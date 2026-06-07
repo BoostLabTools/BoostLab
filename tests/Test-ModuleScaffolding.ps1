@@ -27,6 +27,20 @@ else {
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $placeholderPath = Join-Path $modulesRoot 'ToolModule.Placeholder.ps1'
+$implementedModules = @{
+    'startup-apps-settings' = @{
+        RelativePath = 'Setup\StartupAppsSettings.psm1'
+        LaunchText   = 'Start-Process "ms-settings:startupapps"'
+    }
+    'startup-apps-task-manager' = @{
+        RelativePath = 'Setup\StartupAppsTaskManager.psm1'
+        LaunchText   = 'Start-Process "taskmgr" -ArgumentList " /0 /startup"'
+    }
+    'graphics-configuration-center' = @{
+        RelativePath = 'Graphics\GraphicsConfigurationCenter.psm1'
+        LaunchText   = 'Start-Process "ms-settings:display-advancedgraphics"'
+    }
+}
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
     'Test-BoostLabToolCompatibility'
@@ -65,7 +79,6 @@ $prohibitedCommands = @(
     'Invoke-WebRequest'
     'Invoke-RestMethod'
     'Start-BitsTransfer'
-    'Start-Process'
     'Restart-Computer'
     'Stop-Computer'
     'Checkpoint-Computer'
@@ -88,7 +101,13 @@ $expectedModules = [ordered]@{}
 
 foreach ($stage in $stages) {
     foreach ($tool in @($stage['Tools'] | Sort-Object { [int]$_['Order'] })) {
-        $relativePath = Join-Path ([string]$stage['Name']) ("{0}.psm1" -f [string]$tool['Id'])
+        $toolId = [string]$tool['Id']
+        $relativePath = if ($implementedModules.ContainsKey($toolId)) {
+            [string]$implementedModules[$toolId].RelativePath
+        }
+        else {
+            Join-Path ([string]$stage['Name']) ("{0}.psm1" -f $toolId)
+        }
         $fullPath = Join-Path $modulesRoot $relativePath
         $expectedModules[$fullPath.ToLowerInvariant()] = @{
             Path = $fullPath
@@ -176,9 +195,6 @@ foreach ($entry in $expectedModules.Values) {
         }
     }
 
-    if (-not $source.Contains('ToolModule.Placeholder.ps1')) {
-        $errors.Add("$modulePath does not use the shared placeholder contract.")
-    }
     foreach ($functionName in $requiredFunctions) {
         if (-not $source.Contains("'$functionName'")) {
             $errors.Add("$modulePath does not export $functionName.")
@@ -194,6 +210,35 @@ foreach ($entry in $expectedModules.Values) {
     foreach ($commandName in $commands) {
         if ($commandName -in $prohibitedCommands) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
+        }
+    }
+
+    $toolId = [string]$tool['Id']
+    if ($implementedModules.ContainsKey($toolId)) {
+        if ($source.Contains('ToolModule.Placeholder.ps1')) {
+            $errors.Add("$modulePath must not use the shared placeholder implementation.")
+        }
+        if (-not $source.Contains('$script:BoostLabImplementedActions = @(''Open'')')) {
+            $errors.Add("$modulePath does not mark Open as its implemented action.")
+        }
+        if (-not $source.Contains([string]$implementedModules[$toolId].LaunchText)) {
+            $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
+        }
+
+        $startProcessCount = @($commands | Where-Object { $_ -eq 'Start-Process' }).Count
+        if ($startProcessCount -ne 1) {
+            $errors.Add("$modulePath must contain exactly one Start-Process command.")
+        }
+    }
+    else {
+        if (-not $source.Contains('ToolModule.Placeholder.ps1')) {
+            $errors.Add("$modulePath does not use the shared placeholder contract.")
+        }
+        if ('Start-Process' -in $commands) {
+            $errors.Add("$modulePath is a placeholder but contains Start-Process.")
+        }
+        if ($source.Contains('$script:BoostLabImplementedActions')) {
+            $errors.Add("$modulePath is a placeholder but declares implemented actions.")
         }
     }
 }
@@ -218,8 +263,10 @@ if ($errors.Count -gt 0) {
     Success               = $true
     ApprovedToolCount     = $expectedModules.Count
     ModuleCount           = $actualModules.Count
+    ImplementedModuleCount = $implementedModules.Count
+    PlaceholderModuleCount = $actualModules.Count - $implementedModules.Count
     RequiredFunctionCount = $requiredFunctions.Count
     DeletedModuleCount    = 0
-    Message               = 'All approved tools have matching placeholder modules.'
+    Message               = 'All approved tools have matching modules and valid implementation status.'
     Timestamp             = Get-Date
 }

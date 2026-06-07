@@ -1,10 +1,12 @@
 # BoostLab Tool Module Contract
 
-Every approved tool in `config/Stages.psd1` must have one matching PowerShell module under:
+Every approved tool in `config/Stages.psd1` must have one matching PowerShell module under its stage folder. Placeholder modules normally use:
 
 ```text
 modules/<Stage>/<ToolId>.psm1
 ```
+
+An implemented module may use an approved canonical filename when it is explicitly mapped by the runtime and validator. Module paths must never be accepted directly from editable tool metadata.
 
 Tool modules must remain isolated from the GUI. Future runtime discovery will load a selected module and call its exported functions through a module-qualified command or another isolated module scope.
 
@@ -59,7 +61,7 @@ Required result fields:
 * `RestartRequired`
 * `Timestamp`
 
-Phase 5 modules return `Not implemented`.
+Placeholder modules return `Not implemented`. Implemented modules may return `Ready`.
 
 ### Invoke-BoostLabToolAction
 
@@ -79,17 +81,17 @@ Required result fields:
 * `RestartRequired`
 * `Timestamp`
 
-Phase 5 modules must not execute real logic. Valid requests return `Action not implemented yet`.
+Placeholder modules must not execute real logic. Valid requests return `Action not implemented yet`.
 
 ### Restore-BoostLabToolDefault
 
 Modules export this function for a consistent contract. It represents default or restore behavior when applicable to the tool metadata.
 
-Required result fields are the same as `Invoke-BoostLabToolAction`. Phase 5 returns `Action not implemented yet` and performs no restore operation.
+Required result fields are the same as `Invoke-BoostLabToolAction`. Placeholder modules return `Action not implemented yet` and perform no restore operation.
 
 ## Placeholder Safety Rules
 
-Phase 5 tool modules must not:
+Placeholder tool modules must not:
 
 * Modify registry values
 * Change services
