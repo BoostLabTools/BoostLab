@@ -247,6 +247,51 @@ This applies to:
 
 ---
 
+## Script Migration Policy
+
+### Normal Approved Action Tools
+
+When migrating a normal approved action tool from Ultimate:
+
+* Preserve the original Ultimate behavior as closely as possible.
+* Do not change registry keys, service names, command logic, paths, revert/default logic, or execution order unless explicitly instructed.
+* Refactor only the interface layer required to integrate the behavior into BoostLab.
+* Convert console menus, including `Read-Host` option prompts, into equivalent GUI actions.
+* Remove or replace console-only behavior such as `Clear-Host`, `Pause`, `Exit`, and `Write-Host` with GUI logging and appropriate user prompts.
+* Keep the original Apply / Default / On / Off behavior equivalent.
+
+### Redesigned or Assistant Tools
+
+For redesigned or assistant tools:
+
+* Use the original Ultimate script as source reference only.
+* Add analysis, recommendations, warnings, confirmations, and relevant system checks.
+* Do not blindly execute high-risk changes.
+
+This policy applies to examples including:
+
+* BIOS Information
+* Graphics Configuration Center
+* Spectre / Meltdown Assistant
+* MMAgent Assistant
+* Resizable BAR Assistant
+* SMT / HT Assistant
+* Services Optimizer
+* Timer Resolution Assistant
+* Defender Optimize Assistant
+
+### Deleted Scripts
+
+* Deleted scripts must never be reintroduced.
+* Deleted functionality must not be recreated indirectly under a new name.
+
+### Legacy Source
+
+* The `source-ultimate` directory must remain untouched as the legacy reference source.
+* All migrated production logic must live in `modules/`.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically
