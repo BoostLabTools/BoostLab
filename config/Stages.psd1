@@ -22,7 +22,7 @@
                     Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Review firmware settings guidance before opening BIOS configuration.'
+                    Description = 'Review BIOS setting guidance and optionally restart into BIOS/UEFI firmware settings.'
                     Actions     = @('Analyze', 'Open')
                 }
             )

@@ -33,6 +33,11 @@ $implementedModules = @{
         LaunchText            = 'Start-Process $searchUrl'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
     }
+    'bios-settings' = @{
+        RelativePath          = 'Check\BIOSSettings.psm1'
+        LaunchText            = '& $commandProcessorPath @firmwareRestartArguments'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
+    }
     'startup-apps-settings' = @{
         RelativePath          = 'Setup\StartupAppsSettings.psm1'
         LaunchText            = 'Start-Process "ms-settings:startupapps"'
@@ -233,9 +238,10 @@ foreach ($entry in $expectedModules.Values) {
             $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
         }
 
+        $expectedStartProcessCount = if ($toolId -eq 'bios-settings') { 0 } else { 1 }
         $startProcessCount = @($commands | Where-Object { $_ -eq 'Start-Process' }).Count
-        if ($startProcessCount -ne 1) {
-            $errors.Add("$modulePath must contain exactly one Start-Process command.")
+        if ($startProcessCount -ne $expectedStartProcessCount) {
+            $errors.Add("$modulePath must contain exactly $expectedStartProcessCount Start-Process command(s).")
         }
 
         if ($toolId -eq 'bios-information') {
@@ -248,6 +254,50 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing BIOS information safety behavior: $requiredText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'bios-settings') {
+            foreach ($requiredText in @(
+                'INTEL CPU'
+                'ENABLE ram profile (XMP DOCP EXPO)'
+                'DISABLE c-states (K CHIPS ONLY)'
+                'ENABLE resizable bar (REBAR C.A.M)'
+                'DISABLE i-gpu'
+                'AMD CPU'
+                'ENABLE precision boost overdrive (PBO)'
+                'DISABLE iommu (NEEDED FOR FACEIT)'
+                'MAX pump and set fans to performance'
+                'DISABLE any driver installer software'
+                'Asus armory crate'
+                'MSI driver utility'
+                'Gigabyte update utility'
+                'Asrock motherboard utility'
+                'Do not change settings you do not understand'
+                'Document current BIOS settings'
+                '$script:BoostLabFirmwareConfirmationText'
+                '[bool]$Confirmed = $false'
+                '$commandProcessorPath = Join-Path $env:SystemRoot ''System32\cmd.exe'''
+                '$shutdownPath = Join-Path $env:SystemRoot ''System32\shutdown.exe'''
+                '$firmwareRestartCommand = "`"$shutdownPath`" /r /fw /t 0"'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing BIOS Settings guidance behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'https://www.google.com/search?q='
+                '[System.Uri]::EscapeDataString'
+                'Start-Process $searchUrl'
+                'bcdedit'
+                'Restart-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains forbidden BIOS Settings behavior: $forbiddenText")
                 }
             }
         }

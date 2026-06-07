@@ -6,6 +6,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSInformation.psm1'
         Actions = @('Analyze', 'Open')
     }
+    'bios-settings' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSSettings.psm1'
+        Actions = @('Analyze', 'Open')
+    }
     'startup-apps-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
         Actions = @('Open')
@@ -88,7 +92,9 @@ function New-BoostLabToolActionResult {
         [Parameter(Mandatory)]
         [string]$Message,
 
-        [bool]$RestartRequired = $false
+        [bool]$RestartRequired = $false,
+
+        [bool]$Cancelled = $false
     )
 
     return [pscustomobject]@{
@@ -98,6 +104,7 @@ function New-BoostLabToolActionResult {
         Action          = $Action
         Message         = $Message
         RestartRequired = $RestartRequired
+        Cancelled       = $Cancelled
         Timestamp       = Get-Date
     }
 }
@@ -108,7 +115,9 @@ function Invoke-BoostLabImplementedModuleAction {
         [System.Collections.IDictionary]$ToolMetadata,
 
         [Parameter(Mandatory)]
-        [string]$ActionName
+        [string]$ActionName,
+
+        [bool]$Confirmed = $false
     )
 
     $toolId = [string]$ToolMetadata['Id']
@@ -189,7 +198,14 @@ function Invoke-BoostLabImplementedModuleAction {
                 -Message ([string]$compatibility.Reason)
         }
 
-        return & $actionCommand -ActionName $ActionName
+        $actionParameters = @{
+            ActionName = $ActionName
+        }
+        if ($toolId -eq 'bios-settings' -and $ActionName -eq 'Open') {
+            $actionParameters['Confirmed'] = $Confirmed
+        }
+
+        return & $actionCommand @actionParameters
     }
     catch {
         return New-BoostLabToolActionResult `
@@ -264,9 +280,63 @@ function Invoke-BoostLabToolAction {
         }
     }
 
+    $isBiosFirmwareOpen = $toolId -eq 'bios-settings' -and $ActionName -eq 'Open'
+    if ($isBiosFirmwareOpen -and -not [bool]$safetyGate.IsAllowed) {
+        $message = 'Cancelled by user'
+        $result = New-BoostLabToolActionResult `
+            -Success $false `
+            -ToolId $toolId `
+            -ToolTitle $toolTitle `
+            -Action $ActionName `
+            -Message $message `
+            -Cancelled $true
+
+        Write-BoostLabInfo `
+            -Message '[BIOS Settings] [Open] cancelled by user' `
+            -Source 'Execution' `
+            -EventId 'ToolAction.Cancelled' `
+            -Data @{
+                ToolId    = $toolId
+                Stage     = [string]$ToolMetadata['Stage']
+                RiskLevel = $riskLevel
+            } | Out-Null
+
+        Set-BoostLabToolState `
+            -ToolId $toolId `
+            -Status 'Cancelled' `
+            -LastAction ([pscustomobject]@{
+                ToolId      = $toolId
+                ToolTitle   = $toolTitle
+                Stage       = [string]$ToolMetadata['Stage']
+                Action      = $ActionName
+                RiskLevel   = $riskLevel
+                RequestedAt = $result.Timestamp
+            }) `
+            -LastResult $result `
+            -NoSave | Out-Null
+        Set-BoostLabStateValue -Name 'CurrentStatus' -Value 'Cancelled' -NoSave | Out-Null
+        Set-BoostLabRestartRequired -Required $false -Reason '' | Out-Null
+
+        return $result
+    }
+
+    if ($isBiosFirmwareOpen) {
+        Write-BoostLabWarning `
+            -Message '[BIOS Settings] [Open] restart to BIOS/UEFI requested' `
+            -Source 'Execution' `
+            -EventId 'ToolAction.FirmwareRestartRequested' `
+            -Data @{
+                ToolId    = $toolId
+                Stage     = [string]$ToolMetadata['Stage']
+                RiskLevel = $riskLevel
+                Confirmed = $true
+            } | Out-Null
+    }
+
     $moduleResult = Invoke-BoostLabImplementedModuleAction `
         -ToolMetadata $ToolMetadata `
-        -ActionName $ActionName
+        -ActionName $ActionName `
+        -Confirmed:$RiskConfirmed
     if ($null -ne $moduleResult) {
         $implementedModuleDefinition = $script:BoostLabImplementedToolModules[$toolId]
         $actionRecord = [pscustomobject]@{
@@ -281,16 +351,29 @@ function Invoke-BoostLabToolAction {
         if ([bool]$moduleResult.Success) {
             if ($ActionName -eq 'Analyze' -and $null -ne $moduleResult.PSObject.Properties['Data']) {
                 $analysis = $moduleResult.Data
-                $summary = 'Motherboard: {0} {1} | BIOS: {2} {3} ({4}) | Secure Boot: {5} | TPM: {6} | CPU: {7} | Windows: {8}' -f `
-                    $analysis.MotherboardManufacturer, `
-                    $analysis.MotherboardModel, `
-                    $analysis.BiosManufacturer, `
-                    $analysis.BiosVersion, `
-                    $analysis.BiosReleaseDate, `
-                    $analysis.SecureBootStatus, `
-                    $analysis.TpmStatus, `
-                    $analysis.CpuName, `
-                    $analysis.WindowsVersion
+                $summary = if ($toolId -eq 'bios-information') {
+                    'Motherboard: {0} {1} | BIOS: {2} {3} ({4}) | Secure Boot: {5} | TPM: {6} | CPU: {7} | Windows: {8}' -f `
+                        $analysis.MotherboardManufacturer, `
+                        $analysis.MotherboardModel, `
+                        $analysis.BiosManufacturer, `
+                        $analysis.BiosVersion, `
+                        $analysis.BiosReleaseDate, `
+                        $analysis.SecureBootStatus, `
+                        $analysis.TpmStatus, `
+                        $analysis.CpuName, `
+                        $analysis.WindowsVersion
+                }
+                elseif ($toolId -eq 'bios-settings') {
+                    $guidanceSummary = @($analysis.GuidanceLines) -join [Environment]::NewLine
+                    $warningSummary = @($analysis.Warnings) -join [Environment]::NewLine
+                    'Original Ultimate BIOS settings guidance:{0}{1}{0}Warnings:{0}{2}' -f `
+                        [Environment]::NewLine, `
+                        $guidanceSummary, `
+                        $warningSummary
+                }
+                else {
+                    [string]$moduleResult.Message
+                }
 
                 Write-BoostLabSuccess `
                     -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, $summary) `
@@ -303,7 +386,7 @@ function Invoke-BoostLabToolAction {
                         RiskLevel = $riskLevel
                     } | Out-Null
             }
-            else {
+            elseif (-not $isBiosFirmwareOpen) {
                 Write-BoostLabSuccess `
                     -Message ('[{0}] [{1}] launched' -f $toolTitle, $ActionName) `
                     -Source 'Execution' `
@@ -329,6 +412,9 @@ function Invoke-BoostLabToolAction {
 
         $status = if ([bool]$moduleResult.Success -and $ActionName -eq 'Analyze') {
             'Analyzed'
+        }
+        elseif ([bool]$moduleResult.Success -and $isBiosFirmwareOpen) {
+            'Restart requested'
         }
         elseif ([bool]$moduleResult.Success) {
             'Launched'

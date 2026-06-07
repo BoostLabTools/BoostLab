@@ -200,9 +200,27 @@ function New-BoostLabToolCard {
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
         $actionButton.Add_Click({
             $context = $this.Tag
+            $riskConfirmed = $false
+            if (
+                [string]$context.ToolMetadata['Id'] -eq 'bios-settings' -and
+                [string]$context.ActionName -eq 'Open'
+            ) {
+                $confirmationText = 'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
+                $confirmationResult = [System.Windows.MessageBox]::Show(
+                    $script:BoostLabWindow,
+                    $confirmationText,
+                    'Restart to BIOS/UEFI',
+                    [System.Windows.MessageBoxButton]::YesNo,
+                    [System.Windows.MessageBoxImage]::Warning,
+                    [System.Windows.MessageBoxResult]::No
+                )
+                $riskConfirmed = $confirmationResult -eq [System.Windows.MessageBoxResult]::Yes
+            }
+
             $result = Invoke-BoostLabToolAction `
                 -ToolMetadata $context.ToolMetadata `
-                -ActionName $context.ActionName
+                -ActionName $context.ActionName `
+                -RiskConfirmed:$riskConfirmed
 
             (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
         })
