@@ -97,7 +97,9 @@ The result includes:
 * `RestartRequired`
 * `Timestamp`
 
-All valid tool requests currently return `Action not implemented yet`. No production tool module or legacy script is invoked.
+Read-only assistant analysis may also include a structured `Data` payload.
+
+Tools without an approved implementation continue to return `Action not implemented yet`. Implemented modules are loaded only through the runtime allowlist; no legacy script is invoked.
 
 ## GUI Integration
 

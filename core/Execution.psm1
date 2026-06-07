@@ -2,9 +2,22 @@ Set-StrictMode -Version Latest
 
 $script:BoostLabModulesRoot = Join-Path (Split-Path -Parent $PSScriptRoot) 'modules'
 $script:BoostLabImplementedToolModules = @{
-    'startup-apps-settings' = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
-    'startup-apps-task-manager' = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsTaskManager.psm1'
-    'graphics-configuration-center' = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
+    'bios-information' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSInformation.psm1'
+        Actions = @('Analyze', 'Open')
+    }
+    'startup-apps-settings' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
+        Actions = @('Open')
+    }
+    'startup-apps-task-manager' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsTaskManager.psm1'
+        Actions = @('Open')
+    }
+    'graphics-configuration-center' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
+        Actions = @('Open')
+    }
 }
 
 function Test-BoostLabToolMetadata {
@@ -105,16 +118,17 @@ function Invoke-BoostLabImplementedModuleAction {
         return $null
     }
 
-    if ($ActionName -ne 'Open') {
+    $moduleDefinition = $script:BoostLabImplementedToolModules[$toolId]
+    if ($ActionName -notin @($moduleDefinition['Actions'])) {
         return New-BoostLabToolActionResult `
             -Success $false `
             -ToolId $toolId `
             -ToolTitle $toolTitle `
             -Action $ActionName `
-            -Message 'Unsupported action. Only Open is allowed.'
+            -Message 'Unsupported action for this tool.'
     }
 
-    $modulePath = [string]$script:BoostLabImplementedToolModules[$toolId]
+    $modulePath = [string]$moduleDefinition['Path']
     if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
         return New-BoostLabToolActionResult `
             -Success $false `
@@ -254,6 +268,7 @@ function Invoke-BoostLabToolAction {
         -ToolMetadata $ToolMetadata `
         -ActionName $ActionName
     if ($null -ne $moduleResult) {
+        $implementedModuleDefinition = $script:BoostLabImplementedToolModules[$toolId]
         $actionRecord = [pscustomobject]@{
             ToolId      = $toolId
             ToolTitle   = $toolTitle
@@ -264,29 +279,63 @@ function Invoke-BoostLabToolAction {
         }
 
         if ([bool]$moduleResult.Success) {
-            Write-BoostLabSuccess `
-                -Message ('[{0}] [{1}] launched' -f $toolTitle, $ActionName) `
-                -Source 'Execution' `
-                -EventId 'ToolAction.Launched' `
-                -Data @{
-                    ToolId    = $toolId
-                    Stage     = [string]$ToolMetadata['Stage']
-                    Module    = [System.IO.Path]::GetFileName([string]$script:BoostLabImplementedToolModules[$toolId])
-                    RiskLevel = $riskLevel
-                } | Out-Null
+            if ($ActionName -eq 'Analyze' -and $null -ne $moduleResult.PSObject.Properties['Data']) {
+                $analysis = $moduleResult.Data
+                $summary = 'Motherboard: {0} {1} | BIOS: {2} {3} ({4}) | Secure Boot: {5} | TPM: {6} | CPU: {7} | Windows: {8}' -f `
+                    $analysis.MotherboardManufacturer, `
+                    $analysis.MotherboardModel, `
+                    $analysis.BiosManufacturer, `
+                    $analysis.BiosVersion, `
+                    $analysis.BiosReleaseDate, `
+                    $analysis.SecureBootStatus, `
+                    $analysis.TpmStatus, `
+                    $analysis.CpuName, `
+                    $analysis.WindowsVersion
+
+                Write-BoostLabSuccess `
+                    -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, $summary) `
+                    -Source 'Execution' `
+                    -EventId 'ToolAction.Analyzed' `
+                    -Data @{
+                        ToolId    = $toolId
+                        Stage     = [string]$ToolMetadata['Stage']
+                        Module    = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
+                        RiskLevel = $riskLevel
+                    } | Out-Null
+            }
+            else {
+                Write-BoostLabSuccess `
+                    -Message ('[{0}] [{1}] launched' -f $toolTitle, $ActionName) `
+                    -Source 'Execution' `
+                    -EventId 'ToolAction.Launched' `
+                    -Data @{
+                        ToolId    = $toolId
+                        Stage     = [string]$ToolMetadata['Stage']
+                        Module    = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
+                        RiskLevel = $riskLevel
+                    } | Out-Null
+            }
         }
         else {
             Write-BoostLabError `
                 -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
                 -Source 'Execution' `
-                -EventId 'ToolAction.LaunchFailed' `
+                -EventId 'ToolAction.Failed' `
                 -Data @{
                     ToolId = $toolId
                     Stage  = [string]$ToolMetadata['Stage']
                 } | Out-Null
         }
 
-        $status = if ([bool]$moduleResult.Success) { 'Launched' } else { 'Launch failed' }
+        $status = if ([bool]$moduleResult.Success -and $ActionName -eq 'Analyze') {
+            'Analyzed'
+        }
+        elseif ([bool]$moduleResult.Success) {
+            'Launched'
+        }
+        else {
+            'Action failed'
+        }
         Set-BoostLabToolState `
             -ToolId $toolId `
             -Status $status `

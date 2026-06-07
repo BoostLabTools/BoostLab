@@ -28,17 +28,25 @@ $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $placeholderPath = Join-Path $modulesRoot 'ToolModule.Placeholder.ps1'
 $implementedModules = @{
+    'bios-information' = @{
+        RelativePath          = 'Check\BIOSInformation.psm1'
+        LaunchText            = 'Start-Process $searchUrl'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
+    }
     'startup-apps-settings' = @{
-        RelativePath = 'Setup\StartupAppsSettings.psm1'
-        LaunchText   = 'Start-Process "ms-settings:startupapps"'
+        RelativePath          = 'Setup\StartupAppsSettings.psm1'
+        LaunchText            = 'Start-Process "ms-settings:startupapps"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
     'startup-apps-task-manager' = @{
-        RelativePath = 'Setup\StartupAppsTaskManager.psm1'
-        LaunchText   = 'Start-Process "taskmgr" -ArgumentList " /0 /startup"'
+        RelativePath          = 'Setup\StartupAppsTaskManager.psm1'
+        LaunchText            = 'Start-Process "taskmgr" -ArgumentList " /0 /startup"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
     'graphics-configuration-center' = @{
-        RelativePath = 'Graphics\GraphicsConfigurationCenter.psm1'
-        LaunchText   = 'Start-Process "ms-settings:display-advancedgraphics"'
+        RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
+        LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
 }
 $requiredFunctions = @(
@@ -218,8 +226,8 @@ foreach ($entry in $expectedModules.Values) {
         if ($source.Contains('ToolModule.Placeholder.ps1')) {
             $errors.Add("$modulePath must not use the shared placeholder implementation.")
         }
-        if (-not $source.Contains('$script:BoostLabImplementedActions = @(''Open'')')) {
-            $errors.Add("$modulePath does not mark Open as its implemented action.")
+        if (-not $source.Contains([string]$implementedModules[$toolId].ImplementedActionsText)) {
+            $errors.Add("$modulePath does not declare the approved implemented actions.")
         }
         if (-not $source.Contains([string]$implementedModules[$toolId].LaunchText)) {
             $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
@@ -228,6 +236,20 @@ foreach ($entry in $expectedModules.Values) {
         $startProcessCount = @($commands | Where-Object { $_ -eq 'Start-Process' }).Count
         if ($startProcessCount -ne 1) {
             $errors.Add("$modulePath must contain exactly one Start-Process command.")
+        }
+
+        if ($toolId -eq 'bios-information') {
+            foreach ($requiredText in @(
+                'Get-CimInstance'
+                '[System.Uri]::EscapeDataString'
+                'https://www.google.com/search?q='
+                'Confirm-SecureBootUEFI'
+                'Get-Tpm'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing BIOS information safety behavior: $requiredText")
+                }
+            }
         }
     }
     else {

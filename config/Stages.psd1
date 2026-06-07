@@ -13,7 +13,7 @@
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Review detected BIOS, firmware, and motherboard information.'
-                    Actions     = @('Analyze')
+                    Actions     = @('Analyze', 'Open')
                 }
                 @{
                     Id          = 'bios-settings'

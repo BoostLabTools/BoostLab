@@ -81,6 +81,8 @@ Required result fields:
 * `RestartRequired`
 * `Timestamp`
 
+Assistant analysis actions may also return a structured `Data` object containing read-only findings.
+
 Placeholder modules must not execute real logic. Valid requests return `Action not implemented yet`.
 
 ### Restore-BoostLabToolDefault
