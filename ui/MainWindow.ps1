@@ -148,7 +148,7 @@ function Initialize-BoostLabMainWindow {
     )
 
     $script:BoostLabWindow = $Window
-    $script:BoostLabStages = @($StageConfiguration.Stages | Sort-Object Order)
+    $script:BoostLabStages = @($StageConfiguration.Stages | Sort-Object { [int]$_['Order'] })
     $script:BoostLabStageButtons = @{}
 
     Initialize-BoostLabState
