@@ -13,79 +13,157 @@ function Get-BoostLabUiElement {
     return $script:BoostLabWindow.FindName($Name)
 }
 
+function New-BoostLabBadge {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [string]$Background,
+
+        [Parameter(Mandatory)]
+        [string]$Foreground
+    )
+
+    $badge = [System.Windows.Controls.Border]::new()
+    $badge.Margin = [System.Windows.Thickness]::new(0, 0, 7, 0)
+    $badge.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
+    $badge.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($Background)
+    $badge.CornerRadius = [System.Windows.CornerRadius]::new(10)
+
+    $label = [System.Windows.Controls.TextBlock]::new()
+    $label.Text = $Text.ToUpperInvariant()
+    $label.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($Foreground)
+    $label.FontSize = 10
+    $label.FontWeight = [System.Windows.FontWeights]::SemiBold
+
+    $badge.Child = $label
+    return $badge
+}
+
 function New-BoostLabToolCard {
     param(
         [Parameter(Mandatory)]
-        [string]$StageName,
-
-        [Parameter(Mandatory)]
-        [string]$ToolName
+        [hashtable]$Tool
     )
+
+    $toolId = [string]$Tool['Id']
+    $toolTitle = [string]$Tool['Title']
+    $stageName = [string]$Tool['Stage']
+    $toolType = ([string]$Tool['Type']).ToLowerInvariant()
+    $riskLevel = ([string]$Tool['RiskLevel']).ToLowerInvariant()
 
     $card = [System.Windows.Controls.Border]::new()
     $card.Width = 310
-    $card.MinHeight = 176
+    $card.MinHeight = 238
     $card.Margin = [System.Windows.Thickness]::new(0, 0, 14, 14)
     $card.Padding = [System.Windows.Thickness]::new(16)
-    $card.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#182238')
-    $card.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#293653')
-    $card.BorderThickness = [System.Windows.Thickness]::new(1)
     $card.CornerRadius = [System.Windows.CornerRadius]::new(9)
 
-    $layout = [System.Windows.Controls.Grid]::new()
-    $layout.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
-    $layout.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
-    $layout.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
-    $layout.RowDefinitions[0].Height = [System.Windows.GridLength]::Auto
-    $layout.RowDefinitions[1].Height = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $layout.RowDefinitions[2].Height = [System.Windows.GridLength]::Auto
+    if ($riskLevel -eq 'high') {
+        $card.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#281923')
+        $card.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#DC2626')
+        $card.BorderThickness = [System.Windows.Thickness]::new(2)
+    }
+    elseif ($toolType -eq 'assistant') {
+        $card.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#1D203A')
+        $card.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#7C3AED')
+        $card.BorderThickness = [System.Windows.Thickness]::new(1)
+    }
+    else {
+        $card.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#182238')
+        $card.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#0E7490')
+        $card.BorderThickness = [System.Windows.Thickness]::new(1)
+    }
+
+    $layout = [System.Windows.Controls.StackPanel]::new()
 
     $title = [System.Windows.Controls.TextBlock]::new()
-    $title.Text = $ToolName
+    $title.Text = $toolTitle
     $title.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#F4F7FC')
     $title.FontSize = 16
     $title.FontWeight = [System.Windows.FontWeights]::SemiBold
     $title.TextWrapping = [System.Windows.TextWrapping]::Wrap
-    [System.Windows.Controls.Grid]::SetRow($title, 0)
     $layout.Children.Add($title) | Out-Null
 
-    $details = [System.Windows.Controls.StackPanel]::new()
-    $details.Margin = [System.Windows.Thickness]::new(0, 10, 0, 12)
+    $badges = [System.Windows.Controls.WrapPanel]::new()
+    $badges.Margin = [System.Windows.Thickness]::new(0, 10, 0, 0)
+
+    if ($toolType -eq 'assistant') {
+        $badges.Children.Add((New-BoostLabBadge -Text 'Assistant' -Background '#3B1D67' -Foreground '#DDD6FE')) | Out-Null
+    }
+    else {
+        $badges.Children.Add((New-BoostLabBadge -Text 'Action' -Background '#164E63' -Foreground '#CFFAFE')) | Out-Null
+    }
+
+    $riskBadgeColors = switch ($riskLevel) {
+        'high' {
+            @{
+                Background = '#7F1D1D'
+                Foreground = '#FEE2E2'
+            }
+        }
+        'medium' {
+            @{
+                Background = '#78350F'
+                Foreground = '#FEF3C7'
+            }
+        }
+        default {
+            @{
+                Background = '#14532D'
+                Foreground = '#DCFCE7'
+            }
+        }
+    }
+    $badges.Children.Add(
+        (New-BoostLabBadge -Text "$riskLevel risk" -Background $riskBadgeColors['Background'] -Foreground $riskBadgeColors['Foreground'])
+    ) | Out-Null
+    $layout.Children.Add($badges) | Out-Null
 
     $description = [System.Windows.Controls.TextBlock]::new()
-    $description.Text = 'Phase 1 interface placeholder. No system action is connected.'
+    $description.Margin = [System.Windows.Thickness]::new(0, 12, 0, 0)
+    $description.Text = [string]$Tool['Description']
     $description.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#9EABC2')
     $description.FontSize = 12
     $description.TextWrapping = [System.Windows.TextWrapping]::Wrap
-    $details.Children.Add($description) | Out-Null
+    $layout.Children.Add($description) | Out-Null
 
     $status = [System.Windows.Controls.TextBlock]::new()
     $status.Margin = [System.Windows.Thickness]::new(0, 10, 0, 0)
     $status.Text = 'Status: Not implemented'
     $status.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FBBF24')
     $status.FontSize = 12
-    $details.Children.Add($status) | Out-Null
+    $layout.Children.Add($status) | Out-Null
 
-    [System.Windows.Controls.Grid]::SetRow($details, 1)
-    $layout.Children.Add($details) | Out-Null
+    $actionsPanel = [System.Windows.Controls.WrapPanel]::new()
+    $actionsPanel.Margin = [System.Windows.Thickness]::new(0, 14, 0, 0)
 
-    $actionButton = [System.Windows.Controls.Button]::new()
-    $actionButton.Content = 'Action'
-    $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $actionButton.Tag = [pscustomobject]@{
-        Stage = $StageName
-        Tool  = $ToolName
+    foreach ($actionName in @($Tool['Actions'])) {
+        $actionButton = [System.Windows.Controls.Button]::new()
+        $actionButton.Content = [string]$actionName
+        $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $actionButton.Margin = [System.Windows.Thickness]::new(0, 0, 8, 8)
+        $actionButton.MinWidth = 72
+        $actionButton.Tag = [pscustomobject]@{
+            Stage      = $stageName
+            ToolId     = $toolId
+            ToolTitle  = $toolTitle
+            ActionName = [string]$actionName
+        }
+        $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
+        $actionButton.Add_Click({
+            $context = $this.Tag
+            $message = '[{0}] [{1}] not implemented yet' -f $context.ToolTitle, $context.ActionName
+
+            Set-BoostLabStateValue -Name 'CurrentStatus' -Value 'Not implemented'
+            (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($context.ToolTitle): Not implemented"
+            Write-BoostLabLog -Message $message -Source "$($context.Stage) / $($context.ToolId)" | Out-Null
+        })
+
+        $actionsPanel.Children.Add($actionButton) | Out-Null
     }
-    $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
-    $actionButton.Add_Click({
-        $context = $this.Tag
-        Set-BoostLabStateValue -Name 'CurrentStatus' -Value 'Not implemented'
-        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Not implemented'
-        Write-BoostLabLog -Message 'Action not implemented yet' -Source "$($context.Stage) / $($context.Tool)" | Out-Null
-    })
-
-    [System.Windows.Controls.Grid]::SetRow($actionButton, 2)
-    $layout.Children.Add($actionButton) | Out-Null
+    $layout.Children.Add($actionsPanel) | Out-Null
 
     $card.Child = $layout
     return $card
@@ -97,15 +175,15 @@ function Show-BoostLabStage {
         [string]$StageName
     )
 
-    $stage = $script:BoostLabStages | Where-Object { $_.Name -eq $StageName } | Select-Object -First 1
+    $stage = $script:BoostLabStages | Where-Object { $_['Name'] -eq $StageName } | Select-Object -First 1
     if (-not $stage) {
         return
     }
 
     Set-BoostLabStateValue -Name 'CurrentStage' -Value $StageName
 
-    (Get-BoostLabUiElement -Name 'StageTitleText').Text = $stage.Name
-    (Get-BoostLabUiElement -Name 'StageDescriptionText').Text = $stage.Description
+    (Get-BoostLabUiElement -Name 'StageTitleText').Text = [string]$stage['Name']
+    (Get-BoostLabUiElement -Name 'StageDescriptionText').Text = [string]$stage['Description']
 
     foreach ($buttonName in $script:BoostLabStageButtons.Keys) {
         $button = $script:BoostLabStageButtons[$buttonName]
@@ -120,8 +198,8 @@ function Show-BoostLabStage {
     $cardsPanel = Get-BoostLabUiElement -Name 'ToolCardsPanel'
     $cardsPanel.Children.Clear()
 
-    foreach ($toolName in $stage.Tools) {
-        $cardsPanel.Children.Add((New-BoostLabToolCard -StageName $stage.Name -ToolName $toolName)) | Out-Null
+    foreach ($tool in @($stage['Tools'] | Sort-Object { [int]$_['Order'] })) {
+        $cardsPanel.Children.Add((New-BoostLabToolCard -Tool $tool)) | Out-Null
     }
 }
 
@@ -148,7 +226,7 @@ function Initialize-BoostLabMainWindow {
     )
 
     $script:BoostLabWindow = $Window
-    $script:BoostLabStages = @($StageConfiguration.Stages | Sort-Object { [int]$_['Order'] })
+    $script:BoostLabStages = @($StageConfiguration['Stages'] | Sort-Object { [int]$_['Order'] })
     $script:BoostLabStageButtons = @{}
 
     Initialize-BoostLabState
@@ -183,14 +261,14 @@ function Initialize-BoostLabMainWindow {
     $navigationPanel = Get-BoostLabUiElement -Name 'StageNavigationPanel'
     foreach ($stage in $script:BoostLabStages) {
         $button = [System.Windows.Controls.Button]::new()
-        $button.Content = $stage.Name
-        $button.Tag = $stage.Name
+        $button.Content = [string]$stage['Name']
+        $button.Tag = [string]$stage['Name']
         $button.Style = $Window.FindResource('SidebarButtonStyle')
         $button.Add_Click({
             Show-BoostLabStage -StageName ([string]$this.Tag)
         })
 
-        $script:BoostLabStageButtons[$stage.Name] = $button
+        $script:BoostLabStageButtons[[string]$stage['Name']] = $button
         $navigationPanel.Children.Add($button) | Out-Null
     }
 
