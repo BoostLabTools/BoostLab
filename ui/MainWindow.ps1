@@ -194,19 +194,17 @@ function New-BoostLabToolCard {
         $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $actionButton.Margin = [System.Windows.Thickness]::new(0, 0, 7, 0)
         $actionButton.Tag = [pscustomobject]@{
-            Stage      = $stageName
-            ToolId     = $toolId
-            ToolTitle  = $toolTitle
-            ActionName = [string]$actionName
+            ToolMetadata = $Tool
+            ActionName   = [string]$actionName
         }
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
         $actionButton.Add_Click({
             $context = $this.Tag
-            $message = '[{0}] [{1}] not implemented yet' -f $context.ToolTitle, $context.ActionName
+            $result = Invoke-BoostLabToolAction `
+                -ToolMetadata $context.ToolMetadata `
+                -ActionName $context.ActionName
 
-            Set-BoostLabStateValue -Name 'CurrentStatus' -Value 'Not implemented'
-            (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($context.ToolTitle): Not implemented"
-            Write-BoostLabLog -Message $message -Source "$($context.Stage) / $($context.ToolId)" | Out-Null
+            (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
         })
 
         $actionsPanel.Children.Add($actionButton) | Out-Null
@@ -278,10 +276,7 @@ function Initialize-BoostLabMainWindow {
         [hashtable]$StageConfiguration,
 
         [Parameter(Mandatory)]
-        [bool]$IsAdministrator,
-
-        [Parameter(Mandatory)]
-        [bool]$HasInternet,
+        [pscustomobject]$EnvironmentInfo,
 
         [Parameter(Mandatory)]
         [pscustomobject]$LicenseStatus,
@@ -297,13 +292,13 @@ function Initialize-BoostLabMainWindow {
     Initialize-BoostLabState
 
     $adminStatusText = Get-BoostLabUiElement -Name 'AdminStatusText'
-    $adminStatusText.Text = if ($IsAdministrator) {
+    $adminStatusText.Text = if ($EnvironmentInfo.IsAdministrator) {
         'Admin: Yes'
     }
     else {
         'Admin: No'
     }
-    $adminStatusText.Foreground = if ($IsAdministrator) {
+    $adminStatusText.Foreground = if ($EnvironmentInfo.IsAdministrator) {
         [System.Windows.Media.BrushConverter]::new().ConvertFromString('#86EFAC')
     }
     else {
@@ -311,13 +306,13 @@ function Initialize-BoostLabMainWindow {
     }
 
     $internetStatusText = Get-BoostLabUiElement -Name 'InternetStatusText'
-    $internetStatusText.Text = if ($HasInternet) {
+    $internetStatusText.Text = if ($EnvironmentInfo.HasInternet) {
         'Internet: Online'
     }
     else {
         'Internet: Offline'
     }
-    $internetStatusText.Foreground = if ($HasInternet) {
+    $internetStatusText.Foreground = if ($EnvironmentInfo.HasInternet) {
         [System.Windows.Media.BrushConverter]::new().ConvertFromString('#86EFAC')
     }
     else {
@@ -354,5 +349,13 @@ function Initialize-BoostLabMainWindow {
     }
 
     Show-BoostLabStage -StageName 'Check'
-    Write-BoostLabLog -Message 'BoostLab interface initialized.' | Out-Null
+    Write-BoostLabInfo `
+        -Message 'BoostLab interface initialized.' `
+        -Source 'UI' `
+        -EventId 'UI.Initialized' `
+        -Data @{
+            PowerShellVersion = [string]$EnvironmentInfo.PowerShell.Version
+            Architecture      = [string]$EnvironmentInfo.Architecture.OperatingSystem
+            PendingReboot     = [bool]$EnvironmentInfo.PendingReboot.IsPending
+        } | Out-Null
 }

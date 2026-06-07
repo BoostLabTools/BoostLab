@@ -39,6 +39,7 @@ $modulePaths = @(
     'core\Logging.psm1'
     'core\Safety.psm1'
     'core\State.psm1'
+    'core\Execution.psm1'
     'license\LicenseProvider.psm1'
 )
 
@@ -48,6 +49,8 @@ foreach ($relativeModulePath in $modulePaths) {
         Import-Module -Name $modulePath -Force -ErrorAction Stop
     }
 }
+
+Initialize-BoostLabLogging | Out-Null
 
 $stagesPath = Join-Path $projectRoot 'config\Stages.psd1'
 $xamlPath = Join-Path $projectRoot 'ui\MainWindow.xaml'
@@ -59,25 +62,16 @@ foreach ($requiredPath in @($stagesPath, $xamlPath, $uiControllerPath)) {
     }
 }
 
-$isAdministrator = if ($AdminStatus -eq 'Unknown') {
-    Test-BoostLabAdministrator
+$environmentInfo = Get-BoostLabEnvironmentInfo
+if ($AdminStatus -ne 'Unknown') {
+    $environmentInfo.IsAdministrator = [bool]::Parse($AdminStatus)
 }
-else {
-    [bool]::Parse($AdminStatus)
-}
-
-$hasInternet = if ($InternetStatus -eq 'Unknown') {
-    Test-BoostLabInternet
-}
-else {
-    [bool]::Parse($InternetStatus)
+if ($InternetStatus -ne 'Unknown') {
+    $environmentInfo.HasInternet = [bool]::Parse($InternetStatus)
 }
 
-$windowsVersion = Get-BoostLabWindowsVersion
 $licenseStatus = Get-BoostLabLicenseStatus
 $stageConfiguration = Import-PowerShellDataFile -LiteralPath $stagesPath
-
-Initialize-BoostLabLogging
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -97,9 +91,8 @@ finally {
 Initialize-BoostLabMainWindow `
     -Window $window `
     -StageConfiguration $stageConfiguration `
-    -IsAdministrator $isAdministrator `
-    -HasInternet $hasInternet `
+    -EnvironmentInfo $environmentInfo `
     -LicenseStatus $licenseStatus `
-    -WindowsVersion $windowsVersion
+    -WindowsVersion $environmentInfo.Windows
 
 $window.ShowDialog() | Out-Null
