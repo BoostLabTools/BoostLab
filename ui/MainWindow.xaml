@@ -4,30 +4,55 @@
     x:Name="BoostLabWindow"
     Title="BoostLab"
     Width="1280"
-    Height="820"
-    MinWidth="1024"
+    Height="720"
+    MinWidth="1080"
     MinHeight="680"
     WindowStartupLocation="CenterScreen"
-    Background="#0B1020"
-    FontFamily="Segoe UI">
+    Background="#080D19"
+    FontFamily="Segoe UI"
+    SnapsToDevicePixels="True"
+    UseLayoutRounding="True"
+    TextOptions.TextFormattingMode="Display">
     <Window.Resources>
-        <SolidColorBrush x:Key="PageBackground" Color="#0B1020" />
-        <SolidColorBrush x:Key="PanelBackground" Color="#11182B" />
-        <SolidColorBrush x:Key="CardBackground" Color="#182238" />
-        <SolidColorBrush x:Key="BorderBrush" Color="#293653" />
-        <SolidColorBrush x:Key="PrimaryText" Color="#F4F7FC" />
-        <SolidColorBrush x:Key="SecondaryText" Color="#9EABC2" />
+        <SolidColorBrush x:Key="PageBackground" Color="#080D19" />
+        <SolidColorBrush x:Key="HeaderBackground" Color="#0E1525" />
+        <SolidColorBrush x:Key="PanelBackground" Color="#0D1423" />
+        <SolidColorBrush x:Key="SurfaceBackground" Color="#111A2D" />
+        <SolidColorBrush x:Key="CardBackground" Color="#151F33" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#26334A" />
+        <SolidColorBrush x:Key="PrimaryText" Color="#F6F8FC" />
+        <SolidColorBrush x:Key="SecondaryText" Color="#A5B1C6" />
+        <SolidColorBrush x:Key="MutedText" Color="#74829A" />
         <SolidColorBrush x:Key="AccentBrush" Color="#38BDF8" />
         <SolidColorBrush x:Key="AccentDarkBrush" Color="#075985" />
 
+        <Style x:Key="HeaderStatusBorderStyle" TargetType="Border">
+            <Setter Property="Margin" Value="7,0,0,0" />
+            <Setter Property="Padding" Value="11,7" />
+            <Setter Property="Background" Value="#141E31" />
+            <Setter Property="BorderBrush" Value="#2B3952" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+        </Style>
+
+        <Style x:Key="HeaderStatusTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource SecondaryText}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
         <Style x:Key="SidebarButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource PrimaryText}" />
+            <Setter Property="Height" Value="46" />
+            <Setter Property="Foreground" Value="#B8C5D9" />
             <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Padding" Value="18,12" />
-            <Setter Property="Margin" Value="10,3" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="Margin" Value="12,3" />
             <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Normal" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -35,15 +60,31 @@
                         <Border
                             x:Name="ButtonBorder"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="7"
+                            CornerRadius="8"
                             Padding="{TemplateBinding Padding}">
-                            <ContentPresenter
-                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="Center" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border
+                                    Margin="0,9"
+                                    Background="{TemplateBinding BorderBrush}"
+                                    CornerRadius="2" />
+                                <ContentPresenter
+                                    Grid.Column="1"
+                                    Margin="12,0,0,0"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="Center" />
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#22304B" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#17243A" />
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryText}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#1B2D48" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -52,10 +93,14 @@
         </Style>
 
         <Style x:Key="ActionButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Background" Value="{StaticResource AccentDarkBrush}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="MinWidth" Value="70" />
+            <Setter Property="Foreground" Value="#F8FAFC" />
+            <Setter Property="Background" Value="#0A5F87" />
+            <Setter Property="BorderBrush" Value="#1780AA" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="13,0" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -64,6 +109,8 @@
                         <Border
                             x:Name="ActionBorder"
                             Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="6"
                             Padding="{TemplateBinding Padding}">
                             <ContentPresenter
@@ -72,10 +119,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ActionBorder" Property="Background" Value="#0369A1" />
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#0877A6" />
+                                <Setter TargetName="ActionBorder" Property="BorderBrush" Value="#38BDF8" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ActionBorder" Property="Background" Value="#0C4A6E" />
+                                <Setter TargetName="ActionBorder" Property="Background" Value="#07506F" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -88,56 +136,79 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="170" />
+            <RowDefinition Height="154" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="244" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Border
             Grid.Row="0"
             Grid.ColumnSpan="2"
-            Background="#10172A"
+            Padding="24,14"
+            Background="{StaticResource HeaderBackground}"
             BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="0,0,0,1"
-            Padding="22,16">
+            BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel>
+                <Border
+                    Width="4"
+                    Height="38"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource AccentBrush}"
+                    CornerRadius="2" />
+
+                <StackPanel Grid.Column="1" Margin="14,0,24,0" VerticalAlignment="Center">
                     <TextBlock
                         Foreground="{StaticResource PrimaryText}"
                         FontSize="24"
                         FontWeight="Bold"
                         Text="BoostLab" />
                     <TextBlock
-                        Margin="0,3,0,0"
-                        Foreground="{StaticResource SecondaryText}"
-                        FontSize="12"
-                        Text="Windows optimization workflow" />
+                        Margin="0,2,0,0"
+                        Foreground="{StaticResource MutedText}"
+                        FontSize="11"
+                        Text="Guided Windows optimization workspace" />
                 </StackPanel>
 
-                <StackPanel
-                    Grid.Column="1"
-                    Orientation="Horizontal"
+                <WrapPanel
+                    Grid.Column="2"
+                    HorizontalAlignment="Right"
                     VerticalAlignment="Center">
-                    <Border Margin="4,0" Padding="10,6" Background="#17233A" CornerRadius="6">
-                        <TextBlock x:Name="AdminStatusText" Foreground="{StaticResource SecondaryText}" Text="Admin: Checking" />
+                    <Border Style="{StaticResource HeaderStatusBorderStyle}">
+                        <TextBlock
+                            x:Name="AdminStatusText"
+                            Style="{StaticResource HeaderStatusTextStyle}"
+                            Text="Admin: Checking" />
                     </Border>
-                    <Border Margin="4,0" Padding="10,6" Background="#17233A" CornerRadius="6">
-                        <TextBlock x:Name="InternetStatusText" Foreground="{StaticResource SecondaryText}" Text="Internet: Checking" />
+                    <Border Style="{StaticResource HeaderStatusBorderStyle}">
+                        <TextBlock
+                            x:Name="InternetStatusText"
+                            Style="{StaticResource HeaderStatusTextStyle}"
+                            Text="Internet: Checking" />
                     </Border>
-                    <Border Margin="4,0" Padding="10,6" Background="#17233A" CornerRadius="6">
-                        <TextBlock x:Name="LicenseStatusText" Foreground="{StaticResource SecondaryText}" Text="License: Placeholder" />
+                    <Border Style="{StaticResource HeaderStatusBorderStyle}">
+                        <TextBlock
+                            x:Name="LicenseStatusText"
+                            Style="{StaticResource HeaderStatusTextStyle}"
+                            Text="License: Placeholder" />
                     </Border>
-                    <Border Margin="4,0" Padding="10,6" Background="#17233A" CornerRadius="6">
-                        <TextBlock x:Name="WindowsStatusText" Foreground="{StaticResource SecondaryText}" Text="Windows: Detecting" />
+                    <Border Style="{StaticResource HeaderStatusBorderStyle}">
+                        <TextBlock
+                            x:Name="WindowsStatusText"
+                            MaxWidth="220"
+                            Style="{StaticResource HeaderStatusTextStyle}"
+                            Text="Windows: Detecting"
+                            TextTrimming="CharacterEllipsis"
+                            ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                     </Border>
-                </StackPanel>
+                </WrapPanel>
             </Grid>
         </Border>
 
@@ -147,54 +218,137 @@
             Background="{StaticResource PanelBackground}"
             BorderBrush="{StaticResource BorderBrush}"
             BorderThickness="0,0,1,0">
-            <DockPanel>
-                <TextBlock
-                    DockPanel.Dock="Top"
-                    Margin="18,22,18,10"
-                    Foreground="{StaticResource SecondaryText}"
-                    FontSize="11"
-                    FontWeight="SemiBold"
-                    Text="WORKFLOW STAGES" />
-                <StackPanel x:Name="StageNavigationPanel" />
-            </DockPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Margin="20,22,18,13">
+                    <TextBlock
+                        Foreground="{StaticResource PrimaryText}"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Text="WORKFLOW" />
+                    <TextBlock
+                        Margin="0,4,0,0"
+                        Foreground="{StaticResource MutedText}"
+                        FontSize="10"
+                        Text="SELECT A STAGE" />
+                </StackPanel>
+
+                <ScrollViewer
+                    Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="StageNavigationPanel" />
+                </ScrollViewer>
+
+                <Border
+                    Grid.Row="2"
+                    Margin="16,12,16,16"
+                    Padding="12,10"
+                    Background="#111A2B"
+                    BorderBrush="#26334A"
+                    BorderThickness="1"
+                    CornerRadius="7">
+                    <StackPanel>
+                        <TextBlock
+                            Foreground="{StaticResource SecondaryText}"
+                            FontSize="10"
+                            FontWeight="SemiBold"
+                            Text="PREVIEW MODE" />
+                        <TextBlock
+                            Margin="0,3,0,0"
+                            Foreground="{StaticResource MutedText}"
+                            FontSize="10"
+                            Text="Tool actions are not enabled." />
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Grid.Column="1" Margin="26,22,26,18">
+        <Grid Grid.Row="1" Grid.Column="1" Margin="22,18,20,14">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Margin="0,0,0,18">
-                <TextBlock
-                    x:Name="StageTitleText"
-                    Foreground="{StaticResource PrimaryText}"
-                    FontSize="26"
-                    FontWeight="Bold"
-                    Text="Check" />
-                <TextBlock
-                    x:Name="StageDescriptionText"
-                    Margin="0,5,0,0"
-                    Foreground="{StaticResource SecondaryText}"
-                    FontSize="13"
-                    Text="Select a workflow stage." />
-            </StackPanel>
+            <Border
+                Margin="0,0,0,16"
+                Padding="18,15"
+                Background="{StaticResource SurfaceBackground}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="9">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock
+                            x:Name="StageEyebrowText"
+                            Foreground="{StaticResource AccentBrush}"
+                            FontSize="10"
+                            FontWeight="SemiBold"
+                            Text="WORKFLOW STAGE 01 / 07" />
+                        <TextBlock
+                            x:Name="StageTitleText"
+                            Margin="0,4,0,0"
+                            Foreground="{StaticResource PrimaryText}"
+                            FontSize="25"
+                            FontWeight="Bold"
+                            Text="Check" />
+                        <TextBlock
+                            x:Name="StageDescriptionText"
+                            Margin="0,4,24,0"
+                            Foreground="{StaticResource SecondaryText}"
+                            FontSize="12"
+                            Text="Select a workflow stage."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Border
+                        Grid.Column="1"
+                        Padding="12,7"
+                        VerticalAlignment="Top"
+                        Background="#122B3B"
+                        BorderBrush="#245774"
+                        BorderThickness="1"
+                        CornerRadius="7">
+                        <TextBlock
+                            x:Name="StageToolCountText"
+                            Foreground="#BAE6FD"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Text="0 TOOLS" />
+                    </Border>
+                </Grid>
+            </Border>
 
             <ScrollViewer
                 Grid.Row="1"
+                HorizontalContentAlignment="Left"
                 HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-                <WrapPanel x:Name="ToolCardsPanel" />
+                <WrapPanel
+                    x:Name="ToolCardsPanel"
+                    Margin="0,0,0,4"
+                    HorizontalAlignment="Left"
+                    Orientation="Horizontal" />
             </ScrollViewer>
         </Grid>
 
         <Border
             Grid.Row="2"
             Grid.ColumnSpan="2"
-            Background="#0F1729"
+            Padding="18,12"
+            Background="#0B1220"
             BorderBrush="{StaticResource BorderBrush}"
-            BorderThickness="0,1,0,0"
-            Padding="18,12">
+            BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -205,28 +359,46 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock
-                    Foreground="{StaticResource PrimaryText}"
-                    FontWeight="SemiBold"
-                    Text="Activity Log" />
-                <TextBlock
-                    x:Name="ApplicationStatusText"
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Foreground="{StaticResource PrimaryText}"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Text="Activity Log" />
+                    <TextBlock
+                        Margin="9,0,0,0"
+                        Foreground="{StaticResource MutedText}"
+                        FontSize="11"
+                        Text="Placeholder activity and application messages" />
+                </StackPanel>
+
+                <Border
                     Grid.Column="1"
-                    Foreground="{StaticResource AccentBrush}"
-                    Text="Ready" />
+                    Padding="10,4"
+                    Background="#102A3A"
+                    BorderBrush="#1E5875"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                    <TextBlock
+                        x:Name="ApplicationStatusText"
+                        Foreground="#BAE6FD"
+                        FontSize="11"
+                        FontWeight="SemiBold"
+                        Text="Ready" />
+                </Border>
 
                 <TextBox
                     x:Name="LogTextBox"
                     Grid.Row="1"
                     Grid.ColumnSpan="2"
                     Margin="0,9,0,0"
-                    Padding="10,8"
-                    Background="#090E1A"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    Padding="11,8"
+                    Background="#070C15"
+                    BorderBrush="#202C40"
                     BorderThickness="1"
                     Foreground="#C9D4E8"
                     FontFamily="Consolas"
-                    FontSize="12"
+                    FontSize="11"
                     IsReadOnly="True"
                     TextWrapping="Wrap"
                     VerticalScrollBarVisibility="Auto" />
