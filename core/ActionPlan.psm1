@@ -48,11 +48,24 @@ function Test-BoostLabPlanNeedsConfirmation {
         [string]$RiskLevel,
 
         [Parameter(Mandatory)]
-        [pscustomobject]$Capabilities
+        [pscustomobject]$Capabilities,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]
+        [string]$ActionName
     )
 
+    if ($RiskLevel -eq 'high') {
+        return $true
+    }
+    if ($ActionName -eq 'Analyze') {
+        return $false
+    }
+    if ($ActionName -eq 'Open') {
+        return [bool]$Capabilities.CanReboot
+    }
+
     return (
-        $RiskLevel -eq 'high' -or
         $Capabilities.NeedsExplicitConfirmation -or
         $Capabilities.CanReboot -or
         $Capabilities.CanModifyServices -or
@@ -102,9 +115,17 @@ function New-BoostLabActionPlan {
     $capabilities = ConvertTo-BoostLabCapabilityObject -Capabilities $ToolMetadata['Capabilities']
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
-        -Capabilities $capabilities
+        -Capabilities $capabilities `
+        -ActionName $ActionName
 
-    $summary = switch ($ActionName) {
+    $summary = if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+        'Enable System Restore if needed and create the approved backup restore point.'
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
+        'Open Windows System Protection and System Restore.'
+    }
+    else {
+        switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
         'Open' {
             if ($capabilities.CanReboot) {
@@ -117,10 +138,22 @@ function New-BoostLabActionPlan {
         'Apply' { "Apply the approved $toolTitle behavior." }
         'Default' { "Return $toolTitle to its approved default behavior." }
         'Restore' { "Restore $toolTitle from a previous state captured by BoostLab." }
+        }
     }
 
     $plannedChanges = [System.Collections.Generic.List[string]]::new()
-    switch ($ActionName) {
+    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
+        $plannedChanges.Add('Enable System Restore on C:\ if it is disabled.')
+        $plannedChanges.Add('Create a restore point named backup with type MODIFY_SETTINGS.')
+        $plannedChanges.Add('Remove the temporary restore-point frequency override.')
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Open the System Protection page.')
+        $plannedChanges.Add('Open the Windows System Restore interface.')
+    }
+    else {
+        switch ($ActionName) {
         'Analyze' {
             $plannedChanges.Add('Collect and report read-only information defined by the approved tool.')
         }
@@ -135,6 +168,7 @@ function New-BoostLabActionPlan {
         }
         'Restore' {
             $plannedChanges.Add('Use a previous state captured by BoostLab; do not infer or invent restore data.')
+        }
         }
     }
 
@@ -162,6 +196,11 @@ function New-BoostLabActionPlan {
     }
 
     $sideEffects = [System.Collections.Generic.List[string]]::new()
+    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
+        $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
+        $sideEffects.Add('A temporary registry value is created and removed during the operation.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -201,6 +240,9 @@ function New-BoostLabActionPlan {
 
     $confirmationMessage = if ($toolId -eq 'bios-settings' -and $ActionName -eq 'Open') {
         'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+        'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'
     }
     elseif ($needsConfirmation) {
         "Review the action plan for $toolTitle. Confirm only if you understand the planned changes and side effects."

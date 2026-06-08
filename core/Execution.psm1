@@ -45,6 +45,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\sound.psm1'
         Actions = @('Open')
     }
+    'restore-point' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\RestorePoint.psm1'
+        Actions = @('Apply', 'Open')
+    }
 }
 
 function Test-BoostLabToolMetadata {
@@ -291,7 +295,7 @@ function Invoke-BoostLabImplementedModuleAction {
         $actionParameters = @{
             ActionName = $ActionName
         }
-        if ($toolId -eq 'bios-settings' -and $ActionName -eq 'Open') {
+        if ($actionCommand.Parameters.ContainsKey('Confirmed')) {
             $actionParameters['Confirmed'] = $Confirmed
         }
 
@@ -506,11 +510,23 @@ function Invoke-BoostLabToolAction {
                         RiskLevel = $riskLevel
                     } | Out-Null
             }
-            elseif (-not $isBiosFirmwareOpen) {
+            elseif ($ActionName -eq 'Open' -and -not $isBiosFirmwareOpen) {
                 Write-BoostLabSuccess `
                     -Message ('[{0}] [{1}] launched' -f $toolTitle, $ActionName) `
                     -Source 'Execution' `
                     -EventId 'ToolAction.Launched' `
+                    -Data @{
+                        ToolId    = $toolId
+                        Stage     = [string]$ToolMetadata['Stage']
+                        Module    = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
+                        RiskLevel = $riskLevel
+                    } | Out-Null
+            }
+            elseif (-not $isBiosFirmwareOpen) {
+                Write-BoostLabSuccess `
+                    -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
+                    -Source 'Execution' `
+                    -EventId 'ToolAction.Completed' `
                     -Data @{
                         ToolId    = $toolId
                         Stage     = [string]$ToolMetadata['Stage']
@@ -536,8 +552,11 @@ function Invoke-BoostLabToolAction {
         elseif ([bool]$moduleResult.Success -and $isBiosFirmwareOpen) {
             'Restart requested'
         }
-        elseif ([bool]$moduleResult.Success) {
+        elseif ([bool]$moduleResult.Success -and $ActionName -eq 'Open') {
             'Launched'
+        }
+        elseif ([bool]$moduleResult.Success) {
+            'Completed'
         }
         else {
             'Action failed'

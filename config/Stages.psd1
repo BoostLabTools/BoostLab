@@ -497,10 +497,10 @@
                     Stage       = 'Windows'
                     Order       = 23
                     Type        = 'action'
-                    RiskLevel   = 'low'
-                    Description = 'Prepare a Windows restore point or open recovery options.'
+                    RiskLevel   = 'medium'
+                    Description = 'Create an approved Windows restore point or open System Protection and System Restore.'
                     Actions     = @('Apply', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }

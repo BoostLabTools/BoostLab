@@ -73,6 +73,11 @@ $implementedModules = @{
         LaunchText            = 'Start-Process "mmsys.cpl"'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
+    'restore-point' = @{
+        RelativePath          = 'Windows\RestorePoint.psm1'
+        LaunchText            = 'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Open'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -240,13 +245,17 @@ foreach ($entry in $expectedModules.Values) {
             $true
         ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
     )
+    $toolId = [string]$tool['Id']
     foreach ($commandName in $commands) {
-        if ($commandName -in $prohibitedCommands) {
+        $approvedRestorePointCommand = (
+            $toolId -eq 'restore-point' -and
+            $commandName -in @('Checkpoint-Computer', 'Enable-ComputerRestore')
+        )
+        if ($commandName -in $prohibitedCommands -and -not $approvedRestorePointCommand) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
     }
 
-    $toolId = [string]$tool['Id']
     if ($implementedModules.ContainsKey($toolId)) {
         if ($source.Contains('ToolModule.Placeholder.ps1')) {
             $errors.Add("$modulePath must not use the shared placeholder implementation.")
@@ -258,7 +267,15 @@ foreach ($entry in $expectedModules.Values) {
             $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
         }
 
-        $expectedStartProcessCount = if ($toolId -eq 'bios-settings') { 0 } else { 1 }
+        $expectedStartProcessCount = if ($toolId -eq 'bios-settings') {
+            0
+        }
+        elseif ($toolId -eq 'restore-point') {
+            2
+        }
+        else {
+            1
+        }
         $startProcessCount = @($commands | Where-Object { $_ -eq 'Start-Process' }).Count
         if ($startProcessCount -ne $expectedStartProcessCount) {
             $errors.Add("$modulePath must contain exactly $expectedStartProcessCount Start-Process command(s).")
@@ -318,6 +335,37 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains forbidden BIOS Settings behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'restore-point') {
+            foreach ($requiredText in @(
+                'Enable-ComputerRestore -Drive $script:BoostLabRestoreDrive -ErrorAction Stop'
+                'Checkpoint-Computer'
+                '-Description $script:BoostLabRestorePointName'
+                '-RestorePointType $script:BoostLabRestorePointType'
+                'SystemRestorePointCreationFrequency'
+                '$script:BoostLabRestorePointName = ''backup'''
+                '$script:BoostLabRestorePointType = ''MODIFY_SETTINGS'''
+                'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
+                'Start-Process "rstrui"'
+                'finally'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Restore Point behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Disable-ComputerRestore'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains forbidden Restore Point behavior: $forbiddenText")
                 }
             }
         }

@@ -76,6 +76,11 @@ $implementedTools = [ordered]@{
         LegacyHash = '08FDB346A40595C68FF01D8F0882AC82D8BE27F66D83B400FD5691388B35929B'
         Launcher   = 'Start-Process "mmsys.cpl"'
     }
+    'Restore Point' = @{
+        LegacyPath = 'source-ultimate\6 Windows\23 Restore Point.ps1'
+        ModulePath = 'modules\Windows\RestorePoint.psm1'
+        LegacyHash = 'E9164E079DB76112A59D686B9C0C77B1A9B26E69CA4326B3B4FF46BF63C03C34'
+    }
 }
 
 $deletedToolNames = @(
@@ -165,6 +170,33 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "BIOS Settings incorrectly contains search behavior: $forbiddenText"
+                }
+            }
+        }
+        'Restore Point' {
+            foreach ($requiredText in @(
+                'SystemRestorePointCreationFrequency'
+                'Enable-ComputerRestore -Drive $script:BoostLabRestoreDrive -ErrorAction Stop'
+                'Checkpoint-Computer'
+                '$script:BoostLabRestorePointName = ''backup'''
+                '$script:BoostLabRestorePointType = ''MODIFY_SETTINGS'''
+                'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
+                'Start-Process "rstrui"'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Restore Point preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Disable-ComputerRestore'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Restore Point contains unrelated behavior: $forbiddenText"
                 }
             }
         }
