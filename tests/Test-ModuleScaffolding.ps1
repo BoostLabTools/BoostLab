@@ -390,9 +390,12 @@ foreach ($entry in $expectedModules.Values) {
                 '[bool]$Confirmed = $false'
                 'Widgets disabled.'
                 'Widgets restored to default.'
+                'Widgets already default.'
                 '$script:BoostLabPolicyManagerProviderPath = ''HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'''
                 '$script:BoostLabDshPolicyProviderPath = ''HKLM:\SOFTWARE\Policies\Microsoft\Dsh'''
                 'function Test-BoostLabWidgetsState'
+                'function New-BoostLabWidgetsRegistryOperations'
+                'function Test-BoostLabWidgetsAlreadyDefault'
                 'New-BoostLabVerificationResult'
                 '-VerificationResult $verificationResult'
             )) {

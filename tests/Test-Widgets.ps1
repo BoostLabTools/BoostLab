@@ -85,9 +85,12 @@ foreach ($requiredText in @(
     'if (-not $Confirmed)'
     'Widgets disabled.'
     'Widgets restored to default.'
+    'Widgets already default.'
     '$script:BoostLabPolicyManagerProviderPath = ''HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'''
     '$script:BoostLabDshPolicyProviderPath = ''HKLM:\SOFTWARE\Policies\Microsoft\Dsh'''
     'function Test-BoostLabWidgetsState'
+    'function New-BoostLabWidgetsRegistryOperations'
+    'function Test-BoostLabWidgetsAlreadyDefault'
     'Get-ItemProperty -LiteralPath $Path -ErrorAction Stop'
     '[System.Diagnostics.Process]::GetProcessesByName($Name)'
     '-VerificationResult $verificationResult'
@@ -182,6 +185,101 @@ try {
         (@($toolInfo.ImplementedActions) -join ',') -ne 'Apply,Default'
     ) {
         throw 'Widgets exported metadata or implemented actions are incorrect.'
+    }
+
+    $dshKeyAbsent = [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $false
+        Exists        = $false
+        Value         = $null
+        DisplayValue  = 'Absent'
+        Message       = 'Mock Dsh key is absent.'
+    }
+    $keyAbsentOperations = & $widgetsModule {
+        param($DshPolicyState)
+        New-BoostLabWidgetsRegistryOperations `
+            -ActionName 'Default' `
+            -DshPolicyState $DshPolicyState
+    } $dshKeyAbsent
+    if (
+        @($keyAbsentOperations).Count -ne 2 -or
+        [bool]$keyAbsentOperations[0].Skip -or
+        -not [bool]$keyAbsentOperations[1].Skip -or
+        $keyAbsentOperations[1].Command -ne $defaultDshCommand
+    ) {
+        throw 'Widgets Default does not treat an absent Dsh key as already default.'
+    }
+
+    $dshValueAbsent = [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $false
+        Value         = $null
+        DisplayValue  = 'Absent'
+        Message       = 'Mock Dsh value is absent.'
+    }
+    $valueAbsentOperations = & $widgetsModule {
+        param($DshPolicyState)
+        New-BoostLabWidgetsRegistryOperations `
+            -ActionName 'Default' `
+            -DshPolicyState $DshPolicyState
+    } $dshValueAbsent
+    if (-not [bool]$valueAbsentOperations[1].Skip) {
+        throw 'Widgets Default does not treat a missing AllowNewsAndInterests value as already default.'
+    }
+
+    $policyManagerDefault = [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $true
+        Value         = 1
+        DisplayValue  = '1'
+        Message       = 'Mock PolicyManager value is default.'
+    }
+    $keyAbsentIsDefault = & $widgetsModule {
+        param($PolicyManagerState, $DshPolicyState)
+        Test-BoostLabWidgetsAlreadyDefault `
+            -PolicyManagerState $PolicyManagerState `
+            -DshPolicyState $DshPolicyState
+    } $policyManagerDefault $dshKeyAbsent
+    $valueAbsentIsDefault = & $widgetsModule {
+        param($PolicyManagerState, $DshPolicyState)
+        Test-BoostLabWidgetsAlreadyDefault `
+            -PolicyManagerState $PolicyManagerState `
+            -DshPolicyState $DshPolicyState
+    } $policyManagerDefault $dshValueAbsent
+    if (-not $keyAbsentIsDefault -or -not $valueAbsentIsDefault) {
+        throw 'Widgets already-default state detection failed for an absent Dsh key or value.'
+    }
+
+    $dshUnreadable = [pscustomobject]@{
+        ReadSucceeded = $false
+        KeyExists     = $null
+        Exists        = $false
+        Value         = $null
+        DisplayValue  = 'Unknown'
+        Message       = 'Mock Dsh state is unreadable.'
+    }
+    $unreadableOperations = & $widgetsModule {
+        param($DshPolicyState)
+        New-BoostLabWidgetsRegistryOperations `
+            -ActionName 'Default' `
+            -DshPolicyState $DshPolicyState
+    } $dshUnreadable
+    if ([bool]$unreadableOperations[1].Skip) {
+        throw 'Widgets Default must retain the original delete attempt when Dsh state is unreadable.'
+    }
+
+    $applyOperations = & $widgetsModule {
+        New-BoostLabWidgetsRegistryOperations -ActionName 'Apply'
+    }
+    if (
+        @($applyOperations).Count -ne 2 -or
+        @($applyOperations | Where-Object { $_.Skip }).Count -ne 0 -or
+        $applyOperations[0].Command -ne $applyPolicyManagerCommand -or
+        $applyOperations[1].Command -ne $applyDshCommand
+    ) {
+        throw 'Widgets Apply registry behavior changed while adding Default idempotency.'
     }
 
     $applyPassedRegistryReader = {
@@ -452,6 +550,8 @@ foreach ($requiredText in @(
     'Approved by Yazan'
     'Verification Strategy'
     'Windows may delay the taskbar''s visual update'
+    'Default is idempotent'
+    'already absent'
     'Automated tests must not invoke the real Apply or Default command paths.'
 )) {
     if (-not $record.Contains($requiredText)) {

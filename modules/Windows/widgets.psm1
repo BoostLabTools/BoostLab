@@ -161,6 +161,7 @@ function Get-BoostLabWidgetsRegistryValue {
         if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
             return [pscustomobject]@{
                 ReadSucceeded = $true
+                KeyExists     = $false
                 Exists        = $false
                 Value         = $null
                 DisplayValue  = 'Absent'
@@ -173,6 +174,7 @@ function Get-BoostLabWidgetsRegistryValue {
         if ($null -eq $property) {
             return [pscustomobject]@{
                 ReadSucceeded = $true
+                KeyExists     = $true
                 Exists        = $false
                 Value         = $null
                 DisplayValue  = 'Absent'
@@ -182,6 +184,7 @@ function Get-BoostLabWidgetsRegistryValue {
 
         return [pscustomobject]@{
             ReadSucceeded = $true
+            KeyExists     = $true
             Exists        = $true
             Value         = $property.Value
             DisplayValue  = [string]$property.Value
@@ -191,6 +194,7 @@ function Get-BoostLabWidgetsRegistryValue {
     catch {
         return [pscustomobject]@{
             ReadSucceeded = $false
+            KeyExists     = $null
             Exists        = $false
             Value         = $null
             DisplayValue  = 'Unknown'
@@ -385,6 +389,82 @@ function Test-BoostLabWidgetsState {
         -Message $message
 }
 
+function New-BoostLabWidgetsRegistryOperations {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [AllowNull()]
+        [object]$DshPolicyState = $null
+    )
+
+    if ($ActionName -eq 'Apply') {
+        return @(
+            [pscustomobject]@{
+                Description = 'Set PolicyManager AllowNewsAndInterests value to 0'
+                Command = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
+                Skip = $false
+                SkipMessage = ''
+            }
+            [pscustomobject]@{
+                Description = 'Set Dsh AllowNewsAndInterests value to 0'
+                Command = 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f'
+                Skip = $false
+                SkipMessage = ''
+            }
+        )
+    }
+
+    $skipDshDelete = (
+        $null -ne $DshPolicyState -and
+        [bool]$DshPolicyState.ReadSucceeded -and
+        -not [bool]$DshPolicyState.Exists
+    )
+    return @(
+        [pscustomobject]@{
+            Description = 'Set PolicyManager AllowNewsAndInterests value to 1'
+            Command = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f'
+            Skip = $false
+            SkipMessage = ''
+        }
+        [pscustomobject]@{
+            Description = 'Remove the Dsh Widgets blocking policy key'
+            Command = 'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f'
+            Skip = $skipDshDelete
+            SkipMessage = if ($skipDshDelete) {
+                'Dsh Widgets blocking policy is already absent.'
+            }
+            else {
+                ''
+            }
+        }
+    )
+}
+
+function Test-BoostLabWidgetsAlreadyDefault {
+    param(
+        [AllowNull()]
+        [object]$PolicyManagerState,
+
+        [AllowNull()]
+        [object]$DshPolicyState
+    )
+
+    return (
+        $null -ne $PolicyManagerState -and
+        [bool]$PolicyManagerState.ReadSucceeded -and
+        [bool]$PolicyManagerState.Exists -and
+        [string]$PolicyManagerState.Value -eq '1' -and
+        $null -ne $DshPolicyState -and
+        [bool]$DshPolicyState.ReadSucceeded -and
+        (
+            -not [bool]$DshPolicyState.Exists -or
+            [string]$DshPolicyState.Value -ne '0'
+        )
+    )
+}
+
 function Invoke-BoostLabWidgetsAction {
     param(
         [Parameter(Mandatory)]
@@ -413,37 +493,32 @@ function Invoke-BoostLabWidgetsAction {
             -Message 'Widgets policy could not be changed because cmd.exe was not found.'
     }
 
-    $registryOperations = if ($ActionName -eq 'Apply') {
-        @(
-            [pscustomobject]@{
-                Description = 'Set PolicyManager AllowNewsAndInterests value to 0'
-                Command = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
-            }
-            [pscustomobject]@{
-                Description = 'Set Dsh AllowNewsAndInterests value to 0'
-                Command = 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f'
-            }
-        )
+    $defaultPolicyManagerState = $null
+    $defaultDshPolicyState = $null
+    if ($ActionName -eq 'Default') {
+        $defaultPolicyManagerState = Get-BoostLabWidgetsRegistryValue `
+            -Path $script:BoostLabPolicyManagerProviderPath `
+            -Name 'value'
+        $defaultDshPolicyState = Get-BoostLabWidgetsRegistryValue `
+            -Path $script:BoostLabDshPolicyProviderPath `
+            -Name 'AllowNewsAndInterests'
     }
-    else {
-        @(
-            [pscustomobject]@{
-                Description = 'Set PolicyManager AllowNewsAndInterests value to 1'
-                Command = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f'
-            }
-            [pscustomobject]@{
-                Description = 'Remove the Dsh Widgets blocking policy key'
-                Command = 'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f'
-            }
-        )
-    }
+    $registryOperations = New-BoostLabWidgetsRegistryOperations `
+        -ActionName $ActionName `
+        -DshPolicyState $defaultDshPolicyState
 
     $registryChangesAttempted = [System.Collections.Generic.List[string]]::new()
     $registryChangesCompleted = [System.Collections.Generic.List[string]]::new()
+    $registryChangesSkipped = [System.Collections.Generic.List[string]]::new()
     $processesStopped = [System.Collections.Generic.List[string]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
 
     foreach ($operation in $registryOperations) {
+        if ([bool]$operation.Skip) {
+            $registryChangesSkipped.Add([string]$operation.SkipMessage)
+            continue
+        }
+
         $registryChangesAttempted.Add([string]$operation.Description)
         try {
             Invoke-BoostLabWidgetsRegistryCommand `
@@ -481,6 +556,7 @@ function Invoke-BoostLabWidgetsAction {
     $data = [pscustomobject]@{
         RegistryChangesAttempted = $registryChangesAttempted.ToArray()
         RegistryChangesCompleted = $registryChangesCompleted.ToArray()
+        RegistryChangesSkipped   = $registryChangesSkipped.ToArray()
         ProcessesStopped         = $processesStopped.ToArray()
         CompletedAt              = $completedAt
     }
@@ -494,8 +570,17 @@ function Invoke-BoostLabWidgetsAction {
             -VerificationResult $verificationResult
     }
 
+    $wasAlreadyDefault = (
+        $ActionName -eq 'Default' -and
+        (Test-BoostLabWidgetsAlreadyDefault `
+            -PolicyManagerState $defaultPolicyManagerState `
+            -DshPolicyState $defaultDshPolicyState)
+    )
     $message = if ($ActionName -eq 'Apply') {
         'Widgets disabled.'
+    }
+    elseif ($wasAlreadyDefault) {
+        'Widgets already default.'
     }
     else {
         'Widgets restored to default.'

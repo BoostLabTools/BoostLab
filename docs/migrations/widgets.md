@@ -38,6 +38,8 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f
 
 The original script suppresses command output and ignores process-stop errors. BoostLab checks each registry command result and returns structured errors. It ignores a missing Widgets process as the original intended, but reports a failure when a process remains running after a failed stop attempt.
 
+Default is idempotent: when a read confirms that the Dsh key or `AllowNewsAndInterests` value is already absent, BoostLab skips the unnecessary delete command and reports the state as already default. This preserves Ultimate's effective result while avoiding a false command error from `reg delete`.
+
 The original script self-elevates and uses a console menu. BoostLab preserves Administrator enforcement at application/runtime level and maps the two menu choices to confirmed GUI actions.
 
 ## Side Effects
@@ -56,7 +58,7 @@ Apply and Default require an Action Plan confirmation. Neither action restarts t
 
 ## Default Behavior
 
-Default preserves Ultimate's approved behavior: set the PolicyManager `value` to `1` and delete `HKLM\SOFTWARE\Policies\Microsoft\Dsh`.
+Default preserves Ultimate's approved behavior: set the PolicyManager `value` to `1` and remove the Dsh blocking policy when present. If the Dsh key or `AllowNewsAndInterests` value is already absent, no deletion is required and the action remains successful.
 
 ## Verification Strategy
 
