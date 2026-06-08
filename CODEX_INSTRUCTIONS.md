@@ -292,6 +292,40 @@ This policy applies to examples including:
 
 ---
 
+## Preserve Ultimate Execution Strength
+
+### Approved Normal Action Tools
+
+* Preserve the original Ultimate behavior and enforcement strength as closely as possible.
+* Do not weaken registry, service, policy, process, driver, power, security, or cleanup commands.
+* Do not replace strong commands with softer alternatives unless explicitly instructed.
+* If the original Ultimate script requires Administrator rights, BoostLab must preserve that requirement at the application or runtime level.
+* BoostLab may replace console interaction with GUI controls, but must not weaken the actual operational effect.
+* Convert `Read-Host` menus into equivalent GUI buttons.
+* Replace `Pause`, `Clear-Host`, `Write-Host`, and `Exit` with GUI status, logging, result panels, or prompts as appropriate.
+* Preserve Apply / Default / On / Off / Restore behavior equivalence.
+* Preserve execution order unless explicitly instructed.
+
+### Approved High-Risk Tools
+
+* Preserve the intended original behavior while adding clear GUI warnings, confirmations, logging, and result reporting.
+* Do not silently execute destructive or rebooting actions.
+* Do not remove required confirmations for reboot, Safe Mode, TrustedInstaller, driver, Defender, service, or security-sensitive flows.
+* Do not reduce the tool's intended effect merely to make it appear safer.
+
+### Redesigned Assistant Tools
+
+* Use the Ultimate script as a source reference when applicable.
+* Add analysis, recommendations, and warnings.
+* If an Apply or Open action is intended to preserve original behavior, it must preserve the original behavior's effective result.
+* Document every intentional deviation from Ultimate in code comments and project documentation.
+
+### Deleted Tools
+
+* Never reintroduce deleted tools directly or indirectly.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically
