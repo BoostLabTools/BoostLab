@@ -7,6 +7,9 @@ if (-not (Get-Command -Name 'New-BoostLabActionPlan' -ErrorAction SilentlyContin
 if (-not (Get-Command -Name 'Test-BoostLabActionPlanExecutionGate' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $PSScriptRoot 'Safety.psm1') -Scope Local -Force -ErrorAction Stop
 }
+if (-not (Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name (Join-Path $PSScriptRoot 'Verification.psm1') -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabImplementedToolModules = @{
     'bios-information' = @{
@@ -466,6 +469,50 @@ function Invoke-BoostLabToolAction {
         -Confirmed:([bool]$safetyGate.Confirmed)
     if ($null -ne $moduleResult) {
         $moduleResult | Add-Member -NotePropertyName 'ActionPlan' -NotePropertyValue $actionPlan -Force
+        $verificationResult = if ($null -ne $moduleResult.PSObject.Properties['VerificationResult']) {
+            $moduleResult.VerificationResult
+        }
+        else {
+            $null
+        }
+        if ($null -ne $verificationResult) {
+            $verificationValidation = Test-BoostLabVerificationResult `
+                -VerificationResult $verificationResult `
+                -ExpectedToolId $toolId `
+                -ExpectedToolTitle $toolTitle `
+                -ExpectedAction $ActionName
+            if (-not $verificationValidation.IsValid) {
+                $verificationResult = New-BoostLabVerificationResult `
+                    -ToolId $toolId `
+                    -ToolTitle $toolTitle `
+                    -Action $ActionName `
+                    -Status 'Failed' `
+                    -ExpectedState 'A valid BoostLab VerificationResult object.' `
+                    -DetectedState ($verificationValidation.Errors -join '; ') `
+                    -Checks @(
+                        New-BoostLabVerificationCheck `
+                            -Name 'Verification contract' `
+                            -Expected 'Valid schema and matching tool/action identity' `
+                            -Actual 'Invalid verification object' `
+                            -Status 'Failed' `
+                            -Message ($verificationValidation.Errors -join '; ')
+                    ) `
+                    -Message 'Post-action verification returned an invalid result.'
+                $moduleResult | Add-Member `
+                    -NotePropertyName 'VerificationResult' `
+                    -NotePropertyValue $verificationResult `
+                    -Force
+
+                Write-BoostLabWarning `
+                    -Message ('[{0}] [{1}] verification contract failed' -f $toolTitle, $ActionName) `
+                    -Source 'Execution' `
+                    -EventId 'ToolAction.VerificationContractFailed' `
+                    -Data @{
+                        ToolId = $toolId
+                        Errors = $verificationValidation.Errors -join '; '
+                    } | Out-Null
+            }
+        }
         $implementedModuleDefinition = $script:BoostLabImplementedToolModules[$toolId]
         $actionRecord = [pscustomobject]@{
             ToolId      = $toolId
@@ -512,6 +559,12 @@ function Invoke-BoostLabToolAction {
                         Stage     = [string]$ToolMetadata['Stage']
                         Module    = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
                         RiskLevel = $riskLevel
+                        VerificationStatus = if ($null -ne $verificationResult) {
+                            [string]$verificationResult.Status
+                        }
+                        else {
+                            'NotApplicable'
+                        }
                     } | Out-Null
             }
             elseif ($ActionName -eq 'Open' -and -not $isBiosFirmwareOpen) {
@@ -536,6 +589,12 @@ function Invoke-BoostLabToolAction {
                         Stage     = [string]$ToolMetadata['Stage']
                         Module    = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
                         RiskLevel = $riskLevel
+                        VerificationStatus = if ($null -ne $verificationResult) {
+                            [string]$verificationResult.Status
+                        }
+                        else {
+                            'NotApplicable'
+                        }
                     } | Out-Null
             }
         }
@@ -545,8 +604,14 @@ function Invoke-BoostLabToolAction {
                 -Source 'Execution' `
                 -EventId 'ToolAction.Failed' `
                 -Data @{
-                    ToolId = $toolId
-                    Stage  = [string]$ToolMetadata['Stage']
+                    ToolId             = $toolId
+                    Stage              = [string]$ToolMetadata['Stage']
+                    VerificationStatus = if ($null -ne $verificationResult) {
+                        [string]$verificationResult.Status
+                    }
+                    else {
+                        'NotApplicable'
+                    }
                 } | Out-Null
         }
 

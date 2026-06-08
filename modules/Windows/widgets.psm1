@@ -1,5 +1,10 @@
 Set-StrictMode -Version Latest
 
+$verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1'
+if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $verificationModulePath -Scope Local -Force -ErrorAction Stop
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'widgets'; Title = 'Widgets'; Stage = 'Windows'; Order = 7
     Type = 'action'; RiskLevel = 'low'
@@ -17,6 +22,8 @@ $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabWidgetProcessNames = @('Widgets', 'WidgetService')
 $script:BoostLabPolicyManagerPath = 'HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'
 $script:BoostLabDshPolicyPath = 'HKLM\SOFTWARE\Policies\Microsoft\Dsh'
+$script:BoostLabPolicyManagerProviderPath = 'HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'
+$script:BoostLabDshPolicyProviderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Dsh'
 
 function Test-BoostLabAdministrator {
     try {
@@ -43,7 +50,10 @@ function New-BoostLabWidgetsResult {
         [bool]$Cancelled = $false,
 
         [AllowNull()]
-        [object]$Data = $null
+        [object]$Data = $null,
+
+        [AllowNull()]
+        [object]$VerificationResult = $null
     )
 
     return [pscustomobject]@{
@@ -56,6 +66,7 @@ function New-BoostLabWidgetsResult {
         Cancelled       = $Cancelled
         Timestamp       = Get-Date
         Data            = $Data
+        VerificationResult = $VerificationResult
     }
 }
 
@@ -135,6 +146,243 @@ function Invoke-BoostLabWidgetsRegistryCommand {
 
         throw "$Description failed: $detail"
     }
+}
+
+function Get-BoostLabWidgetsRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                Exists        = $false
+                Value         = $null
+                DisplayValue  = 'Absent'
+                Message       = 'Registry path is absent.'
+            }
+        }
+
+        $item = Get-ItemProperty -LiteralPath $Path -ErrorAction Stop
+        $property = $item.PSObject.Properties[$Name]
+        if ($null -eq $property) {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                Exists        = $false
+                Value         = $null
+                DisplayValue  = 'Absent'
+                Message       = 'Registry value is absent.'
+            }
+        }
+
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists        = $true
+            Value         = $property.Value
+            DisplayValue  = [string]$property.Value
+            Message       = 'Registry value detected.'
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            Exists        = $false
+            Value         = $null
+            DisplayValue  = 'Unknown'
+            Message       = $_.Exception.Message
+        }
+    }
+}
+
+function Get-BoostLabWidgetsProcessState {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    try {
+        $processes = @([System.Diagnostics.Process]::GetProcessesByName($Name))
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            IsRunning     = $processes.Count -gt 0
+            DisplayValue  = if ($processes.Count -gt 0) { 'Running' } else { 'Not running' }
+            Message       = if ($processes.Count -gt 0) {
+                "$Name is running."
+            }
+            else {
+                "$Name is not running."
+            }
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            IsRunning     = $null
+            DisplayValue  = 'Unknown'
+            Message       = $_.Exception.Message
+        }
+    }
+}
+
+function Test-BoostLabWidgetsState {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [AllowNull()]
+        [scriptblock]$RegistryReader = $null,
+
+        [AllowNull()]
+        [scriptblock]$ProcessReader = $null
+    )
+
+    $readRegistry = if ($null -ne $RegistryReader) {
+        $RegistryReader
+    }
+    else {
+        { param($Path, $Name) Get-BoostLabWidgetsRegistryValue -Path $Path -Name $Name }
+    }
+    $readProcess = if ($null -ne $ProcessReader) {
+        $ProcessReader
+    }
+    else {
+        { param($Name) Get-BoostLabWidgetsProcessState -Name $Name }
+    }
+
+    $policyManager = & $readRegistry $script:BoostLabPolicyManagerProviderPath 'value'
+    $dshPolicy = & $readRegistry $script:BoostLabDshPolicyProviderPath 'AllowNewsAndInterests'
+    $widgetsProcess = & $readProcess 'Widgets'
+    $widgetServiceProcess = & $readProcess 'WidgetService'
+    $checks = [System.Collections.Generic.List[object]]::new()
+
+    $expectedPolicyManagerValue = if ($ActionName -eq 'Apply') { 0 } else { 1 }
+    $policyManagerStatus = if (-not [bool]$policyManager.ReadSucceeded) {
+        'Warning'
+    }
+    elseif (
+        -not [bool]$policyManager.Exists -or
+        [string]$policyManager.Value -ne [string]$expectedPolicyManagerValue
+    ) {
+        'Failed'
+    }
+    else {
+        'Passed'
+    }
+    $checks.Add(
+        (New-BoostLabVerificationCheck `
+            -Name 'PolicyManager value' `
+            -Expected $expectedPolicyManagerValue `
+            -Actual ([string]$policyManager.DisplayValue) `
+            -Status $policyManagerStatus `
+            -Message ([string]$policyManager.Message))
+    )
+
+    if ($ActionName -eq 'Apply') {
+        $dshStatus = if (-not [bool]$dshPolicy.ReadSucceeded) {
+            'Warning'
+        }
+        elseif (-not [bool]$dshPolicy.Exists -or [string]$dshPolicy.Value -ne '0') {
+            'Failed'
+        }
+        else {
+            'Passed'
+        }
+        $dshExpected = 'AllowNewsAndInterests = 0'
+    }
+    else {
+        $dshStatus = if (-not [bool]$dshPolicy.ReadSucceeded) {
+            'Warning'
+        }
+        elseif ([bool]$dshPolicy.Exists -and [string]$dshPolicy.Value -eq '0') {
+            'Failed'
+        }
+        else {
+            'Passed'
+        }
+        $dshExpected = 'Absent or not set to 0'
+    }
+    $checks.Add(
+        (New-BoostLabVerificationCheck `
+            -Name 'Dsh policy state' `
+            -Expected $dshExpected `
+            -Actual ([string]$dshPolicy.DisplayValue) `
+            -Status $dshStatus `
+            -Message ([string]$dshPolicy.Message))
+    )
+
+    foreach ($processState in @(
+        [pscustomobject]@{ Name = 'Widgets process state'; Value = $widgetsProcess }
+        [pscustomobject]@{ Name = 'WidgetService process state'; Value = $widgetServiceProcess }
+    )) {
+        if ($ActionName -eq 'Default') {
+            $processStatus = 'NotApplicable'
+            $processExpected = 'Informational only'
+        }
+        elseif (-not [bool]$processState.Value.ReadSucceeded) {
+            $processStatus = 'Warning'
+            $processExpected = 'Not running'
+        }
+        elseif ([bool]$processState.Value.IsRunning) {
+            $processStatus = 'Failed'
+            $processExpected = 'Not running'
+        }
+        else {
+            $processStatus = 'Passed'
+            $processExpected = 'Not running'
+        }
+
+        $checks.Add(
+            (New-BoostLabVerificationCheck `
+                -Name $processState.Name `
+                -Expected $processExpected `
+                -Actual ([string]$processState.Value.DisplayValue) `
+                -Status $processStatus `
+                -Message ([string]$processState.Value.Message))
+        )
+    }
+
+    $overallStatus = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) {
+        'Failed'
+    }
+    elseif (@($checks | Where-Object { $_.Status -eq 'Warning' }).Count -gt 0) {
+        'Warning'
+    }
+    else {
+        'Passed'
+    }
+    $expectedState = [pscustomobject]@{
+        PolicyManagerValue      = $expectedPolicyManagerValue
+        DshPolicyState          = $dshExpected
+        WidgetsProcessState     = if ($ActionName -eq 'Apply') { 'Not running' } else { 'Informational only' }
+        WidgetServiceProcessState = if ($ActionName -eq 'Apply') { 'Not running' } else { 'Informational only' }
+    }
+    $detectedState = [pscustomobject]@{
+        PolicyManagerValue      = [string]$policyManager.DisplayValue
+        DshPolicyState          = [string]$dshPolicy.DisplayValue
+        WidgetsProcessState     = [string]$widgetsProcess.DisplayValue
+        WidgetServiceProcessState = [string]$widgetServiceProcess.DisplayValue
+    }
+    $message = switch ($overallStatus) {
+        'Passed' { 'The expected Widgets state was detected.' }
+        'Warning' { 'Widgets commands completed, but part of the resulting state could not be confirmed.' }
+        default { 'The detected Widgets state does not match the expected result.' }
+    }
+
+    return New-BoostLabVerificationResult `
+        -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+        -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
+        -Action $ActionName `
+        -Status $overallStatus `
+        -ExpectedState $expectedState `
+        -DetectedState $detectedState `
+        -Checks $checks.ToArray() `
+        -Message $message
 }
 
 function Invoke-BoostLabWidgetsAction {
@@ -229,6 +477,7 @@ function Invoke-BoostLabWidgetsAction {
     }
 
     $completedAt = Get-Date
+    $verificationResult = Test-BoostLabWidgetsState -ActionName $ActionName
     $data = [pscustomobject]@{
         RegistryChangesAttempted = $registryChangesAttempted.ToArray()
         RegistryChangesCompleted = $registryChangesCompleted.ToArray()
@@ -241,7 +490,8 @@ function Invoke-BoostLabWidgetsAction {
             -Success $false `
             -Action $ActionName `
             -Message ("Widgets action completed with errors: {0}" -f ($errors -join '; ')) `
-            -Data $data
+            -Data $data `
+            -VerificationResult $verificationResult
     }
 
     $message = if ($ActionName -eq 'Apply') {
@@ -254,7 +504,8 @@ function Invoke-BoostLabWidgetsAction {
         -Success $true `
         -Action $ActionName `
         -Message $message `
-        -Data $data
+        -Data $data `
+        -VerificationResult $verificationResult
 }
 
 function Invoke-BoostLabToolAction {

@@ -58,6 +58,23 @@ Apply and Default require an Action Plan confirmation. Neither action restarts t
 
 Default preserves Ultimate's approved behavior: set the PolicyManager `value` to `1` and delete `HKLM\SOFTWARE\Policies\Microsoft\Dsh`.
 
+## Verification Strategy
+
+After Apply or Default completes, BoostLab performs read-only checks of:
+
+* `HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests` value `value`
+* `HKLM:\SOFTWARE\Policies\Microsoft\Dsh` value `AllowNewsAndInterests`
+* Running state of `Widgets`
+* Running state of `WidgetService`
+
+Apply expects PolicyManager `value = 0`, Dsh `AllowNewsAndInterests = 0`, and both approved process targets not running. Missing processes pass verification. Unreadable process state produces a warning; a contradictory registry value or a still-running process produces a failure.
+
+Default expects PolicyManager `value = 1` and the Dsh blocking value absent or not equal to `0`. Process state is informational and Widgets is never force-started. An unreadable Dsh state produces a warning; PolicyManager remaining at `0`, another unexpected PolicyManager value, or Dsh still blocking Widgets produces a failure.
+
+Command completion and verification are reported separately. A successful command path can therefore have a verification warning or failure.
+
+Windows may delay the taskbar's visual update even after registry verification passes. A policy refresh, sign-out, taskbar refresh, or later Windows session may be required. BoostLab does not restart Explorer or reboot to force the visual change.
+
 ## Test Requirements
 
-Validate the source checksum, exact registry paths, names, data values, command order, process target allowlist, Apply/Default metadata, capabilities, confirmation plans, runtime mapping, structured result fields, and absence of unrelated commands. Automated tests must not invoke Apply or Default.
+Validate the source checksum, exact registry paths, names, data values, command order, process target allowlist, Apply/Default metadata, capabilities, confirmation plans, verification outcomes, runtime mapping, structured result fields, and absence of unrelated commands. Automated tests must not invoke the real Apply or Default command paths.

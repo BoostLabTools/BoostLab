@@ -161,6 +161,10 @@ function Show-BoostLabActionResult {
     $toolId = [string]$ToolMetadata['Id']
     $toolTitle = [string]$ToolMetadata['Title']
     $status = Get-BoostLabResultStatus -Result $Result
+    $verificationResult = Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'VerificationResult' `
+        -DefaultValue $null
     $panel = Get-BoostLabUiElement -Name 'LatestResultPanel'
     $panel.Children.Clear()
 
@@ -178,8 +182,72 @@ function Show-BoostLabActionResult {
 
     Add-BoostLabResultRow -Panel $panel -Label 'Tool' -Value $toolTitle
     Add-BoostLabResultRow -Panel $panel -Label 'Action' -Value $ActionName
-    Add-BoostLabResultRow -Panel $panel -Label 'Status' -Value $status
+    Add-BoostLabResultRow `
+        -Panel $panel `
+        -Label $(if ($null -ne $verificationResult) { 'Command Status' } else { 'Status' }) `
+        -Value $status
     Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$Result.Message)
+
+    if ($null -ne $verificationResult) {
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Verification'
+        Add-BoostLabResultRow -Panel $panel -Label 'Verification Status' -Value ([string]$verificationResult.Status)
+
+        if ($toolId -eq 'widgets') {
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'PolicyManager value' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'PolicyManagerValue')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Dsh policy state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'DshPolicyState')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Widgets process state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'WidgetsProcessState')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'WidgetService process state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'WidgetServiceProcessState')
+        }
+        else {
+            foreach ($stateDefinition in @(
+                [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
+                [pscustomobject]@{ Title = 'Detected State'; Value = $verificationResult.DetectedState }
+            )) {
+                Add-BoostLabResultSectionTitle -Panel $panel -Text $stateDefinition.Title
+                if ($null -ne $stateDefinition.Value) {
+                    foreach ($property in @($stateDefinition.Value.PSObject.Properties)) {
+                        Add-BoostLabResultRow -Panel $panel -Label $property.Name -Value $property.Value
+                    }
+                }
+            }
+        }
+
+        Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$verificationResult.Message)
+        if (@($verificationResult.Checks).Count -gt 0) {
+            Add-BoostLabResultSectionTitle -Panel $panel -Text 'Verification Checks'
+            foreach ($check in @($verificationResult.Checks)) {
+                $checkText = '{0} [{1}] Expected: {2}; Actual: {3}. {4}' -f `
+                    $check.Name, `
+                    $check.Status, `
+                    $check.Expected, `
+                    $check.Actual, `
+                    $check.Message
+                $checkColor = switch ([string]$check.Status) {
+                    'Passed' { '#86EFAC' }
+                    'Warning' { '#FDE68A' }
+                    'Failed' { '#FCA5A5' }
+                    default { '#AAB7CA' }
+                }
+                Add-BoostLabResultBullet -Panel $panel -Text $checkText -Color $checkColor
+            }
+        }
+    }
 
     $actionPlan = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'ActionPlan' -DefaultValue $null
     if ($null -ne $actionPlan) {
@@ -359,11 +427,29 @@ function Add-BoostLabToolActionActivityEntry {
     )
 
     $status = Get-BoostLabResultStatus -Result $Result
-    $level = switch ($status) {
+    $verificationResult = Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'VerificationResult' `
+        -DefaultValue $null
+    $verificationStatus = if ($null -ne $verificationResult) {
+        [string]$verificationResult.Status
+    }
+    else {
+        ''
+    }
+    $level = if ($status -eq 'Success' -and $verificationStatus -eq 'Warning') {
+        'Warning'
+    }
+    elseif ($status -eq 'Success' -and $verificationStatus -eq 'Failed') {
+        'Error'
+    }
+    else {
+        switch ($status) {
         'Success' { 'Success' }
         'Not implemented' { 'Info' }
         'Cancelled' { 'Info' }
         default { 'Error' }
+        }
     }
     $message = if (
         [string]$ToolMetadata['Id'] -eq 'bios-information' -and
@@ -371,6 +457,12 @@ function Add-BoostLabToolActionActivityEntry {
         [bool]$Result.Success
     ) {
         'Hardware and BIOS information detected.'
+    }
+    elseif ($verificationStatus -in @('Warning', 'Failed')) {
+        '{0} Verification {1}: {2}' -f `
+            [string]$Result.Message, `
+            $verificationStatus.ToLowerInvariant(), `
+            [string]$verificationResult.Message
     }
     else {
         [string]$Result.Message

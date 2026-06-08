@@ -19,7 +19,7 @@ Phase 11 implements the Plan and reusable Confirm boundary:
 5. Block the implemented action when confirmation is declined or unavailable.
 6. Attach the Action Plan to the structured result for UI and logging use.
 
-Checkpoint, verification, rollback, and durable restart continuation remain future work.
+Phase 13.5 adds the reusable post-action verification contract and the first implementation for Widgets. Checkpoint, generalized verification coverage, rollback, and durable restart continuation remain future work.
 
 ## Action Plan Contract
 
@@ -88,6 +88,19 @@ The WPF controller supplies a confirmation callback to the runtime. The callback
 
 Latest Result renders an attached Action Plan independently of the confirmation dialog. This preserves a visible record of what was proposed, including placeholder dry-run plans.
 
+## Post-Action Verification
+
+After a real action completes, the module should safely inspect the resulting state when possible and return a `VerificationResult`. The runtime validates the verification schema and tool/action identity before exposing it to state and UI layers.
+
+Command and verification status must remain distinct:
+
+* **Command Success** means the approved execution path completed without a reported command failure.
+* **Verification Passed** means the expected system state was detected.
+* **Verification Warning** means the command completed but detection was incomplete or Windows may still require refresh, sign-out, policy refresh, or restart.
+* **Verification Failed** means the detected state contradicts the expected result.
+
+Verification must be read-only. It must not silently retry, restart Explorer, reboot, or expand the action beyond its migration record.
+
 ## Migration Governance
 
 The framework supports preserving Ultimate execution strength without permitting silent destructive execution. Future migrations still require:
@@ -97,6 +110,7 @@ The framework supports preserving Ultimate execution strength without permitting
 * A reviewable plan.
 * Required confirmation.
 * Compatibility and privilege checks.
-* Checkpoint, verification, persistence, restart, and rollback behavior appropriate to the tool.
+* Post-action verification when the resulting state can be detected safely.
+* Checkpoint, persistence, restart, and rollback behavior appropriate to the tool.
 
 Confirmation is not authorization to exceed the approved migration record or capability set.

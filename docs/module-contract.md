@@ -116,6 +116,34 @@ Placeholder modules must not execute real logic. Valid requests return `Action n
 
 The shared runtime may attach an `ActionPlan` property to the module result before returning it to the UI. Modules must not treat the presence of a plan or user confirmation as permission to exceed their approved migration record or capability metadata.
 
+### VerificationResult
+
+Real `Apply`, `Default`, and `Restore` actions should return a `VerificationResult` when the resulting state can be checked safely. Verification is read-only and occurs after the approved command path completes.
+
+Required `VerificationResult` fields:
+
+* `ToolId`
+* `ToolTitle`
+* `Action`
+* `Status`: `Passed`, `Warning`, `Failed`, `NotApplicable`, or `NotImplemented`
+* `ExpectedState`
+* `DetectedState`
+* `Checks`
+* `Message`
+* `Timestamp`
+
+Each entry in `Checks` must contain:
+
+* `Name`
+* `Expected`
+* `Actual`
+* `Status`
+* `Message`
+
+Command success and verification success are separate. `Success = true` means the approved command path completed without a reported execution failure. `VerificationResult.Status = Passed` means the expected state was detected afterward. `Warning` means execution completed but verification was incomplete or Windows may require a refresh, sign-out, policy refresh, or restart. `Failed` means the detected state contradicts the expected result.
+
+Tools that cannot yet verify safely may omit `VerificationResult` or return `NotApplicable`/`NotImplemented`. Existing modules without verification remain valid.
+
 ### Restore-BoostLabToolDefault
 
 Modules export this function for a consistent contract. It represents default or restore behavior when applicable to the tool metadata.

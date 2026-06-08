@@ -38,6 +38,7 @@ $modulePaths = @(
     'core\Environment.psm1'
     'core\Logging.psm1'
     'core\ActionPlan.psm1'
+    'core\Verification.psm1'
     'core\Safety.psm1'
     'core\State.psm1'
     'core\Execution.psm1'

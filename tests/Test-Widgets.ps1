@@ -27,6 +27,7 @@ $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\Widgets.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\7 Widgets.ps1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$verificationPath = Join-Path $ProjectRoot 'core\Verification.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $recordPath = Join-Path $ProjectRoot 'docs\migrations\widgets.md'
@@ -84,6 +85,12 @@ foreach ($requiredText in @(
     'if (-not $Confirmed)'
     'Widgets disabled.'
     'Widgets restored to default.'
+    '$script:BoostLabPolicyManagerProviderPath = ''HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'''
+    '$script:BoostLabDshPolicyProviderPath = ''HKLM:\SOFTWARE\Policies\Microsoft\Dsh'''
+    'function Test-BoostLabWidgetsState'
+    'Get-ItemProperty -LiteralPath $Path -ErrorAction Stop'
+    '[System.Diagnostics.Process]::GetProcessesByName($Name)'
+    '-VerificationResult $verificationResult'
 )) {
     if (-not $moduleSource.Contains([string]$requiredText)) {
         throw "Widgets module is missing: $requiredText"
@@ -176,6 +183,201 @@ try {
     ) {
         throw 'Widgets exported metadata or implemented actions are incorrect.'
     }
+
+    $applyPassedRegistryReader = {
+        param($Path, $Name)
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists        = $true
+            Value         = 0
+            DisplayValue  = '0'
+            Message       = 'Mock registry value detected.'
+        }
+    }
+    $notRunningProcessReader = {
+        param($Name)
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            IsRunning     = $false
+            DisplayValue  = 'Not running'
+            Message       = "$Name is not running."
+        }
+    }
+    $applyPassed = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $applyPassedRegistryReader $notRunningProcessReader
+    if ($applyPassed.Status -ne 'Passed') {
+        throw "Widgets Apply expected Passed, found $($applyPassed.Status)."
+    }
+
+    $uncertainProcessReader = {
+        param($Name)
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            IsRunning     = $null
+            DisplayValue  = 'Unknown'
+            Message       = "$Name state could not be read."
+        }
+    }
+    $applyWarning = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $applyPassedRegistryReader $uncertainProcessReader
+    if ($applyWarning.Status -ne 'Warning') {
+        throw "Widgets Apply expected Warning, found $($applyWarning.Status)."
+    }
+
+    $applyFailedRegistryReader = {
+        param($Path, $Name)
+        $value = if ($Path -like '*PolicyManager*') { 1 } else { 0 }
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists        = $true
+            Value         = $value
+            DisplayValue  = [string]$value
+            Message       = 'Mock registry value detected.'
+        }
+    }
+    $applyFailed = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $applyFailedRegistryReader $notRunningProcessReader
+    if ($applyFailed.Status -ne 'Failed') {
+        throw "Widgets Apply expected Failed, found $($applyFailed.Status)."
+    }
+
+    $defaultPassedRegistryReader = {
+        param($Path, $Name)
+        if ($Path -like '*PolicyManager*') {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                Exists        = $true
+                Value         = 1
+                DisplayValue  = '1'
+                Message       = 'Mock registry value detected.'
+            }
+        }
+
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists        = $false
+            Value         = $null
+            DisplayValue  = 'Absent'
+            Message       = 'Mock registry value is absent.'
+        }
+    }
+    $runningProcessReader = {
+        param($Name)
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            IsRunning     = $true
+            DisplayValue  = 'Running'
+            Message       = "$Name is running."
+        }
+    }
+    $defaultPassed = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Default' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $defaultPassedRegistryReader $runningProcessReader
+    if (
+        $defaultPassed.Status -ne 'Passed' -or
+        @($defaultPassed.Checks | Where-Object { $_.Status -eq 'NotApplicable' }).Count -ne 2
+    ) {
+        throw 'Widgets Default process state is not informational-only.'
+    }
+
+    $defaultWarningRegistryReader = {
+        param($Path, $Name)
+        if ($Path -like '*PolicyManager*') {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                Exists        = $true
+                Value         = 1
+                DisplayValue  = '1'
+                Message       = 'Mock registry value detected.'
+            }
+        }
+
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            Exists        = $false
+            Value         = $null
+            DisplayValue  = 'Unknown'
+            Message       = 'Mock Dsh state is unreadable.'
+        }
+    }
+    $defaultWarning = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Default' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $defaultWarningRegistryReader $runningProcessReader
+    if ($defaultWarning.Status -ne 'Warning') {
+        throw "Widgets Default expected Warning, found $($defaultWarning.Status)."
+    }
+
+    $defaultFailedRegistryReader = {
+        param($Path, $Name)
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists        = $true
+            Value         = 0
+            DisplayValue  = '0'
+            Message       = 'Mock blocking value detected.'
+        }
+    }
+    $defaultFailed = & $widgetsModule {
+        param($RegistryReader, $ProcessReader)
+        Test-BoostLabWidgetsState `
+            -ActionName 'Default' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader
+    } $defaultFailedRegistryReader $runningProcessReader
+    if ($defaultFailed.Status -ne 'Failed') {
+        throw "Widgets Default expected Failed, found $($defaultFailed.Status)."
+    }
+
+    foreach ($verificationResult in @(
+        $applyPassed
+        $applyWarning
+        $applyFailed
+        $defaultPassed
+        $defaultWarning
+        $defaultFailed
+    )) {
+        foreach ($field in @(
+            'ToolId'
+            'ToolTitle'
+            'Action'
+            'Status'
+            'ExpectedState'
+            'DetectedState'
+            'Checks'
+            'Message'
+            'Timestamp'
+        )) {
+            if ($null -eq $verificationResult.PSObject.Properties[$field]) {
+                throw "Widgets VerificationResult is missing field: $field"
+            }
+        }
+        if (@($verificationResult.Checks).Count -ne 4) {
+            throw 'Widgets VerificationResult must contain four checks.'
+        }
+    }
 }
 finally {
     Remove-Module -ModuleInfo $widgetsModule -Force -ErrorAction SilentlyContinue
@@ -218,6 +420,7 @@ foreach ($requiredText in @(
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
     'ToolAction.Completed'
+    'Test-BoostLabVerificationResult'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Widgets runtime mapping is missing: $requiredText"
@@ -230,6 +433,12 @@ foreach ($requiredText in @(
     '-Label ''Registry changes attempted'''
     '-Label ''Processes stopped'''
     '-Label ''Timestamp'''
+    '''Command Status'''
+    '-Label ''Verification Status'''
+    '-Label ''PolicyManager value'''
+    '-Label ''Dsh policy state'''
+    '-Label ''Widgets process state'''
+    '-Label ''WidgetService process state'''
 )) {
     if (-not $uiSource.Contains($requiredText)) {
         throw "Widgets Latest Result rendering is missing: $requiredText"
@@ -241,7 +450,9 @@ foreach ($requiredText in @(
     'source-ultimate/6 Windows/7 Widgets.ps1'
     '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
     'Approved by Yazan'
-    'Automated tests must not invoke Apply or Default.'
+    'Verification Strategy'
+    'Windows may delay the taskbar''s visual update'
+    'Automated tests must not invoke the real Apply or Default command paths.'
 )) {
     if (-not $record.Contains($requiredText)) {
         throw "Widgets migration record is missing: $requiredText"

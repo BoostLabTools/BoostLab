@@ -390,6 +390,11 @@ foreach ($entry in $expectedModules.Values) {
                 '[bool]$Confirmed = $false'
                 'Widgets disabled.'
                 'Widgets restored to default.'
+                '$script:BoostLabPolicyManagerProviderPath = ''HKLM:\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests'''
+                '$script:BoostLabDshPolicyProviderPath = ''HKLM:\SOFTWARE\Policies\Microsoft\Dsh'''
+                'function Test-BoostLabWidgetsState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing Widgets behavior: $requiredText")

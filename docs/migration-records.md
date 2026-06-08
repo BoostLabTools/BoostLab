@@ -23,6 +23,8 @@ Each record must contain:
 * **Confirmation requirements**
 * **Rollback/default behavior**
 * **Restart behavior**
+* **Verification strategy**
+* **Expected Apply/Default/Restore state**, where applicable
 * **Test requirements**
 * **Yazan approval status**
 
@@ -37,6 +39,15 @@ Intentional deviations must explain why the behavior differs, how the effective 
 Capabilities must match `config/Stages.psd1`. Setting a capability does not authorize implementation; it declares the maximum reviewed operational scope.
 
 Default behavior must identify the approved tool default. Restore behavior may be claimed only when BoostLab captures the prior state needed to reverse the action.
+
+Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
+
+* Read-only checks used
+* Expected state for each real action
+* Conditions that produce `Passed`, `Warning`, or `Failed`
+* Known UI, policy refresh, sign-out, or restart caveats
+
+Verification must not add writes, retries, restarts, or side effects that are absent from the approved behavior.
 
 The approval status must be one of:
 
