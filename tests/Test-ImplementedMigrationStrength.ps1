@@ -76,6 +76,11 @@ $implementedTools = [ordered]@{
         LegacyHash = '08FDB346A40595C68FF01D8F0882AC82D8BE27F66D83B400FD5691388B35929B'
         Launcher   = 'Start-Process "mmsys.cpl"'
     }
+    'Widgets' = @{
+        LegacyPath = 'source-ultimate\6 Windows\7 Widgets.ps1'
+        ModulePath = 'modules\Windows\Widgets.psm1'
+        LegacyHash = '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
+    }
     'Restore Point' = @{
         LegacyPath = 'source-ultimate\6 Windows\23 Restore Point.ps1'
         ModulePath = 'modules\Windows\RestorePoint.psm1'
@@ -197,6 +202,33 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Restore Point contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Widgets' {
+            foreach ($requiredText in @(
+                'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
+                'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f'
+                'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f'
+                'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f'
+                '$script:BoostLabWidgetProcessNames = @(''Widgets'', ''WidgetService'')'
+                'Stop-Process -Force -Name $processName -ErrorAction Stop'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Widgets preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Widgets contains unrelated behavior: $forbiddenText"
                 }
             }
         }

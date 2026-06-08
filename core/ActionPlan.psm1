@@ -124,6 +124,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
         'Open Windows System Protection and System Restore.'
     }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
+        'Disable Windows Widgets and remove Widgets from the taskbar using the approved policies.'
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
+        'Restore the approved default Windows Widgets policy behavior.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -151,6 +157,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
         $plannedChanges.Add('Open the System Protection page.')
         $plannedChanges.Add('Open the Windows System Restore interface.')
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Set PolicyManager AllowNewsAndInterests value to 0.')
+        $plannedChanges.Add('Set the Dsh AllowNewsAndInterests policy value to 0.')
+        $plannedChanges.Add('Stop Widgets and WidgetService if they are running.')
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Set PolicyManager AllowNewsAndInterests value to 1.')
+        $plannedChanges.Add('Remove the Dsh policy key used to block Widgets.')
     }
     else {
         switch ($ActionName) {
@@ -201,6 +216,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
         $sideEffects.Add('A temporary registry value is created and removed during the operation.')
     }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Widgets and News and Interests are disabled by machine policy.')
+        $sideEffects.Add('Running Widgets and WidgetService processes are closed.')
+        $sideEffects.Add('The taskbar may update immediately or after Windows refreshes its policy state.')
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Widgets availability returns to the approved Windows default policy behavior.')
+        $sideEffects.Add('The taskbar may update after Windows refreshes its policy state.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -243,6 +267,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
+        'BoostLab will disable Widgets by machine policy and close Widgets processes if they are running. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
+        'BoostLab will restore the approved default Widgets policy values. No restart is required. Do you want to continue?'
     }
     elseif ($needsConfirmation) {
         "Review the action plan for $toolTitle. Confirm only if you understand the planned changes and side effects."

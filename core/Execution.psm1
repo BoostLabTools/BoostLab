@@ -45,6 +45,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\sound.psm1'
         Actions = @('Open')
     }
+    'widgets' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\Widgets.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'restore-point' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\RestorePoint.psm1'
         Actions = @('Apply', 'Open')

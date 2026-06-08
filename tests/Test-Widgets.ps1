@@ -1,0 +1,339 @@
+[CmdletBinding()]
+param(
+    [string]$ProjectRoot
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $scriptPath = if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        $PSCommandPath
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+        $MyInvocation.MyCommand.Path
+    }
+    else {
+        throw 'Unable to determine the Widgets test script path.'
+    }
+
+    $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+}
+else {
+    $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
+}
+
+$configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$modulePath = Join-Path $ProjectRoot 'modules\Windows\Widgets.psm1'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\7 Widgets.ps1'
+$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
+$uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$recordPath = Join-Path $ProjectRoot 'docs\migrations\widgets.md'
+$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
+
+$configuration = Import-PowerShellDataFile -LiteralPath $configPath
+$tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
+$tool = $tools | Where-Object { $_['Id'] -eq 'widgets' } | Select-Object -First 1
+if ($null -eq $tool) {
+    throw 'Widgets metadata is missing.'
+}
+if (
+    [string]$tool['Stage'] -ne 'Windows' -or
+    [int]$tool['Order'] -ne 7 -or
+    [string]$tool['RiskLevel'] -ne 'low' -or
+    (@($tool['Actions']) -join ',') -ne 'Apply,Default'
+) {
+    throw 'Widgets stage, order, risk, or actions are incorrect.'
+}
+
+$capabilities = $tool['Capabilities']
+$expectedTrueCapabilities = @(
+    'RequiresAdmin'
+    'CanModifyRegistry'
+    'SupportsDefault'
+    'NeedsExplicitConfirmation'
+)
+foreach ($field in $capabilities.Keys) {
+    $expected = $field -in $expectedTrueCapabilities
+    if ([bool]$capabilities[$field] -ne $expected) {
+        throw "Widgets capability '$field' is incorrect."
+    }
+}
+
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73') {
+    throw 'Widgets Ultimate source hash changed.'
+}
+
+$source = Get-Content -Raw -LiteralPath $sourcePath
+$moduleSource = Get-Content -Raw -LiteralPath $modulePath
+$applyPolicyManagerCommand = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
+$applyDshCommand = 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f'
+$defaultPolicyManagerCommand = 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f'
+$defaultDshCommand = 'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f'
+
+foreach ($requiredText in @(
+    $applyPolicyManagerCommand
+    $applyDshCommand
+    $defaultPolicyManagerCommand
+    $defaultDshCommand
+    '$script:BoostLabWidgetProcessNames = @(''Widgets'', ''WidgetService'')'
+    'Stop-Process -Force -Name $processName -ErrorAction Stop'
+    '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    '[bool]$Confirmed = $false'
+    'if (-not $Confirmed)'
+    'Widgets disabled.'
+    'Widgets restored to default.'
+)) {
+    if (-not $moduleSource.Contains([string]$requiredText)) {
+        throw "Widgets module is missing: $requiredText"
+    }
+}
+
+foreach ($sourceText in @(
+    'AllowNewsAndInterests`" /v `"value`" /t REG_DWORD /d `"0`" /f'
+    'SOFTWARE\Policies\Microsoft\Dsh`" /v `"AllowNewsAndInterests`" /t REG_DWORD /d `"0`" /f'
+    'Stop-Process -Force -Name Widgets -ErrorAction SilentlyContinue'
+    'Stop-Process -Force -Name WidgetService -ErrorAction SilentlyContinue'
+    'AllowNewsAndInterests`" /v `"value`" /t REG_DWORD /d `"1`" /f'
+    'reg delete `"HKLM\SOFTWARE\Policies\Microsoft\Dsh`" /f'
+)) {
+    if (-not $source.Contains($sourceText)) {
+        throw "Widgets source no longer contains: $sourceText"
+    }
+}
+
+$applyPolicyManagerIndex = $moduleSource.IndexOf($applyPolicyManagerCommand)
+$applyDshIndex = $moduleSource.IndexOf($applyDshCommand)
+$defaultPolicyManagerIndex = $moduleSource.IndexOf($defaultPolicyManagerCommand)
+$defaultDshIndex = $moduleSource.IndexOf($defaultDshCommand)
+if (
+    $applyPolicyManagerIndex -lt 0 -or
+    $applyDshIndex -le $applyPolicyManagerIndex -or
+    $defaultPolicyManagerIndex -le $applyDshIndex -or
+    $defaultDshIndex -le $defaultPolicyManagerIndex
+) {
+    throw 'Widgets registry operation order no longer matches Ultimate.'
+}
+
+foreach ($forbiddenText in @(
+    'Restart-Computer'
+    'Stop-Computer'
+    'Invoke-WebRequest'
+    'Invoke-RestMethod'
+    'Start-BitsTransfer'
+    'Set-Service'
+    'Stop-Service'
+    'Remove-Item'
+    'Disable-ComputerRestore'
+)) {
+    if ($moduleSource.Contains($forbiddenText)) {
+        throw "Widgets module contains forbidden behavior: $forbiddenText"
+    }
+}
+
+$tokens = $null
+$parseErrors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    $modulePath,
+    [ref]$tokens,
+    [ref]$parseErrors
+)
+if (@($parseErrors).Count -gt 0) {
+    throw "Widgets module syntax error: $($parseErrors[0].Message)"
+}
+$commands = @(
+    $ast.FindAll(
+        { param($node) $node -is [System.Management.Automation.Language.CommandAst] },
+        $true
+    ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
+)
+if (@($commands | Where-Object { $_ -eq 'Stop-Process' }).Count -ne 1) {
+    throw 'Widgets must contain one allowlisted Stop-Process call.'
+}
+if ('Start-Process' -in $commands -or 'Restart-Computer' -in $commands) {
+    throw 'Widgets must not launch or restart anything.'
+}
+
+$widgetsModule = Import-Module `
+    -Name $modulePath `
+    -Force `
+    -PassThru `
+    -Prefix 'WidgetsTest' `
+    -Scope Local `
+    -DisableNameChecking `
+    -ErrorAction Stop
+try {
+    $infoCommand = Get-Command `
+        -Name 'Get-WidgetsTestBoostLabToolInfo' `
+        -Module $widgetsModule.Name `
+        -ErrorAction Stop
+    $toolInfo = & $infoCommand
+    if (
+        [string]$toolInfo.Id -ne 'widgets' -or
+        (@($toolInfo.Actions) -join ',') -ne 'Apply,Default' -or
+        (@($toolInfo.ImplementedActions) -join ',') -ne 'Apply,Default'
+    ) {
+        throw 'Widgets exported metadata or implemented actions are incorrect.'
+    }
+}
+finally {
+    Remove-Module -ModuleInfo $widgetsModule -Force -ErrorAction SilentlyContinue
+}
+
+$processNamesMatch = [regex]::Matches(
+    $moduleSource,
+    '\$script:BoostLabWidgetProcessNames\s*=\s*@\(''(?<First>[^'']+)'',\s*''(?<Second>[^'']+)''\)'
+)
+if (
+    $processNamesMatch.Count -ne 1 -or
+    $processNamesMatch[0].Groups['First'].Value -ne 'Widgets' -or
+    $processNamesMatch[0].Groups['Second'].Value -ne 'WidgetService'
+) {
+    throw 'Widgets process target allowlist changed.'
+}
+
+$actionPlanModule = Import-Module -Name $actionPlanPath -Force -PassThru -Scope Local -ErrorAction Stop
+try {
+    foreach ($actionName in @('Apply', 'Default')) {
+        $plan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName $actionName -IsDryRun $false
+        if (
+            -not $plan.NeedsExplicitConfirmation -or
+            $plan.CanReboot -or
+            $plan.RequiresInternet -or
+            $plan.ConfirmationMessage -notmatch 'No restart is required'
+        ) {
+            throw "Widgets $actionName action plan is not safely confirmation-gated."
+        }
+    }
+}
+finally {
+    Remove-Module -ModuleInfo $actionPlanModule -Force -ErrorAction SilentlyContinue
+}
+
+$executionSource = Get-Content -Raw -LiteralPath $executionPath
+foreach ($requiredText in @(
+    '''widgets'' = @{'
+    '''Windows\Widgets.psm1'''
+    'Actions = @(''Apply'', ''Default'')'
+    '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
+    'ToolAction.Completed'
+)) {
+    if (-not $executionSource.Contains($requiredText)) {
+        throw "Widgets runtime mapping is missing: $requiredText"
+    }
+}
+
+$uiSource = Get-Content -Raw -LiteralPath $uiPath
+foreach ($requiredText in @(
+    '$toolId -eq ''widgets'''
+    '-Label ''Registry changes attempted'''
+    '-Label ''Processes stopped'''
+    '-Label ''Timestamp'''
+)) {
+    if (-not $uiSource.Contains($requiredText)) {
+        throw "Widgets Latest Result rendering is missing: $requiredText"
+    }
+}
+
+$record = Get-Content -Raw -LiteralPath $recordPath
+foreach ($requiredText in @(
+    'source-ultimate/6 Windows/7 Widgets.ps1'
+    '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
+    'Approved by Yazan'
+    'Automated tests must not invoke Apply or Default.'
+)) {
+    if (-not $record.Contains($requiredText)) {
+        throw "Widgets migration record is missing: $requiredText"
+    }
+}
+
+$deletedToolNames = @(
+    'Windows Activation Helper'
+    'Firewall'
+    'DEP'
+    'File Download Security Warning'
+    'MPO'
+    'FSO'
+    'FSE'
+    'Hardware Flip'
+    'AMD ULPS'
+    'WHQL Secure Boot Bypass'
+    'Keyboard Shortcuts'
+    'Search Shell Mobsync'
+    'NVME Faster Driver'
+    'Core 1 Thread 1'
+    'DDU'
+    'UAC'
+    'Scaling'
+    'Start Menu Shortcuts'
+)
+$normalizedDeletedNames = @(
+    $deletedToolNames | ForEach-Object {
+        ($_ -replace '[^a-zA-Z0-9]+', '-').Trim('-').ToLowerInvariant()
+    }
+)
+$deletedModules = @(
+    Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -File -Filter '*.psm1' |
+        Where-Object {
+            [System.IO.Path]::GetFileNameWithoutExtension($_.Name).ToLowerInvariant() -in $normalizedDeletedNames
+        }
+)
+if ($deletedModules.Count -gt 0) {
+    throw "Deleted tool modules were found: $($deletedModules.FullName -join ', ')"
+}
+
+$allModules = @(
+    Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -File -Filter '*.psm1' |
+        Where-Object { $_.Directory.Parent.FullName -eq (Join-Path $ProjectRoot 'modules') }
+)
+$implementedCount = @(
+    $allModules | Where-Object {
+        (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
+    }
+).Count
+$placeholderCount = @(
+    $allModules | Where-Object {
+        (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
+    }
+).Count
+if ($implementedCount -ne 11 -or $placeholderCount -ne 38) {
+    throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
+}
+
+$root = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
+    ForEach-Object {
+        '{0}|{1}' -f `
+            $_.FullName.Substring($root.Length + 1).Replace('\', '/'), `
+            (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash
+    }
+$sha256 = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $sourceManifestHash = [BitConverter]::ToString(
+        $sha256.ComputeHash([Text.Encoding]::UTF8.GetBytes(($sourceLines -join "`n")))
+    ).Replace('-', '')
+}
+finally {
+    $sha256.Dispose()
+}
+if (
+    @($sourceLines).Count -ne 50 -or
+    $sourceManifestHash -ne '4F96170AFF67F9EE7A2E765A8DE268570651E22D2F3EE2C02923E0654D2C8EBF'
+) {
+    throw 'source-ultimate content or paths changed.'
+}
+
+[pscustomobject]@{
+    Success                 = $true
+    ToolId                  = 'widgets'
+    ImplementedActions      = @('Apply', 'Default')
+    ApplyExecuted           = $false
+    DefaultExecuted         = $false
+    ImplementedModuleCount  = $implementedCount
+    PlaceholderModuleCount  = $placeholderCount
+    SourceUltimateUnchanged = $true
+    Message                 = 'Widgets Apply/Default behavior was validated statically; no registry or process action was executed.'
+    Timestamp               = Get-Date
+}

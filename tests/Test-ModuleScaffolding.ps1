@@ -73,6 +73,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process "mmsys.cpl"'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
+    'widgets' = @{
+        RelativePath          = 'Windows\Widgets.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'restore-point' = @{
         RelativePath          = 'Windows\RestorePoint.psm1'
         LaunchText            = 'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
@@ -263,7 +267,10 @@ foreach ($entry in $expectedModules.Values) {
         if (-not $source.Contains([string]$implementedModules[$toolId].ImplementedActionsText)) {
             $errors.Add("$modulePath does not declare the approved implemented actions.")
         }
-        if (-not $source.Contains([string]$implementedModules[$toolId].LaunchText)) {
+        if (
+            $implementedModules[$toolId].ContainsKey('LaunchText') -and
+            -not $source.Contains([string]$implementedModules[$toolId].LaunchText)
+        ) {
             $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
         }
 
@@ -272,6 +279,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'restore-point') {
             2
+        }
+        elseif ($toolId -eq 'widgets') {
+            0
         }
         else {
             1
@@ -366,6 +376,37 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains forbidden Restore Point behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'widgets') {
+            foreach ($requiredText in @(
+                '$script:BoostLabWidgetProcessNames = @(''Widgets'', ''WidgetService'')'
+                'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
+                'reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f'
+                'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "1" /f'
+                'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f'
+                'Stop-Process -Force -Name $processName -ErrorAction Stop'
+                '[bool]$Confirmed = $false'
+                'Widgets disabled.'
+                'Widgets restored to default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Widgets behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains forbidden Widgets behavior: $forbiddenText")
                 }
             }
         }

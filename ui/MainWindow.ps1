@@ -219,6 +219,17 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Restore point created' -Value (Get-BoostLabObjectPropertyValue $data 'RestorePointCreated')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CreatedAt')
     }
+    elseif ($toolId -eq 'widgets' -and $null -ne $data) {
+        $registryChanges = @((Get-BoostLabObjectPropertyValue $data 'RegistryChangesAttempted' @())) -join [Environment]::NewLine
+        $processesStopped = @((Get-BoostLabObjectPropertyValue $data 'ProcessesStopped' @()))
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Widgets Changes'
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry changes attempted' -Value $registryChanges
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'Processes stopped' `
+            -Value $(if ($processesStopped.Count -gt 0) { $processesStopped -join ', ' } else { 'None (not running or not applicable)' })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Detected System'
         Add-BoostLabResultRow -Panel $panel -Label 'Motherboard Manufacturer' -Value (Get-BoostLabObjectPropertyValue $data 'MotherboardManufacturer')
