@@ -326,6 +326,22 @@ This policy applies to examples including:
 
 ---
 
+## BoostLab Governance Decisions
+
+* Ultimate is the source of approved operational intent, not an untouchable source of defects.
+* Approved normal tools should preserve Ultimate behavior and execution strength.
+* Any intentional deviation from Ultimate must be documented and approved by Yazan before it becomes production behavior.
+* Deleted tools must never be reintroduced directly, indirectly, under a different name, or as part of another tool.
+* `Default` means the tool's approved default behavior. It does not automatically mean the current Windows default unless that is the approved behavior.
+* `Restore` means returning to a previous system state captured by BoostLab. A tool must not expose working Restore behavior unless BoostLab has captured the state required for that restoration.
+* BoostLab is currently a technician-focused tool, not a fully automated consumer optimizer.
+* BoostLab is expected to run elevated as Administrator. Elevation does not replace high-risk confirmation, logging, compatibility checks, or result reporting.
+* Strong execution is allowed for approved tools, but silent destructive execution is not allowed.
+* Capability metadata in `config/Stages.psd1` is conservative governance metadata. A capability set to `true` identifies behavior that a completed migration may perform and must be considered by runtime safety checks.
+* Capability metadata does not authorize implementation. A placeholder remains a placeholder until its migration is separately approved.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

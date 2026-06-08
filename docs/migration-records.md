@@ -1,0 +1,48 @@
+# BoostLab Migration Records
+
+Every tool must have an approved migration record before production behavior is added or expanded. The record is the review boundary between the historical Ultimate implementation and approved BoostLab behavior.
+
+Migration records live under `docs/migrations/` and use the tool ID as the filename where practical.
+
+## Required Record
+
+Each record must contain:
+
+* **Tool name**
+* **Stage**
+* **Source script path**
+* **Source checksum** using SHA-256
+* **Original Ultimate behavior summary**
+* **Approved BoostLab behavior**
+* **Preserved commands**
+* **Intentional deviations**
+* **Side effects**
+* **Required privileges**
+* **Capabilities**
+* **Risk level**
+* **Confirmation requirements**
+* **Rollback/default behavior**
+* **Restart behavior**
+* **Test requirements**
+* **Yazan approval status**
+
+## Governance Rules
+
+The source checksum identifies the exact legacy material reviewed for the migration. A changed source checksum requires another review.
+
+Preserved commands must identify operationally important commands, arguments, paths, registry keys, service names, policies, and execution order. Summaries such as "same behavior" are insufficient for action tools.
+
+Intentional deviations must explain why the behavior differs, how the effective result changes, and whether the deviation fixes a defect, replaces console interaction, adds safety, or redesigns an assistant. Deviations require explicit Yazan approval.
+
+Capabilities must match `config/Stages.psd1`. Setting a capability does not authorize implementation; it declares the maximum reviewed operational scope.
+
+Default behavior must identify the approved tool default. Restore behavior may be claimed only when BoostLab captures the prior state needed to reverse the action.
+
+The approval status must be one of:
+
+* `Draft`
+* `Review required`
+* `Approved by Yazan`
+* `Rejected`
+
+Approval applies only to the behavior and source checksum recorded in that document.

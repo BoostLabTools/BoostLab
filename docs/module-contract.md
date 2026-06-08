@@ -22,8 +22,37 @@ Tool modules must remain isolated from the GUI. Future runtime discovery will lo
 * `RiskLevel`
 * `Description`
 * `Actions`
+* `Capabilities`
 
 The module metadata must not redefine the approved stage name, tool name, order, type, risk meaning, description, or action list.
+
+## Capability Metadata
+
+`config/Stages.psd1` is the canonical source for capability metadata. Every tool entry must contain a `Capabilities` object with Boolean values for:
+
+* `RequiresAdmin`
+* `RequiresInternet`
+* `CanReboot`
+* `CanModifyRegistry`
+* `CanModifyServices`
+* `CanInstallSoftware`
+* `CanDownload`
+* `CanModifyDrivers`
+* `CanModifySecurity`
+* `CanDeleteFiles`
+* `UsesTrustedInstaller`
+* `UsesSafeMode`
+* `SupportsDefault`
+* `SupportsRestore`
+* `NeedsExplicitConfirmation`
+
+The runtime must validate and honor the catalog capabilities before dispatching implemented behavior. A module must not perform an operation whose capability is not declared in the catalog.
+
+Modules created or migrated after Phase 9 should expose a matching `Capabilities` object from `Get-BoostLabToolInfo`. Existing modules that do not yet return the object remain governed by the catalog metadata supplied to the runtime. Module metadata may be more restrictive during compatibility checks, but it must never silently expand the approved capability set.
+
+Capability flags describe possible operational scope; they do not mean that an action is implemented or authorized. Unknown behavior must be represented conservatively. `CanReboot`, high risk, security-sensitive behavior, destructive file operations, Safe Mode, and TrustedInstaller use require explicit confirmation.
+
+`SupportsDefault` is valid only when the approved action list contains `Default`. `SupportsRestore` is valid only when the action list contains `Restore` and the implementation can use a previous state captured by BoostLab.
 
 ## Required Functions
 
@@ -113,3 +142,4 @@ Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCT
 * `source-ultimate` remains untouched.
 * Approved production logic will live in the matching tool module.
 * Deleted tools must never receive modules or be recreated under another name.
+* Every migration must have an approved record under `docs/migrations/` before stronger production behavior is enabled.

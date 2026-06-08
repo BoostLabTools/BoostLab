@@ -1,6 +1,6 @@
 # BoostLab Runtime Foundation
 
-Phase 4 introduces the shared runtime services that future BoostLab tools will use. It does not migrate or execute any Ultimate script, and it does not implement real tool actions.
+Phase 4 introduced the shared runtime services used by BoostLab tools. The runtime does not execute scripts from `source-ultimate`; approved production behavior lives in individual modules.
 
 ## Runtime Modules
 
@@ -100,6 +100,25 @@ The result includes:
 Read-only assistant analysis may also include a structured `Data` payload.
 
 Tools without an approved implementation continue to return `Action not implemented yet`. Implemented modules are loaded only through the runtime allowlist; no legacy script is invoked.
+
+## Target Execution Lifecycle
+
+Stronger tools must eventually use this mandatory lifecycle:
+
+```text
+Preflight -> Plan -> Confirm -> Checkpoint -> Execute -> Verify -> Persist -> Restart or Rollback
+```
+
+* **Preflight** validates metadata, capabilities, privileges, compatibility, dependencies, and environment state.
+* **Plan** produces a reviewable description of intended commands and side effects.
+* **Confirm** obtains explicit approval when required by risk or capability metadata.
+* **Checkpoint** captures the state required for an approved Default or Restore path.
+* **Execute** runs only the approved module behavior.
+* **Verify** checks the effective result rather than assuming command success.
+* **Persist** records the action, result, captured state, and restart requirement.
+* **Restart or Rollback** performs only an approved, confirmed continuation or recovery path.
+
+This lifecycle is the target governance model and is not fully implemented yet. Capability metadata and migration records introduced in Phase 9 define the information the future pipeline must enforce. No stronger tool should be enabled merely because a module exists.
 
 ## GUI Integration
 

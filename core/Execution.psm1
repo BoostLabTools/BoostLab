@@ -44,6 +44,7 @@ function Test-BoostLabToolMetadata {
         'RiskLevel'
         'Description'
         'Actions'
+        'Capabilities'
     )
     $errors = [System.Collections.Generic.List[string]]::new()
 
@@ -68,6 +69,68 @@ function Test-BoostLabToolMetadata {
         }
         if ($ActionName -notin @($ToolMetadata['Actions'])) {
             $errors.Add("Action '$ActionName' is not declared for this tool.")
+        }
+
+        $requiredCapabilityFields = @(
+            'RequiresAdmin'
+            'RequiresInternet'
+            'CanReboot'
+            'CanModifyRegistry'
+            'CanModifyServices'
+            'CanInstallSoftware'
+            'CanDownload'
+            'CanModifyDrivers'
+            'CanModifySecurity'
+            'CanDeleteFiles'
+            'UsesTrustedInstaller'
+            'UsesSafeMode'
+            'SupportsDefault'
+            'SupportsRestore'
+            'NeedsExplicitConfirmation'
+        )
+        $capabilities = $ToolMetadata['Capabilities']
+        if ($capabilities -isnot [System.Collections.IDictionary]) {
+            $errors.Add('Tool Capabilities must be a dictionary.')
+        }
+        else {
+            foreach ($field in $requiredCapabilityFields) {
+                if (-not $capabilities.Contains($field)) {
+                    $errors.Add("Missing capability field: $field")
+                }
+                elseif ($capabilities[$field] -isnot [bool]) {
+                    $errors.Add("Capability '$field' must be Boolean.")
+                }
+            }
+
+            if (
+                $capabilities.Contains('NeedsExplicitConfirmation') -and
+                [string]$ToolMetadata['RiskLevel'] -eq 'high' -and
+                -not [bool]$capabilities['NeedsExplicitConfirmation']
+            ) {
+                $errors.Add('High-risk tools must require explicit confirmation.')
+            }
+            if (
+                $capabilities.Contains('CanReboot') -and
+                $capabilities.Contains('NeedsExplicitConfirmation') -and
+                [bool]$capabilities['CanReboot'] -and
+                -not [bool]$capabilities['NeedsExplicitConfirmation']
+            ) {
+                $errors.Add('Tools that can reboot must require explicit confirmation.')
+            }
+            if (
+                $capabilities.Contains('SupportsDefault') -and
+                [bool]$capabilities['SupportsDefault'] -and
+                'Default' -notin @($ToolMetadata['Actions'])
+            ) {
+                $errors.Add('SupportsDefault requires a declared Default action.')
+            }
+            if (
+                $capabilities.Contains('SupportsRestore') -and
+                [bool]$capabilities['SupportsRestore'] -and
+                'Restore' -notin @($ToolMetadata['Actions'])
+            ) {
+                $errors.Add('SupportsRestore requires a declared Restore action.')
+            }
         }
     }
 

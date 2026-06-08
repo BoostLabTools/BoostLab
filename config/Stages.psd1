@@ -14,6 +14,7 @@
                     RiskLevel   = 'low'
                     Description = 'Review detected BIOS, firmware, and motherboard information.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'bios-settings'
@@ -24,6 +25,7 @@
                     RiskLevel   = 'high'
                     Description = 'Review BIOS setting guidance and optionally restart into BIOS/UEFI firmware settings.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }
@@ -41,6 +43,7 @@
                     RiskLevel   = 'high'
                     Description = 'Review prerequisites and prepare a guided Windows reinstall workflow.'
                     Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'unattended'
@@ -51,6 +54,7 @@
                     RiskLevel   = 'high'
                     Description = 'Prepare unattended Windows setup options for review before use.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'updates-drivers-block'
@@ -61,6 +65,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Manage the policy that controls driver delivery through Windows Update.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'to-bios'
@@ -71,6 +76,7 @@
                     RiskLevel   = 'high'
                     Description = 'Review restart guidance before opening Windows firmware startup options.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }
@@ -88,6 +94,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Review and manage the Windows memory compression setting.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'date-language-region-time'
@@ -98,6 +105,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open the Windows pages for date, time, language, and regional settings.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'startup-apps-settings'
@@ -108,6 +116,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open the Windows Settings page for startup application management.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'startup-apps-task-manager'
@@ -118,6 +127,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Task Manager for detailed startup application review.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'background-apps'
@@ -128,6 +138,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Windows controls for reviewing application background activity.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'edge-settings'
@@ -138,6 +149,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Microsoft Edge settings for technician-guided configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'store-settings'
@@ -148,6 +160,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Microsoft Store settings for update and preference review.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'updates-pause'
@@ -158,6 +171,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible Windows Update pause preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
             )
         }
@@ -175,6 +189,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare approved application installation selections.'
                     Actions     = @('Open', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }
@@ -192,6 +207,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze graphics hardware and prepare a guided driver installation workflow.'
                     Actions     = @('Analyze', 'Apply', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'directx'
@@ -202,6 +218,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare the approved DirectX runtime installation.'
                     Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'visual-cpp'
@@ -212,6 +229,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare approved Microsoft Visual C++ runtime installation.'
                     Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'graphics-configuration-center'
@@ -222,6 +240,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open the installed graphics control center for guided configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
             )
         }
@@ -239,6 +258,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Windows personalization controls for Start and taskbar settings.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'start-menu-layout'
@@ -249,6 +269,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible BoostLab Start menu layout preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'context-menu'
@@ -259,6 +280,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible Windows context menu preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'theme-black'
@@ -269,6 +291,7 @@
                     RiskLevel   = 'low'
                     Description = 'Apply or reset the approved dark Windows theme preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'signout-lockscreen-wallpaper-black'
@@ -279,6 +302,7 @@
                     RiskLevel   = 'low'
                     Description = 'Apply or reset the approved black sign-out and lock-screen appearance.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'user-account-pictures-black'
@@ -289,6 +313,7 @@
                     RiskLevel   = 'low'
                     Description = 'Apply or restore the approved black user account image set.'
                     Actions     = @('Apply', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'widgets'
@@ -299,6 +324,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible Windows Widgets preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'copilot'
@@ -309,6 +335,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Manage supported Windows Copilot policy preferences.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'game-mode'
@@ -319,6 +346,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible Windows Game Mode preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'pointer-precision'
@@ -329,6 +357,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible enhanced pointer precision preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'bloatware'
@@ -339,6 +368,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Analyze installed applications before preparing a reviewed removal plan.'
                     Actions     = @('Analyze', 'Apply', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'game-bar'
@@ -349,6 +379,7 @@
                     RiskLevel   = 'low'
                     Description = 'Manage the reversible Xbox Game Bar preference.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'edge-webview'
@@ -359,6 +390,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Review Microsoft Edge and WebView components before making changes.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'notepad-settings'
@@ -369,6 +401,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Notepad settings for technician-guided configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'control-panel-settings'
@@ -379,6 +412,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Control Panel for technician-guided Windows configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'sound'
@@ -389,6 +423,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Windows sound settings for device and output configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'loudness-eq'
@@ -399,6 +434,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open audio device properties for loudness equalization review.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'device-manager-power-savings-wake'
@@ -409,6 +445,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open Device Manager for guided power-saving and wake configuration.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'network-adapter-power-savings-wake'
@@ -419,6 +456,7 @@
                     RiskLevel   = 'low'
                     Description = 'Open network adapter properties for guided power and wake settings.'
                     Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'write-cache-buffer-flushing'
@@ -429,6 +467,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze storage hardware before changing write-cache buffer flushing.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'power-plan'
@@ -439,6 +478,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Apply or reset the approved Windows power plan configuration.'
                     Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'cleanup'
@@ -449,6 +489,7 @@
                     RiskLevel   = 'medium'
                     Description = 'Analyze removable temporary data before preparing a cleanup operation.'
                     Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'restore-point'
@@ -459,6 +500,7 @@
                     RiskLevel   = 'low'
                     Description = 'Prepare a Windows restore point or open recovery options.'
                     Actions     = @('Apply', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
             )
         }
@@ -476,6 +518,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze mitigation state and explain security and performance tradeoffs.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'mmagent-assistant'
@@ -486,6 +529,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze Windows memory-management features before recommending changes.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'resizable-bar-assistant'
@@ -496,6 +540,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze hardware support and explain firmware requirements for Resizable BAR.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'smt-ht-assistant'
@@ -506,6 +551,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze processor topology and explain SMT or Hyper-Threading tradeoffs.'
                     Actions     = @('Analyze', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'services-optimizer'
@@ -516,6 +562,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze Windows services and prepare a reviewed optimization plan.'
                     Actions     = @('Analyze', 'Apply', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $true; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'timer-resolution-assistant'
@@ -526,6 +573,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze timer behavior and explain latency, power, and stability tradeoffs.'
                     Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'defender-optimize-assistant'
@@ -536,6 +584,7 @@
                     RiskLevel   = 'high'
                     Description = 'Analyze Microsoft Defender settings before recommending approved changes.'
                     Actions     = @('Analyze', 'Apply', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $true; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
             )
         }
