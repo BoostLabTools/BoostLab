@@ -232,6 +232,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected MemoryCompression state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'MemoryCompression')
         }
+        elseif ($toolId -eq 'background-apps') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Background Apps state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'BackgroundApps')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Background Apps state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'BackgroundApps')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -329,6 +347,18 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedMemoryCompression')
         Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedMemoryCompression')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'background-apps' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Background Apps'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedBackgroundAppsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedBackgroundAppsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Settings page' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsPageStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

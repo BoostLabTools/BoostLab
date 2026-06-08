@@ -52,6 +52,11 @@ $implementedModules = @{
         RelativePath          = 'Setup\MemoryCompression.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'background-apps' = @{
+        RelativePath          = 'Setup\BackgroundApps.psm1'
+        LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -456,6 +461,40 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Memory Compression behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'background-apps') {
+            foreach ($requiredText in @(
+                'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /t REG_DWORD /d "2" /f'
+                'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /f'
+                'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
+                'function Test-BoostLabBackgroundAppsState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Background apps disabled.'
+                'Background apps restored to default.'
+                'Background Apps already default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Background Apps behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Stop-Process'
+                'UsesTrustedInstaller = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Background Apps behavior: $forbiddenText")
                 }
             }
         }

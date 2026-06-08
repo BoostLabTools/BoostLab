@@ -51,6 +51,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Setup\MemoryCompression.psm1'
         LegacyHash = 'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352'
     }
+    'Background Apps' = @{
+        LegacyPath = 'source-ultimate\3 Setup\5 Background Apps.ps1'
+        ModulePath = 'modules\Setup\BackgroundApps.psm1'
+        LegacyHash = '2DF15DE03306CCAF19180940F215972E943EA94E7B2C52B7D6EC2B6403E79445'
+    }
     'Graphics Configuration Center' = @{
         LegacyPath = 'source-ultimate\5 Graphics\4 Graphics Configuration Center.ps1'
         ModulePath = 'modules\Graphics\GraphicsConfigurationCenter.psm1'
@@ -262,6 +267,33 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Memory Compression contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Background Apps' {
+            foreach ($requiredText in @(
+                'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /t REG_DWORD /d "2" /f'
+                'reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" /v "LetAppsRunInBackground" /f'
+                'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Background Apps preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Stop-Process'
+                'UsesTrustedInstaller = $true'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Background Apps contains unrelated behavior: $forbiddenText"
                 }
             }
         }

@@ -35,6 +35,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\MemoryCompression.psm1'
         Actions = @('Apply', 'Default')
     }
+    'background-apps' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\BackgroundApps.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

@@ -134,11 +134,11 @@
                     Title       = 'Background Apps'
                     Stage       = 'Setup'
                     Order       = 5
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'low'
-                    Description = 'Open Windows controls for reviewing application background activity.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Description = 'Disable background apps by machine policy or restore the approved default behavior.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'edge-settings'

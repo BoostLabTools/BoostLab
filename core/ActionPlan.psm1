@@ -144,6 +144,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
         'Restore the approved default enabled Memory Compression state.'
     }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
+        'Disable Windows background apps using the approved machine policy.'
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
+        'Restore the approved default Windows background apps policy behavior.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -188,6 +194,16 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Run Enable-MMAgent -MemoryCompression.')
         $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Set AppPrivacy LetAppsRunInBackground to 2 (Force deny).')
+        $plannedChanges.Add('Open the Windows Background Apps Settings page.')
+        $plannedChanges.Add('Read the resulting AppPrivacy policy value.')
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Remove the AppPrivacy LetAppsRunInBackground policy value.')
+        $plannedChanges.Add('Open the Windows Background Apps Settings page.')
+        $plannedChanges.Add('Confirm that the AppPrivacy policy value is absent.')
     }
     else {
         switch ($ActionName) {
@@ -261,6 +277,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows will be allowed to use memory compression again.')
         $sideEffects.Add('The setting is changed immediately; BoostLab does not restart the computer.')
     }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Windows apps governed by this machine policy will be prevented from running in the background.')
+        $sideEffects.Add('The Windows Background Apps Settings page will open after the policy command.')
+        $sideEffects.Add('Windows may require policy refresh, sign-out, or a later session before every visible effect appears.')
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Background app behavior returns to the Windows default when no other policy controls it.')
+        $sideEffects.Add('The Windows Background Apps Settings page will open after the policy command.')
+        $sideEffects.Add('Windows may require policy refresh, sign-out, or a later session before every visible effect appears.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -318,6 +344,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
         'BoostLab will run Enable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
+        'BoostLab will set LetAppsRunInBackground to 2 (Force deny), open Background Apps Settings, and verify the policy. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
+        'BoostLab will remove the LetAppsRunInBackground policy value, open Background Apps Settings, and verify the default state. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."
