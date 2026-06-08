@@ -214,6 +214,24 @@ function Show-BoostLabActionResult {
                 -Label 'WidgetService process state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'WidgetServiceProcessState')
         }
+        elseif ($toolId -eq 'memory-compression') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected MemoryCompression state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'MemoryCompression')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected MemoryCompression state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'MemoryCompression')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -296,6 +314,13 @@ function Show-BoostLabActionResult {
             -Panel $panel `
             -Label 'Processes stopped' `
             -Value $(if ($processesStopped.Count -gt 0) { $processesStopped -join ', ' } else { 'None (not running or not applicable)' })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'memory-compression' -and $null -ne $data) {
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Memory Compression'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedMemoryCompression')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedMemoryCompression')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

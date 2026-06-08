@@ -46,6 +46,11 @@ $implementedTools = [ordered]@{
         LegacyHash = 'EB648780E90F95A7A65CD25EDF21CCDFC1BFEA92705AEF0AC88C97B41989ABF6'
         Launcher   = 'Start-Process "taskmgr" -ArgumentList " /0 /startup"'
     }
+    'Memory Compression' = @{
+        LegacyPath = 'source-ultimate\3 Setup\1 Memory Compression.ps1'
+        ModulePath = 'modules\Setup\MemoryCompression.psm1'
+        LegacyHash = 'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352'
+    }
     'Graphics Configuration Center' = @{
         LegacyPath = 'source-ultimate\5 Graphics\4 Graphics Configuration Center.ps1'
         ModulePath = 'modules\Graphics\GraphicsConfigurationCenter.psm1'
@@ -229,6 +234,34 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Widgets contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Memory Compression' {
+            foreach ($requiredText in @(
+                'Disable-MMAgent -MemoryCompression -ErrorAction Stop'
+                'Enable-MMAgent -MemoryCompression -ErrorAction Stop'
+                'Get-MMAgent -ErrorAction Stop'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Memory Compression preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Set-MMAgent'
+                '-PageCombining'
+                '-ApplicationPreLaunch'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Memory Compression contains unrelated behavior: $forbiddenText"
                 }
             }
         }

@@ -168,7 +168,7 @@ try {
         throw 'The planner did not use deletion capability metadata.'
     }
 
-    $placeholderModulePath = Join-Path $ProjectRoot 'modules\Setup\memory-compression.psm1'
+    $placeholderModulePath = Join-Path $ProjectRoot 'modules\Setup\updates-pause.psm1'
     $placeholderSource = Get-Content -Raw -LiteralPath $placeholderModulePath
     if (
         -not $placeholderSource.Contains('ToolModule.Placeholder.ps1') -or
@@ -176,7 +176,7 @@ try {
     ) {
         throw 'The placeholder module execution boundary changed.'
     }
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'memory-compression' } | Select-Object -First 1
+    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'updates-pause' } | Select-Object -First 1
     $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName 'Apply'
     if (-not $placeholderPlan.IsDryRun) {
         throw 'Placeholder planning is not marked as a dry run.'

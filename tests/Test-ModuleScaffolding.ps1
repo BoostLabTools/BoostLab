@@ -48,6 +48,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process "taskmgr" -ArgumentList " /0 /startup"'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
+    'memory-compression' = @{
+        RelativePath          = 'Setup\MemoryCompression.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -283,6 +287,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'widgets') {
             0
         }
+        elseif ($toolId -eq 'memory-compression') {
+            0
+        }
         else {
             1
         }
@@ -415,6 +422,40 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains forbidden Widgets behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'memory-compression') {
+            foreach ($requiredText in @(
+                'Disable-MMAgent -MemoryCompression -ErrorAction Stop'
+                'Enable-MMAgent -MemoryCompression -ErrorAction Stop'
+                'Get-MMAgent -ErrorAction Stop'
+                'function Test-BoostLabMemoryCompressionState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Memory compression disabled.'
+                'Memory compression restored to default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Memory Compression behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Set-MMAgent'
+                '-PageCombining'
+                '-ApplicationPreLaunch'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Memory Compression behavior: $forbiddenText")
                 }
             }
         }

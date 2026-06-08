@@ -160,7 +160,13 @@ function Test-BoostLabVerificationResult {
         $errors.Add("VerificationResult Action '$action' does not match '$ExpectedAction'.")
     }
 
-    $checks = @(Get-BoostLabVerificationPropertyValue -InputObject $VerificationResult -Name 'Checks')
+    $checksValue = Get-BoostLabVerificationPropertyValue -InputObject $VerificationResult -Name 'Checks'
+    $checks = if ($null -eq $checksValue) {
+        @()
+    }
+    else {
+        @($checksValue)
+    }
     foreach ($check in $checks) {
         if ($null -eq $check) {
             $errors.Add('VerificationResult contains a null check entry.')

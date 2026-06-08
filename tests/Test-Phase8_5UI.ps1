@@ -110,7 +110,7 @@ try {
     $tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
     $biosInformationTool = $tools | Where-Object { $_['Id'] -eq 'bios-information' } | Select-Object -First 1
     $biosSettingsTool = $tools | Where-Object { $_['Id'] -eq 'bios-settings' } | Select-Object -First 1
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'memory-compression' } | Select-Object -First 1
+    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'directx' } | Select-Object -First 1
 
     $biosInformationModule = Import-Module `
         -Name $biosInformationPath `

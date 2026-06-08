@@ -91,9 +91,9 @@
                     Stage       = 'Setup'
                     Order       = 1
                     Type        = 'action'
-                    RiskLevel   = 'medium'
-                    Description = 'Review and manage the Windows memory compression setting.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
+                    RiskLevel   = 'low'
+                    Description = 'Disable Windows memory compression using the approved recommendation or restore the default enabled state.'
+                    Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{

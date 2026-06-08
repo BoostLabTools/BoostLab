@@ -130,6 +130,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
         'Restore the approved default Windows Widgets policy behavior.'
     }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
+        'Disable Windows Memory Compression using the approved Ultimate recommendation.'
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
+        'Restore the approved default enabled Memory Compression state.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -166,6 +172,14 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Set PolicyManager AllowNewsAndInterests value to 1.')
         $plannedChanges.Add('Remove the Dsh policy key used to block Widgets.')
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Run Disable-MMAgent -MemoryCompression.')
+        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Run Enable-MMAgent -MemoryCompression.')
+        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
     }
     else {
         switch ($ActionName) {
@@ -225,6 +239,14 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Widgets availability returns to the approved Windows default policy behavior.')
         $sideEffects.Add('The taskbar may update after Windows refreshes its policy state.')
     }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Windows will stop using memory compression until it is enabled again.')
+        $sideEffects.Add('The setting is changed immediately; BoostLab does not restart the computer.')
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Windows will be allowed to use memory compression again.')
+        $sideEffects.Add('The setting is changed immediately; BoostLab does not restart the computer.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -273,6 +295,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
         'BoostLab will restore the approved default Widgets policy values. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
+        'BoostLab will run Disable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
+        'BoostLab will run Enable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
     }
     elseif ($needsConfirmation) {
         "Review the action plan for $toolTitle. Confirm only if you understand the planned changes and side effects."
