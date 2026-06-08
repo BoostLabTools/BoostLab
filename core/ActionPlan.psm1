@@ -150,6 +150,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
         'Restore the approved default Windows background apps policy behavior.'
     }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Apply') {
+        'Apply the approved Microsoft Store update and preference optimizations.'
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
+        'Restore the approved default Microsoft Store settings behavior.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -204,6 +210,19 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Remove the AppPrivacy LetAppsRunInBackground policy value.')
         $plannedChanges.Add('Open the Windows Background Apps Settings page.')
         $plannedChanges.Add('Confirm that the AppPrivacy policy value is absent.')
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Open Microsoft Store Settings before changing Store preferences.')
+        $plannedChanges.Add('Stop only WinStore.App, backgroundTaskHost, and StoreDesktopExtension.')
+        $plannedChanges.Add('Set WindowsStore WindowsUpdate AutoDownload to 2.')
+        $plannedChanges.Add('Import the approved video autoplay, installation notification, and personalization values into the Store settings hive.')
+        $plannedChanges.Add('Unload the Store settings hive and reopen Microsoft Store Settings.')
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Remove the WindowsStore registry key used by the approved optimization.')
+        $plannedChanges.Add('Stop only WinStore.App, backgroundTaskHost, and StoreDesktopExtension.')
+        $plannedChanges.Add('Launch the built-in wsreset.exe Store reset.')
+        $plannedChanges.Add('Stop the same Store process targets again and open Microsoft Store Settings.')
     }
     else {
         switch ($ActionName) {
@@ -287,6 +306,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The Windows Background Apps Settings page will open after the policy command.')
         $sideEffects.Add('Windows may require policy refresh, sign-out, or a later session before every visible effect appears.')
     }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Automatic Microsoft Store app updates are disabled by the approved registry value.')
+        $sideEffects.Add('Store video autoplay, install notifications, and personalized experiences are disabled in the Store settings hive.')
+        $sideEffects.Add('Running Microsoft Store components may be closed, and Microsoft Store Settings opens before and after the changes.')
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The approved WindowsStore registry key is removed and the built-in Store reset is launched.')
+        $sideEffects.Add('Running Microsoft Store components may be closed before and after wsreset.exe.')
+        $sideEffects.Add('Microsoft Store Settings opens after the reset; the Store UI may need time to refresh.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -350,6 +379,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Default') {
         'BoostLab will remove the LetAppsRunInBackground policy value, open Background Apps Settings, and verify the default state. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Apply') {
+        'BoostLab will apply the approved Microsoft Store registry and preference settings, close only approved Store process targets, and verify the result. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
+        'BoostLab will remove the approved WindowsStore registry key, close only approved Store process targets, launch wsreset.exe, and verify the default policy state. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

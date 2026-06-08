@@ -292,6 +292,7 @@ $implementedModules = [ordered]@{
     'startup-apps-task-manager' = 'Setup\StartupAppsTaskManager.psm1'
     'memory-compression' = 'Setup\MemoryCompression.psm1'
     'background-apps' = 'Setup\BackgroundApps.psm1'
+    'store-settings' = 'Setup\StoreSettings.psm1'
     'graphics-configuration-center' = 'Graphics\GraphicsConfigurationCenter.psm1'
     'date-language-region-time' = 'Setup\date-language-region-time.psm1'
     'game-mode' = 'Windows\game-mode.psm1'
@@ -324,7 +325,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 13) {
+if ($implementedModuleFiles.Count -ne 14) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

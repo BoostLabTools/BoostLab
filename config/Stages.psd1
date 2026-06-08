@@ -156,11 +156,11 @@
                     Title       = 'Store Settings'
                     Stage       = 'Setup'
                     Order       = 7
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'low'
-                    Description = 'Open Microsoft Store settings for update and preference review.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Description = 'Optimize Microsoft Store update and preference settings or restore the approved default behavior.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'updates-pause'

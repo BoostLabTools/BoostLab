@@ -250,6 +250,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Background Apps state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'BackgroundApps')
         }
+        elseif ($toolId -eq 'store-settings') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Store Settings state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'StoreSettings')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Store Settings state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'StoreSettings')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -359,6 +377,22 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedBackgroundAppsState')
         Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
         Add-BoostLabResultRow -Panel $panel -Label 'Settings page' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsPageStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'store-settings' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        $processActions = @(
+            (Get-BoostLabObjectPropertyValue $data 'ProcessActions' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Store Settings'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedStoreSettingsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedStoreSettingsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Process actions' -Value $processActions
+        Add-BoostLabResultRow -Panel $panel -Label 'Store UI actions' -Value (Get-BoostLabObjectPropertyValue $data 'StoreUiActions')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

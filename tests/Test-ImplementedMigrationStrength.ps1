@@ -56,6 +56,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Setup\BackgroundApps.psm1'
         LegacyHash = '2DF15DE03306CCAF19180940F215972E943EA94E7B2C52B7D6EC2B6403E79445'
     }
+    'Store Settings' = @{
+        LegacyPath = 'source-ultimate\3 Setup\7 Store Settings.ps1'
+        ModulePath = 'modules\Setup\StoreSettings.psm1'
+        LegacyHash = 'D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167'
+    }
     'Graphics Configuration Center' = @{
         LegacyPath = 'source-ultimate\5 Graphics\4 Graphics Configuration Center.ps1'
         ModulePath = 'modules\Graphics\GraphicsConfigurationCenter.psm1'
@@ -294,6 +299,34 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Background Apps contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Store Settings' {
+            foreach ($requiredText in @(
+                'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate" /v "AutoDownload" /t REG_DWORD /d "2" /f'
+                'reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore" /f'
+                'Start-Process "ms-windows-store:settings" -ErrorAction Stop'
+                'Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction Stop'
+                '$script:BoostLabStoreProcessNames = @(''WinStore.App'', ''backgroundTaskHost'', ''StoreDesktopExtension'')'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Store Settings preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'UsesTrustedInstaller = $true'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Store Settings contains unrelated behavior: $forbiddenText"
                 }
             }
         }

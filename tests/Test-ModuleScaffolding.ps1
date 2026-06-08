@@ -57,6 +57,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'store-settings' = @{
+        RelativePath          = 'Setup\StoreSettings.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -264,7 +268,15 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'restore-point' -and
             $commandName -in @('Checkpoint-Computer', 'Enable-ComputerRestore')
         )
-        if ($commandName -in $prohibitedCommands -and -not $approvedRestorePointCommand) {
+        $approvedStoreSettingsCommand = (
+            $toolId -eq 'store-settings' -and
+            $commandName -eq 'Set-Content'
+        )
+        if (
+            $commandName -in $prohibitedCommands -and
+            -not $approvedRestorePointCommand -and
+            -not $approvedStoreSettingsCommand
+        ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
     }
@@ -294,6 +306,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'memory-compression') {
             0
+        }
+        elseif ($toolId -eq 'store-settings') {
+            2
         }
         else {
             1
@@ -495,6 +510,45 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Background Apps behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'store-settings') {
+            foreach ($requiredText in @(
+                '$script:BoostLabStoreProcessNames = @(''WinStore.App'', ''backgroundTaskHost'', ''StoreDesktopExtension'')'
+                'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate" /v "AutoDownload" /t REG_DWORD /d "2" /f'
+                'reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore" /f'
+                'Start-Process "ms-windows-store:settings" -ErrorAction Stop'
+                'Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction Stop'
+                'Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue'
+                'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
+                'reg load "HKLM\Settings"'
+                'reg import'
+                'reg unload "HKLM\Settings"'
+                'function Test-BoostLabStoreSettingsState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Store settings optimized.'
+                'Store settings restored to default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Store Settings behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'UsesTrustedInstaller = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Store Settings behavior: $forbiddenText")
                 }
             }
         }
