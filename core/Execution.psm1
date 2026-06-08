@@ -1,6 +1,13 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabModulesRoot = Join-Path (Split-Path -Parent $PSScriptRoot) 'modules'
+if (-not (Get-Command -Name 'New-BoostLabActionPlan' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name (Join-Path $PSScriptRoot 'ActionPlan.psm1') -Scope Local -Force -ErrorAction Stop
+}
+if (-not (Get-Command -Name 'Test-BoostLabActionPlanExecutionGate' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name (Join-Path $PSScriptRoot 'Safety.psm1') -Scope Local -Force -ErrorAction Stop
+}
+
 $script:BoostLabImplementedToolModules = @{
     'bios-information' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSInformation.psm1'
@@ -173,7 +180,10 @@ function New-BoostLabToolActionResult {
 
         [bool]$RestartRequired = $false,
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [AllowNull()]
+        [object]$ActionPlan = $null
     )
 
     return [pscustomobject]@{
@@ -184,6 +194,7 @@ function New-BoostLabToolActionResult {
         Message         = $Message
         RestartRequired = $RestartRequired
         Cancelled       = $Cancelled
+        ActionPlan      = $ActionPlan
         Timestamp       = Get-Date
     }
 }
@@ -311,7 +322,10 @@ function Invoke-BoostLabToolAction {
         [Parameter(Mandatory)]
         [string]$ActionName,
 
-        [switch]$RiskConfirmed
+        [switch]$RiskConfirmed,
+
+        [AllowNull()]
+        [scriptblock]$ConfirmationCallback
     )
 
     $validation = Test-BoostLabToolMetadata -ToolMetadata $ToolMetadata -ActionName $ActionName
@@ -341,26 +355,44 @@ function Invoke-BoostLabToolAction {
     }
 
     $riskLevel = (Get-Culture).TextInfo.ToTitleCase(([string]$ToolMetadata['RiskLevel']).ToLowerInvariant())
-    $safetyGate = if ($riskLevel -eq 'High') {
-        Test-BoostLabHighRiskActionGate `
-            -ToolId $toolId `
-            -ToolTitle $toolTitle `
-            -Action $ActionName `
-            -RiskLevel $riskLevel `
-            -Confirmed:$RiskConfirmed
+    $isImplementedAction = (
+        $script:BoostLabImplementedToolModules.ContainsKey($toolId) -and
+        $ActionName -in @($script:BoostLabImplementedToolModules[$toolId]['Actions'])
+    )
+    $actionPlan = New-BoostLabActionPlan `
+        -ToolMetadata $ToolMetadata `
+        -ActionName $ActionName `
+        -IsDryRun:(-not $isImplementedAction)
+
+    $requiresExecutionConfirmation = (
+        $isImplementedAction -and
+        [bool]$actionPlan.NeedsExplicitConfirmation -and
+        $ActionName -ne 'Analyze'
+    )
+    $safetyGate = if ($requiresExecutionConfirmation) {
+        Test-BoostLabActionPlanExecutionGate `
+            -ActionPlan $actionPlan `
+            -Confirmed:$RiskConfirmed `
+            -ConfirmationCallback $ConfirmationCallback
     }
     else {
         [pscustomobject]@{
-            IsHighRisk           = $false
             ConfirmationRequired = $false
             Confirmed            = $true
+            CallbackUsed         = $false
+            CallbackError        = ''
             IsAllowed            = $true
-            Message              = 'High-risk safety gate is not required.'
+            Message              = if ($isImplementedAction) {
+                'This implemented action does not require an execution confirmation.'
+            }
+            else {
+                'Placeholder actions are not executed and do not request confirmation.'
+            }
         }
     }
 
     $isBiosFirmwareOpen = $toolId -eq 'bios-settings' -and $ActionName -eq 'Open'
-    if ($isBiosFirmwareOpen -and -not [bool]$safetyGate.IsAllowed) {
+    if ($requiresExecutionConfirmation -and -not [bool]$safetyGate.IsAllowed) {
         $message = 'Cancelled by user'
         $result = New-BoostLabToolActionResult `
             -Success $false `
@@ -368,16 +400,24 @@ function Invoke-BoostLabToolAction {
             -ToolTitle $toolTitle `
             -Action $ActionName `
             -Message $message `
-            -Cancelled $true
+            -Cancelled $true `
+            -ActionPlan $actionPlan
 
+        $cancellationLogMessage = if ($isBiosFirmwareOpen) {
+            '[BIOS Settings] [Open] cancelled by user'
+        }
+        else {
+            '[{0}] [{1}] cancelled by user' -f $toolTitle, $ActionName
+        }
         Write-BoostLabInfo `
-            -Message '[BIOS Settings] [Open] cancelled by user' `
+            -Message $cancellationLogMessage `
             -Source 'Execution' `
             -EventId 'ToolAction.Cancelled' `
             -Data @{
                 ToolId    = $toolId
                 Stage     = [string]$ToolMetadata['Stage']
                 RiskLevel = $riskLevel
+                CallbackUsed = [bool]$safetyGate.CallbackUsed
             } | Out-Null
 
         Set-BoostLabToolState `
@@ -415,8 +455,9 @@ function Invoke-BoostLabToolAction {
     $moduleResult = Invoke-BoostLabImplementedModuleAction `
         -ToolMetadata $ToolMetadata `
         -ActionName $ActionName `
-        -Confirmed:$RiskConfirmed
+        -Confirmed:([bool]$safetyGate.Confirmed)
     if ($null -ne $moduleResult) {
+        $moduleResult | Add-Member -NotePropertyName 'ActionPlan' -NotePropertyValue $actionPlan -Force
         $implementedModuleDefinition = $script:BoostLabImplementedToolModules[$toolId]
         $actionRecord = [pscustomobject]@{
             ToolId      = $toolId
@@ -520,7 +561,8 @@ function Invoke-BoostLabToolAction {
         -ToolTitle $toolTitle `
         -Action $ActionName `
         -Message $message `
-        -RestartRequired $false
+        -RestartRequired $false `
+        -ActionPlan $actionPlan
 
     $actionRecord = [pscustomobject]@{
         ToolId     = $toolId
@@ -540,8 +582,13 @@ function Invoke-BoostLabToolAction {
             Stage                = [string]$ToolMetadata['Stage']
             Type                 = [string]$ToolMetadata['Type']
             RiskLevel            = $riskLevel
-            ConfirmationRequired = [bool]$safetyGate.ConfirmationRequired
-            Confirmed            = [bool]$safetyGate.Confirmed
+            ConfirmationRequired = [bool]$actionPlan.NeedsExplicitConfirmation
+            Confirmed            = if ($requiresExecutionConfirmation) {
+                [bool]$safetyGate.Confirmed
+            }
+            else {
+                $false
+            }
             GateAllowed          = [bool]$safetyGate.IsAllowed
         } | Out-Null
 

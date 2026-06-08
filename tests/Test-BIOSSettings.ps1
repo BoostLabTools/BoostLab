@@ -26,6 +26,7 @@ else {
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Check\BIOSSettings.psm1'
 $biosInformationPath = Join-Path $ProjectRoot 'modules\Check\BIOSInformation.psm1'
+$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $runtimePath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $legacyPath = Join-Path $ProjectRoot 'source-ultimate\1 Check\2 BIOS Settings.ps1'
@@ -178,7 +179,9 @@ try {
     foreach ($requiredLog in @(
         '[BIOS Settings] [Open] restart to BIOS/UEFI requested'
         '[BIOS Settings] [Open] cancelled by user'
-        '-Confirmed:$RiskConfirmed'
+        'Test-BoostLabActionPlanExecutionGate'
+        '-ConfirmationCallback $ConfirmationCallback'
+        '-Confirmed:([bool]$safetyGate.Confirmed)'
         'Original Ultimate BIOS settings guidance:'
     )) {
         if (-not $runtimeSource.Contains($requiredLog)) {
@@ -187,12 +190,15 @@ try {
     }
 
     $uiSource = Get-Content -Raw -LiteralPath $uiPath
+    $actionPlanSource = Get-Content -Raw -LiteralPath $actionPlanPath
     if (
-        -not $uiSource.Contains('This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings.') -or
-        -not $uiSource.Contains('[System.Windows.MessageBoxButton]::YesNo') -or
-        -not $uiSource.Contains('[System.Windows.MessageBoxResult]::No')
+        -not $actionPlanSource.Contains('This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings.') -or
+        -not $uiSource.Contains('function Show-BoostLabActionPlanConfirmation') -or
+        -not $uiSource.Contains('$confirmButton.Content = ''Confirm''') -or
+        -not $uiSource.Contains('$cancelButton.Content = ''Cancel''') -or
+        -not $uiSource.Contains('-ConfirmationCallback {')
     ) {
-        throw 'BIOS Settings GUI confirmation is missing or does not default to No.'
+        throw 'BIOS Settings generic action-plan confirmation is missing.'
     }
 
     $biosInformationSource = Get-Content -Raw -LiteralPath $biosInformationPath

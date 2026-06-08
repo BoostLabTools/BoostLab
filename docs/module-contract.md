@@ -114,6 +114,8 @@ Assistant analysis actions may also return a structured `Data` object containing
 
 Placeholder modules must not execute real logic. Valid requests return `Action not implemented yet`.
 
+The shared runtime may attach an `ActionPlan` property to the module result before returning it to the UI. Modules must not treat the presence of a plan or user confirmation as permission to exceed their approved migration record or capability metadata.
+
 ### Restore-BoostLabToolDefault
 
 Modules export this function for a consistent contract. It represents default or restore behavior when applicable to the tool metadata.

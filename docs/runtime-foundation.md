@@ -43,14 +43,23 @@ Pending reboot detection is read-only. It checks common Windows servicing, Windo
 
 ### Safety
 
-`core/Safety.psm1` contains structured safety placeholders for:
+`core/Safety.psm1` contains structured safety functions for:
 
 * Risk confirmation
 * Restore point requests
 * High-risk action gating
+* Action Plan confirmation callback gating
 * Restart requirement descriptions
 
-These functions return assessment objects only. They do not display prompts, create restore points, change Windows, or restart the computer.
+Safety functions return assessment objects only. The UI owns presentation of confirmation prompts. Safety functions do not create restore points, change Windows, or restart the computer.
+
+### Action Planning
+
+`core/ActionPlan.psm1` builds conservative Action Plan objects from catalog metadata and capabilities.
+
+Plans describe the requested action, risk, possible changes, side effects, privilege and internet requirements, restart capability, confirmation requirement, Default and Restore support, and dry-run status. Planning does not execute module behavior.
+
+The WPF UI may receive a plan through the runtime confirmation callback and display a reusable Confirm/Cancel dialog. Safe Open-only actions do not request confirmation. Placeholder actions receive dry-run plans but remain non-executing.
 
 ### State
 
@@ -78,14 +87,16 @@ The state directory is created during initialization. State persistence contains
 Invoke-BoostLabToolAction -ToolMetadata $tool -ActionName $action
 ```
 
-The placeholder pipeline:
+The execution pipeline:
 
 1. Validates required tool metadata and the requested action.
-2. Evaluates the high-risk safety gate when `RiskLevel` is `high`.
-3. Creates a structured result object.
-4. Logs `[ToolTitle] [ActionName] not implemented yet`.
-5. Updates JSON-backed runtime state.
-6. Returns the result to the GUI.
+2. Builds an Action Plan from risk and capability metadata.
+3. Determines whether an implemented non-Analyze action requires confirmation.
+4. Invokes the optional UI confirmation callback when required.
+5. Blocks an implemented action when required confirmation is absent or declined.
+6. Dispatches only actions present in the approved implementation allowlist.
+7. Attaches the Action Plan to the structured result.
+8. Logs and persists the result state.
 
 The result includes:
 
@@ -95,6 +106,7 @@ The result includes:
 * `Action`
 * `Message`
 * `RestartRequired`
+* `ActionPlan`
 * `Timestamp`
 
 Read-only assistant analysis may also include a structured `Data` payload.
@@ -118,23 +130,24 @@ Preflight -> Plan -> Confirm -> Checkpoint -> Execute -> Verify -> Persist -> Re
 * **Persist** records the action, result, captured state, and restart requirement.
 * **Restart or Rollback** performs only an approved, confirmed continuation or recovery path.
 
-This lifecycle is the target governance model and is not fully implemented yet. Capability metadata and migration records introduced in Phase 9 define the information the future pipeline must enforce. No stronger tool should be enabled merely because a module exists.
+This lifecycle is the target governance model and is not fully implemented yet. Phase 11 implements the Plan and reusable Confirm boundary. Capability metadata and migration records define the information the future pipeline must enforce. No stronger tool should be enabled merely because a module exists.
 
 ## GUI Integration
 
-The GUI passes the selected tool metadata and action name to `Invoke-BoostLabToolAction`. It displays the returned placeholder message and receives structured log entries through the existing Activity Log sink.
+The GUI passes the selected tool metadata, action name, and a confirmation callback to `Invoke-BoostLabToolAction`. The callback is invoked only when an implemented action requires confirmation. Latest Result displays returned Action Plans and structured action details.
 
 Header status indicators use the environment snapshot produced by `Get-BoostLabEnvironmentInfo`.
 
 ## Current Safety Boundary
 
-Phase 4 does not:
+The current runtime does not:
 
 * Execute Ultimate scripts
-* Implement registry, service, driver, installer, firmware, or Windows changes
+* Implement registry, service, driver, installer, cleanup, Defender, or security changes
 * Create restore points
-* Restart or reboot Windows
 * Download content
 * Enforce licenses
 
-`source-ultimate` remains an untouched legacy reference. Future production tool logic must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md` and live under `modules/`.
+BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.
+
+`source-ultimate` remains an untouched legacy reference. Future production tool logic must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`, have an approved migration record, and live under `modules/`.

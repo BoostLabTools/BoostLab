@@ -112,6 +112,61 @@ function Test-BoostLabHighRiskActionGate {
     }
 }
 
+function Test-BoostLabActionPlanExecutionGate {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$ActionPlan,
+
+        [bool]$Confirmed = $false,
+
+        [AllowNull()]
+        [scriptblock]$ConfirmationCallback
+    )
+
+    $requiresConfirmation = [bool]$ActionPlan.NeedsExplicitConfirmation
+    $callbackUsed = $false
+    $callbackError = ''
+    $isConfirmed = $Confirmed -or -not $requiresConfirmation
+
+    if ($requiresConfirmation -and -not $isConfirmed -and $null -ne $ConfirmationCallback) {
+        $callbackUsed = $true
+        try {
+            $isConfirmed = [bool](& $ConfirmationCallback $ActionPlan)
+        }
+        catch {
+            $callbackError = $_.Exception.Message
+            $isConfirmed = $false
+        }
+    }
+
+    return [pscustomobject]@{
+        ToolId               = [string]$ActionPlan.ToolId
+        ToolTitle            = [string]$ActionPlan.ToolTitle
+        Action               = [string]$ActionPlan.Action
+        RiskLevel            = [string]$ActionPlan.RiskLevel
+        ConfirmationRequired = $requiresConfirmation
+        Confirmed            = $isConfirmed
+        CallbackUsed         = $callbackUsed
+        CallbackError        = $callbackError
+        IsAllowed            = (-not $requiresConfirmation -or $isConfirmed)
+        Message              = if (-not [string]::IsNullOrWhiteSpace($callbackError)) {
+            "Confirmation callback failed: $callbackError"
+        }
+        elseif (-not $requiresConfirmation) {
+            'The action plan does not require explicit confirmation.'
+        }
+        elseif ($isConfirmed) {
+            'The action plan was explicitly confirmed.'
+        }
+        else {
+            'The action plan requires explicit confirmation.'
+        }
+        EvaluatedAt          = Get-Date
+    }
+}
+
 function New-BoostLabRestartRequirement {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -156,6 +211,7 @@ Export-ModuleMember -Function @(
     'Request-BoostLabRiskConfirmation'
     'Request-BoostLabRestorePoint'
     'Test-BoostLabHighRiskActionGate'
+    'Test-BoostLabActionPlanExecutionGate'
     'New-BoostLabRestartRequirement'
     'New-BoostLabSafetyAssessment'
 )

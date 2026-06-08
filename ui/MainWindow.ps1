@@ -181,6 +181,34 @@ function Show-BoostLabActionResult {
     Add-BoostLabResultRow -Panel $panel -Label 'Status' -Value $status
     Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$Result.Message)
 
+    $actionPlan = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'ActionPlan' -DefaultValue $null
+    if ($null -ne $actionPlan) {
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Action Plan'
+        Add-BoostLabResultRow -Panel $panel -Label 'Risk' -Value ([string]$actionPlan.RiskLevel).ToUpperInvariant()
+        Add-BoostLabResultRow -Panel $panel -Label 'Summary' -Value ([string]$actionPlan.Summary)
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'Confirmation' `
+            -Value $(if ([bool]$actionPlan.NeedsExplicitConfirmation) { 'Required' } else { 'Not required' })
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'Plan mode' `
+            -Value $(if ([bool]$actionPlan.IsDryRun) { 'Dry run' } else { 'Execution request' })
+
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Planned Changes'
+        foreach ($plannedChange in @($actionPlan.PlannedChanges)) {
+            Add-BoostLabResultBullet -Panel $panel -Text ([string]$plannedChange)
+        }
+
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Side Effects'
+        foreach ($sideEffect in @($actionPlan.SideEffects)) {
+            Add-BoostLabResultBullet -Panel $panel -Text ([string]$sideEffect) -Color '#FDE68A'
+        }
+
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Confirmation Message'
+        Add-BoostLabResultBullet -Panel $panel -Text ([string]$actionPlan.ConfirmationMessage)
+    }
+
     $data = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'Data' -DefaultValue $null
     if ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Detected System'
@@ -405,6 +433,123 @@ function New-BoostLabBadge {
     return $badge
 }
 
+function Show-BoostLabActionPlanConfirmation {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$ActionPlan
+    )
+
+    $dialog = [System.Windows.Window]::new()
+    $dialog.Title = 'Confirm BoostLab Action'
+    $dialog.Width = 620
+    $dialog.Height = 640
+    $dialog.MinWidth = 520
+    $dialog.MinHeight = 500
+    $dialog.ResizeMode = [System.Windows.ResizeMode]::CanResize
+    $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#0B1220')
+    $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E2E8F0')
+    if ($null -ne $script:BoostLabWindow -and $script:BoostLabWindow.IsVisible) {
+        $dialog.Owner = $script:BoostLabWindow
+    }
+
+    $root = [System.Windows.Controls.Grid]::new()
+    $root.Margin = [System.Windows.Thickness]::new(22)
+    $root.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions[0].Height = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $root.RowDefinitions[1].Height = [System.Windows.GridLength]::Auto
+
+    $scrollViewer = [System.Windows.Controls.ScrollViewer]::new()
+    $scrollViewer.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $scrollViewer.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
+
+    $content = [System.Windows.Controls.StackPanel]::new()
+    $heading = [System.Windows.Controls.TextBlock]::new()
+    $heading.Text = 'Review Action Plan'
+    $heading.FontSize = 22
+    $heading.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $heading.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#F8FAFC')
+    $content.Children.Add($heading) | Out-Null
+
+    $subheading = [System.Windows.Controls.TextBlock]::new()
+    $subheading.Margin = [System.Windows.Thickness]::new(0, 5, 0, 16)
+    $subheading.Text = 'Review the operation before BoostLab continues.'
+    $subheading.FontSize = 12
+    $subheading.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#94A3B8')
+    $content.Children.Add($subheading) | Out-Null
+
+    Add-BoostLabResultRow -Panel $content -Label 'Tool' -Value ([string]$ActionPlan.ToolTitle)
+    Add-BoostLabResultRow -Panel $content -Label 'Action' -Value ([string]$ActionPlan.Action)
+    Add-BoostLabResultRow -Panel $content -Label 'Risk' -Value ([string]$ActionPlan.RiskLevel).ToUpperInvariant()
+    Add-BoostLabResultRow -Panel $content -Label 'Summary' -Value ([string]$ActionPlan.Summary)
+
+    Add-BoostLabResultSectionTitle -Panel $content -Text 'Planned Changes'
+    foreach ($plannedChange in @($ActionPlan.PlannedChanges)) {
+        Add-BoostLabResultBullet -Panel $content -Text ([string]$plannedChange)
+    }
+
+    Add-BoostLabResultSectionTitle -Panel $content -Text 'Side Effects'
+    foreach ($sideEffect in @($ActionPlan.SideEffects)) {
+        Add-BoostLabResultBullet -Panel $content -Text ([string]$sideEffect) -Color '#FDE68A'
+    }
+
+    $messageBorder = [System.Windows.Controls.Border]::new()
+    $messageBorder.Margin = [System.Windows.Thickness]::new(0, 12, 0, 0)
+    $messageBorder.Padding = [System.Windows.Thickness]::new(12)
+    $messageBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#2A2020')
+    $messageBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#8F505D')
+    $messageBorder.BorderThickness = [System.Windows.Thickness]::new(1)
+    $messageBorder.CornerRadius = [System.Windows.CornerRadius]::new(7)
+
+    $messageText = [System.Windows.Controls.TextBlock]::new()
+    $messageText.Text = [string]$ActionPlan.ConfirmationMessage
+    $messageText.FontSize = 12
+    $messageText.LineHeight = 18
+    $messageText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $messageText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A')
+    $messageBorder.Child = $messageText
+    $content.Children.Add($messageBorder) | Out-Null
+
+    $scrollViewer.Content = $content
+    [System.Windows.Controls.Grid]::SetRow($scrollViewer, 0)
+    $root.Children.Add($scrollViewer) | Out-Null
+
+    $buttons = [System.Windows.Controls.StackPanel]::new()
+    $buttons.Margin = [System.Windows.Thickness]::new(0, 18, 0, 0)
+    $buttons.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttons.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    $cancelButton = [System.Windows.Controls.Button]::new()
+    $cancelButton.Content = 'Cancel'
+    $cancelButton.Width = 104
+    $cancelButton.Height = 36
+    $cancelButton.Margin = [System.Windows.Thickness]::new(0, 0, 10, 0)
+    $cancelButton.IsCancel = $true
+    $cancelButton.Add_Click(({
+        $dialog.DialogResult = $false
+    }).GetNewClosure())
+    $buttons.Children.Add($cancelButton) | Out-Null
+
+    $confirmButton = [System.Windows.Controls.Button]::new()
+    $confirmButton.Content = 'Confirm'
+    $confirmButton.Width = 104
+    $confirmButton.Height = 36
+    $confirmButton.IsDefault = $true
+    $confirmButton.Add_Click(({
+        $dialog.DialogResult = $true
+    }).GetNewClosure())
+    $buttons.Children.Add($confirmButton) | Out-Null
+
+    [System.Windows.Controls.Grid]::SetRow($buttons, 1)
+    $root.Children.Add($buttons) | Out-Null
+    $dialog.Content = $root
+
+    return $dialog.ShowDialog() -eq $true
+}
+
 function New-BoostLabToolCard {
     param(
         [Parameter(Mandatory)]
@@ -560,27 +705,14 @@ function New-BoostLabToolCard {
             $context = $this.Tag
             (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$context.ToolMetadata['Title']
             (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = ([string]$context.ActionName).ToUpperInvariant()
-            $riskConfirmed = $false
-            if (
-                [string]$context.ToolMetadata['Id'] -eq 'bios-settings' -and
-                [string]$context.ActionName -eq 'Open'
-            ) {
-                $confirmationText = 'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
-                $confirmationResult = [System.Windows.MessageBox]::Show(
-                    $script:BoostLabWindow,
-                    $confirmationText,
-                    'Restart to BIOS/UEFI',
-                    [System.Windows.MessageBoxButton]::YesNo,
-                    [System.Windows.MessageBoxImage]::Warning,
-                    [System.Windows.MessageBoxResult]::No
-                )
-                $riskConfirmed = $confirmationResult -eq [System.Windows.MessageBoxResult]::Yes
-            }
 
             $result = Invoke-BoostLabToolAction `
                 -ToolMetadata $context.ToolMetadata `
                 -ActionName $context.ActionName `
-                -RiskConfirmed:$riskConfirmed
+                -ConfirmationCallback {
+                    param($ActionPlan)
+                    Show-BoostLabActionPlanConfirmation -ActionPlan $ActionPlan
+                }
 
             Add-BoostLabToolActionActivityEntry `
                 -ToolMetadata $context.ToolMetadata `
