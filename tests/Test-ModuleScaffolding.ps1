@@ -53,6 +53,26 @@ $implementedModules = @{
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
+    'date-language-region-time' = @{
+        RelativePath          = 'Setup\date-language-region-time.psm1'
+        LaunchText            = 'Start-Process "ms-settings:dateandtime"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
+    }
+    'game-mode' = @{
+        RelativePath          = 'Windows\game-mode.psm1'
+        LaunchText            = 'Start-Process "ms-settings:gaming-gamemode"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
+    }
+    'pointer-precision' = @{
+        RelativePath          = 'Windows\pointer-precision.psm1'
+        LaunchText            = 'Start-Process "control.exe" -ArgumentList "main.cpl ,2"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
+    }
+    'sound' = @{
+        RelativePath          = 'Windows\sound.psm1'
+        LaunchText            = 'Start-Process "mmsys.cpl"'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'

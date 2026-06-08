@@ -1,9 +1,121 @@
 Set-StrictMode -Version Latest
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'date-language-region-time'; Title = 'Date Language Region Time'; Stage = 'Setup'; Order = 2
     Type = 'assistant'; RiskLevel = 'low'
-    Description = 'Open the Windows pages for date, time, language, and regional settings.'
+    Description = 'Open the Windows Date & time settings page.'
     Actions = @('Open')
+    Capabilities = [ordered]@{
+        RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false
+        CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false
+        CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false
+        CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false
+        SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false
+    }
 }
-. (Join-Path (Split-Path -Parent $PSScriptRoot) 'ToolModule.Placeholder.ps1')
-Export-ModuleMember -Function @('Get-BoostLabToolInfo', 'Test-BoostLabToolCompatibility', 'Get-BoostLabToolState', 'Invoke-BoostLabToolAction', 'Restore-BoostLabToolDefault')
+$script:BoostLabImplementedActions = @('Open')
+
+function Get-BoostLabToolInfo {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    return [pscustomobject]@{
+        Id                 = [string]$script:BoostLabToolMetadata['Id']
+        Title              = [string]$script:BoostLabToolMetadata['Title']
+        Stage              = [string]$script:BoostLabToolMetadata['Stage']
+        Order              = [int]$script:BoostLabToolMetadata['Order']
+        Type               = [string]$script:BoostLabToolMetadata['Type']
+        RiskLevel          = [string]$script:BoostLabToolMetadata['RiskLevel']
+        Description        = [string]$script:BoostLabToolMetadata['Description']
+        Actions            = @($script:BoostLabToolMetadata['Actions'])
+        Capabilities       = [pscustomobject]$script:BoostLabToolMetadata['Capabilities']
+        ImplementedActions = @($script:BoostLabImplementedActions)
+    }
+}
+
+function Test-BoostLabToolCompatibility {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    return [pscustomobject]@{
+        Supported = $true
+        ToolId    = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
+        Reason    = 'Windows Date and time settings are available through a built-in Settings URI.'
+        Timestamp = Get-Date
+    }
+}
+
+function Get-BoostLabToolState {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    return [pscustomobject]@{
+        ToolId          = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
+        Status          = 'Ready'
+        LastAction      = $null
+        LastResult      = $null
+        RestartRequired = $false
+        Timestamp       = Get-Date
+    }
+}
+
+function Invoke-BoostLabToolAction {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ActionName
+    )
+
+    if ($ActionName -ne 'Open') {
+        return [pscustomobject]@{
+            Success = $false; ToolId = [string]$script:BoostLabToolMetadata['Id']
+            ToolTitle = [string]$script:BoostLabToolMetadata['Title']; Action = $ActionName
+            Message = 'Unsupported action. Only Open is allowed.'; RestartRequired = $false
+            Timestamp = Get-Date
+        }
+    }
+
+    try {
+        Start-Process "ms-settings:dateandtime"
+        return [pscustomobject]@{
+            Success = $true; ToolId = [string]$script:BoostLabToolMetadata['Id']
+            ToolTitle = [string]$script:BoostLabToolMetadata['Title']; Action = 'Open'
+            Message = 'Launched'; RestartRequired = $false; Timestamp = Get-Date
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false; ToolId = [string]$script:BoostLabToolMetadata['Id']
+            ToolTitle = [string]$script:BoostLabToolMetadata['Title']; Action = 'Open'
+            Message = "Launch failed: $($_.Exception.Message)"; RestartRequired = $false
+            Timestamp = Get-Date
+        }
+    }
+}
+
+function Restore-BoostLabToolDefault {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    return [pscustomobject]@{
+        Success = $false; ToolId = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle = [string]$script:BoostLabToolMetadata['Title']; Action = 'Default'
+        Message = 'Action is not declared for this tool.'; RestartRequired = $false
+        Timestamp = Get-Date
+    }
+}
+
+Export-ModuleMember -Function @(
+    'Get-BoostLabToolInfo'
+    'Test-BoostLabToolCompatibility'
+    'Get-BoostLabToolState'
+    'Invoke-BoostLabToolAction'
+    'Restore-BoostLabToolDefault'
+)

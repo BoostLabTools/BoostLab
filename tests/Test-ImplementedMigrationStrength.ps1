@@ -52,6 +52,30 @@ $implementedTools = [ordered]@{
         LegacyHash = '5D8438C6E6CBB7AA87111518F24689095382F72F76DD72E64CBBF3019B9B13CA'
         Launcher   = 'Start-Process "ms-settings:display-advancedgraphics"'
     }
+    'Date Language Region Time' = @{
+        LegacyPath = 'source-ultimate\3 Setup\2 Date Language Region Time.ps1'
+        ModulePath = 'modules\Setup\date-language-region-time.psm1'
+        LegacyHash = '77F4B88F2FBB43F7EACA5F3AD850268210685F41E659DF02EB09279422EA0EE9'
+        Launcher   = 'Start-Process "ms-settings:dateandtime"'
+    }
+    'GameMode' = @{
+        LegacyPath = 'source-ultimate\6 Windows\9 Gamemode.ps1'
+        ModulePath = 'modules\Windows\game-mode.psm1'
+        LegacyHash = 'F83275C0B3CE135679C2F1D98A1F0BD6B101936E0B2BC17B542DE288EF6A0B82'
+        Launcher   = 'Start-Process "ms-settings:gaming-gamemode"'
+    }
+    'Pointer Precision' = @{
+        LegacyPath = 'source-ultimate\6 Windows\10 Pointer Precision.ps1'
+        ModulePath = 'modules\Windows\pointer-precision.psm1'
+        LegacyHash = 'ED66BB1C068DF13FC2D58617E49C2274CEA9609C689FE34F9A0B138AC22F618C'
+        Launcher   = 'Start-Process "control.exe" -ArgumentList "main.cpl ,2"'
+    }
+    'Sound' = @{
+        LegacyPath = 'source-ultimate\6 Windows\16 Sound.ps1'
+        ModulePath = 'modules\Windows\sound.psm1'
+        LegacyHash = '08FDB346A40595C68FF01D8F0882AC82D8BE27F66D83B400FD5691388B35929B'
+        Launcher   = 'Start-Process "mmsys.cpl"'
+    }
 }
 
 $deletedToolNames = @(

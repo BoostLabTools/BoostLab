@@ -22,6 +22,22 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')
     }
+    'date-language-region-time' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\date-language-region-time.psm1'
+        Actions = @('Open')
+    }
+    'game-mode' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\game-mode.psm1'
+        Actions = @('Open')
+    }
+    'pointer-precision' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\pointer-precision.psm1'
+        Actions = @('Open')
+    }
+    'sound' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\sound.psm1'
+        Actions = @('Open')
+    }
 }
 
 function Test-BoostLabToolMetadata {

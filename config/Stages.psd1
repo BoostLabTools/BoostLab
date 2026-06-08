@@ -103,7 +103,7 @@
                     Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'low'
-                    Description = 'Open the Windows pages for date, time, language, and regional settings.'
+                    Description = 'Open the Windows Date & time settings page.'
                     Actions     = @('Open')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
@@ -342,22 +342,22 @@
                     Title       = 'GameMode'
                     Stage       = 'Windows'
                     Order       = 9
-                    Type        = 'action'
+                    Type        = 'assistant'
                     RiskLevel   = 'low'
-                    Description = 'Manage the reversible Windows Game Mode preference.'
-                    Actions     = @('Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Description = 'Open the Windows Game Mode settings page.'
+                    Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'pointer-precision'
                     Title       = 'Pointer Precision'
                     Stage       = 'Windows'
                     Order       = 10
-                    Type        = 'action'
+                    Type        = 'assistant'
                     RiskLevel   = 'low'
-                    Description = 'Manage the reversible enhanced pointer precision preference.'
-                    Actions     = @('Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Description = 'Open the Windows Mouse Properties pointer options page.'
+                    Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'bloatware'
