@@ -5,6 +5,13 @@ $script:BoostLabToolMetadata = [ordered]@{
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open the Windows Settings page for startup application management.'
     Actions = @('Open')
+    Capabilities = [ordered]@{
+        RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false
+        CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false
+        CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false
+        CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false
+        SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false
+    }
 }
 $script:BoostLabImplementedActions = @('Open')
 
@@ -22,6 +29,7 @@ function Get-BoostLabToolInfo {
         RiskLevel          = [string]$script:BoostLabToolMetadata['RiskLevel']
         Description        = [string]$script:BoostLabToolMetadata['Description']
         Actions            = @($script:BoostLabToolMetadata['Actions'])
+        Capabilities       = [pscustomobject]$script:BoostLabToolMetadata['Capabilities']
         ImplementedActions = @($script:BoostLabImplementedActions)
     }
 }

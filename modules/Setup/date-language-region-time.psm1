@@ -6,7 +6,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Description = 'Open the Windows Date & time settings page.'
     Actions = @('Open')
     Capabilities = [ordered]@{
-        RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false
+        RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false
         CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false
         CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false
         CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false

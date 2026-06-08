@@ -48,6 +48,10 @@ The module metadata must not redefine the approved stage name, tool name, order,
 
 The runtime must validate and honor the catalog capabilities before dispatching implemented behavior. A module must not perform an operation whose capability is not declared in the catalog.
 
+Modules must not copy Ultimate per-script self-elevation blocks or silently elevate themselves. BoostLab owns Administrator elevation at the bootstrap/runtime level. A module that declares `RequiresAdmin = true` may rely on the runtime gate, but it must still report privilege-related failures clearly.
+
+Modules must not implement TrustedInstaller execution directly. A future approved module with `UsesTrustedInstaller = true` must use the centralized runtime helper, require explicit confirmation, and stay within its approved migration record. The Phase 14.5 helper is a non-executing placeholder.
+
 Modules created or migrated after Phase 9 should expose a matching `Capabilities` object from `Get-BoostLabToolInfo`. Existing modules that do not yet return the object remain governed by the catalog metadata supplied to the runtime. Module metadata may be more restrictive during compatibility checks, but it must never silently expand the approved capability set.
 
 Capability flags describe possible operational scope; they do not mean that an action is implemented or authorized. Unknown behavior must be represented conservatively. `CanReboot`, high risk, security-sensitive behavior, destructive file operations, Safe Mode, and TrustedInstaller use require explicit confirmation.

@@ -4,7 +4,9 @@ param(
     [string]$AdminStatus = 'Unknown',
 
     [ValidateSet('True', 'False', 'Unknown')]
-    [string]$InternetStatus = 'Unknown'
+    [string]$InternetStatus = 'Unknown',
+
+    [switch]$ElevationAttempted
 )
 
 Set-StrictMode -Version Latest
@@ -12,6 +14,45 @@ $ErrorActionPreference = 'Stop'
 
 if ($env:OS -ne 'Windows_NT') {
     throw 'BoostLab requires Windows because the interface uses WPF.'
+}
+
+$environmentModulePath = Join-Path $PSScriptRoot 'core\Environment.psm1'
+if (-not (Test-Path -LiteralPath $environmentModulePath -PathType Leaf)) {
+    throw "BoostLab environment module was not found: $environmentModulePath"
+}
+Import-Module -Name $environmentModulePath -Force -ErrorAction Stop
+
+if (-not (Test-BoostLabAdministrator)) {
+    if ($ElevationAttempted) {
+        throw 'BoostLab requires Administrator rights, but the elevated process is not running as Administrator.'
+    }
+
+    $windowsPowerShell = (Get-Command powershell.exe -ErrorAction Stop).Source
+    $arguments = @(
+        '-NoProfile'
+        '-ExecutionPolicy'
+        'Bypass'
+        '-STA'
+        '-File'
+        "`"$PSCommandPath`""
+        '-AdminStatus'
+        'True'
+        '-InternetStatus'
+        $InternetStatus
+        '-ElevationAttempted'
+    )
+
+    try {
+        Start-Process `
+            -FilePath $windowsPowerShell `
+            -ArgumentList $arguments `
+            -Verb RunAs `
+            -ErrorAction Stop
+    }
+    catch {
+        throw "BoostLab requires Administrator rights. Elevation was not completed: $($_.Exception.Message)"
+    }
+    return
 }
 
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne [Threading.ApartmentState]::STA) {
@@ -28,6 +69,9 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne [Threading.ApartmentSta
         '-InternetStatus'
         $InternetStatus
     )
+    if ($ElevationAttempted) {
+        $arguments += '-ElevationAttempted'
+    }
 
     Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments
     return
@@ -41,6 +85,7 @@ $modulePaths = @(
     'core\Verification.psm1'
     'core\Safety.psm1'
     'core\State.psm1'
+    'core\TrustedInstaller.psm1'
     'core\Execution.psm1'
     'license\LicenseProvider.psm1'
 )

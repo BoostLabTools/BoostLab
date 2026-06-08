@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/3 Setup/4 Startup Apps (Task Manager).ps1`
 * **Source checksum:** `EB648780E90F95A7A65CD25EDF21CCDFC1BFEA92705AEF0AC88C97B41989ABF6`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches Task Manager only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all other capabilities, including explicit confirmation, are false.
+`RequiresAdmin = false`; all other capabilities, including explicit confirmation, are false.
 
 ## Default, Restore, and Restart
 

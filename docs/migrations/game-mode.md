@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/6 Windows/9 Gamemode.ps1`
 * **Source checksum:** `F83275C0B3CE135679C2F1D98A1F0BD6B101936E0B2BC17B542DE288EF6A0B82`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches Windows Settings only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all mutation, Default, Restore, confirmation, and restart capabilities are false.
+`RequiresAdmin = false`; all mutation, Default, Restore, confirmation, and restart capabilities are false.
 
 ## Default, Restore, and Restart
 

@@ -10,6 +10,9 @@ if (-not (Get-Command -Name 'Test-BoostLabActionPlanExecutionGate' -ErrorAction 
 if (-not (Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $PSScriptRoot 'Verification.psm1') -Scope Local -Force -ErrorAction Stop
 }
+if (-not (Get-Command -Name 'Test-BoostLabAdministrator' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name (Join-Path $PSScriptRoot 'Environment.psm1') -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabImplementedToolModules = @{
     'bios-information' = @{
@@ -154,6 +157,22 @@ function Test-BoostLabToolMetadata {
                 -not [bool]$capabilities['NeedsExplicitConfirmation']
             ) {
                 $errors.Add('Tools that can reboot must require explicit confirmation.')
+            }
+            if (
+                $capabilities.Contains('UsesTrustedInstaller') -and
+                $capabilities.Contains('NeedsExplicitConfirmation') -and
+                [bool]$capabilities['UsesTrustedInstaller'] -and
+                -not [bool]$capabilities['NeedsExplicitConfirmation']
+            ) {
+                $errors.Add('Tools that use TrustedInstaller must require explicit confirmation.')
+            }
+            if (
+                $capabilities.Contains('UsesSafeMode') -and
+                $capabilities.Contains('NeedsExplicitConfirmation') -and
+                [bool]$capabilities['UsesSafeMode'] -and
+                -not [bool]$capabilities['NeedsExplicitConfirmation']
+            ) {
+                $errors.Add('Tools that use Safe Mode must require explicit confirmation.')
             }
             if (
                 $capabilities.Contains('SupportsDefault') -and
@@ -378,6 +397,49 @@ function Invoke-BoostLabToolAction {
         -ToolMetadata $ToolMetadata `
         -ActionName $ActionName `
         -IsDryRun:(-not $isImplementedAction)
+
+    if (
+        $isImplementedAction -and
+        [bool]$actionPlan.RequiresAdmin -and
+        -not (Test-BoostLabAdministrator)
+    ) {
+        $message = 'Administrator rights are required. Relaunch BoostLab through bootstrap.ps1.'
+        $result = New-BoostLabToolActionResult `
+            -Success $false `
+            -ToolId $toolId `
+            -ToolTitle $toolTitle `
+            -Action $ActionName `
+            -Message $message `
+            -ActionPlan $actionPlan
+
+        Write-BoostLabError `
+            -Message ('[{0}] [{1}] blocked because BoostLab is not running as Administrator' -f $toolTitle, $ActionName) `
+            -Source 'Execution' `
+            -EventId 'ToolAction.AdministratorRequired' `
+            -Data @{
+                ToolId        = $toolId
+                Stage         = [string]$ToolMetadata['Stage']
+                RequiresAdmin = $true
+            } | Out-Null
+
+        Set-BoostLabToolState `
+            -ToolId $toolId `
+            -Status 'Administrator required' `
+            -LastAction ([pscustomobject]@{
+                ToolId      = $toolId
+                ToolTitle   = $toolTitle
+                Stage       = [string]$ToolMetadata['Stage']
+                Action      = $ActionName
+                RiskLevel   = $riskLevel
+                RequestedAt = $result.Timestamp
+            }) `
+            -LastResult $result `
+            -NoSave | Out-Null
+        Set-BoostLabStateValue -Name 'CurrentStatus' -Value 'Administrator required' -NoSave | Out-Null
+        Set-BoostLabRestartRequired -Required $false -Reason '' | Out-Null
+
+        return $result
+    }
 
     $requiresExecutionConfirmation = (
         $isImplementedAction -and

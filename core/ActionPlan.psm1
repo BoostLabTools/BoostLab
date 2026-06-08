@@ -62,7 +62,12 @@ function Test-BoostLabPlanNeedsConfirmation {
         return $false
     }
     if ($ActionName -eq 'Open') {
-        return [bool]$Capabilities.CanReboot
+        return (
+            $Capabilities.NeedsExplicitConfirmation -or
+            $Capabilities.CanReboot -or
+            $Capabilities.UsesTrustedInstaller -or
+            $Capabilities.UsesSafeMode
+        )
     }
 
     return (
@@ -117,6 +122,9 @@ function New-BoostLabActionPlan {
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
         -ActionName $ActionName
+    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
+        $needsConfirmation = $false
+    }
 
     $summary = if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
@@ -223,6 +231,12 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
+    if ($capabilities.RequiresAdmin) {
+        $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
+    }
+    if ($capabilities.UsesTrustedInstaller) {
+        $plannedChanges.Add('Route any approved TrustedInstaller-level command through the centralized runtime helper.')
+    }
 
     $sideEffects = [System.Collections.Generic.List[string]]::new()
     if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
@@ -277,6 +291,9 @@ function New-BoostLabActionPlan {
     if ($isPotentialChangeAction -and $capabilities.UsesTrustedInstaller) {
         $sideEffects.Add('TrustedInstaller execution has elevated system impact and requires explicit review.')
     }
+    elseif ($capabilities.UsesTrustedInstaller) {
+        $sideEffects.Add('TrustedInstaller capability is declared for this tool; no TrustedInstaller command is implemented in the current placeholder.')
+    }
     if ($isPotentialChangeAction -and $capabilities.UsesSafeMode) {
         $sideEffects.Add('Safe Mode changes the next startup flow and requires a documented recovery path.')
     }
@@ -302,11 +319,25 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
         'BoostLab will run Enable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
     }
+    elseif ($capabilities.UsesTrustedInstaller) {
+        "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."
+    }
     elseif ($needsConfirmation) {
         "Review the action plan for $toolTitle. Confirm only if you understand the planned changes and side effects."
     }
     else {
         'No explicit confirmation is required for this action.'
+    }
+
+    $privilegeRequirements = [System.Collections.Generic.List[string]]::new()
+    if ($capabilities.RequiresAdmin) {
+        $privilegeRequirements.Add('Administrator required')
+    }
+    if ($capabilities.UsesTrustedInstaller) {
+        $privilegeRequirements.Add('TrustedInstaller required for approved tool-specific execution')
+    }
+    if ($privilegeRequirements.Count -eq 0) {
+        $privilegeRequirements.Add('No tool-specific elevated privilege required')
     }
 
     return [pscustomobject]@{
@@ -319,6 +350,9 @@ function New-BoostLabActionPlan {
         PlannedChanges            = $plannedChanges.ToArray()
         SideEffects               = $sideEffects.ToArray()
         RequiresAdmin             = [bool]$capabilities.RequiresAdmin
+        UsesTrustedInstaller      = [bool]$capabilities.UsesTrustedInstaller
+        UsesSafeMode              = [bool]$capabilities.UsesSafeMode
+        PrivilegeRequirements     = $privilegeRequirements.ToArray()
         RequiresInternet          = [bool]$capabilities.RequiresInternet
         CanReboot                 = [bool]$capabilities.CanReboot
         NeedsExplicitConfirmation = [bool]$needsConfirmation

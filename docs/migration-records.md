@@ -34,6 +34,10 @@ The source checksum identifies the exact legacy material reviewed for the migrat
 
 Preserved commands must identify operationally important commands, arguments, paths, registry keys, service names, policies, and execution order. Summaries such as "same behavior" are insufficient for action tools.
 
+Required privileges must identify the source evidence for Administrator, TrustedInstaller, Safe Mode, RunOnce, or other privileged execution. A record must distinguish BoostLab's global Administrator process from a tool's `RequiresAdmin` capability.
+
+If `UsesTrustedInstaller = true`, the record must identify the exact approved source behavior that requires it, the centralized runtime path, confirmation text, logging requirements, and the commands that may run at that privilege. Modules may not add their own TrustedInstaller launcher.
+
 Intentional deviations must explain why the behavior differs, how the effective result changes, and whether the deviation fixes a defect, replaces console interaction, adds safety, or redesigns an assistant. Deviations require explicit Yazan approval.
 
 Capabilities must match `config/Stages.psd1`. Setting a capability does not authorize implementation; it declares the maximum reviewed operational scope.

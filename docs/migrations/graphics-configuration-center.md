@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/5 Graphics/4 Graphics Configuration Center.ps1`
 * **Source checksum:** `5D8438C6E6CBB7AA87111518F24689095382F72F76DD72E64CBBF3019B9B13CA`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches Windows Settings only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all other capabilities, including explicit confirmation, are false.
+`RequiresAdmin = false`; all other capabilities, including explicit confirmation, are false.
 
 ## Default, Restore, and Restart
 

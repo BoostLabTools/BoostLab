@@ -34,6 +34,9 @@ Phase 13.5 adds the reusable post-action verification contract and the first imp
 * `PlannedChanges`
 * `SideEffects`
 * `RequiresAdmin`
+* `UsesTrustedInstaller`
+* `UsesSafeMode`
+* `PrivilegeRequirements`
 * `RequiresInternet`
 * `CanReboot`
 * `NeedsExplicitConfirmation`
@@ -60,6 +63,8 @@ A plan requires confirmation when the tool is high risk or declares confirmation
 * Safe Mode
 
 The explicit catalog flag `NeedsExplicitConfirmation` is also honored.
+
+`RequiresAdmin` is displayed as an action prerequisite. `UsesTrustedInstaller` adds an elevated privileged-execution warning and always requires explicit confirmation. A plan never grants permission to self-elevate or to execute TrustedInstaller commands outside the centralized runtime helper.
 
 Planning and execution gating are related but distinct. A high-risk Analyze plan remains visibly high risk, but a read-only Analyze action is not interrupted by an execution confirmation dialog. Placeholder actions receive a dry-run plan and still return `Action not implemented yet`; confirmation never turns a placeholder into an executable action.
 

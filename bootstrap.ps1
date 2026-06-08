@@ -27,7 +27,12 @@ if (-not (Test-BoostLabAdministrator)) {
         "`"$PSCommandPath`""
     )
 
-    Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -Verb RunAs
+    try {
+        Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -Verb RunAs -ErrorAction Stop
+    }
+    catch {
+        throw "BoostLab requires Administrator rights. Elevation was not completed: $($_.Exception.Message)"
+    }
     return
 }
 

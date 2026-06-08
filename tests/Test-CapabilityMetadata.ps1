@@ -116,6 +116,18 @@ foreach ($tool in $tools) {
             $errors.Add("$toolName can reboot but does not require explicit confirmation.")
         }
     }
+    if (
+        [bool]$capabilities['UsesTrustedInstaller'] -and
+        -not [bool]$capabilities['NeedsExplicitConfirmation']
+    ) {
+        $errors.Add("$toolName uses TrustedInstaller but does not require explicit confirmation.")
+    }
+    if (
+        [bool]$capabilities['UsesSafeMode'] -and
+        -not [bool]$capabilities['NeedsExplicitConfirmation']
+    ) {
+        $errors.Add("$toolName uses Safe Mode but does not require explicit confirmation.")
+    }
     if ([bool]$capabilities['SupportsDefault'] -ne ('Default' -in @($tool['Actions']))) {
         $errors.Add("$toolName SupportsDefault does not match its action list.")
     }

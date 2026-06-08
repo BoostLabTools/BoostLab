@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/6 Windows/10 Pointer Precision.ps1`
 * **Source checksum:** `ED66BB1C068DF13FC2D58617E49C2274CEA9609C689FE34F9A0B138AC22F618C`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches the built-in Mouse Properties UI only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all mutation, Default, Restore, confirmation, and restart capabilities are false.
+`RequiresAdmin = false`; all mutation, Default, Restore, confirmation, and restart capabilities are false.
 
 ## Default, Restore, and Restart
 

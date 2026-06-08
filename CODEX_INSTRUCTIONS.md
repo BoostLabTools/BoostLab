@@ -342,6 +342,25 @@ This policy applies to examples including:
 
 ---
 
+## Privilege Preservation Policy
+
+* BoostLab preserves Ultimate's Administrator requirement at the application and runtime level.
+* Do not duplicate Ultimate's per-script self-elevation block inside every tool module.
+* `bootstrap.ps1` and `Start-BoostLab.ps1` must ensure the application is elevated before privileged runtime execution.
+* If BoostLab is not elevated and a tool declares `RequiresAdmin = true`, execution must be blocked or the application must be relaunched with a clear elevation message.
+* Tool metadata must declare `RequiresAdmin` accurately. Open-only tools do not require Administrator unless their approved Ultimate source actually requires it.
+* Strong approved execution must not be weakened merely to avoid elevation.
+* Ultimate console elevation code is replaced by BoostLab bootstrap and runtime elevation.
+* Tool modules must not silently self-elevate unless Yazan explicitly approves that exception.
+* Future migrations must preserve the privilege requirement demonstrated by the approved source script and record it in the migration record.
+* BoostLab runs globally as Administrator. It must not run the entire application as TrustedInstaller.
+* TrustedInstaller may be used only by a specific approved tool whose Ultimate source requires it and whose metadata declares `UsesTrustedInstaller = true`.
+* TrustedInstaller actions require explicit confirmation, a visible Action Plan warning, centralized runtime dispatch, and clear logging.
+* Generic modules must never invoke TrustedInstaller silently or use it for tools whose approved source does not require it.
+* `core/TrustedInstaller.psm1` is the only approved future runtime boundary for TrustedInstaller execution. Its Phase 14.5 implementation is a non-executing placeholder.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

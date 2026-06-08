@@ -41,6 +41,14 @@ Internet detection first uses a lightweight HTTPS request with timeout handling.
 
 Pending reboot detection is read-only. It checks common Windows servicing, Windows Update, and pending file rename indicators without restarting the computer.
 
+### Privileged Execution
+
+BoostLab uses an application-level Administrator model. `bootstrap.ps1` requests elevation before launching the application, and `Start-BoostLab.ps1` repeats the check so direct launch cannot bypass the requirement. An elevation-attempt marker prevents an infinite relaunch loop.
+
+Tool-level `RequiresAdmin` metadata still describes the approved behavior of the tool itself. Before dispatching an implemented action with `RequiresAdmin = true`, `core/Execution.psm1` verifies that the current process is elevated and returns a structured blocked result when it is not.
+
+`core/TrustedInstaller.psm1` defines the centralized boundary for any future approved TrustedInstaller operation. The Phase 14.5 helper is intentionally non-executing and returns `NotImplemented`. BoostLab never runs the complete application as TrustedInstaller.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -58,6 +66,8 @@ Safety functions return assessment objects only. The UI owns presentation of con
 `core/ActionPlan.psm1` builds conservative Action Plan objects from catalog metadata and capabilities.
 
 Plans describe the requested action, risk, possible changes, side effects, privilege and internet requirements, restart capability, confirmation requirement, Default and Restore support, and dry-run status. Planning does not execute module behavior.
+
+Plans expose Administrator, TrustedInstaller, and Safe Mode requirements explicitly. TrustedInstaller capability always requires confirmation and an elevated privileged-execution warning.
 
 The WPF UI may receive a plan through the runtime confirmation callback and display a reusable Confirm/Cancel dialog. Safe Open-only actions do not request confirmation. Placeholder actions receive dry-run plans but remain non-executing.
 

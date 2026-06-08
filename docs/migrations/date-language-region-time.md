@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/3 Setup/2 Date Language Region Time.ps1`
 * **Source checksum:** `77F4B88F2FBB43F7EACA5F3AD850268210685F41E659DF02EB09279422EA0EE9`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches Windows Settings only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all other capabilities, including explicit confirmation, are false.
+`RequiresAdmin = false`; all other capabilities, including explicit confirmation, are false.
 
 ## Default, Restore, and Restart
 

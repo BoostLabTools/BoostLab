@@ -5,7 +5,7 @@
 * **Source script path:** `source-ultimate/6 Windows/16 Sound.ps1`
 * **Source checksum:** `08FDB346A40595C68FF01D8F0882AC82D8BE27F66D83B400FD5691388B35929B`
 * **Risk level:** Low
-* **Required privileges:** BoostLab application context; catalog currently requires Administrator
+* **Required privileges:** None for the launcher; BoostLab still runs as Administrator globally
 * **Yazan approval status:** Approved by Yazan
 
 ## Original Ultimate Behavior
@@ -30,7 +30,7 @@ Launches the built-in Sound UI only.
 
 ## Capabilities
 
-`RequiresAdmin = true`; all other capabilities, including explicit confirmation, are false.
+`RequiresAdmin = false`; all other capabilities, including explicit confirmation, are false.
 
 ## Default, Restore, and Restart
 

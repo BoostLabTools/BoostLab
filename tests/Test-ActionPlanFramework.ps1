@@ -46,6 +46,9 @@ try {
         'PlannedChanges'
         'SideEffects'
         'RequiresAdmin'
+        'UsesTrustedInstaller'
+        'UsesSafeMode'
+        'PrivilegeRequirements'
         'RequiresInternet'
         'CanReboot'
         'NeedsExplicitConfirmation'
@@ -166,6 +169,28 @@ try {
         (@($capabilityPlan.PlannedChanges) -join ' ') -notmatch 'Delete files'
     ) {
         throw 'The planner did not use deletion capability metadata.'
+    }
+
+    $trustedInstallerTool = $tools |
+        Where-Object { $_['Id'] -eq 'game-bar' } |
+        Select-Object -First 1
+    $trustedInstallerAction = [string]@($trustedInstallerTool['Actions'])[0]
+    $trustedInstallerPlan = New-BoostLabActionPlan `
+        -ToolMetadata $trustedInstallerTool `
+        -ActionName $trustedInstallerAction
+    $trustedInstallerText = @(
+        @($trustedInstallerPlan.PrivilegeRequirements)
+        @($trustedInstallerPlan.PlannedChanges)
+        @($trustedInstallerPlan.SideEffects)
+        $trustedInstallerPlan.ConfirmationMessage
+    ) -join ' '
+    if (
+        -not [bool]$trustedInstallerPlan.UsesTrustedInstaller -or
+        -not [bool]$trustedInstallerPlan.NeedsExplicitConfirmation -or
+        $trustedInstallerText -notmatch 'TrustedInstaller' -or
+        $trustedInstallerText -notmatch 'Administrator|elevated'
+    ) {
+        throw 'TrustedInstaller capability is not visible in the Action Plan.'
     }
 
     $placeholderModulePath = Join-Path $ProjectRoot 'modules\Setup\updates-pause.psm1'

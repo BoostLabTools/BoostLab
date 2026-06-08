@@ -110,6 +110,9 @@ foreach ($toolId in $definitions.Keys) {
     }
 
     $capabilities = $tool['Capabilities']
+    if ([bool]$capabilities['RequiresAdmin']) {
+        throw "$toolId should not require Administrator for its approved launcher."
+    }
     foreach ($field in @(
         'RequiresInternet'
         'CanReboot'

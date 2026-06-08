@@ -274,6 +274,14 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Summary' -Value ([string]$actionPlan.Summary)
         Add-BoostLabResultRow `
             -Panel $panel `
+            -Label 'Administrator' `
+            -Value $(if ([bool]$actionPlan.RequiresAdmin) { 'Required' } else { 'Not required by this tool' })
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'TrustedInstaller' `
+            -Value $(if ([bool]$actionPlan.UsesTrustedInstaller) { 'Required for approved execution' } else { 'Not declared' })
+        Add-BoostLabResultRow `
+            -Panel $panel `
             -Label 'Confirmation' `
             -Value $(if ([bool]$actionPlan.NeedsExplicitConfirmation) { 'Required' } else { 'Not required' })
         Add-BoostLabResultRow `
@@ -622,6 +630,14 @@ function Show-BoostLabActionPlanConfirmation {
     Add-BoostLabResultRow -Panel $content -Label 'Action' -Value ([string]$ActionPlan.Action)
     Add-BoostLabResultRow -Panel $content -Label 'Risk' -Value ([string]$ActionPlan.RiskLevel).ToUpperInvariant()
     Add-BoostLabResultRow -Panel $content -Label 'Summary' -Value ([string]$ActionPlan.Summary)
+    Add-BoostLabResultRow `
+        -Panel $content `
+        -Label 'Administrator' `
+        -Value $(if ([bool]$ActionPlan.RequiresAdmin) { 'Required' } else { 'Not required by this tool' })
+    Add-BoostLabResultRow `
+        -Panel $content `
+        -Label 'TrustedInstaller' `
+        -Value $(if ([bool]$ActionPlan.UsesTrustedInstaller) { 'Required for approved execution' } else { 'Not declared' })
 
     Add-BoostLabResultSectionTitle -Panel $content -Text 'Planned Changes'
     foreach ($plannedChange in @($ActionPlan.PlannedChanges)) {
