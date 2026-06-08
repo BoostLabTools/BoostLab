@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $script:BoostLabWindow = $null
 $script:BoostLabStages = @()
 $script:BoostLabStageButtons = @{}
+$script:BoostLabVisibleLogText = [System.Collections.Generic.List[string]]::new()
 
 function Get-BoostLabUiElement {
     param(
@@ -11,6 +12,362 @@ function Get-BoostLabUiElement {
     )
 
     return $script:BoostLabWindow.FindName($Name)
+}
+
+function Get-BoostLabObjectPropertyValue {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$PropertyName,
+
+        [AllowNull()]
+        [object]$DefaultValue = 'Unknown'
+    )
+
+    if ($null -eq $InputObject) {
+        return $DefaultValue
+    }
+
+    $property = $InputObject.PSObject.Properties[$PropertyName]
+    if ($null -eq $property -or $null -eq $property.Value) {
+        return $DefaultValue
+    }
+
+    if ($property.Value -is [string] -and [string]::IsNullOrWhiteSpace($property.Value)) {
+        return $DefaultValue
+    }
+
+    return $property.Value
+}
+
+function Add-BoostLabResultSectionTitle {
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Panel]$Panel,
+
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    $title = [System.Windows.Controls.TextBlock]::new()
+    $title.Margin = [System.Windows.Thickness]::new(0, 10, 0, 6)
+    $title.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#7DD3FC')
+    $title.FontSize = 10
+    $title.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $title.Text = $Text.ToUpperInvariant()
+    $Panel.Children.Add($title) | Out-Null
+}
+
+function Add-BoostLabResultRow {
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Panel]$Panel,
+
+        [Parameter(Mandatory)]
+        [string]$Label,
+
+        [AllowNull()]
+        [object]$Value
+    )
+
+    $row = [System.Windows.Controls.Grid]::new()
+    $row.Margin = [System.Windows.Thickness]::new(0, 0, 0, 7)
+    $row.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]::new())
+    $row.ColumnDefinitions.Add([System.Windows.Controls.ColumnDefinition]::new())
+    $row.ColumnDefinitions[0].Width = [System.Windows.GridLength]::new(116)
+    $row.ColumnDefinitions[1].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+
+    $labelText = [System.Windows.Controls.TextBlock]::new()
+    $labelText.Margin = [System.Windows.Thickness]::new(0, 0, 9, 0)
+    $labelText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#7F8DA5')
+    $labelText.FontSize = 10
+    $labelText.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $labelText.Text = "$Label`:"
+    $labelText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $row.Children.Add($labelText) | Out-Null
+
+    $valueText = [System.Windows.Controls.TextBlock]::new()
+    $valueText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E2E8F0')
+    $valueText.FontSize = 11
+    $valueText.LineHeight = 16
+    $valueText.Text = if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+        'Unknown'
+    }
+    else {
+        [string]$Value
+    }
+    $valueText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    [System.Windows.Controls.Grid]::SetColumn($valueText, 1)
+    $row.Children.Add($valueText) | Out-Null
+
+    $Panel.Children.Add($row) | Out-Null
+}
+
+function Add-BoostLabResultBullet {
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Panel]$Panel,
+
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [string]$Color = '#D6DFED'
+    )
+
+    $line = [System.Windows.Controls.TextBlock]::new()
+    $line.Margin = [System.Windows.Thickness]::new(2, 0, 0, 6)
+    $line.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($Color)
+    $line.FontSize = 11
+    $line.LineHeight = 17
+    $line.Text = '{0} {1}' -f [char]0x2022, $Text
+    $line.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $Panel.Children.Add($line) | Out-Null
+}
+
+function Get-BoostLabResultStatus {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Result
+    )
+
+    $cancelled = [bool](Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'Cancelled' -DefaultValue $false)
+    if ($cancelled) {
+        return 'Cancelled'
+    }
+    if ([bool]$Result.Success) {
+        return 'Success'
+    }
+    if ([string]$Result.Message -eq 'Action not implemented yet') {
+        return 'Not implemented'
+    }
+
+    return 'Error'
+}
+
+function Show-BoostLabActionResult {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [object]$Result
+    )
+
+    $toolId = [string]$ToolMetadata['Id']
+    $toolTitle = [string]$ToolMetadata['Title']
+    $status = Get-BoostLabResultStatus -Result $Result
+    $panel = Get-BoostLabUiElement -Name 'LatestResultPanel'
+    $panel.Children.Clear()
+
+    (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = $toolTitle
+    (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = $ActionName.ToUpperInvariant()
+
+    $statusText = Get-BoostLabUiElement -Name 'LatestResultStatusText'
+    $statusText.Text = $status.ToUpperInvariant()
+    $statusText.Foreground = switch ($status) {
+        'Success' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#86EFAC') }
+        'Cancelled' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A') }
+        'Not implemented' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#93C5FD') }
+        default { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FCA5A5') }
+    }
+
+    Add-BoostLabResultRow -Panel $panel -Label 'Tool' -Value $toolTitle
+    Add-BoostLabResultRow -Panel $panel -Label 'Action' -Value $ActionName
+    Add-BoostLabResultRow -Panel $panel -Label 'Status' -Value $status
+    Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$Result.Message)
+
+    $data = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'Data' -DefaultValue $null
+    if ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Detected System'
+        Add-BoostLabResultRow -Panel $panel -Label 'Motherboard Manufacturer' -Value (Get-BoostLabObjectPropertyValue $data 'MotherboardManufacturer')
+        Add-BoostLabResultRow -Panel $panel -Label 'Motherboard Model' -Value (Get-BoostLabObjectPropertyValue $data 'MotherboardModel')
+        Add-BoostLabResultRow -Panel $panel -Label 'BIOS Vendor' -Value (Get-BoostLabObjectPropertyValue $data 'BiosManufacturer')
+        Add-BoostLabResultRow -Panel $panel -Label 'BIOS Version' -Value (Get-BoostLabObjectPropertyValue $data 'BiosVersion')
+        Add-BoostLabResultRow -Panel $panel -Label 'BIOS Date' -Value (Get-BoostLabObjectPropertyValue $data 'BiosReleaseDate')
+        Add-BoostLabResultRow -Panel $panel -Label 'TPM' -Value (Get-BoostLabObjectPropertyValue $data 'TpmStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Secure Boot' -Value (Get-BoostLabObjectPropertyValue $data 'SecureBootStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'CPU' -Value (Get-BoostLabObjectPropertyValue $data 'CpuName')
+        $windowsValue = '{0} (Build {1})' -f `
+            (Get-BoostLabObjectPropertyValue $data 'WindowsVersion'), `
+            (Get-BoostLabObjectPropertyValue $data 'WindowsBuild')
+        Add-BoostLabResultRow -Panel $panel -Label 'Windows' -Value $windowsValue
+    }
+    elseif ($toolId -eq 'bios-settings' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
+        foreach ($section in @($data.Guidance)) {
+            Add-BoostLabResultSectionTitle -Panel $panel -Text ([string]$section.Title)
+            foreach ($instruction in @($section.Instructions)) {
+                Add-BoostLabResultBullet -Panel $panel -Text ([string]$instruction)
+            }
+        }
+
+        if (@($data.Warnings).Count -gt 0) {
+            Add-BoostLabResultSectionTitle -Panel $panel -Text 'Warnings'
+            foreach ($warning in @($data.Warnings)) {
+                Add-BoostLabResultBullet -Panel $panel -Text ([string]$warning) -Color '#FDE68A'
+            }
+        }
+    }
+    elseif ($null -ne $data) {
+        $displayProperties = @(
+            $data.PSObject.Properties |
+                Where-Object {
+                    $_.Name -notin @('Timestamp') -and
+                    ($null -eq $_.Value -or $_.Value -is [string] -or $_.Value -is [ValueType])
+                }
+        )
+        if ($displayProperties.Count -gt 0) {
+            Add-BoostLabResultSectionTitle -Panel $panel -Text 'Details'
+            foreach ($property in $displayProperties) {
+                Add-BoostLabResultRow -Panel $panel -Label $property.Name -Value $property.Value
+            }
+        }
+    }
+
+    (Get-BoostLabUiElement -Name 'LatestResultScrollViewer').ScrollToTop()
+}
+
+function Add-BoostLabActivityEntry {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Entry
+    )
+
+    $displayLevel = if ([string]$Entry.Level -eq 'Debug') {
+        'DETAIL'
+    }
+    else {
+        ([string]$Entry.Level).ToUpperInvariant()
+    }
+    $toolName = [string]$Entry.Source
+    $actionName = [string]$Entry.EventId
+    $message = [string]$Entry.Message
+    $match = [regex]::Match(
+        $message,
+        '^\[(?<Tool>[^\]]+)\]\s+\[(?<Action>[^\]]+)\]\s*(?<Message>.*)$',
+        [System.Text.RegularExpressions.RegexOptions]::Singleline
+    )
+    if ($match.Success) {
+        $toolName = $match.Groups['Tool'].Value
+        $actionName = $match.Groups['Action'].Value
+        $message = $match.Groups['Message'].Value
+    }
+
+    $arrow = [char]0x2192
+    $header = '[{0:HH:mm:ss}] [{1}]' -f `
+        $Entry.Timestamp, `
+        $displayLevel
+    $actionLine = '{0} {1} {2}' -f $toolName, $arrow, $actionName
+    $visibleText = "$header`r`n$actionLine`r`n$message"
+    $script:BoostLabVisibleLogText.Add($visibleText)
+
+    $levelColor = switch ($displayLevel) {
+        'SUCCESS' { '#86EFAC' }
+        'WARNING' { '#FDE68A' }
+        'ERROR' { '#FCA5A5' }
+        'DETAIL' { '#C4B5FD' }
+        default { '#7DD3FC' }
+    }
+
+    $paragraph = [System.Windows.Documents.Paragraph]::new()
+    $paragraph.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
+    $paragraph.LineHeight = 17
+
+    $headerRun = [System.Windows.Documents.Run]::new($header)
+    $headerRun.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($levelColor)
+    $headerRun.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $paragraph.Inlines.Add($headerRun)
+    $paragraph.Inlines.Add([System.Windows.Documents.LineBreak]::new())
+
+    $actionRun = [System.Windows.Documents.Run]::new($actionLine)
+    $actionRun.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E2E8F0')
+    $actionRun.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $paragraph.Inlines.Add($actionRun)
+    $paragraph.Inlines.Add([System.Windows.Documents.LineBreak]::new())
+
+    $messageRun = [System.Windows.Documents.Run]::new($message)
+    $messageRun.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#AAB7CA')
+    $paragraph.Inlines.Add($messageRun)
+
+    $activityLog = Get-BoostLabUiElement -Name 'ActivityLogRichTextBox'
+    $activityLog.Document.Blocks.Add($paragraph)
+    $activityLog.ScrollToEnd()
+}
+
+function Add-BoostLabToolActionActivityEntry {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [object]$Result
+    )
+
+    $status = Get-BoostLabResultStatus -Result $Result
+    $level = switch ($status) {
+        'Success' { 'Success' }
+        'Not implemented' { 'Info' }
+        'Cancelled' { 'Info' }
+        default { 'Error' }
+    }
+    $message = if (
+        [string]$ToolMetadata['Id'] -eq 'bios-information' -and
+        $ActionName -eq 'Analyze' -and
+        [bool]$Result.Success
+    ) {
+        'Hardware and BIOS information detected.'
+    }
+    else {
+        [string]$Result.Message
+    }
+
+    Add-BoostLabActivityEntry -Entry ([pscustomobject]@{
+        Timestamp = Get-Date
+        Level     = $level
+        Source    = [string]$ToolMetadata['Title']
+        EventId   = $ActionName
+        Message   = $message
+    })
+}
+
+function Add-BoostLabStartupActivityEntry {
+    Add-BoostLabActivityEntry -Entry ([pscustomobject]@{
+        Timestamp = Get-Date
+        Level     = 'Info'
+        Source    = 'BoostLab'
+        EventId   = 'Startup'
+        Message   = 'Interface initialized.'
+    })
+}
+
+function Clear-BoostLabVisibleActivityLog {
+    $activityLog = Get-BoostLabUiElement -Name 'ActivityLogRichTextBox'
+    $activityLog.Document.Blocks.Clear()
+    $script:BoostLabVisibleLogText.Clear()
+    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Visible log cleared'
+}
+
+function Copy-BoostLabVisibleActivityLog {
+    $visibleText = $script:BoostLabVisibleLogText -join "`r`n`r`n"
+    if ([string]::IsNullOrWhiteSpace($visibleText)) {
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Log is empty'
+        return
+    }
+
+    try {
+        [System.Windows.Clipboard]::SetText($visibleText)
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Visible log copied'
+    }
+    catch {
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Clipboard unavailable'
+    }
 }
 
 function New-BoostLabBadge {
@@ -196,10 +553,13 @@ function New-BoostLabToolCard {
         $actionButton.Tag = [pscustomobject]@{
             ToolMetadata = $Tool
             ActionName   = [string]$actionName
+            StatusText   = $status
         }
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
         $actionButton.Add_Click({
             $context = $this.Tag
+            (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$context.ToolMetadata['Title']
+            (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = ([string]$context.ActionName).ToUpperInvariant()
             $riskConfirmed = $false
             if (
                 [string]$context.ToolMetadata['Id'] -eq 'bios-settings' -and
@@ -222,6 +582,17 @@ function New-BoostLabToolCard {
                 -ActionName $context.ActionName `
                 -RiskConfirmed:$riskConfirmed
 
+            Add-BoostLabToolActionActivityEntry `
+                -ToolMetadata $context.ToolMetadata `
+                -ActionName $context.ActionName `
+                -Result $result
+
+            Show-BoostLabActionResult `
+                -ToolMetadata $context.ToolMetadata `
+                -ActionName $context.ActionName `
+                -Result $result
+
+            $context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $result)
             (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
         })
 
@@ -306,6 +677,7 @@ function Initialize-BoostLabMainWindow {
     $script:BoostLabWindow = $Window
     $script:BoostLabStages = @($StageConfiguration['Stages'] | Sort-Object { [int]$_['Order'] })
     $script:BoostLabStageButtons = @{}
+    $script:BoostLabVisibleLogText.Clear()
 
     Initialize-BoostLabState
 
@@ -340,16 +712,12 @@ function Initialize-BoostLabMainWindow {
     (Get-BoostLabUiElement -Name 'LicenseStatusText').Text = "License: $($LicenseStatus.Status)"
     (Get-BoostLabUiElement -Name 'WindowsStatusText').Text = $WindowsVersion.DisplayName
 
-    $logTextBox = Get-BoostLabUiElement -Name 'LogTextBox'
-    $logSink = {
-        param($Entry)
-
-        $line = '[{0:HH:mm:ss}] [{1}] {2}' -f $Entry.Timestamp, $Entry.Level, $Entry.Message
-        $logTextBox.AppendText("$line`r`n")
-        $logTextBox.CaretIndex = $logTextBox.Text.Length
-        $logTextBox.ScrollToEnd()
-    }.GetNewClosure()
-    Register-BoostLabLogSink -Sink $logSink
+    (Get-BoostLabUiElement -Name 'ClearLogButton').Add_Click({
+        Clear-BoostLabVisibleActivityLog
+    })
+    (Get-BoostLabUiElement -Name 'CopyLogButton').Add_Click({
+        Copy-BoostLabVisibleActivityLog
+    })
 
     $navigationPanel = Get-BoostLabUiElement -Name 'StageNavigationPanel'
     foreach ($stage in $script:BoostLabStages) {
@@ -376,4 +744,5 @@ function Initialize-BoostLabMainWindow {
             Architecture      = [string]$EnvironmentInfo.Architecture.OperatingSystem
             PendingReboot     = [bool]$EnvironmentInfo.PendingReboot.IsPending
         } | Out-Null
+    Add-BoostLabStartupActivityEntry
 }
