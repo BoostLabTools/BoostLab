@@ -146,6 +146,34 @@ function Get-BoostLabResultStatus {
     return 'Error'
 }
 
+function New-BoostLabUiActionFailureResult {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    return [pscustomobject]@{
+        Success            = $false
+        ToolId             = [string]$ToolMetadata['Id']
+        ToolTitle          = [string]$ToolMetadata['Title']
+        Action             = $ActionName
+        Status             = 'Failed'
+        Message            = $Message
+        RestartRequired    = $false
+        Cancelled          = $false
+        ActionPlan         = $null
+        VerificationResult = $null
+        Data               = $null
+        Timestamp          = Get-Date
+    }
+}
+
 function Show-BoostLabActionResult {
     param(
         [Parameter(Mandatory)]
@@ -340,6 +368,28 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Context Menu state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'ContextMenu')
         }
+        elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Lock Screen / Signout Wallpaper state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'Wallpaper')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Lock Screen / Signout Wallpaper state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'Wallpaper')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'File disposition' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'FileDisposition')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -531,6 +581,29 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'UI / Explorer refresh' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        $filePathsChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'FilePathsChecked' @())
+        ) -join [Environment]::NewLine
+        $warnings = @(
+            (Get-BoostLabObjectPropertyValue $data 'Warnings' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Signout LockScreen Wallpaper Black'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected Lock Screen / Signout Wallpaper state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedWallpaperState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected Lock Screen / Signout Wallpaper state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedWallpaperState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'File paths checked' -Value $filePathsChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Backup / ownership status' -Value (Get-BoostLabObjectPropertyValue $data 'BackupOwnershipStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Backup path' -Value (Get-BoostLabObjectPropertyValue $data 'BackupPath')
+        Add-BoostLabResultRow -Panel $panel -Label 'File disposition' -Value (Get-BoostLabObjectPropertyValue $data 'FileDisposition')
+        Add-BoostLabResultRow -Panel $panel -Label 'Wallpaper refresh' -Value (Get-BoostLabObjectPropertyValue $data 'WallpaperRefreshStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Warnings' -Value $(if ([string]::IsNullOrWhiteSpace($warnings)) { 'None' } else { $warnings })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Detected System'
         Add-BoostLabResultRow -Panel $panel -Label 'Motherboard Manufacturer' -Value (Get-BoostLabObjectPropertyValue $data 'MotherboardManufacturer')
@@ -708,6 +781,75 @@ function Add-BoostLabToolActionActivityEntry {
         EventId   = $ActionName
         Message   = $message
     })
+}
+
+function Invoke-BoostLabToolCardAction {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Context,
+
+        [scriptblock]$ActionInvoker = {
+            param($ToolMetadata, $ActionName)
+
+            Invoke-BoostLabToolAction `
+                -ToolMetadata $ToolMetadata `
+                -ActionName $ActionName `
+                -ConfirmationCallback {
+                    param($ActionPlan)
+                    Show-BoostLabActionPlanConfirmation -ActionPlan $ActionPlan
+                }
+        }
+    )
+
+    $toolMetadata = $Context.ToolMetadata
+    $actionName = [string]$Context.ActionName
+    (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$toolMetadata['Title']
+    (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = $actionName.ToUpperInvariant()
+
+    try {
+        $result = & $ActionInvoker $toolMetadata $actionName
+        if ($null -eq $result) {
+            throw 'Tool execution returned no result.'
+        }
+    }
+    catch {
+        $message = "Tool execution failed: $($_.Exception.Message)"
+        $result = New-BoostLabUiActionFailureResult `
+            -ToolMetadata $toolMetadata `
+            -ActionName $actionName `
+            -Message $message
+
+        try {
+            if (Get-Command -Name 'Write-BoostLabError' -ErrorAction SilentlyContinue) {
+                Write-BoostLabError `
+                    -Message ('[{0}] [{1}] {2}' -f [string]$toolMetadata['Title'], $actionName, $message) `
+                    -Source 'UI' `
+                    -EventId 'ToolAction.UiRuntimeFailed' `
+                    -Data @{
+                        ToolId = [string]$toolMetadata['Id']
+                        Error  = $_.Exception.Message
+                    } | Out-Null
+            }
+        }
+        catch {
+            # The visible Activity Log below remains the final reporting path.
+        }
+    }
+
+    Add-BoostLabToolActionActivityEntry `
+        -ToolMetadata $toolMetadata `
+        -ActionName $actionName `
+        -Result $result
+
+    Show-BoostLabActionResult `
+        -ToolMetadata $toolMetadata `
+        -ActionName $actionName `
+        -Result $result
+
+    $Context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $result)
+    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
+
+    return $result
 }
 
 function Add-BoostLabStartupActivityEntry {
@@ -1056,29 +1198,38 @@ function New-BoostLabToolCard {
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
         $actionButton.Add_Click({
             $context = $this.Tag
-            (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$context.ToolMetadata['Title']
-            (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = ([string]$context.ActionName).ToUpperInvariant()
+            try {
+                Invoke-BoostLabToolCardAction -Context $context | Out-Null
+            }
+            catch {
+                $message = "Tool result presentation failed: $($_.Exception.Message)"
+                $fallbackResult = New-BoostLabUiActionFailureResult `
+                    -ToolMetadata $context.ToolMetadata `
+                    -ActionName $context.ActionName `
+                    -Message $message
 
-            $result = Invoke-BoostLabToolAction `
-                -ToolMetadata $context.ToolMetadata `
-                -ActionName $context.ActionName `
-                -ConfirmationCallback {
-                    param($ActionPlan)
-                    Show-BoostLabActionPlanConfirmation -ActionPlan $ActionPlan
+                try {
+                    Add-BoostLabToolActionActivityEntry `
+                        -ToolMetadata $context.ToolMetadata `
+                        -ActionName $context.ActionName `
+                        -Result $fallbackResult
+                }
+                catch {
+                    # Never allow a secondary Activity Log failure to escape the WPF event.
+                }
+                try {
+                    Show-BoostLabActionResult `
+                        -ToolMetadata $context.ToolMetadata `
+                        -ActionName $context.ActionName `
+                        -Result $fallbackResult
+                }
+                catch {
+                    # Keep the application open even if the detailed renderer is unavailable.
                 }
 
-            Add-BoostLabToolActionActivityEntry `
-                -ToolMetadata $context.ToolMetadata `
-                -ActionName $context.ActionName `
-                -Result $result
-
-            Show-BoostLabActionResult `
-                -ToolMetadata $context.ToolMetadata `
-                -ActionName $context.ActionName `
-                -Result $result
-
-            $context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $result)
-            (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
+                $context.StatusText.Text = 'Status: Error'
+                (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = $message
+            }
         })
 
         $actionsPanel.Children.Add($actionButton) | Out-Null

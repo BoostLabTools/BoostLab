@@ -236,6 +236,48 @@ try {
         }
     }
 
+    $failureStatusText = [System.Windows.Controls.TextBlock]::new()
+    $failureContext = [pscustomobject]@{
+        ToolMetadata = $placeholderTool
+        ActionName   = 'Analyze'
+        StatusText   = $failureStatusText
+    }
+    $failureLogCountBefore = $script:BoostLabVisibleLogText.Count
+    $runtimeFailureResult = Invoke-BoostLabToolCardAction `
+        -Context $failureContext `
+        -ActionInvoker {
+            throw "The term 'Test-BoostLabVerificationResult' is not recognized as the name of a cmdlet, function, script file, or operable program."
+        }
+    if (
+        [bool]$runtimeFailureResult.Success -or
+        [string]$runtimeFailureResult.Status -ne 'Failed' -or
+        -not ([string]$runtimeFailureResult.Message).Contains('Test-BoostLabVerificationResult') -or
+        [string]$failureStatusText.Text -ne 'Status: Error'
+    ) {
+        throw 'The WPF action boundary did not return a structured Failed result for a missing verification helper.'
+    }
+    if ($script:BoostLabVisibleLogText.Count -ne ($failureLogCountBefore + 1)) {
+        throw 'The WPF action boundary did not append the verification helper failure to Activity Log.'
+    }
+    $failureLogEntry = [string]$script:BoostLabVisibleLogText[$script:BoostLabVisibleLogText.Count - 1]
+    if (
+        -not $failureLogEntry.Contains('[ERROR]') -or
+        -not $failureLogEntry.Contains('Test-BoostLabVerificationResult')
+    ) {
+        throw 'The verification helper failure Activity Log entry is incomplete.'
+    }
+    $runtimeFailureText = Get-BoostLabTestText -Root $window.FindName('LatestResultPanel')
+    foreach ($expectedText in @(
+        'Status:'
+        'Error'
+        'Message:'
+        'Test-BoostLabVerificationResult'
+    )) {
+        if (-not (@($runtimeFailureText | Where-Object { $_ -like "*$expectedText*" }).Count -gt 0)) {
+            throw "Latest Result did not render the verification helper failure: $expectedText"
+        }
+    }
+
     Add-BoostLabStartupActivityEntry
     Add-BoostLabToolActionActivityEntry `
         -ToolMetadata $biosInformationTool `
@@ -328,6 +370,7 @@ try {
         BiosInformationAnalyze     = $biosInformationResult.Success
         BiosSettingsAnalyze        = $biosSettingsResult.Success
         PlaceholderResultRendered  = $true
+        RuntimeFailureContained    = $true
         VisibleLogLevels           = 5
         ClearLogValidated          = $true
         CopyLogValidated           = $true

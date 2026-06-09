@@ -299,8 +299,8 @@
                     Stage       = 'Windows'
                     Order       = 5
                     Type        = 'action'
-                    RiskLevel   = 'low'
-                    Description = 'Apply or reset the approved black sign-out and lock-screen appearance.'
+                    RiskLevel   = 'medium'
+                    Description = 'Apply a generated black sign-out, lock screen, and desktop wallpaper or safely restore the approved default.'
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

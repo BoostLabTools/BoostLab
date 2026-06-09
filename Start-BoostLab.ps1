@@ -78,11 +78,21 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne [Threading.ApartmentSta
 }
 
 $projectRoot = $PSScriptRoot
+$verificationModulePath = Join-Path $projectRoot 'core\Verification.psm1'
+if (-not (Test-Path -LiteralPath $verificationModulePath -PathType Leaf)) {
+    throw "BoostLab verification module was not found: $verificationModulePath"
+}
+$verificationModule = Import-Module `
+    -Name $verificationModulePath `
+    -Scope Local `
+    -Force `
+    -PassThru `
+    -ErrorAction Stop
+
 $modulePaths = @(
     'core\Environment.psm1'
     'core\Logging.psm1'
     'core\ActionPlan.psm1'
-    'core\Verification.psm1'
     'core\Safety.psm1'
     'core\State.psm1'
     'core\TrustedInstaller.psm1'
@@ -94,6 +104,22 @@ foreach ($relativeModulePath in $modulePaths) {
     $modulePath = Join-Path $projectRoot $relativeModulePath
     if (Test-Path -LiteralPath $modulePath) {
         Import-Module -Name $modulePath -Force -ErrorAction Stop
+    }
+}
+
+foreach ($verificationCommand in @(
+    'New-BoostLabVerificationCheck'
+    'New-BoostLabVerificationResult'
+    'Test-BoostLabVerificationResult'
+)) {
+    if (
+        -not $verificationModule.ExportedCommands.ContainsKey($verificationCommand) -or
+        -not (Get-Command `
+            -Name $verificationCommand `
+            -Module $verificationModule.Name `
+            -ErrorAction SilentlyContinue)
+    ) {
+        throw "BoostLab verification runtime command was not imported: $verificationCommand"
     }
 }
 

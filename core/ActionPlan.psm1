@@ -180,6 +180,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
         'Restore the Ultimate Context Menu handlers with the Yazan-approved scoped Blocked-value cleanup.'
     }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
+        'Generate and apply the approved black sign-out, lock screen, and desktop wallpaper with ownership tracking.'
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
+        'Restore the approved default wallpaper state without deleting unrelated PersonalizationCSP values or files.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -291,6 +297,20 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Restore the source Compatibility, Library, Sharing, Previous Versions, and Send To handler states.')
         $plannedChanges.Add('Remove only the three Context Menu-owned values from the shared Shell Extensions Blocked key; leave the key and unrelated values intact.')
         $plannedChanges.Add('Verify all 23 approved default Context Menu registry states.')
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Check C:\Windows\Black.jpg ownership and back up a pre-existing unrelated file before overwrite.')
+        $plannedChanges.Add('Generate C:\Windows\Black.jpg as a black bitmap at the primary monitor resolution.')
+        $plannedChanges.Add('Set HKLM PersonalizationCSP LockScreenImagePath and LockScreenImageStatus.')
+        $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Black.jpg and request the source wallpaper refresh.')
+        $plannedChanges.Add('Record backup and generated-file ownership metadata under ProgramData\BoostLab\State.')
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Remove only the tool-owned PersonalizationCSP values LockScreenImagePath and LockScreenImageStatus.')
+        $plannedChanges.Add('Leave the shared PersonalizationCSP key and every unrelated value intact.')
+        $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Web\Wallpaper\Windows\img0.jpg and request the source wallpaper refresh.')
+        $plannedChanges.Add('Restore a recorded backup of a pre-existing C:\Windows\Black.jpg when available.')
+        $plannedChanges.Add('Otherwise remove Black.jpg only when BoostLab state and hash prove ownership; leave uncertain or unrelated files intact.')
     }
     else {
         switch ($ActionName) {
@@ -423,6 +443,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Only the three tool-owned Blocked GUID values are removed; unrelated values and the shared Blocked key are preserved.')
         $sideEffects.Add('No Explorer process is stopped; reopening the context menu, Explorer refresh, or sign-out may be required before every visual change appears.')
     }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The desktop, sign-out, and lock screen wallpaper may become black.')
+        $sideEffects.Add('A pre-existing unrelated C:\Windows\Black.jpg is copied to BoostLab state storage before replacement.')
+        $sideEffects.Add('No process is stopped and no restart occurs; Windows may require lock, sign-out, Settings, or Explorer refresh before every visual change appears.')
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Wallpaper registry values return to the approved source default.')
+        $sideEffects.Add('A recorded pre-existing Black.jpg is restored; an owned generated file is removed only when ownership is proven.')
+        $sideEffects.Add('Unrelated PersonalizationCSP values and files are preserved, and uncertain file ownership is reported as a warning.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -516,6 +546,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
         'BoostLab will restore the source Context Menu handlers and remove only the three tool-owned Blocked GUID values. The shared Blocked key and unrelated values will remain. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
+        'BoostLab will back up any unrelated pre-existing C:\Windows\Black.jpg, generate the approved black wallpaper, set the owned PersonalizationCSP and desktop values, and verify ownership. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
+        'BoostLab will remove only its two PersonalizationCSP values, restore the approved desktop wallpaper, and restore or remove Black.jpg only when backup or ownership state permits. Unrelated values and files will remain. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

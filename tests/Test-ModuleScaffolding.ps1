@@ -112,6 +112,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\ContextMenu.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'signout-lockscreen-wallpaper-black' = @{
+        RelativePath          = 'Windows\SignoutLockScreenWallpaperBlack.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -356,6 +360,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'context-menu') {
             1
         }
+        elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
+            0
+        }
         else {
             1
         }
@@ -542,6 +549,54 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Context Menu behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'C:\Windows\Black.jpg'
+                'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
+                'LockScreenImagePath'
+                'LockScreenImageStatus'
+                'UpdatePerUserSystemParameters'
+                'Backup-BoostLabWallpaperFile'
+                'Restore-BoostLabWallpaperBackup'
+                'Remove-BoostLabOwnedWallpaperFile'
+                'signout-lockscreen-wallpaper-black.json'
+                'function Test-BoostLabSignoutWallpaperState'
+                'New-BoostLabVerificationResult'
+                'VerificationResult'
+                '[bool] $Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Signout LockScreen Wallpaper Black behavior: $requiredText")
+                }
+            }
+
+            if (
+                $source -match
+                    'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PersonalizationCSP["'']?\s+/f'
+            ) {
+                $errors.Add("$modulePath contains the disallowed complete PersonalizationCSP key deletion.")
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Signout LockScreen Wallpaper Black behavior: $forbiddenText")
                 }
             }
         }

@@ -7,9 +7,10 @@ if (-not (Get-Command -Name 'New-BoostLabActionPlan' -ErrorAction SilentlyContin
 if (-not (Get-Command -Name 'Test-BoostLabActionPlanExecutionGate' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $PSScriptRoot 'Safety.psm1') -Scope Local -Force -ErrorAction Stop
 }
-if (-not (Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
-    Import-Module -Name (Join-Path $PSScriptRoot 'Verification.psm1') -Scope Local -Force -ErrorAction Stop
-}
+Import-Module `
+    -Name (Join-Path $PSScriptRoot 'Verification.psm1') `
+    -Scope Local `
+    -ErrorAction Stop
 if (-not (Get-Command -Name 'Test-BoostLabAdministrator' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $PSScriptRoot 'Environment.psm1') -Scope Local -Force -ErrorAction Stop
 }
@@ -85,6 +86,10 @@ $script:BoostLabImplementedToolModules = @{
     }
     'context-menu' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\ContextMenu.psm1'
+        Actions = @('Apply', 'Default')
+    }
+    'signout-lockscreen-wallpaper-black' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\SignoutLockScreenWallpaperBlack.psm1'
         Actions = @('Apply', 'Default')
     }
 }
@@ -566,12 +571,59 @@ function Invoke-BoostLabToolAction {
             $null
         }
         if ($null -ne $verificationResult) {
-            $verificationValidation = Test-BoostLabVerificationResult `
-                -VerificationResult $verificationResult `
-                -ExpectedToolId $toolId `
-                -ExpectedToolTitle $toolTitle `
-                -ExpectedAction $ActionName
-            if (-not $verificationValidation.IsValid) {
+            $verificationValidation = $null
+            try {
+                $verificationValidation = Test-BoostLabVerificationResult `
+                    -VerificationResult $verificationResult `
+                    -ExpectedToolId $toolId `
+                    -ExpectedToolTitle $toolTitle `
+                    -ExpectedAction $ActionName
+            }
+            catch {
+                $verificationFailureMessage = "Verification contract validation failed: $($_.Exception.Message)"
+                $verificationResult = [pscustomobject]@{
+                    ToolId        = $toolId
+                    ToolTitle     = $toolTitle
+                    Action        = $ActionName
+                    Status        = 'Failed'
+                    ExpectedState = 'A callable BoostLab verification contract validator.'
+                    DetectedState = $_.Exception.Message
+                    Checks        = @(
+                        [pscustomobject]@{
+                            Name     = 'Verification runtime'
+                            Expected = 'Test-BoostLabVerificationResult is imported and callable'
+                            Actual   = $_.Exception.Message
+                            Status   = 'Failed'
+                            Message  = $verificationFailureMessage
+                        }
+                    )
+                    Message       = $verificationFailureMessage
+                    Timestamp     = Get-Date
+                }
+                $moduleResult | Add-Member `
+                    -NotePropertyName 'VerificationResult' `
+                    -NotePropertyValue $verificationResult `
+                    -Force
+                $moduleResult | Add-Member `
+                    -NotePropertyName 'Success' `
+                    -NotePropertyValue $false `
+                    -Force
+                $moduleResult | Add-Member `
+                    -NotePropertyName 'Message' `
+                    -NotePropertyValue $verificationFailureMessage `
+                    -Force
+
+                Write-BoostLabError `
+                    -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, $verificationFailureMessage) `
+                    -Source 'Execution' `
+                    -EventId 'ToolAction.VerificationRuntimeFailed' `
+                    -Data @{
+                        ToolId = $toolId
+                        Error  = $_.Exception.Message
+                    } | Out-Null
+            }
+
+            if ($null -ne $verificationValidation -and -not $verificationValidation.IsValid) {
                 $verificationResult = New-BoostLabVerificationResult `
                     -ToolId $toolId `
                     -ToolTitle $toolTitle `

@@ -202,7 +202,7 @@ $placeholderModules = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 )
-if ($implementedModules.Count -ne 18 -or $placeholderModules.Count -ne 31) {
+if ($implementedModules.Count -ne 19 -or $placeholderModules.Count -ne 30) {
     throw "Unexpected module counts: $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }
 

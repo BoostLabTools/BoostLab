@@ -122,6 +122,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\ContextMenu.psm1'
         LegacyHash = '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2'
     }
+    'Signout LockScreen Wallpaper Black' = @{
+        LegacyPath = 'source-ultimate\6 Windows\5 Signout Lockscreen Wallpaper Black.ps1'
+        ModulePath = 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
+        LegacyHash = 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+    }
 }
 
 $deletedToolNames = @(
@@ -501,6 +506,54 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Context Menu contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Signout LockScreen Wallpaper Black' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'System.Windows.Forms.SystemInformation'
+                'System.Drawing.Bitmap'
+                'FillRectangle'
+                'C:\Windows\Black.jpg'
+                'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
+                'LockScreenImagePath'
+                'LockScreenImageStatus'
+                'HKCU\Control Panel\Desktop'
+                'UpdatePerUserSystemParameters'
+                'Backup-BoostLabWallpaperFile'
+                'Restore-BoostLabWallpaperBackup'
+                'Remove-BoostLabOwnedWallpaperFile'
+                'GeneratedFileSha256'
+                'OriginalFileSha256'
+                'New-BoostLabVerificationResult'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Signout LockScreen Wallpaper Black preserved behavior is missing: $requiredText"
+                }
+            }
+            if (
+                $moduleSource -match
+                    'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PersonalizationCSP["'']?\s+/f'
+            ) {
+                throw 'Signout LockScreen Wallpaper Black contains the disallowed complete PersonalizationCSP key deletion.'
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Signout LockScreen Wallpaper Black contains unrelated behavior: $forbiddenText"
                 }
             }
         }
