@@ -174,6 +174,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
         'Restore the Ultimate 24H2 Start menu branch as the approved BoostLab Default.'
     }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Apply') {
+        'Apply the approved Ultimate clean Context Menu registry behavior.'
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
+        'Restore the Ultimate Context Menu handlers with the Yazan-approved scoped Blocked-value cleanup.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -272,6 +278,19 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Write the approved oldstartmenu.reg payload to the Windows Temp directory.')
         $plannedChanges.Add('Remove only the four approved feature override EnabledState values.')
         $plannedChanges.Add('Set HKCU Start AllAppsViewMode to 0 and verify the five registry states plus the import file.')
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Apply the source classic context menu value and machine Explorer policy values.')
+        $plannedChanges.Add('Remove the source-defined Pin, Favorites, Compatibility, Library, Sharing, Previous Versions, and Send To handlers.')
+        $plannedChanges.Add('Add only the three source-defined Blocked GUID values for Terminal, Defender scan, and Give access to.')
+        $plannedChanges.Add('Verify all 13 source-defined clean Context Menu registry states.')
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Remove the classic context menu override and NoCustomizeThisFolder value.')
+        $plannedChanges.Add('Write and import the source contextmenudefault.reg payload for Pin to Quick access and Add to favorites.')
+        $plannedChanges.Add('Restore the source Compatibility, Library, Sharing, Previous Versions, and Send To handler states.')
+        $plannedChanges.Add('Remove only the three Context Menu-owned values from the shared Shell Extensions Blocked key; leave the key and unrelated values intact.')
+        $plannedChanges.Add('Verify all 23 approved default Context Menu registry states.')
     }
     else {
         switch ($ActionName) {
@@ -395,6 +414,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('oldstartmenu.reg remains in the Windows Temp directory.')
         $sideEffects.Add('Explorer, Start Menu, sign-out, or a later session may be required before the visual layout refreshes.')
     }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Several Windows context-menu entries are hidden, including Scan with Microsoft Defender, Open in Terminal, and Give access to.')
+        $sideEffects.Add('No Explorer process is stopped; reopening the context menu, Explorer refresh, or sign-out may be required before every visual change appears.')
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The source context-menu handlers are restored and contextmenudefault.reg remains in the Windows Temp directory.')
+        $sideEffects.Add('Only the three tool-owned Blocked GUID values are removed; unrelated values and the shared Blocked key are preserved.')
+        $sideEffects.Add('No Explorer process is stopped; reopening the context menu, Explorer refresh, or sign-out may be required before every visual change appears.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -482,6 +510,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
         'BoostLab will import the Ultimate 24H2 branch as the approved Default, removing only four EnabledState values and setting AllAppsViewMode to 0. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Apply') {
+        'BoostLab will apply the approved Ultimate clean Context Menu registry behavior, including hiding the Defender scan context-menu entry, and verify all source-defined states. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
+        'BoostLab will restore the source Context Menu handlers and remove only the three tool-owned Blocked GUID values. The shared Blocked key and unrelated values will remain. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

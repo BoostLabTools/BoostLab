@@ -108,6 +108,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\StartMenuLayout.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'context-menu' = @{
+        RelativePath          = 'Windows\ContextMenu.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -297,13 +301,18 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'start-menu-layout' -and
             $commandName -eq 'Set-Content'
         )
+        $approvedContextMenuCommand = (
+            $toolId -eq 'context-menu' -and
+            $commandName -eq 'Set-Content'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
             -not $approvedStoreSettingsCommand -and
             -not $approvedUpdatesPauseCommand -and
             -not $approvedThemeBlackCommand -and
-            -not $approvedStartMenuLayoutCommand
+            -not $approvedStartMenuLayoutCommand -and
+            -not $approvedContextMenuCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -342,6 +351,9 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'start-menu-layout') {
+            1
+        }
+        elseif ($toolId -eq 'context-menu') {
             1
         }
         else {
@@ -489,6 +501,47 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Start Menu Layout behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'context-menu') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'contextmenudefault.reg'
+                '$script:BoostLabOwnedBlockedGuids'
+                'ScanWithDefender'
+                'ImportDefaultFile'
+                'Set-Content -Path $Path -Value $Content -Force -ErrorAction Stop'
+                '"regedit.exe"'
+                '-ArgumentList "/S `"$Path`""'
+                'function Test-BoostLabContextMenuState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Clean context menu applied.'
+                'Context menu restored to the approved default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Context Menu behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Context Menu behavior: $forbiddenText")
                 }
             }
         }

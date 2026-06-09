@@ -322,6 +322,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Start Menu Layout state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'StartMenuLayout')
         }
+        elseif ($toolId -eq 'context-menu') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Context Menu state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'ContextMenu')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Context Menu state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'ContextMenu')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -493,6 +511,24 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Registry file' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryFileStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Registry import' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryImportStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'UI refresh / Settings launch' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'context-menu' -and $null -ne $data) {
+        $registryStatesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryStatesChecked' @())
+        ) -join [Environment]::NewLine
+        $operationWarnings = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryOperationWarnings' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Context Menu'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected Context Menu state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedContextMenuState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected Context Menu state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedContextMenuState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry keys and values checked' -Value $registryStatesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry command warnings' -Value $(if ([string]::IsNullOrWhiteSpace($operationWarnings)) { 'None' } else { $operationWarnings })
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry file' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryFileStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry import' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryImportStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'UI / Explorer refresh' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

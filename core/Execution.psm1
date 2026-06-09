@@ -83,6 +83,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\StartMenuLayout.psm1'
         Actions = @('Apply', 'Default')
     }
+    'context-menu' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\ContextMenu.psm1'
+        Actions = @('Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

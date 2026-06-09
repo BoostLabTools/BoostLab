@@ -117,6 +117,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\StartMenuLayout.psm1'
         LegacyHash = '81C1298D7C9E112DB910C4398CD94E4B70ECD97ED3B185CF2FD2B8A380E069E8'
     }
+    'Context Menu' = @{
+        LegacyPath = 'source-ultimate\6 Windows\3 Context Menu.ps1'
+        ModulePath = 'modules\Windows\ContextMenu.psm1'
+        LegacyHash = '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2'
+    }
 }
 
 $deletedToolNames = @(
@@ -454,6 +459,48 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Start Menu Layout contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Context Menu' {
+            foreach ($requiredText in @(
+                '$script:BoostLabOwnedBlockedGuids'
+                '{9F156763-7844-4DC4-B2B1-901F640F5155}'
+                '{09A47860-11B0-4DA5-AFA5-26D86198A780}'
+                '{f81e9010-6ea4-11ce-a7ff-00aa003ca9f6}'
+                'contextmenudefault.reg'
+                'PinAndFavoritesDefaults'
+                'NoCustomizeThisFolder'
+                'NoPreviousVersionsPage'
+                'ScanWithDefender'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Context Menu preserved behavior is missing: $requiredText"
+                }
+            }
+            if (
+                $moduleSource -match
+                    'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Shell Extensions\\Blocked["'']?\s+/f'
+            ) {
+                throw 'Context Menu module contains the disallowed broad Blocked key deletion.'
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Context Menu contains unrelated behavior: $forbiddenText"
                 }
             }
         }
