@@ -268,6 +268,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Store Settings state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'StoreSettings')
         }
+        elseif ($toolId -eq 'updates-pause') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Updates Pause state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'UpdatesPause')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Updates Pause state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'UpdatesPause')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -393,6 +411,20 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
         Add-BoostLabResultRow -Panel $panel -Label 'Process actions' -Value $processActions
         Add-BoostLabResultRow -Panel $panel -Label 'Store UI actions' -Value (Get-BoostLabObjectPropertyValue $data 'StoreUiActions')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'updates-pause' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Updates Pause'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedUpdatesPauseState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedUpdatesPauseState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Settings page' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsPageStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Pause start' -Value (Get-BoostLabObjectPropertyValue $data 'PauseStartTime')
+        Add-BoostLabResultRow -Panel $panel -Label 'Pause expiry' -Value (Get-BoostLabObjectPropertyValue $data 'PauseExpiryTime')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

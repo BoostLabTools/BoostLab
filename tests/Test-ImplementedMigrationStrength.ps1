@@ -61,6 +61,12 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Setup\StoreSettings.psm1'
         LegacyHash = 'D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167'
     }
+    'Updates Pause' = @{
+        LegacyPath = 'source-ultimate\3 Setup\8 Updates Pause.ps1'
+        ModulePath = 'modules\Setup\UpdatesPause.psm1'
+        LegacyHash = '4BBEF16C51FBEBAFAECB58307F8C619A37CD10BB3DC489BD4DF9A59DDBD1A0BD'
+        Launcher   = 'Start-Process ms-settings:windowsupdate'
+    }
     'Graphics Configuration Center' = @{
         LegacyPath = 'source-ultimate\5 Graphics\4 Graphics Configuration Center.ps1'
         ModulePath = 'modules\Graphics\GraphicsConfigurationCenter.psm1'
@@ -327,6 +333,43 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Store Settings contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Updates Pause' {
+            foreach ($requiredText in @(
+                '$script:BoostLabUpdatesPauseRegistryPath = ''HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'''
+                'PauseUpdatesExpiryTime'
+                'PauseFeatureUpdatesEndTime'
+                'PauseFeatureUpdatesStartTime'
+                'PauseQualityUpdatesEndTime'
+                'PauseQualityUpdatesStartTime'
+                'PauseUpdatesStartTime'
+                '.AddDays(365).ToUniversalTime().ToString(''yyyy-MM-ddTHH:mm:ssZ'')'
+                'Set-ItemProperty'
+                'Remove-ItemProperty'
+                'Start-Process ms-settings:windowsupdate -ErrorAction Stop'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Updates Pause preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Updates Pause contains unrelated behavior: $forbiddenText"
                 }
             }
         }

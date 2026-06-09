@@ -156,6 +156,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
         'Restore the approved default Microsoft Store settings behavior.'
     }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Apply') {
+        'Pause Windows Update for 365 days using the approved Ultimate timestamp values.'
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
+        'Restore the default unpaused Windows Update registry state.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -223,6 +229,17 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Stop only WinStore.App, backgroundTaskHost, and StoreDesktopExtension.')
         $plannedChanges.Add('Launch the built-in wsreset.exe Store reset.')
         $plannedChanges.Add('Stop the same Store process targets again and open Microsoft Store Settings.')
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Calculate UTC start timestamps and expiry timestamps 365 days in the future.')
+        $plannedChanges.Add('Write the six approved Windows Update pause timestamp values in Ultimate execution order.')
+        $plannedChanges.Add('Open the built-in Windows Update Settings page.')
+        $plannedChanges.Add('Read and verify all six pause timestamp values.')
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Remove only the six Windows Update pause timestamp values written by Apply.')
+        $plannedChanges.Add('Open the built-in Windows Update Settings page.')
+        $plannedChanges.Add('Confirm that all six pause timestamp values are absent.')
     }
     else {
         switch ($ActionName) {
@@ -316,6 +333,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Running Microsoft Store components may be closed before and after wsreset.exe.')
         $sideEffects.Add('Microsoft Store Settings opens after the reset; the Store UI may need time to refresh.')
     }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Windows Update is paused until the generated expiry timestamps, approximately 365 days from execution.')
+        $sideEffects.Add('Windows Update Settings opens after the registry values are written.')
+        $sideEffects.Add('Windows may require the Settings page to refresh before the pause state is displayed.')
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The six approved pause timestamps are removed so Windows Update returns to its default unpaused state.')
+        $sideEffects.Add('Windows Update Settings opens after the values are removed.')
+        $sideEffects.Add('Windows may require the Settings page to refresh before the default state is displayed.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -385,6 +412,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'store-settings' -and $ActionName -eq 'Default') {
         'BoostLab will remove the approved WindowsStore registry key, close only approved Store process targets, launch wsreset.exe, and verify the default policy state. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Apply') {
+        'BoostLab will write the six approved Windows Update pause timestamps for 365 days, open Windows Update Settings, and verify the values. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
+        'BoostLab will remove only the six approved Windows Update pause timestamps, open Windows Update Settings, and verify the default state. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

@@ -43,6 +43,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StoreSettings.psm1'
         Actions = @('Apply', 'Default')
     }
+    'updates-pause' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\UpdatesPause.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

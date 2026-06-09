@@ -61,6 +61,11 @@ $implementedModules = @{
         RelativePath          = 'Setup\StoreSettings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'updates-pause' = @{
+        RelativePath          = 'Setup\UpdatesPause.psm1'
+        LaunchText            = 'Start-Process ms-settings:windowsupdate -ErrorAction Stop'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -272,10 +277,15 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'store-settings' -and
             $commandName -eq 'Set-Content'
         )
+        $approvedUpdatesPauseCommand = (
+            $toolId -eq 'updates-pause' -and
+            $commandName -in @('Set-ItemProperty', 'Remove-ItemProperty')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
-            -not $approvedStoreSettingsCommand
+            -not $approvedStoreSettingsCommand -and
+            -not $approvedUpdatesPauseCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -328,6 +338,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing BIOS information safety behavior: $requiredText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'updates-pause') {
+            foreach ($requiredText in @(
+                '$script:BoostLabUpdatesPauseRegistryPath = ''HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'''
+                'PauseUpdatesExpiryTime'
+                'PauseFeatureUpdatesEndTime'
+                'PauseFeatureUpdatesStartTime'
+                'PauseQualityUpdatesEndTime'
+                'PauseQualityUpdatesStartTime'
+                'PauseUpdatesStartTime'
+                '.AddDays(365).ToUniversalTime().ToString(''yyyy-MM-ddTHH:mm:ssZ'')'
+                'Set-ItemProperty'
+                'Remove-ItemProperty'
+                'Start-Process ms-settings:windowsupdate -ErrorAction Stop'
+                'function Test-BoostLabUpdatesPauseState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Windows updates paused for 365 days.'
+                'Windows Update pause values restored to default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Updates Pause behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Updates Pause behavior: $forbiddenText")
                 }
             }
         }
