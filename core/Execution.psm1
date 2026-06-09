@@ -96,6 +96,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\NetworkAdapterPowerSavingsWake.psm1'
         Actions = @('Apply', 'Default')
     }
+    'power-plan' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\PowerPlan.psm1'
+        Actions = @('Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

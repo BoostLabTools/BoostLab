@@ -132,6 +132,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\NetworkAdapterPowerSavingsWake.psm1'
         LegacyHash = '1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB'
     }
+    'Power Plan' = @{
+        LegacyPath = 'source-ultimate\6 Windows\21 Power Plan.ps1'
+        ModulePath = 'modules\Windows\PowerPlan.psm1'
+        LegacyHash = '97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56'
+    }
 }
 
 $deletedToolNames = @(

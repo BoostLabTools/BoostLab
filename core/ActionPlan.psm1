@@ -192,6 +192,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
         'Restore the approved default state by removing only the source-defined adapter power and wake values.'
     }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
+        'Apply the source-defined Ultimate power scheme, registry values, hibernation state, and power settings.'
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
+        'Restore Windows default power schemes and the explicit default registry behavior from Ultimate.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -327,6 +333,20 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
         $plannedChanges.Add('Remove only the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
         $plannedChanges.Add('Treat already-absent values as default and verify every unique value on every detected adapter key.')
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Duplicate Ultimate Performance to the source GUID 99999999-9999-9999-9999-999999999999 and activate it.')
+        $plannedChanges.Add('Enumerate and delete the other power schemes exactly as Ultimate does; user-created custom schemes cannot be restored by Default.')
+        $plannedChanges.Add('Disable hibernation and apply the 10 source-defined registry values, including hidden power-setting attributes.')
+        $plannedChanges.Add('Apply all 36 source-defined AC and DC power setting pairs in Ultimate order.')
+        $plannedChanges.Add('Open Power Options and verify the active scheme, settings, and registry state.')
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Run powercfg -restoredefaultschemes, which removes custom schemes and restores Windows built-in schemes.')
+        $plannedChanges.Add('Enable hibernation and apply the explicit Ultimate Default registry operations.')
+        $plannedChanges.Add('Delete the complete FlyoutMenuSettings and PowerThrottling keys exactly as defined by the approved source.')
+        $plannedChanges.Add('Restore the four hidden power-setting Attributes values to 1.')
+        $plannedChanges.Add('Open Power Options and verify Balanced is active and the approved registry defaults are present.')
     }
     else {
         switch ($ActionName) {
@@ -479,6 +499,17 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No unrelated adapter properties or registry values are removed.')
         $sideEffects.Add('Device Manager, adapter refresh, or sign-out may be needed before every visible driver UI state updates; no restart is performed.')
     }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Ultimate deletes every enumerated non-active power scheme. Existing custom power schemes are not captured and cannot be restored by Default.')
+        $sideEffects.Add('Hibernation, Fast Startup, lock and sleep menu options, power throttling, sleep timers, battery protection actions, and many AC/DC settings are changed.')
+        $sideEffects.Add('Critical and low battery notifications, actions, and thresholds are set to zero exactly as defined by Ultimate.')
+        $sideEffects.Add('Power Options opens after execution. No reboot is performed, but the UI may need refresh.')
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Windows built-in power schemes are restored, but previously deleted custom schemes are not recovered.')
+        $sideEffects.Add('The complete FlyoutMenuSettings and PowerThrottling keys are deleted exactly as defined by Ultimate, which may remove unrelated values in those keys.')
+        $sideEffects.Add('Hibernation and Fast Startup are enabled, hidden setting attributes return to 1, and Power Options opens. No reboot is performed.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -584,6 +615,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
         'BoostLab will remove only the 14 approved network adapter power-saving and wake values and verify their default absent state. No adapter will be disabled and no restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
+        'BoostLab will activate the approved Ultimate scheme, permanently delete other enumerated power schemes, disable hibernation, apply 36 AC/DC setting pairs and 10 registry values, and set battery warnings/actions/levels to zero. Custom schemes are not captured and Default cannot restore them. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
+        'BoostLab will run restoredefaultschemes, enable hibernation, restore the explicit Ultimate defaults, and delete the complete FlyoutMenuSettings and PowerThrottling keys. Previously deleted custom schemes will not be recovered. No restart is performed. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

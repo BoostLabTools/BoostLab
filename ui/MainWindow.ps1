@@ -4,6 +4,10 @@ $script:BoostLabWindow = $null
 $script:BoostLabStages = @()
 $script:BoostLabStageButtons = @{}
 $script:BoostLabVisibleLogText = [System.Collections.Generic.List[string]]::new()
+$script:BoostLabLatestResult = $null
+$script:BoostLabLatestResultToolMetadata = $null
+$script:BoostLabLatestResultActionName = ''
+$script:BoostLabLatestResultText = ''
 
 function Get-BoostLabUiElement {
     param(
@@ -40,6 +44,289 @@ function Get-BoostLabObjectPropertyValue {
     }
 
     return $property.Value
+}
+
+function ConvertTo-BoostLabDiagnosticValueText {
+    param(
+        [AllowNull()]
+        [object]$Value,
+
+        [int]$Depth = 0
+    )
+
+    if ($null -eq $Value) {
+        return 'Not available'
+    }
+    if ($Value -is [string]) {
+        return $(if ([string]::IsNullOrWhiteSpace($Value)) { 'Not available' } else { $Value })
+    }
+    if ($Value -is [datetime]) {
+        return $Value.ToString('yyyy-MM-dd HH:mm:ss zzz')
+    }
+    if ($Value -is [ValueType]) {
+        return [string]$Value
+    }
+    if ($Depth -ge 8) {
+        return [string]$Value
+    }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        $lines = [System.Collections.Generic.List[string]]::new()
+        foreach ($key in @($Value.Keys)) {
+            $propertyText = ConvertTo-BoostLabDiagnosticValueText -Value $Value[$key] -Depth ($Depth + 1)
+            $lines.Add(('{0}: {1}' -f [string]$key, $propertyText))
+        }
+        return $(if ($lines.Count -gt 0) { $lines -join [Environment]::NewLine } else { 'Not available' })
+    }
+
+    if ($Value -is [System.Collections.IEnumerable]) {
+        $items = @($Value)
+        if ($items.Count -eq 0) {
+            return 'None'
+        }
+
+        return @(
+            foreach ($item in $items) {
+                $itemText = ConvertTo-BoostLabDiagnosticValueText -Value $item -Depth ($Depth + 1)
+                if ($itemText.Contains([Environment]::NewLine)) {
+                    "- $($itemText -replace [regex]::Escape([Environment]::NewLine), ([Environment]::NewLine + '  '))"
+                }
+                else {
+                    "- $itemText"
+                }
+            }
+        ) -join [Environment]::NewLine
+    }
+
+    $properties = @($Value.PSObject.Properties)
+    if ($properties.Count -gt 0) {
+        return @(
+            foreach ($property in $properties) {
+                '{0}: {1}' -f `
+                    $property.Name, `
+                    (ConvertTo-BoostLabDiagnosticValueText -Value $property.Value -Depth ($Depth + 1))
+            }
+        ) -join [Environment]::NewLine
+    }
+
+    return [string]$Value
+}
+
+function Get-BoostLabDiagnosticItems {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$PropertyName
+    )
+
+    $value = Get-BoostLabObjectPropertyValue `
+        -InputObject $InputObject `
+        -PropertyName $PropertyName `
+        -DefaultValue $null
+    if ($null -eq $value) {
+        return @()
+    }
+
+    return @($value)
+}
+
+function Format-BoostLabLatestResultText {
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [string]$ActionName = '',
+
+        [AllowNull()]
+        [object]$Result
+    )
+
+    $toolTitle = if (
+        $null -ne $ToolMetadata -and
+        $ToolMetadata.Contains('Title') -and
+        -not [string]::IsNullOrWhiteSpace([string]$ToolMetadata['Title'])
+    ) {
+        [string]$ToolMetadata['Title']
+    }
+    else {
+        [string](Get-BoostLabObjectPropertyValue $Result 'ToolTitle' 'Not available')
+    }
+    $toolId = if (
+        $null -ne $ToolMetadata -and
+        $ToolMetadata.Contains('Id') -and
+        -not [string]::IsNullOrWhiteSpace([string]$ToolMetadata['Id'])
+    ) {
+        [string]$ToolMetadata['Id']
+    }
+    else {
+        [string](Get-BoostLabObjectPropertyValue $Result 'ToolId' 'Not available')
+    }
+    $resolvedAction = if (-not [string]::IsNullOrWhiteSpace($ActionName)) {
+        $ActionName
+    }
+    else {
+        [string](Get-BoostLabObjectPropertyValue $Result 'Action' 'Not available')
+    }
+    $data = Get-BoostLabObjectPropertyValue $Result 'Data' $null
+    $verification = Get-BoostLabObjectPropertyValue $Result 'VerificationResult' $null
+    $actionPlan = Get-BoostLabObjectPropertyValue $Result 'ActionPlan' $null
+    $overallStatus = if ($null -ne $Result) {
+        Get-BoostLabResultStatus -Result $Result
+    }
+    else {
+        'Not available'
+    }
+    $commandStatus = Get-BoostLabObjectPropertyValue `
+        -InputObject $data `
+        -PropertyName 'CommandStatus' `
+        -DefaultValue (Get-BoostLabObjectPropertyValue $Result 'Status' $overallStatus)
+    $verificationStatus = if ($null -ne $verification) {
+        Get-BoostLabObjectPropertyValue $verification 'Status' 'Not available'
+    }
+    else {
+        Get-BoostLabObjectPropertyValue $data 'VerificationStatus' 'Not available'
+    }
+    $message = Get-BoostLabObjectPropertyValue $Result 'Message' 'Not available'
+    $timestamp = Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Timestamp' `
+        -DefaultValue (Get-BoostLabObjectPropertyValue $data 'CompletedAt' 'Not available')
+
+    $builder = [System.Text.StringBuilder]::new()
+    [void]$builder.AppendLine('BoostLab Latest Result')
+    [void]$builder.AppendLine('======================')
+    [void]$builder.AppendLine("Tool: $toolTitle")
+    [void]$builder.AppendLine("Tool Id: $toolId")
+    [void]$builder.AppendLine("Action: $resolvedAction")
+    [void]$builder.AppendLine("Status: $overallStatus")
+    [void]$builder.AppendLine("Command Status: $(ConvertTo-BoostLabDiagnosticValueText $commandStatus)")
+    [void]$builder.AppendLine("Verification Status: $(ConvertTo-BoostLabDiagnosticValueText $verificationStatus)")
+    [void]$builder.AppendLine("Timestamp: $(ConvertTo-BoostLabDiagnosticValueText $timestamp)")
+    [void]$builder.AppendLine()
+    [void]$builder.AppendLine('Message')
+    [void]$builder.AppendLine('-------')
+    [void]$builder.AppendLine((ConvertTo-BoostLabDiagnosticValueText $message))
+
+    if ($null -ne $data) {
+        [void]$builder.AppendLine()
+        [void]$builder.AppendLine('Details')
+        [void]$builder.AppendLine('-------')
+        $detailProperties = @(
+            $data.PSObject.Properties |
+                Where-Object {
+                    $_.Name -notin @(
+                        'CommandStatus'
+                        'VerificationStatus'
+                        'Warnings'
+                        'Errors'
+                        'CompletedAt'
+                        'Timestamp'
+                    )
+                }
+        )
+        if ($detailProperties.Count -eq 0) {
+            [void]$builder.AppendLine('Not available')
+        }
+        else {
+            foreach ($property in $detailProperties) {
+                [void]$builder.AppendLine(('{0}:' -f $property.Name))
+                [void]$builder.AppendLine((ConvertTo-BoostLabDiagnosticValueText $property.Value))
+            }
+        }
+    }
+
+    $warnings = @(
+        @(Get-BoostLabDiagnosticItems $Result 'Warnings')
+        @(Get-BoostLabDiagnosticItems $data 'Warnings')
+    )
+    [void]$builder.AppendLine()
+    [void]$builder.AppendLine('Warnings')
+    [void]$builder.AppendLine('--------')
+    if ($warnings.Count -eq 0) {
+        [void]$builder.AppendLine('None')
+    }
+    else {
+        foreach ($warning in $warnings) {
+            [void]$builder.AppendLine(('- {0}' -f (ConvertTo-BoostLabDiagnosticValueText $warning)))
+        }
+    }
+
+    $errors = @(
+        @(Get-BoostLabDiagnosticItems $Result 'Errors')
+        @(Get-BoostLabDiagnosticItems $data 'Errors')
+    )
+    if ($errors.Count -eq 0 -and $overallStatus -in @('Error', 'Failed')) {
+        $errors = @($message)
+    }
+    [void]$builder.AppendLine()
+    [void]$builder.AppendLine('Errors')
+    [void]$builder.AppendLine('------')
+    if ($errors.Count -eq 0) {
+        [void]$builder.AppendLine('None')
+    }
+    else {
+        foreach ($errorText in $errors) {
+            [void]$builder.AppendLine(('- {0}' -f (ConvertTo-BoostLabDiagnosticValueText $errorText)))
+        }
+    }
+
+    [void]$builder.AppendLine()
+    [void]$builder.AppendLine('Verification Checks')
+    [void]$builder.AppendLine('-------------------')
+    $checks = @(Get-BoostLabDiagnosticItems $verification 'Checks')
+    if ($checks.Count -eq 0) {
+        [void]$builder.AppendLine('Not available')
+    }
+    else {
+        foreach ($check in $checks) {
+            [void]$builder.AppendLine((
+                '[{0}] {1}' -f `
+                    (Get-BoostLabObjectPropertyValue $check 'Status' 'Not available'), `
+                    (Get-BoostLabObjectPropertyValue $check 'Name' 'Not available')
+            ))
+            [void]$builder.AppendLine((
+                '  Expected: {0}' -f `
+                    (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Expected' 'Not available'))
+            ))
+            [void]$builder.AppendLine((
+                '  Actual: {0}' -f `
+                    (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Actual' 'Not available'))
+            ))
+            [void]$builder.AppendLine((
+                '  Message: {0}' -f `
+                    (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Message' 'Not available'))
+            ))
+        }
+    }
+
+    [void]$builder.AppendLine()
+    [void]$builder.AppendLine('Action Plan')
+    [void]$builder.AppendLine('-----------')
+    if ($null -eq $actionPlan) {
+        [void]$builder.AppendLine('Not available')
+    }
+    else {
+        [void]$builder.AppendLine((
+            'Summary: {0}' -f `
+                (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $actionPlan 'Summary' 'Not available'))
+        ))
+        [void]$builder.AppendLine((
+            'Risk: {0}' -f `
+                (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $actionPlan 'RiskLevel' 'Not available'))
+        ))
+        [void]$builder.AppendLine('Planned Changes:')
+        [void]$builder.AppendLine((ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $actionPlan 'PlannedChanges' @())))
+        [void]$builder.AppendLine('Side Effects:')
+        [void]$builder.AppendLine((ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $actionPlan 'SideEffects' @())))
+        [void]$builder.AppendLine((
+            'Confirmation: {0}' -f `
+                (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $actionPlan 'ConfirmationMessage' 'Not available'))
+        ))
+    }
+
+    return $builder.ToString().TrimEnd()
 }
 
 function Add-BoostLabResultSectionTitle {
@@ -105,6 +392,43 @@ function Add-BoostLabResultRow {
     $Panel.Children.Add($row) | Out-Null
 }
 
+function Add-BoostLabResultBlock {
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Panel]$Panel,
+
+        [Parameter(Mandatory)]
+        [string]$Label,
+
+        [AllowNull()]
+        [object]$Value,
+
+        [string]$Color = '#E2E8F0'
+    )
+
+    $container = [System.Windows.Controls.StackPanel]::new()
+    $container.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
+
+    $labelText = [System.Windows.Controls.TextBlock]::new()
+    $labelText.Margin = [System.Windows.Thickness]::new(0, 0, 0, 4)
+    $labelText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#7F8DA5')
+    $labelText.FontSize = 10
+    $labelText.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $labelText.Text = "$Label`:"
+    $container.Children.Add($labelText) | Out-Null
+
+    $valueText = [System.Windows.Controls.TextBlock]::new()
+    $valueText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($Color)
+    $valueText.FontFamily = [System.Windows.Media.FontFamily]::new('Consolas')
+    $valueText.FontSize = 11
+    $valueText.LineHeight = 17
+    $valueText.Text = ConvertTo-BoostLabDiagnosticValueText -Value $Value
+    $valueText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $container.Children.Add($valueText) | Out-Null
+
+    $Panel.Children.Add($container) | Out-Null
+}
+
 function Add-BoostLabResultBullet {
     param(
         [Parameter(Mandatory)]
@@ -136,10 +460,30 @@ function Get-BoostLabResultStatus {
     if ($cancelled) {
         return 'Cancelled'
     }
-    if ([bool]$Result.Success) {
+
+    $explicitStatus = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Status' `
+        -DefaultValue '')
+    $success = [bool](Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Success' `
+        -DefaultValue $false)
+    $message = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Message' `
+        -DefaultValue '')
+
+    if ($explicitStatus -in @('NotImplemented', 'Not implemented')) {
+        return 'Not implemented'
+    }
+    if ($explicitStatus -eq 'Warning') {
+        return 'Warning'
+    }
+    if ($success -or $explicitStatus -in @('Passed', 'Success', 'Succeeded')) {
         return 'Success'
     }
-    if ([string]$Result.Message -eq 'Action not implemented yet') {
+    if ($message -eq 'Action not implemented yet') {
         return 'Not implemented'
     }
 
@@ -189,6 +533,10 @@ function Show-BoostLabActionResult {
     $toolId = [string]$ToolMetadata['Id']
     $toolTitle = [string]$ToolMetadata['Title']
     $status = Get-BoostLabResultStatus -Result $Result
+    $data = Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Data' `
+        -DefaultValue $null
     $verificationResult = Get-BoostLabObjectPropertyValue `
         -InputObject $Result `
         -PropertyName 'VerificationResult' `
@@ -203,22 +551,68 @@ function Show-BoostLabActionResult {
     $statusText.Text = $status.ToUpperInvariant()
     $statusText.Foreground = switch ($status) {
         'Success' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#86EFAC') }
+        'Warning' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A') }
         'Cancelled' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A') }
         'Not implemented' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#93C5FD') }
         default { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FCA5A5') }
     }
 
+    $commandStatus = Get-BoostLabObjectPropertyValue `
+        -InputObject $data `
+        -PropertyName 'CommandStatus' `
+        -DefaultValue (Get-BoostLabObjectPropertyValue $Result 'Status' $status)
+    $message = Get-BoostLabObjectPropertyValue $Result 'Message' 'Not available'
+    $timestamp = Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Timestamp' `
+        -DefaultValue (Get-BoostLabObjectPropertyValue $data 'CompletedAt' 'Not available')
+
     Add-BoostLabResultRow -Panel $panel -Label 'Tool' -Value $toolTitle
+    Add-BoostLabResultRow -Panel $panel -Label 'Tool Id' -Value $toolId
     Add-BoostLabResultRow -Panel $panel -Label 'Action' -Value $ActionName
-    Add-BoostLabResultRow `
-        -Panel $panel `
-        -Label $(if ($null -ne $verificationResult) { 'Command Status' } else { 'Status' }) `
-        -Value $status
-    Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$Result.Message)
+    Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value $commandStatus
+    if ($null -ne $verificationResult) {
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'Verification Status' `
+            -Value (Get-BoostLabObjectPropertyValue $verificationResult 'Status' 'Not available')
+    }
+    Add-BoostLabResultBlock -Panel $panel -Label 'Message' -Value $message
+
+    $resultWarnings = @(
+        @(Get-BoostLabDiagnosticItems $Result 'Warnings')
+        @(Get-BoostLabDiagnosticItems $data 'Warnings')
+    )
+    if ($resultWarnings.Count -gt 0) {
+        Add-BoostLabResultBlock `
+            -Panel $panel `
+            -Label 'Warnings' `
+            -Value $resultWarnings `
+            -Color '#FDE68A'
+    }
+
+    $resultErrors = @(
+        @(Get-BoostLabDiagnosticItems $Result 'Errors')
+        @(Get-BoostLabDiagnosticItems $data 'Errors')
+    )
+    if ($resultErrors.Count -eq 0 -and $status -eq 'Error') {
+        $resultErrors = @($message)
+    }
+    if ($resultErrors.Count -gt 0) {
+        Add-BoostLabResultBlock `
+            -Panel $panel `
+            -Label 'Errors' `
+            -Value $resultErrors `
+            -Color '#FCA5A5'
+    }
+    Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value $timestamp
 
     if ($null -ne $verificationResult) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Verification'
-        Add-BoostLabResultRow -Panel $panel -Label 'Verification Status' -Value ([string]$verificationResult.Status)
+        Add-BoostLabResultRow `
+            -Panel $panel `
+            -Label 'Verification Status' `
+            -Value (Get-BoostLabObjectPropertyValue $verificationResult 'Status' 'Not available')
 
         if ($toolId -eq 'widgets') {
             $detectedState = Get-BoostLabObjectPropertyValue `
@@ -408,10 +802,34 @@ function Show-BoostLabActionResult {
                 -Label 'Detected adapter power/wake state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'AdapterPowerWake')
         }
+        elseif ($toolId -eq 'power-plan') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Power Plan state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'PowerPlan')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Power Plan state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'PowerPlan')
+        }
         else {
             foreach ($stateDefinition in @(
-                [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
-                [pscustomobject]@{ Title = 'Detected State'; Value = $verificationResult.DetectedState }
+                [pscustomobject]@{
+                    Title = 'Expected State'
+                    Value = Get-BoostLabObjectPropertyValue $verificationResult 'ExpectedState' $null
+                }
+                [pscustomobject]@{
+                    Title = 'Detected State'
+                    Value = Get-BoostLabObjectPropertyValue $verificationResult 'DetectedState' $null
+                }
             )) {
                 Add-BoostLabResultSectionTitle -Panel $panel -Text $stateDefinition.Title
                 if ($null -ne $stateDefinition.Value) {
@@ -422,17 +840,21 @@ function Show-BoostLabActionResult {
             }
         }
 
-        Add-BoostLabResultRow -Panel $panel -Label 'Message' -Value ([string]$verificationResult.Message)
-        if (@($verificationResult.Checks).Count -gt 0) {
+        Add-BoostLabResultBlock `
+            -Panel $panel `
+            -Label 'Verification Message' `
+            -Value (Get-BoostLabObjectPropertyValue $verificationResult 'Message' 'Not available')
+        $verificationChecks = @(Get-BoostLabDiagnosticItems $verificationResult 'Checks')
+        if ($verificationChecks.Count -gt 0) {
             Add-BoostLabResultSectionTitle -Panel $panel -Text 'Verification Checks'
-            foreach ($check in @($verificationResult.Checks)) {
+            foreach ($check in $verificationChecks) {
                 $checkText = '{0} [{1}] Expected: {2}; Actual: {3}. {4}' -f `
-                    $check.Name, `
-                    $check.Status, `
-                    $check.Expected, `
-                    $check.Actual, `
-                    $check.Message
-                $checkColor = switch ([string]$check.Status) {
+                    (Get-BoostLabObjectPropertyValue $check 'Name' 'Not available'), `
+                    (Get-BoostLabObjectPropertyValue $check 'Status' 'Not available'), `
+                    (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Expected' 'Not available')), `
+                    (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Actual' 'Not available')), `
+                    (Get-BoostLabObjectPropertyValue $check 'Message' 'Not available')
+                $checkColor = switch ([string](Get-BoostLabObjectPropertyValue $check 'Status' 'Not available')) {
                     'Passed' { '#86EFAC' }
                     'Warning' { '#FDE68A' }
                     'Failed' { '#FCA5A5' }
@@ -446,40 +868,49 @@ function Show-BoostLabActionResult {
     $actionPlan = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'ActionPlan' -DefaultValue $null
     if ($null -ne $actionPlan) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Action Plan'
-        Add-BoostLabResultRow -Panel $panel -Label 'Risk' -Value ([string]$actionPlan.RiskLevel).ToUpperInvariant()
-        Add-BoostLabResultRow -Panel $panel -Label 'Summary' -Value ([string]$actionPlan.Summary)
+        $riskLevel = [string](Get-BoostLabObjectPropertyValue $actionPlan 'RiskLevel' 'Not available')
+        Add-BoostLabResultRow -Panel $panel -Label 'Risk' -Value $riskLevel.ToUpperInvariant()
+        Add-BoostLabResultBlock `
+            -Panel $panel `
+            -Label 'Summary' `
+            -Value (Get-BoostLabObjectPropertyValue $actionPlan 'Summary' 'Not available')
         Add-BoostLabResultRow `
             -Panel $panel `
             -Label 'Administrator' `
-            -Value $(if ([bool]$actionPlan.RequiresAdmin) { 'Required' } else { 'Not required by this tool' })
+            -Value $(if ([bool](Get-BoostLabObjectPropertyValue $actionPlan 'RequiresAdmin' $false)) { 'Required' } else { 'Not required by this tool' })
         Add-BoostLabResultRow `
             -Panel $panel `
             -Label 'TrustedInstaller' `
-            -Value $(if ([bool]$actionPlan.UsesTrustedInstaller) { 'Required for approved execution' } else { 'Not declared' })
+            -Value $(if ([bool](Get-BoostLabObjectPropertyValue $actionPlan 'UsesTrustedInstaller' $false)) { 'Required for approved execution' } else { 'Not declared' })
         Add-BoostLabResultRow `
             -Panel $panel `
             -Label 'Confirmation' `
-            -Value $(if ([bool]$actionPlan.NeedsExplicitConfirmation) { 'Required' } else { 'Not required' })
+            -Value $(if ([bool](Get-BoostLabObjectPropertyValue $actionPlan 'NeedsExplicitConfirmation' $false)) { 'Required' } else { 'Not required' })
         Add-BoostLabResultRow `
             -Panel $panel `
             -Label 'Plan mode' `
-            -Value $(if ([bool]$actionPlan.IsDryRun) { 'Dry run' } else { 'Execution request' })
+            -Value $(if ([bool](Get-BoostLabObjectPropertyValue $actionPlan 'IsDryRun' $false)) { 'Dry run' } else { 'Execution request' })
 
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Planned Changes'
-        foreach ($plannedChange in @($actionPlan.PlannedChanges)) {
+        foreach ($plannedChange in @(Get-BoostLabObjectPropertyValue $actionPlan 'PlannedChanges' @())) {
             Add-BoostLabResultBullet -Panel $panel -Text ([string]$plannedChange)
         }
 
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Side Effects'
-        foreach ($sideEffect in @($actionPlan.SideEffects)) {
+        foreach ($sideEffect in @(Get-BoostLabObjectPropertyValue $actionPlan 'SideEffects' @())) {
             Add-BoostLabResultBullet -Panel $panel -Text ([string]$sideEffect) -Color '#FDE68A'
         }
 
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Confirmation Message'
-        Add-BoostLabResultBullet -Panel $panel -Text ([string]$actionPlan.ConfirmationMessage)
+        Add-BoostLabResultBullet `
+            -Panel $panel `
+            -Text ([string](Get-BoostLabObjectPropertyValue $actionPlan 'ConfirmationMessage' 'Not available'))
     }
 
-    $data = Get-BoostLabObjectPropertyValue -InputObject $Result -PropertyName 'Data' -DefaultValue $null
+    if ($null -ne $data) {
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Details'
+    }
+
     if ($toolId -eq 'restore-point' -and $null -ne $data) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Restore Point'
         Add-BoostLabResultRow -Panel $panel -Label 'Restore point name' -Value (Get-BoostLabObjectPropertyValue $data 'RestorePointName')
@@ -651,6 +1082,31 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Registry values / properties checked' -Value $(if ([string]::IsNullOrWhiteSpace($registryValuesChecked)) { 'None' } else { $registryValuesChecked })
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
+    elseif ($toolId -eq 'power-plan' -and $null -ne $data) {
+        $targetedGuids = @(
+            (Get-BoostLabObjectPropertyValue $data 'PowerPlanGuidsTargeted' @())
+        ) -join [Environment]::NewLine
+        $powerChecks = @(
+            (Get-BoostLabObjectPropertyValue $data 'PowerCfgCommandsOrSettingsChecked' @())
+        ) -join [Environment]::NewLine
+        $registryChecks = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesOrFilesChecked' @())
+        ) -join [Environment]::NewLine
+        $warnings = @(
+            (Get-BoostLabObjectPropertyValue $data 'Warnings' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Power Plan'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Verification Status' -Value (Get-BoostLabObjectPropertyValue $data 'VerificationStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected Power Plan state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedPowerPlanState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected Power Plan state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedPowerPlanState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Power plan GUIDs targeted' -Value $(if ([string]::IsNullOrWhiteSpace($targetedGuids)) { 'None' } else { $targetedGuids })
+        Add-BoostLabResultRow -Panel $panel -Label 'Powercfg commands / settings checked' -Value $(if ([string]::IsNullOrWhiteSpace($powerChecks)) { 'None' } else { $powerChecks })
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values / files checked' -Value $(if ([string]::IsNullOrWhiteSpace($registryChecks)) { 'None' } else { $registryChecks })
+        Add-BoostLabResultRow -Panel $panel -Label 'Power Options' -Value (Get-BoostLabObjectPropertyValue $data 'PowerOptionsStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Warnings' -Value $(if ([string]::IsNullOrWhiteSpace($warnings)) { 'None' } else { $warnings })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Detected System'
         Add-BoostLabResultRow -Panel $panel -Label 'Motherboard Manufacturer' -Value (Get-BoostLabObjectPropertyValue $data 'MotherboardManufacturer')
@@ -695,6 +1151,28 @@ function Show-BoostLabActionResult {
                 Add-BoostLabResultRow -Panel $panel -Label $property.Name -Value $property.Value
             }
         }
+    }
+
+    $script:BoostLabLatestResult = $Result
+    $script:BoostLabLatestResultToolMetadata = $ToolMetadata
+    $script:BoostLabLatestResultActionName = $ActionName
+    try {
+        $script:BoostLabLatestResultText = Format-BoostLabLatestResultText `
+            -ToolMetadata $ToolMetadata `
+            -ActionName $ActionName `
+            -Result $Result
+    }
+    catch {
+        $script:BoostLabLatestResultText = @(
+            'BoostLab Latest Result'
+            "Tool: $toolTitle"
+            "Tool Id: $toolId"
+            "Action: $ActionName"
+            "Status: $status"
+            "Message: $(ConvertTo-BoostLabDiagnosticValueText $message)"
+            "Formatting Error: $($_.Exception.Message)"
+            "Timestamp: $(ConvertTo-BoostLabDiagnosticValueText $timestamp)"
+        ) -join [Environment]::NewLine
     }
 
     (Get-BoostLabUiElement -Name 'LatestResultScrollViewer').ScrollToTop()
@@ -785,11 +1263,13 @@ function Add-BoostLabToolActionActivityEntry {
         -PropertyName 'VerificationResult' `
         -DefaultValue $null
     $verificationStatus = if ($null -ne $verificationResult) {
-        [string]$verificationResult.Status
+        [string](Get-BoostLabObjectPropertyValue $verificationResult 'Status' '')
     }
     else {
         ''
     }
+    $resultSuccess = [bool](Get-BoostLabObjectPropertyValue $Result 'Success' $false)
+    $resultMessage = [string](Get-BoostLabObjectPropertyValue $Result 'Message' 'Not available')
     $level = if ($status -eq 'Success' -and $verificationStatus -eq 'Warning') {
         'Warning'
     }
@@ -799,6 +1279,7 @@ function Add-BoostLabToolActionActivityEntry {
     else {
         switch ($status) {
         'Success' { 'Success' }
+        'Warning' { 'Warning' }
         'Not implemented' { 'Info' }
         'Cancelled' { 'Info' }
         default { 'Error' }
@@ -807,18 +1288,18 @@ function Add-BoostLabToolActionActivityEntry {
     $message = if (
         [string]$ToolMetadata['Id'] -eq 'bios-information' -and
         $ActionName -eq 'Analyze' -and
-        [bool]$Result.Success
+        $resultSuccess
     ) {
         'Hardware and BIOS information detected.'
     }
     elseif ($verificationStatus -in @('Warning', 'Failed')) {
         '{0} Verification {1}: {2}' -f `
-            [string]$Result.Message, `
+            $resultMessage, `
             $verificationStatus.ToLowerInvariant(), `
-            [string]$verificationResult.Message
+            [string](Get-BoostLabObjectPropertyValue $verificationResult 'Message' 'Not available')
     }
     else {
-        [string]$Result.Message
+        $resultMessage
     }
 
     Add-BoostLabActivityEntry -Entry ([pscustomobject]@{
@@ -894,7 +1375,15 @@ function Invoke-BoostLabToolCardAction {
         -Result $result
 
     $Context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $result)
-    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "$($result.ToolTitle): $($result.Message)"
+    $resultToolTitle = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $result `
+        -PropertyName 'ToolTitle' `
+        -DefaultValue ([string]$toolMetadata['Title']))
+    $resultMessage = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $result `
+        -PropertyName 'Message' `
+        -DefaultValue 'No result message was provided.')
+    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "${resultToolTitle}: $resultMessage"
 
     return $result
 }
@@ -926,6 +1415,21 @@ function Copy-BoostLabVisibleActivityLog {
     try {
         [System.Windows.Clipboard]::SetText($visibleText)
         (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Visible log copied'
+    }
+    catch {
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Clipboard unavailable'
+    }
+}
+
+function Copy-BoostLabLatestResult {
+    if ([string]::IsNullOrWhiteSpace($script:BoostLabLatestResultText)) {
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Latest result is empty'
+        return
+    }
+
+    try {
+        [System.Windows.Clipboard]::SetText($script:BoostLabLatestResultText)
+        (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Latest result copied'
     }
     catch {
         (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = 'Clipboard unavailable'
@@ -1361,6 +1865,10 @@ function Initialize-BoostLabMainWindow {
     $script:BoostLabStages = @($StageConfiguration['Stages'] | Sort-Object { [int]$_['Order'] })
     $script:BoostLabStageButtons = @{}
     $script:BoostLabVisibleLogText.Clear()
+    $script:BoostLabLatestResult = $null
+    $script:BoostLabLatestResultToolMetadata = $null
+    $script:BoostLabLatestResultActionName = ''
+    $script:BoostLabLatestResultText = ''
 
     Initialize-BoostLabState
 
@@ -1400,6 +1908,9 @@ function Initialize-BoostLabMainWindow {
     })
     (Get-BoostLabUiElement -Name 'CopyLogButton').Add_Click({
         Copy-BoostLabVisibleActivityLog
+    })
+    (Get-BoostLabUiElement -Name 'CopyLatestResultButton').Add_Click({
+        Copy-BoostLabLatestResult
     })
 
     $navigationPanel = Get-BoostLabUiElement -Name 'StageNavigationPanel'

@@ -97,6 +97,7 @@ try {
         'SelectedToolActionText'
         'LatestResultPanel'
         'LatestResultStatusText'
+        'CopyLatestResultButton'
         'ActivityLogRichTextBox'
         'ClearLogButton'
         'CopyLogButton'
@@ -110,6 +111,7 @@ try {
     $tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
     $biosInformationTool = $tools | Where-Object { $_['Id'] -eq 'bios-information' } | Select-Object -First 1
     $biosSettingsTool = $tools | Where-Object { $_['Id'] -eq 'bios-settings' } | Select-Object -First 1
+    $powerPlanTool = $tools | Where-Object { $_['Id'] -eq 'power-plan' } | Select-Object -First 1
     $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'directx' } | Select-Object -First 1
 
     $biosInformationModule = Import-Module `
@@ -226,7 +228,7 @@ try {
         [string]$placeholderTool['Title']
         'Action:'
         'Analyze'
-        'Status:'
+        'Command Status:'
         'Not implemented'
         'Message:'
         'Action not implemented yet'
@@ -278,6 +280,127 @@ try {
         }
     }
 
+    $originalClipboardText = [System.Windows.Clipboard]::GetText()
+    $clipboardCaptured = $true
+    $longPowerPlanError = 'POWER_PLAN_ERROR_BEGIN ' + ('diagnostic-segment ' * 320) + 'POWER_PLAN_ERROR_END'
+    $powerPlanDiagnosticResult = [pscustomobject]@{
+        Success            = $false
+        ToolId             = 'power-plan'
+        ToolTitle          = 'Power Plan'
+        Action             = 'Apply'
+        Status             = 'Failed'
+        Message            = $longPowerPlanError
+        RestartRequired    = $false
+        Cancelled          = $false
+        ActionPlan         = [pscustomobject]@{
+            RiskLevel                = 'Medium'
+            Summary                  = 'Apply the approved Power Plan configuration.'
+            PlannedChanges           = @('Run approved powercfg commands.')
+            SideEffects              = @('Active power behavior may change.')
+            RequiresAdmin            = $true
+            UsesTrustedInstaller      = $false
+            NeedsExplicitConfirmation = $true
+            IsDryRun                  = $false
+            ConfirmationMessage      = 'Confirm the approved Power Plan Apply action.'
+        }
+        VerificationResult = [pscustomobject]@{
+            Status        = 'Failed'
+            Message       = 'The detected active plan did not match the expected plan.'
+            ExpectedState = [pscustomobject]@{ PowerPlan = 'BoostLab approved plan' }
+            DetectedState = [pscustomobject]@{ PowerPlan = 'Balanced' }
+            Checks        = @(
+                [pscustomobject]@{
+                    Name     = 'Active Power Plan'
+                    Status   = 'Failed'
+                    Expected = 'BoostLab approved plan'
+                    Actual   = 'Balanced'
+                    Message  = 'The active power plan differs from the requested plan.'
+                }
+            )
+        }
+        Data               = [pscustomobject]@{
+            CommandStatus                    = 'Failed'
+            VerificationStatus               = 'Failed'
+            PowerPlanGuidsTargeted            = @('00000000-0000-0000-0000-000000000000')
+            PowerCfgCommandsOrSettingsChecked = @('powercfg diagnostic command text')
+            RegistryValuesOrFilesChecked     = @('No diagnostic fixture writes were performed.')
+            PowerOptionsStatus               = 'Not opened'
+            Warnings                         = @('Power Plan diagnostic warning text.')
+            Errors                           = @($longPowerPlanError)
+            CompletedAt                      = Get-Date
+        }
+        Timestamp          = Get-Date
+    }
+
+    Show-BoostLabActionResult `
+        -ToolMetadata $powerPlanTool `
+        -ActionName 'Apply' `
+        -Result $powerPlanDiagnosticResult
+    $powerPlanResultText = Get-BoostLabTestText -Root $window.FindName('LatestResultPanel')
+    if ($longPowerPlanError -notin $powerPlanResultText) {
+        throw 'Latest Result truncated or omitted the full Power Plan error text.'
+    }
+    foreach ($expectedText in @(
+        'Tool:'
+        'Tool Id:'
+        'Command Status:'
+        'Verification Status:'
+        'Message:'
+        'Warnings:'
+        'Errors:'
+        'Verification Checks'
+        'Timestamp:'
+    )) {
+        if (-not (@($powerPlanResultText | Where-Object { $_ -like "*$expectedText*" }).Count -gt 0)) {
+            throw "Latest Result is missing diagnostic field: $expectedText"
+        }
+    }
+
+    $formattedPowerPlanResult = Format-BoostLabLatestResultText `
+        -ToolMetadata $powerPlanTool `
+        -ActionName 'Apply' `
+        -Result $powerPlanDiagnosticResult
+    if (
+        -not $formattedPowerPlanResult.Contains($longPowerPlanError) -or
+        -not $formattedPowerPlanResult.Contains('Active Power Plan') -or
+        -not $formattedPowerPlanResult.Contains('Expected: BoostLab approved plan') -or
+        -not $formattedPowerPlanResult.Contains('Actual: Balanced') -or
+        -not $formattedPowerPlanResult.Contains('Apply the approved Power Plan configuration.')
+    ) {
+        throw 'The plain-text Latest Result formatter omitted structured Power Plan diagnostics.'
+    }
+
+    Copy-BoostLabLatestResult
+    $copiedLatestResult = [System.Windows.Clipboard]::GetText()
+    if (
+        -not $copiedLatestResult.Contains($longPowerPlanError) -or
+        -not $copiedLatestResult.Contains('Tool Id: power-plan') -or
+        -not $copiedLatestResult.Contains('Verification Checks') -or
+        -not $copiedLatestResult.Contains('Action Plan')
+    ) {
+        throw 'Copy Latest Result did not copy the complete structured result.'
+    }
+
+    $minimalResult = [pscustomobject]@{
+        Success   = $false
+        Message   = 'Minimal diagnostic failure.'
+        Timestamp = Get-Date
+    }
+    Show-BoostLabActionResult `
+        -ToolMetadata $powerPlanTool `
+        -ActionName 'Apply' `
+        -Result $minimalResult
+    $minimalFormattedResult = Format-BoostLabLatestResultText `
+        -ToolMetadata $powerPlanTool `
+        -ActionName 'Apply' `
+        -Result $minimalResult
+    if (
+        -not $minimalFormattedResult.Contains('Minimal diagnostic failure.') -or
+        -not $minimalFormattedResult.Contains('Verification Status: Not available')
+    ) {
+        throw 'Latest Result did not handle missing optional result properties cleanly.'
+    }
+
     Add-BoostLabStartupActivityEntry
     Add-BoostLabToolActionActivityEntry `
         -ToolMetadata $biosInformationTool `
@@ -308,6 +431,13 @@ try {
         EventId   = 'Detail'
         Message   = 'Detail message'
     })
+    Add-BoostLabActivityEntry -Entry ([pscustomobject]@{
+        Timestamp = Get-Date
+        Level     = 'Error'
+        Source    = 'Power Plan'
+        EventId   = 'Apply'
+        Message   = $longPowerPlanError
+    })
     $visibleLogText = $script:BoostLabVisibleLogText -join "`r`n"
     foreach ($displayLevel in @('INFO', 'SUCCESS', 'WARNING', 'ERROR', 'DETAIL')) {
         if ($visibleLogText -notmatch "\[$displayLevel\]") {
@@ -331,16 +461,15 @@ try {
         }
     }
 
-    $originalClipboardText = [System.Windows.Clipboard]::GetText()
-    $clipboardCaptured = $true
     Copy-BoostLabVisibleActivityLog
     $copiedText = [System.Windows.Clipboard]::GetText()
     if (
         -not $copiedText.Contains('BIOS Information') -or
         -not $copiedText.Contains('Analyze') -or
-        -not $copiedText.Contains('Hardware and BIOS information detected.')
+        -not $copiedText.Contains('Hardware and BIOS information detected.') -or
+        -not $copiedText.Contains($longPowerPlanError)
     ) {
-        throw 'Copy Log did not copy the visible activity text.'
+        throw 'Copy Log did not copy the complete visible activity text.'
     }
 
     Clear-BoostLabVisibleActivityLog
@@ -373,6 +502,7 @@ try {
         RuntimeFailureContained    = $true
         VisibleLogLevels           = 5
         ClearLogValidated          = $true
+        CopyLatestResultValidated  = $true
         CopyLogValidated           = $true
         OpenActionsExecuted        = $false
         Message                    = 'Phase 8.5 Activity & Results presentation validated without executing Open actions.'

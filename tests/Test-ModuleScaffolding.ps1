@@ -120,6 +120,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\NetworkAdapterPowerSavingsWake.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'power-plan' = @{
+        RelativePath          = 'Windows\PowerPlan.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -369,6 +373,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'network-adapter-power-savings-wake') {
             0
+        }
+        elseif ($toolId -eq 'power-plan') {
+            1
         }
         else {
             1
@@ -647,6 +654,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Network Adapter Power Savings & Wake behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'power-plan') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                '$script:BoostLabPowerSchemeGuid = ''99999999-9999-9999-9999-999999999999'''
+                '$script:BoostLabPowerSettingDefinitions'
+                '/duplicatescheme'
+                '/setactive'
+                '/delete'
+                '-restoredefaultschemes'
+                '/hibernate'
+                'function Test-BoostLabPowerPlanState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verification'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Power Plan behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Disable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'Restart-Computer'
+                'Stop-Computer'
+                'shutdown.exe'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Power Plan behavior: $forbiddenText")
                 }
             }
         }
