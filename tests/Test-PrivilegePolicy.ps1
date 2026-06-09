@@ -301,6 +301,7 @@ $implementedModules = [ordered]@{
     'sound' = 'Windows\sound.psm1'
     'widgets' = 'Windows\Widgets.psm1'
     'restore-point' = 'Windows\RestorePoint.psm1'
+    'theme-black' = 'Windows\ThemeBlack.psm1'
 }
 foreach ($toolId in $implementedModules.Keys) {
     $modulePath = Join-Path $modulesRoot $implementedModules[$toolId]
@@ -326,7 +327,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 15) {
+if ($implementedModuleFiles.Count -ne 16) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

@@ -75,6 +75,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\RestorePoint.psm1'
         Actions = @('Apply', 'Open')
     }
+    'theme-black' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\ThemeBlack.psm1'
+        Actions = @('Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

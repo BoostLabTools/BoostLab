@@ -107,6 +107,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\RestorePoint.psm1'
         LegacyHash = 'E9164E079DB76112A59D686B9C0C77B1A9B26E69CA4326B3B4FF46BF63C03C34'
     }
+    'Theme Black' = @{
+        LegacyPath = 'source-ultimate\6 Windows\4 Theme Black.ps1'
+        ModulePath = 'modules\Windows\ThemeBlack.psm1'
+        LegacyHash = 'C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F'
+    }
 }
 
 $deletedToolNames = @(
@@ -370,6 +375,43 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Updates Pause contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Theme Black' {
+            foreach ($requiredText in @(
+                'blacktheme.reg'
+                'defaulttheme.reg'
+                '"AppsUseLightTheme"=dword:00000000'
+                '"AppsUseLightTheme"=dword:00000001'
+                '[-HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize]'
+                '"AccentColor"=dword:ff191919'
+                '"AccentColor"=dword:ffd47800'
+                'Set-Content -Path $Path -Value $Content -Force -ErrorAction Stop'
+                '"regedit.exe"'
+                '-ArgumentList "/S `"$Path`""'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Theme Black preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Theme Black contains unrelated behavior: $forbiddenText"
                 }
             }
         }

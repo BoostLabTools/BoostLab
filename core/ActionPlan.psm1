@@ -162,6 +162,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
         'Restore the default unpaused Windows Update registry state.'
     }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Apply') {
+        'Apply the approved Ultimate black theme, transparency, accent, DWM, and background registry values.'
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
+        'Restore the explicit default theme registry values from the approved Ultimate source.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -240,6 +246,16 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Remove only the six Windows Update pause timestamp values written by Apply.')
         $plannedChanges.Add('Open the built-in Windows Update Settings page.')
         $plannedChanges.Add('Confirm that all six pause timestamp values are absent.')
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Write the approved blacktheme.reg payload to the Windows Temp directory.')
+        $plannedChanges.Add('Import the exact HKCU and HKLM black theme values with regedit.exe in the Ultimate source order.')
+        $plannedChanges.Add('Verify all 13 theme registry states defined by the source.')
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Write the approved defaulttheme.reg payload to the Windows Temp directory.')
+        $plannedChanges.Add('Import the exact default values and remove the HKLM Themes Personalize key as defined by Ultimate.')
+        $plannedChanges.Add('Verify all 13 default theme registry states defined by the source.')
     }
     else {
         switch ($ActionName) {
@@ -343,6 +359,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows Update Settings opens after the values are removed.')
         $sideEffects.Add('Windows may require the Settings page to refresh before the default state is displayed.')
     }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Windows app and system theme values change to dark, transparency is disabled, and the approved black accent values are applied.')
+        $sideEffects.Add('The source-compatible blacktheme.reg file remains in the Windows Temp directory.')
+        $sideEffects.Add('Windows may require Settings, Explorer, sign-out, or a later session to visually refresh every theme element.')
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Theme, transparency, accent, DWM, and background values return to the explicit Ultimate default branch.')
+        $sideEffects.Add('The HKLM Themes Personalize key is removed exactly as defined by the source, and defaulttheme.reg remains in Windows Temp.')
+        $sideEffects.Add('Windows may require Settings, Explorer, sign-out, or a later session to visually refresh every theme element.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -418,6 +444,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'updates-pause' -and $ActionName -eq 'Default') {
         'BoostLab will remove only the six approved Windows Update pause timestamps, open Windows Update Settings, and verify the default state. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Apply') {
+        'BoostLab will import the approved Ultimate black theme registry payload and verify all source-defined values. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
+        'BoostLab will import the approved Ultimate default theme payload, including removal of the HKLM Themes Personalize key, and verify the result. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

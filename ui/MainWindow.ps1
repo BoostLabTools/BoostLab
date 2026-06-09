@@ -286,6 +286,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Updates Pause state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'UpdatesPause')
         }
+        elseif ($toolId -eq 'theme-black') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Theme state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'Theme')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Theme state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'Theme')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -425,6 +443,20 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Settings page' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsPageStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Pause start' -Value (Get-BoostLabObjectPropertyValue $data 'PauseStartTime')
         Add-BoostLabResultRow -Panel $panel -Label 'Pause expiry' -Value (Get-BoostLabObjectPropertyValue $data 'PauseExpiryTime')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'theme-black' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Theme Black'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected Theme state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedThemeState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected Theme state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedThemeState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry file' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryFileStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Theme import' -Value (Get-BoostLabObjectPropertyValue $data 'ThemeImportStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'UI refresh / Settings launch' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

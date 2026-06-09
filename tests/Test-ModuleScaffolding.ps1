@@ -100,6 +100,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Open'')'
     }
+    'theme-black' = @{
+        RelativePath          = 'Windows\ThemeBlack.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -281,11 +285,16 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'updates-pause' -and
             $commandName -in @('Set-ItemProperty', 'Remove-ItemProperty')
         )
+        $approvedThemeBlackCommand = (
+            $toolId -eq 'theme-black' -and
+            $commandName -eq 'Set-Content'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
             -not $approvedStoreSettingsCommand -and
-            -not $approvedUpdatesPauseCommand
+            -not $approvedUpdatesPauseCommand -and
+            -not $approvedThemeBlackCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -319,6 +328,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'store-settings') {
             2
+        }
+        elseif ($toolId -eq 'theme-black') {
+            1
         }
         else {
             1
@@ -381,6 +393,46 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Updates Pause behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'theme-black') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'blacktheme.reg'
+                'defaulttheme.reg'
+                'Set-Content -Path $Path -Value $Content -Force -ErrorAction Stop'
+                'Start-Process'
+                '"regedit.exe"'
+                '-ArgumentList "/S `"$Path`""'
+                'function Test-BoostLabThemeBlackState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Black theme applied.'
+                'Theme restored to default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Theme Black behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Theme Black behavior: $forbiddenText")
                 }
             }
         }
