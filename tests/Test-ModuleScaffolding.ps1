@@ -104,6 +104,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\ThemeBlack.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'start-menu-layout' = @{
+        RelativePath          = 'Windows\StartMenuLayout.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -289,12 +293,17 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'theme-black' -and
             $commandName -eq 'Set-Content'
         )
+        $approvedStartMenuLayoutCommand = (
+            $toolId -eq 'start-menu-layout' -and
+            $commandName -eq 'Set-Content'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
             -not $approvedStoreSettingsCommand -and
             -not $approvedUpdatesPauseCommand -and
-            -not $approvedThemeBlackCommand
+            -not $approvedThemeBlackCommand -and
+            -not $approvedStartMenuLayoutCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -330,6 +339,9 @@ foreach ($entry in $expectedModules.Values) {
             2
         }
         elseif ($toolId -eq 'theme-black') {
+            1
+        }
+        elseif ($toolId -eq 'start-menu-layout') {
             1
         }
         else {
@@ -433,6 +445,50 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Theme Black behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'start-menu-layout') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'newstartmenu.reg'
+                'oldstartmenu.reg'
+                '"EnabledState"=dword:00000002'
+                '"EnabledState"=-'
+                '"AllAppsViewMode"=dword:00000002'
+                '"AllAppsViewMode"=dword:00000000'
+                'Set-Content -Path $Path -Value $Content -Force -ErrorAction Stop'
+                '"regedit.exe"'
+                '-ArgumentList "/S `"$Path`""'
+                'function Test-BoostLabStartMenuLayoutState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+                'Start Menu 25H2 layout applied.'
+                'Start Menu 24H2 layout restored as default.'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Start Menu Layout behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'Remove-Item'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Start Menu Layout behavior: $forbiddenText")
                 }
             }
         }

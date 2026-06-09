@@ -168,6 +168,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
         'Restore the explicit default theme registry values from the approved Ultimate source.'
     }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Apply') {
+        'Apply the approved Ultimate 25H2 recommended Start menu layout feature overrides and apps view.'
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
+        'Restore the Ultimate 24H2 Start menu branch as the approved BoostLab Default.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -256,6 +262,16 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Write the approved defaulttheme.reg payload to the Windows Temp directory.')
         $plannedChanges.Add('Import the exact default values and remove the HKLM Themes Personalize key as defined by Ultimate.')
         $plannedChanges.Add('Verify all 13 default theme registry states defined by the source.')
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Write the approved newstartmenu.reg payload to the Windows Temp directory.')
+        $plannedChanges.Add('Set the four approved HKLM feature override EnabledState values to 2.')
+        $plannedChanges.Add('Set HKCU Start AllAppsViewMode to 2 and verify the five registry values plus the import file.')
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Write the approved oldstartmenu.reg payload to the Windows Temp directory.')
+        $plannedChanges.Add('Remove only the four approved feature override EnabledState values.')
+        $plannedChanges.Add('Set HKCU Start AllAppsViewMode to 0 and verify the five registry states plus the import file.')
     }
     else {
         switch ($ActionName) {
@@ -369,6 +385,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The HKLM Themes Personalize key is removed exactly as defined by the source, and defaulttheme.reg remains in Windows Temp.')
         $sideEffects.Add('Windows may require Settings, Explorer, sign-out, or a later session to visually refresh every theme element.')
     }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The four source-defined Windows feature overrides enable the recommended 25H2 Start menu behavior.')
+        $sideEffects.Add('AllAppsViewMode changes to list view, and newstartmenu.reg remains in the Windows Temp directory.')
+        $sideEffects.Add('Explorer, Start Menu, sign-out, or a later session may be required before the visual layout refreshes.')
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The four source-defined EnabledState values are removed and AllAppsViewMode returns to category view.')
+        $sideEffects.Add('oldstartmenu.reg remains in the Windows Temp directory.')
+        $sideEffects.Add('Explorer, Start Menu, sign-out, or a later session may be required before the visual layout refreshes.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -450,6 +476,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'theme-black' -and $ActionName -eq 'Default') {
         'BoostLab will import the approved Ultimate default theme payload, including removal of the HKLM Themes Personalize key, and verify the result. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Apply') {
+        'BoostLab will import the approved Ultimate 25H2 Start menu layout values and verify all five registry states plus the import file. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $ActionName -eq 'Default') {
+        'BoostLab will import the Ultimate 24H2 branch as the approved Default, removing only four EnabledState values and setting AllAppsViewMode to 0. No restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

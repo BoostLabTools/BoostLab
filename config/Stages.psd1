@@ -267,7 +267,7 @@
                     Order       = 2
                     Type        = 'action'
                     RiskLevel   = 'low'
-                    Description = 'Manage the reversible BoostLab Start menu layout preference.'
+                    Description = 'Apply the recommended 25H2 Start menu layout or restore the source 24H2 layout.'
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

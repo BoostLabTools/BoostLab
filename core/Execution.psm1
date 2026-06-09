@@ -79,6 +79,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\ThemeBlack.psm1'
         Actions = @('Apply', 'Default')
     }
+    'start-menu-layout' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\StartMenuLayout.psm1'
+        Actions = @('Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

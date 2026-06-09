@@ -112,6 +112,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\ThemeBlack.psm1'
         LegacyHash = 'C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F'
     }
+    'Start Menu Layout' = @{
+        LegacyPath = 'source-ultimate\6 Windows\2 Start Menu Layout.ps1'
+        ModulePath = 'modules\Windows\StartMenuLayout.psm1'
+        LegacyHash = '81C1298D7C9E112DB910C4398CD94E4B70ECD97ED3B185CF2FD2B8A380E069E8'
+    }
 }
 
 $deletedToolNames = @(
@@ -412,6 +417,43 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Theme Black contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Start Menu Layout' {
+            foreach ($requiredText in @(
+                'newstartmenu.reg'
+                'oldstartmenu.reg'
+                '"EnabledState"=dword:00000002'
+                '"EnabledState"=-'
+                '"AllAppsViewMode"=dword:00000002'
+                '"AllAppsViewMode"=dword:00000000'
+                'Set-Content -Path $Path -Value $Content -Force -ErrorAction Stop'
+                '"regedit.exe"'
+                '-ArgumentList "/S `"$Path`""'
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Start Menu Layout preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'Remove-Item'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Start Menu Layout contains unrelated behavior: $forbiddenText"
                 }
             }
         }

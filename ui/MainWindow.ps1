@@ -304,6 +304,24 @@ function Show-BoostLabActionResult {
                 -Label 'Detected Theme state' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'Theme')
         }
+        elseif ($toolId -eq 'start-menu-layout') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected Start Menu Layout state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'StartMenuLayout')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected Start Menu Layout state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'StartMenuLayout')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -456,6 +474,24 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
         Add-BoostLabResultRow -Panel $panel -Label 'Registry file' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryFileStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Theme import' -Value (Get-BoostLabObjectPropertyValue $data 'ThemeImportStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'UI refresh / Settings launch' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'start-menu-layout' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        $filePathsChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'FilePathsChecked' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Start Menu Layout'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected Start Menu Layout state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedStartMenuLayoutState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected Start Menu Layout state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedStartMenuLayoutState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $registryValuesChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'File paths checked' -Value $filePathsChecked
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry file' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryFileStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry import' -Value (Get-BoostLabObjectPropertyValue $data 'RegistryImportStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'UI refresh / Settings launch' -Value (Get-BoostLabObjectPropertyValue $data 'UiRefreshStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
