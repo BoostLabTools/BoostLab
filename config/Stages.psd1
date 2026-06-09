@@ -452,11 +452,11 @@
                     Title       = 'Network Adapter Power Savings & Wake'
                     Stage       = 'Windows'
                     Order       = 19
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open network adapter properties for guided power and wake settings.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Type        = 'action'
+                    RiskLevel   = 'medium'
+                    Description = 'Disable approved network adapter power-saving and wake values or restore their default absent state.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'write-cache-buffer-flushing'

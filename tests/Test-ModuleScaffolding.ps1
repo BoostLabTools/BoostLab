@@ -116,6 +116,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\SignoutLockScreenWallpaperBlack.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'network-adapter-power-savings-wake' = @{
+        RelativePath          = 'Windows\NetworkAdapterPowerSavingsWake.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -363,6 +367,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
             0
         }
+        elseif ($toolId -eq 'network-adapter-power-savings-wake') {
+            0
+        }
         else {
             1
         }
@@ -597,6 +604,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Signout LockScreen Wallpaper Black behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'network-adapter-power-savings-wake') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'HKLM:\System\ControlSet001\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'
+                'PnPCapabilities'
+                'AdvancedEEE'
+                '*ModernStandbyWoLMagicPacket'
+                'function Test-BoostLabNetworkAdapterPowerWakeState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Network Adapter Power Savings & Wake behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Disable-NetAdapter'
+                'Disable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'netsh winsock reset'
+                'netsh int ip reset'
+                'Set-NetFirewall'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Network Adapter Power Savings & Wake behavior: $forbiddenText")
                 }
             }
         }

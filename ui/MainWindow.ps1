@@ -390,6 +390,24 @@ function Show-BoostLabActionResult {
                 -Label 'File disposition' `
                 -Value (Get-BoostLabObjectPropertyValue $detectedState 'FileDisposition')
         }
+        elseif ($toolId -eq 'network-adapter-power-savings-wake') {
+            $expectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'ExpectedState' `
+                -DefaultValue $null
+            $detectedState = Get-BoostLabObjectPropertyValue `
+                -InputObject $verificationResult `
+                -PropertyName 'DetectedState' `
+                -DefaultValue $null
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Expected adapter power/wake state' `
+                -Value (Get-BoostLabObjectPropertyValue $expectedState 'AdapterPowerWake')
+            Add-BoostLabResultRow `
+                -Panel $panel `
+                -Label 'Detected adapter power/wake state' `
+                -Value (Get-BoostLabObjectPropertyValue $detectedState 'AdapterPowerWake')
+        }
         else {
             foreach ($stateDefinition in @(
                 [pscustomobject]@{ Title = 'Expected State'; Value = $verificationResult.ExpectedState }
@@ -602,6 +620,35 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'File disposition' -Value (Get-BoostLabObjectPropertyValue $data 'FileDisposition')
         Add-BoostLabResultRow -Panel $panel -Label 'Wallpaper refresh' -Value (Get-BoostLabObjectPropertyValue $data 'WallpaperRefreshStatus')
         Add-BoostLabResultRow -Panel $panel -Label 'Warnings' -Value $(if ([string]::IsNullOrWhiteSpace($warnings)) { 'None' } else { $warnings })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $null -ne $data) {
+        $adapterNames = @(
+            (Get-BoostLabObjectPropertyValue $data 'AdapterNamesTargeted' @())
+        ) -join [Environment]::NewLine
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        $propertiesChanged = @(
+            (Get-BoostLabObjectPropertyValue $data 'PropertiesAppliedOrDefaulted' @())
+        ) -join [Environment]::NewLine
+        $inaccessibleTargets = @(
+            (Get-BoostLabObjectPropertyValue $data 'InaccessibleAdapterTargets' @())
+        ) -join [Environment]::NewLine
+        $inaccessibleProperties = @(
+            (Get-BoostLabObjectPropertyValue $data 'InaccessibleOrUnsupportedProperties' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Network Adapter Power Savings & Wake'
+        Add-BoostLabResultRow -Panel $panel -Label 'Adapter enumeration status' -Value (Get-BoostLabObjectPropertyValue $data 'AdapterEnumerationStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Verification Status' -Value (Get-BoostLabObjectPropertyValue $data 'VerificationStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected adapter power/wake state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedAdapterPowerWakeState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected adapter power/wake state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedAdapterPowerWakeState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Adapter names targeted' -Value $(if ([string]::IsNullOrWhiteSpace($adapterNames)) { 'None found' } else { $adapterNames })
+        Add-BoostLabResultRow -Panel $panel -Label 'Properties applied / defaulted' -Value $(if ([string]::IsNullOrWhiteSpace($propertiesChanged)) { 'None' } else { $propertiesChanged })
+        Add-BoostLabResultRow -Panel $panel -Label 'Inaccessible adapter targets' -Value $(if ([string]::IsNullOrWhiteSpace($inaccessibleTargets)) { 'None' } else { $inaccessibleTargets })
+        Add-BoostLabResultRow -Panel $panel -Label 'Inaccessible / unsupported properties' -Value $(if ([string]::IsNullOrWhiteSpace($inaccessibleProperties)) { 'None' } else { $inaccessibleProperties })
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values / properties checked' -Value $(if ([string]::IsNullOrWhiteSpace($registryValuesChecked)) { 'None' } else { $registryValuesChecked })
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
     elseif ($toolId -eq 'bios-information' -and $ActionName -eq 'Analyze' -and $null -ne $data) {

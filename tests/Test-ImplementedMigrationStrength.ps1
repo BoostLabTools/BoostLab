@@ -127,6 +127,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
         LegacyHash = 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
     }
+    'Network Adapter Power Savings & Wake' = @{
+        LegacyPath = 'source-ultimate\6 Windows\19 Network Adapter Power Savings & Wake.ps1'
+        ModulePath = 'modules\Windows\NetworkAdapterPowerSavingsWake.psm1'
+        LegacyHash = '1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB'
+    }
 }
 
 $deletedToolNames = @(
@@ -554,6 +559,56 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Signout LockScreen Wallpaper Black contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Network Adapter Power Savings & Wake' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'HKLM:\System\ControlSet001\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'
+                'PnPCapabilities'
+                'AdvancedEEE'
+                '*EEE'
+                'EEELinkAdvertisement'
+                'SipsEnabled'
+                'ULPMode'
+                'GigaLite'
+                'EnableGreenEthernet'
+                'PowerSavingMode'
+                'S5WakeOnLan'
+                '*WakeOnMagicPacket'
+                '*ModernStandbyWoLMagicPacket'
+                '*WakeOnPattern'
+                'WakeOnLink'
+                'New-BoostLabVerificationResult'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Network Adapter Power Savings & Wake preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Disable-NetAdapter'
+                'Disable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'netsh winsock reset'
+                'netsh int ip reset'
+                'Set-NetFirewall'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Network Adapter Power Savings & Wake contains unrelated behavior: $forbiddenText"
                 }
             }
         }

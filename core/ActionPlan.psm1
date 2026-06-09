@@ -186,6 +186,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
         'Restore the approved default wallpaper state without deleting unrelated PersonalizationCSP values or files.'
     }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
+        'Disable the approved network adapter power-saving and wake values across detected adapter class keys.'
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
+        'Restore the approved default state by removing only the source-defined adapter power and wake values.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -311,6 +317,16 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Web\Wallpaper\Windows\img0.jpg and request the source wallpaper refresh.')
         $plannedChanges.Add('Restore a recorded backup of a pre-existing C:\Windows\Black.jpg when available.')
         $plannedChanges.Add('Otherwise remove Black.jpg only when BoostLab state and hash prove ownership; leave uncertain or unrelated files intact.')
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
+        $plannedChanges.Add('Set the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
+        $plannedChanges.Add('Verify every unique value on every detected adapter key.')
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
+        $plannedChanges.Add('Remove only the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
+        $plannedChanges.Add('Treat already-absent values as default and verify every unique value on every detected adapter key.')
     }
     else {
         switch ($ActionName) {
@@ -453,6 +469,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('A recorded pre-existing Black.jpg is restored; an owned generated file is removed only when ownership is proven.')
         $sideEffects.Add('Unrelated PersonalizationCSP values and files are preserved, and uncertain file ownership is reported as a warning.')
     }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Detected network adapters may use more power and will not wake from the source-defined wake events.')
+        $sideEffects.Add('No adapter is disabled and no driver is installed, removed, replaced, or updated.')
+        $sideEffects.Add('Device Manager, adapter refresh, or sign-out may be needed before every visible driver UI state updates; no restart is performed.')
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The source-defined adapter overrides are removed so each driver can return to its default behavior.')
+        $sideEffects.Add('No unrelated adapter properties or registry values are removed.')
+        $sideEffects.Add('Device Manager, adapter refresh, or sign-out may be needed before every visible driver UI state updates; no restart is performed.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -552,6 +578,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
         'BoostLab will remove only its two PersonalizationCSP values, restore the approved desktop wallpaper, and restore or remove Black.jpg only when backup or ownership state permits. Unrelated values and files will remain. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
+        'BoostLab will set the 14 approved power-saving and wake values on every detected network adapter class key and verify each value. No adapter will be disabled and no restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
+        'BoostLab will remove only the 14 approved network adapter power-saving and wake values and verify their default absent state. No adapter will be disabled and no restart is required. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

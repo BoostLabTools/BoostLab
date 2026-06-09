@@ -92,6 +92,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\SignoutLockScreenWallpaperBlack.psm1'
         Actions = @('Apply', 'Default')
     }
+    'network-adapter-power-savings-wake' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\NetworkAdapterPowerSavingsWake.psm1'
+        Actions = @('Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {
