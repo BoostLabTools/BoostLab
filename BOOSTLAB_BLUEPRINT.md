@@ -79,13 +79,12 @@ The application must be built using PowerShell and a graphical user interface.
 14. Notepad Settings
 15. Control Panel Settings
 16. Sound
-17. Loudness EQ
-18. Device Manager Power Savings & Wake
-19. Network Adapter Power Savings & Wake
-20. Write Cache Buffer Flushing
-21. Power Plan
-22. Cleanup
-23. Restore Point
+17. Device Manager Power Savings & Wake
+18. Network Adapter Power Savings & Wake
+19. Write Cache Buffer Flushing
+20. Power Plan
+21. Cleanup
+22. Restore Point
 
 ### Stage 7 - Advanced
 
@@ -121,6 +120,13 @@ The following components are intentionally excluded from BoostLab:
 * UAC
 * Scaling
 * Start Menu Shortcuts
+* Loudness EQ
+
+### Phase 25 Removal Record
+
+Loudness EQ was permanently removed from the BoostLab product by Yazan on June 10, 2026. It is not hidden, deferred, or eligible for future migration, and it must not be recreated under another name or inside another tool.
+
+Phase 25 intentionally deleted only `source-ultimate/6 Windows/17 Loudness EQ.ps1` from the legacy source tree. The file's final SHA-256 was `2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE`. This one-file exception does not weaken the rule that all other `source-ultimate` files remain immutable reference material.
 
 ---
 

@@ -88,7 +88,6 @@ $serviceIds = @(
     'game-bar'
     'edge-webview'
     'control-panel-settings'
-    'loudness-eq'
     'services-optimizer'
     'timer-resolution-assistant'
     'defender-optimize-assistant'
@@ -136,8 +135,8 @@ $runOnceSources = @($sourceFiles | Where-Object {
     (Get-Content -Raw -LiteralPath $_.FullName) -match '(?i)RunOnce'
 })
 if (
-    $sourceFiles.Count -ne 50 -or
-    $adminSources.Count -ne 42 -or
+    $sourceFiles.Count -ne 49 -or
+    $adminSources.Count -ne 41 -or
     $trustedInstallerSources.Count -ne 4 -or
     $safeModeSources.Count -ne 2 -or
     $runOnceSources.Count -ne 5
@@ -353,6 +352,7 @@ $deletedToolNames = @(
     'UAC'
     'Scaling'
     'Start Menu Shortcuts'
+    'Loudness EQ'
 )
 function ConvertTo-NormalizedToolName {
     param([Parameter(Mandatory)][string]$Name)
@@ -390,8 +390,8 @@ finally {
     $sha256.Dispose()
 }
 if (
-    $sourceLines.Count -ne 50 -or
-    $sourceManifestHash -ne '4F96170AFF67F9EE7A2E765A8DE268570651E22D2F3EE2C02923E0654D2C8EBF'
+    $sourceLines.Count -ne 49 -or
+    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
 ) {
     $errors.Add('source-ultimate content or paths changed.')
 }

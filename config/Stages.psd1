@@ -426,17 +426,6 @@
                     Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
-                    Id          = 'loudness-eq'
-                    Title       = 'Loudness EQ'
-                    Stage       = 'Windows'
-                    Order       = 17
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open audio device properties for loudness equalization review.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
                     Id          = 'device-manager-power-savings-wake'
                     Title       = 'Device Manager Power Savings & Wake'
                     Stage       = 'Windows'

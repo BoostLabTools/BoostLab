@@ -570,7 +570,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($implementedCount -ne 21 -or $placeholderCount -ne 28) {
+if ($implementedCount -ne 21 -or $placeholderCount -ne 27) {
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 
@@ -594,8 +594,8 @@ finally {
     $sha256.Dispose()
 }
 if (
-    $sourceLines.Count -ne 50 -or
-    $sourceManifestHash -ne '4F96170AFF67F9EE7A2E765A8DE268570651E22D2F3EE2C02923E0654D2C8EBF'
+    $sourceLines.Count -ne 49 -or
+    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

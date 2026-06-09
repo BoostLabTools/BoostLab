@@ -158,6 +158,7 @@ $deletedToolNames = @(
     'UAC'
     'Scaling'
     'Start Menu Shortcuts'
+    'Loudness EQ'
 )
 
 $auditResults = [System.Collections.Generic.List[object]]::new()

@@ -61,6 +61,7 @@ $deletedToolNames = @(
     'UAC'
     'Scaling'
     'Start Menu Shortcuts'
+    'Loudness EQ'
 )
 
 if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
@@ -178,8 +179,8 @@ finally {
     $sha256.Dispose()
 }
 
-$expectedSourceFileCount = 50
-$expectedSourceManifestHash = '4F96170AFF67F9EE7A2E765A8DE268570651E22D2F3EE2C02923E0654D2C8EBF'
+$expectedSourceFileCount = 49
+$expectedSourceManifestHash = '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
 if ($sourceFiles.Count -ne $expectedSourceFileCount) {
     $errors.Add("source-ultimate file count changed: expected $expectedSourceFileCount, found $($sourceFiles.Count).")
 }

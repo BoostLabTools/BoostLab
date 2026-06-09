@@ -151,6 +151,7 @@ $deletedToolNames = @(
     'UAC'
     'Scaling'
     'Start Menu Shortcuts'
+    'Loudness EQ'
 )
 $prohibitedCommands = @(
     'Set-ItemProperty'
