@@ -116,6 +116,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\SignoutLockScreenWallpaperBlack.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'device-manager-power-savings-wake' = @{
+        RelativePath          = 'Windows\device-manager-power-savings-wake.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'network-adapter-power-savings-wake' = @{
         RelativePath          = 'Windows\NetworkAdapterPowerSavingsWake.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -372,6 +376,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
             0
         }
+        elseif ($toolId -eq 'device-manager-power-savings-wake') {
+            0
+        }
         elseif ($toolId -eq 'network-adapter-power-savings-wake') {
             0
         }
@@ -612,6 +619,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Signout LockScreen Wallpaper Black behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'device-manager-power-savings-wake') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                '$script:BoostLabDeviceClasses = @(''ACPI'', ''HID'', ''PCI'', ''USB'')'
+                'EnhancedPowerManagementEnabled'
+                'SeleactiveSuspendEnabled'
+                'SelectiveSuspendEnabled'
+                'SelectiveSuspendOn'
+                'IdleInWorkingState'
+                'WaitWakeEnabled'
+                'function Test-BoostLabDeviceManagerRegistryTarget'
+                'function Test-BoostLabDeviceManagerPowerWakeState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Device Manager Power Savings & Wake behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Disable-PnpDevice'
+                'Enable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Remove-Item'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated Device Manager Power Savings & Wake behavior: $forbiddenText")
                 }
             }
         }

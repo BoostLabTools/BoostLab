@@ -430,11 +430,11 @@
                     Title       = 'Device Manager Power Savings & Wake'
                     Stage       = 'Windows'
                     Order       = 18
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open Device Manager for guided power-saving and wake configuration.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Type        = 'action'
+                    RiskLevel   = 'medium'
+                    Description = 'Disable source-approved device power-saving and wake values or restore the Ultimate default value removals.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'network-adapter-power-savings-wake'

@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **21**
-* Placeholder modules: **27**
+* Implemented modules: **22**
+* Placeholder modules: **26**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -31,7 +31,7 @@ The current catalog describes several placeholders more softly than their Ultima
 * `Edge Settings` exposes only `Open`, but the source changes policy, RunOnce, Active Setup, services, and performs a repair download.
 * `Notepad Settings` exposes only `Open`, but the source stops Notepad, edits its settings hive, and deletes `settings.dat` for Default.
 * `Control Panel Settings` exposes only `Open`, but the source is a large Apply/Default optimization using services, security-sensitive policy, deletion, and TrustedInstaller.
-* `Device Manager Power Savings & Wake` and `Network Adapter Power Savings & Wake` expose only `Open`, but their sources perform broad HKLM device-registry changes.
+* `Network Adapter Power Savings & Wake` was originally cataloged as `Open`, but its source performs broad HKLM adapter-registry changes. It has since been implemented under an approved migration record.
 
 These mismatches are documented here rather than changed during this planning-only phase. Their actions and capabilities should be corrected as part of an approved implementation phase, after the intended BoostLab behavior is decided.
 
@@ -68,25 +68,21 @@ These mismatches are documented here rather than changed during this planning-on
    * Stops Notepad, mounts its `settings.dat` registry hive, imports values, and unloads the hive.
    * Default deletes `settings.dat`, so this needs explicit file-change confirmation and verification.
 
-5. **Device Manager Power Savings & Wake**
-   * Applies or removes values across all connected ACPI, HID, PCI, and USB device registry trees.
-   * Explicit Default exists, but dynamic device enumeration and value-level verification are required.
-
-6. **Network Adapter Power Savings & Wake**
+5. **Network Adapter Power Savings & Wake**
    * Applies or removes multiple power and wake values across every detected network adapter class key.
    * Explicit Default exists; adapter-specific unsupported values must be warnings rather than false failures.
 
-7. **MMAgent Assistant**
+6. **MMAgent Assistant**
    * Uses focused MMAgent commands plus one prefetch registry value.
    * Explicit Default and Check branches exist.
    * Must remain an assistant with analysis, command planning, verification, and warnings about delayed state initialization.
 
-8. **SMT / HT Assistant**
+7. **SMT / HT Assistant**
    * Changes process affinity for a selected process or launches a selected executable with an affinity mask.
    * One branch stops a list of game launchers. There is no Default or restore branch.
    * Requires user-driven process selection and captured prior affinity if Restore is ever offered.
 
-9. **Timer Resolution Assistant**
+8. **Timer Resolution Assistant**
     * Compiles and installs a narrowly scoped custom Windows service, then starts/stops and removes it.
     * Explicit Default exists, but service creation, binary provenance, compilation, cleanup, and verification need a dedicated phase.
 
@@ -140,7 +136,6 @@ These mismatches are documented here rather than changed during this planning-on
 | Edge & WebView | Windows | `modules/Windows/edge-webview.psm1` | `source-ultimate/6 Windows/13 Edge & WebView.ps1`<br>`161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691` | HKCU/HKLM; processes; service deletion; RunOnce; downloads; installers; broad file deletion | Deferred | Removes Edge/WebView files and services, then Default downloads repair installers. | Yes | No | Phase: Edge and WebView Removal/Repair |
 | Notepad Settings | Windows | `modules/Windows/notepad-settings.psm1` | `source-ultimate/6 Windows/14 Notepad Settings.ps1`<br>`2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB` | Notepad process stop; mounted app settings hive; file write/delete | Medium | Default deletes Notepad `settings.dat`. Current `Open` metadata is inaccurate. | Yes | No | Phase: Notepad Settings State |
 | Control Panel Settings | Windows | `modules/Windows/control-panel-settings.psm1` | `source-ultimate/6 Windows/15 Control Panel Settings.ps1`<br>`B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | HKCU/HKLM/HKCR; services; security policy; deletion; TrustedInstaller | Deferred | Nearly 3,000 lines of broad policy and settings behavior. Current `Open` metadata is inaccurate. | Yes | No | Phase: Control Panel Settings Decomposition |
-| Device Manager Power Savings & Wake | Windows | `modules/Windows/device-manager-power-savings-wake.psm1` | `source-ultimate/6 Windows/18 Device Manager Power Savings & Wake.ps1`<br>`FB543A5C6BD8F2FBEA5CD3069FD72DCDCCAB847D9E4753FD33BB0909843D209F` | Broad dynamic HKLM device registry | Medium | Writes/removes values for every ACPI, HID, PCI, and USB device. Current `Open` metadata is inaccurate. | Yes | No | Phase: Device Power and Wake Policy |
 | Network Adapter Power Savings & Wake | Windows | `modules/Windows/network-adapter-power-savings-wake.psm1` | `source-ultimate/6 Windows/19 Network Adapter Power Savings & Wake.ps1`<br>`1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB` | Broad dynamic HKLM adapter registry | Medium | Writes/removes 14 adapter power/wake values per detected adapter. Current `Open` metadata is inaccurate. | Yes | No | Phase: Network Adapter Power and Wake |
 | Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Deferred | Apply writes one value, but Default deletes entire device `Disk` subkeys. Source also references the intentionally deleted NVME Faster Driver tool. | Yes, but unsafe | Yes; approve a value-only Default or captured-state Restore | Phase: Storage Write Cache Safety Review |
 | Power Plan | Windows | `modules/Windows/power-plan.psm1` | `source-ultimate/6 Windows/21 Power Plan.ps1`<br>`97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56` | HKLM power policy; extensive `powercfg`; power-scheme deletion; UI launch | Deferred | Deletes all enumerated schemes, disables hibernation, and sets battery warnings/actions/levels to zero. Default cannot restore custom prior schemes. | Yes | Yes for true Restore; source Default only restores Windows schemes | Phase: Power Plan Capture, Apply, and Rollback |
@@ -153,7 +148,13 @@ These mismatches are documented here rather than changed during this planning-on
 | Timer Resolution Assistant | Advanced | `modules/Advanced/timer-resolution-assistant.psm1` | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1`<br>`883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Compiles executable; creates/starts/stops service; scoped file deletion; Task Manager launch | Medium | Narrowly scoped service, but production needs reviewed source provenance, deterministic compilation, service verification, and cleanup. | Yes | No | Phase: Timer Resolution Service Assistant |
 | Defender Optimize Assistant | Advanced | `modules/Advanced/defender-optimize-assistant.psm1` | `source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1`<br>`512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6` | Defender/security; services; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | High-impact security workflow with repeated Safe Mode transitions and restarts. | Yes | No, but recovery must be independently verified | Phase: Defender Safe Mode Recovery Assistant |
 
-## D. Permanently Deleted Tools
+## D. Implemented After Triage
+
+### Device Manager Power Savings & Wake
+
+Phase 26 implemented the source-defined Apply and Default registry behavior with strict ACPI/HID/PCI/USB target validation, explicit confirmation, idempotent value deletion, and read-only verification. See `docs/migrations/device-manager-power-savings-wake.md`.
+
+## E. Permanently Deleted Tools
 
 ### Loudness EQ
 
@@ -167,7 +168,7 @@ The approved deletion removed:
 
 The deleted legacy source had SHA-256 `2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE`. The source stopped and restarted audio services and wrote per-device HKLM enhancement data without a Default path. Loudness EQ must never be recreated directly, indirectly, under another name, or inside another tool.
 
-## E. Refused Tools
+## F. Refused Tools
 
 ### GameBar
 

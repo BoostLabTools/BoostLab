@@ -127,6 +127,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
         LegacyHash = 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
     }
+    'Device Manager Power Savings & Wake' = @{
+        LegacyPath = 'source-ultimate\6 Windows\18 Device Manager Power Savings & Wake.ps1'
+        ModulePath = 'modules\Windows\device-manager-power-savings-wake.psm1'
+        LegacyHash = 'FB543A5C6BD8F2FBEA5CD3069FD72DCDCCAB847D9E4753FD33BB0909843D209F'
+    }
     'Network Adapter Power Savings & Wake' = @{
         LegacyPath = 'source-ultimate\6 Windows\19 Network Adapter Power Savings & Wake.ps1'
         ModulePath = 'modules\Windows\NetworkAdapterPowerSavingsWake.psm1'
@@ -615,6 +620,44 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Network Adapter Power Savings & Wake contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Device Manager Power Savings & Wake' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                '$script:BoostLabDeviceClasses = @(''ACPI'', ''HID'', ''PCI'', ''USB'')'
+                'EnhancedPowerManagementEnabled'
+                'SeleactiveSuspendEnabled'
+                'SelectiveSuspendEnabled'
+                'SelectiveSuspendOn'
+                'IdleInWorkingState'
+                'WaitWakeEnabled'
+                'Test-BoostLabDeviceManagerRegistryTarget'
+                'New-BoostLabVerificationResult'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Device Manager Power Savings & Wake preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Disable-PnpDevice'
+                'Enable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'Remove-Item'
+                'Remove-AppxPackage'
+                'Invoke-WebRequest'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Computer'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Device Manager Power Savings & Wake contains unrelated behavior: $forbiddenText"
                 }
             }
         }
