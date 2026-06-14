@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **24**
-* Placeholder modules: **24**
+* Implemented modules: **25**
+* Placeholder modules: **23**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -68,12 +68,7 @@ These mismatches are documented here rather than changed during this planning-on
    * Applies or removes multiple power and wake values across every detected network adapter class key.
    * Explicit Default exists; adapter-specific unsupported values must be warnings rather than false failures.
 
-5. **SMT / HT Assistant**
-   * Changes process affinity for a selected process or launches a selected executable with an affinity mask.
-   * One branch stops a list of game launchers. There is no Default or restore branch.
-   * Requires user-driven process selection and captured prior affinity if Restore is ever offered.
-
-6. **Timer Resolution Assistant**
+5. **Timer Resolution Assistant**
     * Compiles and installs a narrowly scoped custom Windows service, then starts/stops and removes it.
     * Explicit Default exists, but service creation, binary provenance, compilation, cleanup, and verification need a dedicated phase.
 
@@ -133,7 +128,6 @@ These mismatches are documented here rather than changed during this planning-on
 | Spectre / Meltdown Assistant | Advanced | `modules/Advanced/spectre-meltdown-assistant.psm1` | `source-ultimate/8 Advanced/1 Spectre  Meltdown Assistant.ps1`<br>`3989B93BC4B3367B1ED0CF831C93DA6C2E87C556D945854FEE4ECA5D4C66AB50` | HKLM security mitigation registry | Deferred | Directly disables CPU vulnerability mitigations. Must remain a high-risk assistant with explicit security impact analysis. | Yes | No | Phase: Spectre/Meltdown Security Assistant |
 | MMAgent Assistant | Advanced | `modules/Advanced/mmagent-assistant.psm1` | `source-ultimate/8 Advanced/2 MMAgent Assistant.ps1`<br>`C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79` | HKLM registry; MMAgent commands; read-only check | Medium | Focused but multi-setting system behavior. Source Default intentionally leaves MemoryCompression and PageCombining disabled, so “Default” must preserve that approved meaning. | Yes | No | Phase: MMAgent Analysis and Toggle |
 | Resizable BAR Assistant | Advanced | `modules/Advanced/resizable-bar-assistant.psm1` | `source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1`<br>`E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443` | Download; driver profiles; external executable; firmware reboot | Deferred | Downloads NVIDIA Inspector, imports large profiles, and includes reboot-to-BIOS behavior. | Yes, driver whitelist | No | Phase: Resizable BAR Driver and Firmware Assistant |
-| SMT / HT Assistant | Advanced | `modules/Advanced/smt-ht-assistant.psm1` | `source-ultimate/8 Advanced/4 SMT  HT Assistant.ps1`<br>`5D53BF2A9A589ECB14D9F8F9048FF4830D2E6F4DEE7E4B54BA6B6B6F77F004FE` | Process analysis; process affinity; selected executable launch; launcher process stops | Medium | Interactive process/file selection and affinity calculation. No Default or restore behavior. | No | Yes if Restore is introduced; capture prior affinity | Phase: SMT/HT Process Affinity Assistant |
 | Services Optimizer | Advanced | `modules/Advanced/services-optimizer.psm1` | `source-ultimate/8 Advanced/5 Services Optimizer.ps1`<br>`386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Broad services; HKLM; security; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | Heavy multi-stage privileged workflow. Requires service-state capture, Safe Mode recovery, TrustedInstaller runtime, and rollback design. | Yes | No, but Restore should use captured pre-action service state | Phase: Services Optimizer Recovery Architecture |
 | Timer Resolution Assistant | Advanced | `modules/Advanced/timer-resolution-assistant.psm1` | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1`<br>`883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Compiles executable; creates/starts/stops service; scoped file deletion; Task Manager launch | Medium | Narrowly scoped service, but production needs reviewed source provenance, deterministic compilation, service verification, and cleanup. | Yes | No | Phase: Timer Resolution Service Assistant |
 | Defender Optimize Assistant | Advanced | `modules/Advanced/defender-optimize-assistant.psm1` | `source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1`<br>`512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6` | Defender/security; services; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | High-impact security workflow with repeated Safe Mode transitions and restarts. | Yes | No, but recovery must be independently verified | Phase: Defender Safe Mode Recovery Assistant |
@@ -151,6 +145,10 @@ Phase 27 implemented the source-defined black-image and default-restore behavior
 ### MMAgent Assistant
 
 Phase 28 implemented the source-defined Check, Off, and Default behavior as an assistant with Action Plan confirmation, structured results, and verification. The approved BoostLab Default preserves the original source meaning where `MemoryCompression` and `PageCombining` remain disabled. See `docs/migrations/mmagent-assistant.md`.
+
+### SMT / HT Assistant
+
+Phase 29 implemented the source-defined `Off: Already Running` and `Off: Startup` workflows as an advanced assistant with Analyze, Action Plan confirmation, structured results, and affinity verification. The implementation preserves the source launcher stop list and temporary per-process scope without changing BIOS SMT/HT settings. See `docs/migrations/smt-ht-assistant.md`.
 
 ## E. Permanently Deleted Tools
 
@@ -201,13 +199,13 @@ A policy-only implementation would weaken Ultimate behavior. The full source req
 
 In recommended order:
 
-1. **Theme Black**
-2. **Start Menu Layout**, after approving the `24H2`-to-`Default` action mapping
-3. **Context Menu**, after deciding how to avoid or preserve deletion of the shared Blocked key
-4. **Signout LockScreen Wallpaper Black**, with scoped state capture for existing CSP values and wallpaper
-5. **Network Adapter Power Savings & Wake**, with adapter-aware verification and unsupported-value warnings
+1. **Notepad Settings**, with explicit approval for mounted `settings.dat` handling and file-backed default behavior
+2. **Timer Resolution Assistant**, after approving service creation, binary provenance, and cleanup expectations
+3. **Spectre / Meltdown Assistant**, only with a dedicated high-risk security-assistant prompt and mitigation-impact reporting
+4. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
+5. **To BIOS**, once the reboot confirmation and firmware-entry flow is explicitly approved for a dedicated phase
 
-The first two are Group 1. Items three through five are the lowest-complexity Group 2 candidates, not unconditional safe migrations.
+The first two are the strongest remaining medium-risk candidates. Items three through five still require a narrower safety decision before implementation.
 
 ## Decisions Needed Before Future Phases
 

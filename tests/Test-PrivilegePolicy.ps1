@@ -307,6 +307,7 @@ $implementedModules = [ordered]@{
     'device-manager-power-savings-wake' = 'Windows\device-manager-power-savings-wake.psm1'
     'user-account-pictures-black' = 'Windows\user-account-pictures-black.psm1'
     'mmagent-assistant' = 'Advanced\mmagent-assistant.psm1'
+    'smt-ht-assistant' = 'Advanced\smt-ht-assistant.psm1'
 }
 foreach ($toolId in $implementedModules.Keys) {
     $modulePath = Join-Path $modulesRoot $implementedModules[$toolId]
@@ -332,7 +333,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 24) {
+if ($implementedModuleFiles.Count -ne 25) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

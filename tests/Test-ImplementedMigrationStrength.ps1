@@ -56,6 +56,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Advanced\mmagent-assistant.psm1'
         LegacyHash = 'C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79'
     }
+    'SMT / HT Assistant' = @{
+        LegacyPath = 'source-ultimate\8 Advanced\4 SMT  HT Assistant.ps1'
+        ModulePath = 'modules\Advanced\smt-ht-assistant.psm1'
+        LegacyHash = '5D53BF2A9A589ECB14D9F8F9048FF4830D2E6F4DEE7E4B54BA6B6B6F77F004FE'
+    }
     'Background Apps' = @{
         LegacyPath = 'source-ultimate\3 Setup\5 Background Apps.ps1'
         ModulePath = 'modules\Setup\BackgroundApps.psm1'
@@ -363,6 +368,39 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "MMAgent Assistant contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'SMT / HT Assistant' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Open'')'
+                'Get-WmiObject Win32_ComputerSystem -ErrorAction Stop'
+                'WorkingSet64 -gt 500MB'
+                '$script:BoostLabLauncherStopList = @('
+                'Battle.net'
+                'RiotClientServices'
+                'ProcessorAffinity = [int]$affinityProfile.IntegerMask'
+                'start "" /affinity {0} "{1}"'
+                'Start-Sleep -Seconds $Seconds'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "SMT / HT Assistant preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-ItemProperty'
+                'New-ItemProperty'
+                'Remove-ItemProperty'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "SMT / HT Assistant contains unrelated behavior: $forbiddenText"
                 }
             }
         }

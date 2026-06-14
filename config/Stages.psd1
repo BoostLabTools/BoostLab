@@ -538,8 +538,8 @@
                     Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Analyze processor topology and explain SMT or Hyper-Threading tradeoffs.'
-                    Actions     = @('Analyze', 'Open')
+                    Description = 'Analyze processor topology and temporarily disable sibling CPU threads per selected app or launcher.'
+                    Actions     = @('Analyze', 'Apply', 'Open')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
