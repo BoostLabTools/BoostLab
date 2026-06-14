@@ -116,6 +116,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\SignoutLockScreenWallpaperBlack.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'user-account-pictures-black' = @{
+        RelativePath          = 'Windows\user-account-pictures-black.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'device-manager-power-savings-wake' = @{
         RelativePath          = 'Windows\device-manager-power-savings-wake.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -376,6 +380,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'signout-lockscreen-wallpaper-black') {
             0
         }
+        elseif ($toolId -eq 'user-account-pictures-black') {
+            0
+        }
         elseif ($toolId -eq 'device-manager-power-savings-wake') {
             0
         }
@@ -619,6 +626,52 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Signout LockScreen Wallpaper Black behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'user-account-pictures-black') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'Microsoft\User Account Pictures'
+                '$script:BoostLabApprovedExtensions = @(''.png'', ''.bmp'')'
+                'System.Drawing.Bitmap'
+                'System.Drawing.Graphics'
+                'System.Drawing.Color]::Black'
+                'Copy-BoostLabAccountPictureBackup'
+                'Set-BoostLabAccountPictureBlack'
+                'Restore-BoostLabAccountPictureBackup'
+                'Remove-BoostLabAccountPictureBackupSet'
+                'user-account-pictures-black.json'
+                'OriginalSha256'
+                'AppliedSha256'
+                'LeftIntactUnknownOwnership'
+                'function Test-BoostLabUserAccountPicturesState'
+                'New-BoostLabVerificationResult'
+                'VerificationResult'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing User Account Pictures Black behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+                'source-ultimate'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated User Account Pictures Black behavior: $forbiddenText")
                 }
             }
         }

@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **22**
-* Placeholder modules: **26**
+* Implemented modules: **23**
+* Placeholder modules: **25**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -60,29 +60,25 @@ These mismatches are documented here rather than changed during this planning-on
    * Creates `C:\Windows\Black.jpg`, changes lock-screen and wallpaper values, refreshes desktop parameters, and deletes the generated file on Default.
    * Default deletes the full `PersonalizationCSP` key, so state capture or narrower approved behavior should be decided.
 
-3. **User Account Pictures Black**
-   * Backs up and overwrites system account-picture files.
-   * Restore depends on the backup folder created by Apply; the runtime should verify backup completeness before changing images.
-
-4. **Notepad Settings**
+3. **Notepad Settings**
    * Stops Notepad, mounts its `settings.dat` registry hive, imports values, and unloads the hive.
    * Default deletes `settings.dat`, so this needs explicit file-change confirmation and verification.
 
-5. **Network Adapter Power Savings & Wake**
+4. **Network Adapter Power Savings & Wake**
    * Applies or removes multiple power and wake values across every detected network adapter class key.
    * Explicit Default exists; adapter-specific unsupported values must be warnings rather than false failures.
 
-6. **MMAgent Assistant**
+5. **MMAgent Assistant**
    * Uses focused MMAgent commands plus one prefetch registry value.
    * Explicit Default and Check branches exist.
    * Must remain an assistant with analysis, command planning, verification, and warnings about delayed state initialization.
 
-7. **SMT / HT Assistant**
+6. **SMT / HT Assistant**
    * Changes process affinity for a selected process or launches a selected executable with an affinity mask.
    * One branch stops a list of game launchers. There is no Default or restore branch.
    * Requires user-driven process selection and captured prior affinity if Restore is ever offered.
 
-8. **Timer Resolution Assistant**
+7. **Timer Resolution Assistant**
     * Compiles and installs a narrowly scoped custom Windows service, then starts/stops and removes it.
     * Explicit Default exists, but service creation, binary provenance, compilation, cleanup, and verification need a dedicated phase.
 
@@ -129,7 +125,6 @@ These mismatches are documented here rather than changed during this planning-on
 | Context Menu | Windows | `modules/Windows/context-menu.psm1` | `source-ultimate/6 Windows/3 Context Menu.ps1`<br>`33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2` | HKCU/HKLM/HKCR registry; temporary `.reg` file | Medium | Reversible in intent, but touches many shell handlers. Default deletes the complete shared `Shell Extensions\Blocked` key and could remove unrelated entries. | Yes | No, but collateral-key behavior needs approval or state capture | Phase: Context Menu Policy Toggle |
 | Theme Black | Windows | `modules/Windows/theme-black.psm1` | `source-ultimate/6 Windows/4 Theme Black.ps1`<br>`C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F` | HKCU/HKLM registry; temporary `.reg` file | Safe | Focused theme, transparency, accent, DWM, and background values with an explicit Default branch. | Yes | No | Phase: Theme Black Toggle |
 | Signout LockScreen Wallpaper Black | Windows | `modules/Windows/signout-lockscreen-wallpaper-black.psm1` | `source-ultimate/6 Windows/5 Signout Lockscreen Wallpaper Black.ps1`<br>`C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C` | HKCU/HKLM; generated image; scoped file deletion; UI refresh | Medium | Creates/deletes `C:\Windows\Black.jpg`. Default removes the complete `PersonalizationCSP` key rather than only owned values. | Yes | No, but previous wallpaper/CSP state should be captured if behavior is narrowed | Phase: Black Wallpaper and Lock Screen |
-| User Account Pictures Black | Windows | `modules/Windows/user-account-pictures-black.psm1` | `source-ultimate/6 Windows/6 User Account Pictures Black.ps1`<br>`8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710` | System-file backup, overwrite, and restore | Medium | Overwrites all PNG/BMP account-picture assets. Restore relies on a source-created backup and does not verify its integrity. | Yes, backup restore | No; Restore must require a valid captured backup | Phase: User Picture Backup and Blackout |
 | Copilot | Windows | `modules/Windows/copilot.psm1` | `source-ultimate/6 Windows/8 Copilot.ps1`<br>`21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90` | HKCU/HKLM policy; broad process stop; AppX removal/re-registration | Deferred | Phase 18 refusal: registry-only behavior would weaken Ultimate; full behavior violates AppX and broad-process restrictions. | Yes | No | Phase: Copilot Package and Policy Workflow |
 | Bloatware | Windows | `modules/Windows/bloatware.psm1` | `source-ultimate/6 Windows/11 Bloatware.ps1`<br>`36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5` | AppX removal/re-registration; services; downloads; installers; security-related features; broad deletion | Deferred | Multi-mode removal and repair workflow with no single reversible state. | No single Default | Yes; Restore requires a captured package/feature inventory | Phase: Bloatware Analysis and Package Plan |
 | GameBar | Windows | `modules/Windows/game-bar.psm1` | `source-ultimate/6 Windows/12 Gamebar.ps1`<br>`8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59` | HKCU/HKLM/HKCR; processes; services; AppX; installer/uninstaller; downloads; TrustedInstaller | Deferred | Phase 18 refusal: full behavior includes Gaming/Xbox removal, GameInput uninstall, repair downloads, and TrustedInstaller. | Yes | No | Phase: GameBar and Gaming Services Repair |
@@ -153,6 +148,10 @@ These mismatches are documented here rather than changed during this planning-on
 ### Device Manager Power Savings & Wake
 
 Phase 26 implemented the source-defined Apply and Default registry behavior with strict ACPI/HID/PCI/USB target validation, explicit confirmation, idempotent value deletion, and read-only verification. See `docs/migrations/device-manager-power-savings-wake.md`.
+
+### User Account Pictures Black
+
+Phase 27 implemented the source-defined black-image and default-restore behavior with verified per-file backups, ownership tracking, explicit confirmation, unknown-file preservation, and hash-based verification. See `docs/migrations/user-account-pictures-black.md`.
 
 ## E. Permanently Deleted Tools
 

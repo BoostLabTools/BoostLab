@@ -310,10 +310,10 @@
                     Stage       = 'Windows'
                     Order       = 6
                     Type        = 'action'
-                    RiskLevel   = 'low'
-                    Description = 'Apply or restore the approved black user account image set.'
-                    Actions     = @('Apply', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
+                    RiskLevel   = 'medium'
+                    Description = 'Back up and replace the approved Windows account pictures with black images, or safely restore the captured originals.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'widgets'

@@ -127,6 +127,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
         LegacyHash = 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
     }
+    'User Account Pictures Black' = @{
+        LegacyPath = 'source-ultimate\6 Windows\6 User Account Pictures Black.ps1'
+        ModulePath = 'modules\Windows\user-account-pictures-black.psm1'
+        LegacyHash = '8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710'
+    }
     'Device Manager Power Savings & Wake' = @{
         LegacyPath = 'source-ultimate\6 Windows\18 Device Manager Power Savings & Wake.ps1'
         ModulePath = 'modules\Windows\device-manager-power-savings-wake.psm1'
@@ -620,6 +625,44 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Network Adapter Power Savings & Wake contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'User Account Pictures Black' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                'Microsoft\User Account Pictures'
+                '$script:BoostLabApprovedExtensions = @(''.png'', ''.bmp'')'
+                'System.Drawing.Bitmap'
+                'System.Drawing.Graphics'
+                'System.Drawing.Color]::Black'
+                'Copy-BoostLabAccountPictureBackup'
+                'Restore-BoostLabAccountPictureBackup'
+                'OriginalSha256'
+                'AppliedSha256'
+                'LeftIntactUnknownOwnership'
+                'New-BoostLabVerificationResult'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "User Account Pictures Black preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+                'source-ultimate'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "User Account Pictures Black contains unrelated behavior: $forbiddenText"
                 }
             }
         }
