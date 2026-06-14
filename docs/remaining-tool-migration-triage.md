@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **23**
-* Placeholder modules: **25**
+* Implemented modules: **24**
+* Placeholder modules: **24**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -68,17 +68,12 @@ These mismatches are documented here rather than changed during this planning-on
    * Applies or removes multiple power and wake values across every detected network adapter class key.
    * Explicit Default exists; adapter-specific unsupported values must be warnings rather than false failures.
 
-5. **MMAgent Assistant**
-   * Uses focused MMAgent commands plus one prefetch registry value.
-   * Explicit Default and Check branches exist.
-   * Must remain an assistant with analysis, command planning, verification, and warnings about delayed state initialization.
-
-6. **SMT / HT Assistant**
+5. **SMT / HT Assistant**
    * Changes process affinity for a selected process or launches a selected executable with an affinity mask.
    * One branch stops a list of game launchers. There is no Default or restore branch.
    * Requires user-driven process selection and captured prior affinity if Restore is ever offered.
 
-7. **Timer Resolution Assistant**
+6. **Timer Resolution Assistant**
     * Compiles and installs a narrowly scoped custom Windows service, then starts/stops and removes it.
     * Explicit Default exists, but service creation, binary provenance, compilation, cleanup, and verification need a dedicated phase.
 
@@ -152,6 +147,10 @@ Phase 26 implemented the source-defined Apply and Default registry behavior with
 ### User Account Pictures Black
 
 Phase 27 implemented the source-defined black-image and default-restore behavior with verified per-file backups, ownership tracking, explicit confirmation, unknown-file preservation, and hash-based verification. See `docs/migrations/user-account-pictures-black.md`.
+
+### MMAgent Assistant
+
+Phase 28 implemented the source-defined Check, Off, and Default behavior as an assistant with Action Plan confirmation, structured results, and verification. The approved BoostLab Default preserves the original source meaning where `MemoryCompression` and `PageCombining` remain disabled. See `docs/migrations/mmagent-assistant.md`.
 
 ## E. Permanently Deleted Tools
 

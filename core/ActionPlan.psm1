@@ -198,6 +198,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'Restore Windows default power schemes and the explicit default registry behavior from Ultimate.'
     }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
+        'Analyze the current MMAgent and prefetcher state and compare it with the approved Ultimate Off and Default profiles.'
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
+        'Apply the approved Ultimate MMAgent Off profile, including the source-defined prefetch and MMAgent feature changes.'
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
+        'Restore the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -347,6 +356,25 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Delete the complete FlyoutMenuSettings and PowerThrottling keys exactly as defined by the approved source.')
         $plannedChanges.Add('Restore the four hidden power-setting Attributes values to 1.')
         $plannedChanges.Add('Open Power Options and verify Balanced is active and the approved registry defaults are present.')
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the source-defined EnablePrefetcher registry value.')
+        $plannedChanges.Add('Read Get-MMAgent and compare ApplicationLaunchPrefetching, ApplicationPreLaunch, MaxOperationAPIFiles, MemoryCompression, OperationAPI, and PageCombining.')
+        $plannedChanges.Add('Display the approved Ultimate Off and Default profiles and the source warning about delayed initialization after reboot.')
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Set HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters\\EnablePrefetcher to 0.')
+        $plannedChanges.Add('Run Disable-MMAgent -ApplicationLaunchPrefetching and Disable-MMAgent -ApplicationPreLaunch.')
+        $plannedChanges.Add('Run Set-MMAgent -MaxOperationAPIFiles 1.')
+        $plannedChanges.Add('Run Disable-MMAgent -MemoryCompression, Disable-MMAgent -OperationAPI, and Disable-MMAgent -PageCombining.')
+        $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Off profile.')
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Set HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters\\EnablePrefetcher to 3.')
+        $plannedChanges.Add('Run Enable-MMAgent -ApplicationLaunchPrefetching and Enable-MMAgent -ApplicationPreLaunch.')
+        $plannedChanges.Add('Run Set-MMAgent -MaxOperationAPIFiles 512.')
+        $plannedChanges.Add('Preserve the source-defined Default behavior by keeping MemoryCompression and PageCombining disabled and enabling only OperationAPI.')
+        $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Default profile.')
     }
     else {
         switch ($ActionName) {
@@ -510,6 +538,19 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The complete FlyoutMenuSettings and PowerThrottling keys are deleted exactly as defined by Ultimate, which may remove unrelated values in those keys.')
         $sideEffects.Add('Hibernation and Fast Startup are enabled, hidden setting attributes return to 1, and Power Options opens. No reboot is performed.')
     }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; the result compares the current state with the source-defined Off and Default profiles.')
+        $sideEffects.Add('The source warns that MMAgent settings may take time to initialize after reboot before they can be checked accurately.')
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Windows prefetch and multiple MMAgent features are changed together exactly as defined by the approved Ultimate Off profile.')
+        $sideEffects.Add('MemoryCompression is disabled here as part of the MMAgent profile; use the separate Memory Compression tool when only that setting should change.')
+        $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The approved Ultimate Default profile does not re-enable every MMAgent feature. MemoryCompression and PageCombining remain disabled by source design.')
+        $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -621,6 +662,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'BoostLab will run restoredefaultschemes, enable hibernation, restore the explicit Ultimate defaults, and delete the complete FlyoutMenuSettings and PowerThrottling keys. Previously deleted custom schemes will not be recovered. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
+        'BoostLab will apply the approved Ultimate MMAgent Off profile: set EnablePrefetcher to 0, disable ApplicationLaunchPrefetching, ApplicationPreLaunch, MemoryCompression, OperationAPI, and PageCombining, set MaxOperationAPIFiles to 1, and verify the result. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
+        'BoostLab will restore the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

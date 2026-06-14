@@ -52,6 +52,10 @@ $implementedModules = @{
         RelativePath          = 'Setup\MemoryCompression.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'mmagent-assistant' = @{
+        RelativePath          = 'Advanced\mmagent-assistant.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    }
     'background-apps' = @{
         RelativePath          = 'Setup\BackgroundApps.psm1'
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
@@ -363,6 +367,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'memory-compression') {
+            0
+        }
+        elseif ($toolId -eq 'mmagent-assistant') {
             0
         }
         elseif ($toolId -eq 'store-settings') {
@@ -949,6 +956,52 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Memory Compression behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'mmagent-assistant') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+                '$script:BoostLabMMAgentPrefetchRegistryCmdKey = ''HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters'''
+                'Disable-MMAgent -ApplicationLaunchPrefetching -ErrorAction Stop'
+                'Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop'
+                'Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction Stop'
+                'Disable-MMAgent -MemoryCompression -ErrorAction Stop'
+                'Disable-MMAgent -OperationAPI -ErrorAction Stop'
+                'Disable-MMAgent -PageCombining -ErrorAction Stop'
+                'Enable-MMAgent -ApplicationLaunchPrefetching -ErrorAction Stop'
+                'Enable-MMAgent -ApplicationPreLaunch -ErrorAction Stop'
+                'Enable-MMAgent -OperationAPI -ErrorAction Stop'
+                'Get-MMAgent -ErrorAction Stop'
+                'SETTINGS MAY TAKE A WHILE TO INITIALIZE AFTER REBOOT'
+                'WAIT A SHORT PERIOD BEFORE CHECKING'
+                'The Ultimate Default profile still disables MemoryCompression and PageCombining.'
+                'Use the dedicated Memory Compression tool when you only want to change MemoryCompression.'
+                'function Test-BoostLabMMAgentAssistantState'
+                'New-BoostLabVerificationResult'
+                '-VerificationResult $verificationResult'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing MMAgent Assistant behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Start-Process'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated MMAgent Assistant behavior: $forbiddenText")
                 }
             }
         }

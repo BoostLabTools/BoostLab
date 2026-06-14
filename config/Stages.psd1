@@ -516,7 +516,7 @@
                     Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Analyze Windows memory-management features before recommending changes.'
+                    Description = 'Analyze current MMAgent state and apply or restore the approved Ultimate MMAgent feature profile.'
                     Actions     = @('Analyze', 'Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

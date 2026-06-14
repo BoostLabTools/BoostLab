@@ -527,7 +527,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($tools.Count -ne 48 -or $implementedCount -ne 23 -or $placeholderCount -ne 25) {
+if ($tools.Count -ne 48 -or $implementedCount -ne 24 -or $placeholderCount -ne 24) {
     throw "Unexpected Phase 27 inventory: $($tools.Count) tools, $implementedCount implemented, $placeholderCount placeholders."
 }
 
