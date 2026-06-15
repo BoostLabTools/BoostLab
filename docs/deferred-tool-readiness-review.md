@@ -59,9 +59,9 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **4**
-* Foundation-ready but needs artifact provenance approvals: **6**
+* Foundation-ready but needs artifact provenance approvals: **7**
 * Foundation-ready but needs tool-specific design: **4**
-* Candidate for next implementation attempt: **2**
+* Candidate for next implementation attempt: **1**
 
 ## Per-Tool Review
 
@@ -72,7 +72,7 @@ Current inventory:
 | Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Decompose the source into policy, service, and repair behaviors before any migration phase |
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install side effects | Download provenance, installer policy, service rollback, file/registry rollback | No approved app list, no approved artifacts, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file allowlists | No | Foundation-ready but needs artifact provenance approvals | Reduce to an explicitly approved installer set before another migration attempt |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Refused placeholder | NVIDIA path still downloads tools, installs drivers, imports profiles, removes components, and reboots | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback | No approved NVIDIA artifacts, no approved driver scopes, no approved reboot scope, no approved component-removal allowlists | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile and cleanup allowlists | No | Foundation-ready but needs artifact provenance approvals | Define the exact NVIDIA-only branch and required artifacts before retrying |
-| DirectX | `directx` | Graphics | Refused placeholder | Downloads/extracts tools and launches DirectX runtime installer | Download provenance and installer policy | No approved `7zip.exe` or DirectX artifacts, no approved installer execution request | Exact artifact records, signer/hash evidence, exact extraction and install command sequence | **Yes** | Candidate for next implementation attempt | Attempt a narrowly scoped provenance-first migration if artifact review is approved |
+| DirectX | `directx` | Graphics | Refused placeholder after Phase 45 provenance review | Downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Download provenance, installer policy, file/registry rollback, and cleanup policy | Source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/directx-provenance-review.md` exists |
 | Visual C++ | `visual-cpp` | Graphics | Refused placeholder | Downloads and installs many redistributables from mutable URLs | Download provenance and installer policy | No approved redistributable artifacts, no approved exact command set | Exact artifact records for each redistributable, signer/hash evidence, exact installer request definitions | **Yes** | Candidate for next implementation attempt | Attempt a provenance-only review first, then a narrow installer phase |
 | Start Menu Taskbar | `start-menu-taskbar` | Windows | Refused placeholder | Replaces layout files, deletes state, writes policy, and restarts Explorer | File/registry rollback and cleanup policy | No approved file/registry/cleanup scopes, no approved ownership rule for replaced user state | Exact file targets, exact registry targets, exact cleanup ownership rules, exact rollback design | No | Foundation-ready but needs production allowlists | Approve exact owned targets and rollback behavior before a second attempt |
 | Copilot | `copilot` | Windows | Refused placeholder | Registry-only implementation would weaken Ultimate; full source removes/re-registers AppX and stops many processes | AppX inventory and restore foundation | No process-handling governance, no exact package/process policy for this tool | Exact package scope and a separately approved process-handling model | No | Not ready | Keep deferred until process-stop governance is defined or the tool is redesigned |
@@ -116,6 +116,7 @@ execution approval”:
 * Reinstall
 * Installers
 * Driver Install Debloat & Settings
+* DirectX
 * Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
@@ -135,23 +136,24 @@ deliberate tool design before scopes or artifacts can be approved safely:
 These are the narrowest remaining deferred tools, but they are still blocked
 until the stated approvals are complete:
 
-* DirectX
 * Visual C++
 
 ## Recommended Next Phase List
 
 In conservative order:
 
-1. `DirectX`
-   Remaining gap is mostly exact artifact provenance plus installer request approval.
-2. `Visual C++`
+1. `Visual C++`
    Same pattern as DirectX, but with a larger artifact set.
-3. `Start Menu Taskbar`
+2. `Start Menu Taskbar`
    Needs exact owned file/registry scope and rollback decisions, but no new foundation category.
-4. `Write Cache Buffer Flushing`
+3. `Write Cache Buffer Flushing`
    Needs an explicit product decision on source Default versus captured-state restore.
-5. `Cleanup`
+4. `Cleanup`
    Needs exact target ownership and quarantine/delete choices before implementation can be attempted safely.
+
+DirectX was removed from the candidate list by the Phase 45 provenance review.
+Its source uses mutable branch downloads and lacks the hashes, signer evidence,
+extraction inventory, and approved installer execution required by Phase 35.
 
 ## Remaining Blockers
 
