@@ -206,8 +206,23 @@ The current runtime does not:
 * Capture or restore file/registry state without a future approved scope and explicit tool call
 * Capture or restore service state without a future approved exact service scope and explicit tool call
 * Perform destructive cleanup or quarantine without a future approved exact cleanup scope and explicit tool call
+* Inspect, remove, re-register, repair, or restore AppX packages without a future approved exact package scope, inventory record, confirmation, and explicit tool call
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.
 
 `source-ultimate` remains an untouched legacy reference. Future production tool logic must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`, have an approved migration record, and live under `modules/`.
+
+## AppX Package Foundation
+
+`core/AppxPackageInventory.psm1` and `core/AppxPackageExecution.psm1` establish
+the future package lifecycle:
+
+```text
+Exact scope -> Inventory -> Plan -> Confirm -> Mutate -> Verify -> Persist
+```
+
+Restore adds record validation and exact captured manifest/install-location
+checks before execution. Production package scopes are empty, the helpers are
+not imported by `core/Execution.psm1`, and execution is callback-only. Phase 39
+does not call package cmdlets, DISM, downloads, installers, or deferred modules.

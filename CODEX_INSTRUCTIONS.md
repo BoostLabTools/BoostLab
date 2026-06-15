@@ -463,6 +463,22 @@ This policy applies to examples including:
 
 ---
 
+## AppX Package Inventory and Restore Policy
+
+* AppX package inventory, mutation, and restore are denied by default.
+* A future AppX-capable tool must use an exact tool/action/package scope in `config/AppxPackagePolicy.psd1`. Phase 39 approves no production package scopes.
+* Inventory must be captured before removal and must record exact package family/full identity, publisher, version, architecture, install location, status, provisioned identity, user scope, original installed/provisioned state, registration manifest, dependencies, intended mutation, rollback eligibility, verification requirement, and risk.
+* Unknown, wildcard, partial, broad, out-of-scope, framework, dependency, and system-critical package targets are blocked unless a future exact scope explicitly approves the specific source behavior.
+* Edge, WebView, Store, Shell Experience Host, Start Menu Experience Host, Desktop App Installer, VCLibs, UI Xaml, .NET Native, Windows App Runtime, frameworks, and dependencies are protected by default.
+* Current-user removal, all-user removal, and provisioned-image removal are different capabilities. All-user and provisioned removal require separate explicit scope permission.
+* Every AppX mutation and restore requires a matching Action Plan, explicit confirmation, exact package identity, structured verification, and persisted post-operation state.
+* Restore is allowed only from an integrity-verified, non-stale BoostLab inventory record after a recorded mutation. Missing, corrupt, stale, mismatched, ineligible, or out-of-scope records are blocked.
+* Restore requires the exact captured install location, registration manifest, or provisioned identity needed by the approved restore path. Missing package content blocks restore; this foundation must not download or install replacement content.
+* AppX inventory does not authorize services, downloads, installers, cleanup, file/registry changes, TrustedInstaller, Safe Mode, or broad package re-registration.
+* Phase 39 contains no built-in AppX or DISM command, is not wired into any tool module, and enables no deferred tool.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

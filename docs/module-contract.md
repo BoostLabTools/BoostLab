@@ -171,6 +171,15 @@ The modules may only return static metadata and structured placeholder objects.
 
 Implemented modules that perform future destructive cleanup must use an approved exact scope from `config/CleanupPolicy.psd1`, require an Action Plan and explicit confirmation, provide Phase 36 state-capture evidence when rollback eligible, and return structured verification. Modules must not bypass the centralized cleanup boundary with broad or metadata-driven deletion commands.
 
+Implemented modules that perform future AppX package work must use an approved
+exact scope from `config/AppxPackagePolicy.psd1`. They must capture inventory
+before removal, identify the exact package family, user scope, and mutation,
+require Action Plan confirmation, return structured verification, and persist
+post-mutation state. Restore may use only a valid BoostLab package record and
+the exact captured manifest, install location, or provisioned identity. Modules
+must not enumerate broad package families, re-register every package, or bypass
+the centralized AppX boundary.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

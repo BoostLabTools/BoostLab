@@ -87,6 +87,26 @@ For destructive file cleanup, a future migration record must identify:
 
 Adding a cleanup scope does not authorize broad cleanup. A future tool must preserve approved source behavior while proving that every target remains exact, owned, bounded, confirmed, and verifiable.
 
+For AppX package mutations, a future migration record must identify:
+
+* The exact `config/AppxPackagePolicy.psd1` scope id.
+* Every exact package family and approved user scope.
+* Package full-name and provisioned-identity discovery rules.
+* Whether the package is a framework, dependency, protected Windows package, or system-critical component.
+* The exact mutation type for each action: current-user removal, all-user removal, provisioned removal, re-registration, provisioned restore, or registration repair.
+* Required pre-mutation inventory fields and record age.
+* Source-approved operation order across package, process, service, policy, file, and repair steps.
+* Separate approval for all-user or provisioned-image removal.
+* Rollback eligibility and the exact captured manifest, install location, or provisioned identity required for restore.
+* Behavior when package content or registration manifests are missing.
+* Action Plan warnings, confirmation text, verification checks, and persisted post-mutation state.
+* Additional download, installer, service, cleanup, file/registry, TrustedInstaller, or reboot foundations required by the source.
+
+Adding an AppX package scope does not authorize mutation. A future tool phase
+must still implement the exact approved package behavior, use the centralized
+inventory and execution boundaries, and prove that restore is record-based
+rather than broad package re-registration.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

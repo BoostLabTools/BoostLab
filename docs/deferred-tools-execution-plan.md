@@ -95,6 +95,16 @@ Affected tools:
 
 Needed before any tool removes, re-registers, or repairs Store/AppX packages and before any Restore claim can be meaningful.
 
+Phase 39 establishes exact package/tool/action scopes, protected-package
+defaults, pre-mutation inventory records, integrity and age validation,
+separate current-user/all-user/provisioned mutation gates, callback-only
+execution, structured verification, and record-based restore planning. It
+approves no production package scopes and performs no real package operation.
+
+The affected tools remain deferred because each still needs exact package
+allowlists, per-package rollback decisions, and other foundations required by
+its Ultimate source.
+
 Affected tools:
 
 * `copilot`
