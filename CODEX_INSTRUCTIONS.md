@@ -411,6 +411,23 @@ This policy applies to examples including:
 
 ---
 
+## File and Registry State Capture Policy
+
+* File and registry capture and rollback are denied by default.
+* A future tool must use an exact tool-specific scope listed in `config/RollbackPolicy.psd1`. Phase 36 approves no production scopes.
+* Capture records must identify the operation, tool, action, schema/version, exact source path, item type, original existence, original metadata, file hashes and backup location where applicable, intended mutation, rollback eligibility, verification requirement, and risk.
+* File capture must use an absolute literal target inside an approved bounded root. Wildcards, drive roots, Windows, Program Files, the user-profile root, System32, reparse points, and targets outside the approved scope are blocked.
+* Directory capture requires an explicit scope with file-count and byte limits. It must not roam into unrelated user data.
+* Registry capture must use an exact HKCU or HKLM path approved for the tool. Registry values require an exact approved value name. Broad hives and protected `HKLM\SYSTEM` paths are blocked unless a future dedicated scope explicitly approves that source behavior.
+* Restore is permitted only from an integrity-verified BoostLab rollback record under the BoostLab state directory.
+* File restore requires a verified backup whose hash matches both the captured original hash and recorded backup hash.
+* Rollback requires recorded post-mutation state. If the current target no longer matches that state, rollback must refuse rather than overwrite unrelated later changes.
+* Missing, corrupt, mismatched, ineligible, out-of-scope, or wrong-tool/action records are blocked.
+* `Default` remains the approved default behavior of a tool. `Restore` means returning to state captured before that operation; the terms are not interchangeable.
+* Phase 36 does not wire capture or rollback into any tool. Future tool phases must add exact scopes, migration-record details, Action Plan coverage, and tool-specific tests before use.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

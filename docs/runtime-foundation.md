@@ -59,6 +59,22 @@ Tool-level `RequiresAdmin` metadata still describes the approved behavior of the
 
 This foundation is deliberately disconnected from current tools. It defines the security contract required before any deferred downloader or installer migration can begin.
 
+### File and Registry State Capture
+
+`config/RollbackPolicy.psd1` is the centralized allowlist for future file and registry capture scopes. Phase 36 leaves both production scope collections empty.
+
+`core/StateCapture.psm1` validates exact tool/scope/path identity, captures original existence and metadata, creates hash-verified file backups, and saves integrity-protected rollback records under:
+
+```text
+$env:ProgramData\BoostLab\State\Rollback
+```
+
+File scopes reject wildcards, broad system roots, reparse points, and paths outside the approved root. Directory scopes require explicit file-count and byte limits. Registry scopes require an exact approved key and, for values, an exact approved value name. Broad hives and protected `HKLM\SYSTEM` paths are denied by default.
+
+`core/Rollback.psm1` restores only from a valid BoostLab record after the current target matches the recorded post-mutation state. File backups must match both the captured original hash and backup hash. Registry rollback uses explicit reader, writer, and remover boundaries so a future tool can keep operations narrowly scoped and testable.
+
+These helpers are not imported by `core/Execution.psm1` and are not wired to any tool. A future approved migration must add an exact production scope and call the helpers explicitly.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -167,6 +183,7 @@ The current runtime does not:
 * Create restore points
 * Download content
 * Launch third-party installers through the Phase 35 policy helpers
+* Capture or restore file/registry state without a future approved scope and explicit tool call
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.

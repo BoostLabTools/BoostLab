@@ -44,6 +44,18 @@ Capabilities must match `config/Stages.psd1`. Setting a capability does not auth
 
 Default behavior must identify the approved tool default. Restore behavior may be claimed only when BoostLab captures the prior state needed to reverse the action.
 
+For file or registry mutations, a future migration record must identify:
+
+* The exact `config/RollbackPolicy.psd1` scope id.
+* Every file path, directory root, registry key, and registry value permitted by that scope.
+* The intended mutation type for each target.
+* Required backup, hash, metadata, and post-mutation verification.
+* Whether rollback restores a captured original or removes a proven operation-created item.
+* Directory file-count and byte limits where directory capture is approved.
+* Why the scope excludes unrelated files, user data, registry values, and protected hives.
+
+Adding a scope does not itself implement Restore. The module must still expose an approved Restore action, use the capture record before mutation, record post-mutation state, and verify rollback.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

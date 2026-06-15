@@ -151,6 +151,8 @@ Affected tools:
 
 Needed where Ultimate replaces user/system files, writes broad registry state, or deletes keys/values that cannot be reconstructed safely without a captured baseline.
 
+Phase 36 establishes integrity-protected records, bounded file and registry scopes, verified file backups, post-mutation identity checks, and deny-by-default rollback helpers. It approves no production scopes and does not enable any deferred tool. Each future migration still needs exact tool-specific paths and rollback rules.
+
 Affected tools:
 
 * `updates-drivers-block`
