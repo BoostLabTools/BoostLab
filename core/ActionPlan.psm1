@@ -126,7 +126,13 @@ function New-BoostLabActionPlan {
         $needsConfirmation = $false
     }
 
-    $summary = if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+    $summary = if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+        'Review the approved Windows 11 unattended setup payload without creating files.'
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
+        'Create the approved Windows 11 autounattend.xml on selected removable installation media.'
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
@@ -255,7 +261,20 @@ function New-BoostLabActionPlan {
     }
 
     $plannedChanges = [System.Collections.Generic.List[string]]::new()
-    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+    if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read Windows version and removable-media availability without creating or deleting files.')
+        $plannedChanges.Add('Display the exact source-defined Windows Setup, local account, OOBE, and hardware-bypass behavior.')
+        $plannedChanges.Add('Report that Windows 10 may host this Windows 11 preparation workflow while Windows 10 optimization branches remain unsupported.')
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Require a Windows 10 or Windows 11 host and let the technician select a local account name and detected removable-media root.')
+        $plannedChanges.Add('Back up and hash every pre-existing source-targeted temporary or destination unattended file before replacement.')
+        $plannedChanges.Add('Create the exact Ultimate autounattendtemplate.xml and autounattend.xml sequence under Windows Temp.')
+        $plannedChanges.Add('Move autounattend.xml to the selected removable-media root and preserve the source overwrite behavior only after backup.')
+        $plannedChanges.Add('Verify the final file hash, XML structure, account substitution, and all five source-defined hardware bypass commands.')
+        $plannedChanges.Add('Persist destination, backup, ownership, source checksum, and verification state under ProgramData\BoostLab\State.')
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
         $plannedChanges.Add('Enable System Restore on C:\ if it is disabled.')
         $plannedChanges.Add('Create a restore point named backup with type MODIFY_SETTINGS.')
@@ -510,7 +529,17 @@ function New-BoostLabActionPlan {
     }
 
     $sideEffects = [System.Collections.Generic.List[string]]::new()
-    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
+    if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No files are created, moved, overwritten, or deleted.')
+        $sideEffects.Add('The analysis distinguishes an allowed Windows 10 host from unsupported Windows 10 optimization branches.')
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The generated file creates a blank-password local administrator and skips multiple Windows OOBE pages when used by Windows Setup.')
+        $sideEffects.Add('The generated file bypasses TPM, RAM, Secure Boot, CPU, and storage requirement checks during Windows 11 Setup.')
+        $sideEffects.Add('Dynamic Update is disabled in the generated setup payload, and existing source-targeted files are retained as verified BoostLab backups.')
+        $sideEffects.Add('BoostLab creates the file but does not start Windows Setup, partition disks, format media, or reboot the computer.')
+    }
+    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
         $sideEffects.Add('A temporary registry value is created and removed during the operation.')
@@ -720,7 +749,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No system-changing side effects are declared for this action.')
     }
 
-    $confirmationMessage = if ($toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open') {
+    $confirmationMessage = if ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
+        'BoostLab will create the approved Windows 11 autounattend.xml on selected removable media. The file creates a blank-password local administrator, skips OOBE, disables Dynamic Update, and bypasses TPM, RAM, Secure Boot, CPU, and storage checks. Existing source-targeted files will be backed up first. No installation or reboot starts now. Do you want to continue?'
+    }
+    elseif ($toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open') {
         'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {

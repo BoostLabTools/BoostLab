@@ -14,9 +14,11 @@ Classification meanings:
 
 ## Product Scope Notes
 
-BoostLab's current product scope is Windows 11 only, with NVIDIA-only support for GPU-specific tooling.
+Windows 11 is BoostLab's optimized target platform, with NVIDIA-only support for GPU-specific tooling.
 
-Windows 10 source branches, AMD GPU branches, and Intel GPU branches are currently outside scope unless Yazan explicitly expands scope later.
+Windows 10 optimization, performance, service, and settings-improvement branches, AMD GPU branches, and Intel GPU branches are currently outside scope unless Yazan explicitly expands scope later.
+
+A Windows 10 host may run an approved preparation, refresh, migration, or transition tool when the tool's output and goal target Windows 11. This exception covers host compatibility for Windows 11 preparation; it does not make Windows 10 optimization branches supported.
 
 If a source contains both supported and unsupported branches, future migration phases may keep the unsupported branches disabled, visual-only, or placeholder-only while implementing only the supported Windows 11 / NVIDIA path. That is a scope decision, not an accidental weakening.
 
@@ -27,8 +29,8 @@ The intent is that unsupported branches remain disabled, visual-only, or not imp
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **28**
-* Placeholder modules: **20**
+* Implemented modules: **29**
+* Placeholder modules: **19**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -108,7 +110,7 @@ These mismatches are documented here rather than changed during this planning-on
 | Tool | Stage | Module | Ultimate source and SHA-256 | Detected behavior | Class | Reason / warnings | Source Default | Approved inverse needed | Suggested phase |
 |---|---|---|---|---|---|---|---|---|---|
 | Reinstall | Refresh | `modules/Refresh/reinstall.psm1` | `source-ultimate/2 Refresh/1 Reinstall.ps1`<br>`137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Downloads; installer/UI launch | Deferred | Downloads and launches Windows 10/11 media creation executables. | No | No; workflow has no meaningful inverse | Phase: Refresh Reinstall Workflow |
-| Unattended | Refresh | `modules/Refresh/unattended.psm1` | `source-ultimate/2 Refresh/2 Unattended.ps1`<br>`0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338` | HKLM setup commands; file creation/deletion; installation-media UI | Deferred | Creates `autounattend.xml`, includes TPM/RAM/Secure Boot/CPU/storage bypasses, and writes selected installation media. | No | No; artifact generation needs Cancel/Delete semantics instead | Phase: Unattended Media Builder |
+| Unattended | Refresh | `modules/Refresh/unattended.psm1` | `source-ultimate/2 Refresh/2 Unattended.ps1`<br>`0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338` | Windows Setup commands; file creation/deletion; installation-media UI | Implemented | Phase 33 preserves the Windows 11 artifact workflow with confirmation, removable-media validation, verified backups, ownership state, and structured verification. | No | No Default or Restore action is claimed | Phase 33 complete |
 | Updates Drivers Block | Refresh | `modules/Refresh/updates-drivers-block.psm1` | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1`<br>`4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | HKLM policy; file generation/move; UI launch; reboot | Deferred | Six distinct modes include live policy and bootable USB scripts. Some branches embed reboot commands and nonstandard update-server URLs. | Yes, Unblock branches | No for live policies; bootable-media rollback must be separately designed | Phase: Update and Driver Policy Assistant |
 | To BIOS | Refresh | `modules/Refresh/to-bios.psm1` | `source-ultimate/2 Refresh/4 To Bios.ps1`<br>`A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C` | Reboot to firmware | Deferred | Executes `shutdown.exe /r /fw /t 0`; requires the established explicit reboot confirmation flow. | No | No | Phase: Firmware Restart Workflow |
 | Edge Settings | Setup | `modules/Setup/edge-settings.psm1` | `source-ultimate/3 Setup/6 Edge Settings.ps1`<br>`342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | HKLM policy; process; service deletion; RunOnce; downloads; installer; registry deletion | Deferred | Not an open-only tool. Default downloads and launches an Edge installer. Current catalog actions/capabilities understate source behavior. | Yes | No | Phase: Edge Policy and Repair Workflow |
@@ -162,6 +164,10 @@ Phase 30 implemented the source-defined Disable and Enable (Default) registry be
 ### Notepad Settings
 
 Phase 32 implemented the source-defined Apply and Default behavior with exact Notepad process and `settings.dat` scope, mounted-hive import, explicit confirmation, verified pre-change backup, state capture, and structured verification. See `docs/migrations/notepad-settings.md`.
+
+### Unattended
+
+Phase 33 implemented the source-defined Windows 11 `autounattend.xml` generation workflow with Analyze and confirmed Apply actions. It preserves the complete Ultimate XML payload, account substitution, temporary-file sequence, removable-media destination, and folder launch while adding verified backup and ownership state before any overwrite. Windows 10 and Windows 11 may host this Windows 11 preparation workflow; Windows 10 optimization branches remain unsupported. No Default or Restore action is claimed. See `docs/migrations/unattended.md`.
 
 ## E. Permanently Deleted Tools
 

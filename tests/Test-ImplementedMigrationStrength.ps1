@@ -39,6 +39,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Refresh\to-bios.psm1'
         LegacyHash = 'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C'
     }
+    'Unattended' = @{
+        LegacyPath = 'source-ultimate\2 Refresh\2 Unattended.ps1'
+        ModulePath = 'modules\Refresh\unattended.psm1'
+        LegacyHash = '0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338'
+    }
     'Startup Apps (Settings)' = @{
         LegacyPath = 'source-ultimate\3 Setup\3 Startup Apps (Settings).ps1'
         ModulePath = 'modules\Setup\StartupAppsSettings.psm1'

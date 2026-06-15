@@ -39,14 +39,15 @@ foreach ($path in $filesToCheck) {
     }
 
     $text = Get-Content -LiteralPath $path -Raw
-    if (-not $text.Contains('Windows 11 only')) {
-        $errors.Add("Missing 'Windows 11 only' in $path")
-    }
     if (-not ($text.Contains('NVIDIA only') -or $text.Contains('NVIDIA-only'))) {
         $errors.Add("Missing NVIDIA-only scope text in $path")
     }
     foreach ($phrase in @(
+        'Windows 11'
         'Windows 10'
+        'Windows 10 host'
+        'Windows 10 optimization'
+        'preparation'
         'AMD'
         'Intel'
         'disabled, visual-only, or not implemented'
@@ -64,7 +65,7 @@ if ($errors.Count -gt 0) {
 [pscustomobject]@{
     Success        = $true
     FileCount      = $filesToCheck.Count
-    PhraseCount    = 6
-    Message        = 'Product scope policy is documented across the governance files.'
+    PhraseCount    = 9
+    Message        = 'Windows 11 target scope, Windows 10 preparation-host exception, and GPU scope are documented.'
     Timestamp      = Get-Date
 }

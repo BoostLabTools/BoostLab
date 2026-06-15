@@ -25,11 +25,15 @@ The application must be built using PowerShell and a graphical user interface.
 
 ## Product Scope
 
-BoostLab currently targets Windows 11 only.
+Windows 11 is BoostLab's optimized target platform.
 
 GPU-specific tooling targets NVIDIA only.
 
-Windows 10 source branches and AMD/Intel GPU-specific branches are outside the supported scope unless Yazan explicitly changes scope later.
+Windows 10 optimization, performance, service, and settings-improvement branches are outside the supported scope unless Yazan explicitly changes scope later.
+
+BoostLab may run on a Windows 10 host when an approved preparation, refresh, migration, or transition tool produces a Windows 11-targeted outcome. This exception permits Windows 11 preparation from Windows 10; it does not permit Windows 10 optimization branches.
+
+AMD/Intel GPU-specific branches remain outside the supported scope unless Yazan explicitly changes scope later.
 
 Unsupported branches should stay disabled, visual-only, or not implemented rather than being ported silently.
 

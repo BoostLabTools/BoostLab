@@ -52,9 +52,9 @@
                     Order       = 2
                     Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Prepare unattended Windows setup options for review before use.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Create the approved Windows 11 autounattend.xml on selected removable installation media.'
+                    Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'updates-drivers-block'

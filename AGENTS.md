@@ -12,6 +12,6 @@ These instructions apply to Codex when working in the BoostLab repository.
 8. Stop and report if a source requires behavior outside the current governance rules.
 9. Run all validators before reporting completion.
 
-10. Respect the current product scope: BoostLab supports Windows 11 only, and NVIDIA-only behavior for GPU-specific tooling. Windows 10 branches and AMD/Intel GPU-specific branches remain unsupported unless Yazan explicitly changes scope later. Unsupported branches must stay disabled, visual-only, or not implemented, and must not be turned into active command execution by accident.
+10. Respect the current product scope: Windows 11 is BoostLab's optimized target platform, and GPU-specific tooling is NVIDIA-only. Windows 10 optimization, performance, service, and settings-improvement branches remain unsupported unless Yazan explicitly changes scope. A Windows 10 host may run an approved preparation, refresh, migration, or transition tool when that tool's output and goal target Windows 11. AMD/Intel GPU-specific branches remain disabled, visual-only, or not implemented.
 
 When in doubt, prefer the existing project documentation and the approved source mapping over invention.

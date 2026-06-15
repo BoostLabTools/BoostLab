@@ -28,6 +28,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\to-bios.psm1'
         Actions = @('Analyze', 'Open')
     }
+    'unattended' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\unattended.psm1'
+        Actions = @('Analyze', 'Apply')
+    }
     'startup-apps-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
         Actions = @('Open')

@@ -43,6 +43,10 @@ $implementedModules = @{
         LaunchText            = '& $commandProcessorPath @firmwareRestartArguments'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
     }
+    'unattended' = @{
+        RelativePath          = 'Refresh\unattended.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+    }
     'startup-apps-settings' = @{
         RelativePath          = 'Setup\StartupAppsSettings.psm1'
         LaunchText            = 'Start-Process "ms-settings:startupapps"'
@@ -351,6 +355,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'notepad-settings' -and
             $commandName -in @('Set-Content', 'Remove-Item')
         )
+        $approvedUnattendedCommand = (
+            $toolId -eq 'unattended' -and
+            $commandName -in @('Set-Content', 'Remove-Item')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -359,7 +367,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedThemeBlackCommand -and
             -not $approvedStartMenuLayoutCommand -and
             -not $approvedContextMenuCommand -and
-            -not $approvedNotepadSettingsCommand
+            -not $approvedNotepadSettingsCommand -and
+            -not $approvedUnattendedCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
