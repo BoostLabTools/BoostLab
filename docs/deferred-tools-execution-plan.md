@@ -137,6 +137,19 @@ Affected tools:
 
 Needed for multi-stage tools that change boot flow and must survive interruption or failed resumes.
 
+Phase 43 establishes exact tool/action/type scopes, required Phase 40 reboot
+workflow references, pre-Safe-Mode checkpoints, verified adjacent-foundation
+state records, bounded known resume handlers, mandatory exit plans,
+integrity-protected workflow records, cancellation, expiration, machine-state
+validation, structured verification, and recovery guidance. It approves no
+production Safe Mode scope and performs no BCD, reboot, RunOnce, Scheduled
+Task, service, TrustedInstaller, registry, protected-file, or process action.
+
+The affected tools remain deferred because each still needs an exact
+tool-specific Safe Mode allowlist, approved execution implementation, exact
+service/security/TrustedInstaller operations, and recovery tests for its
+source-defined workflow.
+
 Affected tools:
 
 * `services-optimizer`
@@ -261,7 +274,10 @@ Affected tools:
 9. **TrustedInstaller execution framework**
    Phase 42 adds deny-by-default structured request validation, foundation references, verification, logging, and recovery policy. Future work still needs exact tool scopes and a separately approved process implementation.
 10. **Safe Mode recovery/resume framework**
-    This is the last major blocker because only the heaviest security/service tools need it, but they cannot move safely without it.
+    Phase 43 adds the deny-by-default Safe Mode planning, record, resume, exit,
+    cancellation, and recovery contract. Future work still needs exact
+    per-tool allowlists and a separately approved execution implementation;
+    no deferred tool is enabled by the foundation alone.
 
 ## What This Means for Future Phases
 

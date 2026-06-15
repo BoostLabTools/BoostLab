@@ -162,6 +162,27 @@ Adding a TrustedInstaller scope does not authorize execution. A future phase
 must separately approve the exact implementation and prove that the privileged
 operation cannot escape its recorded command and target scope.
 
+For Safe Mode entry, continuation, exit, or recovery, a future migration record
+must identify:
+
+* The exact `config/SafeModeRecoveryPolicy.psd1` scope id.
+* Exact tool/action identity and approved Safe Mode type.
+* The matching verified Phase 40 reboot workflow scope and record.
+* Every required pre-Safe-Mode checkpoint and evidence source.
+* Every required file/registry, service, AppX, cleanup, driver, provenance, installer, TrustedInstaller, or other state reference.
+* Exact ordered resume handler ids and trusted local artifact paths.
+* The complete Safe Mode exit strategy, handler id, expected conditions, verification, and recovery instructions.
+* Why no record contains arbitrary commands, scripts, executables, arguments, URLs, network paths, or dynamic shell content.
+* Expiration, cancellation eligibility, user warning, and technician recovery guidance.
+* Machine-state conditions required before resume and exit.
+* Post-resume verification checks and structured failure behavior.
+* Behavior for missing, corrupt, stale, expired, mismatched, cancelled, incomplete, or state-drifted records.
+
+Adding a Safe Mode scope does not authorize BCD changes, reboot, scheduling,
+service work, TrustedInstaller, or tool execution. A future phase must
+separately approve the exact runtime implementation and prove that the machine
+cannot enter Safe Mode without a known bounded resume and exit path.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

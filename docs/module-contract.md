@@ -209,6 +209,17 @@ external elevation tools, start or modify the TrustedInstaller service, create
 temporary services or Scheduled Tasks, alter ACLs/ownership, or bypass the
 centralized boundary.
 
+Implemented modules that require future Safe Mode work must use an exact scope
+from `config/SafeModeRecoveryPolicy.psd1` and a matching verified Phase 40
+`SafeModeReboot` workflow reference. They must provide passed checkpoints,
+verified adjacent-foundation state records, bounded policy-approved resume
+handlers, a mandatory policy-approved exit strategy, machine-state
+expectations, post-resume verification, cancellation behavior, expiration,
+warning text, and readable recovery instructions. Modules must not edit BCD,
+call reboot commands, write RunOnce, create Scheduled Tasks or temporary
+services, embed arbitrary commands/scripts/arguments/URLs in workflow state, or
+bypass the centralized Safe Mode boundary.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

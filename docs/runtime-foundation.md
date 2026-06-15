@@ -53,6 +53,20 @@ Tool-level `RequiresAdmin` metadata still describes the approved behavior of the
 
 `core/TrustedInstallerExecution.psm1` is deliberately inert. Valid future-shaped requests return `NotImplemented`; invalid requests return `Blocked`. Both paths report `ProcessStarted = false` and `CommandExecuted = false`. BoostLab never runs the complete application as TrustedInstaller.
 
+### Safe Mode Recovery and Resume
+
+`config/SafeModeRecoveryPolicy.psd1` is the deny-by-default allowlist for future Safe Mode workflows. Phase 43 leaves production scopes empty.
+
+`core/SafeModeWorkflow.psm1` validates exact tool/action/type scopes, pre-Safe-Mode checkpoints, state-capture references, a matching verified Phase 40 reboot workflow, bounded known resume handlers, a mandatory exit strategy, expiration, cancellation, machine-state validation, and post-resume verification. Integrity-protected workflow records are stored under:
+
+```text
+$env:ProgramData\BoostLab\State\SafeModeRecovery\Records
+```
+
+`core/SafeModeExecution.psm1` is deliberately inert. Structurally valid future-shaped entry, scheduling, and exit requests return `NotImplemented`; invalid requests return `Blocked`. Every result reports that Safe Mode, BCD, reboot, scheduling, services, TrustedInstaller, and protected targets were not changed.
+
+This foundation is separate from normal reboot recovery. Phase 40 records the reboot and post-reboot lifecycle. Phase 43 requires that reference, then adds Safe Mode-specific entry type, bounded in-mode continuation, a predeclared exit path, and recovery guarantees.
+
 ### Download Provenance and Installer Execution
 
 `config/ArtifactProvenance.psd1` is the centralized allowlist for future downloaded artifacts. Phase 35 intentionally leaves the production artifact list empty.
@@ -236,6 +250,7 @@ The current runtime does not:
 * Perform destructive cleanup or quarantine without a future approved exact cleanup scope and explicit tool call
 * Inspect, remove, re-register, repair, or restore AppX packages without a future approved exact package scope, inventory record, confirmation, and explicit tool call
 * Request reboot, schedule post-reboot resume, alter boot state, or continue a workflow without a future approved exact reboot scope and integrity-verified workflow record
+* Configure or enter Safe Mode, schedule a Safe Mode continuation, or request Safe Mode exit without a future approved exact Safe Mode scope, verified Phase 40 reference, bounded resume plan, and documented exit strategy
 * Inventory, install, update, uninstall, disable, enable, remove, profile-import, debloat, or roll back a driver without a future exact driver scope and integrity-verified record
 * Execute a TrustedInstaller command without a future exact scope and separately approved execution implementation
 * Enforce licenses
@@ -306,3 +321,24 @@ commands, broad/protected targets, external elevation utilities, missing state
 records, and missing verification are denied. The execution boundary contains
 no process, service, ACL, ownership, registry, file, package, Scheduled Task,
 or elevation command and is not wired into any tool.
+
+## Safe Mode Recovery and Resume Foundation
+
+`core/SafeModeWorkflow.psm1` and `core/SafeModeExecution.psm1` establish the
+future Safe Mode lifecycle:
+
+```text
+Exact scope -> Plan -> Confirm -> Checkpoint -> Verify Phase 40 reference
+            -> Persist -> Future entry -> Validate resume -> Known steps
+            -> Planned exit -> Verify -> Complete or recover
+```
+
+Production scopes are empty. Workflow state can describe only known handler
+ids and exact trusted local artifact paths; it cannot contain command strings,
+scripts, executables, arguments, or URLs. Cancellation blocks resume, machine
+state drift blocks continuation, and failed verification returns structured
+recovery guidance.
+
+The execution boundary contains no BCD, reboot, RunOnce, Scheduled Task,
+service, TrustedInstaller, registry, protected-file, or process command and is
+not imported by the live runtime or any tool.

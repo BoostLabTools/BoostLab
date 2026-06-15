@@ -13,6 +13,11 @@ not approve a production scope, restart Windows, write RunOnce, create a
 Scheduled Task, edit BCD, enter Safe Mode, alter Windows Recovery Environment,
 or enable a deferred tool.
 
+Phase 43 adds a separate Safe Mode-specific policy boundary. A future Safe Mode
+tool must satisfy both foundations: Phase 40 owns the reboot record, while
+Phase 43 requires Safe Mode type approval, bounded in-mode resume handlers, a
+mandatory exit plan, machine-state validation, and Safe Mode recovery guidance.
+
 ## Production Files
 
 * `config/RebootRecoveryPolicy.psd1` contains future exact workflow scopes.

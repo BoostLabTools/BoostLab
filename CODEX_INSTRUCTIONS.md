@@ -529,6 +529,23 @@ This policy applies to examples including:
 
 ---
 
+## Safe Mode Recovery and Resume Policy
+
+* Safe Mode entry, resume scheduling, exit, and recovery are denied by default.
+* A future Safe Mode-capable tool must use an exact tool/action scope in `config/SafeModeRecoveryPolicy.psd1`. Phase 43 approves no production Safe Mode scopes.
+* Safe Mode is not implied by generic reboot permission. Every workflow requires a matching, verified Phase 40 `SafeModeReboot` workflow reference.
+* Every Safe Mode plan requires a matching Action Plan, explicit confirmation, High risk classification, passed pre-Safe-Mode checkpoints, verified state-capture references, bounded known resume handlers, a documented exit strategy, post-resume verification, expiration, warning text, and readable recovery instructions.
+* Minimal, Networking, and Command Shell are distinct Safe Mode types. Command Shell requires separate future scope approval and is denied by default.
+* Resume and exit records must contain exact policy-approved handler ids and trusted local artifact paths only. Arbitrary commands, command lines, scripts, arguments, executables, URLs, network paths, wildcards, and dynamic shell content are prohibited.
+* Resume is allowed only from an integrity-verified, non-stale, non-expired, matching, non-cancelled BoostLab Safe Mode record whose machine-state expectations still match.
+* Cancellation permanently blocks future resume. Missing, corrupt, expired, mismatched, incomplete, cancelled, or state-drifted workflows must return structured refusal with recovery guidance.
+* A Safe Mode workflow must never be schedulable without a known exit path. Failed resume or failed post-resume verification must not continue silently.
+* Safe Mode policy does not authorize BCD edits, reboot, RunOnce, Scheduled Tasks, temporary services, service changes, TrustedInstaller, protected registry/file operations, downloads, installers, cleanup, AppX, driver, or security changes governed elsewhere.
+* `core/SafeModeWorkflow.psm1` validates and persists workflow metadata. `core/SafeModeExecution.psm1` is inert and returns only `Blocked` or `NotImplemented`; it does not configure Safe Mode, alter BCD, reboot, schedule work, or change system state.
+* Adding a Safe Mode scope does not implement a tool. A future approved tool phase must separately document the exact Ultimate behavior, adjacent foundation scopes, execution implementation, recovery path, and verification.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically
