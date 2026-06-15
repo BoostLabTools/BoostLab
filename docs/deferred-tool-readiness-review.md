@@ -59,9 +59,9 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **4**
-* Foundation-ready but needs artifact provenance approvals: **7**
+* Foundation-ready but needs artifact provenance approvals: **8**
 * Foundation-ready but needs tool-specific design: **4**
-* Candidate for next implementation attempt: **1**
+* Candidate for next implementation attempt: **0**
 
 ## Per-Tool Review
 
@@ -73,7 +73,7 @@ Current inventory:
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install side effects | Download provenance, installer policy, service rollback, file/registry rollback | No approved app list, no approved artifacts, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file allowlists | No | Foundation-ready but needs artifact provenance approvals | Reduce to an explicitly approved installer set before another migration attempt |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Refused placeholder | NVIDIA path still downloads tools, installs drivers, imports profiles, removes components, and reboots | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback | No approved NVIDIA artifacts, no approved driver scopes, no approved reboot scope, no approved component-removal allowlists | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile and cleanup allowlists | No | Foundation-ready but needs artifact provenance approvals | Define the exact NVIDIA-only branch and required artifacts before retrying |
 | DirectX | `directx` | Graphics | Refused placeholder after Phase 45 provenance review | Downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Download provenance, installer policy, file/registry rollback, and cleanup policy | Source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/directx-provenance-review.md` exists |
-| Visual C++ | `visual-cpp` | Graphics | Refused placeholder | Downloads and installs many redistributables from mutable URLs | Download provenance and installer policy | No approved redistributable artifacts, no approved exact command set | Exact artifact records for each redistributable, signer/hash evidence, exact installer request definitions | **Yes** | Candidate for next implementation attempt | Attempt a provenance-only review first, then a narrow installer phase |
+| Visual C++ | `visual-cpp` | Graphics | Refused placeholder after Phase 46 provenance review | Downloads twelve redistributables from mutable mirror URLs and installs every x86/x64 package with version-specific switches | Download provenance and installer policy | All source URLs are mutable branch references; no approved hashes, sizes, package versions, signers, authoritative source evidence, exit-code rules, installer execution, or temp ownership scopes | Immutable artifact sources and exact hash/size/version/signer evidence for all twelve packages, approved installer requests and exit-code rules, and exact generated-temp-path scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/visual-cpp-provenance-review.md` exists |
 | Start Menu Taskbar | `start-menu-taskbar` | Windows | Refused placeholder | Replaces layout files, deletes state, writes policy, and restarts Explorer | File/registry rollback and cleanup policy | No approved file/registry/cleanup scopes, no approved ownership rule for replaced user state | Exact file targets, exact registry targets, exact cleanup ownership rules, exact rollback design | No | Foundation-ready but needs production allowlists | Approve exact owned targets and rollback behavior before a second attempt |
 | Copilot | `copilot` | Windows | Refused placeholder | Registry-only implementation would weaken Ultimate; full source removes/re-registers AppX and stops many processes | AppX inventory and restore foundation | No process-handling governance, no exact package/process policy for this tool | Exact package scope and a separately approved process-handling model | No | Not ready | Keep deferred until process-stop governance is defined or the tool is redesigned |
 | Bloatware | `bloatware` | Windows | Refused placeholder | Broad AppX, service, cleanup, download, and repair workflow | AppX inventory, service rollback, cleanup policy, download/installer policy | No approved package list, no approved service scopes, no approved cleanup ownership map, no unified restore design | Exact package allowlists, exact service scopes, exact cleanup scopes, any artifact approvals | No | Foundation-ready but needs tool-specific design | Define a tightly scoped approved package/service matrix before another implementation phase |
@@ -117,6 +117,7 @@ execution approval”:
 * Installers
 * Driver Install Debloat & Settings
 * DirectX
+* Visual C++
 * Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
@@ -133,27 +134,29 @@ deliberate tool design before scopes or artifacts can be approved safely:
 
 ### Candidate for next implementation attempt
 
-These are the narrowest remaining deferred tools, but they are still blocked
-until the stated approvals are complete:
-
-* Visual C++
+No deferred tool currently qualifies as a conservative next implementation
+attempt without first obtaining production scopes, artifact approvals, or a
+tool-specific design.
 
 ## Recommended Next Phase List
 
 In conservative order:
 
-1. `Visual C++`
-   Same pattern as DirectX, but with a larger artifact set.
-2. `Start Menu Taskbar`
+1. `Start Menu Taskbar`
    Needs exact owned file/registry scope and rollback decisions, but no new foundation category.
-3. `Write Cache Buffer Flushing`
+2. `Write Cache Buffer Flushing`
    Needs an explicit product decision on source Default versus captured-state restore.
-4. `Cleanup`
+3. `Cleanup`
    Needs exact target ownership and quarantine/delete choices before implementation can be attempted safely.
 
 DirectX was removed from the candidate list by the Phase 45 provenance review.
 Its source uses mutable branch downloads and lacks the hashes, signer evidence,
 extraction inventory, and approved installer execution required by Phase 35.
+
+Visual C++ was removed from the candidate list by the Phase 46 provenance
+review. All twelve source packages use mutable branch downloads and lack the
+complete hash, size, version, signer, authoritative-source, exit-code, and
+installer approvals required by Phase 35.
 
 ## Remaining Blockers
 

@@ -83,9 +83,9 @@ foreach ($requiredSection in @(
 foreach ($requiredCategory in @(
     'Not ready: **3**'
     'Foundation-ready but needs production allowlists: **4**'
-    'Foundation-ready but needs artifact provenance approvals: **7**'
+    'Foundation-ready but needs artifact provenance approvals: **8**'
     'Foundation-ready but needs tool-specific design: **4**'
-    'Candidate for next implementation attempt: **1**'
+    'Candidate for next implementation attempt: **0**'
 )) {
     if (-not $reviewText.Contains($requiredCategory)) {
         throw "Deferred readiness review is missing category summary: $requiredCategory"
@@ -156,7 +156,7 @@ if (
     Success                   = $true
     DeferredToolCount         = $placeholderTools.Count
     CategoryCount             = 5
-    CandidateCount            = 1
+    CandidateCount            = 0
     SourceUltimateUnchanged   = $true
     Message                   = 'Deferred readiness review documents all current placeholders and their post-foundation status.'
     Timestamp                 = Get-Date

@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the DirectX provenance validator path.'
+        throw 'Unable to determine the Visual C++ provenance validator path.'
     }
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
@@ -22,12 +22,12 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
-$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\2 DirectX.ps1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\DirectX.psm1'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\3 C++.ps1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
 $manifestPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
-$reviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
+$reviewPath = Join-Path $ProjectRoot 'docs\visual-cpp-provenance-review.md'
 $readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
-$migrationRecordPath = Join-Path $ProjectRoot 'docs\migrations\directx.md'
+$migrationRecordPath = Join-Path $ProjectRoot 'docs\migrations\visual-cpp.md'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
@@ -41,39 +41,62 @@ foreach ($requiredPath in @(
     $readinessPath
 )) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
-        $errors.Add("Required DirectX provenance review file is missing: $requiredPath")
+        $errors.Add("Required Visual C++ provenance review file is missing: $requiredPath")
     }
 }
 if ($errors.Count -gt 0) {
-    throw "DirectX provenance review validation failed:`r`n- $($errors -join "`r`n- ")"
+    throw "Visual C++ provenance review validation failed:`r`n- $($errors -join "`r`n- ")"
 }
 
-$expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
+$expectedSourceHash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
-    $errors.Add("DirectX Ultimate source checksum changed: $actualSourceHash")
+    $errors.Add("Visual C++ Ultimate source checksum changed: $actualSourceHash")
 }
 
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw
+$packageFiles = @(
+    'vcredist2005_x64.exe'
+    'vcredist2005_x86.exe'
+    'vcredist2008_x64.exe'
+    'vcredist2008_x86.exe'
+    'vcredist2010_x64.exe'
+    'vcredist2010_x86.exe'
+    'vcredist2012_x64.exe'
+    'vcredist2012_x86.exe'
+    'vcredist2013_x64.exe'
+    'vcredist2013_x86.exe'
+    'vcredist2015_2017_2019_2022_x64.exe'
+    'vcredist2015_2017_2019_2022_x86.exe'
+)
+foreach ($packageFile in $packageFiles) {
+    if (-not $sourceText.Contains("refs/heads/main/$packageFile")) {
+        $errors.Add("Visual C++ source no longer contains reviewed package URL: $packageFile")
+    }
+    if (-not $sourceText.Contains("Temp\$packageFile")) {
+        $errors.Add("Visual C++ source no longer contains reviewed temp target: $packageFile")
+    }
+}
+
 foreach ($sourceBehavior in @(
-    'refs/heads/main/7zip.exe'
-    'Start-Process -Wait "$env:SystemRoot\Temp\7zip.exe" -ArgumentList "/S"'
-    'HKEY_CURRENT_USER\Software\7-Zip\Options'
-    'refs/heads/main/directx.exe'
-    'Program Files\7-Zip\7z.exe'
-    'DXSETUP.exe'
+    'vcredist2005_x86.exe" -ArgumentList "/q"'
+    'vcredist2008_x86.exe" -ArgumentList "/qb"'
+    'vcredist2010_x86.exe" -ArgumentList "/passive /norestart"'
+    'vcredist2012_x64.exe" -ArgumentList "/passive /norestart"'
+    'vcredist2013_x64.exe" -ArgumentList "/passive /norestart"'
+    'vcredist2015_2017_2019_2022_x64.exe" -ArgumentList "/passive /norestart"'
 )) {
     if (-not $sourceText.Contains($sourceBehavior)) {
-        $errors.Add("DirectX source no longer contains reviewed behavior: $sourceBehavior")
+        $errors.Add("Visual C++ source no longer contains reviewed installer behavior: $sourceBehavior")
     }
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    $errors.Add('DirectX module is no longer a placeholder.')
+    $errors.Add('Visual C++ module is no longer a placeholder.')
 }
 if ($moduleText.Contains('$script:BoostLabImplementedActions')) {
-    $errors.Add('DirectX module unexpectedly declares implemented actions.')
+    $errors.Add('Visual C++ module unexpectedly declares implemented actions.')
 }
 foreach ($forbiddenCommand in @(
     'Invoke-WebRequest'
@@ -82,7 +105,7 @@ foreach ($forbiddenCommand in @(
     'New-BoostLabArtifactDownloadRequest'
 )) {
     if ($moduleText.Contains($forbiddenCommand)) {
-        $errors.Add("DirectX placeholder contains executable behavior: $forbiddenCommand")
+        $errors.Add("Visual C++ placeholder contains executable behavior: $forbiddenCommand")
     }
 }
 
@@ -93,28 +116,33 @@ if ($artifacts.Count -ne 0) {
 }
 foreach ($artifact in $artifacts) {
     if (
-        [string]$artifact.Id -match 'directx|7zip' -or
-        @($artifact.SourceToolIds) -contains 'directx'
+        [string]$artifact.Id -match 'visual|vcredist|cpp' -or
+        @($artifact.SourceToolIds) -contains 'visual-cpp'
     ) {
-        $errors.Add("DirectX artifact was added without complete approval: $($artifact.Id)")
+        $errors.Add("Visual C++ artifact was added without complete approval: $($artifact.Id)")
     }
 }
 
 $reviewText = Get-Content -LiteralPath $reviewPath -Raw
 foreach ($requiredPhrase in @(
-    '# DirectX Artifact Provenance Review'
-    'DirectX remains a refused placeholder.'
+    '# Visual C++ Artifact Provenance Review'
+    'Visual C++ remains a refused placeholder.'
+    'all twelve executables'
     'refs/heads/main'
-    'Exact SHA-256 for `7zip.exe`.'
-    'Exact SHA-256 for `directx.exe`.'
-    'Exact extraction inventory and expected SHA-256 for `DXSETUP.exe`.'
-    'The Phase 35 installer helper is also intentionally inert.'
-    'No real DirectX or 7-Zip artifact is approved.'
-    'Until that package exists, DirectX remains disabled and visual-only.'
+    'Exact SHA-256.'
+    'Verified Authenticode status and expected Microsoft publisher/signer.'
+    'The Phase 35 installer helper is intentionally inert.'
+    'No real Visual C++ redistributable is approved.'
+    'Until the complete twelve-artifact approval package exists'
     $expectedSourceHash
 )) {
     if (-not $reviewText.Contains($requiredPhrase)) {
-        $errors.Add("DirectX provenance review is missing phrase: $requiredPhrase")
+        $errors.Add("Visual C++ provenance review is missing phrase: $requiredPhrase")
+    }
+}
+foreach ($packageFile in $packageFiles) {
+    if (-not $reviewText.Contains($packageFile)) {
+        $errors.Add("Visual C++ provenance review is missing package: $packageFile")
     }
 }
 
@@ -122,16 +150,16 @@ $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 foreach ($requiredPhrase in @(
     'Foundation-ready but needs artifact provenance approvals: **8**'
     'Candidate for next implementation attempt: **0**'
-    'Refused placeholder after Phase 45 provenance review'
-    'docs/directx-provenance-review.md'
+    'Refused placeholder after Phase 46 provenance review'
+    'docs/visual-cpp-provenance-review.md'
 )) {
     if (-not $readinessText.Contains($requiredPhrase)) {
-        $errors.Add("Deferred readiness review is missing Phase 45 result: $requiredPhrase")
+        $errors.Add("Deferred readiness review is missing Phase 46 result: $requiredPhrase")
     }
 }
 
 if (Test-Path -LiteralPath $migrationRecordPath -PathType Leaf) {
-    $errors.Add('DirectX migration record must not exist while the tool remains unimplemented.')
+    $errors.Add('Visual C++ migration record must not exist while the tool remains unimplemented.')
 }
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
@@ -205,17 +233,17 @@ if (
 }
 
 if ($errors.Count -gt 0) {
-    throw "DirectX provenance review validation failed:`r`n- $($errors -join "`r`n- ")"
+    throw "Visual C++ provenance review validation failed:`r`n- $($errors -join "`r`n- ")"
 }
 
 [pscustomobject]@{
-    Success                   = $true
-    DirectXImplemented        = $false
-    ProductionArtifactCount   = $artifacts.Count
-    DirectXArtifactApproved   = $false
-    ImplementedModuleCount    = $implementedModules.Count
-    PlaceholderModuleCount    = $placeholderModules.Count
-    SourceUltimateUnchanged   = $true
-    Message                   = 'DirectX remains denied until immutable artifact provenance and installer approvals exist.'
-    Timestamp                 = Get-Date
+    Success                    = $true
+    VisualCppImplemented       = $false
+    ProductionArtifactCount    = $artifacts.Count
+    VisualCppArtifactApproved  = $false
+    ImplementedModuleCount     = $implementedModules.Count
+    PlaceholderModuleCount     = $placeholderModules.Count
+    SourceUltimateUnchanged    = $true
+    Message                    = 'Visual C++ remains denied until all twelve immutable artifact and installer approvals exist.'
+    Timestamp                  = Get-Date
 }
