@@ -395,6 +395,22 @@ This policy applies to examples including:
 
 ---
 
+## Download Provenance and Installer Execution Policy
+
+* Downloads and installer execution are denied by default.
+* A future tool must reference an artifact listed in `config/ArtifactProvenance.psd1`; editable URLs or arbitrary paths from tool metadata must never be executed.
+* Every approved artifact record must declare its id, display name, HTTPS source URL, exact SHA-256, expected file name, size or size bounds when required, expected publisher for executable content, future consumer tool ids, license or redistributability note, execution permission, Administrator requirement, reboot possibility, verification requirements, and approval status.
+* Unknown artifacts, missing hashes, malformed hashes, hash mismatches, revoked or unapproved artifacts, and artifacts absent from the manifest are blocked.
+* Executable or installer artifacts allowed to run must declare and pass an Authenticode signer/publisher requirement. Missing signer policy is allowed only when the artifact is explicitly non-executable.
+* Downloads must never be executed directly from a URL. A future downloader must save to a controlled local path and complete provenance verification before any use.
+* Installer execution requires a matching verified artifact, a matching tool id and action id, an exact documented command line, source-approved switches, explicit Action Plan confirmation, process start/finish logging, timeout handling, and exit-code capture.
+* Silent execution is prohibited unless its switches are preserved from approved source behavior and documented in the migration record.
+* Unverified temporary paths, unsigned executable content, hash-mismatched content, and unrelated cleanup are prohibited.
+* Adding an artifact to the manifest does not implement or authorize a tool. A dedicated approved phase must add the artifact record, manual source/hash/signature evidence, tests, migration record updates, and tool wiring.
+* Phase 35 approves no real third-party artifacts. `core/DownloadProvenance.psm1` and `core/InstallerExecution.psm1` are inert policy boundaries; the installer entry point does not start a process.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

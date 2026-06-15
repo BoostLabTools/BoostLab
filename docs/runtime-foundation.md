@@ -49,6 +49,16 @@ Tool-level `RequiresAdmin` metadata still describes the approved behavior of the
 
 `core/TrustedInstaller.psm1` defines the centralized boundary for any future approved TrustedInstaller operation. The Phase 14.5 helper is intentionally non-executing and returns `NotImplemented`. BoostLab never runs the complete application as TrustedInstaller.
 
+### Download Provenance and Installer Execution
+
+`config/ArtifactProvenance.psd1` is the centralized allowlist for future downloaded artifacts. Phase 35 intentionally leaves the production artifact list empty.
+
+`core/DownloadProvenance.psm1` validates manifest records and local files. It checks artifact identity, approval state, expected file name, SHA-256, size constraints, and Authenticode publisher requirements for executable content. Unknown artifacts and failed verification are blocked. The module has no network command and cannot download a file.
+
+`core/InstallerExecution.psm1` validates future installer requests against a verified provenance result, matching tool/action identity, an explicit Action Plan, confirmation, exact command line, and timeout policy. Its Phase 35 execution function always returns `NotImplemented` or `Blocked` and never starts a process.
+
+This foundation is deliberately disconnected from current tools. It defines the security contract required before any deferred downloader or installer migration can begin.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -156,6 +166,7 @@ The current runtime does not:
 * Implement registry, service, driver, installer, cleanup, Defender, or security changes
 * Create restore points
 * Download content
+* Launch third-party installers through the Phase 35 policy helpers
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.

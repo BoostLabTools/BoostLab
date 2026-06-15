@@ -59,6 +59,8 @@ In practice, every tool in this document is both still a placeholder and current
 
 Needed when a tool downloads any executable, installer, archive, or helper.
 
+Phase 35 establishes the deny-by-default manifest schema and inert local verification helpers. It approves no real artifacts and does not by itself make any deferred tool executable. Each future artifact still needs a dedicated approval record, manually verified source/hash/signature evidence, and tool-specific tests.
+
 Affected tools:
 
 * `reinstall`
@@ -75,6 +77,8 @@ Affected tools:
 ### Installer execution policy
 
 Needed when a tool launches MSI, EXE, setup, or repair packages and BoostLab must define allowed switches, visible/non-visible execution rules, exit-code handling, and post-install verification.
+
+Phase 35 establishes the request-validation and non-executing runtime boundary. Real process launch remains disabled until a later phase approves the execution implementation and at least one real artifact.
 
 Affected tools:
 
