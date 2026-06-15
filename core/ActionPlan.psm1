@@ -198,6 +198,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'Restore Windows default power schemes and the explicit default registry behavior from Ultimate.'
     }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
+        'Analyze the two source-defined Spectre / Meltdown mitigation override values and explain the security and performance tradeoff.'
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
+        'Disable the source-targeted Spectre / Meltdown mitigations by setting both approved Ultimate override values to 3.'
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
+        'Remove both source-defined mitigation overrides so Windows can use its default mitigation policy.'
+    }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
         'Analyze the current MMAgent and prefetcher state and compare it with the approved Ultimate Off and Default profiles.'
     }
@@ -365,6 +374,21 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Delete the complete FlyoutMenuSettings and PowerThrottling keys exactly as defined by the approved source.')
         $plannedChanges.Add('Restore the four hidden power-setting Attributes values to 1.')
         $plannedChanges.Add('Open Power Options and verify Balanced is active and the approved registry defaults are present.')
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read FeatureSettingsOverrideMask and FeatureSettingsOverride under the exact Ultimate ControlSet001 Memory Management path.')
+        $plannedChanges.Add('Classify the detected policy as source-disabled, default, custom/partial, or unknown.')
+        $plannedChanges.Add('Explain that Apply reduces speculative-execution vulnerability protection and Default is the recommended security posture.')
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Set FeatureSettingsOverrideMask to DWORD 3 at the exact source-defined ControlSet001 path.')
+        $plannedChanges.Add('Set FeatureSettingsOverride to DWORD 3 at the exact source-defined ControlSet001 path.')
+        $plannedChanges.Add('Verify both values independently without changing boot configuration or restarting Windows.')
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Delete only FeatureSettingsOverrideMask from the exact source-defined ControlSet001 path.')
+        $plannedChanges.Add('Delete only FeatureSettingsOverride from the exact source-defined ControlSet001 path.')
+        $plannedChanges.Add('Treat already-absent values as default and verify both values independently.')
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the source-defined EnablePrefetcher registry value.')
@@ -564,6 +588,20 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The complete FlyoutMenuSettings and PowerThrottling keys are deleted exactly as defined by Ultimate, which may remove unrelated values in those keys.')
         $sideEffects.Add('Hibernation and Fast Startup are enabled, hidden setting attributes return to 1, and Power Options opens. No reboot is performed.')
     }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; only the two source-defined mitigation override values are read.')
+        $sideEffects.Add('Registry inspection cannot prove the currently active kernel mitigation state.')
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('CPU vulnerability protection is reduced by disabling the source-targeted Spectre / Meltdown mitigations.')
+        $sideEffects.Add('Only the two approved Ultimate registry values are written; no BCD, service, driver, process, or reboot behavior is added.')
+        $sideEffects.Add('Verification confirms registry configuration only and does not claim to measure active kernel mitigation state.')
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Only the two source-defined override values are removed so Windows can use its default mitigation policy.')
+        $sideEffects.Add('Already-absent values are treated as the approved default; unrelated Memory Management values are left intact.')
+        $sideEffects.Add('Verification confirms registry configuration only and does not claim to measure active kernel mitigation state.')
+    }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; the result compares the current state with the source-defined Off and Default profiles.')
         $sideEffects.Add('The source warns that MMAgent settings may take time to initialize after reboot before they can be checked accurately.')
@@ -701,6 +739,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'BoostLab will run restoredefaultschemes, enable hibernation, restore the explicit Ultimate defaults, and delete the complete FlyoutMenuSettings and PowerThrottling keys. Previously deleted custom schemes will not be recovered. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
+        'Security warning: BoostLab will set FeatureSettingsOverrideMask and FeatureSettingsOverride to 3 exactly as defined by Ultimate. This disables the source-targeted Spectre / Meltdown mitigations and reduces CPU vulnerability protection. No reboot is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
+        'BoostLab will remove only FeatureSettingsOverrideMask and FeatureSettingsOverride from the source-defined ControlSet001 path so Windows can use its default mitigation policy. Already-absent values are accepted and no reboot is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
         'BoostLab will apply the approved Ultimate MMAgent Off profile: set EnablePrefetcher to 0, disable ApplicationLaunchPrefetching, ApplicationPreLaunch, MemoryCompression, OperationAPI, and PageCombining, set MaxOperationAPIFiles to 1, and verify the result. No restart is performed. Do you want to continue?'

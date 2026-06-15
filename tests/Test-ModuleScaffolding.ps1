@@ -52,6 +52,10 @@ $implementedModules = @{
         RelativePath          = 'Setup\MemoryCompression.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'spectre-meltdown-assistant' = @{
+        RelativePath          = 'Advanced\spectre-meltdown-assistant.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    }
     'mmagent-assistant' = @{
         RelativePath          = 'Advanced\mmagent-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
@@ -373,6 +377,9 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'memory-compression') {
             0
         }
+        elseif ($toolId -eq 'spectre-meltdown-assistant') {
+            0
+        }
         elseif ($toolId -eq 'mmagent-assistant') {
             0
         }
@@ -481,6 +488,20 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing SMT / HT preserved behavior: $requiredText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'spectre-meltdown-assistant') {
+            foreach ($requiredText in @(
+                'HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management'
+                'FeatureSettingsOverrideMask'
+                'FeatureSettingsOverride'
+                '/t REG_DWORD /d "3" /f'
+                'function Test-BoostLabSpectreMeltdownState'
+                'function New-BoostLabSpectreVerificationResult'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Spectre / Meltdown preserved behavior: $requiredText")
                 }
             }
         }

@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **25**
-* Placeholder modules: **23**
+* Implemented modules: **26**
+* Placeholder modules: **22**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -92,7 +92,6 @@ These mismatches are documented here rather than changed during this planning-on
 * **Write Cache Buffer Flushing:** modifies storage-device registry state; source Default deletes complete `Disk` subkeys rather than only the value written by Apply.
 * **Power Plan:** deletes all enumerated power schemes, disables hibernation, changes battery safety behavior, and cannot restore custom previous schemes.
 * **Cleanup:** recursively deletes temporary data, `Windows.old`, `inetpub`, `PerfLogs`, and dump files without a restore path.
-* **Spectre / Meltdown Assistant:** directly disables or enables CPU vulnerability mitigations.
 * **Resizable BAR Assistant:** downloads and executes NVIDIA Inspector profiles, changes driver profile behavior, and includes firmware restart.
 * **Services Optimizer:** broad service/security changes with TrustedInstaller, Safe Mode, RunOnce, restore-point, driver-related, deletion, and reboot behavior.
 * **Defender Optimize Assistant:** Defender/security changes using TrustedInstaller, Safe Mode, RunOnce, service handling, and repeated reboots.
@@ -125,7 +124,6 @@ These mismatches are documented here rather than changed during this planning-on
 | Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Deferred | Apply writes one value, but Default deletes entire device `Disk` subkeys. Source also references the intentionally deleted NVME Faster Driver tool. | Yes, but unsafe | Yes; approve a value-only Default or captured-state Restore | Phase: Storage Write Cache Safety Review |
 | Power Plan | Windows | `modules/Windows/power-plan.psm1` | `source-ultimate/6 Windows/21 Power Plan.ps1`<br>`97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56` | HKLM power policy; extensive `powercfg`; power-scheme deletion; UI launch | Deferred | Deletes all enumerated schemes, disables hibernation, and sets battery warnings/actions/levels to zero. Default cannot restore custom prior schemes. | Yes | Yes for true Restore; source Default only restores Windows schemes | Phase: Power Plan Capture, Apply, and Rollback |
 | Cleanup | Windows | `modules/Windows/cleanup.psm1` | `source-ultimate/6 Windows/22 Cleanup.ps1`<br>`3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Broad recursive file deletion | Deferred | Deletes user/system temp contents, `inetpub`, `PerfLogs`, `Windows.old`, and `DumpStack.log`; no rollback. | No | No practical inverse | Phase: Cleanup Inventory and Confirmation |
-| Spectre / Meltdown Assistant | Advanced | `modules/Advanced/spectre-meltdown-assistant.psm1` | `source-ultimate/8 Advanced/1 Spectre  Meltdown Assistant.ps1`<br>`3989B93BC4B3367B1ED0CF831C93DA6C2E87C556D945854FEE4ECA5D4C66AB50` | HKLM security mitigation registry | Deferred | Directly disables CPU vulnerability mitigations. Must remain a high-risk assistant with explicit security impact analysis. | Yes | No | Phase: Spectre/Meltdown Security Assistant |
 | MMAgent Assistant | Advanced | `modules/Advanced/mmagent-assistant.psm1` | `source-ultimate/8 Advanced/2 MMAgent Assistant.ps1`<br>`C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79` | HKLM registry; MMAgent commands; read-only check | Medium | Focused but multi-setting system behavior. Source Default intentionally leaves MemoryCompression and PageCombining disabled, so “Default” must preserve that approved meaning. | Yes | No | Phase: MMAgent Analysis and Toggle |
 | Resizable BAR Assistant | Advanced | `modules/Advanced/resizable-bar-assistant.psm1` | `source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1`<br>`E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443` | Download; driver profiles; external executable; firmware reboot | Deferred | Downloads NVIDIA Inspector, imports large profiles, and includes reboot-to-BIOS behavior. | Yes, driver whitelist | No | Phase: Resizable BAR Driver and Firmware Assistant |
 | Services Optimizer | Advanced | `modules/Advanced/services-optimizer.psm1` | `source-ultimate/8 Advanced/5 Services Optimizer.ps1`<br>`386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Broad services; HKLM; security; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | Heavy multi-stage privileged workflow. Requires service-state capture, Safe Mode recovery, TrustedInstaller runtime, and rollback design. | Yes | No, but Restore should use captured pre-action service state | Phase: Services Optimizer Recovery Architecture |
@@ -149,6 +147,10 @@ Phase 28 implemented the source-defined Check, Off, and Default behavior as an a
 ### SMT / HT Assistant
 
 Phase 29 implemented the source-defined `Off: Already Running` and `Off: Startup` workflows as an advanced assistant with Analyze, Action Plan confirmation, structured results, and affinity verification. The implementation preserves the source launcher stop list and temporary per-process scope without changing BIOS SMT/HT settings. See `docs/migrations/smt-ht-assistant.md`.
+
+### Spectre / Meltdown Assistant
+
+Phase 30 implemented the source-defined Disable and Enable (Default) registry behavior as a security-sensitive assistant with read-only Analyze, explicit Action Plan confirmation, structured results, idempotent Default handling, and independent verification for both mitigation values. See `docs/migrations/spectre-meltdown-assistant.md`.
 
 ## E. Permanently Deleted Tools
 
@@ -201,9 +203,9 @@ In recommended order:
 
 1. **Notepad Settings**, with explicit approval for mounted `settings.dat` handling and file-backed default behavior
 2. **Timer Resolution Assistant**, after approving service creation, binary provenance, and cleanup expectations
-3. **Spectre / Meltdown Assistant**, only with a dedicated high-risk security-assistant prompt and mitigation-impact reporting
-4. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
-5. **To BIOS**, once the reboot confirmation and firmware-entry flow is explicitly approved for a dedicated phase
+3. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
+4. **To BIOS**, once the reboot confirmation and firmware-entry flow is explicitly approved for a dedicated phase
+5. **Edge Settings**, only after download provenance, service deletion, RunOnce recovery, and repair behavior are approved
 
 The first two are the strongest remaining medium-risk candidates. Items three through five still require a narrower safety decision before implementation.
 
