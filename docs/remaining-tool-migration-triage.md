@@ -35,6 +35,8 @@ The intent is that unsupported branches remain disabled, visual-only, or not imp
 * Missing module files: **0**
 * Missing source mappings: **0**
 
+The first migration pass is complete. The execution-focused follow-up plan for every remaining placeholder or refused tool now lives in `docs/deferred-tools-execution-plan.md`.
+
 No existing implementation changed during Phase 25. The only catalog and source changes are the permanent Loudness EQ removal approved by Yazan.
 
 ### Important Catalog Mismatches
