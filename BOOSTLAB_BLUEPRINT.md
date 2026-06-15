@@ -23,6 +23,16 @@ The application must be built using PowerShell and a graphical user interface.
 * GitHub hosted
 * Future cloud integration
 
+## Product Scope
+
+BoostLab currently targets Windows 11 only.
+
+GPU-specific tooling targets NVIDIA only.
+
+Windows 10 source branches and AMD/Intel GPU-specific branches are outside the supported scope unless Yazan explicitly changes scope later.
+
+Unsupported branches should stay disabled, visual-only, or not implemented rather than being ported silently.
+
 ---
 
 ## Workflow Structure

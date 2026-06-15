@@ -12,6 +12,18 @@ Classification meanings:
 * **Medium:** potentially migratable, but needs a stronger tool-specific plan, confirmation, verification, state capture, or narrowly scoped process/service handling.
 * **Deferred:** contains behavior that should not be migrated until the relevant heavy runtime, rollback, distribution, or safety decisions are approved.
 
+## Product Scope Notes
+
+BoostLab's current product scope is Windows 11 only, with NVIDIA-only support for GPU-specific tooling.
+
+Windows 10 source branches, AMD GPU branches, and Intel GPU branches are currently outside scope unless Yazan explicitly expands scope later.
+
+If a source contains both supported and unsupported branches, future migration phases may keep the unsupported branches disabled, visual-only, or placeholder-only while implementing only the supported Windows 11 / NVIDIA path. That is a scope decision, not an accidental weakening.
+
+If a tool is entirely outside the supported scope, it should remain a placeholder or disabled candidate with a clear reason until scope changes.
+
+The intent is that unsupported branches remain disabled, visual-only, or not implemented unless Yazan later expands scope.
+
 ## A. Summary
 
 * Active approved tools: **48**

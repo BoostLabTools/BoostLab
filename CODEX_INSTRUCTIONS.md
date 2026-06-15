@@ -26,6 +26,26 @@ Do not re-add removed functionality.
 
 ---
 
+## Product Scope
+
+BoostLab currently supports Windows 11 only.
+
+GPU-specific tooling is NVIDIA-only.
+
+Windows 10 source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
+
+AMD GPU-specific source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
+
+Intel GPU-specific source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
+
+If a source script contains both supported and unsupported branches, future phases may implement only the supported Windows 11 / NVIDIA behavior while leaving unsupported branches disabled or visual-only. That is a product-scope decision, not accidental weakening.
+
+If a tool is entirely outside the supported scope, keep it as a placeholder or disabled candidate with a clear reason.
+
+Do not modify `source-ultimate` for scope reasons.
+
+---
+
 ## Required UI Style
 
 Build a WinUtil-inspired PowerShell GUI.
