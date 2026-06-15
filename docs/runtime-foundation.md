@@ -95,6 +95,30 @@ The service helpers contain no live Service Control Manager command and are not 
 
 These helpers are not imported by `core/Execution.psm1` and are not wired into a tool. Future migrations must add exact production scopes and still satisfy AppX, service, driver, TrustedInstaller, Safe Mode, installer, registry, reboot, or ownership requirements that apply to the source.
 
+### Driver State Capture and Rollback
+
+`config/DriverStatePolicy.psd1` is the deny-by-default allowlist for future
+driver operations. Phase 41 leaves `DriverScopes` empty.
+
+`core/DriverState.psm1` validates exact tool, action, device instance,
+hardware, vendor, mutation, and driver-package identities. Inventory records
+preserve provider/version/date, INF and published names, device status and
+problem code, associated services/files, source-store location, provenance
+evidence, reboot workflow references, related state records, verification
+requirements, and rollback eligibility.
+
+`core/DriverExecution.psm1` provides callback-only mutation and rollback
+boundaries for local mocked validation. It requires a policy-approved dry-run
+plan, matching Action Plan, explicit confirmation, structured verification,
+and persisted post-operation state. The module contains no built-in driver,
+PnP, DISM, installer, device-state, or package-removal command.
+
+Install/update planning requires verified Phase 35 provenance. Reboot-capable
+mutations require a verified Phase 40 workflow reference. Associated file,
+registry, service, AppX, installer, or cleanup work remains governed by its
+own foundation. The driver helpers are not imported by
+`core/Execution.psm1` and are not wired into a tool.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -208,6 +232,7 @@ The current runtime does not:
 * Perform destructive cleanup or quarantine without a future approved exact cleanup scope and explicit tool call
 * Inspect, remove, re-register, repair, or restore AppX packages without a future approved exact package scope, inventory record, confirmation, and explicit tool call
 * Request reboot, schedule post-reboot resume, alter boot state, or continue a workflow without a future approved exact reboot scope and integrity-verified workflow record
+* Inventory, install, update, uninstall, disable, enable, remove, profile-import, debloat, or roll back a driver without a future exact driver scope and integrity-verified record
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.
@@ -243,3 +268,19 @@ ids, expiration, cancellation state, recovery instructions, and post-reboot
 verification. Production workflow scopes are empty and both reboot and resume
 scheduling entry points return `NotImplemented`. The helpers are not imported
 by `core/Execution.psm1` or wired into any tool.
+
+## Driver State and Rollback Foundation
+
+`core/DriverState.psm1` and `core/DriverExecution.psm1` establish the future
+driver lifecycle:
+
+```text
+Exact scope -> Inventory -> Plan -> Confirm -> Mutate -> Verify -> Persist
+            -> Validate identity/package -> Roll back -> Verify -> Persist
+```
+
+Production driver scopes are empty. GPU-specific targets are NVIDIA-only, but
+NVIDIA is not implicitly approved. Install/update requires Phase 35 provenance,
+reboot-capable work requires Phase 40 workflow evidence, and associated state
+changes require their own foundation records. Execution is callback-only and
+the helpers are not imported by the live runtime.

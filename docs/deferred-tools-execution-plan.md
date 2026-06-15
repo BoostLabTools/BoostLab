@@ -156,6 +156,17 @@ Affected tools:
 
 Needed before driver installers, profile imports, vendor-service removals, or graphics-driver registry changes.
 
+Phase 41 establishes exact tool/action/device/package scopes, NVIDIA-only GPU
+governance, pre-mutation inventory records, provenance and reboot-reference
+requirements, integrity/age validation, current-device identity checks,
+callback-only mutation/rollback, and persisted verification. It approves no
+production driver targets and performs no real driver or device operation.
+
+The affected tools remain deferred because each still needs an exact
+tool-specific NVIDIA scope, approved artifacts/installers or profile sources,
+operation-specific rollback decisions, and the other foundations required by
+its Ultimate source.
+
 Affected tools:
 
 * `driver-install-debloat-settings`
@@ -235,7 +246,7 @@ Affected tools:
 7. **Reboot/recovery workflow**
    This should cover preflight, confirmation, interrupted-run state, and post-restart continuation.
 8. **Driver state capture and rollback**
-   This is required before any NVIDIA driver orchestration or profile-import workflow can preserve Ultimate without becoming one-way.
+   Phase 41 adds the deny-by-default inventory, verification, and guarded rollback contract. Future work still needs exact NVIDIA device/package scopes, approved provenance, execution implementation, and tool-specific rollback tests.
 9. **TrustedInstaller execution framework**
    The placeholder helper exists, but it still needs execution policy, visibility, logging, and recovery rules.
 10. **Safe Mode recovery/resume framework**

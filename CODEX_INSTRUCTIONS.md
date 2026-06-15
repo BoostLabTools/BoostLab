@@ -495,6 +495,24 @@ This policy applies to examples including:
 
 ---
 
+## Driver State Capture and Rollback Policy
+
+* Driver inventory, mutation, package removal, profile import, component debloat, and rollback are denied by default.
+* A future driver-capable tool must use an exact tool/action/device/package scope in `config/DriverStatePolicy.psd1`. Phase 41 approves no production driver scopes.
+* Class-only, wildcard, unknown-device, unknown-package, broad hardware-enumeration, and arbitrary INF operations are blocked. A scope must identify exact device instance ids, hardware ids, vendor identity, allowed mutations, and package identities where package work is requested.
+* GPU-specific behavior remains NVIDIA-only by product scope. AMD and Intel GPU driver branches are unsupported. NVIDIA behavior is still blocked until a future phase adds an exact approved NVIDIA scope.
+* Exact inventory must be captured before mutation. Records include device class and identity, hardware ids, vendor, provider, version/date, INF and published names, package identity, status/problem code, associated services/files, source-store location, mutation intent, rollback eligibility, provenance and reboot references, verification, and risk.
+* Install and update require matching verified Phase 35 artifact provenance. Driver content must not be downloaded or installed through the Phase 41 helpers.
+* Reboot-capable driver mutations require a matching verified Phase 40 workflow reference. Driver records must not create their own reboot, RunOnce, Scheduled Task, BCD, or recovery behavior.
+* Service, file, registry, AppX, installer, cleanup, or other associated changes require their own matching foundation records. Driver scope does not authorize those side effects.
+* Driver package removal requires the exact captured device and package identity. Broad store cleanup and unrelated package removal are prohibited.
+* Rollback requires an integrity-verified, non-stale BoostLab driver record, a recorded verified mutation, stable current device identity, the original package/source information, matching policy scope, confirmation, and any required reboot workflow.
+* Missing, corrupt, stale, mismatched, out-of-scope, identity-drifted, package-missing, source-missing, or incomplete records block rollback. Rollback must never download or install missing replacement content implicitly.
+* `core/DriverState.psm1` and `core/DriverExecution.psm1` are callback-only foundation boundaries. They contain no built-in driver, PnP, DISM, installer, device-disable, or package-removal command and are not wired into live tool execution.
+* Phase 41 enables no deferred tool and does not approve Driver Install Debloat & Settings or Resizable BAR Assistant.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

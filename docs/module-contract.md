@@ -188,6 +188,17 @@ recovery instructions. Modules must not write RunOnce, create Scheduled Tasks,
 edit BCD, embed command strings in resume records, or call reboot commands
 outside the future centralized reboot boundary.
 
+Implemented modules that perform future driver work must use an exact scope
+from `config/DriverStatePolicy.psd1`. They must capture exact device and package
+inventory before mutation, use the centralized driver plan and execution
+boundaries, require Action Plan confirmation, verify the resulting state, and
+persist post-mutation state before any rollback claim. Install/update must
+reference verified artifact provenance, reboot-capable work must reference a
+verified reboot workflow, and related service/file/registry/AppX/cleanup work
+must use those separate foundations. Modules must not enumerate broad device
+classes, accept arbitrary INF paths, run AMD/Intel GPU branches, or bypass the
+driver boundary with direct PnP/DISM/device commands.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

@@ -126,6 +126,26 @@ Adding a reboot scope does not authorize reboot or scheduling. A future tool
 phase must separately implement the exact approved runtime boundary and prove
 that interrupted or failed continuation cannot run silently.
 
+For driver, device, package, or vendor-profile mutations, a future migration
+record must identify:
+
+* The exact `config/DriverStatePolicy.psd1` scope id.
+* Exact tool/action, device class, device instance, hardware id, vendor, and driver package identities.
+* The exact allowed mutation type and source-defined operation order.
+* Pre-mutation inventory fields, source-store/package requirements, and rollback eligibility.
+* Whether the behavior is GPU-specific and proof that only the supported NVIDIA branch is active.
+* Required Phase 35 artifact provenance for install/update.
+* Required Phase 40 reboot workflow for reboot-capable mutations.
+* Associated service, file, registry, AppX, cleanup, installer, and state-capture references.
+* Exact verification checks for device identity, provider, version, INF/package, status, and problem code where applicable.
+* Behavior for missing packages, missing source content, identity drift, unsupported hardware, and failed verification.
+* Rollback limitations and confirmation/recovery requirements.
+
+Adding a driver scope does not authorize driver execution. A future tool phase
+must separately approve the exact NVIDIA-supported source behavior, execution
+callbacks or runtime implementation, artifact/package sources, verification,
+and rollback. AMD and Intel GPU branches remain unsupported.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used
