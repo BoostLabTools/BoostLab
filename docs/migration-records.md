@@ -56,6 +56,21 @@ For file or registry mutations, a future migration record must identify:
 
 Adding a scope does not itself implement Restore. The module must still expose an approved Restore action, use the capture record before mutation, record post-mutation state, and verify rollback.
 
+For service mutations, a future migration record must identify:
+
+* The exact `config/ServiceRollbackPolicy.psd1` scope id.
+* Every exact service name and approved mutation type.
+* Original source order for startup-type and start/stop operations.
+* Whether delayed auto-start is read or changed.
+* Binary path, account, dependencies, description, and failure-action fields that must remain unchanged.
+* Which captured fields are rollback eligible.
+* Whether the source creates, deletes, or recreates services.
+* Whether protected/core services are targeted and the separate approval supporting that scope.
+* Read-only verification checks for existence, status, startup type, delayed auto-start, and configuration where available.
+* Required Action Plan warnings, Administrator/TrustedInstaller requirements, interruption handling, and rollback limitations.
+
+Adding a service scope does not authorize service execution. The tool phase must still implement the exact approved behavior, record post-mutation state, and prove rollback or explicitly document why rollback is unavailable.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

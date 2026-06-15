@@ -428,6 +428,24 @@ This policy applies to examples including:
 
 ---
 
+## Service State Capture and Rollback Policy
+
+* Service capture and rollback are denied by default.
+* A future service-changing tool must use an exact tool-specific scope in `config/ServiceRollbackPolicy.psd1`. Phase 37 approves no production service scopes.
+* Scopes must list exact service names and exact allowed mutation types. Wildcards, unknown services, broad enumeration, and unapproved names are blocked.
+* Protected/core Windows services remain denied unless a future migration explicitly scopes the exact service and receives Yazan approval with recovery requirements.
+* Capture must occur before mutation and record original existence, status, startup type, delayed auto-start, binary path, account, dependencies, description, failure actions where available, intended mutation, rollback eligibility, verification requirements, and risk.
+* The complete post-mutation service state must be recorded before rollback can be attempted.
+* Rollback requires an integrity-verified, non-stale BoostLab service record whose tool, action, scope, service identity, and current state all match.
+* Service identity drift, missing or corrupt records, stale records, current-state drift, out-of-scope services, and ineligible mutations are blocked.
+* Phase 37 may restore only explicitly approved startup type, delayed auto-start, and running status through a narrow runtime boundary.
+* Service creation, deletion, recreation, arbitrary binary/account/dependency changes, and protected-service recovery remain disabled until separately approved infrastructure exists.
+* Service rollback failures must return structured results and must never be ignored silently.
+* `Default` remains the approved tool default. Service rollback means restoring a captured prior service state and is not an optimizer preset.
+* Phase 37 does not wire service helpers into any module or enable any deferred tool.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

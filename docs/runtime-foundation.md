@@ -75,6 +75,16 @@ File scopes reject wildcards, broad system roots, reparse points, and paths outs
 
 These helpers are not imported by `core/Execution.psm1` and are not wired to any tool. A future approved migration must add an exact production scope and call the helpers explicitly.
 
+### Service State Capture and Rollback
+
+`config/ServiceRollbackPolicy.psd1` is the deny-by-default allowlist for future service-changing tools. Phase 37 leaves `ServiceScopes` empty.
+
+`core/ServiceState.psm1` defines exact-name scope validation, integrity-protected service records, read-only state verification, and capture through an injected service reader. Records include original existence, status, startup type, delayed auto-start, binary path, account, dependencies, description, failure actions where available, mutation intent, rollback eligibility, and risk.
+
+`core/ServiceRollback.psm1` requires a valid non-stale record, matching tool/action/scope/service identity, recorded post-mutation state, and current-state verification. Its approved mutation plan can restore only startup type, delayed auto-start, and running status when the scope explicitly allows those fields.
+
+The service helpers contain no live Service Control Manager command and are not imported by `core/Execution.psm1` or any tool module. Service creation, deletion, recreation, arbitrary configuration restoration, protected-service handling, TrustedInstaller, Safe Mode, and reboot recovery remain outside the Phase 37 boundary.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -184,6 +194,7 @@ The current runtime does not:
 * Download content
 * Launch third-party installers through the Phase 35 policy helpers
 * Capture or restore file/registry state without a future approved scope and explicit tool call
+* Capture or restore service state without a future approved exact service scope and explicit tool call
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.

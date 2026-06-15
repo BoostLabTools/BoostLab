@@ -125,6 +125,10 @@ Affected tools:
 
 Needed before changing or deleting services so BoostLab can prove what changed and restore a captured prior state where appropriate.
 
+Phase 37 establishes exact-name policy scopes, integrity-protected service state records, post-mutation identity checks, read-only verification, and callback-based rollback for explicitly eligible startup type, delayed auto-start, and running status. It approves no production service names and does not enable service creation, deletion, recreation, protected-service changes, or arbitrary configuration rollback.
+
+The affected tools below remain deferred because their Ultimate behavior also depends on downloads/installers, AppX operations, TrustedInstaller, Safe Mode, driver handling, destructive cleanup, reboot recovery, broad multi-service plans, or service create/delete semantics that Phase 37 intentionally does not provide.
+
 Affected tools:
 
 * `edge-settings`
@@ -198,7 +202,7 @@ Affected tools:
 3. **File/registry state capture and rollback**
    This is the baseline for any future `Default` narrowing or true `Restore` path on system-state tools.
 4. **Service state capture and rollback**
-   This is needed before any real service deletion, startup-type mutation, or “optimizer” workflow.
+   Phase 37 adds the deny-by-default capture, verification, and guarded startup/status rollback contract. Future work still needs explicit per-tool service scopes and separate approval for protected services, create/delete/recreation, multi-service recovery, and interrupted workflows.
 5. **Destructive cleanup policy**
    This should define deletion scope, ownership checks, exclusions, and when a tool must refuse broad cleanup instead of narrowing it silently.
 6. **AppX/package inventory and restore framework**
