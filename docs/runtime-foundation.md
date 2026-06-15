@@ -207,6 +207,7 @@ The current runtime does not:
 * Capture or restore service state without a future approved exact service scope and explicit tool call
 * Perform destructive cleanup or quarantine without a future approved exact cleanup scope and explicit tool call
 * Inspect, remove, re-register, repair, or restore AppX packages without a future approved exact package scope, inventory record, confirmation, and explicit tool call
+* Request reboot, schedule post-reboot resume, alter boot state, or continue a workflow without a future approved exact reboot scope and integrity-verified workflow record
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.
@@ -226,3 +227,19 @@ Restore adds record validation and exact captured manifest/install-location
 checks before execution. Production package scopes are empty, the helpers are
 not imported by `core/Execution.psm1`, and execution is callback-only. Phase 39
 does not call package cmdlets, DISM, downloads, installers, or deferred modules.
+
+## Reboot and Recovery Foundation
+
+`core/RebootWorkflow.psm1` and `core/RebootExecution.psm1` establish the future
+workflow:
+
+```text
+Scope -> Plan -> Confirm -> Checkpoint -> Persist -> Reboot or Manual Pause
+      -> Validate Resume -> Execute Known Steps -> Verify -> Complete or Recover
+```
+
+Workflow records preserve checkpoints, state references, ordered known handler
+ids, expiration, cancellation state, recovery instructions, and post-reboot
+verification. Production workflow scopes are empty and both reboot and resume
+scheduling entry points return `NotImplemented`. The helpers are not imported
+by `core/Execution.psm1` or wired into any tool.

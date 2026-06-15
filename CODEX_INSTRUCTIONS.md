@@ -479,6 +479,22 @@ This policy applies to examples including:
 
 ---
 
+## Reboot and Recovery Workflow Policy
+
+* Reboot, resume scheduling, cancellation, and post-reboot continuation are denied by default.
+* A future reboot-capable tool must use an exact tool/action scope in `config/RebootRecoveryPolicy.psd1`. Phase 40 approves no production workflow scopes.
+* Workflow records must include operation/tool/action identity, schema/version, requested reboot type, reason, risk, confirmation level, passed pre-reboot checkpoints, verified state-capture references, bounded resume steps, post-reboot verification, expiration, cancellation rules, recovery instructions, and warning text.
+* Immediate reboot, manual reboot required, and post-reboot continuation are distinct workflow types. Firmware and Safe Mode restart require separate explicit policy permission.
+* Every reboot-capable plan requires a matching Action Plan and explicit confirmation. Missing checkpoints, state references, recovery instructions, or verification requirements block planning.
+* Resume is allowed only from an integrity-verified, non-stale, non-expired, matching BoostLab workflow record in `PendingResume` state.
+* Resume steps must use exact policy-approved handler ids and trusted artifact paths. Workflow records must never contain arbitrary command lines, executable names, arguments, scripts, URLs, or untrusted paths.
+* Current machine state must match the recorded expected conditions before resume. Failed validation or verification must return a structured failure and must not continue silently.
+* Eligible cancellation must persist the cancellation reason and timestamp, preserve recovery instructions, and permanently block later resume.
+* Reboot workflow state does not authorize file/registry, service, AppX, cleanup, download, installer, driver, TrustedInstaller, Safe Mode, BCD, or recovery-environment behavior governed elsewhere.
+* Phase 40 does not call reboot commands, create RunOnce entries or Scheduled Tasks, edit BCD, enter Safe Mode, modify recovery settings, wire helpers into modules, or enable deferred tools.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

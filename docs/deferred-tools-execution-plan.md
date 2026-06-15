@@ -198,6 +198,17 @@ Affected tools:
 
 Needed when a tool can reboot, hand control to firmware or setup, or leave the machine mid-workflow.
 
+Phase 40 establishes exact tool/action scopes, persisted workflow records,
+mandatory checkpoints and state references, bounded known resume handler ids,
+machine-state validation, cancellation, recovery instructions, expiration, and
+structured post-reboot verification. Production scopes remain empty, and
+reboot and scheduling entry points return `NotImplemented`.
+
+The affected tools remain deferred because each still requires an approved
+tool-specific workflow scope and additional foundations such as installer
+approval, driver rollback, TrustedInstaller, Safe Mode recovery, security
+governance, or exact service and state plans.
+
 Affected tools:
 
 * `reinstall`

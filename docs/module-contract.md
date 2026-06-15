@@ -180,6 +180,14 @@ the exact captured manifest, install location, or provisioned identity. Modules
 must not enumerate broad package families, re-register every package, or bypass
 the centralized AppX boundary.
 
+Implemented modules that perform future reboot-capable work must use an exact
+scope from `config/RebootRecoveryPolicy.psd1`. They must supply passed
+pre-reboot checkpoints, verified state references, bounded policy-approved
+resume handler ids, post-reboot verification, expiration, warning text, and
+recovery instructions. Modules must not write RunOnce, create Scheduled Tasks,
+edit BCD, embed command strings in resume records, or call reboot commands
+outside the future centralized reboot boundary.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

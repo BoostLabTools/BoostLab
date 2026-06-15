@@ -107,6 +107,25 @@ must still implement the exact approved package behavior, use the centralized
 inventory and execution boundaries, and prove that restore is record-based
 rather than broad package re-registration.
 
+For reboot-capable or post-reboot workflows, a future migration record must identify:
+
+* The exact `config/RebootRecoveryPolicy.psd1` scope id.
+* Exact tool/action identities and approved reboot type.
+* Whether reboot is immediate, manual, firmware, Safe Mode, or followed by resume.
+* Every required pre-reboot checkpoint and its evidence source.
+* Every required file, registry, service, package, driver, cleanup, or other state record.
+* Exact ordered resume handler ids and trusted artifact paths.
+* Why no resume step contains arbitrary commands, scripts, arguments, URLs, or untrusted paths.
+* Workflow expiration, cancellation eligibility, warning text, and recovery instructions.
+* Expected machine-state conditions before resume.
+* Post-reboot verification checks and failure behavior.
+* How interrupted, cancelled, expired, mismatched, and failed workflows are surfaced.
+* Additional download, installer, driver, TrustedInstaller, Safe Mode, BCD, service, security, or rollback governance required by the source.
+
+Adding a reboot scope does not authorize reboot or scheduling. A future tool
+phase must separately implement the exact approved runtime boundary and prove
+that interrupted or failed continuation cannot run silently.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used
