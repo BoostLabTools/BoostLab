@@ -34,6 +34,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Check\BIOSSettings.psm1'
         LegacyHash = 'C68BDADC7EEAC77A0FE8ECE999CEB5A28C51D819D69107AFD471739BA36E2737'
     }
+    'To BIOS' = @{
+        LegacyPath = 'source-ultimate\2 Refresh\4 To Bios.ps1'
+        ModulePath = 'modules\Refresh\to-bios.psm1'
+        LegacyHash = 'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C'
+    }
     'Startup Apps (Settings)' = @{
         LegacyPath = 'source-ultimate\3 Setup\3 Startup Apps (Settings).ps1'
         ModulePath = 'modules\Setup\StartupAppsSettings.psm1'
@@ -252,6 +257,27 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "BIOS Settings incorrectly contains search behavior: $forbiddenText"
+                }
+            }
+        }
+        'To BIOS' {
+            foreach ($requiredLegacyText in @(
+                'cmd /c C:\Windows\System32\shutdown.exe /r /fw /t 0'
+                'Press Enter to Restart to BIOS'
+            )) {
+                if (-not $legacySource.Contains($requiredLegacyText)) {
+                    throw "To BIOS legacy behavior is missing: $requiredLegacyText"
+                }
+            }
+            foreach ($requiredModuleText in @(
+                '[bool]$Confirmed = $false'
+                '$commandProcessorPath = Join-Path $env:SystemRoot ''System32\cmd.exe'''
+                '$shutdownPath = Join-Path $env:SystemRoot ''System32\shutdown.exe'''
+                '$firmwareRestartCommand = "`"$shutdownPath`" /r /fw /t 0"'
+                '& $commandProcessorPath @firmwareRestartArguments'
+            )) {
+                if (-not $moduleSource.Contains($requiredModuleText)) {
+                    throw "To BIOS module behavior is missing: $requiredModuleText"
                 }
             }
         }

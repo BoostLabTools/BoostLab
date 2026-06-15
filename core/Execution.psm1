@@ -24,6 +24,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSSettings.psm1'
         Actions = @('Analyze', 'Open')
     }
+    'to-bios' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\to-bios.psm1'
+        Actions = @('Analyze', 'Open')
+    }
     'startup-apps-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
         Actions = @('Open')
@@ -525,7 +529,7 @@ function Invoke-BoostLabToolAction {
         }
     }
 
-    $isBiosFirmwareOpen = $toolId -eq 'bios-settings' -and $ActionName -eq 'Open'
+    $isBiosFirmwareOpen = $toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open'
     if ($requiresExecutionConfirmation -and -not [bool]$safetyGate.IsAllowed) {
         $message = 'Cancelled by user'
         $result = New-BoostLabToolActionResult `
@@ -537,8 +541,11 @@ function Invoke-BoostLabToolAction {
             -Cancelled $true `
             -ActionPlan $actionPlan
 
-        $cancellationLogMessage = if ($isBiosFirmwareOpen) {
+        $cancellationLogMessage = if ($toolId -eq 'bios-settings' -and $isBiosFirmwareOpen) {
             '[BIOS Settings] [Open] cancelled by user'
+        }
+        elseif ($toolId -eq 'to-bios' -and $isBiosFirmwareOpen) {
+            '[To BIOS] [Open] cancelled by user'
         }
         else {
             '[{0}] [{1}] cancelled by user' -f $toolTitle, $ActionName
@@ -574,8 +581,14 @@ function Invoke-BoostLabToolAction {
     }
 
     if ($isBiosFirmwareOpen) {
+        $firmwareLogMessage = if ($toolId -eq 'bios-settings') {
+            '[BIOS Settings] [Open] restart to BIOS/UEFI requested'
+        }
+        else {
+            '[To BIOS] [Open] restart to BIOS/UEFI requested'
+        }
         Write-BoostLabWarning `
-            -Message '[BIOS Settings] [Open] restart to BIOS/UEFI requested' `
+            -Message $firmwareLogMessage `
             -Source 'Execution' `
             -EventId 'ToolAction.FirmwareRestartRequested' `
             -Data @{

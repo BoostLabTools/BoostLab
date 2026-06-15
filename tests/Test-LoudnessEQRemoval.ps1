@@ -70,8 +70,8 @@ $placeholderModules = @(
 )
 if (
     $moduleFiles.Count -ne 48 -or
-    $implementedModules.Count -ne 26 -or
-    $placeholderModules.Count -ne 22
+    $implementedModules.Count -ne 27 -or
+    $placeholderModules.Count -ne 21
 ) {
     throw "Unexpected Phase 25 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }

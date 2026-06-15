@@ -130,6 +130,17 @@ try {
         throw 'An approved confirmation callback did not pass the action plan gate.'
     }
 
+    $toBios = $tools | Where-Object { $_['Id'] -eq 'to-bios' } | Select-Object -First 1
+    $toBiosPlan = New-BoostLabActionPlan -ToolMetadata $toBios -ActionName 'Open' -IsDryRun $false
+    if (
+        -not [bool]$toBiosPlan.NeedsExplicitConfirmation -or
+        -not [bool]$toBiosPlan.CanReboot -or
+        $toBiosPlan.ConfirmationMessage -notmatch 'restart immediately' -or
+        $toBiosPlan.ConfirmationMessage -notmatch 'BIOS/UEFI'
+    ) {
+        throw 'To BIOS Open does not have its explicit reboot confirmation plan.'
+    }
+
     $capabilities = [ordered]@{}
     foreach ($field in @(
         'RequiresAdmin'

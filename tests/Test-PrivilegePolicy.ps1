@@ -287,6 +287,7 @@ foreach ($requiredText in @(
 $implementedModules = [ordered]@{
     'bios-information' = 'Check\BIOSInformation.psm1'
     'bios-settings' = 'Check\BIOSSettings.psm1'
+    'to-bios' = 'Refresh\to-bios.psm1'
     'startup-apps-settings' = 'Setup\StartupAppsSettings.psm1'
     'startup-apps-task-manager' = 'Setup\StartupAppsTaskManager.psm1'
     'memory-compression' = 'Setup\MemoryCompression.psm1'
@@ -334,7 +335,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 26) {
+if ($implementedModuleFiles.Count -ne 27) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

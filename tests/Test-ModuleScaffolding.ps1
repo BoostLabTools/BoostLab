@@ -38,6 +38,11 @@ $implementedModules = @{
         LaunchText            = '& $commandProcessorPath @firmwareRestartArguments'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
     }
+    'to-bios' = @{
+        RelativePath          = 'Refresh\to-bios.psm1'
+        LaunchText            = '& $commandProcessorPath @firmwareRestartArguments'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'')'
+    }
     'startup-apps-settings' = @{
         RelativePath          = 'Setup\StartupAppsSettings.psm1'
         LaunchText            = 'Start-Process "ms-settings:startupapps"'
@@ -365,7 +370,7 @@ foreach ($entry in $expectedModules.Values) {
             $errors.Add("$modulePath does not preserve the approved Start-Process behavior.")
         }
 
-        $expectedStartProcessCount = if ($toolId -eq 'bios-settings') {
+        $expectedStartProcessCount = if ($toolId -in @('bios-settings', 'to-bios')) {
             0
         }
         elseif ($toolId -eq 'restore-point') {
@@ -894,6 +899,40 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains forbidden BIOS Settings behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'to-bios') {
+            foreach ($requiredText in @(
+                '$script:BoostLabFirmwareConfirmationText'
+                '[bool]$Confirmed = $false'
+                '$commandProcessorPath = Join-Path $env:SystemRoot ''System32\cmd.exe'''
+                '$shutdownPath = Join-Path $env:SystemRoot ''System32\shutdown.exe'''
+                '$firmwareRestartCommand = "`"$shutdownPath`" /r /fw /t 0"'
+                '& $commandProcessorPath @firmwareRestartArguments'
+                'VerificationResult'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing To BIOS behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Set-ItemProperty'
+                'New-ItemProperty'
+                'Remove-ItemProperty'
+                'bcdedit'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'pnputil'
+                'devcon'
+                'source-ultimate'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated To BIOS behavior: $forbiddenText")
                 }
             }
         }

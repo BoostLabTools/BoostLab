@@ -225,6 +225,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Open') {
         'Run the approved Startup SMT / HT-off workflow by stopping specific launchers, selecting a file, and launching it with the source affinity mask.'
     }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
+        'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
+    }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Open') {
+        'Restart Windows immediately and request BIOS/UEFI firmware settings using the approved Ultimate command.'
+    }
     else {
         switch ($ActionName) {
         'Analyze' { "Analyze $toolTitle without applying changes." }
@@ -425,6 +431,14 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Select a launcher, game, shortcut, or executable file.')
         $plannedChanges.Add('Launch the selected file with `start "" /affinity <hex-mask> "<path>"` through cmd.exe exactly in the approved source style.')
         $plannedChanges.Add('Wait for the source delay window, then try to verify the launched process affinity by base file name.')
+    }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Display the approved restart-to-firmware command and safety warnings without executing it.')
+    }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Require explicit GUI confirmation before execution.')
+        $plannedChanges.Add('Run cmd.exe with the source-defined shutdown.exe /r /fw /t 0 command.')
+        $plannedChanges.Add('Report whether Windows accepted the firmware restart request.')
     }
     else {
         switch ($ActionName) {
@@ -628,6 +642,14 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The selected launcher or executable is started with a temporary SMT / HT-off affinity mask. BIOS settings and permanent CPU configuration are not changed.')
         $sideEffects.Add('Verification may be inconclusive when a shortcut or launcher spawns a differently named child process.')
     }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made and no restart command is executed.')
+    }
+    elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('The computer restarts immediately and unsaved work can be lost.')
+        $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
+        $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
+    }
     if ($ActionName -eq 'Analyze') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
@@ -668,7 +690,7 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No system-changing side effects are declared for this action.')
     }
 
-    $confirmationMessage = if ($toolId -eq 'bios-settings' -and $ActionName -eq 'Open') {
+    $confirmationMessage = if ($toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open') {
         'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
