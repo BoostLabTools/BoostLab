@@ -199,6 +199,16 @@ must use those separate foundations. Modules must not enumerate broad device
 classes, accept arbitrary INF paths, run AMD/Intel GPU branches, or bypass the
 driver boundary with direct PnP/DISM/device commands.
 
+Implemented modules that require future TrustedInstaller execution must use an
+exact scope from `config/TrustedInstallerPolicy.psd1` and the centralized
+request/execution boundary. They must provide a structured command descriptor,
+exact targets, matching Action Plan confirmation, verified Administrator host,
+required state references, verification plan, timeout, logging, and recovery
+behavior. Modules must not self-elevate, embed raw command lines, invoke
+external elevation tools, start or modify the TrustedInstaller service, create
+temporary services or Scheduled Tasks, alter ACLs/ownership, or bypass the
+centralized boundary.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

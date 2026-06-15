@@ -146,6 +146,22 @@ must separately approve the exact NVIDIA-supported source behavior, execution
 callbacks or runtime implementation, artifact/package sources, verification,
 and rollback. AMD and Intel GPU branches remain unsupported.
 
+For TrustedInstaller-level operations, a future migration record must identify:
+
+* The exact `config/TrustedInstallerPolicy.psd1` scope id.
+* Exact tool, action, requested identity, command id, executable/helper id, structured argument tokens, and working directory.
+* Every exact file, registry, service, package, driver, or other affected target.
+* Why TrustedInstaller is required by the approved Ultimate source and why Administrator is insufficient.
+* Required file/registry, service, AppX, cleanup, reboot, driver, and provenance references.
+* Action Plan warning and confirmation text.
+* Administrator host validation, timeout, logging, cancellation, and recovery behavior.
+* Structured verification checks and failure behavior.
+* Why no raw command, external elevation utility, network path, service hijack, Scheduled Task, ACL, or ownership workaround is used.
+
+Adding a TrustedInstaller scope does not authorize execution. A future phase
+must separately approve the exact implementation and prove that the privileged
+operation cannot escape its recorded command and target scope.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

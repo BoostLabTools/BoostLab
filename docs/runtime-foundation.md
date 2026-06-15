@@ -47,7 +47,11 @@ BoostLab uses an application-level Administrator model. `bootstrap.ps1` requests
 
 Tool-level `RequiresAdmin` metadata still describes the approved behavior of the tool itself. Before dispatching an implemented action with `RequiresAdmin = true`, `core/Execution.psm1` verifies that the current process is elevated and returns a structured blocked result when it is not.
 
-`core/TrustedInstaller.psm1` defines the centralized boundary for any future approved TrustedInstaller operation. The Phase 14.5 helper is intentionally non-executing and returns `NotImplemented`. BoostLab never runs the complete application as TrustedInstaller.
+`config/TrustedInstallerPolicy.psd1` is the deny-by-default allowlist for future narrowly scoped TrustedInstaller requests. Phase 42 leaves production scopes empty.
+
+`core/TrustedInstaller.psm1` validates exact tool/action/command identities, structured argument tokens, local executable/helper identity, working directory, exact targets, Action Plan confirmation, Administrator host status, required adjacent-foundation records, verification plans, timeout, logging, risk, and recovery behavior.
+
+`core/TrustedInstallerExecution.psm1` is deliberately inert. Valid future-shaped requests return `NotImplemented`; invalid requests return `Blocked`. Both paths report `ProcessStarted = false` and `CommandExecuted = false`. BoostLab never runs the complete application as TrustedInstaller.
 
 ### Download Provenance and Installer Execution
 
@@ -233,6 +237,7 @@ The current runtime does not:
 * Inspect, remove, re-register, repair, or restore AppX packages without a future approved exact package scope, inventory record, confirmation, and explicit tool call
 * Request reboot, schedule post-reboot resume, alter boot state, or continue a workflow without a future approved exact reboot scope and integrity-verified workflow record
 * Inventory, install, update, uninstall, disable, enable, remove, profile-import, debloat, or roll back a driver without a future exact driver scope and integrity-verified record
+* Execute a TrustedInstaller command without a future exact scope and separately approved execution implementation
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.
@@ -284,3 +289,20 @@ NVIDIA is not implicitly approved. Install/update requires Phase 35 provenance,
 reboot-capable work requires Phase 40 workflow evidence, and associated state
 changes require their own foundation records. Execution is callback-only and
 the helpers are not imported by the live runtime.
+
+## TrustedInstaller Execution Foundation
+
+`core/TrustedInstaller.psm1` and
+`core/TrustedInstallerExecution.psm1` establish the future privileged
+sub-operation lifecycle:
+
+```text
+Exact scope -> Structured request -> Plan -> Confirm -> Validate admin/state
+            -> Refuse or future execute -> Verify -> Log -> Recover
+```
+
+Production scopes are empty. Raw command strings, network paths, unknown
+commands, broad/protected targets, external elevation utilities, missing state
+records, and missing verification are denied. The execution boundary contains
+no process, service, ACL, ownership, registry, file, package, Scheduled Task,
+or elevation command and is not wired into any tool.

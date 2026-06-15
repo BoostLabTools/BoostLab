@@ -115,6 +115,17 @@ Affected tools:
 
 Needed for tools whose approved Ultimate source explicitly depends on TrustedInstaller-level execution.
 
+Phase 42 establishes exact tool/action/command/target scopes, structured
+argument-only requests, Administrator-host and confirmation gating, required
+adjacent-foundation references, verification plans, timeouts, logging,
+recovery metadata, and an inert execution boundary. It approves no production
+TrustedInstaller scope and starts no privileged process.
+
+The affected tools remain deferred because each still needs an exact
+tool-specific command/target allowlist, separately approved execution
+implementation, and its remaining service, AppX, cleanup, Safe Mode, reboot,
+download, installer, file/registry, or security foundations.
+
 Affected tools:
 
 * `game-bar`
@@ -248,7 +259,7 @@ Affected tools:
 8. **Driver state capture and rollback**
    Phase 41 adds the deny-by-default inventory, verification, and guarded rollback contract. Future work still needs exact NVIDIA device/package scopes, approved provenance, execution implementation, and tool-specific rollback tests.
 9. **TrustedInstaller execution framework**
-   The placeholder helper exists, but it still needs execution policy, visibility, logging, and recovery rules.
+   Phase 42 adds deny-by-default structured request validation, foundation references, verification, logging, and recovery policy. Future work still needs exact tool scopes and a separately approved process implementation.
 10. **Safe Mode recovery/resume framework**
     This is the last major blocker because only the heaviest security/service tools need it, but they cannot move safely without it.
 

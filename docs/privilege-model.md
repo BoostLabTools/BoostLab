@@ -26,7 +26,21 @@ TrustedInstaller may be used only by a specific approved tool whose reviewed Ult
 
 Its Action Plan must identify the TrustedInstaller requirement, show an elevated execution warning, and receive explicit confirmation. Usage must be logged clearly.
 
-`core/TrustedInstaller.psm1` is the only intended runtime boundary for future TrustedInstaller execution. In Phase 14.5 it is deliberately inert: it can report support status and construct a structured plan, but it cannot start services, modify services, invoke utilities, or execute commands.
+`config/TrustedInstallerPolicy.psd1`, `core/TrustedInstaller.psm1`, and
+`core/TrustedInstallerExecution.psm1` form the centralized Phase 42 boundary.
+Production scopes are empty. The policy helper validates exact structured
+requests; the execution helper returns only `Blocked` or `NotImplemented` and
+never starts a process.
+
+The whole application must never run as TrustedInstaller because that would
+turn unrelated UI/runtime code into privileged execution. A future approved
+tool may request only a narrow sub-operation whose command id, structured
+arguments, local executable/helper identity, targets, state records,
+verification, timeout, logging, and recovery behavior are explicitly scoped.
+
+PsExec, NSudo, PowerRun, AdvancedRun, token theft, service hijacking,
+temporary services, Scheduled Task elevation, COM elevation, ACL changes, and
+ownership changes are not Phase 42 execution mechanisms.
 
 ## Migration Requirements
 

@@ -513,6 +513,22 @@ This policy applies to examples including:
 
 ---
 
+## TrustedInstaller Execution Foundation Policy
+
+* TrustedInstaller execution is denied by default and may be requested only through the centralized policy boundary.
+* A future tool must use an exact tool/action/command/target scope in `config/TrustedInstallerPolicy.psd1`. Phase 42 approves no production scopes.
+* BoostLab must run globally as Administrator, never as TrustedInstaller. Only a narrowly scoped future sub-operation may request `NT SERVICE\TrustedInstaller`.
+* Requests must use a known command id and a structured command descriptor containing an exact approved executable path or helper id plus exact argument tokens. Raw command lines, shell strings, script blocks, arbitrary arguments, network paths, and editable metadata commands are denied.
+* PsExec, NSudo, PowerRun, AdvancedRun, service hijacking, token theft, Scheduled Task elevation, COM elevation, temporary services, and other external or indirect elevation mechanisms are prohibited unless a future governance phase explicitly approves a different centralized implementation.
+* Exact file, registry, service, and package targets are mandatory. Wildcards, broad roots/hives/classes, unknown targets, and protected targets without a future explicit tool-specific allowlist are denied.
+* Every request requires a matching Action Plan, explicit confirmation, verified Administrator host, High risk classification, timeout, logging requirements, structured verification plan, and any policy-required state-capture references.
+* Required adjacent foundations must be named and verified, including file/registry rollback, service rollback, AppX restore, cleanup, reboot recovery, driver rollback, and download provenance where applicable.
+* Missing, stale, mismatched, unconfirmed, unverified, out-of-scope, or incomplete requests are blocked.
+* `core/TrustedInstaller.psm1` validates policy, request, command, targets, state references, and verification plans. `core/TrustedInstallerExecution.psm1` is inert and returns only `Blocked` or `NotImplemented` with `ProcessStarted = false` and `CommandExecuted = false`.
+* Phase 42 starts no process, changes no service, ACL, ownership, registry, file, package, driver, task, or boot state, and enables no deferred tool.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically
