@@ -490,7 +490,6 @@ $protectedFiles = [ordered]@{
     'modules\Windows\copilot.psm1' = '740FEDE65972C413A7BF0938F3409AB683B45C914281BDDD6C25222FD39E617D'
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
     'modules\Windows\control-panel-settings.psm1' = '6B02392A74AEF177C3249F0A686E48D418693A683F36A7F4C3E9C7BF764941BE'
-    'modules\Windows\notepad-settings.psm1' = '073BAD37B898E96D5C7D40CDA56D9F92212BF6424B23C34B37C833C7A17589BD'
     'modules\Windows\cleanup.psm1' = '4E5F8DD0068E4291B1BA813B98B2E6C6D593DC0500B62F57D7C77BB1A1F973DF'
 }
 foreach ($relativePath in $protectedFiles.Keys) {
@@ -505,7 +504,6 @@ foreach ($placeholderPath in @(
     'modules\Windows\copilot.psm1'
     'modules\Windows\control-panel-settings.psm1'
     'modules\Setup\edge-settings.psm1'
-    'modules\Windows\notepad-settings.psm1'
     'modules\Windows\cleanup.psm1'
 )) {
     if (-not (Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot $placeholderPath)).Contains('ToolModule.Placeholder.ps1')) {
@@ -527,7 +525,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($tools.Count -ne 48 -or $implementedCount -ne 27 -or $placeholderCount -ne 21) {
+if ($tools.Count -ne 48 -or $implementedCount -ne 28 -or $placeholderCount -ne 20) {
     throw "Unexpected Phase 27 inventory: $($tools.Count) tools, $implementedCount implemented, $placeholderCount placeholders."
 }
 

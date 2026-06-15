@@ -186,6 +186,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
         'Restore the approved default wallpaper state without deleting unrelated PersonalizationCSP values or files.'
     }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
+        'Back up Notepad settings.dat, stop Notepad, and import the approved Ultimate settings into the mounted Notepad settings hive.'
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
+        'Back up Notepad settings.dat, stop Notepad, and delete only that file to restore the Ultimate default behavior.'
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'Disable the approved network adapter power-saving and wake values across detected adapter class keys.'
     }
@@ -356,6 +362,20 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Web\Wallpaper\Windows\img0.jpg and request the source wallpaper refresh.')
         $plannedChanges.Add('Restore a recorded backup of a pre-existing C:\Windows\Black.jpg when available.')
         $plannedChanges.Add('Otherwise remove Black.jpg only when BoostLab state and hash prove ownership; leave uncertain or unrelated files intact.')
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Stop only the Notepad process and wait for the source-defined two-second delay.')
+        $plannedChanges.Add('Create and verify a unique backup of the exact Notepad settings.dat before mutation.')
+        $plannedChanges.Add('Write the source-compatible notepadsettings.reg file under Windows Temp.')
+        $plannedChanges.Add('Load settings.dat at HKLM\Settings, import the three source-defined LocalState values, and unload the hive.')
+        $plannedChanges.Add('Persist the target path, original hash, backup hash, and action outcome under ProgramData\BoostLab\State.')
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Stop only the Notepad process and wait for the source-defined two-second delay.')
+        $plannedChanges.Add('Create and verify a unique backup of the exact Notepad settings.dat before deletion when it exists.')
+        $plannedChanges.Add('Delete only Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat, matching Ultimate Default.')
+        $plannedChanges.Add('Treat an already-absent settings.dat as the approved default state.')
+        $plannedChanges.Add('Persist the target path, original hash, backup hash, and action outcome under ProgramData\BoostLab\State.')
     }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
@@ -581,6 +601,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('A recorded pre-existing Black.jpg is restored; an owned generated file is removed only when ownership is proven.')
         $sideEffects.Add('Unrelated PersonalizationCSP values and files are preserved, and uncertain file ownership is reported as a warning.')
     }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Running Notepad is closed and unsaved Notepad work can be lost.')
+        $sideEffects.Add('The current user Notepad settings.dat is modified through a temporary mounted registry hive.')
+        $sideEffects.Add('A verified pre-change backup and state record are retained under ProgramData\BoostLab\State; no Restore action is exposed.')
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Running Notepad is closed and unsaved Notepad work can be lost.')
+        $sideEffects.Add('The exact current user Notepad settings.dat is deleted, so Notepad recreates default settings later.')
+        $sideEffects.Add('A verified pre-delete backup and state record are retained under ProgramData\BoostLab\State; unrelated files are not deleted.')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Detected network adapters may use more power and will not wake from the source-defined wake events.')
         $sideEffects.Add('No adapter is disabled and no driver is installed, removed, replaced, or updated.')
@@ -749,6 +779,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
         'BoostLab will remove only its two PersonalizationCSP values, restore the approved desktop wallpaper, and restore or remove Black.jpg only when backup or ownership state permits. Unrelated values and files will remain. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
+        'BoostLab will close Notepad, create and verify a backup of the exact Notepad settings.dat, import the three approved Ultimate settings through a mounted hive, unload it, and verify the result. Unsaved Notepad work can be lost. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
+        'BoostLab will close Notepad, create and verify a backup of the exact Notepad settings.dat when it exists, then delete only that file so Notepad returns to its source-defined default state. Unsaved Notepad work can be lost. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'BoostLab will set the 14 approved power-saving and wake values on every detected network adapter class key and verify each value. No adapter will be disabled and no restart is required. Do you want to continue?'

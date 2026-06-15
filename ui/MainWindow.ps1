@@ -477,6 +477,9 @@ function Get-BoostLabResultStatus {
     if ($explicitStatus -in @('NotImplemented', 'Not implemented')) {
         return 'Not implemented'
     }
+    if ($explicitStatus -in @('NotApplicable', 'Not applicable')) {
+        return 'Not applicable'
+    }
     if ($explicitStatus -eq 'Warning') {
         return 'Warning'
     }
@@ -554,6 +557,7 @@ function Show-BoostLabActionResult {
         'Warning' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A') }
         'Cancelled' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A') }
         'Not implemented' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#93C5FD') }
+        'Not applicable' { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#93C5FD') }
         default { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FCA5A5') }
     }
 
@@ -1053,6 +1057,42 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultRow -Panel $panel -Label 'Warnings' -Value $(if ([string]::IsNullOrWhiteSpace($warnings)) { 'None' } else { $warnings })
         Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
     }
+    elseif ($toolId -eq 'notepad-settings' -and $null -ne $data) {
+        $registryValuesChecked = @(
+            (Get-BoostLabObjectPropertyValue $data 'RegistryValuesChecked' @())
+        ) -join [Environment]::NewLine
+        $processActions = @(
+            (Get-BoostLabObjectPropertyValue $data 'ProcessActions' @())
+        ) -join [Environment]::NewLine
+        $hiveOperations = @(
+            (Get-BoostLabObjectPropertyValue $data 'HiveOperations' @())
+        ) -join [Environment]::NewLine
+        $warnings = @(
+            (Get-BoostLabObjectPropertyValue $data 'Warnings' @())
+        ) -join [Environment]::NewLine
+        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Notepad Settings'
+        Add-BoostLabResultRow -Panel $panel -Label 'Command Status' -Value (Get-BoostLabObjectPropertyValue $data 'CommandStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Verification Status' -Value (Get-BoostLabObjectPropertyValue $data 'VerificationStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Expected state' -Value (Get-BoostLabObjectPropertyValue $data 'ExpectedNotepadSettingsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected state' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedNotepadSettingsState')
+        Add-BoostLabResultRow -Panel $panel -Label 'settings.dat path' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsDatPath')
+        Add-BoostLabResultRow -Panel $panel -Label 'Notepad package directory' -Value (Get-BoostLabObjectPropertyValue $data 'NotepadPackageDirectoryPath')
+        Add-BoostLabResultRow -Panel $panel -Label 'Package directory exists' -Value (Get-BoostLabObjectPropertyValue $data 'NotepadPackageDirectoryExists')
+        Add-BoostLabResultRow -Panel $panel -Label 'settings.dat exists' -Value (Get-BoostLabObjectPropertyValue $data 'SettingsDatExists')
+        Add-BoostLabResultRow -Panel $panel -Label 'Changes executed' -Value (Get-BoostLabObjectPropertyValue $data 'ChangesExecuted')
+        Add-BoostLabResultRow -Panel $panel -Label 'Compatibility' -Value (Get-BoostLabObjectPropertyValue $data 'CompatibilityStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Compatibility detail' -Value (Get-BoostLabObjectPropertyValue $data 'CompatibilityMessage')
+        Add-BoostLabResultRow -Panel $panel -Label 'Backup status' -Value (Get-BoostLabObjectPropertyValue $data 'BackupStatus')
+        Add-BoostLabResultRow -Panel $panel -Label 'Backup path' -Value (Get-BoostLabObjectPropertyValue $data 'BackupPath')
+        Add-BoostLabResultRow -Panel $panel -Label 'Original SHA-256' -Value (Get-BoostLabObjectPropertyValue $data 'OriginalSha256')
+        Add-BoostLabResultRow -Panel $panel -Label 'Detected SHA-256' -Value (Get-BoostLabObjectPropertyValue $data 'DetectedSha256')
+        Add-BoostLabResultRow -Panel $panel -Label 'Process actions' -Value $(if ([string]::IsNullOrWhiteSpace($processActions)) { 'None' } else { $processActions })
+        Add-BoostLabResultRow -Panel $panel -Label 'Hive operations' -Value $(if ([string]::IsNullOrWhiteSpace($hiveOperations)) { 'None' } else { $hiveOperations })
+        Add-BoostLabResultRow -Panel $panel -Label 'Registry values checked' -Value $(if ([string]::IsNullOrWhiteSpace($registryValuesChecked)) { 'None' } else { $registryValuesChecked })
+        Add-BoostLabResultRow -Panel $panel -Label 'File disposition' -Value (Get-BoostLabObjectPropertyValue $data 'FileDisposition')
+        Add-BoostLabResultRow -Panel $panel -Label 'Warnings' -Value $(if ([string]::IsNullOrWhiteSpace($warnings)) { 'None' } else { $warnings })
+        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CompletedAt')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $null -ne $data) {
         $adapterNames = @(
             (Get-BoostLabObjectPropertyValue $data 'AdapterNamesTargeted' @())
@@ -1281,6 +1321,7 @@ function Add-BoostLabToolActionActivityEntry {
         'Success' { 'Success' }
         'Warning' { 'Warning' }
         'Not implemented' { 'Info' }
+        'Not applicable' { 'Info' }
         'Cancelled' { 'Info' }
         default { 'Error' }
         }

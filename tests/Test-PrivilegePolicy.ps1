@@ -310,6 +310,7 @@ $implementedModules = [ordered]@{
     'spectre-meltdown-assistant' = 'Advanced\spectre-meltdown-assistant.psm1'
     'mmagent-assistant' = 'Advanced\mmagent-assistant.psm1'
     'smt-ht-assistant' = 'Advanced\smt-ht-assistant.psm1'
+    'notepad-settings' = 'Windows\notepad-settings.psm1'
 }
 foreach ($toolId in $implementedModules.Keys) {
     $modulePath = Join-Path $modulesRoot $implementedModules[$toolId]
@@ -335,7 +336,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 27) {
+if ($implementedModuleFiles.Count -ne 28) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

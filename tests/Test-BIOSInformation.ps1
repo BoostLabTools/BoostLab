@@ -131,7 +131,7 @@ try {
         }
     ).Count
 
-    if ($implementedCount -ne 27 -or $placeholderCount -ne 21) {
+    if ($implementedCount -ne 28 -or $placeholderCount -ne 20) {
         throw "Unexpected implementation counts: $implementedCount implemented, $placeholderCount placeholders."
     }
 

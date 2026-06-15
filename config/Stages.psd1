@@ -397,11 +397,11 @@
                     Title       = 'Notepad Settings'
                     Stage       = 'Windows'
                     Order       = 14
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open Notepad settings for technician-guided configuration.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Type        = 'action'
+                    RiskLevel   = 'medium'
+                    Description = 'Apply the approved Notepad settings or reset Notepad by deleting its settings.dat after a verified backup.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'control-panel-settings'

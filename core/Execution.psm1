@@ -100,6 +100,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\user-account-pictures-black.psm1'
         Actions = @('Apply', 'Default')
     }
+    'notepad-settings' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\notepad-settings.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'device-manager-power-savings-wake' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\device-manager-power-savings-wake.psm1'
         Actions = @('Apply', 'Default')
@@ -706,7 +710,24 @@ function Invoke-BoostLabToolAction {
             RequestedAt = $moduleResult.Timestamp
         }
 
-        if ([bool]$moduleResult.Success) {
+        $moduleStatus = if ($null -ne $moduleResult.PSObject.Properties['Status']) {
+            [string]$moduleResult.Status
+        }
+        else {
+            ''
+        }
+        if ($moduleStatus -eq 'NotApplicable') {
+            Write-BoostLabInfo `
+                -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
+                -Source 'Execution' `
+                -EventId 'ToolAction.NotApplicable' `
+                -Data @{
+                    ToolId = $toolId
+                    Stage = [string]$ToolMetadata['Stage']
+                    VerificationStatus = 'NotApplicable'
+                } | Out-Null
+        }
+        elseif ([bool]$moduleResult.Success) {
             if ($ActionName -eq 'Analyze' -and $null -ne $moduleResult.PSObject.Properties['Data']) {
                 $analysis = $moduleResult.Data
                 $summary = if ($toolId -eq 'bios-information') {
@@ -798,7 +819,10 @@ function Invoke-BoostLabToolAction {
                 } | Out-Null
         }
 
-        $status = if ([bool]$moduleResult.Success -and $ActionName -eq 'Analyze') {
+        $status = if ($moduleStatus -eq 'NotApplicable') {
+            'Not applicable'
+        }
+        elseif ([bool]$moduleResult.Success -and $ActionName -eq 'Analyze') {
             'Analyzed'
         }
         elseif ([bool]$moduleResult.Success -and $isBiosFirmwareOpen) {

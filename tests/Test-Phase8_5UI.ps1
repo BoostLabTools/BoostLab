@@ -401,6 +401,29 @@ try {
         throw 'Latest Result did not handle missing optional result properties cleanly.'
     }
 
+    $notApplicableTool = [ordered]@{
+        Id = 'notepad-settings'
+        Title = 'Notepad Settings'
+    }
+    $notApplicableResult = [pscustomobject]@{
+        Success = $true
+        ToolId = 'notepad-settings'
+        ToolTitle = 'Notepad Settings'
+        Action = 'Apply'
+        Status = 'NotApplicable'
+        Message = 'The source-targeted Notepad settings.dat is absent.'
+        Data = [pscustomobject]@{
+            CommandStatus = 'Not applicable'
+            VerificationStatus = 'NotApplicable'
+            ChangesExecuted = $false
+        }
+        Timestamp = Get-Date
+    }
+    Add-BoostLabToolActionActivityEntry `
+        -ToolMetadata $notApplicableTool `
+        -ActionName 'Apply' `
+        -Result $notApplicableResult
+
     Add-BoostLabStartupActivityEntry
     Add-BoostLabToolActionActivityEntry `
         -ToolMetadata $biosInformationTool `
@@ -444,10 +467,17 @@ try {
             throw "The visible log is missing level: $displayLevel"
         }
     }
+    if (
+        $visibleLogText -notmatch '\[INFO\]\s+Notepad Settings' -or
+        $visibleLogText -match '\[ERROR\]\s+Notepad Settings'
+    ) {
+        throw 'NotApplicable activity severity did not render as a neutral INFO entry.'
+    }
     foreach ($expectedEntryText in @(
         'BoostLab'
         'Startup'
         'Interface initialized.'
+        'The source-targeted Notepad settings.dat is absent.'
         'BIOS Information'
         'Hardware and BIOS information detected.'
         'BIOS Settings'

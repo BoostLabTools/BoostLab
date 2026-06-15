@@ -149,6 +149,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\PowerPlan.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'notepad-settings' = @{
+        RelativePath          = 'Windows\notepad-settings.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -343,6 +347,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'context-menu' -and
             $commandName -eq 'Set-Content'
         )
+        $approvedNotepadSettingsCommand = (
+            $toolId -eq 'notepad-settings' -and
+            $commandName -in @('Set-Content', 'Remove-Item')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -350,7 +358,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedUpdatesPauseCommand -and
             -not $approvedThemeBlackCommand -and
             -not $approvedStartMenuLayoutCommand -and
-            -not $approvedContextMenuCommand
+            -not $approvedContextMenuCommand -and
+            -not $approvedNotepadSettingsCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -417,6 +426,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'power-plan') {
             1
+        }
+        elseif ($toolId -eq 'notepad-settings') {
+            0
         }
         else {
             1
@@ -507,6 +519,26 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing Spectre / Meltdown preserved behavior: $requiredText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'notepad-settings') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                '$script:BoostLabNotepadProcessName = ''Notepad'''
+                'Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
+                'notepadsettings.reg'
+                '"OpenFile"=hex(5f5e104):01,00,00,00,d1,55,24,57,d1,84,db,01'
+                '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
+                '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
+                'Copy-Item -LiteralPath $SourcePath -Destination $BackupPath'
+                'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
+                'Invoke-BoostLabNotepadRegistryCommand'
+                'New-BoostLabVerificationResult'
+                '[bool]$Confirmed = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Notepad Settings behavior: $requiredText")
                 }
             }
         }

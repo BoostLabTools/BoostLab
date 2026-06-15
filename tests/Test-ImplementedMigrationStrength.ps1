@@ -167,6 +167,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\PowerPlan.psm1'
         LegacyHash = '97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56'
     }
+    'Notepad Settings' = @{
+        LegacyPath = 'source-ultimate\6 Windows\14 Notepad Settings.ps1'
+        ModulePath = 'modules\Windows\notepad-settings.psm1'
+        LegacyHash = '2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB'
+    }
 }
 
 $deletedToolNames = @(
@@ -518,6 +523,36 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Store Settings contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Notepad Settings' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+                '$script:BoostLabNotepadProcessName = ''Notepad'''
+                'Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
+                '"OpenFile"=hex(5f5e104):01,00,00,00,d1,55,24,57,d1,84,db,01'
+                '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
+                '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
+                'Copy-Item -LiteralPath $SourcePath -Destination $BackupPath -Force -ErrorAction Stop'
+                'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
+                'Invoke-BoostLabNotepadRegistryCommand'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Notepad Settings preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'Remove-AppxPackage'
+                'Get-AppxPackage'
+                'Invoke-WebRequest'
+                'Set-Service'
+                'Restart-Computer'
+                'UsesTrustedInstaller = $true'
+                'safeboot'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Notepad Settings contains unrelated behavior: $forbiddenText"
                 }
             }
         }

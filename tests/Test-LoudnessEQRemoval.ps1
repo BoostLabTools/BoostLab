@@ -70,8 +70,8 @@ $placeholderModules = @(
 )
 if (
     $moduleFiles.Count -ne 48 -or
-    $implementedModules.Count -ne 27 -or
-    $placeholderModules.Count -ne 21
+    $implementedModules.Count -ne 28 -or
+    $placeholderModules.Count -ne 20
 ) {
     throw "Unexpected Phase 25 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }
@@ -81,7 +81,6 @@ $expectedPlaceholderPaths = @(
     'modules\Windows\copilot.psm1'
     'modules\Windows\control-panel-settings.psm1'
     'modules\Setup\edge-settings.psm1'
-    'modules\Windows\notepad-settings.psm1'
 )
 foreach ($relativePath in $expectedPlaceholderPaths) {
     $path = Join-Path $ProjectRoot $relativePath
@@ -105,7 +104,6 @@ $protectedHashes = [ordered]@{
     'modules\Windows\sound.psm1' = 'B20CBF149CDAA562011AABD05D5828100D0B3810A565A4B7E305EBD50C91FDE3'
     'modules\Windows\control-panel-settings.psm1' = '6B02392A74AEF177C3249F0A686E48D418693A683F36A7F4C3E9C7BF764941BE'
     'modules\Setup\edge-settings.psm1' = '6EE32C25D17D797AAC2BF79D5941BADE098F0D15A2C2927A1E093F4F047DC878'
-    'modules\Windows\notepad-settings.psm1' = '073BAD37B898E96D5C7D40CDA56D9F92212BF6424B23C34B37C833C7A17589BD'
     'modules\Windows\PowerPlan.psm1' = '74437292978C6C0B7EEBFC60099A1361F79C8EBC72E14256990169A1B73DE028'
 }
 foreach ($relativePath in $protectedHashes.Keys) {

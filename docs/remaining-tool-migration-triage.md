@@ -15,8 +15,8 @@ Classification meanings:
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **26**
-* Placeholder modules: **22**
+* Implemented modules: **28**
+* Placeholder modules: **20**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -29,7 +29,6 @@ The current catalog describes several placeholders more softly than their Ultima
 
 * `Start Menu Taskbar` exposes only `Open`, but the source has Clean and Default system-changing branches.
 * `Edge Settings` exposes only `Open`, but the source changes policy, RunOnce, Active Setup, services, and performs a repair download.
-* `Notepad Settings` exposes only `Open`, but the source stops Notepad, edits its settings hive, and deletes `settings.dat` for Default.
 * `Control Panel Settings` exposes only `Open`, but the source is a large Apply/Default optimization using services, security-sensitive policy, deletion, and TrustedInstaller.
 * `Network Adapter Power Savings & Wake` was originally cataloged as `Open`, but its source performs broad HKLM adapter-registry changes. It has since been implemented under an approved migration record.
 
@@ -60,15 +59,11 @@ These mismatches are documented here rather than changed during this planning-on
    * Creates `C:\Windows\Black.jpg`, changes lock-screen and wallpaper values, refreshes desktop parameters, and deletes the generated file on Default.
    * Default deletes the full `PersonalizationCSP` key, so state capture or narrower approved behavior should be decided.
 
-3. **Notepad Settings**
-   * Stops Notepad, mounts its `settings.dat` registry hive, imports values, and unloads the hive.
-   * Default deletes `settings.dat`, so this needs explicit file-change confirmation and verification.
-
-4. **Network Adapter Power Savings & Wake**
+3. **Network Adapter Power Savings & Wake**
    * Applies or removes multiple power and wake values across every detected network adapter class key.
    * Explicit Default exists; adapter-specific unsupported values must be warnings rather than false failures.
 
-5. **Timer Resolution Assistant**
+4. **Timer Resolution Assistant**
     * Compiles and installs a narrowly scoped custom Windows service, then starts/stops and removes it.
     * Explicit Default exists, but service creation, binary provenance, compilation, cleanup, and verification need a dedicated phase.
 
@@ -118,7 +113,7 @@ These mismatches are documented here rather than changed during this planning-on
 | Bloatware | Windows | `modules/Windows/bloatware.psm1` | `source-ultimate/6 Windows/11 Bloatware.ps1`<br>`36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5` | AppX removal/re-registration; services; downloads; installers; security-related features; broad deletion | Deferred | Multi-mode removal and repair workflow with no single reversible state. | No single Default | Yes; Restore requires a captured package/feature inventory | Phase: Bloatware Analysis and Package Plan |
 | GameBar | Windows | `modules/Windows/game-bar.psm1` | `source-ultimate/6 Windows/12 Gamebar.ps1`<br>`8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59` | HKCU/HKLM/HKCR; processes; services; AppX; installer/uninstaller; downloads; TrustedInstaller | Deferred | Phase 18 refusal: full behavior includes Gaming/Xbox removal, GameInput uninstall, repair downloads, and TrustedInstaller. | Yes | No | Phase: GameBar and Gaming Services Repair |
 | Edge & WebView | Windows | `modules/Windows/edge-webview.psm1` | `source-ultimate/6 Windows/13 Edge & WebView.ps1`<br>`161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691` | HKCU/HKLM; processes; service deletion; RunOnce; downloads; installers; broad file deletion | Deferred | Removes Edge/WebView files and services, then Default downloads repair installers. | Yes | No | Phase: Edge and WebView Removal/Repair |
-| Notepad Settings | Windows | `modules/Windows/notepad-settings.psm1` | `source-ultimate/6 Windows/14 Notepad Settings.ps1`<br>`2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB` | Notepad process stop; mounted app settings hive; file write/delete | Medium | Default deletes Notepad `settings.dat`. Current `Open` metadata is inaccurate. | Yes | No | Phase: Notepad Settings State |
+| Notepad Settings | Windows | `modules/Windows/notepad-settings.psm1` | `source-ultimate/6 Windows/14 Notepad Settings.ps1`<br>`2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB` | Notepad process stop; mounted app settings hive; file write/delete | Implemented | Phase 32 preserves Apply and Default with explicit confirmation, a verified pre-change backup, scoped state capture, and structured verification. | Yes | No; no Restore action is claimed | Phase 32 complete |
 | Control Panel Settings | Windows | `modules/Windows/control-panel-settings.psm1` | `source-ultimate/6 Windows/15 Control Panel Settings.ps1`<br>`B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | HKCU/HKLM/HKCR; services; security policy; deletion; TrustedInstaller | Deferred | Nearly 3,000 lines of broad policy and settings behavior. Current `Open` metadata is inaccurate. | Yes | No | Phase: Control Panel Settings Decomposition |
 | Network Adapter Power Savings & Wake | Windows | `modules/Windows/network-adapter-power-savings-wake.psm1` | `source-ultimate/6 Windows/19 Network Adapter Power Savings & Wake.ps1`<br>`1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB` | Broad dynamic HKLM adapter registry | Medium | Writes/removes 14 adapter power/wake values per detected adapter. Current `Open` metadata is inaccurate. | Yes | No | Phase: Network Adapter Power and Wake |
 | Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Deferred | Apply writes one value, but Default deletes entire device `Disk` subkeys. Source also references the intentionally deleted NVME Faster Driver tool. | Yes, but unsafe | Yes; approve a value-only Default or captured-state Restore | Phase: Storage Write Cache Safety Review |
@@ -151,6 +146,10 @@ Phase 29 implemented the source-defined `Off: Already Running` and `Off: Startup
 ### Spectre / Meltdown Assistant
 
 Phase 30 implemented the source-defined Disable and Enable (Default) registry behavior as a security-sensitive assistant with read-only Analyze, explicit Action Plan confirmation, structured results, idempotent Default handling, and independent verification for both mitigation values. See `docs/migrations/spectre-meltdown-assistant.md`.
+
+### Notepad Settings
+
+Phase 32 implemented the source-defined Apply and Default behavior with exact Notepad process and `settings.dat` scope, mounted-hive import, explicit confirmation, verified pre-change backup, state capture, and structured verification. See `docs/migrations/notepad-settings.md`.
 
 ## E. Permanently Deleted Tools
 
@@ -201,13 +200,11 @@ A policy-only implementation would weaken Ultimate behavior. The full source req
 
 In recommended order:
 
-1. **Notepad Settings**, with explicit approval for mounted `settings.dat` handling and file-backed default behavior
-2. **Timer Resolution Assistant**, after approving service creation, binary provenance, and cleanup expectations
-3. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
-4. **To BIOS**, once the reboot confirmation and firmware-entry flow is explicitly approved for a dedicated phase
-5. **Edge Settings**, only after download provenance, service deletion, RunOnce recovery, and repair behavior are approved
+1. **Timer Resolution Assistant**, after approving service creation, binary provenance, and cleanup expectations
+2. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
+3. **Edge Settings**, only after download provenance, service deletion, RunOnce recovery, and repair behavior are approved
 
-The first two are the strongest remaining medium-risk candidates. Items three through five still require a narrower safety decision before implementation.
+Timer Resolution is the strongest remaining medium-risk candidate in this historical queue. Every listed item still requires a dedicated safety decision before implementation.
 
 ## Decisions Needed Before Future Phases
 
