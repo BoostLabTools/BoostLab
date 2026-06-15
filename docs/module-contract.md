@@ -169,6 +169,8 @@ Placeholder tool modules must not:
 
 The modules may only return static metadata and structured placeholder objects.
 
+Implemented modules that perform future destructive cleanup must use an approved exact scope from `config/CleanupPolicy.psd1`, require an Action Plan and explicit confirmation, provide Phase 36 state-capture evidence when rollback eligible, and return structured verification. Modules must not bypass the centralized cleanup boundary with broad or metadata-driven deletion commands.
+
 ## Migration Boundary
 
 Future implementation must follow the Script Migration Policy in `CODEX_INSTRUCTIONS.md`.

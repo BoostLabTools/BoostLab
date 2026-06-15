@@ -85,6 +85,16 @@ These helpers are not imported by `core/Execution.psm1` and are not wired to any
 
 The service helpers contain no live Service Control Manager command and are not imported by `core/Execution.psm1` or any tool module. Service creation, deletion, recreation, arbitrary configuration restoration, protected-service handling, TrustedInstaller, Safe Mode, and reboot recovery remain outside the Phase 37 boundary.
 
+### Destructive Cleanup and Quarantine
+
+`config/CleanupPolicy.psd1` is the deny-by-default allowlist for future destructive cleanup. Phase 38 leaves `CleanupScopes` empty.
+
+`core/CleanupPolicy.psm1` validates exact bounded targets, rejects broad or unsafe paths, performs read-only file/directory inspection, builds cleanup plans, validates Phase 36 state-capture evidence, and stores integrity-protected quarantine records.
+
+`core/CleanupExecution.psm1` requires a matching Action Plan, explicit confirmation, any required state-capture evidence, and structured post-operation verification. Permanent deletion, quarantine, and quarantine restore are callback-only boundaries; the module contains no built-in destructive command.
+
+These helpers are not imported by `core/Execution.psm1` and are not wired into a tool. Future migrations must add exact production scopes and still satisfy AppX, service, driver, TrustedInstaller, Safe Mode, installer, registry, reboot, or ownership requirements that apply to the source.
+
 ### Safety
 
 `core/Safety.psm1` contains structured safety functions for:
@@ -195,6 +205,7 @@ The current runtime does not:
 * Launch third-party installers through the Phase 35 policy helpers
 * Capture or restore file/registry state without a future approved scope and explicit tool call
 * Capture or restore service state without a future approved exact service scope and explicit tool call
+* Perform destructive cleanup or quarantine without a future approved exact cleanup scope and explicit tool call
 * Enforce licenses
 
 BIOS Settings retains its previously approved, explicitly confirmed firmware restart action. No new reboot behavior is introduced by the planning framework.

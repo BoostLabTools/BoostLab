@@ -71,6 +71,22 @@ For service mutations, a future migration record must identify:
 
 Adding a service scope does not authorize service execution. The tool phase must still implement the exact approved behavior, record post-mutation state, and prove rollback or explicitly document why rollback is unavailable.
 
+For destructive file cleanup, a future migration record must identify:
+
+* The exact `config/CleanupPolicy.psd1` scope id.
+* Every bounded root and exact file or directory target.
+* Cleanup type for every target: delete, quarantine, empty directory, or remove generated artifact.
+* Why BoostLab owns or is authorized to remove each target.
+* Whether recursion is required and the approved file-count/byte limits.
+* Whether user data, AppData, package content, system paths, or reparse points are involved.
+* Whether Phase 36 state capture is mandatory and the matching rollback scope.
+* Whether permanent delete or quarantine is approved.
+* Quarantine hash, metadata, record, restore, and expiration requirements.
+* Confirmation text and Action Plan details.
+* Read-only post-cleanup verification and failure behavior.
+
+Adding a cleanup scope does not authorize broad cleanup. A future tool must preserve approved source behavior while proving that every target remains exact, owned, bounded, confirmed, and verifiable.
+
 Real Apply, Default, and Restore migrations should document post-action verification whenever the resulting state can be detected safely. The record must distinguish command completion from detected-state verification and describe:
 
 * Read-only checks used

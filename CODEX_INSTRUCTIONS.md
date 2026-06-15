@@ -446,6 +446,23 @@ This policy applies to examples including:
 
 ---
 
+## Destructive Cleanup Policy
+
+* Destructive cleanup, quarantine, and restore are denied by default.
+* A future cleanup-capable tool must use an exact tool-specific scope in `config/CleanupPolicy.psd1`. Phase 38 approves no production cleanup scopes.
+* Scopes must declare one bounded root, exact target paths, target types, cleanup types, recursion permission, file-count/byte limits, state-capture requirements, and delete/quarantine permission.
+* Drive roots, Windows, System32, Program Files, ProgramData root, user-profile root, Desktop, Documents, Downloads, AppData roots, Temp root, wildcards, traversal, unresolved variables, out-of-scope paths, and reparse points are denied.
+* Recursive cleanup requires an exact directory target plus positive file-count and byte limits.
+* Unrelated user documents must never be deleted. User-library targets require a separately approved exact scope and must not cover a whole library root.
+* Every destructive operation requires an Action Plan and explicit user confirmation.
+* Rollback-eligible cleanup requires matching pre-mutation state capture from the file rollback foundation.
+* Permanent deletion and quarantine are distinct. Permanent deletion requires explicit scope permission. Quarantine requires an operation-specific BoostLab path, matching hashes, metadata, reason, identity, and restore eligibility.
+* Quarantine restore is allowed only from an integrity-verified, non-stale BoostLab record when the original path is absent and the quarantined content still matches its recorded hash.
+* Cleanup execution and restore failures must return structured results and must never be ignored silently.
+* Phase 38 contains no built-in destructive file command, wires no cleanup helper into a module, and enables no deferred tool.
+
+---
+
 ## Safety Rules
 
 * Do not run dangerous changes automatically

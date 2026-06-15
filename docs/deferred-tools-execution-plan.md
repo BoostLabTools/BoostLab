@@ -170,6 +170,10 @@ Affected tools:
 
 Needed for tools that remove files, folders, extracted components, package debris, or registry trees where “delete what Ultimate deleted” is not automatically safe enough for BoostLab.
 
+Phase 38 establishes exact bounded target scopes, broad-root and reparse-point denial, recursive file-count/byte limits, mandatory confirmation, state-capture evidence requirements, callback-only execution, and integrity-protected quarantine records. It approves no production cleanup targets and does not perform real deletion or quarantine.
+
+The affected tools remain deferred because they still need exact per-tool ownership decisions and additional foundations such as AppX inventory, installer provenance, driver rollback, service recovery, TrustedInstaller, Safe Mode, registry rollback, or reboot continuation.
+
 Affected tools:
 
 * `driver-install-debloat-settings`
@@ -204,7 +208,7 @@ Affected tools:
 4. **Service state capture and rollback**
    Phase 37 adds the deny-by-default capture, verification, and guarded startup/status rollback contract. Future work still needs explicit per-tool service scopes and separate approval for protected services, create/delete/recreation, multi-service recovery, and interrupted workflows.
 5. **Destructive cleanup policy**
-   This should define deletion scope, ownership checks, exclusions, and when a tool must refuse broad cleanup instead of narrowing it silently.
+   Phase 38 adds deny-by-default bounded cleanup planning, confirmation, verification, and quarantine records. Future work still needs exact per-tool targets, ownership approval, Phase 36 capture scopes where rollback is claimed, and the other foundations required by each source.
 6. **AppX/package inventory and restore framework**
    This is required for Copilot, Bloatware, and GameBar-class tools.
 7. **Reboot/recovery workflow**
