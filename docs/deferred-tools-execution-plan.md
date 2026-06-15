@@ -6,6 +6,9 @@ This plan covers every active BoostLab tool that remains a placeholder after the
 
 These tools are not abandoned. They are blocked until the required foundation exists to preserve approved Ultimate behavior without weakening it, silently narrowing it, or bypassing current governance.
 
+The follow-up implementation-readiness assessment for this same deferred queue
+now lives in `docs/deferred-tool-readiness-review.md`.
+
 Current inventory at the time of this plan:
 
 * Active approved tools: **48**
