@@ -12,6 +12,9 @@ now lives in `docs/deferred-tool-readiness-review.md`.
 The final post-design readiness matrix for the current deferred queue lives in
 `docs/final-deferred-tools-readiness-matrix.md`.
 
+The production allowlist approval rules for future exact scopes live in
+`docs/production-allowlist-governance.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

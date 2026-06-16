@@ -20,6 +20,9 @@ approved just because a foundation now exists.
 The final post-design matrix for the same deferred queue is documented in
 `docs/final-deferred-tools-readiness-matrix.md`.
 
+The future production allowlist approval rules are documented in
+`docs/production-allowlist-governance.md`.
+
 ## Review Inputs
 
 This review is based on:

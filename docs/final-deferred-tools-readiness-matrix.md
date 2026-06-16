@@ -109,7 +109,7 @@ These are not ready today. They are the comparatively safest next implementation
 Recommended shared foundations before any heavy deferred implementation resumes:
 
 1. **Production Allowlist Governance**
-   Define how exact production file, registry, service, cleanup, package, driver, TrustedInstaller, Safe Mode, and reboot scopes are proposed, reviewed, approved, versioned, and revoked.
+   Define how exact production file, registry, service, cleanup, package, driver, TrustedInstaller, Safe Mode, and reboot scopes are proposed, reviewed, approved, versioned, and revoked. Phase 66 documents this governance foundation in `docs/production-allowlist-governance.md`; it approves no production scopes.
 2. **Restore Selection UI / Runtime Foundation**
    Build the user-facing and runtime model for choosing a captured-state restore record without confusing `Default` with `Restore`.
 3. **Process Handling Policy Foundation**
@@ -162,16 +162,16 @@ Current product-scope impact:
 
 ## Recommended Next Phases
 
-1. **Production Allowlist Governance**
-   Create the approval path and validator pattern for adding exact production scopes without accidentally enabling behavior.
-2. **Restore Selection UI / Runtime Foundation**
+1. **Restore Selection UI / Runtime Foundation**
    Unblock safe Restore work for file, registry, service, cleanup, package, and driver foundations.
-3. **Process Handling Policy Foundation**
+2. **Process Handling Policy Foundation**
    Required by Copilot, Start Menu Taskbar, Control Panel Settings, and several heavy tools.
-4. **Scheduled Task State Capture / Rollback Foundation**
+3. **Scheduled Task State Capture / Rollback Foundation**
    Required by Edge Settings, Control Panel Settings, Defender Optimize Assistant, and installer-style workflows.
-5. **Generated Script / Temp Artifact Ownership Policy**
+4. **Generated Script / Temp Artifact Ownership Policy**
    Required by Updates Drivers Block, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and several registry-import workflows.
+5. **RunOnce / Active Setup Governance**
+   Required before persistent startup or post-reboot repair behavior can be approved.
 6. **Start Menu Taskbar Allowlist Review**
    A narrow tool-specific approval phase after process handling and restore boundaries are clearer.
 7. **Cleanup Allowlist Review**
