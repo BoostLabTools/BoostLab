@@ -15,6 +15,9 @@ The final post-design readiness matrix for the current deferred queue lives in
 The production allowlist approval rules for future exact scopes live in
 `docs/production-allowlist-governance.md`.
 
+The shared Restore selection UI/runtime foundation for future captured-state
+Restore actions lives in `docs/restore-selection-ui-runtime.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

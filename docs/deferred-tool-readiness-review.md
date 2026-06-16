@@ -23,6 +23,9 @@ The final post-design matrix for the same deferred queue is documented in
 The future production allowlist approval rules are documented in
 `docs/production-allowlist-governance.md`.
 
+The shared Restore selection UI/runtime foundation is documented in
+`docs/restore-selection-ui-runtime.md`.
+
 ## Review Inputs
 
 This review is based on:
