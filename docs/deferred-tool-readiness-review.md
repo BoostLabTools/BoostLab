@@ -17,6 +17,9 @@ All existing foundations remain deny-by-default. No production scope, artifact,
 installer, driver, TrustedInstaller command, or Safe Mode workflow becomes
 approved just because a foundation now exists.
 
+The final post-design matrix for the same deferred queue is documented in
+`docs/final-deferred-tools-readiness-matrix.md`.
+
 ## Review Inputs
 
 This review is based on:

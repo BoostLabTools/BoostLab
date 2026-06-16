@@ -9,6 +9,9 @@ These tools are not abandoned. They are blocked until the required foundation ex
 The follow-up implementation-readiness assessment for this same deferred queue
 now lives in `docs/deferred-tool-readiness-review.md`.
 
+The final post-design readiness matrix for the current deferred queue lives in
+`docs/final-deferred-tools-readiness-matrix.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`
