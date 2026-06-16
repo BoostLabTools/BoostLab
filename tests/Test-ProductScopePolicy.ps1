@@ -47,9 +47,13 @@ foreach ($path in $filesToCheck) {
         'Windows 10'
         'Windows 10 host'
         'Windows 10 optimization'
+        'branch-level scope'
+        'shared Windows behavior'
         'preparation'
         'AMD'
         'Intel'
+        'GPU-neutral'
+        'NVIDIA'
         'disabled, visual-only, or not implemented'
     )) {
         if (-not $text.Contains($phrase)) {
@@ -65,7 +69,7 @@ if ($errors.Count -gt 0) {
 [pscustomobject]@{
     Success        = $true
     FileCount      = $filesToCheck.Count
-    PhraseCount    = 9
-    Message        = 'Windows 11 target scope, Windows 10 preparation-host exception, and GPU scope are documented.'
+    PhraseCount    = 12
+    Message        = 'Branch-level Windows and GPU product scope is documented.'
     Timestamp      = Get-Date
 }

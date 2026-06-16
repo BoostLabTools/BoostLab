@@ -72,12 +72,7 @@ try {
         }
         if ([string]$tool['RiskLevel'] -eq 'high') {
             $highRiskCount++
-            $isScopedNonExecutingPlan = (
-                [string]$tool['Id'] -eq 'write-cache-buffer-flushing' -and
-                (($plan.PlannedChanges -join "`n") -match 'outside BoostLab product scope') -and
-                (($plan.PlannedChanges -join "`n") -match 'Do not enumerate HKLM storage registry paths')
-            )
-            if (-not [bool]$plan.NeedsExplicitConfirmation -and -not $isScopedNonExecutingPlan) {
+            if (-not [bool]$plan.NeedsExplicitConfirmation) {
                 throw "$($tool['Title']) is high risk but its plan does not require confirmation."
             }
         }

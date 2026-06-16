@@ -28,7 +28,7 @@ The original Ultimate Default path discovers `Disk` keys under the same SCSI and
 
 BoostLab preserves the Apply behavior by discovering the same SCSI and NVME registry targets and setting only `CacheIsPowerProtected` to `REG_DWORD 1`.
 
-Because this is a Windows performance/storage optimization tool, it is supported only on Windows 11 under the current BoostLab product scope. Windows 10 hosts receive a clean `NotApplicable` result for Analyze and Apply before registry discovery, capture, or mutation. This is not treated as a runtime error because Windows 10 optimization branches are outside scope unless Yazan expands scope later.
+The Ultimate source has no explicit Windows 10-only branch or option. Under the clarified branch-level product scope, BoostLab preserves this shared Windows behavior instead of blocking Windows 10 hosts merely because Windows 11 is the preferred supported product target. If a future source contains an explicit Windows 10-only optimization branch, that branch remains unsupported unless Yazan expands scope.
 
 Before any registry write, BoostLab captures the exact prior state of the target value using the Phase 36 registry state capture foundation:
 

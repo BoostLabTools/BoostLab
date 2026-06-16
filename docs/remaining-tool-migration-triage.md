@@ -14,13 +14,19 @@ Classification meanings:
 
 ## Product Scope Notes
 
-Windows 11 is BoostLab's optimized target platform, with NVIDIA-only support for GPU-specific tooling.
+Windows 11 is BoostLab's preferred supported product target, with NVIDIA-only support for GPU-specific tooling.
 
-Windows 10 optimization, performance, service, and settings-improvement branches, AMD GPU branches, and Intel GPU branches are currently outside scope unless Yazan explicitly expands scope later.
+Product scope is branch-level scope, not a blanket host-OS or hardware-vendor block.
 
-A Windows 10 host may run an approved preparation, refresh, migration, or transition tool when the tool's output and goal target Windows 11. This exception covers host compatibility for Windows 11 preparation; it does not make Windows 10 optimization branches supported.
+If an approved Ultimate source applies the same behavior to Windows 10 and Windows 11 without an explicit Windows 10-only branch or option, that shared Windows behavior may be preserved. A Windows 10 host must not be blocked merely because the preferred supported product target is Windows 11.
 
-If a source contains both supported and unsupported branches, future migration phases may keep the unsupported branches disabled, visual-only, or placeholder-only while implementing only the supported Windows 11 / NVIDIA path. That is a scope decision, not an accidental weakening.
+Explicit Windows 10-only optimization, performance, service, and settings-improvement branches, AMD GPU branches, and Intel GPU branches are currently outside scope unless Yazan explicitly expands scope later.
+
+A Windows 10 host may also run an approved preparation, refresh, migration, or transition tool when the tool's output and goal target Windows 11. This exception covers host compatibility for Windows 11 preparation; it does not make Windows 10-only optimization branches supported.
+
+If a source contains both supported and unsupported branches, future migration phases may keep the unsupported branches disabled, visual-only, or placeholder-only while implementing only the supported shared Windows / Windows 11 / NVIDIA path. That is a scope decision, not an accidental weakening.
+
+GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwise approved. Explicit AMD/Intel GPU branches remain unsupported.
 
 If a tool is entirely outside the supported scope, it should remain a placeholder or disabled candidate with a clear reason until scope changes.
 

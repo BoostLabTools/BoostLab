@@ -326,12 +326,12 @@ function New-BoostLabWriteCacheUnsupportedScopeRuntimeResult {
         -ToolTitle $ToolTitle `
         -Action $ActionName `
         -Status 'NotApplicable' `
-        -ExpectedState 'Windows 11 host for storage optimization actions' `
-        -DetectedState 'Unsupported host for this optimization tool' `
+        -ExpectedState 'Windows host for shared storage optimization behavior' `
+        -DetectedState 'Unsupported host for this Windows storage tool' `
         -Checks @(
             New-BoostLabVerificationCheck `
                 -Name 'Product scope' `
-                -Expected 'Windows 11 optimization host' `
+                -Expected 'Windows host for shared source behavior' `
                 -Actual 'Unsupported host for Write Cache Buffer Flushing' `
                 -Status 'NotApplicable' `
                 -Message $Message

@@ -195,18 +195,12 @@ function Test-BoostLabWriteCacheProductScope {
     $isWindows = $operatingSystem -eq 'Windows_NT' -or $caption -match 'Windows'
     $isWindows10 = $caption -match 'Windows 10' -or ($buildNumber -ge 10240 -and $buildNumber -lt 22000)
     $isWindows11 = $caption -match 'Windows 11' -or ($buildNumber -ge 22000 -and $caption -notmatch 'Server')
-    $supported = $isWindows -and $isWindows11 -and -not $isWindows10
+    $supported = $isWindows
     $reason = if ($supported) {
-        'Windows 11 host is within BoostLab product scope for this optimization tool.'
-    }
-    elseif ($isWindows10) {
-        'Windows 10 optimization is outside BoostLab product scope. Write Cache Buffer Flushing is not a Windows 11 preparation, migration, or refresh tool.'
-    }
-    elseif ($isWindows) {
-        'This Windows host is not detected as supported Windows 11 for this optimization tool.'
+        'Write Cache Buffer Flushing uses shared Windows storage registry behavior; the Ultimate source has no Windows 10-only branch.'
     }
     else {
-        'Write Cache Buffer Flushing requires a supported Windows 11 host.'
+        'Write Cache Buffer Flushing requires a Windows host.'
     }
 
     return [pscustomobject]@{
@@ -235,12 +229,12 @@ function New-BoostLabWriteCacheProductScopeResult {
         -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
         -Action $ActionName `
         -Status 'NotApplicable' `
-        -ExpectedState 'Windows 11 host for storage optimization actions' `
+        -ExpectedState 'Windows host for shared storage optimization behavior' `
         -DetectedState ('{0} build {1}' -f [string]$Scope.Caption, [string]$Scope.BuildNumber) `
         -Checks @(
             (New-BoostLabVerificationCheck `
                 -Name 'Product scope' `
-                -Expected 'Windows 11 optimization host' `
+                -Expected 'Windows host for shared source behavior' `
                 -Actual ('{0} build {1}' -f [string]$Scope.Caption, [string]$Scope.BuildNumber) `
                 -Status 'NotApplicable' `
                 -Message ([string]$Scope.Reason))
@@ -749,6 +743,7 @@ function Invoke-BoostLabWriteCacheAnalyze {
         TargetCount              = @($discovery.Targets).Count
         Targets                  = @($discovery.Targets)
         DiscoveryWarnings        = @($discovery.Warnings)
+        ChangesExecuted          = $false
         ApplySupported           = $true
         DefaultSupported         = $false
         RestoreSupported         = $false

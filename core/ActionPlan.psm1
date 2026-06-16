@@ -107,14 +107,12 @@ function Test-BoostLabWriteCacheActionPlanProductScope {
         # The plan falls back to the process-reported build and remains conservative.
     }
 
+    $isWindows = $productName -match 'Windows' -or $env:OS -eq 'Windows_NT'
     $isWindows10 = $productName -match 'Windows 10' -or ($buildNumber -ge 10240 -and $buildNumber -lt 22000)
     $isWindows11 = $productName -match 'Windows 11' -or ($buildNumber -ge 22000 -and $productName -notmatch 'Server')
-    $supported = $isWindows11 -and -not $isWindows10
+    $supported = $isWindows
     $reason = if ($supported) {
-        'Windows 11 host is within BoostLab product scope for this optimization tool.'
-    }
-    elseif ($isWindows10) {
-        'Windows 10 optimization is outside BoostLab product scope. Write Cache Buffer Flushing is not a Windows 11 preparation, migration, or refresh tool.'
+        'Write Cache Buffer Flushing uses shared Windows storage registry behavior; the Ultimate source has no Windows 10-only branch.'
     }
     else {
         'This host is outside BoostLab product scope for Write Cache Buffer Flushing.'
@@ -332,7 +330,7 @@ function New-BoostLabActionPlan {
     $plannedChanges = [System.Collections.Generic.List[string]]::new()
     if ($isProductScopeNotApplicable) {
         $plannedChanges.Add([string]$productScope.Reason)
-        $plannedChanges.Add('Do not enumerate HKLM storage registry paths on this unsupported host.')
+        $plannedChanges.Add('No Windows storage registry path enumeration is planned on this unsupported host.')
         $plannedChanges.Add('Do not capture registry state and do not write CacheIsPowerProtected.')
     }
     elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {

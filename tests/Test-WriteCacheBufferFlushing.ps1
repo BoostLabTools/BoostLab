@@ -79,7 +79,7 @@ try {
         'CacheIsPowerProtected'
         'HKLM:\SYSTEM\ControlSet001\Enum'
         'Test-BoostLabWriteCacheProductScope'
-        'Windows 10 optimization is outside BoostLab product scope'
+        'shared Windows storage registry behavior'
         'SupportsDefault           = $false'
         'SupportsRestore           = $false'
     )) {
@@ -115,9 +115,6 @@ try {
         'write-cache-buffer-flushing'
         'Capture the prior CacheIsPowerProtected existence, type, and data'
         'Do not run the Ultimate Default broad Disk-key deletion.'
-        'Windows 10 optimization is outside BoostLab product scope'
-        'Do not enumerate HKLM storage registry paths on this unsupported host.'
-        'No Administrator execution, registry discovery, registry capture, or registry write is required.'
     )) {
         Assert-BoostLabCondition ($actionPlanSource.Contains($requiredPlanText)) "Action Plan is missing Write Cache text: $requiredPlanText"
     }
@@ -139,10 +136,9 @@ try {
     }
     if ($hostBuild -ge 10240 -and $hostBuild -lt 22000 -and $hostProductName -match 'Windows 10') {
         $windows10Plan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName 'Apply' -IsDryRun:$false
-        Assert-BoostLabCondition (-not [bool]$windows10Plan.RequiresAdmin) 'Windows 10 Write Cache plan should not require Administrator execution.'
-        Assert-BoostLabCondition (-not [bool]$windows10Plan.NeedsExplicitConfirmation) 'Windows 10 Write Cache plan should not request mutation confirmation.'
-        Assert-BoostLabCondition (($windows10Plan.PlannedChanges -join "`n") -match 'Do not enumerate HKLM storage registry paths') 'Windows 10 Write Cache plan should be non-mutating.'
-        Assert-BoostLabCondition (($windows10Plan.PlannedChanges -join "`n") -notmatch 'Capture the prior CacheIsPowerProtected') 'Windows 10 Write Cache plan should not describe registry capture.'
+        Assert-BoostLabCondition ([bool]$windows10Plan.RequiresAdmin) 'Windows 10 Write Cache shared behavior should preserve Administrator requirement.'
+        Assert-BoostLabCondition ([bool]$windows10Plan.NeedsExplicitConfirmation) 'Windows 10 Write Cache shared behavior should preserve confirmation requirement.'
+        Assert-BoostLabCondition (($windows10Plan.PlannedChanges -join "`n") -match 'Capture the prior CacheIsPowerProtected') 'Windows 10 Write Cache plan should describe registry capture for shared behavior.'
     }
 
     $migrationText = Get-Content -LiteralPath $migrationPath -Raw
@@ -150,60 +146,102 @@ try {
         'Source SHA-256: `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D`'
         'Default is not implemented'
         'Restore is not exposed'
+        'no explicit Windows 10-only branch'
         'CacheIsPowerProtected'
         'REG_DWORD 1'
     )) {
         Assert-BoostLabCondition ($migrationText.Contains($requiredMigrationText)) "Migration record is missing: $requiredMigrationText"
     }
 
+    $sourceText = Get-Content -LiteralPath $sourcePath -Raw
+    Assert-BoostLabCondition (-not ($sourceText -match 'Windows\s*10|Windows\s*11')) 'Write Cache source should not contain Windows-version branches.'
+
     $moduleInfo = Import-Module -Name $modulePath -Force -PassThru
 
     $windows10Events = [System.Collections.Generic.List[string]]::new()
+    $windows10Target = [pscustomobject]@{
+        ClassName    = 'SCSI'
+        RegistryPath = 'HKLM:\SYSTEM\ControlSet001\Enum\SCSI\Win10Disk\Device Parameters\Disk'
+    }
     $windows10Analyze = & $moduleInfo {
-        param($Events)
+        param($Events, $Target)
 
         Invoke-BoostLabWriteCacheAnalyze `
             -WindowsInfoReader { [pscustomobject]@{ OperatingSystem = 'Windows_NT'; Caption = 'Microsoft Windows 10 Pro'; BuildNumber = '19045' } } `
-            -TargetEnumerator { $Events.Add('DISCOVERY'); throw 'Discovery should not run on Windows 10.' } `
-            -RegistryReader { param($Path, $ItemType, $ValueName) $Events.Add('READ'); throw 'Registry reader should not run on Windows 10.' }
-    } $windows10Events
+            -TargetEnumerator {
+                $Events.Add('DISCOVERY')
+                [pscustomobject]@{ Succeeded = $true; Targets = @($Target); Warnings = @(); Message = 'Windows 10 shared target.' }
+            } `
+            -RegistryReader {
+                param($Path, $ItemType, $ValueName)
+                $Events.Add("READ:$Path")
+                [pscustomobject]@{
+                    ReadSucceeded = $true
+                    KeyExists     = $true
+                    Exists        = $false
+                    Metadata      = $null
+                    DisplayValue  = 'Absent'
+                    Message       = 'Mock Windows 10 shared state read.'
+                }
+            }
+    } $windows10Events $windows10Target
 
-    Assert-BoostLabCondition ([bool]$windows10Analyze.Success) 'Windows 10 Analyze should return a clean NotApplicable result.'
-    Assert-BoostLabCondition ([string]$windows10Analyze.Status -eq 'NotApplicable') "Windows 10 Analyze should be NotApplicable, got $($windows10Analyze.Status)."
-    Assert-BoostLabCondition ([string]$windows10Analyze.Message -like '*Windows 10 optimization is outside BoostLab product scope*') 'Windows 10 Analyze did not explain product scope.'
-    Assert-BoostLabCondition ([string]$windows10Analyze.Data.CommandStatus -eq 'Not applicable') 'Windows 10 Analyze command status should be Not applicable.'
-    Assert-BoostLabCondition ([string]$windows10Analyze.Data.VerificationStatus -eq 'NotApplicable') 'Windows 10 Analyze verification status should be NotApplicable.'
+    Assert-BoostLabCondition ([bool]$windows10Analyze.Success) 'Windows 10 Analyze should support shared Windows behavior.'
+    Assert-BoostLabCondition ([string]$windows10Analyze.Status -eq 'Analyzed') "Windows 10 Analyze should be Analyzed, got $($windows10Analyze.Status)."
+    Assert-BoostLabCondition ([int]$windows10Analyze.Data.TargetCount -eq 1) 'Windows 10 Analyze should enumerate mocked shared storage targets.'
     Assert-BoostLabCondition (-not [bool]$windows10Analyze.Data.ChangesExecuted) 'Windows 10 Analyze must not execute changes.'
-    Assert-BoostLabCondition (-not [bool]$windows10Analyze.Data.TargetDiscoveryRun) 'Windows 10 Analyze must not run target discovery.'
     Assert-BoostLabCondition (@($windows10Analyze.Errors).Count -eq 0) 'Windows 10 Analyze top-level Errors should be empty.'
-    Assert-BoostLabCondition (@($windows10Analyze.Data.Errors).Count -eq 0) 'Windows 10 Analyze should not report errors.'
-    Assert-BoostLabCondition ($windows10Events.Count -eq 0) 'Windows 10 Analyze ran discovery or registry callbacks.'
+    Assert-BoostLabCondition (($windows10Events -join '|') -match 'DISCOVERY' -and ($windows10Events -join '|') -match 'READ:') 'Windows 10 Analyze did not use the shared discovery/read path.'
 
     $windows10ApplyEvents = [System.Collections.Generic.List[string]]::new()
+    $windows10RegistryStore = @{
+        $windows10Target.RegistryPath = [pscustomobject]@{ Exists = $false; ValueType = ''; ValueData = $null }
+    }
     $windows10Apply = & $moduleInfo {
-        param($Events, $StateRoot)
+        param($Events, $Target, $RegistryStore, $StateRoot)
 
         Invoke-BoostLabWriteCacheApply `
             -WindowsInfoReader { [pscustomobject]@{ OperatingSystem = 'Windows_NT'; Caption = 'Microsoft Windows 10 Pro'; BuildNumber = '19045' } } `
-            -AdministratorChecker { $Events.Add('ADMIN'); throw 'Admin check should not run on Windows 10.' } `
-            -TargetEnumerator { $Events.Add('DISCOVERY'); throw 'Discovery should not run on Windows 10.' } `
-            -RegistryReader { param($Path, $ItemType, $ValueName) $Events.Add('READ'); throw 'Registry reader should not run on Windows 10.' } `
-            -RegistryWriter { param($Target, $Value) $Events.Add('WRITE'); throw 'Registry writer should not run on Windows 10.' } `
+            -AdministratorChecker { $Events.Add('ADMIN'); $true } `
+            -TargetEnumerator {
+                $Events.Add('DISCOVERY')
+                [pscustomobject]@{ Succeeded = $true; Targets = @($Target); Warnings = @(); Message = 'Windows 10 shared target.' }
+            } `
+            -RegistryReader {
+                param($Path, $ItemType, $ValueName)
+                $Events.Add("READ:$Path")
+                $entry = $RegistryStore[$Path]
+                [pscustomobject]@{
+                    ReadSucceeded = $true
+                    KeyExists     = $true
+                    Exists        = [bool]$entry.Exists
+                    Metadata      = if ([bool]$entry.Exists) {
+                        [ordered]@{ ValueName = $ValueName; ValueType = [string]$entry.ValueType; ValueData = $entry.ValueData }
+                    }
+                    else {
+                        $null
+                    }
+                    DisplayValue  = if ([bool]$entry.Exists) { "$($entry.ValueType):$($entry.ValueData)" } else { 'Absent' }
+                    Message       = 'Mock Windows 10 shared state read.'
+                }
+            } `
+            -RegistryWriter {
+                param($Target, $Value)
+                $path = [string]$Target.RegistryPath
+                $Events.Add("WRITE:$path")
+                $RegistryStore[$path] = [pscustomobject]@{ Exists = $true; ValueType = 'DWord'; ValueData = [int]$Value }
+            } `
             -StateRoot $StateRoot
-    } $windows10ApplyEvents $tempRoot
+    } $windows10ApplyEvents $windows10Target $windows10RegistryStore $tempRoot
 
-    Assert-BoostLabCondition ([bool]$windows10Apply.Success) 'Windows 10 Apply should return a clean NotApplicable result.'
-    Assert-BoostLabCondition ([string]$windows10Apply.Status -eq 'NotApplicable') "Windows 10 Apply should be NotApplicable, got $($windows10Apply.Status)."
-    Assert-BoostLabCondition ([string]$windows10Apply.Message -like '*Windows 10 optimization is outside BoostLab product scope*') 'Windows 10 Apply did not explain product scope.'
-    Assert-BoostLabCondition ([string]$windows10Apply.Data.CommandStatus -eq 'Not applicable') 'Windows 10 Apply command status should be Not applicable.'
-    Assert-BoostLabCondition ([string]$windows10Apply.Data.VerificationStatus -eq 'NotApplicable') 'Windows 10 Apply verification status should be NotApplicable.'
-    Assert-BoostLabCondition (-not [bool]$windows10Apply.Data.ChangesExecuted) 'Windows 10 Apply must not execute changes.'
-    Assert-BoostLabCondition (-not [bool]$windows10Apply.Data.TargetDiscoveryRun) 'Windows 10 Apply must not run target discovery.'
-    Assert-BoostLabCondition (-not [bool]$windows10Apply.Data.CaptureAttempted) 'Windows 10 Apply must not attempt capture.'
-    Assert-BoostLabCondition (-not [bool]$windows10Apply.Data.RegistryWriteAttempted) 'Windows 10 Apply must not attempt registry writes.'
+    Assert-BoostLabCondition ([bool]$windows10Apply.Success) 'Windows 10 Apply should support shared Windows behavior with mocked registry operations.'
+    Assert-BoostLabCondition ([string]$windows10Apply.Status -eq 'Completed') "Windows 10 Apply should be Completed, got $($windows10Apply.Status)."
+    Assert-BoostLabCondition ([bool]$windows10Apply.Data.ChangesExecuted) 'Windows 10 Apply should execute the mocked shared write path.'
+    Assert-BoostLabCondition (@($windows10Apply.Data.CaptureRecords).Count -eq 1) 'Windows 10 Apply should capture the mocked prior value state before mutation.'
+    Assert-BoostLabCondition ([int]$windows10RegistryStore[$windows10Target.RegistryPath].ValueData -eq 1) 'Windows 10 Apply did not set the mocked CacheIsPowerProtected value to 1.'
     Assert-BoostLabCondition (@($windows10Apply.Errors).Count -eq 0) 'Windows 10 Apply top-level Errors should be empty.'
     Assert-BoostLabCondition (@($windows10Apply.Data.Errors).Count -eq 0) 'Windows 10 Apply should not report errors.'
-    Assert-BoostLabCondition ($windows10ApplyEvents.Count -eq 0) 'Windows 10 Apply ran admin, discovery, capture, or writer callbacks.'
+    Assert-BoostLabCondition (($windows10ApplyEvents -join '|') -match 'ADMIN' -and ($windows10ApplyEvents -join '|') -match 'DISCOVERY' -and ($windows10ApplyEvents -join '|') -match 'WRITE:') 'Windows 10 Apply did not use the shared admin/discovery/write path.'
 
     $targets = @(
         [pscustomobject]@{

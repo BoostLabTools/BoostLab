@@ -28,21 +28,27 @@ Do not re-add removed functionality.
 
 ## Product Scope
 
-Windows 11 is BoostLab's optimized target platform.
+Windows 11 is BoostLab's preferred supported product target.
 
 GPU-specific tooling is NVIDIA-only.
 
-Windows 10 optimization, performance, service, and settings-improvement source branches are unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
+Product scope is branch-level scope, not a blanket host-OS or hardware-vendor block.
+
+If an approved Ultimate source script applies the same behavior to Windows 10 and Windows 11 without an explicit Windows 10-only branch or option, preserve that shared Windows behavior. Do not block shared Windows behavior merely because the current host is Windows 10.
+
+Explicit Windows 10-only optimization, performance, service, and settings-improvement source branches are unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
 
 A Windows 10 host may run an approved preparation, refresh, migration, or transition tool when that tool produces or prepares the supported Windows 11 outcome. Examples can include Windows 11 installation-media preparation tools such as Reinstall or Unattended, but each tool still requires its own approved migration phase and safety gates.
 
-This host-usage exception does not authorize Windows 10-specific optimization behavior. If a tool combines Windows 11 preparation with Windows 10 optimization branches, only the preparation behavior may be implemented unless Yazan explicitly expands scope.
+This host-usage exception does not authorize Windows 10-specific optimization branches. If a tool combines Windows 11 preparation with Windows 10 optimization branches, only the preparation behavior may be implemented unless Yazan explicitly expands scope.
 
 AMD GPU-specific source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
 
 Intel GPU-specific source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
 
-If a source script contains both supported and unsupported branches, future phases may implement only the supported Windows 11 target / NVIDIA behavior while leaving Windows 10 optimization and AMD/Intel branches disabled or visual-only. That is a product-scope decision, not accidental weakening.
+GPU-neutral behavior is allowed when otherwise approved. NVIDIA-specific behavior is allowed when otherwise approved. Do not block GPU-neutral behavior merely because it can run on AMD or Intel systems unless the source or a policy marks that behavior as AMD/Intel-specific.
+
+If a source script contains both supported and unsupported branches, future phases may implement only the supported shared Windows / Windows 11 target / NVIDIA behavior while leaving Windows 10-only optimization and AMD/Intel-specific branches disabled or visual-only. That is a product-scope decision, not accidental weakening.
 
 If a tool is entirely outside the supported scope, keep it as a placeholder or disabled candidate with a clear reason.
 
