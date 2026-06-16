@@ -14,4 +14,6 @@ These instructions apply to Codex when working in the BoostLab repository.
 
 10. Respect the current product scope as branch-level scope: Windows 11 is BoostLab's preferred supported product target, and GPU-specific tooling is NVIDIA-only. If an approved Ultimate source applies the same Windows behavior to Windows 10 and Windows 11 without an explicit Windows 10-only branch or option, preserve that shared Windows behavior. Explicit Windows 10 optimization branches, including Windows 10-only optimization, performance, service, and settings-improvement branches, remain unsupported unless Yazan expands scope. A Windows 10 host may also run an approved preparation, refresh, migration, or transition tool when that tool's output and goal target Windows 11. Explicit AMD/Intel GPU-specific branches remain disabled, visual-only, or not implemented; GPU-neutral and NVIDIA-specific behavior may be preserved when otherwise approved.
 
+11. Respect the Phase 70 Driver Clean intake exception: Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU, DDU execution, DDU downloads, artifact approvals, production scopes, modules, placeholders, or tool behavior. Loudness EQ and NVME Faster Driver remain deleted.
+
 When in doubt, prefer the existing project documentation and the approved source mapping over invention.

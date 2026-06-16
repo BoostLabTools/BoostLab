@@ -208,6 +208,14 @@ Do not implement or reintroduce:
 * The deleted source file's final SHA-256 was `2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE`.
 * The authorized deletion scope was limited to the catalog entry, placeholder module, source file, documentation references, and validation baselines required to remove Loudness EQ completely.
 
+### Phase 70 Driver Clean Intake Exception
+
+* Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
+* This exception only allows `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` to be treated as a missing Ultimate script candidate for future source promotion.
+* Do not create a standalone DDU BoostLab tool.
+* Do not download, execute, approve artifacts for, or approve production scopes for DDU unless a future phase explicitly authorizes a dedicated Driver Clean implementation design.
+* This exception does not weaken deleted-tool protection for Loudness EQ, NVME Faster Driver, or any other deleted tool.
+
 ---
 
 ## Architecture Requirements

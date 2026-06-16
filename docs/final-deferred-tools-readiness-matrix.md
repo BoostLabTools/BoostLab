@@ -19,6 +19,8 @@ This document does not approve production scopes, allowlists, artifacts, install
 * Tool behavior changed by this phase: **No**
 * `source-ultimate/` modified by this phase: **No**
 
+Phase 70 note: `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage. It remains separate from official active/deferred counts and does not approve standalone DDU, DDU execution, downloads, artifacts, production scopes, or tool behavior.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

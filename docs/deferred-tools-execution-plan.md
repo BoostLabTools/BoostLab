@@ -27,6 +27,11 @@ Phase 69 intake for seven manually supplied Ultimate scripts lives in
 candidates pending source promotion and do not change the official active or
 deferred tool counts in this plan.
 
+Phase 70 updates that intake review to record `Driver Clean.ps1` as a
+Yazan-approved intake exception despite DDU usage. This does not approve
+standalone DDU, DDU execution, downloads, artifacts, production scopes, or tool
+behavior.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

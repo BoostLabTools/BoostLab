@@ -146,6 +146,12 @@ Loudness EQ was permanently removed from the BoostLab product by Yazan on June 1
 
 Phase 25 intentionally deleted only `source-ultimate/6 Windows/17 Loudness EQ.ps1` from the legacy source tree. The file's final SHA-256 was `2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE`. This one-file exception does not weaken the rule that all other `source-ultimate` files remain immutable reference material.
 
+### Phase 70 Driver Clean Intake Exception
+
+Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution. The exception only allows `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` to be treated as a missing Ultimate script candidate for future source promotion.
+
+No Driver Clean behavior, DDU download, DDU execution, artifact approval, production scope, module, placeholder, or tool card is approved by this exception. Standalone DDU remains excluded, and Loudness EQ and NVME Faster Driver remain permanently deleted.
+
 ---
 
 ## Assistant Philosophy

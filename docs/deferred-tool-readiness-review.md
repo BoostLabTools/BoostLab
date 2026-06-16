@@ -34,6 +34,11 @@ Phase 69 intake for seven manually supplied Ultimate scripts is documented in
 the 18-tool deferred queue unless a future phase promotes accepted scripts into
 the official source/catalog.
 
+Phase 70 records `Driver Clean.ps1` as a Yazan-approved intake exception
+despite DDU usage. This keeps the script eligible for a future source-promotion
+decision while leaving standalone DDU, DDU execution, downloads, artifacts,
+production scopes, and tool behavior unapproved.
+
 ## Review Inputs
 
 This review is based on:

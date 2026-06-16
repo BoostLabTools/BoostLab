@@ -57,7 +57,8 @@ Deleted and disallowed BoostLab tools remain excluded:
 
 Conflict result:
 
-* `Driver Clean.ps1` is blocked by a deleted-tool conflict because it downloads and runs Display Driver Uninstaller / DDU behavior. DDU is permanently disallowed in BoostLab.
+* `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
+* `Driver Clean.ps1` downloads and runs Display Driver Uninstaller / DDU behavior in the intake source, so future implementation requires dedicated Driver Clean scope/provenance/safety design before any execution can be considered.
 * The remaining six intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
 * Loudness EQ remains deleted and is not present in the intake set.
 * NVME Faster Driver remains deleted and is not present in the intake set.
@@ -109,7 +110,7 @@ These five scripts must not be merged into one tool during intake. Any future im
 
 | Script | Intake classification | Likely future handling | Major risk groups | Product-scope notes | Reason |
 |---|---|---|---|---|---|
-| `5 Graphics/1 Driver Clean.ps1` | Intake blocked by deleted-tool conflict | Deleted/disallowed conflict | downloads/artifacts/installers; driver install/profile/settings; AMD/Intel unsupported behavior; registry mutation; file mutation/cleanup; services/tasks/processes; reboot/firmware restart; Safe Mode; RunOnce; Default/Restore concerns | Uses broad GPU cleanup and DDU behavior across NVIDIA/AMD/Intel cleanup settings. | Downloads 7-Zip and DDU, configures DDU, writes RunOnce, changes BCD SafeBoot, restarts, and runs Display Driver Uninstaller. DDU is a deleted/disallowed tool. |
+| `5 Graphics/1 Driver Clean.ps1` | Yazan-approved intake exception for future source promotion | Scope + Provenance Design needed | downloads/artifacts/installers; driver install/profile/settings; AMD/Intel unsupported behavior; registry mutation; file mutation/cleanup; services/tasks/processes; reboot/firmware restart; Safe Mode; RunOnce; Default/Restore concerns | Uses broad GPU cleanup and DDU behavior across NVIDIA/AMD/Intel cleanup settings. Future BoostLab design must reconcile this with NVIDIA-only product scope and must not create a standalone DDU tool. | Downloads 7-Zip and DDU, configures DDU, writes RunOnce, changes BCD SafeBoot, restarts, and runs Display Driver Uninstaller. Yazan approved Driver Clean for intake despite DDU usage, but no DDU execution, download, artifact approval, or tool implementation is approved by this intake exception. |
 | `5 Graphics/2 Driver Install Latest.ps1` | Intake accepted for future source promotion | Scope + Provenance Design needed | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; AMD/Intel unsupported behavior | Future BoostLab may consider only the NVIDIA branch. AMD and Intel branches must remain disabled/not implemented. | NVIDIA branch queries NVIDIA driver API, downloads the latest NVIDIA installer to `%SystemRoot%\Temp\nvidiadriver.exe`, and launches it. AMD branch downloads AMD installer; Intel branch opens Intel driver page. |
 | `5 Graphics/4 Nvidia Settings.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; file mutation/cleanup; process execution; Default/Restore concerns | NVIDIA-specific behavior is future-eligible only after exact artifact, registry, profile, file, and Default policy decisions. | Downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, writes NVIDIA registry values, writes/imports `.nip` profile data, opens NVIDIA Control Panel, and has a Default branch that deletes or changes NVIDIA values. |
 | `5 Graphics/5 Hdcp.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; Default/Restore concerns | NVIDIA display-class registry behavior may be considered only with exact target discovery, capture, and verification. | Writes `RMHdcpKeyglobZero` under NVIDIA display class registry instances with On/Default values. |
@@ -125,7 +126,7 @@ If accepted in a future source-promotion phase, the natural future destination p
 
 | Intake path | Proposed future destination | Reconciliation issue |
 |---|---|---|
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `source-ultimate/5 Graphics/1 Driver Clean.ps1` | Conflicts with current Graphics slot 1 and is blocked by DDU deletion. Do not promote unless Yazan explicitly changes deleted-tool policy. |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `source-ultimate/5 Graphics/1 Driver Clean.ps1` | Conflicts with current Graphics slot 1. Yazan approved this script as an intake exception despite DDU usage, but source promotion still needs a separate phase and dedicated Driver Clean scope/provenance/safety design. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `source-ultimate/5 Graphics/2 Driver Install Latest.ps1` | Conflicts with current Graphics slot 2 (`DirectX`). Needs separate source-promotion order decision. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `source-ultimate/5 Graphics/4 Nvidia Settings.ps1` | Conflicts with current Graphics slot 4 (`Graphics Configuration Center`). Needs separate source-promotion order decision. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `source-ultimate/5 Graphics/5 Hdcp.ps1` | No current Graphics slot 5 file, but official catalog has only four active Graphics tools today. |
@@ -156,10 +157,12 @@ No tool was implemented or enabled in this phase.
 
 No tool card, module, placeholder, action, Default, Restore, production allowlist, artifact approval, installer approval, download approval, driver scope, AppX scope, service scope, scheduled task scope, process scope, cleanup scope, reboot scope, TrustedInstaller scope, or Safe Mode scope was approved in this phase.
 
+Standalone DDU remains deleted/disallowed as an independent BoostLab tool. The Phase 70 decision only accepts `Driver Clean.ps1` as a missing Ultimate script candidate for future source promotion despite DDU usage.
+
 Loudness EQ and NVME Faster Driver remain deleted.
 
 ## Recommended Next Phase
 
 Recommended next phase: **Missing Scripts Source Promotion Decision**.
 
-That phase should not implement behavior. It should decide whether any accepted intake scripts become official `source-ultimate` reference files, how numbering conflicts are reconciled, whether Path B becomes a future visual workflow, and whether `Driver Clean.ps1` remains blocked because of the DDU deletion policy.
+That phase should not implement behavior. It should decide whether any accepted intake scripts become official `source-ultimate` reference files, how numbering conflicts are reconciled, whether Path B becomes a future visual workflow, and how the Yazan-approved Driver Clean intake exception should be represented without approving standalone DDU, DDU execution, downloads, artifacts, or driver-cleaning behavior.

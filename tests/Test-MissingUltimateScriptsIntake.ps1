@@ -23,6 +23,9 @@ else {
 }
 
 $docPath = Join-Path $ProjectRoot 'docs\missing-ultimate-scripts-intake-review.md'
+$agentsPath = Join-Path $ProjectRoot 'AGENTS.md'
+$instructionsPath = Join-Path $ProjectRoot 'CODEX_INSTRUCTIONS.md'
+$blueprintPath = Join-Path $ProjectRoot 'BOOSTLAB_BLUEPRINT.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $reviewPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $matrixPath = Join-Path $ProjectRoot 'docs\final-deferred-tools-readiness-matrix.md'
@@ -30,7 +33,7 @@ $stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-foreach ($path in @($docPath, $planPath, $reviewPath, $matrixPath, $stagesPath)) {
+foreach ($path in @($docPath, $agentsPath, $instructionsPath, $blueprintPath, $planPath, $reviewPath, $matrixPath, $stagesPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Required file was not found: $path"
     }
@@ -55,6 +58,9 @@ $expectedWorkflow = @(
 )
 
 $docText = Get-Content -LiteralPath $docPath -Raw
+$agentsText = Get-Content -LiteralPath $agentsPath -Raw
+$instructionsText = Get-Content -LiteralPath $instructionsPath -Raw
+$blueprintText = Get-Content -LiteralPath $blueprintPath -Raw
 $planText = Get-Content -LiteralPath $planPath -Raw
 $reviewText = Get-Content -LiteralPath $reviewPath -Raw
 $matrixText = Get-Content -LiteralPath $matrixPath -Raw
@@ -147,8 +153,9 @@ foreach ($deletedTool in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Driver Clean.ps1` is blocked by a deleted-tool conflict',
-    'DDU is permanently disallowed in BoostLab',
+    'Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution',
+    'future implementation requires dedicated Driver Clean scope/provenance/safety design',
+    'Standalone DDU remains deleted/disallowed as an independent BoostLab tool',
     'No intake script currently exists in `source-ultimate/` under the same relative path or same script title',
     'numbering/order reconciliation conflicts',
     'No files should be renamed or moved in this phase',
@@ -157,7 +164,8 @@ foreach ($requiredPhrase in @(
     'No intake scripts were edited',
     'No `source-ultimate` files were modified',
     'Intake candidate scripts reviewed here: **7**',
-    'Official BoostLab counts do not change in this phase'
+    'Official BoostLab counts do not change in this phase',
+    'Yazan approved this script as an intake exception despite DDU usage'
 )) {
     if (-not $docText.Contains($requiredPhrase)) {
         throw "Intake review is missing required phrase: $requiredPhrase"
@@ -165,7 +173,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($classification in @(
-    'Intake blocked by deleted-tool conflict',
+    'Yazan-approved intake exception for future source promotion',
     'Intake accepted for future source promotion',
     'Scope + Provenance Design needed',
     'Driver/Profile Design needed',
@@ -173,6 +181,19 @@ foreach ($classification in @(
 )) {
     if (-not $docText.Contains($classification)) {
         throw "Intake review is missing classification: $classification"
+    }
+}
+
+foreach ($governanceText in @($agentsText, $instructionsText, $blueprintText)) {
+    foreach ($requiredPhrase in @(
+        'Driver Clean is a Yazan-approved intake exception despite DDU usage',
+        'does not approve standalone DDU',
+        'Loudness EQ',
+        'NVME Faster Driver'
+    )) {
+        if (-not $governanceText.Contains($requiredPhrase)) {
+            throw "Top-level governance is missing Driver Clean exception phrase: $requiredPhrase"
+        }
     }
 }
 
@@ -198,6 +219,18 @@ if ($placeholderModules.Count -ne 18) {
 }
 if (($allTools.Count - $placeholderModules.Count) -ne 30) {
     throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+}
+
+$dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })
+if ($dduTools.Count -ne 0) {
+    throw 'Standalone DDU was reintroduced into active config.'
+}
+$dduModules = @(
+    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
+        Where-Object { $_.BaseName -eq 'ddu' -or $_.Name -like '*DDU*' }
+)
+if ($dduModules.Count -ne 0) {
+    throw 'Standalone DDU module was reintroduced.'
 }
 
 foreach ($intakePath in $expectedIntakeFiles) {
