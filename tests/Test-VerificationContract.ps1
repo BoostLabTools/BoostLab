@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -319,7 +319,7 @@ foreach ($requiredText in @(
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
     ForEach-Object {
         '{0}|{1}' -f `
@@ -358,3 +358,4 @@ if (
     Message                 = 'Verification contract and runtime/UI integration are valid.'
     Timestamp               = Get-Date
 }
+

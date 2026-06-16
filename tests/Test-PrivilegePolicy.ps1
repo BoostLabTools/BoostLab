@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -121,7 +121,7 @@ foreach ($toolId in $serviceIds) {
     }
 }
 
-$sourceFiles = @(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*.ps1')
+$sourceFiles = @(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*.ps1' | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') })
 $adminSources = @($sourceFiles | Where-Object {
     (Get-Content -Raw -LiteralPath $_.FullName) -match '(?im)#\s*SCRIPT RUN AS ADMIN'
 })
@@ -379,7 +379,7 @@ foreach ($deletedToolName in $deletedToolNames) {
 }
 
 $sourceLines = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             '{0}|{1}' -f `
@@ -420,3 +420,4 @@ if ($errors.Count -gt 0) {
     Message                     = 'Administrator and TrustedInstaller privilege policy is valid without executing tool actions.'
     Timestamp                   = Get-Date
 }
+

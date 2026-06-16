@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -488,7 +488,7 @@ if (Test-Path -LiteralPath $loudnessPath) {
     throw 'Loudness EQ source was reintroduced.'
 }
 $nvmeSource = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Where-Object { $_.Name -like '*NVME Faster Driver*' }
 )
 if ($nvmeSource.Count -ne 0) {
@@ -496,7 +496,7 @@ if ($nvmeSource.Count -ne 0) {
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object {
         $_.FullName.Substring($root.Length + 1).Replace('\', '/')
     } |
@@ -541,3 +541,4 @@ if (
     Message                    = 'Process handling foundation is documented, inert, mock-validated, and deny-by-default.'
     Timestamp                  = Get-Date
 }
+

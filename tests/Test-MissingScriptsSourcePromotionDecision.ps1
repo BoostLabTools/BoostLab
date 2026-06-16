@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -98,6 +98,7 @@ foreach ($section in @(
     '# Missing Scripts Source Promotion Decision',
     '## Purpose',
     '## Counts',
+    '## Phase 72 Mirror Promotion Status',
     '## Promotion Decision Table',
     '## Driver Clean Decision',
     '## NVIDIA App Path B Decision',
@@ -129,8 +130,12 @@ foreach ($script in $expectedScripts) {
     }
 
     $sourceMirrorDiskPath = Join-Path $ProjectRoot ($script.SourceMirror -replace '/', '\')
-    if (Test-Path -LiteralPath $sourceMirrorDiskPath) {
-        throw "Source-promotion mirror file was created in this phase: $($script.SourceMirror)"
+    if (-not (Test-Path -LiteralPath $sourceMirrorDiskPath -PathType Leaf)) {
+        throw "Source-promotion mirror file is missing: $($script.SourceMirror)"
+    }
+    $mirrorHash = (Get-FileHash -LiteralPath $sourceMirrorDiskPath -Algorithm SHA256).Hash
+    if ($mirrorHash -ne $script.Hash) {
+        throw "Source-promotion mirror hash mismatch for $($script.SourceMirror): $mirrorHash"
     }
 }
 
@@ -197,7 +202,8 @@ foreach ($requiredPhrase in @(
     'source-ultimate/_intake-promoted/Ultimate/',
     'minimizes breakage to existing docs/tests',
     'preserves the mandatory NVIDIA Path B order',
-    'This phase does not create that folder and does not move any files'
+    'Phase 72 created that folder and copied the seven source-promoted mirror files with exact hash verification',
+    'Existing approved source files outside `_intake-promoted` remain protected by the legacy source manifest validators'
 )) {
     if (-not $decisionText.Contains($requiredPhrase)) {
         throw "Source-order reconciliation strategy is missing: $requiredPhrase"
@@ -205,9 +211,9 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'source manifest and source integrity baselines',
-    'intake validator',
-    'source-promotion decision validator',
+    'legacy source manifest validators continue to protect the original 49-file tree outside `_intake-promoted`',
+    'tests/Test-MissingScriptsSourcePromotionMirror.ps1',
+    'intake and source-promotion decision validators recognize the mirror as source-reference promotion only',
     'Count handling',
     'Rollback plan if source promotion mapping is wrong',
     'Do not implement or enable any promoted script in the same phase as source promotion',
@@ -223,8 +229,9 @@ foreach ($requiredPhrase in @(
     'Implemented tools: **30**',
     'Deferred/placeholders: **18**',
     'Intake candidates: **7 separate from official counts**',
-    'No `source-ultimate` files were modified',
-    'No `source-ultimate` files were created',
+    'Source-promoted mirror candidates: **7 separate from official counts**',
+    'No existing `source-ultimate` files outside `_intake-promoted` were modified',
+    'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
     'No tool was implemented',
     'No placeholder was enabled',
@@ -280,7 +287,7 @@ if (Test-Path -LiteralPath $loudnessPath) {
     throw 'Loudness EQ source was reintroduced.'
 }
 $nvmeMatches = @(
-    Get-ChildItem -Path $sourceRoot -Recurse -File |
+    Get-ChildItem -Path $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }
 )
 if ($nvmeMatches.Count -ne 0) {
@@ -342,7 +349,7 @@ if (
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceFiles = @(
-    Get-ChildItem -Path $sourceRoot -Recurse -File |
+    Get-ChildItem -Path $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             $relative = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
@@ -373,3 +380,4 @@ if ($sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1
     RecommendedStrategy      = 'Strategy C: source-ultimate/_intake-promoted/Ultimate/ mirror'
     Message                  = 'Missing scripts source-promotion decision is documented and remains non-executing.'
 }
+

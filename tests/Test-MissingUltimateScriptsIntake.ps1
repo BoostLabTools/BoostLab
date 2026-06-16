@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -246,7 +246,7 @@ if (Test-Path -LiteralPath $loudnessPath) {
     throw 'Loudness EQ source was reintroduced.'
 }
 $nvmeMatches = @(
-    Get-ChildItem -Path $sourceRoot -Recurse -File |
+    Get-ChildItem -Path $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }
 )
 if ($nvmeMatches.Count -ne 0) {
@@ -325,7 +325,7 @@ if ($trustedPolicy.TrustedInstallerScopes.Count -ne 0) {
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceFiles = @(
-    Get-ChildItem -Path $sourceRoot -Recurse -File |
+    Get-ChildItem -Path $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             $relative = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
@@ -355,3 +355,4 @@ if ($sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1
     SourceUltimateUnchanged  = $true
     Message                  = 'Missing Ultimate scripts intake review is documented and remains separate from official source/tool counts.'
 }
+

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -124,7 +124,7 @@ foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object {
         $_.FullName.Substring($root.Length + 1).Replace('\', '/')
     } |
@@ -161,3 +161,4 @@ if (
     Message                   = 'Deferred readiness review documents all current placeholders and their post-foundation status.'
     Timestamp                 = Get-Date
 }
+

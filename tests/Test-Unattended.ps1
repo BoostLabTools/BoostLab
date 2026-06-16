@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -452,7 +452,7 @@ foreach ($relativePath in $refusedPlaceholders) {
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
     ForEach-Object {
         '{0}|{1}' -f `
@@ -491,3 +491,4 @@ foreach ($deletedName in @('Loudness EQ', 'NVME Faster Driver')) {
     Message = 'Unattended Windows 11 artifact generation passed static and mocked validation.'
     Timestamp = Get-Date
 }
+

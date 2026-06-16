@@ -44,6 +44,10 @@ Phase 71 source-promotion planning is documented in
 remain outside the 18-tool deferred queue until a future catalog phase changes
 the official tool inventory.
 
+Phase 72 completed the mirror copy into
+`source-ultimate/_intake-promoted/Ultimate/`. The mirrored scripts are source
+references only, not implemented tools or placeholders.
+
 ## Review Inputs
 
 This review is based on:

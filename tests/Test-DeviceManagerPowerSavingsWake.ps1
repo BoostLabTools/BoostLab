@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -571,7 +571,7 @@ if (
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             '{0}|{1}' -f `
@@ -609,3 +609,4 @@ if (
     ProtectedFilesUnchanged = $true
     Message = 'Device Manager Power Savings & Wake passed static and mocked Phase 26 validation.'
 }
+

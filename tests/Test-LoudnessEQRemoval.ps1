@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -115,7 +115,7 @@ foreach ($relativePath in $protectedHashes.Keys) {
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             '{0}|{1}' -f `
@@ -167,3 +167,4 @@ foreach ($requiredText in $requiredRemovalText) {
     RemovedSourceSHA256      = '2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE'
     ProtectedFileCount       = $protectedHashes.Count
 }
+

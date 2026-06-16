@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -646,7 +646,7 @@ try {
     }
 
     $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-    $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object {
             $_.FullName.Substring($root.Length + 1).Replace('\', '/')
         } |
@@ -701,3 +701,4 @@ if ($errors.Count -gt 0) {
     Message                 = 'Reboot and recovery workflow foundation is deny-by-default and non-executing.'
     Timestamp               = Get-Date
 }
+

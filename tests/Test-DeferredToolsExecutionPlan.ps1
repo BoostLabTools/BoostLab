@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -119,7 +119,7 @@ if (-not $triageText.Contains('docs/deferred-tools-execution-plan.md')) {
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
     ForEach-Object {
         '{0}|{1}' -f `
@@ -149,3 +149,4 @@ if (@($sourceLines).Count -ne 49 -or $manifestHash -ne '4804366AADB45394EB3E8A85
     Message                = 'Deferred tools execution plan documents all remaining placeholders and their required foundations.'
     Timestamp              = Get-Date
 }
+

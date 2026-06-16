@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -245,7 +245,7 @@ try {
     }
 
     $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-    $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
         ForEach-Object {
             '{0}|{1}' -f `
@@ -286,3 +286,4 @@ finally {
     Remove-Module -ModuleInfo $safetyModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $actionPlanModule -Force -ErrorAction SilentlyContinue
 }
+

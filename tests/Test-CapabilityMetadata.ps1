@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -156,7 +156,7 @@ foreach ($deletedName in $deletedToolNames) {
 }
 
 $sourceFiles = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
         Sort-Object {
             $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/')
         }
@@ -204,3 +204,4 @@ if ($errors.Count -gt 0) {
     Message                   = 'Capability metadata and legacy source integrity are valid.'
     Timestamp                 = Get-Date
 }
+

@@ -37,6 +37,11 @@ Phase 71 source-promotion planning lives in
 source-promotion mirror under `source-ultimate/_intake-promoted/Ultimate/` and
 does not change official counts or tool behavior.
 
+Phase 72 completed the source-promotion mirror copy for all seven intake
+scripts under `source-ultimate/_intake-promoted/Ultimate/`. They remain
+source-promoted candidates only and still require future design/review before
+any implementation or catalog change.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

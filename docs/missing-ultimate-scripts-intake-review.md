@@ -167,4 +167,6 @@ Recommended next phase: **Missing Scripts Source Promotion Decision**.
 
 Phase 71 records that decision in `docs/missing-scripts-source-promotion-decision.md`. It recommends preserving original intake filenames in a future source-promotion mirror under `source-ultimate/_intake-promoted/Ultimate/` rather than renumbering existing approved source files.
 
-That future source-promotion mirror phase should not implement behavior. It should copy accepted intake scripts only if Yazan approves the mirror strategy, preserve Path B workflow metadata, and keep standalone DDU, DDU execution, downloads, artifacts, and driver-cleaning behavior unapproved.
+Phase 72 completed that mirror copy for all seven candidates under `source-ultimate/_intake-promoted/Ultimate/`. The original intake files remain preserved for intake history. This source promotion is not implementation, catalog promotion, placeholder enablement, or production approval.
+
+Future catalog/design phases must preserve Path B workflow metadata and keep standalone DDU, DDU execution, downloads, artifacts, and driver-cleaning behavior unapproved until explicitly approved.

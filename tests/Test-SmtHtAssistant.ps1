@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -307,7 +307,7 @@ if ($implementedCount -ne 30 -or $placeholderCount -ne 18) {
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
     ForEach-Object {
         '{0}|{1}' -f `
@@ -342,3 +342,4 @@ if (
     Message                 = 'SMT / HT Assistant behavior and mocked verification were validated without changing live process affinity.'
     Timestamp               = Get-Date
 }
+

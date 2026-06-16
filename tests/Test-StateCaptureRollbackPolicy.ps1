@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -614,7 +614,7 @@ try {
     }
 
     $sourceLines = @(
-        Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
+        Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
             Sort-Object { $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/') } |
             ForEach-Object {
                 '{0}|{1}' -f `
@@ -683,3 +683,4 @@ if ($errors.Count -gt 0) {
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
     Timestamp                = Get-Date
 }
+
