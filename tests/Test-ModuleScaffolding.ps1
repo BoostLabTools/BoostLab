@@ -149,6 +149,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\NetworkAdapterPowerSavingsWake.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'write-cache-buffer-flushing' = @{
+        RelativePath          = 'Windows\write-cache-buffer-flushing.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+    }
     'power-plan' = @{
         RelativePath          = 'Windows\PowerPlan.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -359,6 +363,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'unattended' -and
             $commandName -in @('Set-Content', 'Remove-Item')
         )
+        $approvedWriteCacheCommand = (
+            $toolId -eq 'write-cache-buffer-flushing' -and
+            $commandName -eq 'New-ItemProperty'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -368,7 +376,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedStartMenuLayoutCommand -and
             -not $approvedContextMenuCommand -and
             -not $approvedNotepadSettingsCommand -and
-            -not $approvedUnattendedCommand
+            -not $approvedUnattendedCommand -and
+            -not $approvedWriteCacheCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -431,6 +440,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'network-adapter-power-savings-wake') {
+            0
+        }
+        elseif ($toolId -eq 'write-cache-buffer-flushing') {
             0
         }
         elseif ($toolId -eq 'power-plan') {
@@ -853,6 +865,44 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Network Adapter Power Savings & Wake behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'write-cache-buffer-flushing') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+                'HKLM:\SYSTEM\ControlSet001\Enum'
+                'SCSI'
+                'NVME'
+                'CacheIsPowerProtected'
+                'New-BoostLabRegistryStateCapture'
+                'Set-BoostLabRollbackMutationState'
+                'SupportsDefault           = $false'
+                'SupportsRestore           = $false'
+                'CanModifyDrivers          = $false'
+                'function Test-BoostLabWriteCacheState'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Write Cache Buffer Flushing behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'reg delete'
+                'Remove-ItemProperty'
+                'Remove-Item -LiteralPath'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Set-Service'
+                'Stop-Service'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'UsesTrustedInstaller      = $true'
+                'UsesSafeMode              = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or unsafe Write Cache behavior: $forbiddenText")
                 }
             }
         }

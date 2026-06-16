@@ -12,8 +12,8 @@ now lives in `docs/deferred-tool-readiness-review.md`.
 Current inventory at the time of this plan:
 
 * Active approved tools: **48**
-* Implemented tools: **29**
-* Remaining placeholders: **19**
+* Implemented tools: **30**
+* Remaining placeholders: **18**
 * Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
 
 ## Product Scope Context
@@ -49,7 +49,7 @@ In practice, every tool in this document is both still a placeholder and current
 | `game-bar` | GameBar | Windows | `source-ultimate/6 Windows/12 Gamebar.ps1` | `8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59` | Refused | TrustedInstaller execution framework | Full source removes AppX, uninstalls GameInput, changes services/protocols, downloads repair tools, and uses TrustedInstaller. | AppX/package inventory and restore framework; TrustedInstaller execution framework; download provenance and installer execution policies; service state capture and rollback | No scope exception | `GameBar and Gaming Services Repair` | Yes |
 | `edge-webview` | Edge & WebView | Windows | `source-ultimate/6 Windows/13 Edge & WebView.ps1` | `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691` | Refused | Destructive cleanup policy | Removes Edge/WebView files and services, changes RunOnce, and downloads repair installers. | Download provenance and checksum/signature policy; installer execution policy; service state capture and rollback; destructive cleanup policy; file/registry state capture and rollback | No scope exception | `Edge and WebView Removal/Repair` | Yes |
 | `control-panel-settings` | Control Panel Settings | Windows | `source-ultimate/6 Windows/15 Control Panel Settings.ps1` | `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | Refused | TrustedInstaller execution framework | Very large optimization source with services, deletion, security-sensitive policy, and TrustedInstaller. Current `Open` metadata understates risk. | TrustedInstaller execution framework; service state capture and rollback; file/registry state capture and rollback; destructive cleanup policy | No scope exception | `Control Panel Settings Decomposition` | Yes |
-| `write-cache-buffer-flushing` | Write Cache Buffer Flushing | Windows | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1` | `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | Refused | File/registry state capture and rollback | Source `Default` deletes complete device `Disk` subkeys rather than only the value written by Apply, and references deleted NVME Faster Driver context. | File/registry state capture and rollback; destructive cleanup policy | No scope exception; NVME Faster Driver must remain deleted | `Storage Write Cache Safety Review` | Yes |
+| `write-cache-buffer-flushing` | Write Cache Buffer Flushing | Windows | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1` | `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | Implemented in Phase 47 | File/registry state capture and rollback | Phase 47 preserves Apply with exact value capture and refuses source Default because it deletes complete device `Disk` subkeys. | Future Restore would require a reviewed captured-state selection flow; Default remains unavailable. | No scope exception; NVME Faster Driver must remain deleted | `Storage Write Cache Restore Review` | No |
 | `cleanup` | Cleanup | Windows | `source-ultimate/6 Windows/22 Cleanup.ps1` | `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Refused | Destructive cleanup policy | Recursively deletes temp data, `Windows.old`, `inetpub`, `PerfLogs`, and dumps with no approved rollback path. | Destructive cleanup policy; file/registry state capture and rollback | No scope exception | `Cleanup Inventory and Confirmation` | Yes |
 | `resizable-bar-assistant` | Resizable BAR Assistant | Advanced | `source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1` | `E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443` | Refused | Driver state capture and rollback | NVIDIA-only in scope, but still downloads NVIDIA Inspector, imports driver profiles, and includes firmware restart. | Download provenance and checksum/signature policy; driver state capture and rollback; reboot/recovery workflow | AMD and Intel remain disabled; NVIDIA-only path could be revisited later | `Resizable BAR Driver and Firmware Assistant` | Yes |
 | `services-optimizer` | Services Optimizer | Advanced | `source-ultimate/8 Advanced/5 Services Optimizer.ps1` | `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Refused | Safe Mode recovery/resume framework | Heavy multi-stage privileged workflow with Safe Mode, TrustedInstaller, RunOnce, service/security changes, deletion, and reboot behavior. | Safe Mode recovery/resume framework; TrustedInstaller execution framework; service state capture and rollback; reboot/recovery workflow | No scope exception | `Services Optimizer Recovery Architecture` | Yes |
@@ -222,8 +222,11 @@ Affected tools:
 * `start-menu-taskbar`
 * `edge-settings`
 * `edge-webview`
-* `write-cache-buffer-flushing`
 * `control-panel-settings`
+
+`write-cache-buffer-flushing` used this foundation in Phase 47 for Apply-only
+value capture. It is no longer a remaining placeholder, but any future Restore
+still needs a reviewed captured-state selection flow.
 
 ### Destructive cleanup policy
 
@@ -238,10 +241,12 @@ Affected tools:
 * `driver-install-debloat-settings`
 * `edge-webview`
 * `cleanup`
-* `write-cache-buffer-flushing`
 * `control-panel-settings`
 * `bloatware`
 * `timer-resolution-assistant`
+
+`write-cache-buffer-flushing` no longer depends on destructive cleanup policy
+for Phase 47 because the source Default broad `Disk` key deletion was refused.
 
 ### Reboot/recovery workflow
 

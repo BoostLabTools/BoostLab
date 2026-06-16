@@ -36,8 +36,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **48**
-* Implemented tools: **29**
-* Deferred/placeholders: **19**
+* Implemented tools: **30**
+* Deferred/placeholders: **18**
 
 ## Category Definitions
 
@@ -58,7 +58,7 @@ Current inventory:
 ## Readiness Summary
 
 * Not ready: **3**
-* Foundation-ready but needs production allowlists: **4**
+* Foundation-ready but needs production allowlists: **3**
 * Foundation-ready but needs artifact provenance approvals: **8**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
@@ -85,7 +85,7 @@ Current inventory:
 | Services Optimizer | `services-optimizer` | Advanced | Refused placeholder | Heavy Safe Mode, TrustedInstaller, service, security, deletion, and reboot workflow | Service rollback, reboot workflow, TrustedInstaller policy, Safe Mode policy, cleanup policy | No approved production service scopes, no approved Safe Mode scope, no approved TI scope, no tool-specific recovery design | Exact service scopes, exact TI scopes, exact Safe Mode scope, exact cleanup scopes | No | Foundation-ready but needs tool-specific design | Design the exact staged workflow and rollback/recovery model before any implementation retry |
 | Timer Resolution Assistant | `timer-resolution-assistant` | Advanced | Refused placeholder | Builds a binary, creates a service, and deletes scoped files | Service rollback, cleanup policy, download/installer provenance model | No approved artifact provenance for the built/distributed binary, no approved service scope, no approved cleanup scope | Exact artifact/binary provenance, exact service scope, exact cleanup scope | No | Foundation-ready but needs artifact provenance approvals | Decide the approved binary provenance strategy before another attempt |
 | Defender Optimize Assistant | `defender-optimize-assistant` | Advanced | Refused placeholder | Security-sensitive Safe Mode, TrustedInstaller, service, deletion, and reboot workflow | Service rollback, reboot workflow, TrustedInstaller policy, Safe Mode policy, cleanup policy | No approved security-sensitive scopes, no approved TI scope, no approved Safe Mode scope, no tool-specific recovery design | Exact service/TI/Safe Mode/cleanup scopes plus security verification plan | No | Foundation-ready but needs tool-specific design | Keep deferred until a security-specific migration design is approved end to end |
-| Write Cache Buffer Flushing | `write-cache-buffer-flushing` | Windows | Refused placeholder | Apply writes one value; source Default deletes broad disk subkeys | File/registry rollback and cleanup policy | No approved exact registry scope, no approved decision on whether unsafe Default is preserved or replaced by captured restore | Exact registry scope and explicit Yazan decision on source Default versus captured-state restore | No | Foundation-ready but needs production allowlists | Decide the approved inverse behavior first, then scope the exact storage keys |
+| Write Cache Buffer Flushing | `write-cache-buffer-flushing` | Windows | Implemented in Phase 47 | Apply writes one value; source Default deletes broad disk subkeys | File/registry rollback and cleanup policy | Restore remains unavailable until a reviewed captured-state selection flow exists | None for Phase 47 Apply; future Restore would need exact captured-state selection and verification rules | Complete | Phase 47 complete | Apply is implemented with pre-change value capture; Default remains refused because it would delete complete storage `Disk` keys |
 
 ## Readiness Categories
 
@@ -106,7 +106,6 @@ but they still need exact bounded production scopes:
 * Updates Drivers Block
 * Start Menu Taskbar
 * Cleanup
-* Write Cache Buffer Flushing
 
 ### Foundation-ready but needs artifact provenance approvals
 
@@ -144,9 +143,7 @@ In conservative order:
 
 1. `Start Menu Taskbar`
    Needs exact owned file/registry scope and rollback decisions, but no new foundation category.
-2. `Write Cache Buffer Flushing`
-   Needs an explicit product decision on source Default versus captured-state restore.
-3. `Cleanup`
+2. `Cleanup`
    Needs exact target ownership and quarantine/delete choices before implementation can be attempted safely.
 
 DirectX was removed from the candidate list by the Phase 45 provenance review.

@@ -372,8 +372,8 @@ try {
     )
     if (
         $allModules.Count -ne 48 -or
-        $implementedModules.Count -ne 29 -or
-        $placeholderModules.Count -ne 19
+        $implementedModules.Count -ne 30 -or
+        $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -457,8 +457,8 @@ if ($errors.Count -gt 0) {
     HashMismatchBlocked     = $true
     ConfirmationRequired    = $true
     InstallerExecuted       = $false
-    ImplementedModuleCount  = 29
-    PlaceholderModuleCount  = 19
+    ImplementedModuleCount  = 30
+    PlaceholderModuleCount  = 18
     SourceUltimateUnchanged = $true
     Message                 = 'Download provenance and installer execution policies are valid and inert.'
     Timestamp               = Get-Date

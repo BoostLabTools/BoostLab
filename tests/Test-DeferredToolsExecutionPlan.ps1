@@ -54,8 +54,8 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($placeholderTools.Count -ne 19) {
-    throw "Expected 19 remaining placeholder tools, found $($placeholderTools.Count)."
+if ($placeholderTools.Count -ne 18) {
+    throw "Expected 18 remaining placeholder tools, found $($placeholderTools.Count)."
 }
 
 foreach ($requiredSection in @(

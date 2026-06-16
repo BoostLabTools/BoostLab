@@ -423,7 +423,7 @@ $implementedCount = @(
         Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }
 ).Count
 $placeholderCount = 48 - $implementedCount
-if ($implementedCount -ne 29 -or $placeholderCount -ne 19) {
+if ($implementedCount -ne 30 -or $placeholderCount -ne 18) {
     throw "Unexpected Phase 33 inventory: $implementedCount implemented, $placeholderCount placeholders."
 }
 
@@ -435,7 +435,6 @@ $refusedPlaceholders = @(
     'Windows\game-bar.psm1'
     'Windows\edge-webview.psm1'
     'Windows\control-panel-settings.psm1'
-    'Windows\write-cache-buffer-flushing.psm1'
     'Windows\cleanup.psm1'
     'Advanced\resizable-bar-assistant.psm1'
     'Advanced\services-optimizer.psm1'

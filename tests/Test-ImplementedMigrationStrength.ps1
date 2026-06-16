@@ -167,6 +167,11 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Windows\NetworkAdapterPowerSavingsWake.psm1'
         LegacyHash = '1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB'
     }
+    'Write Cache Buffer Flushing' = @{
+        LegacyPath = 'source-ultimate\6 Windows\20 Write Cache Buffer Flushing.ps1'
+        ModulePath = 'modules\Windows\write-cache-buffer-flushing.psm1'
+        LegacyHash = '67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D'
+    }
     'Power Plan' = @{
         LegacyPath = 'source-ultimate\6 Windows\21 Power Plan.ps1'
         ModulePath = 'modules\Windows\PowerPlan.psm1'
@@ -809,6 +814,53 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Network Adapter Power Savings & Wake contains unrelated behavior: $forbiddenText"
+                }
+            }
+        }
+        'Write Cache Buffer Flushing' {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+                'HKLM:\SYSTEM\ControlSet001\Enum'
+                'SCSI'
+                'NVME'
+                'Device Parameters'
+                'Disk'
+                'CacheIsPowerProtected'
+                '$script:BoostLabCacheExpectedValue = 1'
+                'New-BoostLabRegistryStateCapture'
+                'Set-BoostLabRollbackMutationState'
+                'SupportsDefault           = $false'
+                'SupportsRestore           = $false'
+                'function Test-BoostLabWriteCacheState'
+                'Default is refused because it deletes entire storage Disk registry keys.'
+            )) {
+                if (-not $moduleSource.Contains($requiredText)) {
+                    throw "Write Cache Buffer Flushing preserved behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                'reg delete'
+                'Remove-ItemProperty'
+                'Remove-Item -LiteralPath'
+                'Disable-PnpDevice'
+                'Uninstall-PnpDevice'
+                'pnputil'
+                'devcon'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Stop-Process'
+                'Remove-AppxPackage'
+                'UsesTrustedInstaller      = $true'
+                'UsesSafeMode              = $true'
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "Write Cache Buffer Flushing contains unrelated or unsafe behavior: $forbiddenText"
                 }
             }
         }

@@ -452,11 +452,11 @@
                     Title       = 'Write Cache Buffer Flushing'
                     Stage       = 'Windows'
                     Order       = 20
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Analyze storage hardware before changing write-cache buffer flushing.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Analyze and apply the approved storage write-cache buffer flushing registry value with captured prior state.'
+                    Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'power-plan'

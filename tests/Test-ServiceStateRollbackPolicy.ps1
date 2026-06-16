@@ -658,8 +658,8 @@ try {
     )
     if (
         $allModules.Count -ne 48 -or
-        $implementedModules.Count -ne 29 -or
-        $placeholderModules.Count -ne 19
+        $implementedModules.Count -ne 30 -or
+        $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), " +
@@ -753,8 +753,8 @@ if ($errors.Count -gt 0) {
     MockServiceRollbackPassed     = $true
     RollbackFailureReported       = $true
     LiveServiceCommandsPresent    = $false
-    ImplementedModuleCount        = 29
-    PlaceholderModuleCount        = 19
+    ImplementedModuleCount        = 30
+    PlaceholderModuleCount        = 18
     SourceUltimateUnchanged       = $true
     Message                       = 'Service state capture and rollback is exact, guarded, mocked, and deny-by-default.'
     Timestamp                     = Get-Date

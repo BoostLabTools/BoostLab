@@ -116,6 +116,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\NetworkAdapterPowerSavingsWake.psm1'
         Actions = @('Apply', 'Default')
     }
+    'write-cache-buffer-flushing' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\write-cache-buffer-flushing.psm1'
+        Actions = @('Analyze', 'Apply')
+    }
     'power-plan' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\PowerPlan.psm1'
         Actions = @('Apply', 'Default')
@@ -302,6 +306,63 @@ function New-BoostLabToolActionResult {
     }
 }
 
+function New-BoostLabWriteCacheUnsupportedScopeRuntimeResult {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ToolId,
+
+        [Parameter(Mandatory)]
+        [string]$ToolTitle,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    $verification = New-BoostLabVerificationResult `
+        -ToolId $ToolId `
+        -ToolTitle $ToolTitle `
+        -Action $ActionName `
+        -Status 'NotApplicable' `
+        -ExpectedState 'Windows 11 host for storage optimization actions' `
+        -DetectedState 'Unsupported host for this optimization tool' `
+        -Checks @(
+            New-BoostLabVerificationCheck `
+                -Name 'Product scope' `
+                -Expected 'Windows 11 optimization host' `
+                -Actual 'Unsupported host for Write Cache Buffer Flushing' `
+                -Status 'NotApplicable' `
+                -Message $Message
+        ) `
+        -Message $Message
+
+    return [pscustomobject]@{
+        Success            = $true
+        Status             = 'NotApplicable'
+        ToolId             = $ToolId
+        ToolTitle          = $ToolTitle
+        Action             = $ActionName
+        Message            = $Message
+        RestartRequired    = $false
+        Cancelled          = $false
+        Errors             = @()
+        Data               = [pscustomobject]@{
+            SupportedProductScope  = $false
+            CommandStatus          = 'Not applicable'
+            VerificationStatus     = 'NotApplicable'
+            ChangesExecuted        = $false
+            TargetDiscoveryRun     = $false
+            CaptureAttempted       = $false
+            RegistryWriteAttempted = $false
+            Errors                 = @()
+        }
+        VerificationResult = $verification
+        Timestamp          = Get-Date
+    }
+}
+
 function Invoke-BoostLabImplementedModuleAction {
     param(
         [Parameter(Mandatory)]
@@ -383,6 +444,14 @@ function Invoke-BoostLabImplementedModuleAction {
 
         $compatibility = & $compatibilityCommand
         if (-not [bool]$compatibility.Supported) {
+            if ($toolId -eq 'write-cache-buffer-flushing') {
+                return New-BoostLabWriteCacheUnsupportedScopeRuntimeResult `
+                    -ToolId $toolId `
+                    -ToolTitle $toolTitle `
+                    -ActionName $ActionName `
+                    -Message ([string]$compatibility.Reason)
+            }
+
             return New-BoostLabToolActionResult `
                 -Success $false `
                 -ToolId $toolId `

@@ -84,6 +84,52 @@ function Test-BoostLabPlanNeedsConfirmation {
     )
 }
 
+function Test-BoostLabWriteCacheActionPlanProductScope {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    $productName = 'Windows'
+    $buildNumber = [Environment]::OSVersion.Version.Build
+
+    try {
+        $currentVersion = Get-ItemProperty `
+            -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' `
+            -ErrorAction Stop
+        $productName = [string]$currentVersion.ProductName
+        $buildNumber = [int]$currentVersion.CurrentBuildNumber
+
+        if ($buildNumber -ge 22000 -and $productName -like 'Windows 10*') {
+            $productName = $productName -replace '^Windows 10', 'Windows 11'
+        }
+    }
+    catch {
+        # The plan falls back to the process-reported build and remains conservative.
+    }
+
+    $isWindows10 = $productName -match 'Windows 10' -or ($buildNumber -ge 10240 -and $buildNumber -lt 22000)
+    $isWindows11 = $productName -match 'Windows 11' -or ($buildNumber -ge 22000 -and $productName -notmatch 'Server')
+    $supported = $isWindows11 -and -not $isWindows10
+    $reason = if ($supported) {
+        'Windows 11 host is within BoostLab product scope for this optimization tool.'
+    }
+    elseif ($isWindows10) {
+        'Windows 10 optimization is outside BoostLab product scope. Write Cache Buffer Flushing is not a Windows 11 preparation, migration, or refresh tool.'
+    }
+    else {
+        'This host is outside BoostLab product scope for Write Cache Buffer Flushing.'
+    }
+
+    return [pscustomobject]@{
+        Supported   = $supported
+        ProductName = $productName
+        Build       = $buildNumber
+        IsWindows10 = $isWindows10
+        IsWindows11 = $isWindows11
+        Reason      = $reason
+    }
+}
+
 function New-BoostLabActionPlan {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -118,15 +164,32 @@ function New-BoostLabActionPlan {
     }
 
     $capabilities = ConvertTo-BoostLabCapabilityObject -Capabilities $ToolMetadata['Capabilities']
+    $productScope = if ($toolId -eq 'write-cache-buffer-flushing') {
+        Test-BoostLabWriteCacheActionPlanProductScope
+    }
+    else {
+        $null
+    }
+    $isProductScopeNotApplicable = (
+        $toolId -eq 'write-cache-buffer-flushing' -and
+        $null -ne $productScope -and
+        -not [bool]$productScope.Supported
+    )
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
         -ActionName $ActionName
+    if ($isProductScopeNotApplicable) {
+        $needsConfirmation = $false
+    }
     if ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
         $needsConfirmation = $false
     }
 
-    $summary = if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+    $summary = if ($isProductScopeNotApplicable) {
+        'This Windows optimization tool is not applicable on the current host; no registry discovery, capture, or write will run.'
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
         'Review the approved Windows 11 unattended setup payload without creating files.'
     }
     elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
@@ -204,6 +267,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
         'Restore the approved default state by removing only the source-defined adapter power and wake values.'
     }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Analyze') {
+        'Analyze the source-targeted SCSI and NVME storage registry paths without changing write-cache buffer flushing.'
+    }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
+        'Set CacheIsPowerProtected to 1 on source-targeted storage Disk registry paths after capturing each prior value state.'
+    }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         'Apply the source-defined Ultimate power scheme, registry values, hibernation state, and power settings.'
     }
@@ -261,7 +330,12 @@ function New-BoostLabActionPlan {
     }
 
     $plannedChanges = [System.Collections.Generic.List[string]]::new()
-    if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+    if ($isProductScopeNotApplicable) {
+        $plannedChanges.Add([string]$productScope.Reason)
+        $plannedChanges.Add('Do not enumerate HKLM storage registry paths on this unsupported host.')
+        $plannedChanges.Add('Do not capture registry state and do not write CacheIsPowerProtected.')
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read Windows version and removable-media availability without creating or deleting files.')
         $plannedChanges.Add('Display the exact source-defined Windows Setup, local account, OOBE, and hardware-bypass behavior.')
         $plannedChanges.Add('Report that Windows 10 may host this Windows 11 preparation workflow while Windows 10 optimization branches remain unsupported.')
@@ -406,6 +480,18 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Remove only the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
         $plannedChanges.Add('Treat already-absent values as default and verify every unique value on every detected adapter key.')
     }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Enumerate source-targeted Device Parameters keys under HKLM:\SYSTEM\ControlSet001\Enum\SCSI and NVME.')
+        $plannedChanges.Add('Report whether each detected Disk child key has CacheIsPowerProtected set, absent, or unreadable.')
+        $plannedChanges.Add('Make no registry changes and expose no Default key deletion.')
+    }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Enumerate the same source-targeted SCSI and NVME Device Parameters paths and validate the exact Disk child path.')
+        $plannedChanges.Add('Capture the prior CacheIsPowerProtected existence, type, and data for every target before any write.')
+        $plannedChanges.Add('Set only CacheIsPowerProtected to REG_DWORD 1 on each captured target.')
+        $plannedChanges.Add('Verify each changed value and record post-mutation evidence for future review.')
+        $plannedChanges.Add('Do not run the Ultimate Default broad Disk-key deletion.')
+    }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Duplicate Ultimate Performance to the source GUID 99999999-9999-9999-9999-999999999999 and activate it.')
         $plannedChanges.Add('Enumerate and delete the other power schemes exactly as Ultimate does; user-created custom schemes cannot be restored by Default.')
@@ -529,7 +615,11 @@ function New-BoostLabActionPlan {
     }
 
     $sideEffects = [System.Collections.Generic.List[string]]::new()
-    if ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
+    if ($isProductScopeNotApplicable) {
+        $sideEffects.Add('No system changes are planned because this tool is outside product scope on the current host.')
+        $sideEffects.Add('No Administrator execution, registry discovery, registry capture, or registry write is required.')
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No files are created, moved, overwritten, or deleted.')
         $sideEffects.Add('The analysis distinguishes an allowed Windows 10 host from unsupported Windows 10 optimization branches.')
     }
@@ -650,6 +740,11 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No unrelated adapter properties or registry values are removed.')
         $sideEffects.Add('Device Manager, adapter refresh, or sign-out may be needed before every visible driver UI state updates; no restart is performed.')
     }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Storage write-cache buffer flushing policy may change for detected SCSI and NVME disk registry paths.')
+        $sideEffects.Add('Only CacheIsPowerProtected is written; no driver, service, device, or reboot action is performed.')
+        $sideEffects.Add('The unsafe Ultimate Default broad Disk-key deletion is not implemented; captured value state is retained for future review.')
+    }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Ultimate deletes every enumerated non-active power scheme. Existing custom power schemes are not captured and cannot be restored by Default.')
         $sideEffects.Add('Hibernation, Fast Startup, lock and sleep menu options, power throttling, sleep timers, battery protection actions, and many AC/DC settings are changed.')
@@ -749,7 +844,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No system-changing side effects are declared for this action.')
     }
 
-    $confirmationMessage = if ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
+    $confirmationMessage = if ($isProductScopeNotApplicable) {
+        'No confirmation is required because this tool is not applicable on the current host and no changes will be executed.'
+    }
+    elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
         'BoostLab will create the approved Windows 11 autounattend.xml on selected removable media. The file creates a blank-password local administrator, skips OOBE, disables Dynamic Update, and bypasses TPM, RAM, Secure Boot, CPU, and storage checks. Existing source-targeted files will be backed up first. No installation or reboot starts now. Do you want to continue?'
     }
     elseif ($toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open') {
@@ -824,6 +922,9 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Default') {
         'BoostLab will remove only the 14 approved network adapter power-saving and wake values and verify their default absent state. No adapter will be disabled and no restart is required. Do you want to continue?'
     }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
+        'BoostLab will capture the exact prior CacheIsPowerProtected value state on every detected source-targeted SCSI/NVME Disk path, then set only that value to REG_DWORD 1 and verify it. No driver change, broad key deletion, or reboot is performed. Do you want to continue?'
+    }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         'BoostLab will activate the approved Ultimate scheme, permanently delete other enumerated power schemes, disable hibernation, apply 36 AC/DC setting pairs and 10 registry values, and set battery warnings/actions/levels to zero. Custom schemes are not captured and Default cannot restore them. No restart is performed. Do you want to continue?'
     }
@@ -859,7 +960,10 @@ function New-BoostLabActionPlan {
     }
 
     $privilegeRequirements = [System.Collections.Generic.List[string]]::new()
-    if ($capabilities.RequiresAdmin) {
+    if ($isProductScopeNotApplicable) {
+        $privilegeRequirements.Add('No Administrator execution required because no action will run on this unsupported host.')
+    }
+    elseif ($capabilities.RequiresAdmin) {
         $privilegeRequirements.Add('Administrator required')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -878,7 +982,7 @@ function New-BoostLabActionPlan {
         Summary                   = $summary
         PlannedChanges            = $plannedChanges.ToArray()
         SideEffects               = $sideEffects.ToArray()
-        RequiresAdmin             = [bool]$capabilities.RequiresAdmin
+        RequiresAdmin             = if ($isProductScopeNotApplicable) { $false } else { [bool]$capabilities.RequiresAdmin }
         UsesTrustedInstaller      = [bool]$capabilities.UsesTrustedInstaller
         UsesSafeMode              = [bool]$capabilities.UsesSafeMode
         PrivilegeRequirements     = $privilegeRequirements.ToArray()

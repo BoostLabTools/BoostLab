@@ -29,8 +29,8 @@ The intent is that unsupported branches remain disabled, visual-only, or not imp
 ## A. Summary
 
 * Active approved tools: **48**
-* Implemented modules: **29**
-* Placeholder modules: **19**
+* Implemented modules: **30**
+* Placeholder modules: **18**
 * Permanently deleted in Phase 25: **Loudness EQ**
 * Missing module files: **0**
 * Missing source mappings: **0**
@@ -100,7 +100,6 @@ These mismatches are documented here rather than changed during this planning-on
 * **GameBar:** AppX removal/re-registration, GameInput uninstall, service/process handling, TrustedInstaller, downloads, and repair installers.
 * **Edge & WebView:** broad file deletion, service deletion, RunOnce changes, downloads, and reinstall behavior.
 * **Control Panel Settings:** very large policy set with services, security-sensitive changes, deletion, and TrustedInstaller.
-* **Write Cache Buffer Flushing:** modifies storage-device registry state; source Default deletes complete `Disk` subkeys rather than only the value written by Apply.
 * **Power Plan:** deletes all enumerated power schemes, disables hibernation, changes battery safety behavior, and cannot restore custom previous schemes.
 * **Cleanup:** recursively deletes temporary data, `Windows.old`, `inetpub`, `PerfLogs`, and dump files without a restore path.
 * **Resizable BAR Assistant:** downloads and executes NVIDIA Inspector profiles, changes driver profile behavior, and includes firmware restart.
@@ -132,7 +131,7 @@ These mismatches are documented here rather than changed during this planning-on
 | Notepad Settings | Windows | `modules/Windows/notepad-settings.psm1` | `source-ultimate/6 Windows/14 Notepad Settings.ps1`<br>`2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB` | Notepad process stop; mounted app settings hive; file write/delete | Implemented | Phase 32 preserves Apply and Default with explicit confirmation, a verified pre-change backup, scoped state capture, and structured verification. | Yes | No; no Restore action is claimed | Phase 32 complete |
 | Control Panel Settings | Windows | `modules/Windows/control-panel-settings.psm1` | `source-ultimate/6 Windows/15 Control Panel Settings.ps1`<br>`B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | HKCU/HKLM/HKCR; services; security policy; deletion; TrustedInstaller | Deferred | Nearly 3,000 lines of broad policy and settings behavior. Current `Open` metadata is inaccurate. | Yes | No | Phase: Control Panel Settings Decomposition |
 | Network Adapter Power Savings & Wake | Windows | `modules/Windows/network-adapter-power-savings-wake.psm1` | `source-ultimate/6 Windows/19 Network Adapter Power Savings & Wake.ps1`<br>`1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB` | Broad dynamic HKLM adapter registry | Medium | Writes/removes 14 adapter power/wake values per detected adapter. Current `Open` metadata is inaccurate. | Yes | No | Phase: Network Adapter Power and Wake |
-| Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Deferred | Apply writes one value, but Default deletes entire device `Disk` subkeys. Source also references the intentionally deleted NVME Faster Driver tool. | Yes, but unsafe | Yes; approve a value-only Default or captured-state Restore | Phase: Storage Write Cache Safety Review |
+| Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Implemented | Phase 47 preserves Apply with exact pre-change value capture and refuses the unsafe source Default broad `Disk` key deletion. Source also references the intentionally deleted NVME Faster Driver tool, which remains deleted. | Yes, but unsafe | No Default is exposed; future Restore would require reviewed captured-state selection | Phase 47 complete |
 | Power Plan | Windows | `modules/Windows/power-plan.psm1` | `source-ultimate/6 Windows/21 Power Plan.ps1`<br>`97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56` | HKLM power policy; extensive `powercfg`; power-scheme deletion; UI launch | Deferred | Deletes all enumerated schemes, disables hibernation, and sets battery warnings/actions/levels to zero. Default cannot restore custom prior schemes. | Yes | Yes for true Restore; source Default only restores Windows schemes | Phase: Power Plan Capture, Apply, and Rollback |
 | Cleanup | Windows | `modules/Windows/cleanup.psm1` | `source-ultimate/6 Windows/22 Cleanup.ps1`<br>`3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Broad recursive file deletion | Deferred | Deletes user/system temp contents, `inetpub`, `PerfLogs`, `Windows.old`, and `DumpStack.log`; no rollback. | No | No practical inverse | Phase: Cleanup Inventory and Confirmation |
 | MMAgent Assistant | Advanced | `modules/Advanced/mmagent-assistant.psm1` | `source-ultimate/8 Advanced/2 MMAgent Assistant.ps1`<br>`C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79` | HKLM registry; MMAgent commands; read-only check | Medium | Focused but multi-setting system behavior. Source Default intentionally leaves MemoryCompression and PageCombining disabled, so “Default” must preserve that approved meaning. | Yes | No | Phase: MMAgent Analysis and Toggle |
@@ -170,6 +169,10 @@ Phase 32 implemented the source-defined Apply and Default behavior with exact No
 ### Unattended
 
 Phase 33 implemented the source-defined Windows 11 `autounattend.xml` generation workflow with Analyze and confirmed Apply actions. It preserves the complete Ultimate XML payload, account substitution, temporary-file sequence, removable-media destination, and folder launch while adding verified backup and ownership state before any overwrite. Windows 10 and Windows 11 may host this Windows 11 preparation workflow; Windows 10 optimization branches remain unsupported. No Default or Restore action is claimed. See `docs/migrations/unattended.md`.
+
+### Write Cache Buffer Flushing
+
+Phase 47 implemented the source-defined Windows 11 Apply behavior with exact SCSI/NVME target discovery, pre-change `CacheIsPowerProtected` value capture, explicit confirmation, and structured verification. Because this is a storage optimization tool rather than a Windows 11 preparation workflow, Windows 10 hosts receive `NotApplicable` before registry discovery or mutation. The source Default broad `Disk` key deletion is refused, and no Restore action is claimed until a captured-state selection flow is approved. See `docs/migrations/write-cache-buffer-flushing.md`.
 
 ## E. Permanently Deleted Tools
 
@@ -221,8 +224,8 @@ A policy-only implementation would weaken Ultimate behavior. The full source req
 In recommended order:
 
 1. **Timer Resolution Assistant**, after approving service creation, binary provenance, and cleanup expectations
-2. **Write Cache Buffer Flushing**, after deciding whether Default preserves the unsafe full-key deletion or narrows to owned values only
-3. **Edge Settings**, only after download provenance, service deletion, RunOnce recovery, and repair behavior are approved
+2. **Edge Settings**, only after download provenance, service deletion, RunOnce recovery, and repair behavior are approved
+3. **Cleanup**, after approving exact cleanup ownership, quarantine/delete choices, and verification rules
 
 Timer Resolution is the strongest remaining medium-risk candidate in this historical queue. Every listed item still requires a dedicated safety decision before implementation.
 

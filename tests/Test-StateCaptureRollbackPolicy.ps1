@@ -545,13 +545,30 @@ try {
             $errors.Add("Existing tool runtime was wired to the Phase 36 helper: $newHelperName")
         }
     }
+    $approvedPhase36CaptureConsumers = @(
+        Join-Path $modulesRoot 'Windows\write-cache-buffer-flushing.psm1'
+    )
     foreach ($module in Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1') {
         $moduleSource = Get-Content -LiteralPath $module.FullName -Raw
+        $isApprovedCaptureConsumer = $module.FullName -in $approvedPhase36CaptureConsumers
         if (
-            $moduleSource.Contains('New-BoostLabFileStateCapture') -or
-            $moduleSource.Contains('New-BoostLabRegistryStateCapture') -or
-            $moduleSource.Contains('Invoke-BoostLabFileRollback') -or
-            $moduleSource.Contains('Invoke-BoostLabRegistryRollback')
+            $isApprovedCaptureConsumer -and
+            (
+                $moduleSource.Contains('New-BoostLabFileStateCapture') -or
+                $moduleSource.Contains('Invoke-BoostLabFileRollback') -or
+                $moduleSource.Contains('Invoke-BoostLabRegistryRollback')
+            )
+        ) {
+            $errors.Add("Approved Phase 36 capture consumer used rollback or file-capture behavior: $($module.FullName)")
+        }
+        if (
+            -not $isApprovedCaptureConsumer -and
+            (
+                $moduleSource.Contains('New-BoostLabFileStateCapture') -or
+                $moduleSource.Contains('New-BoostLabRegistryStateCapture') -or
+                $moduleSource.Contains('Invoke-BoostLabFileRollback') -or
+                $moduleSource.Contains('Invoke-BoostLabRegistryRollback')
+            )
         ) {
             $errors.Add("Tool module was wired to the Phase 36 foundation: $($module.FullName)")
         }
@@ -573,8 +590,8 @@ try {
     )
     if (
         $allModules.Count -ne 48 -or
-        $implementedModules.Count -ne 29 -or
-        $placeholderModules.Count -ne 19
+        $implementedModules.Count -ne 30 -or
+        $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -660,8 +677,8 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount   = 29
-    PlaceholderModuleCount   = 19
+    ImplementedModuleCount   = 30
+    PlaceholderModuleCount   = 18
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
     Timestamp                = Get-Date
