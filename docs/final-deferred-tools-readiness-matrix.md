@@ -113,7 +113,7 @@ Recommended shared foundations before any heavy deferred implementation resumes:
 2. **Restore Selection UI / Runtime Foundation**
    Build the user-facing and runtime model for choosing a captured-state restore record without confusing `Default` with `Restore`. Phase 67 documents this foundation in `docs/restore-selection-ui-runtime.md`; it approves no production Restore scopes or handlers.
 3. **Process Handling Policy Foundation**
-   Define exact process target scopes, user confirmation, interruption handling, verification, and refusal rules for broad or shell-critical process stops.
+   Define exact process target scopes, user confirmation, interruption handling, verification, and refusal rules for broad or shell-critical process stops. Phase 68 documents this foundation in `docs/process-handling-policy.md`; it approves no production process scopes or targets.
 4. **Scheduled Task State Capture / Rollback Foundation**
    Define exact task scopes, capture, mutation, verification, rollback, and recovery rules.
 5. **Generated Script / Temp Artifact Ownership Policy**
@@ -162,17 +162,15 @@ Current product-scope impact:
 
 ## Recommended Next Phases
 
-1. **Process Handling Policy Foundation**
-   Required by Copilot, Start Menu Taskbar, Control Panel Settings, and several heavy tools.
-2. **Scheduled Task State Capture / Rollback Foundation**
+1. **Scheduled Task State Capture / Rollback Foundation**
    Required by Edge Settings, Control Panel Settings, Defender Optimize Assistant, and installer-style workflows.
-3. **Generated Script / Temp Artifact Ownership Policy**
+2. **Generated Script / Temp Artifact Ownership Policy**
    Required by Updates Drivers Block, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and several registry-import workflows.
-4. **RunOnce / Active Setup Governance**
+3. **RunOnce / Active Setup Governance**
    Required before persistent startup or post-reboot repair behavior can be approved.
-5. **Start Menu Taskbar Allowlist Review**
+4. **Start Menu Taskbar Allowlist Review**
    A narrow tool-specific approval phase after process handling and restore boundaries are clearer.
-6. **Cleanup Allowlist Review**
+5. **Cleanup Allowlist Review**
    A narrow tool-specific approval phase after cleanup scopes, quarantine rules, and restore selection are ready.
 
 ## Final Phase 65 Decision

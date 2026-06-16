@@ -170,7 +170,7 @@ if (($activeTools.Count - $placeholderModules.Count) -ne 30) {
 
 $policyMentions = @(
     Get-ChildItem -LiteralPath $configRoot -Filter '*.psd1' -File |
-        Where-Object { $_.Name -ne 'Stages.psd1' } |
+        Where-Object { $_.Name -notin @('Stages.psd1', 'ProcessHandlingPolicy.psd1') } |
         Where-Object {
             $text = Get-Content -LiteralPath $_.FullName -Raw
             $text.Contains('start-menu-taskbar') -or $text.Contains('Start Menu Taskbar')
@@ -178,6 +178,17 @@ $policyMentions = @(
 )
 if ($policyMentions.Count -ne 0) {
     throw "Start Menu Taskbar was found in production policy config: $($policyMentions.FullName -join ', ')"
+}
+
+$processPolicyPath = Join-Path $configRoot 'ProcessHandlingPolicy.psd1'
+if (Test-Path -LiteralPath $processPolicyPath -PathType Leaf) {
+    $processPolicy = Import-PowerShellDataFile -LiteralPath $processPolicyPath
+    if (
+        $processPolicy.ProcessHandlingScopes.Count -ne 0 -or
+        $processPolicy.ApprovedProcessTargets.Count -ne 0
+    ) {
+        throw 'Process handling policy unexpectedly approved a production process scope or target.'
+    }
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

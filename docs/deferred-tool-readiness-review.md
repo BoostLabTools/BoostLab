@@ -26,6 +26,9 @@ The future production allowlist approval rules are documented in
 The shared Restore selection UI/runtime foundation is documented in
 `docs/restore-selection-ui-runtime.md`.
 
+The shared Process Handling Policy foundation is documented in
+`docs/process-handling-policy.md`.
+
 ## Review Inputs
 
 This review is based on:

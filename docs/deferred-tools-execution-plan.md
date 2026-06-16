@@ -18,6 +18,10 @@ The production allowlist approval rules for future exact scopes live in
 The shared Restore selection UI/runtime foundation for future captured-state
 Restore actions lives in `docs/restore-selection-ui-runtime.md`.
 
+The shared Process Handling Policy foundation for future process detection,
+close, stop, restart, and launch-handoff governance lives in
+`docs/process-handling-policy.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`
@@ -132,6 +136,33 @@ Affected tools:
 * `visual-cpp`
 * `game-bar`
 * `edge-webview`
+
+### Process handling policy
+
+Needed before a tool can detect, wait for, gracefully close, stop, restart, or
+handoff to a process outside currently implemented safe launchers.
+
+Phase 68 establishes exact process operation vocabulary, required process
+metadata, shell/Explorer handling rules, tool-owned cleanup boundaries, UI and
+Activity Log expectations, and deny-by-default mock validation helpers. It
+approves no production process targets and performs no real process operation.
+
+The affected tools remain deferred because each still needs exact production
+process scopes, tool-specific confirmation text, and its remaining AppX,
+registry, service, cleanup, installer, TrustedInstaller, Safe Mode, reboot, or
+artifact approvals.
+
+Affected tools:
+
+* `copilot`
+* `start-menu-taskbar`
+* `game-bar`
+* `edge-settings`
+* `edge-webview`
+* `control-panel-settings`
+* `defender-optimize-assistant`
+* `services-optimizer`
+* `driver-install-debloat-settings`
 
 ### AppX/package inventory and restore framework
 
@@ -325,6 +356,11 @@ Affected tools:
     cancellation, and recovery contract. Future work still needs exact
     per-tool allowlists and a separately approved execution implementation;
     no deferred tool is enabled by the foundation alone.
+11. **Process handling policy**
+    Phase 68 adds the deny-by-default process operation vocabulary, metadata
+    requirements, Explorer handling rules, and mock-only validation helpers.
+    Future work still needs exact production process scopes and tool-specific
+    implementation approval.
 
 ## What This Means for Future Phases
 

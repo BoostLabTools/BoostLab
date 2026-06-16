@@ -258,7 +258,7 @@ Phase 66 creates governance only.
 1. **Restore Selection UI / Runtime Foundation**
    Required before captured-state Restore can be exposed confidently.
 2. **Process Handling Policy Foundation**
-   Required for Copilot, Start Menu Taskbar, Control Panel Settings, Edge Settings, and several heavy workflows.
+   Required for Copilot, Start Menu Taskbar, Control Panel Settings, Edge Settings, and several heavy workflows. Phase 68 documents this foundation in `docs/process-handling-policy.md`; it approves no production process scopes or targets.
 3. **Scheduled Task State Capture / Rollback Foundation**
    Required for Edge Settings, Control Panel Settings, Defender Optimize Assistant, and installer-like workflows.
 4. **Generated Script / Temp Artifact Ownership Policy**
