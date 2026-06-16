@@ -1,0 +1,174 @@
+# Missing Scripts Source Promotion Decision
+
+## Purpose
+
+Phase 71 records the source-promotion decision for the seven missing Ultimate scripts currently held in:
+
+`intake/missing-ultimate-scripts/Ultimate/`
+
+This phase is documentation and planning only. It does not move files into `source-ultimate/`, rename intake files, enable placeholders, create tool cards, implement actions, approve production scopes, or change runtime/tool behavior.
+
+## Counts
+
+Official BoostLab counts do not change in this phase:
+
+* Active tools: **48**
+* Implemented tools: **30**
+* Deferred/placeholders: **18**
+* Intake candidates: **7 separate from official counts**
+
+## Promotion Decision Table
+
+| Intake script | Current SHA-256 | Current classification | Source-promotion decision | Future proposed `source-ultimate` destination | Preserve original filename | Numbering conflict exists | Promotion allowed now | Required future design/review before implementation |
+|---|---|---|---|---|---|---|---|---|
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with current Graphics slot 1 | No; requires separate source-promotion phase | Dedicated Driver Clean scope/provenance/safety design; DDU artifact/download/execution policy; driver cleanup scope; Safe Mode/RunOnce/reboot workflow; process handling; file/registry/cleanup/driver state capture and rollback |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | Yes | Yes, conflicts with current Graphics slot 2 | No; requires separate source-promotion phase | NVIDIA-only branch design; download provenance; installer execution policy; driver operation scope; AMD/Intel branch exclusion; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | Yes | Yes, conflicts with current Graphics slot 4 | No; requires separate source-promotion phase | NVIDIA profile/settings design; NVIDIA Profile Inspector provenance; `.nip` generated artifact policy; registry/file capture; Default/Restore distinction; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 5 today | No; requires separate source-promotion phase | NVIDIA display-class registry target discovery; registry state capture; verification; Default/Restore distinction; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 6 today | No; requires separate source-promotion phase | NVIDIA display-class registry target discovery; registry state capture; verification; Default/Restore distinction; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 7 today | No; requires separate source-promotion phase | NVIDIA-only device targeting design; display-device registry state capture; verification; AMD/Intel exclusion; Default/Restore distinction; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1` | Intake accepted for future source promotion | Accepted as source-promotion candidate, not implemented | `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1` | Yes | Yes, conflicts with current Setup slot 1 | No; requires separate source-promotion phase | Security-sensitive design; BitLocker state/volume analysis; explicit confirmation; recovery-key warning; no mutation without approved security workflow; Default/Restore distinction |
+
+## Driver Clean Decision
+
+Driver Clean is accepted for future source promotion as a Yazan-approved intake exception despite DDU usage.
+
+This does not approve standalone DDU, DDU execution, DDU download, or DDU artifact provenance.
+
+This decision does not approve:
+
+* standalone DDU as an independent BoostLab tool
+* DDU execution
+* DDU download
+* DDU artifact provenance
+* DDU installer/tool execution policy
+* Driver Clean implementation
+* driver cleanup behavior
+* Safe Mode, RunOnce, reboot, process, file, registry, cleanup, driver, Default, or Restore production scopes
+
+Driver Clean still requires dedicated Driver Clean scope/provenance/safety design before implementation. That future design must explicitly address DDU provenance, DDU execution, Safe Mode, RunOnce, reboot, downloaded artifacts, driver cleanup scope, AMD/Intel exclusions, state capture, verification, and rollback/support limits.
+
+## NVIDIA App Path B Decision
+
+The following five scripts form **NVIDIA App Path B** and must preserve their exact methodological order:
+
+1. `Driver Install Latest`
+2. `Nvidia Settings`
+3. `Hdcp`
+4. `P0 State`
+5. `Msi Mode`
+
+Path relationship:
+
+* Path A: `Driver Install Debloat & Settings`
+* Path B: `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`
+
+Path B is an alternate NVIDIA workflow for users who want to keep or use NVIDIA App features such as recording or related NVIDIA App features.
+
+Future UI must present Path A and Path B as mutually guided workflows. Future UI must warn against and prevent accidental workflow mixing unless a later explicit design approves a safe mixed workflow. The five Path B scripts must not be treated as unordered graphics tools.
+
+## BitLocker Decision
+
+BitLocker is accepted as a future source-promotion candidate.
+
+BitLocker requires security-sensitive design before implementation. This phase does not approve BitLocker mutation, encryption/decryption, suspend/resume, registry changes, service changes, policy operations, or any live BitLocker command execution.
+
+Future BitLocker design must address volume state detection, recovery-key risk, technician warnings, user confirmation, logging, verification, support boundaries, and the distinction between source-defined On/Off behavior and BoostLab `Default` or `Restore` semantics.
+
+## Source-Order Reconciliation Strategy
+
+Current `source-ultimate` layout creates numbering conflicts:
+
+* `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1` already occupies Graphics slot 1.
+* `source-ultimate/5 Graphics/2 DirectX.ps1` already occupies Graphics slot 2.
+* `source-ultimate/5 Graphics/4 Graphics Configuration Center.ps1` already occupies Graphics slot 4.
+* `source-ultimate/3 Setup/1 Memory Compression.ps1` already occupies Setup slot 1.
+
+Reviewed strategies:
+
+| Strategy | Description | Result |
+|---|---|---|
+| A | Preserve intake original numbers directly in existing `source-ultimate` stage folders and later renumber existing files. | Not recommended. This has high breakage risk for docs/tests and makes existing approved source paths unstable. |
+| B | Assign new non-conflicting numbers directly inside current stage folders while preserving workflow metadata separately. | Not recommended. This minimizes path conflicts but weakens the original Ultimate source identity and makes Path B source order less obvious. |
+| C | Preserve original filenames in a source-promotion mirror subfolder under `source-ultimate`. | Recommended. This preserves the intake filenames and Path B order without renumbering existing approved source files. |
+| D | Keep scripts permanently in `intake/` only. | Not recommended as the final state if Yazan wants them treated as official legacy source references later. Useful only until a source-promotion phase occurs. |
+
+Recommended strategy: **Strategy C**.
+
+Future source promotion should preserve original filenames inside:
+
+`source-ultimate/_intake-promoted/Ultimate/`
+
+This minimizes breakage to existing docs/tests because current approved source paths remain stable. It also preserves the mandatory NVIDIA Path B order through original filenames and future metadata, without forcing the active BoostLab catalog to adopt conflicting source numbers.
+
+This phase does not create that folder and does not move any files.
+
+## Future Promotion Mechanics
+
+A future source-promotion phase should promote these seven scripts as source references only:
+
+* `Driver Clean`
+* `Driver Install Latest`
+* `Nvidia Settings`
+* `Hdcp`
+* `P0 State`
+* `Msi Mode`
+* `BitLocker`
+
+No script is excluded from future source promotion by this decision. Driver Clean remains an explicit intake exception, not a DDU approval.
+
+Proposed future destination paths:
+
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1`
+* `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1`
+
+Expected docs/tests updates in that future phase:
+
+* source manifest and source integrity baselines
+* intake validator so it recognizes promoted source references
+* source-promotion decision validator
+* `docs/missing-ultimate-scripts-intake-review.md`
+* `docs/deferred-tools-execution-plan.md`
+* `docs/deferred-tool-readiness-review.md`
+* `docs/final-deferred-tools-readiness-matrix.md`
+* `CODEX_INSTRUCTIONS.md` and `BOOSTLAB_BLUEPRINT.md` if the promoted source layout becomes official policy
+
+Count handling:
+
+* Active/implemented/deferred tool counts should not change from source promotion alone.
+* Counts should change only if a later catalog phase adds active tools/placeholders to `config/Stages.psd1` and modules.
+* Intake candidate count should either become promoted-source-reference count or remain separately documented until catalog promotion.
+
+Rollback plan if source promotion mapping is wrong:
+
+1. Do not implement or enable any promoted script in the same phase as source promotion.
+2. Keep original intake copies unchanged until the promoted-source mapping is validated.
+3. If mapping is wrong, remove only the newly promoted mirror files from the source-promotion branch before commit.
+4. Re-run source manifest, intake, deleted-tool, module, and count validators.
+5. Do not alter existing approved `source-ultimate` files to repair a promotion mapping mistake.
+
+## Explicit Non-Actions
+
+This phase made no source-promotion filesystem changes.
+
+* No `source-ultimate` files were modified.
+* No `source-ultimate` files were created.
+* No intake files were renamed or moved.
+* No tool was implemented.
+* No placeholder was enabled.
+* No runtime behavior changed.
+* No production approval was added.
+* No DDU execution, DDU download, or DDU artifact approval was added.
+* Standalone DDU was not introduced.
+* Loudness EQ and NVME Faster Driver remain deleted.
+
+## Recommended Next Phase
+
+Recommended next phase: **Missing Scripts Source Promotion Mirror**.
+
+That phase should copy the seven intake scripts into the recommended source-promotion mirror path only if Yazan approves the proposed `source-ultimate/_intake-promoted/Ultimate/` strategy. It should still avoid implementation, placeholders, runtime changes, and production approvals.

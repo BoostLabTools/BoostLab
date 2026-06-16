@@ -165,4 +165,6 @@ Loudness EQ and NVME Faster Driver remain deleted.
 
 Recommended next phase: **Missing Scripts Source Promotion Decision**.
 
-That phase should not implement behavior. It should decide whether any accepted intake scripts become official `source-ultimate` reference files, how numbering conflicts are reconciled, whether Path B becomes a future visual workflow, and how the Yazan-approved Driver Clean intake exception should be represented without approving standalone DDU, DDU execution, downloads, artifacts, or driver-cleaning behavior.
+Phase 71 records that decision in `docs/missing-scripts-source-promotion-decision.md`. It recommends preserving original intake filenames in a future source-promotion mirror under `source-ultimate/_intake-promoted/Ultimate/` rather than renumbering existing approved source files.
+
+That future source-promotion mirror phase should not implement behavior. It should copy accepted intake scripts only if Yazan approves the mirror strategy, preserve Path B workflow metadata, and keep standalone DDU, DDU execution, downloads, artifacts, and driver-cleaning behavior unapproved.

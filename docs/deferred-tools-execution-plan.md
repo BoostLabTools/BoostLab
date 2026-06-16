@@ -32,6 +32,11 @@ Yazan-approved intake exception despite DDU usage. This does not approve
 standalone DDU, DDU execution, downloads, artifacts, production scopes, or tool
 behavior.
 
+Phase 71 source-promotion planning lives in
+`docs/missing-scripts-source-promotion-decision.md`. It recommends a future
+source-promotion mirror under `source-ultimate/_intake-promoted/Ultimate/` and
+does not change official counts or tool behavior.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

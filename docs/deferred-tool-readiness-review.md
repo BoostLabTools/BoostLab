@@ -39,6 +39,11 @@ despite DDU usage. This keeps the script eligible for a future source-promotion
 decision while leaving standalone DDU, DDU execution, downloads, artifacts,
 production scopes, and tool behavior unapproved.
 
+Phase 71 source-promotion planning is documented in
+`docs/missing-scripts-source-promotion-decision.md`. The seven intake scripts
+remain outside the 18-tool deferred queue until a future catalog phase changes
+the official tool inventory.
+
 ## Review Inputs
 
 This review is based on:
