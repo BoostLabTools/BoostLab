@@ -195,3 +195,5 @@ This phase made source-promotion mirror filesystem changes only under `source-ul
 Recommended next phase: **NVIDIA Path B Catalog Design**.
 
 That phase should decide whether and how Path B appears in the BoostLab catalog/UI as guided, non-mixed workflow planning. It should still avoid implementation, runtime changes, downloads, driver operations, and production approvals unless Yazan explicitly expands the phase.
+
+Phase 73 records that catalog/UI planning in `docs/nvidia-path-b-catalog-design.md`. It preserves the required five-step Path B order as catalog metadata only and does not implement or enable any source-promoted script.

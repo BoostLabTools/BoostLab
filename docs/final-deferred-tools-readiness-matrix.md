@@ -25,6 +25,8 @@ Phase 71 note: source-promotion planning for the seven intake scripts lives in `
 
 Phase 72 note: the seven intake scripts were copied into `source-ultimate/_intake-promoted/Ultimate/` as source-promoted mirror references. Official active/deferred counts remain unchanged, and no tool behavior or production approval was added.
 
+Phase 73 note: NVIDIA App Path B catalog planning lives in `docs/nvidia-path-b-catalog-design.md`. It documents Path A versus Path B and preserves the required five-step Path B order as catalog-only planning, with no implementation or production approval.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

@@ -42,6 +42,11 @@ scripts under `source-ultimate/_intake-promoted/Ultimate/`. They remain
 source-promoted candidates only and still require future design/review before
 any implementation or catalog change.
 
+Phase 73 records the NVIDIA App Path B catalog design in
+`docs/nvidia-path-b-catalog-design.md`. It defines the required Path B order
+and Path A/Path B UI guidance as catalog-only planning, with no tool enablement
+or production approval.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

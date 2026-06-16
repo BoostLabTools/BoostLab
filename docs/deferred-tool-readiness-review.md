@@ -48,6 +48,11 @@ Phase 72 completed the mirror copy into
 `source-ultimate/_intake-promoted/Ultimate/`. The mirrored scripts are source
 references only, not implemented tools or placeholders.
 
+Phase 73 records the NVIDIA App Path B catalog design in
+`docs/nvidia-path-b-catalog-design.md`. It preserves
+`Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode` as
+an ordered future workflow and remains catalog-only.
+
 ## Review Inputs
 
 This review is based on:
