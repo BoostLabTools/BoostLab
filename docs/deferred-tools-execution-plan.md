@@ -22,6 +22,11 @@ The shared Process Handling Policy foundation for future process detection,
 close, stop, restart, and launch-handoff governance lives in
 `docs/process-handling-policy.md`.
 
+Phase 69 intake for seven manually supplied Ultimate scripts lives in
+`docs/missing-ultimate-scripts-intake-review.md`. These scripts remain intake
+candidates pending source promotion and do not change the official active or
+deferred tool counts in this plan.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

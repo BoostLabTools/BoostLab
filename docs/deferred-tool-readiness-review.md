@@ -29,6 +29,11 @@ The shared Restore selection UI/runtime foundation is documented in
 The shared Process Handling Policy foundation is documented in
 `docs/process-handling-policy.md`.
 
+Phase 69 intake for seven manually supplied Ultimate scripts is documented in
+`docs/missing-ultimate-scripts-intake-review.md`. These scripts are not part of
+the 18-tool deferred queue unless a future phase promotes accepted scripts into
+the official source/catalog.
+
 ## Review Inputs
 
 This review is based on:

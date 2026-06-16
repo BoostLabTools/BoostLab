@@ -13,6 +13,7 @@ This document does not approve production scopes, allowlists, artifacts, install
 * Active tools: **48**
 * Implemented tools: **30**
 * Deferred/placeholders: **18**
+* Intake candidate scripts pending source promotion: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
