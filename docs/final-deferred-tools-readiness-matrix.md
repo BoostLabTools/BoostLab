@@ -252,3 +252,9 @@ as a focused Driver Clean readiness decision. It keeps Driver Clean outside
 NVIDIA Path B, records `NeedsArtifactDecision`, and does not approve standalone
 DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution, production
 scopes, or tool behavior.
+
+Phase 91 adds
+`docs/tool-designs/driver-clean-controlled-implementation-plan.md` as a focused
+Driver Clean implementation plan. It chooses `ManualHandoffFirst`, keeps Auto
+blocked, and does not approve DDU/7-Zip downloads, artifacts, execution,
+production scopes, or tool behavior.

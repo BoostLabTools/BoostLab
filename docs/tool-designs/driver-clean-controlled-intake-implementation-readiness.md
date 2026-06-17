@@ -176,6 +176,13 @@ blanket governance. It should not approve standalone DDU.
 If the artifact decision cannot be made in that phase, the phase should produce
 **Phase 91: Driver Clean Refusal/Deferral Record** instead.
 
+Phase 91 records the controlled implementation plan in
+`docs/tool-designs/driver-clean-controlled-implementation-plan.md`. It chooses
+`ManualHandoffFirst` as the future strategy and keeps Auto blocked until
+artifact, process, Safe Mode, RunOnce, reboot/recovery, generated-script, and
+driver-state approvals exist. It does not implement Driver Clean or approve
+DDU/7-Zip artifacts.
+
 ## Roadmap Compression Note
 
 The compressed seven-script roadmap is:

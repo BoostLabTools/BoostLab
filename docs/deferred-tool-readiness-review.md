@@ -346,3 +346,10 @@ for focused Driver Clean readiness. The review remains unchanged: Driver Clean
 stays outside NVIDIA Path B, and the DDU intake exception does not approve
 standalone DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution,
 production scopes, UI controls, placeholder enablement, or tool behavior.
+
+Phase 91 adds
+`docs/tool-designs/driver-clean-controlled-implementation-plan.md` for focused
+Driver Clean implementation planning. The review remains unchanged: manual
+handoff is only a future plan, Auto remains blocked, and no DDU/7-Zip
+downloads, artifacts, execution, production scopes, UI controls, placeholder
+enablement, or tool behavior are approved.

@@ -484,3 +484,9 @@ It is a focused readiness decision, not implementation approval. Driver Clean
 remains outside NVIDIA Path B, and the DDU intake exception does not approve
 standalone DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution,
 production scopes, or tool behavior.
+
+Driver Clean controlled implementation planning is tracked in
+`docs/tool-designs/driver-clean-controlled-implementation-plan.md`. It selects
+manual handoff as the safest future first slice and keeps Auto blocked until
+artifact, process, Safe Mode, RunOnce, reboot/recovery, generated-script, and
+driver-state approvals exist.
