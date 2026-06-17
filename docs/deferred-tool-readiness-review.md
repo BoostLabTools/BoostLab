@@ -53,6 +53,10 @@ Phase 73 records the NVIDIA App Path B catalog design in
 `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode` as
 an ordered future workflow and remains catalog-only.
 
+Phase 74 records the corresponding Path B scope design in
+`docs/tool-designs/nvidia-path-b-scope-design.md`. It remains non-executing and
+approves no production scope.
+
 ## Review Inputs
 
 This review is based on:

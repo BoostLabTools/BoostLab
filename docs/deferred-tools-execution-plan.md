@@ -47,6 +47,9 @@ Phase 73 records the NVIDIA App Path B catalog design in
 and Path A/Path B UI guidance as catalog-only planning, with no tool enablement
 or production approval.
 
+Phase 74 records the non-executing NVIDIA App Path B scope design in
+`docs/tool-designs/nvidia-path-b-scope-design.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

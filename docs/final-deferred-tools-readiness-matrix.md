@@ -27,6 +27,8 @@ Phase 72 note: the seven intake scripts were copied into `source-ultimate/_intak
 
 Phase 73 note: NVIDIA App Path B catalog planning lives in `docs/nvidia-path-b-catalog-design.md`. It documents Path A versus Path B and preserves the required five-step Path B order as catalog-only planning, with no implementation or production approval.
 
+Phase 74 note: NVIDIA App Path B scope design lives in `docs/tool-designs/nvidia-path-b-scope-design.md`. It inventories the five source-promoted scripts and documents future foundations without enabling implementation.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

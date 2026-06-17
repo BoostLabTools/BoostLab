@@ -242,3 +242,7 @@ single Path B scope design that covers artifact provenance, NVIDIA-only
 targeting, driver/profile state capture, registry scopes, generated artifacts,
 Action Plan confirmation, verification, Default/Restore semantics, and UI
 workflow gating.
+
+Phase 74 records that scope design in
+`docs/tool-designs/nvidia-path-b-scope-design.md`. It remains non-executing and
+approves no production scope.
