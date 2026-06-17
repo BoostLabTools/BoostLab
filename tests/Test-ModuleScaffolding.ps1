@@ -87,6 +87,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process ms-settings:windowsupdate -ErrorAction Stop'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'driver-clean' = @{
+        RelativePath          = 'Graphics\driver-clean.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -420,6 +424,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'store-settings') {
             2
+        }
+        elseif ($toolId -eq 'driver-clean') {
+            0
         }
         elseif ($toolId -eq 'theme-black') {
             1

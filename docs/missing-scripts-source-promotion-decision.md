@@ -8,17 +8,21 @@ Phase 71 records the source-promotion decision for the seven missing Ultimate sc
 
 Phase 72 completed the approved source-promotion mirror copy under `source-ultimate/_intake-promoted/Ultimate/`.
 
-This is still source-reference promotion only. It does not enable placeholders, create tool cards, implement actions, approve production scopes, or change runtime/tool behavior.
+This phase was source-reference promotion only. Phase 92 later promoted Driver
+Clean into an active controlled manual-handoff implementation without approving
+DDU/7-Zip artifacts, downloads, execution, Safe Mode, RunOnce, reboot, or
+driver cleanup behavior.
 
 ## Counts
 
-Official BoostLab counts do not change in this phase:
+Current BoostLab counts after Phase 92:
 
-* Active tools: **48**
-* Implemented tools: **30**
+* Active tools: **49**
+* Implemented tools: **31**
 * Deferred/placeholders: **18**
-* Intake candidates: **7 separate from official counts**
-* Source-promoted mirror candidates: **7 separate from official counts**
+* Intake files: **7**
+* Source-promoted mirror files: **7**
+* Remaining unimplemented source-promoted intake candidates: **6 separate from official counts**
 
 ## Phase 72 Mirror Promotion Status
 
@@ -38,13 +42,16 @@ Promoted mirror paths:
 * `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1`
 * `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1`
 
-These source-promoted scripts remain separate from official active/deferred BoostLab tools until a future catalog/placeholder phase explicitly changes `config/Stages.psd1` and module scaffolding.
+Driver Clean was promoted in Phase 92 as a controlled manual-handoff tool. The
+remaining six source-promoted scripts remain separate from official
+active/deferred BoostLab tools until a future catalog/placeholder phase
+explicitly changes `config/Stages.psd1` and module scaffolding.
 
 ## Promotion Decision Table
 
 | Intake script | Current SHA-256 | Current classification | Source-promotion decision | Future proposed `source-ultimate` destination | Preserve original filename | Numbering conflict exists | Promotion allowed now | Required future design/review before implementation |
 |---|---|---|---|---|---|---|---|---|
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with current Graphics slot 1 | Completed in mirror only; catalog promotion still separate | Dedicated Driver Clean scope/provenance/safety design; DDU artifact/download/execution policy; driver cleanup scope; Safe Mode/RunOnce/reboot workflow; process handling; file/registry/cleanup/driver state capture and rollback |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Source-promoted into mirror; Phase 92 implemented controlled manual handoff only | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with previous Graphics slot 1 | Implemented as active controlled manual handoff | Auto remains blocked until DDU/7-Zip artifact/download/execution policy, driver cleanup scope, Safe Mode/RunOnce/reboot workflow, process handling, and file/registry/cleanup/driver state capture and rollback approvals exist |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | Yes | Yes, conflicts with current Graphics slot 2 | Completed in mirror only; catalog promotion still separate | NVIDIA-only branch design; download provenance; installer execution policy; driver operation scope; AMD/Intel branch exclusion; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | Yes | Yes, conflicts with current Graphics slot 4 | Completed in mirror only; catalog promotion still separate | NVIDIA profile/settings design; NVIDIA Profile Inspector provenance; `.nip` generated artifact policy; registry/file capture; Default/Restore distinction; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 5 today | Completed in mirror only; catalog promotion still separate | NVIDIA display-class registry target discovery; registry state capture; verification; Default/Restore distinction; Path B workflow design |
@@ -69,7 +76,11 @@ This decision does not approve:
 * driver cleanup behavior
 * Safe Mode, RunOnce, reboot, process, file, registry, cleanup, driver, Default, or Restore production scopes
 
-Driver Clean still requires dedicated Driver Clean scope/provenance/safety design before implementation. That future design must explicitly address DDU provenance, DDU execution, Safe Mode, RunOnce, reboot, downloaded artifacts, driver cleanup scope, AMD/Intel exclusions, state capture, verification, and rollback/support limits.
+Phase 92 implemented Driver Clean manual handoff only. Auto still requires
+dedicated Driver Clean scope/provenance/safety design before implementation.
+That future design must explicitly address DDU provenance, DDU execution, Safe
+Mode, RunOnce, reboot, downloaded artifacts, driver cleanup scope, AMD/Intel
+exclusions, state capture, verification, and rollback/support limits.
 
 ## NVIDIA App Path B Decision
 

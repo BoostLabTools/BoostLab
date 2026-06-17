@@ -82,6 +82,12 @@ It defines future metadata fields and pseudo-schema only; it creates no active
 workflow registry, runtime config, production config, UI implementation, tool
 cards, placeholder enablement, or Path B execution behavior.
 
+Phase 92 implements `Driver Clean` as a controlled manual-handoff active tool
+outside NVIDIA Path B. It is no longer one of the unimplemented
+source-promoted intake candidates, but the source-promoted mirror file remains
+protected reference material. Auto remains blocked as
+`AutoBlockedUntilArtifactApproval`.
+
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It leaves Path B design-only and
 does not enable placeholders or runtime behavior.
@@ -112,9 +118,10 @@ This review is based on:
 
 Current inventory:
 
-* Active tools: **48**
-* Implemented tools: **30**
+* Active tools: **49**
+* Implemented tools: **31**
 * Deferred/placeholders: **18**
+* Remaining unimplemented source-promoted intake candidates: **6**
 
 ## Category Definitions
 

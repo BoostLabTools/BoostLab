@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -179,9 +179,9 @@ $placeholderModules = @(
     }
 )
 if (
-    $tools.Count -ne 48 -or
-    $allModules.Count -ne 48 -or
-    $implementedModules.Count -ne 30 -or
+    $tools.Count -ne 49 -or
+    $allModules.Count -ne 49 -or
+    $implementedModules.Count -ne 31 -or
     $placeholderModules.Count -ne 18
 ) {
     $errors.Add(

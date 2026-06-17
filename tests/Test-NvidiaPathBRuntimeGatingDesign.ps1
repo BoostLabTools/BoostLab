@@ -438,14 +438,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 foreach ($moduleName in @($pathB | ForEach-Object { $_.ModuleName })) {

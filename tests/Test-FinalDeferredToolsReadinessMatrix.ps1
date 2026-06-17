@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -74,14 +74,14 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($allTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($allTools.Count)."
 }
 if ($placeholderTools.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(

@@ -493,6 +493,26 @@ function Get-BoostLabResultStatus {
     return 'Error'
 }
 
+function Get-BoostLabToolActionDisplayLabel {
+    param(
+        [Parameter(Mandatory)]
+        [object]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName
+    )
+
+    $toolId = [string]$ToolMetadata['Id']
+    if ($toolId -eq 'driver-clean') {
+        switch ($ActionName) {
+            'Open' { return 'Manual Handoff' }
+            'Apply' { return 'Apply Auto' }
+        }
+    }
+
+    return $ActionName
+}
+
 function New-BoostLabUiActionFailureResult {
     param(
         [Parameter(Mandatory)]
@@ -1778,13 +1798,16 @@ function New-BoostLabToolCard {
     $actionsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
 
     foreach ($actionName in @($Tool['Actions'])) {
+        $actionName = [string]$actionName
+        $actionDisplayLabel = Get-BoostLabToolActionDisplayLabel -ToolMetadata $Tool -ActionName $actionName
         $actionButton = [System.Windows.Controls.Button]::new()
-        $actionButton.Content = [string]$actionName
+        $actionButton.Content = $actionDisplayLabel
         $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $actionButton.Margin = [System.Windows.Thickness]::new(0, 0, 7, 0)
         $actionButton.Tag = [pscustomobject]@{
             ToolMetadata = $Tool
-            ActionName   = [string]$actionName
+            ActionName   = $actionName
+            ActionLabel  = $actionDisplayLabel
             StatusText   = $status
         }
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')

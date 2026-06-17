@@ -304,3 +304,36 @@ Phase 91 is plan-only.
 * Counts unchanged: 48 active tools, 30 implemented tools, 18
   deferred/placeholders, and 7 source-promoted intake candidates separate from
   official counts.
+
+## Phase 92 Implementation Update
+
+Phase 92 implements `Driver Clean` as a controlled manual-handoff tool only.
+
+Implemented actions:
+
+* `Analyze`
+* `Prepare Manual Handoff`
+* `Apply Auto`
+
+`Analyze` verifies the source mirror checksum and reports
+`ManualHandoffOnly`. `Prepare Manual Handoff` records the Action Plan,
+warnings, and results while performing no automated DDU execution, DDU
+download, 7-Zip download, external process start, registry mutation, RunOnce
+creation, Safe Mode switch, `bcdedit` call, reboot, or driver cleanup.
+`Apply Auto` remains fail-closed as `AutoBlockedUntilArtifactApproval`.
+
+Default and Restore remain unavailable. Default is not Restore, and Restore
+requires real captured state that does not exist for external DDU actions.
+
+Driver Clean remains outside NVIDIA Path B. Path B steps remain separate and
+unmerged:
+
+`Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`
+
+Phase 92 count convention:
+
+* Active tools: 49
+* Implemented tools: 31
+* Deferred/placeholders: 18
+* Source-promoted mirror files: 7
+* Remaining unimplemented source-promoted intake candidates: 6

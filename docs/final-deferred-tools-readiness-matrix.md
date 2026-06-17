@@ -10,10 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **48**
-* Implemented tools: **30**
+* Active tools: **49**
+* Implemented tools: **31**
 * Deferred/placeholders: **18**
-* Intake candidate scripts pending source promotion: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
+* Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
+* Remaining unimplemented source-promoted intake candidates: **6**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
@@ -44,6 +45,8 @@ Phase 80 note: NVIDIA Path B production approval gate design lives in `docs/tool
 Phase 81 note: NVIDIA Path B runtime gating design lives in `docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future gate states and result schema without implementing runtime gates, creating production config, granting production approval, enabling UI, or changing tool behavior.
 
 Phase 82 note: NVIDIA Path B non-executing Workflow Registry schema design lives in `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`. It defines future metadata fields and pseudo-schema only; it creates no active workflow registry, runtime config, production config, UI implementation, or tool behavior.
+
+Phase 92 note: `Driver Clean` is now an implemented active tool using controlled manual handoff only. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no DDU or 7-Zip download/execution, performs no Safe Mode/RunOnce/bcdedit/reboot automation, and remains outside NVIDIA Path B.
 
 ## Coverage Summary
 

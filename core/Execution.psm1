@@ -56,6 +56,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\UpdatesPause.psm1'
         Actions = @('Apply', 'Default')
     }
+    'driver-clean' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-clean.psm1'
+        Actions = @('Analyze', 'Open', 'Apply')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

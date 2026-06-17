@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -657,8 +657,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 48 -or
-        $implementedModules.Count -ne 30 -or
+        $allModules.Count -ne 49 -or
+        $implementedModules.Count -ne 31 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -753,7 +753,7 @@ if ($errors.Count -gt 0) {
     MockServiceRollbackPassed     = $true
     RollbackFailureReported       = $true
     LiveServiceCommandsPresent    = $false
-    ImplementedModuleCount        = 30
+    ImplementedModuleCount        = 31
     PlaceholderModuleCount        = 18
     SourceUltimateUnchanged       = $true
     Message                       = 'Service state capture and rollback is exact, guarded, mocked, and deny-by-default.'

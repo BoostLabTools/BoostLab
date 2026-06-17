@@ -10,14 +10,22 @@ This is an intake review only. It does not promote the scripts into `source-ulti
 
 ## Current Counts
 
-Official BoostLab counts do not change in this phase:
+Official BoostLab counts do not change in this phase. Phase 69 was intake
+review only.
 
-* Active tools: **48**
-* Implemented tools: **30**
+Current BoostLab counts after Phase 92:
+
+* Active tools: **49**
+* Implemented tools: **31**
 * Deferred/placeholders: **18**
 * Intake candidate scripts reviewed here: **7**
+* Remaining unimplemented source-promoted intake candidates: **6**
 
-The intake scripts are documented as **intake pending source promotion**. They should not be counted as active or deferred BoostLab tools unless a future source-promotion phase explicitly accepts them into the official catalog.
+The intake scripts were later source-promoted into the protected mirror. Driver
+Clean was then promoted in Phase 92 as a controlled manual-handoff active tool.
+The remaining six intake scripts should not be counted as active or deferred
+BoostLab tools unless a future source-promotion phase explicitly accepts them
+into the official catalog.
 
 ## Intake File List
 
@@ -58,7 +66,7 @@ Deleted and disallowed BoostLab tools remain excluded:
 Conflict result:
 
 * `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
-* `Driver Clean.ps1` downloads and runs Display Driver Uninstaller / DDU behavior in the intake source, so future implementation requires dedicated Driver Clean scope/provenance/safety design before any execution can be considered.
+* `Driver Clean.ps1` downloads and runs Display Driver Uninstaller / DDU behavior in the intake source. Phase 92 implements controlled manual handoff only; future implementation requires dedicated Driver Clean scope/provenance/safety design before any DDU execution can be considered.
 * The remaining six intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
 * Loudness EQ remains deleted and is not present in the intake set.
 * NVME Faster Driver remains deleted and is not present in the intake set.

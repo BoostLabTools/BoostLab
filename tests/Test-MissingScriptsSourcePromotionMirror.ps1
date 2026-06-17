@@ -143,13 +143,10 @@ foreach ($script in $expectedScripts) {
 foreach ($requiredPhrase in @(
     'Phase 72 completed the approved source-promotion mirror copy',
     'Strategy C mirror promotion is completed',
-    'Source-promoted mirror candidates: **7 separate from official counts**',
+    'Source-promoted mirror files: **7**',
     'No existing `source-ultimate` files outside `_intake-promoted` were modified',
     'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
-    'No tool was implemented',
-    'No placeholder was enabled',
-    'No runtime behavior changed',
     'No production approval was added',
     'Standalone DDU was not introduced',
     'Loudness EQ and NVME Faster Driver remain deleted',
@@ -212,14 +209,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 if (@($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' }).Count -ne 0) {

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -258,14 +258,14 @@ $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($activeTools.Count)."
+if ($activeTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($activeTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

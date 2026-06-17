@@ -310,10 +310,12 @@ if ($uiFilesWithDriverClean.Count -ne 0) {
 
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
-if (Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'Driver Clean' -or $_.Id -eq 'driver-clean' }) -ne 0) {
-    throw 'Driver Clean was unexpectedly added as an active tool.'
+$driverCleanTools = @($allTools).Where({ [string]$_['Title'] -eq 'Driver Clean' -or [string]$_['Id'] -eq 'driver-clean' })
+if ($driverCleanTools.Count -ne 1) {
+    throw 'Driver Clean should be present as the Phase 92 controlled manual-handoff active tool.'
 }
-if (Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' }) -ne 0) {
+$dduTools = @($allTools).Where({ [string]$_['Title'] -eq 'DDU' -or [string]$_['Id'] -eq 'ddu' })
+if ($dduTools.Count -ne 0) {
     throw 'Standalone DDU was reintroduced into active config.'
 }
 
@@ -325,18 +327,18 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
-if (Get-BoostLabItemCount -Value (Get-ChildItem -Path $modulesRoot -Recurse -Filter '*DriverClean*.psm1' -ErrorAction SilentlyContinue) -ne 0) {
-    throw 'Executable tool module was unexpectedly created for Driver Clean.'
+if (-not (Test-Path -LiteralPath (Join-Path $modulesRoot 'Graphics\driver-clean.psm1') -PathType Leaf)) {
+    throw 'Driver Clean controlled manual-handoff module was not found.'
 }
 if (Get-BoostLabItemCount -Value (Get-ChildItem -Path $modulesRoot -Recurse -Filter '*DDU*.psm1' -ErrorAction SilentlyContinue) -ne 0) {
     throw 'Standalone DDU module was reintroduced.'

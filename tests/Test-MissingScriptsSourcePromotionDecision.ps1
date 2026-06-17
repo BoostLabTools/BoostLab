@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -225,17 +225,15 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Active tools: **48**',
-    'Implemented tools: **30**',
+    'Active tools: **49**',
+    'Implemented tools: **31**',
     'Deferred/placeholders: **18**',
-    'Intake candidates: **7 separate from official counts**',
-    'Source-promoted mirror candidates: **7 separate from official counts**',
+    'Intake files: **7**',
+    'Source-promoted mirror files: **7**',
+    'Remaining unimplemented source-promoted intake candidates: **6 separate from official counts**',
     'No existing `source-ultimate` files outside `_intake-promoted` were modified',
     'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
-    'No tool was implemented',
-    'No placeholder was enabled',
-    'No runtime behavior changed',
     'No production approval was added',
     'No DDU execution, DDU download, or DDU artifact approval was added',
     'Standalone DDU was not introduced',
@@ -260,14 +258,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 48) {
-    throw "Expected 48 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 49) {
+    throw "Expected 49 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 30) {
-    throw "Expected 30 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 31) {
+    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

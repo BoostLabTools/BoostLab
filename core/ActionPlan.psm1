@@ -193,6 +193,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'unattended' -and $ActionName -eq 'Apply') {
         'Create the approved Windows 11 autounattend.xml on selected removable installation media.'
     }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Analyze') {
+        'Read the Driver Clean source mirror and report blocked approvals without running any driver-cleaning operation.'
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
+        'Prepare Driver Clean manual handoff instructions only; no external tool, download, or system-changing operation is opened or executed.'
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for Driver Clean because DDU, 7-Zip, process, reboot, and recovery approvals do not exist.'
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
     }
@@ -345,6 +354,24 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Move autounattend.xml to the selected removable-media root and preserve the source overwrite behavior only after backup.')
         $plannedChanges.Add('Verify the final file hash, XML structure, account substitution, and all five source-defined hardware bypass commands.')
         $plannedChanges.Add('Persist destination, backup, ownership, source checksum, and verification state under ProgramData\BoostLab\State.')
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the Driver Clean source mirror checksum and implementation status.')
+        $plannedChanges.Add('Report missing DDU, 7-Zip, process, Safe Mode, RunOnce, bcdedit, reboot, recovery, generated-script, and driver-state approvals.')
+        $plannedChanges.Add('Perform no download, external process start, registry mutation, Safe Mode change, RunOnce creation, bcdedit call, reboot, or driver cleanup.')
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions only.')
+        $plannedChanges.Add('Do not open any external tool or approved external resource.')
+        $plannedChanges.Add('Do not download DDU or 7-Zip.')
+        $plannedChanges.Add('Do not execute DDU or any driver-cleaning process.')
+        $plannedChanges.Add('Do not modify registry, create RunOnce, call bcdedit, switch Safe Mode, reboot, or perform any system-changing operation.')
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing DDU artifact/provenance, 7-Zip artifact/provenance, process handling, Safe Mode, RunOnce, bcdedit, reboot/recovery, generated-script, and driver-state approvals.')
+        $plannedChanges.Add('Perform no download, external process start, registry mutation, Safe Mode change, RunOnce creation, bcdedit call, reboot, or driver cleanup.')
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
@@ -627,6 +654,18 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Dynamic Update is disabled in the generated setup payload, and existing source-targeted files are retained as verified BoostLab backups.')
         $sideEffects.Add('BoostLab creates the file but does not start Windows Setup, partition disks, format media, or reboot the computer.')
     }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Driver Clean analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No external tool is opened, no DDU or 7-Zip artifact is downloaded, and no system-changing operation occurs.')
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, external process, download, registry mutation, reboot, or driver cleanup occurs.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
@@ -802,10 +841,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze') {
+    if ($ActionName -eq 'Analyze' -and $toolId -ne 'driver-clean') {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -ne 'driver-clean') {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet) {
@@ -850,6 +889,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -in @('bios-settings', 'to-bios') -and $ActionName -eq 'Open') {
         'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare Driver Clean manual handoff instructions only. It will not open an external tool, download DDU or 7-Zip, execute DDU, modify registry, create RunOnce, call bcdedit, switch Safe Mode, reboot, or clean drivers. Continue?'
+    }
+    elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
+        'Driver Clean Auto mode is blocked. BoostLab will not execute Auto behavior because DDU/7-Zip artifact provenance, process handling, reboot/recovery, generated-script, and driver-state approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'
