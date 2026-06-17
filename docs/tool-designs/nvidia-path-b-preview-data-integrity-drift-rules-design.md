@@ -319,3 +319,9 @@ Phase 87 records that documentation index/navigation design in
 `docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
 creates no live UI navigation, active docs runtime, active config, modules,
 tool cards, placeholder enablement, or Path B execution behavior.
+
+Phase 88 records documentation backlink audit design in
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md`. It
+defines future backlink audit rules without creating a live backlink auditor,
+active docs runtime, active config, production approval, or Path B execution
+behavior.

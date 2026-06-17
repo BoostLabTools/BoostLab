@@ -327,3 +327,9 @@ Phase 87 adds
 documentation-only Path B navigation. The review remains unchanged: navigation
 design does not approve execution, production allowlists, artifacts, active docs
 runtime, UI controls, or placeholder enablement.
+
+Phase 88 adds
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md` for
+documentation-only Path B backlink audit design. The review remains unchanged:
+backlink audit design does not approve execution, production allowlists,
+artifacts, active docs runtime, UI controls, or placeholder enablement.

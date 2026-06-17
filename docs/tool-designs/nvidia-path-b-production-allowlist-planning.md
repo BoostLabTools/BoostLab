@@ -332,3 +332,9 @@ Phase 87 records documentation index/navigation design in
 `docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
 indexes this planning document without adding production allowlist entries or
 execution approval.
+
+Phase 88 records documentation backlink audit design in
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md`. It
+defines future backlink audit rules without creating a live backlink auditor,
+active docs runtime, active config, production approval, or Path B execution
+behavior.

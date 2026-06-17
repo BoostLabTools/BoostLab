@@ -233,3 +233,9 @@ Phase 87 adds
 documentation-only navigation layer for the Path B doc set. It does not change
 readiness categories, approve scopes, create live navigation, enable UI, or
 implement Path B.
+
+Phase 88 adds
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md` as a
+documentation-only backlink audit design for the Path B doc set. It does not
+change readiness categories, approve scopes, create a live backlink auditor,
+enable UI, or implement Path B.

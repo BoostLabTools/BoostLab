@@ -331,3 +331,9 @@ narrow foundation. It should audit whether all Path B documents link back to
 the index and to their direct dependencies without creating active docs runtime,
 UI config, runtime config, production config, modules, action buttons,
 artifacts, allowlists, or execution behavior.
+
+Phase 88 records documentation backlink audit design in
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md`. It
+defines future backlink audit rules without creating a live backlink auditor,
+active docs runtime, active config, production approval, or Path B execution
+behavior.

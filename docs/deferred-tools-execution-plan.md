@@ -466,3 +466,9 @@ NVIDIA Path B documentation index/navigation design is tracked in
 `docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
 is documentation-only navigation guidance and does not create active docs
 runtime, active UI/runtime config, production scope, artifact, or tool behavior.
+
+NVIDIA Path B documentation backlink audit design is tracked in
+`docs/tool-designs/nvidia-path-b-documentation-backlink-audit-design.md`. It is
+documentation-only backlink audit guidance and does not create a live backlink
+auditor, active docs runtime, active UI/runtime config, production scope,
+artifact, or tool behavior.
