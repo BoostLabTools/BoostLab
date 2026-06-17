@@ -270,3 +270,12 @@ production allowlist config and approves no scope.
 Phase 80 records production approval gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It defines
 future gate criteria only and grants no production approval.
+
+Phase 81 records runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future
+gate states and result schema without adding runtime behavior.
+
+Phase 82 records non-executing Workflow Registry schema design in
+`docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
+It defines future metadata fields for Path B without creating an active
+workflow registry, production config, UI implementation, or tool behavior.

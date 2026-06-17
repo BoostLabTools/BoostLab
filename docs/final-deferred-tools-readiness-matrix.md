@@ -43,6 +43,8 @@ Phase 80 note: NVIDIA Path B production approval gate design lives in `docs/tool
 
 Phase 81 note: NVIDIA Path B runtime gating design lives in `docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future gate states and result schema without implementing runtime gates, creating production config, granting production approval, enabling UI, or changing tool behavior.
 
+Phase 82 note: NVIDIA Path B non-executing Workflow Registry schema design lives in `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`. It defines future metadata fields and pseudo-schema only; it creates no active workflow registry, runtime config, production config, UI implementation, or tool behavior.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

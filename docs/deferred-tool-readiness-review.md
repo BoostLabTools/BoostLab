@@ -75,6 +75,13 @@ gate states and a future runtime result schema without creating runtime config,
 production approval, UI implementation, tool cards, placeholder enablement, or
 Path B execution behavior.
 
+Phase 82 records NVIDIA App Path B non-executing Workflow Registry schema
+design in
+`docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
+It defines future metadata fields and pseudo-schema only; it creates no active
+workflow registry, runtime config, production config, UI implementation, tool
+cards, placeholder enablement, or Path B execution behavior.
+
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It leaves Path B design-only and
 does not enable placeholders or runtime behavior.

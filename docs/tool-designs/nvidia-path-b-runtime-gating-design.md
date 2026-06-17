@@ -415,3 +415,9 @@ runtime foundation. It should define how a future non-executing workflow
 registry would represent Path B steps, gate states, missing approvals, and
 visible blocked status without creating production config, enabling tool
 buttons, approving artifacts, or changing runtime behavior.
+
+Phase 82 records that schema design in
+`docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
+It creates no active workflow registry, runtime config, production config, UI
+implementation, tool card, placeholder enablement, or Path B execution
+behavior.

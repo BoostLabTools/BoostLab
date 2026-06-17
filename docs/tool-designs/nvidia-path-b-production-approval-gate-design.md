@@ -279,3 +279,8 @@ Phase 81 records that design in
 `docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It adds no runtime
 gate implementation, production config, production approval, UI implementation,
 tool card, placeholder enablement, or Path B execution behavior.
+
+Phase 82 records non-executing Workflow Registry schema design in
+`docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
+It does not create an active workflow registry, production config, allowlist
+config, executable handler, UI implementation, or Path B runtime behavior.
