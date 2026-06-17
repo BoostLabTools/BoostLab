@@ -360,3 +360,7 @@ Phase 77 records the inert NVIDIA profile state capture model in
 `docs/nvidia-profile-state-capture-model.md`. It keeps all profile capture,
 restore, import, export, Profile Inspector execution, and `.nip` operations
 unapproved.
+
+Phase 78 records future Path A / Path B UI workflow design in
+`docs/nvidia-path-b-ui-workflow-design.md`. It adds no visible UI controls,
+runtime workflow config, or production approval.

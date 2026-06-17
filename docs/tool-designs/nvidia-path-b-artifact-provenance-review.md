@@ -298,3 +298,7 @@ Settings` and related Path B steps.
 Phase 77 records that model in `docs/nvidia-profile-state-capture-model.md`.
 It approves no profile capture, restore, import, export, Profile Inspector
 execution, `.nip` operation, runtime behavior, or production scope.
+
+Phase 78 records future Path A / Path B UI workflow design in
+`docs/nvidia-path-b-ui-workflow-design.md`. It adds no UI implementation or
+production approval.

@@ -258,3 +258,7 @@ review-only and creates no artifact approval or production provenance config.
 Phase 77 records the inert NVIDIA profile state capture model in
 `docs/nvidia-profile-state-capture-model.md`. It is foundation-only and does not
 enable Path B behavior.
+
+Phase 78 records future Path A / Path B UI workflow design in
+`docs/nvidia-path-b-ui-workflow-design.md`. It keeps Path B catalog-only and
+does not enable tool cards.

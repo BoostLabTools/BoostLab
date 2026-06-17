@@ -290,3 +290,7 @@ That phase should remain design-only unless Yazan explicitly approves a narrower
 scope. It should define how BoostLab presents Path A versus Path B, step order,
 non-mixing gates, profile-capture readiness, NotApproved artifact state, and
 refusal messages before any Path B implementation attempt.
+
+Phase 78 records that design in `docs/nvidia-path-b-ui-workflow-design.md`.
+It adds no UI implementation, tool card, placeholder, runtime behavior, or
+production approval.

@@ -35,6 +35,8 @@ Phase 76 note: NVIDIA App Path B artifact provenance review lives in `docs/tool-
 
 Phase 77 note: NVIDIA profile state capture model lives in `docs/nvidia-profile-state-capture-model.md`. It documents profile capture/restore/import/export requirements without approving NVIDIA Profile Inspector execution, `.nip` operations, profile writes, runtime behavior, or production scopes.
 
+Phase 78 note: NVIDIA Path B UI workflow design lives in `docs/nvidia-path-b-ui-workflow-design.md`. It documents future Path A versus Path B choice, ordered stepper, gating, messaging, and result/log expectations without adding UI implementation or enabling Path B behavior.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:
