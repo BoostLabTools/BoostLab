@@ -254,3 +254,7 @@ planning-only and creates no production config.
 Phase 76 records non-approved artifact provenance review in
 `docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It remains
 review-only and creates no artifact approval or production provenance config.
+
+Phase 77 records the inert NVIDIA profile state capture model in
+`docs/nvidia-profile-state-capture-model.md`. It is foundation-only and does not
+enable Path B behavior.

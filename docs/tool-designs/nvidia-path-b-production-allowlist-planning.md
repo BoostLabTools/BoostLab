@@ -304,3 +304,8 @@ Phase 76 records that review in
 `docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It approves no
 artifacts, downloads, installers, production scopes, or production provenance
 config changes.
+
+Phase 77 records the inert NVIDIA profile state capture model in
+`docs/nvidia-profile-state-capture-model.md`. It approves no profile capture,
+restore, import, export, Profile Inspector execution, `.nip` operation, runtime
+behavior, or production scope.

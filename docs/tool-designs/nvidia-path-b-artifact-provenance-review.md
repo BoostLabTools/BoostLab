@@ -294,3 +294,7 @@ That phase should remain foundation/design-only unless Yazan explicitly
 authorizes a narrower scope. It should define whether NVIDIA profile/DRS state
 can be captured, verified, and restored well enough for future `Nvidia
 Settings` and related Path B steps.
+
+Phase 77 records that model in `docs/nvidia-profile-state-capture-model.md`.
+It approves no profile capture, restore, import, export, Profile Inspector
+execution, `.nip` operation, runtime behavior, or production scope.
