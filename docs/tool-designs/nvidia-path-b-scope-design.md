@@ -364,3 +364,7 @@ unapproved.
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It adds no visible UI controls,
 runtime workflow config, or production approval.
+
+Phase 79 records non-approved draft allowlist proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It keeps every
+candidate Draft/NotApproved and creates no production config.

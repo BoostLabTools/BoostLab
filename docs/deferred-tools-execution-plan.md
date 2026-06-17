@@ -66,6 +66,10 @@ Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It adds no UI implementation,
 runtime workflow config, tool card, placeholder, or production approval.
 
+Phase 79 records non-approved NVIDIA App Path B draft allowlist proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It creates no
+production allowlist config and approves no scope.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

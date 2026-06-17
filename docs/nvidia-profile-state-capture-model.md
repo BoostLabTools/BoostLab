@@ -294,3 +294,8 @@ refusal messages before any Path B implementation attempt.
 Phase 78 records that design in `docs/nvidia-path-b-ui-workflow-design.md`.
 It adds no UI implementation, tool card, placeholder, runtime behavior, or
 production approval.
+
+Phase 79 records non-approved draft allowlist proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. Profile-related
+entries remain non-approved and do not enable capture, import, export, or
+restore.

@@ -444,3 +444,7 @@ That phase should remain non-executing unless Yazan explicitly approves a
 narrower scope. A cautious version should draft non-approved candidate entries
 for exact Path B registry, device, profile, artifact, process, and workflow
 scopes while keeping every candidate `Draft` / `NotApproved`.
+
+Phase 79 records those non-approved draft proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It creates no
+production allowlist config and approves no scope.

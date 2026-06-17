@@ -262,3 +262,7 @@ enable Path B behavior.
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It keeps Path B catalog-only and
 does not enable tool cards.
+
+Phase 79 records non-approved draft allowlist proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It creates no
+production allowlist config and approves no scope.

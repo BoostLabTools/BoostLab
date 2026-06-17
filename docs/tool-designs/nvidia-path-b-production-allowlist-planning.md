@@ -313,3 +313,7 @@ behavior, or production scope.
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It remains design-only and enables
 no Path B behavior.
+
+Phase 79 records non-approved draft allowlist proposals in
+`docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It creates no
+production allowlist config and approves no scope.

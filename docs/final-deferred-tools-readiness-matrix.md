@@ -37,6 +37,8 @@ Phase 77 note: NVIDIA profile state capture model lives in `docs/nvidia-profile-
 
 Phase 78 note: NVIDIA Path B UI workflow design lives in `docs/nvidia-path-b-ui-workflow-design.md`. It documents future Path A versus Path B choice, ordered stepper, gating, messaging, and result/log expectations without adding UI implementation or enabling Path B behavior.
 
+Phase 79 note: NVIDIA Path B draft allowlist proposal lives in `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It structures future candidate scopes while keeping every entry non-approved and adding no production allowlist config.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:
