@@ -57,6 +57,9 @@ Phase 74 records the corresponding Path B scope design in
 `docs/tool-designs/nvidia-path-b-scope-design.md`. It remains non-executing and
 approves no production scope.
 
+Phase 75 records non-approved production allowlist planning in
+`docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`.
+
 ## Review Inputs
 
 This review is based on:

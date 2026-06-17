@@ -246,3 +246,7 @@ workflow gating.
 Phase 74 records that scope design in
 `docs/tool-designs/nvidia-path-b-scope-design.md`. It remains non-executing and
 approves no production scope.
+
+Phase 75 records non-approved production allowlist planning in
+`docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`. It remains
+planning-only and creates no production config.

@@ -50,6 +50,9 @@ or production approval.
 Phase 74 records the non-executing NVIDIA App Path B scope design in
 `docs/tool-designs/nvidia-path-b-scope-design.md`.
 
+Phase 75 records non-approved NVIDIA App Path B production allowlist planning
+in `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

@@ -29,6 +29,8 @@ Phase 73 note: NVIDIA App Path B catalog planning lives in `docs/nvidia-path-b-c
 
 Phase 74 note: NVIDIA App Path B scope design lives in `docs/tool-designs/nvidia-path-b-scope-design.md`. It inventories the five source-promoted scripts and documents future foundations without enabling implementation.
 
+Phase 75 note: NVIDIA App Path B production allowlist planning lives in `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`. It documents candidate allowlist categories and unresolved approval questions without adding production scopes.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

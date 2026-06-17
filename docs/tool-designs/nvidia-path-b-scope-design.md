@@ -346,3 +346,7 @@ That phase should still remain non-executing unless Yazan explicitly approves
 one exact production scope proposal. A cautious next step would be to draft
 non-approved allowlist proposals for `Hdcp`, `P0 State`, and `Msi Mode` first,
 because they are narrower than the download/installer/profile-import steps.
+
+Phase 75 records non-approved candidate allowlist planning in
+`docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`. It creates
+no production config and approves no scope.
