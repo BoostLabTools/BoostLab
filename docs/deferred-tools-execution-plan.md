@@ -53,6 +53,10 @@ Phase 74 records the non-executing NVIDIA App Path B scope design in
 Phase 75 records non-approved NVIDIA App Path B production allowlist planning
 in `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`.
 
+Phase 76 records non-approved NVIDIA App Path B artifact provenance review in
+`docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It does not
+approve artifacts, downloads, installers, or production provenance config.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

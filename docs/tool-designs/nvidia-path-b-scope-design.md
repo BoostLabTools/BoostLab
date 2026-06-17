@@ -350,3 +350,8 @@ because they are narrower than the download/installer/profile-import steps.
 Phase 75 records non-approved candidate allowlist planning in
 `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`. It creates
 no production config and approves no scope.
+
+Phase 76 records non-approved artifact provenance review in
+`docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It approves no
+artifacts, downloads, installers, production scopes, or production provenance
+config changes.

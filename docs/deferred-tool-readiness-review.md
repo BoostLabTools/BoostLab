@@ -60,6 +60,10 @@ approves no production scope.
 Phase 75 records non-approved production allowlist planning in
 `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`.
 
+Phase 76 records non-approved artifact provenance review in
+`docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It leaves all
+artifacts, downloads, installers, and production provenance config unapproved.
+
 ## Review Inputs
 
 This review is based on:

@@ -31,6 +31,8 @@ Phase 74 note: NVIDIA App Path B scope design lives in `docs/tool-designs/nvidia
 
 Phase 75 note: NVIDIA App Path B production allowlist planning lives in `docs/tool-designs/nvidia-path-b-production-allowlist-planning.md`. It documents candidate allowlist categories and unresolved approval questions without adding production scopes.
 
+Phase 76 note: NVIDIA App Path B artifact provenance review lives in `docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It documents artifact evidence and approval blockers without approving artifacts, downloads, installers, production scopes, or provenance config.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

@@ -299,3 +299,8 @@ artifact records. It should determine whether the dynamic NVIDIA driver
 installer flow, 7-Zip artifact, and NVIDIA Profile Inspector artifact can ever
 meet BoostLab's provenance requirements without weakening the Ultimate source
 behavior.
+
+Phase 76 records that review in
+`docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It approves no
+artifacts, downloads, installers, production scopes, or production provenance
+config changes.
