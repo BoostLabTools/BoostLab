@@ -332,8 +332,8 @@ unmerged:
 
 Phase 92 count convention:
 
-* Active tools: 49
-* Implemented tools: 31
+* Active tools: 50
+* Implemented tools: 32
 * Deferred/placeholders: 18
 * Source-promoted mirror files: 7
-* Remaining unimplemented source-promoted intake candidates: 6
+* Remaining unimplemented source-promoted intake candidates: 5

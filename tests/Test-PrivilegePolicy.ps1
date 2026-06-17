@@ -336,7 +336,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 31) {
+if ($implementedModuleFiles.Count -ne 32) {
     $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

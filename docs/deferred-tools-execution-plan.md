@@ -94,6 +94,14 @@ and performs no DDU or 7-Zip download/execution, external process start, Safe
 Mode switch, RunOnce creation, `bcdedit` call, reboot, registry mutation, or
 driver cleanup.
 
+Phase 93 implements `Driver Install Latest` as a controlled manual-handoff
+active tool for Path B step 1 only. It verifies the source mirror checksum,
+reports ManualHandoffOnly, keeps Auto blocked as
+`AutoBlockedUntilArtifactApproval`, and performs no NVIDIA driver download,
+installer execution, browser opening, external process start, registry/system/
+driver mutation, reboot, or session change. The remaining Path B steps remain
+source-promoted intake candidates only.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`
@@ -115,10 +123,10 @@ Tool-specific scope designs created after the first-pass review:
 
 Current inventory at the time of this plan:
 
-* Active approved tools: **49**
-* Implemented tools: **31**
+* Active approved tools: **50**
+* Implemented tools: **32**
 * Remaining placeholders: **18**
-* Remaining unimplemented source-promoted intake candidates: **6**
+* Remaining unimplemented source-promoted intake candidates: **5**
 * Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
 
 ## Product Scope Context

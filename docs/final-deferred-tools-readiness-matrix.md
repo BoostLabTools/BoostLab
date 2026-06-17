@@ -10,11 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **49**
-* Implemented tools: **31**
+* Active tools: **50**
+* Implemented tools: **32**
 * Deferred/placeholders: **18**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
-* Remaining unimplemented source-promoted intake candidates: **6**
+* Remaining unimplemented source-promoted intake candidates: **5**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
@@ -47,6 +47,8 @@ Phase 81 note: NVIDIA Path B runtime gating design lives in `docs/tool-designs/n
 Phase 82 note: NVIDIA Path B non-executing Workflow Registry schema design lives in `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`. It defines future metadata fields and pseudo-schema only; it creates no active workflow registry, runtime config, production config, UI implementation, or tool behavior.
 
 Phase 92 note: `Driver Clean` is now an implemented active tool using controlled manual handoff only. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no DDU or 7-Zip download/execution, performs no Safe Mode/RunOnce/bcdedit/reboot automation, and remains outside NVIDIA Path B.
+
+Phase 93 note: `Driver Install Latest` is now an implemented active tool using controlled manual handoff only for Path B step 1. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no NVIDIA driver download, installer execution, browser opening, external process start, registry/system/driver mutation, reboot, or session change, and leaves the remaining Path B steps separate and unimplemented.
 
 ## Coverage Summary
 

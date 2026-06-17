@@ -179,9 +179,9 @@ $placeholderModules = @(
     }
 )
 if (
-    $tools.Count -ne 49 -or
-    $allModules.Count -ne 49 -or
-    $implementedModules.Count -ne 31 -or
+    $tools.Count -ne 50 -or
+    $allModules.Count -ne 50 -or
+    $implementedModules.Count -ne 32 -or
     $placeholderModules.Count -ne 18
 ) {
     $errors.Add(

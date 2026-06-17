@@ -710,15 +710,15 @@ try {
                 )
             }
     )
-    if ($allTools.Count -ne 49) {
-        $errors.Add("Expected 49 active tools, found $($allTools.Count).")
+    if ($allTools.Count -ne 50) {
+        $errors.Add("Expected 50 active tools, found $($allTools.Count).")
     }
     if ($placeholderModules.Count -ne 18) {
         $errors.Add(
             "Expected 18 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 31) {
+    if (($allTools.Count - $placeholderModules.Count) -ne 32) {
         $errors.Add('Implemented tool count changed from 30.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
@@ -782,8 +782,8 @@ if ($errors.Count -gt 0) {
     ServiceChanged             = $false
     TrustedInstallerUsed       = $false
     ProtectedTargetModified    = $false
-    ActiveToolCount            = 49
-    ImplementedToolCount       = 31
+    ActiveToolCount            = 50
+    ImplementedToolCount       = 32
     PlaceholderToolCount       = 18
     SourceUltimateUnchanged    = $true
     Message                    = 'Safe Mode foundation is deny-by-default and non-executing.'

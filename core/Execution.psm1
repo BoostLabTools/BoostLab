@@ -60,6 +60,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-clean.psm1'
         Actions = @('Analyze', 'Open', 'Apply')
     }
+    'driver-install-latest' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-latest.psm1'
+        Actions = @('Analyze', 'Open', 'Apply')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

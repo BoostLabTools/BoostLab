@@ -11,6 +11,12 @@ No production provenance config was changed. No implementation, placeholder,
 tool card, executable module, runtime workflow config, or runtime behavior
 change was added.
 
+Phase 93 current-state note: `Driver Install Latest` is now implemented only as
+a controlled manual-handoff active tool for Path B step 1. This does not
+approve NVIDIA driver artifacts, downloads, installer descriptors, installer
+execution, external process launch, driver mutation, reboot/session handling,
+Default, Restore, or the remaining Path B steps.
+
 NVIDIA App Path B order remains:
 
 `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`

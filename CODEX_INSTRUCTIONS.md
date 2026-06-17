@@ -129,10 +129,12 @@ The app must follow this exact order:
 
 ## Stage 5 - Graphics
 
-1. Driver Install Debloat & Settings
-2. DirectX
-3. Visual C++
-4. Graphics Configuration Center
+1. Driver Clean
+2. Driver Install Latest
+3. Driver Install Debloat & Settings
+4. DirectX
+5. Visual C++
+6. Graphics Configuration Center
 
 ---
 

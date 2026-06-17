@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'directx'; Title = 'DirectX'; Stage = 'Graphics'; Order = 3
+    Id = 'directx'; Title = 'DirectX'; Stage = 'Graphics'; Order = 4
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Review and prepare the approved DirectX runtime installation.'
     Actions = @('Analyze', 'Apply')

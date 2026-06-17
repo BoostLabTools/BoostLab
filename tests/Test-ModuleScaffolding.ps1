@@ -91,6 +91,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\driver-clean.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
     }
+    'driver-install-latest' = @{
+        RelativePath          = 'Graphics\driver-install-latest.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -426,6 +430,9 @@ foreach ($entry in $expectedModules.Values) {
             2
         }
         elseif ($toolId -eq 'driver-clean') {
+            0
+        }
+        elseif ($toolId -eq 'driver-install-latest') {
             0
         }
         elseif ($toolId -eq 'theme-black') {

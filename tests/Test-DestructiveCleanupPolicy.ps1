@@ -862,8 +862,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 49 -or
-        $implementedModules.Count -ne 31 -or
+        $allModules.Count -ne 50 -or
+        $implementedModules.Count -ne 32 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -963,7 +963,7 @@ if ($errors.Count -gt 0) {
     MockQuarantineRecorded     = $true
     MockQuarantineRestorePassed = $true
     RealFilesDeleted           = $false
-    ImplementedModuleCount     = 31
+    ImplementedModuleCount     = 32
     PlaceholderModuleCount     = 18
     SourceUltimateUnchanged    = $true
     Message                    = 'Destructive cleanup policy is bounded, confirmed, verified, mocked, and deny-by-default.'

@@ -202,6 +202,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Auto mode is blocked for Driver Clean because DDU, 7-Zip, process, reboot, and recovery approvals do not exist.'
     }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
+        'Read the Driver Install Latest source mirror and report blocked NVIDIA driver approvals without downloading or installing anything.'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
+        'Prepare Driver Install Latest manual handoff instructions only; no browser, external tool, NVIDIA driver download, installer execution, or system-changing operation is opened or executed.'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for Driver Install Latest because NVIDIA artifact, installer, driver-state, process, reboot/session, and recovery approvals do not exist.'
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
     }
@@ -372,6 +381,26 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
         $plannedChanges.Add('Report missing DDU artifact/provenance, 7-Zip artifact/provenance, process handling, Safe Mode, RunOnce, bcdedit, reboot/recovery, generated-script, and driver-state approvals.')
         $plannedChanges.Add('Perform no download, external process start, registry mutation, Safe Mode change, RunOnce creation, bcdedit call, reboot, or driver cleanup.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the Driver Install Latest source mirror checksum and implementation status.')
+        $plannedChanges.Add('Report missing NVIDIA driver artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Report Path B step 1 of 5 while keeping Driver Install Latest separate from Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
+        $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, browser opening, external process start, registry mutation, driver mutation, reboot, or session change.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions only.')
+        $plannedChanges.Add('Do not open a browser, external tool, NVIDIA installer, or approved external resource.')
+        $plannedChanges.Add('Do not download an NVIDIA driver or 7-Zip.')
+        $plannedChanges.Add('Do not execute an NVIDIA installer.')
+        $plannedChanges.Add('Do not modify registry, drivers, services, files, sessions, or reboot state.')
+        $plannedChanges.Add('Keep Path B steps separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing NVIDIA driver artifact/download approval, installer execution descriptor approval, driver state capture/rollback approval, process handoff approval, reboot/session handling approval, and recovery handling approval.')
+        $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, external process start, registry/system/driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
@@ -666,6 +695,20 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Auto mode is blocked before execution.')
         $sideEffects.Add('No approved Auto behavior, external process, download, registry mutation, reboot, or driver cleanup occurs.')
     }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Driver Install Latest analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('Path B step 1 is reported without enabling the remaining Path B steps.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No browser, external tool, NVIDIA driver download, NVIDIA installer execution, or system-changing operation occurs.')
+        $sideEffects.Add('No registry, driver, reboot, or session change occurs.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, NVIDIA driver download, installer execution, external process, registry mutation, driver mutation, reboot, or session change occurs.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
@@ -841,10 +884,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -ne 'driver-clean') {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -ne 'driver-clean') {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet) {
@@ -895,6 +938,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Driver Clean Auto mode is blocked. BoostLab will not execute Auto behavior because DDU/7-Zip artifact provenance, process handling, reboot/recovery, generated-script, and driver-state approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare Driver Install Latest manual handoff instructions only. It will not open a browser or external tool, download an NVIDIA driver or 7-Zip, execute an NVIDIA installer, modify registry or drivers, change the session, or reboot. Continue?'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
+        'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'

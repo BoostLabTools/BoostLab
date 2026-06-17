@@ -503,7 +503,7 @@ function Get-BoostLabToolActionDisplayLabel {
     )
 
     $toolId = [string]$ToolMetadata['Id']
-    if ($toolId -eq 'driver-clean') {
+    if ($toolId -in @('driver-clean', 'driver-install-latest')) {
         switch ($ActionName) {
             'Open' { return 'Manual Handoff' }
             'Apply' { return 'Apply Auto' }

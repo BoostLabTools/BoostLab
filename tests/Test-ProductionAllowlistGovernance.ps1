@@ -386,14 +386,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 49) {
-    throw "Expected 49 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 50) {
+    throw "Expected 50 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 31) {
-    throw "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 32) {
+    throw "Expected 32 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $artifactPolicy = Import-PowerShellDataFile -LiteralPath $policyPaths.Artifact

@@ -74,10 +74,12 @@ GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwis
 
 ### Stage 5 - Graphics
 
-1. Driver Install Debloat & Settings
-2. DirectX
-3. Visual C++
-4. Graphics Configuration Center
+1. Driver Clean
+2. Driver Install Latest
+3. Driver Install Debloat & Settings
+4. DirectX
+5. Visual C++
+6. Graphics Configuration Center
 
 ### Stage 6 - Windows
 
@@ -148,7 +150,7 @@ Phase 25 intentionally deleted only `source-ultimate/6 Windows/17 Loudness EQ.ps
 
 ### Phase 70 Driver Clean Intake Exception
 
-Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution. The exception only allows `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` to be treated as a missing Ultimate script candidate for future source promotion.
+Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution. Phase 92 implements Driver Clean as controlled manual handoff only; Auto remains blocked until dedicated future approvals exist.
 
 No Driver Clean behavior, DDU download, DDU execution, artifact approval, production scope, module, placeholder, or tool card is approved by this exception. Standalone DDU remains excluded, and Loudness EQ and NVME Faster Driver remain permanently deleted.
 

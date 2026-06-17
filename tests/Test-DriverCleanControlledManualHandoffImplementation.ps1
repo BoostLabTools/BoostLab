@@ -148,20 +148,21 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 49) "Expected 49 active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq 50) "Expected 50 active tools, found $($allTools.Count)."
 Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 31) "Expected 31 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 32) "Expected 32 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot '_intake-promoted\Ultimate') -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
 $remainingSourcePromoted = @(
     $sourcePromotedFiles | Where-Object {
-        $_.FullName -ne $sourcePath
+        $_.FullName -ne $sourcePath -and
+        $_.Name -ne '2 Driver Install Latest.ps1'
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 6) "Expected 6 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 5) "Expected 5 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
-foreach ($pathBTool in @('driver-install-latest', 'nvidia-settings', 'hdcp', 'p0-state', 'msi-mode')) {
+foreach ($pathBTool in @('nvidia-settings', 'hdcp', 'p0-state', 'msi-mode')) {
     Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq $pathBTool })) -eq 0) "NVIDIA Path B intake tool was unexpectedly added as active: $pathBTool"
 }
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })) -eq 1) 'Path A Driver Install Debloat & Settings must remain active and separate.'
@@ -198,7 +199,7 @@ Assert-BoostLabCondition (-not $actionPlanText.Contains('Apply Auto')) 'Action p
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
     'Get-BoostLabToolActionDisplayLabel',
-    "if (`$toolId -eq 'driver-clean')",
+    "'driver-clean', 'driver-install-latest'",
     "'Open' { return 'Manual Handoff' }",
     "'Apply' { return 'Apply Auto' }",
     'ActionName   = $actionName',

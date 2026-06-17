@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'graphics-configuration-center'; Title = 'Graphics Configuration Center'; Stage = 'Graphics'; Order = 5
+    Id = 'graphics-configuration-center'; Title = 'Graphics Configuration Center'; Stage = 'Graphics'; Order = 6
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open the installed graphics control center for guided configuration.'
     Actions = @('Open')
