@@ -303,3 +303,8 @@ restore.
 Phase 80 records production approval gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. Profile
 capture/import/restore gates remain design-only and unapproved.
+
+Phase 81 records runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. Profile capture,
+profile import, Profile Inspector execution, `.nip` operations, Restore, and
+Default remain unapproved and non-executing.

@@ -69,6 +69,12 @@ Phase 77 records the inert NVIDIA profile state capture model in
 restore, import, export, Profile Inspector execution, `.nip` operation,
 runtime behavior, and production scopes unapproved.
 
+Phase 81 records NVIDIA App Path B runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future
+gate states and a future runtime result schema without creating runtime config,
+production approval, UI implementation, tool cards, placeholder enablement, or
+Path B execution behavior.
+
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It leaves Path B design-only and
 does not enable placeholders or runtime behavior.

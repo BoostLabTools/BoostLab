@@ -307,3 +307,9 @@ approval, validator coverage, and rollback gates.
 Phase 80 records that gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It grants
 no production approval and creates no production allowlist config.
+
+Phase 81 records runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It creates no
+runtime gate implementation, production config, production approval, UI
+implementation, tool card, placeholder enablement, or Path B execution
+behavior.

@@ -41,6 +41,8 @@ Phase 79 note: NVIDIA Path B draft allowlist proposal lives in `docs/tool-design
 
 Phase 80 note: NVIDIA Path B production approval gate design lives in `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It defines future gate criteria for draft entries without granting production approval or creating production config.
 
+Phase 81 note: NVIDIA Path B runtime gating design lives in `docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future gate states and result schema without implementing runtime gates, creating production config, granting production approval, enabling UI, or changing tool behavior.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

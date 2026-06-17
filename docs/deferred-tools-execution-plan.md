@@ -74,6 +74,12 @@ Phase 80 records NVIDIA App Path B production approval gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It grants
 no production approval and creates no production config.
 
+Phase 81 records NVIDIA App Path B runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It defines future
+gate states, runtime result schema, and blocked-path behavior without adding
+runtime gate implementation, production config, UI implementation, tool card,
+placeholder enablement, or Path B execution behavior.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`

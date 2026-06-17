@@ -372,3 +372,9 @@ candidate Draft/NotApproved and creates no production config.
 Phase 80 records production approval gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It creates
 no production config and approves no Path B scope.
+
+Phase 81 records runtime gating design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It creates no
+runtime gate implementation, production config, production approval, UI
+implementation, tool card, placeholder enablement, or Path B execution
+behavior.

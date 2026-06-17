@@ -274,3 +274,8 @@ That phase should remain design-only unless Yazan explicitly approves a narrow
 runtime foundation. It should define how a future runtime would read approved
 Path B workflow gates, block non-approved steps, report missing gates, and
 prevent Path A/Path B mixing without enabling any Path B tool behavior.
+
+Phase 81 records that design in
+`docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. It adds no runtime
+gate implementation, production config, production approval, UI implementation,
+tool card, placeholder enablement, or Path B execution behavior.
