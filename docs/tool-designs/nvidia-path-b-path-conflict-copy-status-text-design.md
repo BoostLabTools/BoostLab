@@ -471,3 +471,8 @@ Phase 85 records that preview data design in
 It creates no live catalog, active UI config, active runtime config, production
 config, modules, tool cards, placeholder enablement, or Path B execution
 behavior.
+
+Phase 86 records preview data integrity/drift rules design in
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
+It defines future drift response copy requirements indirectly through severity
+and report fields, but adds no live UI text, active config, or runtime behavior.

@@ -502,3 +502,8 @@ foundation. It should define how future preview-only data would detect stale
 source checksum, stale badge/gate references, and documentation drift without
 creating active UI config, runtime config, production config, modules, action
 buttons, artifacts, allowlists, or execution behavior.
+
+Phase 86 records that integrity/drift rules design in
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
+It creates no live drift checker, active preview config, active UI config,
+runtime config, production approval, or Path B execution behavior.

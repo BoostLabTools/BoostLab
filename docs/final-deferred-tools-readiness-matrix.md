@@ -221,3 +221,9 @@ Phase 85 adds
 as design-only preview metadata planning. It does not change readiness
 categories, approve scopes, create an active catalog, enable UI, or implement
 Path B.
+
+Phase 86 adds
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`
+as design-only integrity/drift rules for future Path B preview metadata. It
+does not change readiness categories, approve scopes, create a drift checker,
+enable UI, or implement Path B.

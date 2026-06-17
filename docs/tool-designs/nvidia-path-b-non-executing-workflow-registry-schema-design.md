@@ -605,3 +605,9 @@ Phase 85 records non-executing catalog preview data design in
 It keeps preview data documentation-only and does not create an active workflow
 registry, active catalog config, UI implementation, production config, modules,
 or Path B execution behavior.
+
+Phase 86 records preview data integrity/drift rules design in
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
+It keeps integrity checks design-only and does not create a runtime drift
+checker, active preview config, workflow registry, production config, or Path B
+execution behavior.

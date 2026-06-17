@@ -296,3 +296,9 @@ Phase 85 records non-executing catalog preview data design in
 It defines future preview metadata for catalog display without creating a live
 runtime catalog, active UI config, active runtime config, production approval,
 or tool behavior.
+
+Phase 86 records preview data integrity/drift rules design in
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
+It defines future integrity and drift checks for preview metadata without
+creating active catalog config, runtime checks, production approval, or tool
+behavior.

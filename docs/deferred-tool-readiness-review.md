@@ -314,3 +314,10 @@ for future read-only Path B catalog preview metadata. The review remains
 unchanged: preview data design does not approve execution, production
 allowlists, artifacts, runtime catalog config, UI controls, or placeholder
 enablement.
+
+Phase 86 adds
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`
+for future Path B preview integrity and drift rules. The review remains
+unchanged: drift rules design does not approve execution, production allowlists,
+artifacts, active preview config, runtime checks, UI controls, or placeholder
+enablement.

@@ -455,3 +455,9 @@ NVIDIA Path B non-executing catalog preview data design is tracked in
 `docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
 It is documentation-only preview metadata guidance and does not create an
 active runtime catalog, UI config, production scope, artifact, or tool behavior.
+
+NVIDIA Path B preview data integrity/drift rules design is tracked in
+`docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
+It is documentation-only governance for future preview consistency and does not
+create a live drift checker, active preview config, production scope, artifact,
+or tool behavior.
