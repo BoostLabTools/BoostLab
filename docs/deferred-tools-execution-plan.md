@@ -450,3 +450,8 @@ NVIDIA Path B path conflict copy/status text design is tracked in
 is documentation-only future wording guidance and does not add live UI strings,
 localization files, runtime workflow config, production scope, artifact, or
 tool behavior.
+
+NVIDIA Path B non-executing catalog preview data design is tracked in
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
+It is documentation-only preview metadata guidance and does not create an
+active runtime catalog, UI config, production scope, artifact, or tool behavior.

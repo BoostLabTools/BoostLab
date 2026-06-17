@@ -290,3 +290,9 @@ Phase 84 records path conflict copy/status text design in
 keeps Path B catalog-only and defines future user-facing status copy without
 adding live UI strings, localization files, runtime behavior, production
 approval, or tool behavior.
+
+Phase 85 records non-executing catalog preview data design in
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
+It defines future preview metadata for catalog display without creating a live
+runtime catalog, active UI config, active runtime config, production approval,
+or tool behavior.

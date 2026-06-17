@@ -421,3 +421,9 @@ Phase 84 records that copy/status text design in
 `docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
 adds no live UI copy implementation, localization runtime file, active UI
 config, runtime config, production approval, or Path B execution behavior.
+
+Phase 85 records non-executing catalog preview data design in
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
+It defines future read-only preview metadata for badges, blockers, status text,
+source checksums, and missing approvals without creating active UI/runtime
+config or execution behavior.

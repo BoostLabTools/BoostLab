@@ -215,3 +215,9 @@ Phase 84 adds
 design-only wording plan for future Path A/Path B conflict and status text. It
 does not change readiness categories, approve scopes, enable UI, add
 localization runtime files, or implement Path B.
+
+Phase 85 adds
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`
+as design-only preview metadata planning. It does not change readiness
+categories, approve scopes, create an active catalog, enable UI, or implement
+Path B.

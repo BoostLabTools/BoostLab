@@ -473,3 +473,8 @@ Phase 84 records path conflict copy/status text design in
 `docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
 defines future wording for Path A/Path B explanation, conflict state, disabled
 actions, and status templates without modifying WPF/UI runtime files.
+
+Phase 85 records non-executing catalog preview data design in
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
+It defines future read-only preview metadata and sample fields without adding
+live catalog UI, active UI config, runtime behavior, or action enablement.

@@ -465,3 +465,9 @@ runtime or UI foundation. It should define future non-executing catalog preview
 data for Path B without creating live UI config, localization files, runtime
 config, modules, action buttons, artifacts, production scopes, or execution
 behavior.
+
+Phase 85 records that preview data design in
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`.
+It creates no live catalog, active UI config, active runtime config, production
+config, modules, tool cards, placeholder enablement, or Path B execution
+behavior.

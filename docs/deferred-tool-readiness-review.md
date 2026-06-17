@@ -307,3 +307,10 @@ Phase 84 adds
 future Path A/Path B conflict copy and status text. The review remains
 unchanged: wording design does not approve execution, production allowlists,
 artifacts, UI controls, localization runtime files, or placeholder enablement.
+
+Phase 85 adds
+`docs/tool-designs/nvidia-path-b-non-executing-catalog-preview-data-design.md`
+for future read-only Path B catalog preview metadata. The review remains
+unchanged: preview data design does not approve execution, production
+allowlists, artifacts, runtime catalog config, UI controls, or placeholder
+enablement.
