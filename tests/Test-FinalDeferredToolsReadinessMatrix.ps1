@@ -74,14 +74,14 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($allTools.Count -ne 50) {
-    throw "Expected 50 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 51) {
+    throw "Expected 51 active tools, found $($allTools.Count)."
 }
 if ($placeholderTools.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 32) {
-    throw "Expected 32 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne 33) {
+    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(

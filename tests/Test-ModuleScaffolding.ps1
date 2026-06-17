@@ -95,6 +95,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\driver-install-latest.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
     }
+    'nvidia-settings' = @{
+        RelativePath          = 'Graphics\nvidia-settings.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -433,6 +437,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'driver-install-latest') {
+            0
+        }
+        elseif ($toolId -eq 'nvidia-settings') {
             0
         }
         elseif ($toolId -eq 'theme-black') {

@@ -11,6 +11,12 @@ No NVIDIA Profile Inspector execution is approved. No `.nip` import or export
 is approved. No production profile operation is approved. No runtime behavior
 changed.
 
+Phase 94 current-state note: `Nvidia Settings` is now implemented only as a
+controlled manual-handoff active tool for Path B step 2. This does not approve
+NVIDIA profile capture, restore, Profile Inspector execution, `.nip`
+import/export, NVIDIA registry/profile mutation, external process launch, or
+Default/Restore behavior.
+
 Phase 77 status statements:
 
 * No NVIDIA profile capture is performed in this phase.

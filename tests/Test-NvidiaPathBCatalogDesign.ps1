@@ -264,7 +264,7 @@ if (Test-Path -LiteralPath $optionalConfigPath -PathType Leaf) {
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
 $pathBTitles = @($pathB | ForEach-Object { $_.Title })
-foreach ($title in @($pathBTitles | Where-Object { $_ -ne 'Driver Install Latest' })) {
+foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install Latest', 'Nvidia Settings') })) {
     if (@($allTools | Where-Object { $_.Title -eq $title }).Count -ne 0) {
         throw "Path B source-promoted script was unexpectedly added as an active tool: $title"
     }
@@ -272,6 +272,10 @@ foreach ($title in @($pathBTitles | Where-Object { $_ -ne 'Driver Install Latest
 $driverInstallLatestTool = @($allTools | Where-Object { $_.Title -eq 'Driver Install Latest' })
 if ($driverInstallLatestTool.Count -ne 1) {
     throw 'Driver Install Latest must be active exactly once as the Phase 93 controlled manual-handoff tool.'
+}
+$nvidiaSettingsTool = @($allTools | Where-Object { $_.Title -eq 'Nvidia Settings' })
+if ($nvidiaSettingsTool.Count -ne 1) {
+    throw 'Nvidia Settings must be active exactly once as the Phase 94 controlled manual-handoff tool.'
 }
 
 $placeholderModules = @(
@@ -282,19 +286,18 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 50) {
-    throw "Expected 50 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 51) {
+    throw "Expected 51 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 32) {
-    throw "Expected 32 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 33) {
+    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $forbiddenModuleNames = @(
     'DriverInstallLatest',
-    'NvidiaSettings',
     'Hdcp',
     'P0State',
     'MsiMode'

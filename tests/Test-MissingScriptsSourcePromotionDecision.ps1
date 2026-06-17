@@ -225,12 +225,12 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Active tools: **50**',
-    'Implemented tools: **32**',
+    'Active tools: **51**',
+    'Implemented tools: **33**',
     'Deferred/placeholders: **18**',
     'Intake files: **7**',
     'Source-promoted mirror files: **7**',
-    'Remaining unimplemented source-promoted intake candidates: **5 separate from official counts**',
+    'Remaining unimplemented source-promoted intake candidates: **4 separate from official counts**',
     'No existing `source-ultimate` files outside `_intake-promoted` were modified',
     'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
@@ -258,14 +258,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 50) {
-    throw "Expected 50 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 51) {
+    throw "Expected 51 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 32) {
-    throw "Expected 32 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 33) {
+    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

@@ -371,8 +371,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 50 -or
-        $implementedModules.Count -ne 32 -or
+        $allModules.Count -ne 51 -or
+        $implementedModules.Count -ne 33 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -457,7 +457,7 @@ if ($errors.Count -gt 0) {
     HashMismatchBlocked     = $true
     ConfirmationRequired    = $true
     InstallerExecuted       = $false
-    ImplementedModuleCount  = 32
+    ImplementedModuleCount  = 33
     PlaceholderModuleCount  = 18
     SourceUltimateUnchanged = $true
     Message                 = 'Download provenance and installer execution policies are valid and inert.'

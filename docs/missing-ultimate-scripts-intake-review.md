@@ -13,18 +13,19 @@ This is an intake review only. It does not promote the scripts into `source-ulti
 Official BoostLab counts do not change in this phase. Phase 69 was intake
 review only.
 
-Current BoostLab counts after Phase 93:
+Current BoostLab counts after Phase 94:
 
-* Active tools: **50**
-* Implemented tools: **32**
+* Active tools: **51**
+* Implemented tools: **33**
 * Deferred/placeholders: **18**
 * Intake candidate scripts reviewed here: **7**
-* Remaining unimplemented source-promoted intake candidates: **5**
+* Remaining unimplemented source-promoted intake candidates: **4**
 
 The intake scripts were later source-promoted into the protected mirror. Driver
 Clean was then promoted in Phase 92 as a controlled manual-handoff active tool.
 Driver Install Latest was promoted in Phase 93 as controlled manual handoff
-only. The remaining five intake scripts should not be counted as active or deferred
+only. Nvidia Settings was promoted in Phase 94 as controlled manual handoff
+only. The remaining four intake scripts should not be counted as active or deferred
 BoostLab tools unless a future source-promotion phase explicitly accepts them
 into the official catalog.
 
@@ -69,7 +70,7 @@ Conflict result:
 * `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
 * `Driver Clean.ps1` downloads and runs Display Driver Uninstaller / DDU behavior in the intake source. Phase 92 implements controlled manual handoff only; future implementation requires dedicated Driver Clean scope/provenance/safety design before any DDU execution can be considered.
 * `Driver Install Latest.ps1` downloads and launches the latest NVIDIA driver installer in the intake source. Phase 93 implements controlled manual handoff only; Auto remains blocked until NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals exist.
-* The remaining five intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
+* The remaining four intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
 * Loudness EQ remains deleted and is not present in the intake set.
 * NVME Faster Driver remains deleted and is not present in the intake set.
 
@@ -122,7 +123,7 @@ These five scripts must not be merged into one tool during intake. Any future im
 |---|---|---|---|---|---|
 | `5 Graphics/1 Driver Clean.ps1` | Yazan-approved intake exception for future source promotion | Scope + Provenance Design needed | downloads/artifacts/installers; driver install/profile/settings; AMD/Intel unsupported behavior; registry mutation; file mutation/cleanup; services/tasks/processes; reboot/firmware restart; Safe Mode; RunOnce; Default/Restore concerns | Uses broad GPU cleanup and DDU behavior across NVIDIA/AMD/Intel cleanup settings. Future BoostLab design must reconcile this with NVIDIA-only product scope and must not create a standalone DDU tool. | Downloads 7-Zip and DDU, configures DDU, writes RunOnce, changes BCD SafeBoot, restarts, and runs Display Driver Uninstaller. Yazan approved Driver Clean for intake despite DDU usage, but no DDU execution, download, artifact approval, or tool implementation is approved by this intake exception. |
 | `5 Graphics/2 Driver Install Latest.ps1` | Implemented as controlled manual handoff only in Phase 93 | Auto remains blocked pending provenance/installer/driver/reboot approvals | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; AMD/Intel unsupported behavior | BoostLab exposes only manual handoff for the NVIDIA path. AMD and Intel branches remain disabled/not implemented. | NVIDIA branch queries NVIDIA driver API, downloads the latest NVIDIA installer to `%SystemRoot%\Temp\nvidiadriver.exe`, and launches it. BoostLab does not automate those operations in Phase 93. AMD branch downloads AMD installer; Intel branch opens Intel driver page. |
-| `5 Graphics/4 Nvidia Settings.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; file mutation/cleanup; process execution; Default/Restore concerns | NVIDIA-specific behavior is future-eligible only after exact artifact, registry, profile, file, and Default policy decisions. | Downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, writes NVIDIA registry values, writes/imports `.nip` profile data, opens NVIDIA Control Panel, and has a Default branch that deletes or changes NVIDIA values. |
+| `5 Graphics/4 Nvidia Settings.ps1` | Implemented as controlled manual handoff only in Phase 94 | Auto remains blocked pending 7-Zip/Profile Inspector/.nip/profile/registry/process/verification approvals | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; file mutation/cleanup; process execution; Default/Restore concerns | BoostLab exposes only manual handoff for Path B step 2. Automatic NVIDIA settings/profile behavior remains blocked. | Downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, writes NVIDIA registry values, writes/imports `.nip` profile data, opens NVIDIA Control Panel, and has a Default branch that deletes or changes NVIDIA values. |
 | `5 Graphics/5 Hdcp.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; Default/Restore concerns | NVIDIA display-class registry behavior may be considered only with exact target discovery, capture, and verification. | Writes `RMHdcpKeyglobZero` under NVIDIA display class registry instances with On/Default values. |
 | `5 Graphics/6 P0 State.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; Default/Restore concerns | NVIDIA display-class registry behavior may be considered only with exact target discovery, capture, and verification. | Writes `DisableDynamicPstate` under display class registry instances with On/Default values. |
 | `5 Graphics/7 Msi Mode.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; registry mutation; Default/Restore concerns; AMD/Intel unsupported behavior | Current source targets all display devices through `Get-PnpDevice -Class Display`; future BoostLab must constrain or clearly reject non-NVIDIA GPU-specific behavior under product scope. | Writes `MSISupported` under each display device's interrupt-management registry path. This touches device/driver registry state and needs exact device targeting, capture, verification, and rollback policy. |

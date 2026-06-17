@@ -76,10 +76,11 @@ GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwis
 
 1. Driver Clean
 2. Driver Install Latest
-3. Driver Install Debloat & Settings
-4. DirectX
-5. Visual C++
-6. Graphics Configuration Center
+3. Nvidia Settings
+4. Driver Install Debloat & Settings
+5. DirectX
+6. Visual C++
+7. Graphics Configuration Center
 
 ### Stage 6 - Windows
 

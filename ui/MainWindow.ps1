@@ -503,7 +503,7 @@ function Get-BoostLabToolActionDisplayLabel {
     )
 
     $toolId = [string]$ToolMetadata['Id']
-    if ($toolId -in @('driver-clean', 'driver-install-latest')) {
+    if ($toolId -in @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
         switch ($ActionName) {
             'Open' { return 'Manual Handoff' }
             'Apply' { return 'Apply Auto' }

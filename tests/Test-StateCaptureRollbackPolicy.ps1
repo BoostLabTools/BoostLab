@@ -589,8 +589,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 50 -or
-        $implementedModules.Count -ne 32 -or
+        $allModules.Count -ne 51 -or
+        $implementedModules.Count -ne 33 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -677,7 +677,7 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount   = 32
+    ImplementedModuleCount   = 33
     PlaceholderModuleCount   = 18
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'

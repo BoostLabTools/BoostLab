@@ -412,8 +412,8 @@ try {
             (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1')
         }
     )
-    Assert-BoostLabCondition ($allModules.Count -eq 50) "Expected 50 active modules, found $($allModules.Count)."
-    Assert-BoostLabCondition ($implementedModules.Count -eq 32) "Expected 32 implemented modules, found $($implementedModules.Count)."
+    Assert-BoostLabCondition ($allModules.Count -eq 51) "Expected 51 active modules, found $($allModules.Count)."
+    Assert-BoostLabCondition ($implementedModules.Count -eq 33) "Expected 33 implemented modules, found $($implementedModules.Count)."
     Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 
     Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'

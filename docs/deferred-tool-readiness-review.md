@@ -88,13 +88,14 @@ source-promoted intake candidates, but the source-promoted mirror file remains
 protected reference material. Auto remains blocked as
 `AutoBlockedUntilArtifactApproval`.
 
-Phase 93 implements `Driver Install Latest` as a controlled manual-handoff
-active tool for Path B step 1 only. It is no longer one of the unimplemented
-source-promoted intake candidates, but the source-promoted mirror file remains
-protected reference material. Auto remains blocked as
-`AutoBlockedUntilArtifactApproval`, and no NVIDIA driver download, installer
-execution, browser opening, external process start, registry/system/driver
-mutation, reboot, or session change is approved.
+Phase 94 implements `Nvidia Settings` as a controlled manual-handoff active
+tool for Path B step 2 after the Phase 93 `Driver Install Latest` manual
+handoff. It is no longer one of the unimplemented source-promoted intake
+candidates, but the source-promoted mirror file remains protected reference
+material. Auto remains blocked as `AutoBlockedUntilArtifactApproval`, and no
+7-Zip download/install, NVIDIA Profile Inspector download/execution, `.nip`
+import/export, browser opening, Control Panel launch, external process start,
+registry/profile/system mutation, reboot, or session change is approved.
 
 Phase 78 records future Path A / Path B UI workflow design in
 `docs/nvidia-path-b-ui-workflow-design.md`. It leaves Path B design-only and
@@ -126,10 +127,10 @@ This review is based on:
 
 Current inventory:
 
-* Active tools: **50**
-* Implemented tools: **32**
+* Active tools: **51**
+* Implemented tools: **33**
 * Deferred/placeholders: **18**
-* Remaining unimplemented source-promoted intake candidates: **5**
+* Remaining unimplemented source-promoted intake candidates: **4**
 
 ## Category Definitions
 

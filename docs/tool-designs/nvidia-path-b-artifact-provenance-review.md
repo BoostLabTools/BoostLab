@@ -11,11 +11,14 @@ No production provenance config was changed. No implementation, placeholder,
 tool card, executable module, runtime workflow config, or runtime behavior
 change was added.
 
-Phase 93 current-state note: `Driver Install Latest` is now implemented only as
-a controlled manual-handoff active tool for Path B step 1. This does not
-approve NVIDIA driver artifacts, downloads, installer descriptors, installer
-execution, external process launch, driver mutation, reboot/session handling,
-Default, Restore, or the remaining Path B steps.
+Phase 94 current-state note: `Driver Install Latest` and `Nvidia Settings` are
+now implemented only as controlled manual-handoff active tools for Path B steps
+1 and 2. This does not approve NVIDIA driver artifacts, downloads, installer
+descriptors, installer execution, 7-Zip artifact/download/install, NVIDIA
+Profile Inspector artifact/download/execution, `.nip` import/export, external
+process launch, NVIDIA registry/profile mutation, Control Panel launch, driver
+mutation, reboot/session handling, Default, Restore, or the remaining Path B
+steps.
 
 NVIDIA App Path B order remains:
 

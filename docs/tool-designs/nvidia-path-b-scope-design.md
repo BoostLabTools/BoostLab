@@ -10,12 +10,14 @@ This is scope design only.
 This phase adds no implementation, no executable module, no tool card, no
 placeholder enablement, no runtime workflow config, and no production approval.
 
-Phase 93 current-state note: `Driver Install Latest` is now implemented only as
-a controlled manual-handoff active tool for Path B step 1. Auto remains blocked
-as `AutoBlockedUntilArtifactApproval`; no NVIDIA driver download, installer
-execution, browser opening, external process start, registry/system/driver
-mutation, reboot, session change, Default, Restore, or remaining Path B step is
-approved.
+Phase 94 current-state note: `Driver Install Latest` and `Nvidia Settings` are
+now implemented only as controlled manual-handoff active tools for Path B steps
+1 and 2. Auto remains blocked as `AutoBlockedUntilArtifactApproval`; no NVIDIA
+driver download, installer execution, 7-Zip download/install, NVIDIA Profile
+Inspector download/execution, `.nip` import/export, browser opening, Control
+Panel launch, external process start, NVIDIA registry/profile mutation,
+registry/system/driver mutation, reboot, session change, Default, Restore, or
+remaining Path B step is approved.
 
 NVIDIA App Path B order is mandatory and user-facing:
 

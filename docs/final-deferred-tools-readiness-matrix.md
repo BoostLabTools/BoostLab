@@ -10,11 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **50**
-* Implemented tools: **32**
+* Active tools: **51**
+* Implemented tools: **33**
 * Deferred/placeholders: **18**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
-* Remaining unimplemented source-promoted intake candidates: **5**
+* Remaining unimplemented source-promoted intake candidates: **4**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
@@ -34,6 +34,8 @@ Phase 75 note: NVIDIA App Path B production allowlist planning lives in `docs/to
 
 Phase 76 note: NVIDIA App Path B artifact provenance review lives in `docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It documents artifact evidence and approval blockers without approving artifacts, downloads, installers, production scopes, or provenance config.
 
+Phase 94 note: `Driver Install Latest` and `Nvidia Settings` are implemented as controlled manual-handoff active tools for Path B steps 1 and 2 only. Auto remains blocked as `AutoBlockedUntilArtifactApproval`; no NVIDIA driver download, installer execution, 7-Zip download/install, NVIDIA Profile Inspector execution, `.nip` import/export, browser opening, Control Panel launch, external process start, registry/profile/driver/system mutation, reboot, session change, Default, or Restore was approved.
+
 Phase 77 note: NVIDIA profile state capture model lives in `docs/nvidia-profile-state-capture-model.md`. It documents profile capture/restore/import/export requirements without approving NVIDIA Profile Inspector execution, `.nip` operations, profile writes, runtime behavior, or production scopes.
 
 Phase 78 note: NVIDIA Path B UI workflow design lives in `docs/nvidia-path-b-ui-workflow-design.md`. It documents future Path A versus Path B choice, ordered stepper, gating, messaging, and result/log expectations without adding UI implementation or enabling Path B behavior.
@@ -48,7 +50,7 @@ Phase 82 note: NVIDIA Path B non-executing Workflow Registry schema design lives
 
 Phase 92 note: `Driver Clean` is now an implemented active tool using controlled manual handoff only. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no DDU or 7-Zip download/execution, performs no Safe Mode/RunOnce/bcdedit/reboot automation, and remains outside NVIDIA Path B.
 
-Phase 93 note: `Driver Install Latest` is now an implemented active tool using controlled manual handoff only for Path B step 1. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no NVIDIA driver download, installer execution, browser opening, external process start, registry/system/driver mutation, reboot, or session change, and leaves the remaining Path B steps separate and unimplemented.
+Phase 93/94 note: `Driver Install Latest` and `Nvidia Settings` are implemented active tools using controlled manual handoff only for Path B steps 1 and 2. They verify source mirror checksums, report ManualHandoffOnly, keep Auto blocked as `AutoBlockedUntilArtifactApproval`, perform no NVIDIA driver download, installer execution, 7-Zip download/install, Profile Inspector execution, `.nip` import/export, browser opening, Control Panel launch, external process start, registry/profile/driver/system mutation, reboot, or session change, and leave the remaining Path B steps separate and unimplemented.
 
 ## Coverage Summary
 

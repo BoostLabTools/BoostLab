@@ -211,6 +211,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
         'Auto mode is blocked for Driver Install Latest because NVIDIA artifact, installer, driver-state, process, reboot/session, and recovery approvals do not exist.'
     }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
+        'Read the Nvidia Settings source mirror and report blocked 7-Zip, Profile Inspector, .nip, NVIDIA profile, registry, process, and verification approvals without changing settings.'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
+        'Prepare Nvidia Settings manual handoff instructions only; no 7-Zip, Profile Inspector, .nip, Control Panel, browser, external process, registry/profile mutation, or system-changing operation is opened or executed.'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for Nvidia Settings because 7-Zip, Profile Inspector, .nip, profile capture/restore, registry/file rollback, process, and verification approvals do not exist.'
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
     }
@@ -401,6 +410,27 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
         $plannedChanges.Add('Report missing NVIDIA driver artifact/download approval, installer execution descriptor approval, driver state capture/rollback approval, process handoff approval, reboot/session handling approval, and recovery handling approval.')
         $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, external process start, registry/system/driver mutation, reboot, or session change.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the Nvidia Settings source mirror checksum and implementation status.')
+        $plannedChanges.Add('Report missing 7-Zip artifact/download/install approval, NVIDIA Profile Inspector artifact/download/execution approval, .nip import/export approval, NVIDIA profile state capture/restore approval, NVIDIA registry/file rollback capture approval, process handling approval, and verification approval.')
+        $plannedChanges.Add('Report Path B step 2 of 5 while keeping Nvidia Settings separate from Driver Install Latest, Hdcp, P0 State, and Msi Mode.')
+        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector download/execution, .nip import/export, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system mutation.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions only for Path B step 2.')
+        $plannedChanges.Add('Do not download or install 7-Zip.')
+        $plannedChanges.Add('Do not download or run NVIDIA Profile Inspector.')
+        $plannedChanges.Add('Do not import, export, or generate a .nip file for execution.')
+        $plannedChanges.Add('Do not open NVIDIA Control Panel, a browser, external tool, or approved external resource.')
+        $plannedChanges.Add('Do not modify NVIDIA profiles, NVIDIA registry settings, Windows Registry values, files, drivers, sessions, or reboot state.')
+        $plannedChanges.Add('Keep Path B steps separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing 7-Zip artifact/download/install approval, NVIDIA Profile Inspector artifact/download/execution approval, .nip import/export approval, NVIDIA profile state capture/restore approval, NVIDIA registry/file rollback capture approval, process handling approval, and verification approval.')
+        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector execution, .nip import/export, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system-changing operation.')
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
@@ -709,6 +739,20 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Auto mode is blocked before execution.')
         $sideEffects.Add('No approved Auto behavior, NVIDIA driver download, installer execution, external process, registry mutation, driver mutation, reboot, or session change occurs.')
     }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Nvidia Settings analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('Path B step 2 is reported without enabling the remaining Path B steps.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No 7-Zip download/install, NVIDIA Profile Inspector download/execution, .nip import/export, browser, Control Panel launch, external process, or system-changing operation occurs.')
+        $sideEffects.Add('No NVIDIA profile, registry, driver, reboot, or session change occurs.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, 7-Zip download/install, Profile Inspector execution, .nip import/export, external process, Control Panel launch, registry/profile mutation, or system-changing operation occurs.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
@@ -884,10 +928,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest')) {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet) {
@@ -944,6 +988,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
         'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare Nvidia Settings manual handoff instructions only. It will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, open a browser or external process, modify registry or NVIDIA profiles, or change system state. Continue?'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
+        'Nvidia Settings Auto mode is blocked. BoostLab will not execute Auto behavior because 7-Zip, NVIDIA Profile Inspector, .nip, profile capture/restore, registry/file rollback, process, and verification approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'

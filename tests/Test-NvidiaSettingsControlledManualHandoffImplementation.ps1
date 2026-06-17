@@ -86,39 +86,40 @@ function Get-BoostLabItemCount {
 }
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-latest.psm1'
-$sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\2 Driver Install Latest.ps1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\nvidia-settings.psm1'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\4 Nvidia Settings.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 
-foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $uiPath, $artifactPath)) {
+foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $uiPath, $artifactPath, $productionAllowlistPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path) "Required file missing: $path"
 }
 
-$expectedSourceHash = '41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F'
+$expectedSourceHash = '903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Driver Install Latest source hash mismatch: $actualSourceHash"
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Nvidia Settings source hash mismatch: $actualSourceHash"
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
+$driverCleanTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-clean' })[0]
 $driverInstallLatestTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-latest' })[0]
 $nvidiaSettingsTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'nvidia-settings' })[0]
-$driverCleanTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-clean' })[0]
 $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })[0]
 
-Assert-BoostLabCondition ($null -ne $driverInstallLatestTool) 'Driver Install Latest is missing from Graphics stage.'
+Assert-BoostLabCondition ($null -ne $nvidiaSettingsTool) 'Nvidia Settings is missing from Graphics stage.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1.'
-Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Install Latest must be Graphics order 2.'
+Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Install Latest must remain Graphics order 2.'
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 3) 'Nvidia Settings must be Graphics order 3 as Path B step 2.'
 Assert-BoostLabCondition ([int]$pathATool.Order -eq 4) 'Path A Driver Install Debloat & Settings must remain separate after Nvidia Settings.'
-Assert-BoostLabCondition ([string]$driverInstallLatestTool.Type -eq 'assistant') 'Driver Install Latest must be an assistant.'
-Assert-BoostLabCondition ([string]$driverInstallLatestTool.RiskLevel -eq 'high') 'Driver Install Latest must remain high risk.'
-Assert-BoostLabCondition ((@($driverInstallLatestTool.Actions) -join ',') -eq 'Analyze,Open,Apply') 'Driver Install Latest actions must stay canonical Analyze/Open/Apply.'
-Assert-BoostLabCondition ([bool]$driverInstallLatestTool.Capabilities.NeedsExplicitConfirmation) 'Driver Install Latest must require explicit confirmation.'
+Assert-BoostLabCondition ([string]$nvidiaSettingsTool.Type -eq 'assistant') 'Nvidia Settings must be an assistant.'
+Assert-BoostLabCondition ([string]$nvidiaSettingsTool.RiskLevel -eq 'high') 'Nvidia Settings must remain high risk.'
+Assert-BoostLabCondition ((@($nvidiaSettingsTool.Actions) -join ',') -eq 'Analyze,Open,Apply') 'Nvidia Settings actions must stay canonical Analyze/Open/Apply.'
+Assert-BoostLabCondition ([bool]$nvidiaSettingsTool.Capabilities.NeedsExplicitConfirmation) 'Nvidia Settings must require explicit confirmation.'
 
 foreach ($falseCapability in @(
     'RequiresAdmin',
@@ -136,7 +137,7 @@ foreach ($falseCapability in @(
     'SupportsDefault',
     'SupportsRestore'
 )) {
-    Assert-BoostLabCondition (-not [bool]$driverInstallLatestTool.Capabilities[$falseCapability]) "Driver Install Latest capability should be false: $falseCapability"
+    Assert-BoostLabCondition (-not [bool]$nvidiaSettingsTool.Capabilities[$falseCapability]) "Nvidia Settings capability should be false: $falseCapability"
 }
 
 foreach ($remainingPathBTool in @('hdcp', 'p0-state', 'msi-mode')) {
@@ -163,8 +164,8 @@ Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 4) "Expected 4 rema
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
-    "'driver-install-latest'",
-    "Graphics\driver-install-latest.psm1",
+    "'nvidia-settings'",
+    "Graphics\nvidia-settings.psm1",
     "'Analyze', 'Open', 'Apply'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Execution registration'
@@ -184,13 +185,15 @@ Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply',
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action plan ValidateSet must not include display label Manual Handoff.'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action plan ValidateSet must not include display label Apply Auto.'
 foreach ($needle in @(
-    'Prepare Driver Install Latest manual handoff instructions only',
-    'Auto mode is blocked for Driver Install Latest',
-    'Do not open a browser, external tool, NVIDIA installer, or approved external resource.',
-    'Do not execute any approved Auto behavior because none is approved.',
-    'NVIDIA driver artifact/download approval'
+    'Prepare Nvidia Settings manual handoff instructions only',
+    'Auto mode is blocked for Nvidia Settings',
+    'Do not download or install 7-Zip.',
+    'Do not download or run NVIDIA Profile Inspector.',
+    'Do not import, export, or generate a .nip file for execution.',
+    'Do not open NVIDIA Control Panel, a browser, external tool, or approved external resource.',
+    'No approved Auto behavior, 7-Zip download/install, Profile Inspector execution, .nip import/export, external process, Control Panel launch, registry/profile mutation, or system-changing operation occurs.'
 )) {
-    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Driver Install Latest action plan wording'
+    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Nvidia Settings action plan wording'
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
@@ -199,9 +202,9 @@ foreach ($needle in @(
     $expectedSourceHash,
     'ManualHandoffOnly',
     'AutoBlockedUntilArtifactApproval',
-    'PathBStep = ''1 of 5'''
+    'PathBStep = ''2 of 5'''
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Driver Install Latest module text'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Nvidia Settings module text'
 }
 
 foreach ($forbiddenPattern in @(
@@ -210,19 +213,23 @@ foreach ($forbiddenPattern in @(
     '^\s*IWR\b',
     '^\s*Set-ItemProperty\b',
     '^\s*New-Item\b',
+    '^\s*Set-Content\b',
+    '^\s*Move-Item\b',
     '^\s*Remove-Item\b',
+    '^\s*Unblock-File\b',
     '^\s*reg\.exe\b',
+    '^\s*cmd\b',
     '^\s*bcdedit\b',
     '^\s*shutdown\b',
     '^\s*Restart-Computer\b'
 )) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $forbiddenPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline -bor [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) "Driver Install Latest module contains forbidden side-effect command pattern: $forbiddenPattern"
+    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $forbiddenPattern, [System.Text.RegularExpressions.RegexOptions]::Multiline -bor [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) "Nvidia Settings module contains forbidden side-effect command pattern: $forbiddenPattern"
 }
 
 Import-Module -Name $modulePath -Force -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
-    Assert-BoostLabCondition ([string]$info.Id -eq 'driver-install-latest') 'Module info Id mismatch.'
+    Assert-BoostLabCondition ([string]$info.Id -eq 'nvidia-settings') 'Module info Id mismatch.'
     Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Open,Apply') 'Implemented action list mismatch.'
 
     $analyzeResult = Invoke-BoostLabToolAction -ActionName 'Analyze'
@@ -231,21 +238,22 @@ try {
     Assert-BoostLabCondition ([string]$analyzeResult.CommandStatus -eq 'No execution performed') 'Analyze must not execute anything.'
     Assert-BoostLabCondition ([string]$analyzeResult.Data.Mode -eq 'ManualHandoffOnly') 'Analyze mode mismatch.'
     Assert-BoostLabCondition ([string]$analyzeResult.Data.AutoMode -eq 'AutoBlockedUntilArtifactApproval') 'Analyze Auto mode mismatch.'
-    Assert-BoostLabCondition ([int]$analyzeResult.Data.PathBStepNumber -eq 1 -and [int]$analyzeResult.Data.PathBStepTotal -eq 5) 'Analyze Path B step mismatch.'
-    foreach ($flag in @('NoAutomatedExecution', 'NoNvidiaDriverDownloaded', 'NoNvidiaInstallerExecuted', 'NoSevenZipDownloaded', 'NoExternalProcessStarted', 'NoBrowserOpened', 'NoRegistryDriverRebootOrSessionChange')) {
+    Assert-BoostLabCondition ([int]$analyzeResult.Data.PathBStepNumber -eq 2 -and [int]$analyzeResult.Data.PathBStepTotal -eq 5) 'Analyze Path B step mismatch.'
+    foreach ($flag in @('NoAutomatedExecution', 'NoSevenZipDownloadedOrInstalled', 'NoProfileInspectorDownloadedOrExecuted', 'NoNipImportedExportedOrGeneratedForExecution', 'NoNvidiaProfileChanged', 'NoRegistrySettingChanged', 'NoExternalProcessStarted', 'NoBrowserOpened', 'NoNvidiaControlPanelLaunched', 'NoSystemMutation')) {
         Assert-BoostLabCondition ([bool]$analyzeResult.Data.$flag) "Analyze expected flag true: $flag"
     }
     foreach ($approval in @(
-        'NVIDIA driver artifact/download approval',
-        'NVIDIA installer execution descriptor approval',
-        'Driver state capture/rollback approval',
-        'Process handoff approval',
-        'Reboot/session handling approval',
-        'Recovery handling approval'
+        '7-Zip artifact/download/install approval',
+        'NVIDIA Profile Inspector artifact/download/execution approval',
+        '.nip import/export approval',
+        'NVIDIA profile state capture/restore approval',
+        'NVIDIA registry/file rollback capture approval',
+        'process handling approval',
+        'verification approval'
     )) {
         Assert-BoostLabCondition ($approval -in @($analyzeResult.Data.MissingApprovals)) "Analyze missing approval not reported: $approval"
     }
-    Assert-BoostLabNoDuplicateWarnings -Result $analyzeResult -Description 'Driver Install Latest Analyze'
+    Assert-BoostLabNoDuplicateWarnings -Result $analyzeResult -Description 'Nvidia Settings Analyze'
 
     $cancelledResult = Invoke-BoostLabToolAction -ActionName 'Manual Handoff'
     Assert-BoostLabCondition (-not [bool]$cancelledResult.Success) 'Unconfirmed Manual Handoff should not proceed.'
@@ -258,16 +266,17 @@ try {
     Assert-BoostLabCondition ([string]$handoffResult.Status -eq 'ManualHandoffPrepared') 'Manual Handoff status mismatch.'
     Assert-BoostLabCondition ([string]$handoffResult.CommandStatus -eq 'No execution performed') 'Manual Handoff must not execute anything.'
     foreach ($needle in @(
-        'No NVIDIA driver downloaded',
-        'no installer executed',
-        'no browser opened',
+        'No 7-Zip downloaded or installed',
+        'no NVIDIA Profile Inspector downloaded or executed',
+        'no .nip imported or exported',
+        'no NVIDIA Control Panel launched',
         'no external process started',
-        'no registry/system/driver mutation occurred',
-        'no reboot or session change occurred'
+        'no NVIDIA profile or registry setting changed',
+        'no system mutation occurred'
     )) {
         Assert-BoostLabTextContains -Text ([string]$handoffResult.Message) -Needle $needle -Description 'Manual Handoff result message'
     }
-    Assert-BoostLabNoDuplicateWarnings -Result $handoffResult -Description 'Driver Install Latest Manual Handoff'
+    Assert-BoostLabNoDuplicateWarnings -Result $handoffResult -Description 'Nvidia Settings Manual Handoff'
 
     $autoResult = Invoke-BoostLabToolAction -ActionName 'Apply Auto' -Confirmed:$true
     Assert-BoostLabCondition (-not [bool]$autoResult.Success) 'Apply Auto must fail closed.'
@@ -275,8 +284,9 @@ try {
     Assert-BoostLabCondition ([string]$autoResult.Status -eq 'AutoBlockedUntilArtifactApproval') 'Apply Auto status mismatch.'
     Assert-BoostLabCondition ([string]$autoResult.CommandStatus -eq 'Blocked before execution') 'Apply Auto must block before execution.'
     Assert-BoostLabTextContains -Text ([string]$autoResult.Message) -Needle 'AutoBlockedUntilArtifactApproval' -Description 'Apply Auto blocked message'
-    Assert-BoostLabTextContains -Text ([string]$autoResult.Message) -Needle 'No automated NVIDIA driver download' -Description 'Apply Auto no-action message'
-    Assert-BoostLabNoDuplicateWarnings -Result $autoResult -Description 'Driver Install Latest Apply Auto'
+    Assert-BoostLabTextContains -Text ([string]$autoResult.Message) -Needle 'No 7-Zip download/install' -Description 'Apply Auto no-action message'
+    Assert-BoostLabTextContains -Text ([string]$autoResult.Message) -Needle 'Profile Inspector execution' -Description 'Apply Auto Profile Inspector blocked message'
+    Assert-BoostLabNoDuplicateWarnings -Result $autoResult -Description 'Nvidia Settings Apply Auto'
 
     foreach ($unsupportedAction in @('Default', 'Restore')) {
         $unsupportedResult = Invoke-BoostLabToolAction -ActionName $unsupportedAction
@@ -285,11 +295,11 @@ try {
     }
 }
 finally {
-    Remove-Module -Name 'driver-install-latest' -Force -ErrorAction SilentlyContinue
+    Remove-Module -Name 'nvidia-settings' -Force -ErrorAction SilentlyContinue
 }
 
 $previousProgramData = $env:ProgramData
-$tempProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ('BoostLab-DriverInstallLatest-' + [guid]::NewGuid().ToString('N'))
+$tempProgramData = Join-Path ([System.IO.Path]::GetTempPath()) ('BoostLab-NvidiaSettings-' + [guid]::NewGuid().ToString('N'))
 New-Item -Path $tempProgramData -ItemType Directory -Force | Out-Null
 $env:ProgramData = $tempProgramData
 try {
@@ -299,13 +309,12 @@ try {
     Initialize-BoostLabState | Out-Null
     Import-Module -Name $executionPath -Force -ErrorAction Stop
 
-    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $driverInstallLatestTool -ActionName 'Analyze'
+    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $nvidiaSettingsTool -ActionName 'Analyze'
     Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
     Assert-BoostLabCondition ($null -ne $runtimeAnalyze.ActionPlan) 'Runtime Analyze should include ActionPlan.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without downloading or installing anything' -Description 'Runtime Analyze Action Plan summary'
-    Assert-BoostLabCondition (-not ((@($runtimeAnalyze.ActionPlan.PlannedChanges) -join "`n").Contains('Download the NVIDIA driver'))) 'Runtime Analyze Action Plan should not include a download step.'
+    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without changing settings' -Description 'Runtime Analyze Action Plan summary'
 
-    $runtimeHandoff = Invoke-BoostLabToolAction -ToolMetadata $driverInstallLatestTool -ActionName 'Open'
+    $runtimeHandoff = Invoke-BoostLabToolAction -ToolMetadata $nvidiaSettingsTool -ActionName 'Open'
     Assert-BoostLabCondition (-not [bool]$runtimeHandoff.Success) 'Runtime unconfirmed Manual Handoff should be blocked/cancelled.'
     Assert-BoostLabCondition ($null -ne $runtimeHandoff.ActionPlan) 'Runtime Manual Handoff should include ActionPlan.'
     $runtimeHandoffPlanText = @(
@@ -316,16 +325,17 @@ try {
     ) -join "`n"
     foreach ($needle in @(
         'manual handoff instructions only',
-        'Do not open a browser',
-        'Do not download an NVIDIA driver',
-        'Do not execute an NVIDIA installer',
-        'No browser, external tool, NVIDIA driver download, NVIDIA installer execution, or system-changing operation occurs'
+        'Do not download or install 7-Zip.',
+        'Do not download or run NVIDIA Profile Inspector.',
+        'Do not import, export, or generate a .nip file for execution.',
+        'Do not open NVIDIA Control Panel',
+        'No 7-Zip download/install, NVIDIA Profile Inspector download/execution, .nip import/export, browser, Control Panel launch, external process, or system-changing operation occurs'
     )) {
         Assert-BoostLabTextContains -Text $runtimeHandoffPlanText -Needle $needle -Description 'Manual Handoff runtime plan text'
     }
     Assert-BoostLabCondition (-not $runtimeHandoffPlanText.Contains('approved external resource may be opened')) 'Manual Handoff Action Plan must not use generic Open resource wording.'
 
-    $runtimeAuto = Invoke-BoostLabToolAction -ToolMetadata $driverInstallLatestTool -ActionName 'Apply' -RiskConfirmed
+    $runtimeAuto = Invoke-BoostLabToolAction -ToolMetadata $nvidiaSettingsTool -ActionName 'Apply' -RiskConfirmed
     Assert-BoostLabCondition (-not [bool]$runtimeAuto.Success) 'Runtime Apply Auto should fail closed.'
     Assert-BoostLabCondition ([string]$runtimeAuto.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply Auto status mismatch.'
     $runtimeAutoPlanText = @(
@@ -337,13 +347,14 @@ try {
     foreach ($needle in @(
         'Auto mode is blocked',
         'Do not execute any approved Auto behavior because none is approved.',
-        'NVIDIA driver artifact/download approval',
-        'Perform no NVIDIA driver download',
-        'No approved Auto behavior, NVIDIA driver download, installer execution, external process, registry mutation, driver mutation, reboot, or session change occurs.'
+        '7-Zip artifact/download/install approval',
+        'NVIDIA Profile Inspector artifact/download/execution approval',
+        '.nip import/export approval',
+        'No approved Auto behavior, 7-Zip download/install, Profile Inspector execution, .nip import/export, external process, Control Panel launch, registry/profile mutation, or system-changing operation occurs.'
     )) {
         Assert-BoostLabTextContains -Text $runtimeAutoPlanText -Needle $needle -Description 'Apply Auto runtime plan text'
     }
-    Assert-BoostLabCondition (-not $runtimeAutoPlanText.Contains('Apply the approved Driver Install Latest behavior')) 'Apply Auto Action Plan must not use generic Apply wording.'
+    Assert-BoostLabCondition (-not $runtimeAutoPlanText.Contains('Apply the approved Nvidia Settings behavior')) 'Apply Auto Action Plan must not use generic Apply wording.'
 }
 finally {
     $env:ProgramData = $previousProgramData
@@ -352,13 +363,19 @@ finally {
 
 $artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
 $artifactText = Get-Content -LiteralPath $artifactPath -Raw
-Assert-BoostLabCondition (-not $artifactText.Contains('geforce.com')) 'NVIDIA GeForce artifact URL was approved unexpectedly.'
-Assert-BoostLabCondition (-not $artifactText.Contains('international.download.nvidia.com')) 'NVIDIA driver artifact URL was approved unexpectedly.'
+foreach ($forbiddenArtifactText in @('7zip.exe', 'inspector.exe', 'NVIDIA Profile Inspector', 'inspector.nip', 'FR33THYFR33THY')) {
+    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to Nvidia Settings: $forbiddenArtifactText"
+}
 if ($artifactConfig.ContainsKey('Artifacts')) {
     foreach ($artifact in @($artifactConfig.Artifacts)) {
         $artifactTextLine = (($artifact.GetEnumerator() | ForEach-Object { '{0}={1}' -f $_.Key, $_.Value }) -join ';')
-        Assert-BoostLabCondition ($artifactTextLine -notmatch '(?i)nvidia|geforce|display driver|7-zip') "Unexpected artifact approval related to Driver Install Latest: $artifactTextLine"
+        Assert-BoostLabCondition ($artifactTextLine -notmatch '(?i)7-zip|7zip|inspector|nvidia profile|\.nip') "Unexpected artifact approval related to Nvidia Settings: $artifactTextLine"
     }
+}
+
+$productionPolicy = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
+if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
+    Assert-BoostLabCondition (@($productionPolicy.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals should remain empty.'
 }
 
 foreach ($deletedPath in @(
@@ -369,13 +386,13 @@ foreach ($deletedPath in @(
 }
 
 [pscustomobject]@{
-    TestName = 'Driver Install Latest controlled manual handoff implementation'
+    TestName = 'Nvidia Settings controlled manual handoff implementation'
     ActiveTools = $allTools.Count
     ImplementedTools = $allTools.Count - $placeholderModules.Count
     DeferredPlaceholders = $placeholderModules.Count
     SourcePromotedMirrorFiles = $sourcePromotedFiles.Count
     RemainingUnimplementedSourcePromotedCandidates = $remainingSourcePromoted.Count
     SourceHash = $actualSourceHash
-    DriverInstallLatestActions = @($driverInstallLatestTool.Actions)
+    NvidiaSettingsActions = @($nvidiaSettingsTool.Actions)
     AutoMode = 'AutoBlockedUntilArtifactApproval'
 }
