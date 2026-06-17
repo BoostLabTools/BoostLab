@@ -245,3 +245,10 @@ Phase 89 adds
 documentation-only governance freeze review for the Path B doc set. It does not
 change readiness categories, approve scopes, create active governance runtime,
 enable UI, or implement Path B.
+
+Phase 90 adds
+`docs/tool-designs/driver-clean-controlled-intake-implementation-readiness.md`
+as a focused Driver Clean readiness decision. It keeps Driver Clean outside
+NVIDIA Path B, records `NeedsArtifactDecision`, and does not approve standalone
+DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution, production
+scopes, or tool behavior.

@@ -477,3 +477,10 @@ NVIDIA Path B governance freeze review is tracked in
 `docs/tool-designs/nvidia-path-b-governance-freeze-review.md`. It is
 documentation-only freeze guidance and does not create active governance
 runtime, active docs runtime, production scope, artifact, or tool behavior.
+
+Driver Clean controlled intake implementation readiness is tracked in
+`docs/tool-designs/driver-clean-controlled-intake-implementation-readiness.md`.
+It is a focused readiness decision, not implementation approval. Driver Clean
+remains outside NVIDIA Path B, and the DDU intake exception does not approve
+standalone DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution,
+production scopes, or tool behavior.

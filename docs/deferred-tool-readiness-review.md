@@ -339,3 +339,10 @@ Phase 89 adds
 documentation-only Path B governance freeze review. The review remains
 unchanged: freeze review does not approve execution, production allowlists,
 artifacts, active governance runtime, UI controls, or placeholder enablement.
+
+Phase 90 adds
+`docs/tool-designs/driver-clean-controlled-intake-implementation-readiness.md`
+for focused Driver Clean readiness. The review remains unchanged: Driver Clean
+stays outside NVIDIA Path B, and the DDU intake exception does not approve
+standalone DDU, DDU downloads, DDU artifacts, uncontrolled DDU execution,
+production scopes, UI controls, placeholder enablement, or tool behavior.
