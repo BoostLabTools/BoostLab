@@ -368,3 +368,7 @@ runtime workflow config, or production approval.
 Phase 79 records non-approved draft allowlist proposals in
 `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It keeps every
 candidate Draft/NotApproved and creates no production config.
+
+Phase 80 records production approval gate design in
+`docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It creates
+no production config and approves no Path B scope.

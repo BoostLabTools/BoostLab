@@ -299,3 +299,7 @@ Phase 79 records non-approved draft allowlist proposals in
 `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. Profile-related
 entries remain non-approved and do not enable capture, import, export, or
 restore.
+
+Phase 80 records production approval gate design in
+`docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. Profile
+capture/import/restore gates remain design-only and unapproved.

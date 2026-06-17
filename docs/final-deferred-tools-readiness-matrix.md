@@ -39,6 +39,8 @@ Phase 78 note: NVIDIA Path B UI workflow design lives in `docs/nvidia-path-b-ui-
 
 Phase 79 note: NVIDIA Path B draft allowlist proposal lives in `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It structures future candidate scopes while keeping every entry non-approved and adding no production allowlist config.
 
+Phase 80 note: NVIDIA Path B production approval gate design lives in `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It defines future gate criteria for draft entries without granting production approval or creating production config.
+
 ## Coverage Summary
 
 The current deferred queue has complete documentation coverage:

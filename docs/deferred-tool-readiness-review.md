@@ -77,6 +77,10 @@ Phase 79 records non-approved NVIDIA App Path B draft allowlist proposals in
 `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It leaves every
 candidate non-production and approves no scope.
 
+Phase 80 records NVIDIA App Path B production approval gate design in
+`docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It defines
+future gate criteria only and grants no production approval.
+
 ## Review Inputs
 
 This review is based on:

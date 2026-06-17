@@ -303,3 +303,7 @@ That phase should remain governance/design-only unless Yazan explicitly
 authorizes a narrow approval path. It should define how one draft entry could be
 promoted to production approval, including required review evidence, owner
 approval, validator coverage, and rollback gates.
+
+Phase 80 records that gate design in
+`docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It grants
+no production approval and creates no production allowlist config.

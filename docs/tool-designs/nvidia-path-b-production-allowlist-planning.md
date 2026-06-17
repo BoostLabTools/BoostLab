@@ -317,3 +317,7 @@ no Path B behavior.
 Phase 79 records non-approved draft allowlist proposals in
 `docs/tool-designs/nvidia-path-b-draft-allowlist-proposal.md`. It creates no
 production allowlist config and approves no scope.
+
+Phase 80 records production approval gate design in
+`docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. It defines
+future gate criteria only and grants no production approval.
