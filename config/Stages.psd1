@@ -232,10 +232,21 @@
                     Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
+                    Id          = 'hdcp'
+                    Title       = 'HDCP'
+                    Stage       = 'Graphics'
+                    Order       = 4
+                    Type        = 'action'
+                    RiskLevel   = 'high'
+                    Description = 'Path B step 3 of 5. Apply or default the source-defined NVIDIA HDCP registry value only after NVIDIA-only target discovery and registry state capture.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'driver-install-debloat-settings'
                     Title       = 'Driver Install Debloat & Settings'
                     Stage       = 'Graphics'
-                    Order       = 4
+                    Order       = 5
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Analyze graphics hardware and prepare a guided driver installation workflow.'
@@ -246,7 +257,7 @@
                     Id          = 'directx'
                     Title       = 'DirectX'
                     Stage       = 'Graphics'
-                    Order       = 5
+                    Order       = 6
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare the approved DirectX runtime installation.'
@@ -257,7 +268,7 @@
                     Id          = 'visual-cpp'
                     Title       = 'Visual C++'
                     Stage       = 'Graphics'
-                    Order       = 6
+                    Order       = 7
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare approved Microsoft Visual C++ runtime installation.'
@@ -268,7 +279,7 @@
                     Id          = 'graphics-configuration-center'
                     Title       = 'Graphics Configuration Center'
                     Stage       = 'Graphics'
-                    Order       = 7
+                    Order       = 8
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the installed graphics control center for guided configuration.'

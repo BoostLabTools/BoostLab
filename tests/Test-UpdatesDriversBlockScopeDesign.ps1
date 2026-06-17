@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -244,14 +244,14 @@ $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne 51) {
-    throw "Expected 51 active tools, found $($activeTools.Count)."
+if ($activeTools.Count -ne 52) {
+    throw "Expected 52 active tools, found $($activeTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 33) {
-    throw "Expected 33 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 34) {
+    throw "Expected 34 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
@@ -311,4 +311,5 @@ if ($nvmeSource.Count -ne 0) {
     Message                   = 'Updates Drivers Block scope design is present, linked, branch-scoped, and non-executing.'
     Timestamp                 = Get-Date
 }
+
 

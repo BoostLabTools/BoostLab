@@ -169,7 +169,8 @@ texts are design-only and do not create live UI strings.
 
 | Badge/status | Future status text |
 |---|---|
-| `NotImplemented` | Nvidia Settings is documented but not implemented in BoostLab. |
+| `NotImplemented` | Superseded for Nvidia Settings by controlled manual handoff; Auto remains blocked and no automated profile/settings execution is approved. |
+| `ImplementedControlled` | Nvidia Settings is implemented as controlled manual handoff only; Auto remains blocked. |
 | `SourcePromoted` | Source mirror exists and checksum is tracked for Nvidia Settings. |
 | `DesignOnly` | This step is currently design-only. |
 | `NeedsProvenance` | NVIDIA Profile Inspector, 7-Zip, `.nip`, and related artifact provenance are missing. |
@@ -194,13 +195,14 @@ texts are design-only and do not create live UI strings.
 
 | Badge/status | Future status text |
 |---|---|
-| `NotImplemented` | Hdcp is documented but not implemented in BoostLab. |
+| `NotImplemented` | Superseded for Hdcp by Phase 95 controlled registry implementation; Restore/P0/Msi work remains future-scoped. |
+| `ImplementedControlled` | Hdcp is implemented as controlled NVIDIA-only registry behavior with capture before mutation. |
 | `SourcePromoted` | Source mirror exists and checksum is tracked for Hdcp. |
-| `DesignOnly` | This step is currently design-only. |
+| `DesignOnly` | Superseded for Hdcp by Phase 95 controlled implementation; remaining Path B design work continues for P0 State and Msi Mode. |
 | `NeedsProvenance` | Download provenance is not the primary blocker for Hdcp. |
-| `NeedsAllowlist` | Exact HDCP registry scope is not approved. |
+| `NeedsAllowlist` | No production allowlist was added; Hdcp uses module-bounded source scope and NVIDIA target validation. |
 | `NeedsApprovalGate` | Production approval is missing for Hdcp. |
-| `NeedsRuntimeGate` | Runtime gate evaluation is not implemented for this step. |
+| `NeedsRuntimeGate` | Runtime execution is controlled by checksum validation, NVIDIA-only target discovery, confirmation, and registry state capture. |
 | `NeedsProfileCapture` | Profile capture is not the primary blocker for Hdcp. |
 | `NeedsRegistryRollback` | Registry rollback capture is required before the HDCP/content-protection value can change. |
 | `NeedsDriverRollback` | Driver rollback is not the primary blocker for this step. |
@@ -208,11 +210,12 @@ texts are design-only and do not create live UI strings.
 | `NeedsRebootPolicy` | Reboot policy is not the primary blocker unless future verification requires restart disclosure. |
 | `NeedsNvidiaTargeting` | BoostLab must verify an exact NVIDIA target before HDCP registry work. |
 | `NeedsSecurityReview` | HDCP/content-protection changes require security-sensitive review. |
-| `PathConflict` | Path A/Path B conflict blocks Hdcp. |
+| `PathConflict` | Path conflict is handled by keeping HDCP as Path B step 3 and Path A as a separate later Graphics tool. |
 | `RestoreUnavailable` | Restore is unavailable without exact pre-change registry capture. |
 | `RestoreDenied` | Restore is denied because no eligible HDCP capture is selected. |
-| `DefaultUnavailable` | Source-defined Default is not approved for this step. |
-| `ReadyForReview` | Evidence may be reviewed, but Hdcp is not executable. |
+| `DefaultUnavailable` | Superseded for Hdcp by source-defined Default support; Default is not Restore. |
+| `DefaultAvailable` | Source-defined Default is approved for Hdcp as `RMHdcpKeyglobZero` DWORD 0 after capture and verification. |
+| `ReadyForReview` | Evidence may be reviewed for future Restore/P0/Msi work; Hdcp Apply and Default already use the controlled registry path. |
 | `ReadyInFuturePhase` | A future phase may continue after approvals; this does not enable execution now. |
 
 ### P0 State

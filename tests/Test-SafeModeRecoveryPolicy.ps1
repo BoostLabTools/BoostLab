@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -710,15 +710,15 @@ try {
                 )
             }
     )
-    if ($allTools.Count -ne 51) {
-        $errors.Add("Expected 51 active tools, found $($allTools.Count).")
+    if ($allTools.Count -ne 52) {
+        $errors.Add("Expected 52 active tools, found $($allTools.Count).")
     }
     if ($placeholderModules.Count -ne 18) {
         $errors.Add(
             "Expected 18 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 33) {
+    if (($allTools.Count - $placeholderModules.Count) -ne 34) {
         $errors.Add('Implemented tool count changed from 30.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
@@ -782,11 +782,12 @@ if ($errors.Count -gt 0) {
     ServiceChanged             = $false
     TrustedInstallerUsed       = $false
     ProtectedTargetModified    = $false
-    ActiveToolCount            = 51
-    ImplementedToolCount       = 33
+    ActiveToolCount            = 52
+    ImplementedToolCount       = 34
     PlaceholderToolCount       = 18
     SourceUltimateUnchanged    = $true
     Message                    = 'Safe Mode foundation is deny-by-default and non-executing.'
     Timestamp                  = Get-Date
 }
+
 

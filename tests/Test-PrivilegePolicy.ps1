@@ -295,6 +295,7 @@ $implementedModules = [ordered]@{
     'store-settings' = 'Setup\StoreSettings.psm1'
     'updates-pause' = 'Setup\UpdatesPause.psm1'
     'graphics-configuration-center' = 'Graphics\GraphicsConfigurationCenter.psm1'
+    'hdcp' = 'Graphics\hdcp.psm1'
     'date-language-region-time' = 'Setup\date-language-region-time.psm1'
     'game-mode' = 'Windows\game-mode.psm1'
     'pointer-precision' = 'Windows\pointer-precision.psm1'
@@ -336,8 +337,8 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 33) {
-    $errors.Add("No-new-actions boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
+if ($implementedModuleFiles.Count -ne 34) {
+    $errors.Add("Implemented module boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 
 $deletedToolNames = @(

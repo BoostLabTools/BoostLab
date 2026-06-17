@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -319,7 +319,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($implementedCount -ne 33 -or $placeholderCount -ne 18) {
+if ($implementedCount -ne 34 -or $placeholderCount -ne 18) {
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 
@@ -359,4 +359,5 @@ if (
     Message                 = 'MMAgent Assistant behavior and mocked verification were validated without changing the real MMAgent state.'
     Timestamp               = Get-Date
 }
+
 

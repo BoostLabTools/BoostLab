@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -148,9 +148,9 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 51) "Expected 51 active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq 52) "Expected 52 active tools, found $($allTools.Count)."
 Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 33) "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 34) "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot '_intake-promoted\Ultimate') -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
@@ -158,12 +158,14 @@ $remainingSourcePromoted = @(
     $sourcePromotedFiles | Where-Object {
         $_.FullName -ne $sourcePath -and
         $_.Name -ne '2 Driver Install Latest.ps1' -and
-        $_.Name -ne '4 Nvidia Settings.ps1'
+        $_.Name -ne '4 Nvidia Settings.ps1' -and
+        $_.Name -ne '5 Hdcp.ps1'
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 4) "Expected 4 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 3) "Expected 3 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
-foreach ($pathBTool in @('hdcp', 'p0-state', 'msi-mode')) {
+Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain active as its own separate controlled registry Path B step.'
+foreach ($pathBTool in @('p0-state', 'msi-mode')) {
     Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq $pathBTool })) -eq 0) "NVIDIA Path B intake tool was unexpectedly added as active: $pathBTool"
 }
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'nvidia-settings' })) -eq 1) 'Nvidia Settings must remain active as its own separate controlled manual-handoff tool.'
@@ -417,3 +419,4 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     AutoMode                        = 'AutoBlockedUntilArtifactApproval'
     Message                         = 'Driver Clean controlled manual handoff implementation is active, inert, and fail-closed for Auto.'
 }
+

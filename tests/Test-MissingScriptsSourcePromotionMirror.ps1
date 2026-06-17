@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -209,14 +209,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 51) {
-    throw "Expected 51 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 52) {
+    throw "Expected 52 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 33) {
-    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 34) {
+    throw "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 if (@($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' }).Count -ne 0) {
@@ -296,3 +296,4 @@ if (
     ProductionApprovalsAdded       = $false
     Message                        = 'Missing Ultimate script source-promotion mirror is present, hash-verified, and non-executing.'
 }
+

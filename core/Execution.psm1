@@ -68,6 +68,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-settings.psm1'
         Actions = @('Analyze', 'Open', 'Apply')
     }
+    'hdcp' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\hdcp.psm1'
+        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

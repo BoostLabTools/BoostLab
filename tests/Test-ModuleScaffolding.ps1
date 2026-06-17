@@ -99,6 +99,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\nvidia-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
     }
+    'hdcp' = @{
+        RelativePath          = 'Graphics\hdcp.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -379,6 +383,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'write-cache-buffer-flushing' -and
             $commandName -eq 'New-ItemProperty'
         )
+        $approvedHdcpCommand = (
+            $toolId -eq 'hdcp' -and
+            $commandName -eq 'New-ItemProperty'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -389,7 +397,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedContextMenuCommand -and
             -not $approvedNotepadSettingsCommand -and
             -not $approvedUnattendedCommand -and
-            -not $approvedWriteCacheCommand
+            -not $approvedWriteCacheCommand -and
+            -not $approvedHdcpCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -440,6 +449,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'nvidia-settings') {
+            0
+        }
+        elseif ($toolId -eq 'hdcp') {
             0
         }
         elseif ($toolId -eq 'theme-black') {
@@ -886,6 +898,47 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Network Adapter Power Savings & Wake behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'hdcp') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A'
+                'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+                'RMHdcpKeyglobZero'
+                'New-BoostLabRegistryStateCapture'
+                'Set-BoostLabRollbackMutationState'
+                'NeedsNvidiaTargeting'
+                'VEN_10DE'
+                'SupportsDefault = $true'
+                'SupportsRestore = $false'
+                'CanModifyDrivers = $false'
+                'function Test-BoostLabHdcpState'
+                'Default is source-defined DWORD 0 and is not Restore'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing HDCP controlled registry behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'reg delete'
+                'Remove-ItemProperty'
+                'Remove-Item -LiteralPath'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Set-Service'
+                'Stop-Service'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Start-Process'
+                'UsesTrustedInstaller = $true'
+                'UsesSafeMode = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or unsafe HDCP behavior: $forbiddenText")
                 }
             }
         }

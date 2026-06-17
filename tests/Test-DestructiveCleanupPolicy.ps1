@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -862,8 +862,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 51 -or
-        $implementedModules.Count -ne 33 -or
+        $allModules.Count -ne 52 -or
+        $implementedModules.Count -ne 34 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -963,10 +963,11 @@ if ($errors.Count -gt 0) {
     MockQuarantineRecorded     = $true
     MockQuarantineRestorePassed = $true
     RealFilesDeleted           = $false
-    ImplementedModuleCount     = 33
+    ImplementedModuleCount     = 34
     PlaceholderModuleCount     = 18
     SourceUltimateUnchanged    = $true
     Message                    = 'Destructive cleanup policy is bounded, confirmed, verified, mocked, and deny-by-default.'
     Timestamp                  = Get-Date
 }
+
 

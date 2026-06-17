@@ -132,7 +132,13 @@ foreach ($tool in $tools) {
     if ([bool]$capabilities['SupportsDefault'] -ne ('Default' -in @($tool['Actions']))) {
         $errors.Add("$toolName SupportsDefault does not match its action list.")
     }
-    if ([bool]$capabilities['SupportsRestore'] -ne ('Restore' -in @($tool['Actions']))) {
+    $hasRestoreAction = 'Restore' -in @($tool['Actions'])
+    $restoreActionIsBlockedUntilSelectedState = (
+        [string]$tool['Id'] -eq 'hdcp' -and
+        $hasRestoreAction -and
+        -not [bool]$capabilities['SupportsRestore']
+    )
+    if ([bool]$capabilities['SupportsRestore'] -ne $hasRestoreAction -and -not $restoreActionIsBlockedUntilSelectedState) {
         $errors.Add("$toolName SupportsRestore does not match its action list.")
     }
 }

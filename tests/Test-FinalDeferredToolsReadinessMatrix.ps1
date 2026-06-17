@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -74,14 +74,14 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($allTools.Count -ne 51) {
-    throw "Expected 51 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 52) {
+    throw "Expected 52 active tools, found $($allTools.Count)."
 }
 if ($placeholderTools.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 33) {
-    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne 34) {
+    throw "Expected 34 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(
@@ -297,4 +297,5 @@ if (
     Message                   = 'Final deferred tools readiness matrix covers all current placeholders and remains non-executing.'
     Timestamp                 = Get-Date
 }
+
 

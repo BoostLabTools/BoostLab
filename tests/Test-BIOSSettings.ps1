@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -239,7 +239,7 @@ try {
             (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
         }
     ).Count
-    if ($implementedCount -ne 33 -or $placeholderCount -ne 18) {
+    if ($implementedCount -ne 34 -or $placeholderCount -ne 18) {
         throw "Unexpected implementation counts: $implementedCount implemented, $placeholderCount placeholders."
     }
 
@@ -259,3 +259,4 @@ try {
 finally {
     Remove-Module -ModuleInfo $biosModule -Force -ErrorAction SilentlyContinue
 }
+

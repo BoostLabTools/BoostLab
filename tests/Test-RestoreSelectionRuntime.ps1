@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -431,14 +431,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 51) {
-    throw "Expected 51 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 52) {
+    throw "Expected 52 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 33) {
-    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 34) {
+    throw "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $artifactPolicy = Import-PowerShellDataFile -LiteralPath $policyPaths.Artifact
@@ -529,4 +529,5 @@ if (
     Message                    = 'Restore selection foundation is documented, inert, mock-validated, and deny-by-default.'
     Timestamp                  = Get-Date
 }
+
 

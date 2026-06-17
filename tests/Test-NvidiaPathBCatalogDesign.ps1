@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -264,7 +264,7 @@ if (Test-Path -LiteralPath $optionalConfigPath -PathType Leaf) {
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
 $pathBTitles = @($pathB | ForEach-Object { $_.Title })
-foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install Latest', 'Nvidia Settings') })) {
+foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp') })) {
     if (@($allTools | Where-Object { $_.Title -eq $title }).Count -ne 0) {
         throw "Path B source-promoted script was unexpectedly added as an active tool: $title"
     }
@@ -277,6 +277,10 @@ $nvidiaSettingsTool = @($allTools | Where-Object { $_.Title -eq 'Nvidia Settings
 if ($nvidiaSettingsTool.Count -ne 1) {
     throw 'Nvidia Settings must be active exactly once as the Phase 94 controlled manual-handoff tool.'
 }
+$hdcpTool = @($allTools | Where-Object { $_.Title -eq 'HDCP' -or $_.Id -eq 'hdcp' })
+if ($hdcpTool.Count -ne 1) {
+    throw 'HDCP must be active exactly once as the Phase 95 controlled registry tool.'
+}
 
 $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
@@ -286,19 +290,18 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 51) {
-    throw "Expected 51 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 52) {
+    throw "Expected 52 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 33) {
-    throw "Expected 33 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 34) {
+    throw "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $forbiddenModuleNames = @(
     'DriverInstallLatest',
-    'Hdcp',
     'P0State',
     'MsiMode'
 )
@@ -406,3 +409,4 @@ if ($legacySourceHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D154
     RuntimeBehaviorChanged        = $false
     Message                       = 'NVIDIA Path B catalog design is documented and remains non-executing.'
 }
+

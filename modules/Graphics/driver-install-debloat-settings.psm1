@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'driver-install-debloat-settings'; Title = 'Driver Install Debloat & Settings'; Stage = 'Graphics'; Order = 4
+    Id = 'driver-install-debloat-settings'; Title = 'Driver Install Debloat & Settings'; Stage = 'Graphics'; Order = 5
     Type = 'assistant'; RiskLevel = 'high'
     Description = 'Analyze graphics hardware and prepare a guided driver installation workflow.'
     Actions = @('Analyze', 'Apply', 'Restore')

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -151,9 +151,9 @@ $placeholderModules = @(
     }
 )
 if (
-    $tools.Count -ne 51 -or
-    $allModules.Count -ne 51 -or
-    $implementedModules.Count -ne 33 -or
+    $tools.Count -ne 52 -or
+    $allModules.Count -ne 52 -or
+    $implementedModules.Count -ne 34 -or
     $placeholderModules.Count -ne 18
 ) {
     $errors.Add(
@@ -219,4 +219,5 @@ if ($errors.Count -gt 0) {
     Message                   = 'DirectX remains denied until immutable artifact provenance and installer approvals exist.'
     Timestamp                 = Get-Date
 }
+
 
