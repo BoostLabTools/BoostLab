@@ -205,3 +205,7 @@ Current product-scope impact:
 No deferred tool is marked ready for implementation by this matrix.
 
 The safest path is still foundation and allowlist work first, followed by narrow tool-specific reattempts. The presence of a scope design or provenance review is evidence for planning, not permission to execute.
+
+Phase 83 adds `docs/tool-designs/nvidia-path-b-readiness-badge-design.md` as a
+design-only badge taxonomy for future NVIDIA Path B status display. It does not
+change readiness categories, approve scopes, enable UI, or implement Path B.

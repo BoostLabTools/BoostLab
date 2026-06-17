@@ -588,3 +588,8 @@ narrower runtime foundation. It should describe how future UI could show
 catalog-only Path B readiness, missing gate categories, and Path A/Path B
 conflict state without enabling action buttons, creating modules, approving
 artifacts, or changing runtime behavior.
+
+Phase 83 records that badge design in
+`docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It creates no live
+UI badges, active badge config, runtime config, production config, modules,
+tool cards, placeholder enablement, or Path B execution behavior.

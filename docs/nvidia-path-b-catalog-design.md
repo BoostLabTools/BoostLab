@@ -279,3 +279,8 @@ Phase 82 records non-executing Workflow Registry schema design in
 `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
 It defines future metadata fields for Path B without creating an active
 workflow registry, production config, UI implementation, or tool behavior.
+
+Phase 83 records readiness badge design in
+`docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It keeps Path B
+catalog-only and defines future badge language without adding active UI config,
+runtime behavior, production approval, or tool behavior.

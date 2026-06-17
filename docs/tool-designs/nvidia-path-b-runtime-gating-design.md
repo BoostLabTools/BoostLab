@@ -421,3 +421,8 @@ Phase 82 records that schema design in
 It creates no active workflow registry, runtime config, production config, UI
 implementation, tool card, placeholder enablement, or Path B execution
 behavior.
+
+Phase 83 records readiness badge design in
+`docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It defines future
+badge taxonomy and badge-to-gate mapping without implementing live UI badges,
+runtime badge evaluation, production config, or Path B execution behavior.

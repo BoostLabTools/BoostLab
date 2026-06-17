@@ -439,3 +439,8 @@ Affected tools:
 The first migration pass established the runtime, confirmation, logging, state, verification, and assistant patterns needed for low- to medium-risk tools.
 
 The remaining placeholders are concentrated in the heavy-governance categories above. The next project milestone is therefore foundation-building, not opportunistic tool migration.
+
+NVIDIA Path B readiness badge design is tracked in
+`docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It is a
+documentation-only status/badge design and does not enable any deferred tool,
+placeholder, production scope, artifact, runtime workflow, or UI action.

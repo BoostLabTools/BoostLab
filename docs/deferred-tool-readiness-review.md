@@ -296,3 +296,8 @@ project now has the shared policy boundaries needed to talk concretely about
 implementation readiness. What it still does not have is permission to execute
 those behaviors. The next implementation phases should therefore be narrow,
 tool-specific approval phases, not new broad foundation phases.
+
+Phase 83 adds `docs/tool-designs/nvidia-path-b-readiness-badge-design.md` for
+future NVIDIA Path B badge/status language. The review remains unchanged:
+badges are informational design only and do not approve execution, production
+allowlists, artifacts, UI controls, or placeholder enablement.
