@@ -454,3 +454,9 @@ Phase 88 records documentation backlink audit design in
 defines future backlink audit rules without creating a live backlink auditor,
 active docs runtime, active config, production approval, or Path B execution
 behavior.
+
+Phase 89 records governance freeze review in
+`docs/tool-designs/nvidia-path-b-governance-freeze-review.md`. It freezes the
+Path B documentation set as design-only and non-executing without creating
+active governance runtime, production approval, UI approval, runtime approval,
+or Path B execution behavior.

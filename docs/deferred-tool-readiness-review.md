@@ -333,3 +333,9 @@ Phase 88 adds
 documentation-only Path B backlink audit design. The review remains unchanged:
 backlink audit design does not approve execution, production allowlists,
 artifacts, active docs runtime, UI controls, or placeholder enablement.
+
+Phase 89 adds
+`docs/tool-designs/nvidia-path-b-governance-freeze-review.md` for
+documentation-only Path B governance freeze review. The review remains
+unchanged: freeze review does not approve execution, production allowlists,
+artifacts, active governance runtime, UI controls, or placeholder enablement.

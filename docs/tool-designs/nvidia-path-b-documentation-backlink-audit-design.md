@@ -311,3 +311,9 @@ foundation. It should review whether the Path B documentation set is stable
 enough to pause further design layering before any implementation attempt,
 without creating active docs runtime, UI config, runtime config, production
 config, modules, action buttons, artifacts, allowlists, or execution behavior.
+
+Phase 89 records governance freeze review in
+`docs/tool-designs/nvidia-path-b-governance-freeze-review.md`. It freezes the
+Path B documentation set as design-only and non-executing without creating
+active governance runtime, production approval, UI approval, runtime approval,
+or Path B execution behavior.

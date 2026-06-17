@@ -239,3 +239,9 @@ Phase 88 adds
 documentation-only backlink audit design for the Path B doc set. It does not
 change readiness categories, approve scopes, create a live backlink auditor,
 enable UI, or implement Path B.
+
+Phase 89 adds
+`docs/tool-designs/nvidia-path-b-governance-freeze-review.md` as a
+documentation-only governance freeze review for the Path B doc set. It does not
+change readiness categories, approve scopes, create active governance runtime,
+enable UI, or implement Path B.

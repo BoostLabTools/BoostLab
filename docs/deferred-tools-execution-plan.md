@@ -472,3 +472,8 @@ NVIDIA Path B documentation backlink audit design is tracked in
 documentation-only backlink audit guidance and does not create a live backlink
 auditor, active docs runtime, active UI/runtime config, production scope,
 artifact, or tool behavior.
+
+NVIDIA Path B governance freeze review is tracked in
+`docs/tool-designs/nvidia-path-b-governance-freeze-review.md`. It is
+documentation-only freeze guidance and does not create active governance
+runtime, active docs runtime, production scope, artifact, or tool behavior.
