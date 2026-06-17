@@ -314,3 +314,8 @@ narrow foundation. It should create a navigable index of Path B design
 documents and validators without creating active preview config, UI config,
 runtime config, production config, modules, action buttons, artifacts,
 allowlists, or execution behavior.
+
+Phase 87 records that documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+creates no live UI navigation, active docs runtime, active config, modules,
+tool cards, placeholder enablement, or Path B execution behavior.

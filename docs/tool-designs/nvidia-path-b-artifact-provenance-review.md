@@ -310,3 +310,8 @@ entries remain NeedsProvenance or other non-approved statuses.
 Phase 80 records production approval gate design in
 `docs/tool-designs/nvidia-path-b-production-approval-gate-design.md`. Artifact
 entries remain unapproved until a later explicit artifact approval phase.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+indexes this provenance review as non-approved documentation only and grants no
+artifact, download, installer, Profile Inspector, or `.nip` approval.

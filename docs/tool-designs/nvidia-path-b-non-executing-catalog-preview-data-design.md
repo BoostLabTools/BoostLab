@@ -507,3 +507,8 @@ Phase 86 records that integrity/drift rules design in
 `docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
 It creates no live drift checker, active preview config, active UI config,
 runtime config, production approval, or Path B execution behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+adds a documentation-only map of the Path B doc set without creating live UI
+navigation, active docs runtime, active config, or execution behavior.

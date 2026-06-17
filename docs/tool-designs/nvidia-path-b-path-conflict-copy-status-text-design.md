@@ -476,3 +476,8 @@ Phase 86 records preview data integrity/drift rules design in
 `docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
 It defines future drift response copy requirements indirectly through severity
 and report fields, but adds no live UI text, active config, or runtime behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+adds a documentation-only entry point for Path B docs without adding live UI
+navigation, active docs runtime, active config, or execution behavior.

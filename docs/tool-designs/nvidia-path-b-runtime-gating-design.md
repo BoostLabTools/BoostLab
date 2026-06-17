@@ -443,3 +443,8 @@ Phase 86 records preview data integrity/drift rules design in
 `docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
 It defines future integrity checks and drift responses without adding runtime
 gate logic, live drift checking, active config, or Path B execution behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+links the Path B documentation set without implementing runtime navigation,
+runtime gates, active config, or execution behavior.

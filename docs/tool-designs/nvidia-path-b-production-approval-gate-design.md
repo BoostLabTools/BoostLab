@@ -284,3 +284,8 @@ Phase 82 records non-executing Workflow Registry schema design in
 `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`.
 It does not create an active workflow registry, production config, allowlist
 config, executable handler, UI implementation, or Path B runtime behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+provides a documentation-only navigation layer and grants no production
+approval.

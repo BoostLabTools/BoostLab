@@ -227,3 +227,9 @@ Phase 86 adds
 as design-only integrity/drift rules for future Path B preview metadata. It
 does not change readiness categories, approve scopes, create a drift checker,
 enable UI, or implement Path B.
+
+Phase 87 adds
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md` as a
+documentation-only navigation layer for the Path B doc set. It does not change
+readiness categories, approve scopes, create live navigation, enable UI, or
+implement Path B.

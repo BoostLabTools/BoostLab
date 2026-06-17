@@ -302,3 +302,8 @@ Phase 86 records preview data integrity/drift rules design in
 It defines future integrity and drift checks for preview metadata without
 creating active catalog config, runtime checks, production approval, or tool
 behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+provides a documentation-only entry point for the Path B doc set and creates no
+live catalog navigation or runtime behavior.

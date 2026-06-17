@@ -461,3 +461,8 @@ NVIDIA Path B preview data integrity/drift rules design is tracked in
 It is documentation-only governance for future preview consistency and does not
 create a live drift checker, active preview config, production scope, artifact,
 or tool behavior.
+
+NVIDIA Path B documentation index/navigation design is tracked in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+is documentation-only navigation guidance and does not create active docs
+runtime, active UI/runtime config, production scope, artifact, or tool behavior.

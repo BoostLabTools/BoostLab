@@ -308,3 +308,8 @@ Phase 81 records runtime gating design in
 `docs/tool-designs/nvidia-path-b-runtime-gating-design.md`. Profile capture,
 profile import, Profile Inspector execution, `.nip` operations, Restore, and
 Default remain unapproved and non-executing.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+indexes this profile state model as documentation-only and grants no profile
+capture, profile import, profile export, or Restore approval.

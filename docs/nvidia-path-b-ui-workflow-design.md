@@ -483,3 +483,7 @@ Phase 86 records preview data integrity/drift rules design in
 `docs/tool-designs/nvidia-path-b-preview-data-integrity-drift-rules-design.md`.
 It defines future fail-closed drift handling for preview data without modifying
 WPF/UI runtime files or enabling any Path B control.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+adds no live UI navigation, WPF changes, action enablement, or runtime behavior.

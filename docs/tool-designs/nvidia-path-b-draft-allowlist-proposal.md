@@ -313,3 +313,7 @@ Phase 81 records runtime gating design in
 runtime gate implementation, production config, production approval, UI
 implementation, tool card, placeholder enablement, or Path B execution
 behavior.
+
+Phase 87 records documentation index/navigation design in
+`docs/tool-designs/nvidia-path-b-documentation-index-navigation-design.md`. It
+indexes this draft proposal as non-approved documentation only.
