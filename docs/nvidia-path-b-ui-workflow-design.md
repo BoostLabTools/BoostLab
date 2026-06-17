@@ -468,3 +468,8 @@ Phase 83 records readiness badge design in
 `docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It defines future
 badge meanings and display rules but adds no live UI badge implementation,
 runtime config, or enabled Path B controls.
+
+Phase 84 records path conflict copy/status text design in
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
+defines future wording for Path A/Path B explanation, conflict state, disabled
+actions, and status templates without modifying WPF/UI runtime files.

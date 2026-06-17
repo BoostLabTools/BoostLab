@@ -416,3 +416,8 @@ runtime or UI foundation. It should define exact future copy for Path A/Path B
 selection, conflict, warning, and blocked states without implementing UI,
 runtime config, modules, action buttons, artifacts, production scopes, or
 execution behavior.
+
+Phase 84 records that copy/status text design in
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
+adds no live UI copy implementation, localization runtime file, active UI
+config, runtime config, production approval, or Path B execution behavior.

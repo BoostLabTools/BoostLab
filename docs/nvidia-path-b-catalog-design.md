@@ -284,3 +284,9 @@ Phase 83 records readiness badge design in
 `docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It keeps Path B
 catalog-only and defines future badge language without adding active UI config,
 runtime behavior, production approval, or tool behavior.
+
+Phase 84 records path conflict copy/status text design in
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
+keeps Path B catalog-only and defines future user-facing status copy without
+adding live UI strings, localization files, runtime behavior, production
+approval, or tool behavior.

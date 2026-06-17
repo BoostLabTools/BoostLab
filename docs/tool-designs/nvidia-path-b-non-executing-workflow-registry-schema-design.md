@@ -593,3 +593,9 @@ Phase 83 records that badge design in
 `docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It creates no live
 UI badges, active badge config, runtime config, production config, modules,
 tool cards, placeholder enablement, or Path B execution behavior.
+
+Phase 84 records path conflict copy/status text design in
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
+adds no live UI strings, active UI config, localization files, runtime config,
+production config, modules, tool cards, placeholder enablement, or Path B
+execution behavior.

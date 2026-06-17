@@ -444,3 +444,9 @@ NVIDIA Path B readiness badge design is tracked in
 `docs/tool-designs/nvidia-path-b-readiness-badge-design.md`. It is a
 documentation-only status/badge design and does not enable any deferred tool,
 placeholder, production scope, artifact, runtime workflow, or UI action.
+
+NVIDIA Path B path conflict copy/status text design is tracked in
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md`. It
+is documentation-only future wording guidance and does not add live UI strings,
+localization files, runtime workflow config, production scope, artifact, or
+tool behavior.

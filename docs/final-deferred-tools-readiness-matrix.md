@@ -209,3 +209,9 @@ The safest path is still foundation and allowlist work first, followed by narrow
 Phase 83 adds `docs/tool-designs/nvidia-path-b-readiness-badge-design.md` as a
 design-only badge taxonomy for future NVIDIA Path B status display. It does not
 change readiness categories, approve scopes, enable UI, or implement Path B.
+
+Phase 84 adds
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md` as a
+design-only wording plan for future Path A/Path B conflict and status text. It
+does not change readiness categories, approve scopes, enable UI, add
+localization runtime files, or implement Path B.

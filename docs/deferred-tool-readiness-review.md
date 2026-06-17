@@ -301,3 +301,9 @@ Phase 83 adds `docs/tool-designs/nvidia-path-b-readiness-badge-design.md` for
 future NVIDIA Path B badge/status language. The review remains unchanged:
 badges are informational design only and do not approve execution, production
 allowlists, artifacts, UI controls, or placeholder enablement.
+
+Phase 84 adds
+`docs/tool-designs/nvidia-path-b-path-conflict-copy-status-text-design.md` for
+future Path A/Path B conflict copy and status text. The review remains
+unchanged: wording design does not approve execution, production allowlists,
+artifacts, UI controls, localization runtime files, or placeholder enablement.
