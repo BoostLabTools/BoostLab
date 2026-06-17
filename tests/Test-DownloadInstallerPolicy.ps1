@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -371,8 +371,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 52 -or
-        $implementedModules.Count -ne 34 -or
+        $allModules.Count -ne 53 -or
+        $implementedModules.Count -ne 35 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -457,7 +457,7 @@ if ($errors.Count -gt 0) {
     HashMismatchBlocked     = $true
     ConfirmationRequired    = $true
     InstallerExecuted       = $false
-    ImplementedModuleCount  = 34
+    ImplementedModuleCount  = 35
     PlaceholderModuleCount  = 18
     SourceUltimateUnchanged = $true
     Message                 = 'Download provenance and installer execution policies are valid and inert.'

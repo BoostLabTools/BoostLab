@@ -133,10 +133,11 @@ The app must follow this exact order:
 2. Driver Install Latest
 3. Nvidia Settings
 4. HDCP
-5. Driver Install Debloat & Settings
-6. DirectX
-7. Visual C++
-8. Graphics Configuration Center
+5. P0 State
+6. Driver Install Debloat & Settings
+7. DirectX
+8. Visual C++
+9. Graphics Configuration Center
 
 ---
 

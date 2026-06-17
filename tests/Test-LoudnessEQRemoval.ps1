@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -33,8 +33,8 @@ $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $stages = @($configuration['Stages'] | Sort-Object { [int]$_['Order'] })
 $tools = @($stages | ForEach-Object { $_['Tools'] })
 
-if ($tools.Count -ne 52) {
-    throw "Expected 52 active tools after Phase 95, found $($tools.Count)."
+if ($tools.Count -ne 53) {
+    throw "Expected 53 active tools after Phase 96, found $($tools.Count)."
 }
 
 $loudnessTools = @(
@@ -69,8 +69,8 @@ $placeholderModules = @(
     }
 )
 if (
-    $moduleFiles.Count -ne 52 -or
-    $implementedModules.Count -ne 34 -or
+    $moduleFiles.Count -ne 53 -or
+    $implementedModules.Count -ne 35 -or
     $placeholderModules.Count -ne 18
 ) {
     throw "Unexpected Phase 95 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."

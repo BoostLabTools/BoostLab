@@ -198,7 +198,7 @@ texts are design-only and do not create live UI strings.
 | `NotImplemented` | Superseded for Hdcp by Phase 95 controlled registry implementation; Restore/P0/Msi work remains future-scoped. |
 | `ImplementedControlled` | Hdcp is implemented as controlled NVIDIA-only registry behavior with capture before mutation. |
 | `SourcePromoted` | Source mirror exists and checksum is tracked for Hdcp. |
-| `DesignOnly` | Superseded for Hdcp by Phase 95 controlled implementation; remaining Path B design work continues for P0 State and Msi Mode. |
+| `DesignOnly` | Superseded for Hdcp by Phase 95 controlled implementation; remaining Path B design work continues for Msi Mode and future Restore selection. |
 | `NeedsProvenance` | Download provenance is not the primary blocker for Hdcp. |
 | `NeedsAllowlist` | No production allowlist was added; Hdcp uses module-bounded source scope and NVIDIA target validation. |
 | `NeedsApprovalGate` | Production approval is missing for Hdcp. |
@@ -222,13 +222,14 @@ texts are design-only and do not create live UI strings.
 
 | Badge/status | Future status text |
 |---|---|
-| `NotImplemented` | P0 State is documented but not implemented in BoostLab. |
+| `NotImplemented` | Superseded for P0 State by Phase 96 controlled registry implementation; Msi/Restore work remains future-scoped. |
+| `ImplementedControlled` | P0 State is implemented as controlled NVIDIA-only registry behavior with capture before mutation. |
 | `SourcePromoted` | Source mirror exists and checksum is tracked for P0 State. |
-| `DesignOnly` | This step is currently design-only. |
+| `DesignOnly` | Superseded for P0 State by Phase 96 controlled implementation; remaining Path B design work continues for Msi Mode. |
 | `NeedsProvenance` | Download provenance is not the primary blocker for P0 State. |
-| `NeedsAllowlist` | Exact P0 registry scope is not approved. |
-| `NeedsApprovalGate` | Production approval is missing for P0 State. |
-| `NeedsRuntimeGate` | Runtime gate evaluation is not implemented for this step. |
+| `NeedsAllowlist` | No production allowlist was added; P0 State uses module-bounded source scope and NVIDIA target validation. |
+| `NeedsApprovalGate` | Production approval is enforced by checksum validation, NVIDIA-only target discovery, confirmation, and registry state capture. |
+| `NeedsRuntimeGate` | Runtime execution is controlled by checksum validation, NVIDIA-only target discovery, confirmation, and registry state capture. |
 | `NeedsProfileCapture` | Profile capture is not the primary blocker for P0 State. |
 | `NeedsRegistryRollback` | Registry rollback capture is required before P0 performance-state values can change. |
 | `NeedsDriverRollback` | Driver rollback is not the primary blocker for this step. |
@@ -236,11 +237,12 @@ texts are design-only and do not create live UI strings.
 | `NeedsRebootPolicy` | Reboot policy is not the primary blocker unless future verification requires restart disclosure. |
 | `NeedsNvidiaTargeting` | BoostLab must verify an exact NVIDIA target before P0 registry work. |
 | `NeedsSecurityReview` | P0 behavior can affect power, thermal, fan, battery, and stability; review is required. |
-| `PathConflict` | Path A/Path B conflict blocks P0 State. |
+| `PathConflict` | Path conflict is handled by keeping P0 State as Path B step 4 and Path A as a separate later Graphics tool. |
 | `RestoreUnavailable` | Restore is unavailable without exact pre-change registry capture. |
 | `RestoreDenied` | Restore is denied because no eligible P0 capture is selected. |
-| `DefaultUnavailable` | Source-defined Default is not approved for this step. |
-| `ReadyForReview` | Evidence may be reviewed, but P0 State is not executable. |
+| `DefaultUnavailable` | Superseded for P0 State by source-defined Default support; Default is not Restore. |
+| `DefaultAvailable` | Source-defined Default is approved for P0 State as `DisableDynamicPstate` DWORD 0 after capture and verification. |
+| `ReadyForReview` | Evidence may be reviewed for future Restore/Msi work; P0 State Apply and Default already use the controlled registry path. |
 | `ReadyInFuturePhase` | A future phase may continue after approvals; this does not enable execution now. |
 
 ### Msi Mode

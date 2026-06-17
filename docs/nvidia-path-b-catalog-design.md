@@ -33,7 +33,15 @@ with controlled NVIDIA-only registry targeting. It preserves the source-defined
 `RMHdcpKeyglobZero` Apply value `DWORD 1` and Default value `DWORD 0` only after
 source checksum validation, NVIDIA-only target discovery, registry state capture,
 and verification. Restore remains unavailable without a selected captured-state
-restore flow. P0 State and Msi Mode remain separate and unimplemented.
+restore flow.
+
+Phase 96 current-state note: `P0 State` has since been promoted as Path B step
+4 with controlled NVIDIA-only registry targeting. It preserves the
+source-defined `DisableDynamicPstate` Apply value `DWORD 1` and Default value
+`DWORD 0` only after source checksum validation, NVIDIA-only target discovery,
+registry state capture, and verification. Restore remains unavailable without a
+selected captured-state restore flow. Msi Mode remains separate and
+unimplemented.
 
 ## Path A vs Path B
 
@@ -70,7 +78,7 @@ Path B steps must preserve this exact order:
 | 1 | Driver Install Latest | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | `5 Graphics/2 Driver Install Latest.ps1` | Graphics | First Path B step. Must complete before NVIDIA settings/profile steps are considered. | Controlled manual handoff is implemented; Auto remains blocked until NVIDIA artifact/download, installer descriptor, driver state, process handoff, reboot/session, and recovery approvals exist. AMD/Intel branches remain unsupported. | Downloads, installer launch, driver install/update, NVIDIA API use, vendor branch selection, admin execution, process handoff, rollback/support boundaries. | Manual handoff only | No NVIDIA artifact provenance, installer execution descriptor, driver state scope, rollback/support design, or automated Path B execution is approved. |
 | 2 | Nvidia Settings | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | `5 Graphics/4 Nvidia Settings.ps1` | Graphics | Runs after driver installation in Path B. Prepares NVIDIA registry/profile settings before focused display-device steps. | Controlled manual handoff is implemented; Auto remains blocked until 7-Zip, NVIDIA Profile Inspector, `.nip`, profile capture/restore, registry/file rollback, process, and verification approvals exist. | Downloads, installer execution, registry mutation, generated `.nip` profile data, NVIDIA Profile Inspector execution, Control Panel launch, file cleanup, Default behavior. | Manual handoff only | Required artifacts, profile import rules, registry scopes, generated-artifact ownership, process handling, verification, and Default/Restore semantics are not approved. |
 | 3 | Hdcp | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | `5 Graphics/5 Hdcp.ps1` | Graphics | Runs after broad NVIDIA settings. Applies a focused NVIDIA display-class registry behavior before P0 State. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, source-defined Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
-| 4 | P0 State | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | `5 Graphics/6 P0 State.ps1` | Graphics | Runs after Hdcp and before Msi Mode. Applies another focused NVIDIA display-class registry behavior. | Driver/profile/settings design for NVIDIA display-class target discovery, exact registry scopes, state capture, verification, and Default/Restore distinction. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, Default behavior, verification and rollback boundaries. | No | Exact NVIDIA target discovery, registry allowlists, capture-before-mutation, verification, and safe Default/Restore policy are not approved. |
+| 4 | P0 State | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | `5 Graphics/6 P0 State.ps1` | Graphics | Runs after Hdcp and before Msi Mode. Applies another focused NVIDIA display-class registry behavior. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
 | 5 | Msi Mode | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | `5 Graphics/7 Msi Mode.ps1` | Graphics | Final Path B step. Must not be exposed as an unordered independent graphics tweak. | Driver/profile/settings design plus NVIDIA-only targeting decision, exact display-device registry scopes, state capture, verification, and Default/Restore distinction. | Device registry discovery, interrupt-management registry mutation, display driver state, broad display-device targeting risk, AMD/Intel product-scope exclusion, Default behavior. | No | Source-style broad display-device targeting must be reconciled with NVIDIA-only scope, exact device scopes, capture, verification, and rollback policy before implementation. |
 
 ## Required Future Design Work
@@ -124,10 +132,12 @@ Required future approvals include:
 
 ### P0 State
 
-Future work must define an NVIDIA display-class registry design because the
-source writes `DisableDynamicPstate` under display-class registry instances.
+Phase 96 implemented a controlled NVIDIA display-class registry path for the
+source-defined `DisableDynamicPstate` behavior. Future work for this step is
+limited to captured-state Restore selection and any later workflow UI that
+links Path B steps together.
 
-Required future approvals include:
+The current implementation requires:
 
 * Exact target discovery rules.
 * NVIDIA-only product-scope validation.

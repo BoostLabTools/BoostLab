@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -386,14 +386,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 52) {
-    throw "Expected 52 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 53) {
+    throw "Expected 53 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 34) {
-    throw "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 35) {
+    throw "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $artifactPolicy = Import-PowerShellDataFile -LiteralPath $policyPaths.Artifact

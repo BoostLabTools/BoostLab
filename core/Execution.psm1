@@ -72,6 +72,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\hdcp.psm1'
         Actions = @('Analyze', 'Apply', 'Default', 'Restore')
     }
+    'p0-state' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\p0-state.psm1'
+        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

@@ -103,6 +103,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\hdcp.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'p0-state' = @{
+        RelativePath          = 'Graphics\p0-state.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -387,6 +391,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'hdcp' -and
             $commandName -eq 'New-ItemProperty'
         )
+        $approvedP0StateCommand = (
+            $toolId -eq 'p0-state' -and
+            $commandName -eq 'New-ItemProperty'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -398,7 +406,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedNotepadSettingsCommand -and
             -not $approvedUnattendedCommand -and
             -not $approvedWriteCacheCommand -and
-            -not $approvedHdcpCommand
+            -not $approvedHdcpCommand -and
+            -not $approvedP0StateCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -476,6 +485,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'write-cache-buffer-flushing') {
+            0
+        }
+        elseif ($toolId -eq 'p0-state') {
             0
         }
         elseif ($toolId -eq 'power-plan') {
@@ -939,6 +951,47 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated or unsafe HDCP behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'p0-state') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC'
+                'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+                'DisableDynamicPstate'
+                'New-BoostLabRegistryStateCapture'
+                'Set-BoostLabRollbackMutationState'
+                'NeedsNvidiaTargeting'
+                'VEN_10DE'
+                'SupportsDefault = $true'
+                'SupportsRestore = $false'
+                'CanModifyDrivers = $false'
+                'function Test-BoostLabP0StateState'
+                'Default is source-defined DisableDynamicPstate DWORD 0 and is not Restore'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing P0 State controlled registry behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'reg delete'
+                'Remove-ItemProperty'
+                'Remove-Item -LiteralPath'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Set-Service'
+                'Stop-Service'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Start-Process'
+                'UsesTrustedInstaller = $true'
+                'UsesSafeMode = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or unsafe P0 State behavior: $forbiddenText")
                 }
             }
         }

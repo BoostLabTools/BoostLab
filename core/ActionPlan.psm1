@@ -232,6 +232,18 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Restore') {
         'Report Restore as unavailable unless a valid selected captured rollback record from this HDCP tool is provided. No registry mutation is planned without selected captured state.'
     }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
+        'Read the P0 State source mirror and report source-defined NVIDIA display-class registry scope, target classification, Apply availability, Default availability, and Restore availability without changing the system.'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
+        'Apply the source-defined P0 State On value only to eligible NVIDIA display-class registry targets after source checksum validation and pre-change registry state capture; excluded Microsoft/RDP/non-NVIDIA targets are skipped.'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
+        'Apply the source-defined P0 State Default value only to eligible NVIDIA display-class registry targets after source checksum validation and pre-change registry state capture; excluded Microsoft/RDP/non-NVIDIA targets are skipped.'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Restore') {
+        'Report Restore as unavailable unless a valid selected captured rollback record from this P0 State tool is provided. No registry mutation is planned without selected captured state.'
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
     }
@@ -473,6 +485,38 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Restore') {
         $plannedChanges.Add('Do not treat Default as Restore.')
         $plannedChanges.Add('Require a valid selected captured rollback record from this HDCP tool before any Restore operation can be planned.')
+        $plannedChanges.Add('Fail closed when no selected captured state is available.')
+        $plannedChanges.Add('Perform no registry mutation in the current runtime path.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the P0 State source mirror checksum.')
+        $plannedChanges.Add('Report Path B step 4 of 5 while keeping Driver Install Latest, Nvidia Settings, HDCP, P0 State, and Msi Mode separate.')
+        $plannedChanges.Add('Discover the source display-class registry target shape read-only and report eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA and ambiguous targets.')
+        $plannedChanges.Add('Report the exact source value DisableDynamicPstate as REG_DWORD 1 for Apply and REG_DWORD 0 for Default.')
+        $plannedChanges.Add('Report Restore as unavailable unless selected captured rollback state exists.')
+        $plannedChanges.Add('Perform no registry capture, registry write, external process, download, reboot, driver change, or profile mutation.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Verify the approved P0 State source mirror checksum before any target discovery or mutation.')
+        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
+        $plannedChanges.Add('Classify eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA targets and ambiguous targets; skipped targets are reported and never written.')
+        $plannedChanges.Add('Block before capture or write if no eligible NVIDIA target exists, if target identity is ambiguous, or if target discovery includes an out-of-scope registry path.')
+        $plannedChanges.Add('Capture prior state for DisableDynamicPstate on every eligible target before writing.')
+        $plannedChanges.Add('Set only DisableDynamicPstate as REG_DWORD 1 on captured NVIDIA targets.')
+        $plannedChanges.Add('Verify DisableDynamicPstate is DWORD 1 after Apply and record post-mutation state for rollback evidence.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Verify the approved P0 State source mirror checksum before any target discovery or mutation.')
+        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
+        $plannedChanges.Add('Classify eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA targets and ambiguous targets; skipped targets are reported and never written.')
+        $plannedChanges.Add('Block before capture or write if no eligible NVIDIA target exists, if target identity is ambiguous, or if target discovery includes an out-of-scope registry path.')
+        $plannedChanges.Add('Capture prior state for DisableDynamicPstate on every eligible target before writing.')
+        $plannedChanges.Add('Set only DisableDynamicPstate as REG_DWORD 0 on captured NVIDIA targets, matching the Ultimate Default branch.')
+        $plannedChanges.Add('Verify DisableDynamicPstate is DWORD 0 after Default and record post-mutation state for rollback evidence.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Require a valid selected captured rollback record from this P0 State tool before any Restore operation can be planned.')
         $plannedChanges.Add('Fail closed when no selected captured state is available.')
         $plannedChanges.Add('Perform no registry mutation in the current runtime path.')
     }
@@ -814,6 +858,23 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without a selected captured rollback record from this HDCP tool.')
         $sideEffects.Add('No registry mutation occurs in the current Restore path.')
     }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; P0 State analysis is read-only.')
+        $sideEffects.Add('Path B step 4 is reported without merging Driver Install Latest, Nvidia Settings, HDCP, or Msi Mode.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Writes only DisableDynamicPstate as REG_DWORD 1 after eligible NVIDIA target discovery and capture succeed; excluded Microsoft/RDP/non-NVIDIA targets are skipped.')
+        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or non-NVIDIA registry write occurs.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Writes only DisableDynamicPstate as REG_DWORD 0 after eligible NVIDIA target discovery and capture succeed; excluded Microsoft/RDP/non-NVIDIA targets are skipped.')
+        $sideEffects.Add('Default is source-defined behavior and is not a captured-state Restore.')
+        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or non-NVIDIA registry write occurs.')
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Restore') {
+        $sideEffects.Add('Restore is blocked without a selected captured rollback record from this P0 State tool.')
+        $sideEffects.Add('No registry mutation occurs in the current Restore path.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
@@ -1064,6 +1125,15 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Restore') {
         'HDCP Restore requires a selected captured rollback record from this HDCP tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
+        'BoostLab will set only the source-defined P0 State registry value DisableDynamicPstate to DWORD 1 on eligible NVIDIA display-class targets, after source checksum validation and pre-change registry capture. Microsoft/RDP/non-NVIDIA targets are skipped. No external process, download, profile import, driver change, or reboot will occur. Continue?'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
+        'BoostLab will set only the source-defined P0 State Default registry value DisableDynamicPstate to DWORD 0 on eligible NVIDIA display-class targets, after source checksum validation and pre-change registry capture. Microsoft/RDP/non-NVIDIA targets are skipped. Default is not Restore. Continue?'
+    }
+    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Restore') {
+        'P0 State Restore requires a selected captured rollback record from this P0 State tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'

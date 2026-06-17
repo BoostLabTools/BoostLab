@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -114,7 +114,7 @@ Assert-BoostLabCondition ($null -ne $driverInstallLatestTool) 'Driver Install La
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1.'
 Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Install Latest must be Graphics order 2.'
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 3) 'Nvidia Settings must be Graphics order 3 as Path B step 2.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 5) 'Path A Driver Install Debloat & Settings must remain separate after HDCP.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 6) 'Path A Driver Install Debloat & Settings must remain separate after P0 State.'
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.Type -eq 'assistant') 'Driver Install Latest must be an assistant.'
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.RiskLevel -eq 'high') 'Driver Install Latest must remain high risk.'
 Assert-BoostLabCondition ((@($driverInstallLatestTool.Actions) -join ',') -eq 'Analyze,Open,Apply') 'Driver Install Latest actions must stay canonical Analyze/Open/Apply.'
@@ -140,7 +140,8 @@ foreach ($falseCapability in @(
 }
 
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain active as its own separate controlled registry Path B step.'
-foreach ($remainingPathBTool in @('p0-state', 'msi-mode')) {
+Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'p0-state' })) -eq 1) 'P0 State must remain active as its own separate controlled registry Path B step.'
+foreach ($remainingPathBTool in @('msi-mode')) {
     Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq $remainingPathBTool })) -eq 0) "Remaining Path B tool was unexpectedly added as active: $remainingPathBTool"
 }
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' })) -eq 0) 'Standalone DDU was reintroduced.'
@@ -149,18 +150,18 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 52) "Expected 52 active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq 53) "Expected 53 active tools, found $($allTools.Count)."
 Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 34) "Expected 34 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 35) "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate') -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
 $remainingSourcePromoted = @(
     $sourcePromotedFiles | Where-Object {
-        $_.Name -notin @('1 Driver Clean.ps1', '2 Driver Install Latest.ps1', '4 Nvidia Settings.ps1', '5 Hdcp.ps1')
+        $_.Name -notin @('1 Driver Clean.ps1', '2 Driver Install Latest.ps1', '4 Nvidia Settings.ps1', '5 Hdcp.ps1', '6 P0 State.ps1')
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 3) "Expected 3 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 2) "Expected 2 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(

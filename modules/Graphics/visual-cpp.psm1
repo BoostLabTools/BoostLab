@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'visual-cpp'; Title = 'Visual C++'; Stage = 'Graphics'; Order = 7
+    Id = 'visual-cpp'; Title = 'Visual C++'; Stage = 'Graphics'; Order = 8
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Review and prepare approved Microsoft Visual C++ runtime installation.'
     Actions = @('Analyze', 'Apply')

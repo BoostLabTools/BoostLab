@@ -1,4 +1,4 @@
-﻿# Missing Scripts Source Promotion Decision
+# Missing Scripts Source Promotion Decision
 
 ## Purpose
 
@@ -23,14 +23,14 @@ and source-defined Apply/Default behavior only.
 
 ## Counts
 
-Current BoostLab counts after Phase 95:
+Current BoostLab counts after Phase 96:
 
-* Active tools: **52**
-* Implemented tools: **34**
+* Active tools: **53**
+* Implemented tools: **35**
 * Deferred/placeholders: **18**
 * Intake files: **7**
 * Source-promoted mirror files: **7**
-* Remaining unimplemented source-promoted intake candidates: **3 separate from official counts**
+* Remaining unimplemented source-promoted intake candidates: **2 separate from official counts**
 
 ## Phase 72 Mirror Promotion Status
 
@@ -55,7 +55,8 @@ Driver Install Latest was promoted in Phase 93 as Path B step 1 controlled
 manual handoff only. Nvidia Settings was promoted in Phase 94 as Path B step 2
 controlled manual handoff only. HDCP was promoted in Phase 95 as Path B step 3
 controlled registry behavior with NVIDIA-only targeting and capture before
-mutation. The remaining three source-promoted scripts remain separate from official
+mutation. P0 State was promoted in Phase 96 as Path B step 4 controlled registry
+behavior with NVIDIA-only targeting and capture before mutation. The remaining two source-promoted scripts remain separate from official
 active/deferred BoostLab tools until a future catalog/placeholder phase
 explicitly changes `config/Stages.psd1` and module scaffolding.
 
@@ -66,8 +67,8 @@ explicitly changes `config/Stages.psd1` and module scaffolding.
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Source-promoted into mirror; Phase 92 implemented controlled manual handoff only | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with previous Graphics slot 1 | Implemented as active controlled manual handoff | Auto remains blocked until DDU/7-Zip artifact/download/execution policy, driver cleanup scope, Safe Mode/RunOnce/reboot workflow, process handling, and file/registry/cleanup/driver state capture and rollback approvals exist |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | Intake accepted for future source promotion | Implemented as controlled manual handoff only in Phase 93; Auto blocked | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | Yes | Yes, resolved by adding an explicit Graphics order 2 tool and moving Path A to order 3 | Active manual handoff only; no automated NVIDIA download/install behavior approved | NVIDIA-only branch design; download provenance; installer execution policy; driver operation scope; AMD/Intel branch exclusion; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | Intake accepted for future source promotion | Implemented as controlled manual handoff only in Phase 94; Auto blocked | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | Yes | Yes, resolved by adding an explicit Graphics order 3 tool and moving Path A to order 4 | Active manual handoff only; no automated 7-Zip/Profile Inspector/.nip/registry/profile behavior approved | NVIDIA profile/settings design; NVIDIA Profile Inspector provenance; `.nip` generated artifact policy; registry/file capture; Default/Restore distinction; Path B workflow design |
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 95 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict; active Graphics order 4 is now HDCP and Path A shifted to order 5 | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; P0 State and Msi Mode remain unimplemented |
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 6 today | Completed in mirror only; catalog promotion still separate | NVIDIA display-class registry target discovery; registry state capture; verification; Default/Restore distinction; Path B workflow design |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 95 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict; active Graphics order 4 is now HDCP and Path A shifted to order 5 | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; P0 State and Msi Mode remain separate Path B steps |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 96 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | Yes | Yes, resolved by adding active Graphics order 5 and shifting later Graphics tools | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; Msi Mode remains unimplemented |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | Yes | No direct current file conflict, but Graphics catalog has no official slot 7 today | Completed in mirror only; catalog promotion still separate | NVIDIA-only device targeting design; display-device registry state capture; verification; AMD/Intel exclusion; Default/Restore distinction; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1` | Yes | Yes, conflicts with current Setup slot 1 | Completed in mirror only; catalog promotion still separate | Security-sensitive design; BitLocker state/volume analysis; explicit confirmation; recovery-key warning; no mutation without approved security workflow; Default/Restore distinction |
 

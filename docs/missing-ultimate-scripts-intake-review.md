@@ -1,4 +1,4 @@
-﻿# Missing Ultimate Scripts Intake Review
+# Missing Ultimate Scripts Intake Review
 
 ## Purpose
 
@@ -13,21 +13,23 @@ This is an intake review only. It does not promote the scripts into `source-ulti
 Official BoostLab counts do not change in this phase. Phase 69 was intake
 review only.
 
-Current BoostLab counts after Phase 95:
+Current BoostLab counts after Phase 96:
 
-* Active tools: **52**
-* Implemented tools: **34**
+* Active tools: **53**
+* Implemented tools: **35**
 * Deferred/placeholders: **18**
 * Intake candidate scripts reviewed here: **7**
-* Remaining unimplemented source-promoted intake candidates: **3**
+* Remaining unimplemented source-promoted intake candidates: **2**
 
 The intake scripts were later source-promoted into the protected mirror. Driver
 Clean was then promoted in Phase 92 as a controlled manual-handoff active tool.
 Driver Install Latest was promoted in Phase 93 as controlled manual handoff
 only. Nvidia Settings was promoted in Phase 94 as controlled manual handoff
 only. HDCP was promoted in Phase 95 as controlled NVIDIA-only registry behavior
-with source-defined Apply/Default and capture before mutation. The remaining
-three intake scripts should not be counted as active or deferred
+with source-defined Apply/Default and capture before mutation. P0 State was
+promoted in Phase 96 as controlled NVIDIA-only registry behavior with
+source-defined Apply/Default and capture before mutation. The remaining
+two intake scripts should not be counted as active or deferred
 BoostLab tools unless a future source-promotion phase explicitly accepts them
 into the official catalog.
 
@@ -72,7 +74,7 @@ Conflict result:
 * `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
 * `Driver Clean.ps1` downloads and runs Display Driver Uninstaller / DDU behavior in the intake source. Phase 92 implements controlled manual handoff only; future implementation requires dedicated Driver Clean scope/provenance/safety design before any DDU execution can be considered.
 * `Driver Install Latest.ps1` downloads and launches the latest NVIDIA driver installer in the intake source. Phase 93 implements controlled manual handoff only; Auto remains blocked until NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals exist.
-* The remaining three intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
+* The remaining two intake scripts do not directly match the deleted tool names above, but they still require separate governance review before any promotion or implementation.
 * Loudness EQ remains deleted and is not present in the intake set.
 * NVME Faster Driver remains deleted and is not present in the intake set.
 
@@ -127,7 +129,7 @@ These five scripts must not be merged into one tool during intake. Any future im
 | `5 Graphics/2 Driver Install Latest.ps1` | Implemented as controlled manual handoff only in Phase 93 | Auto remains blocked pending provenance/installer/driver/reboot approvals | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; AMD/Intel unsupported behavior | BoostLab exposes only manual handoff for the NVIDIA path. AMD and Intel branches remain disabled/not implemented. | NVIDIA branch queries NVIDIA driver API, downloads the latest NVIDIA installer to `%SystemRoot%\Temp\nvidiadriver.exe`, and launches it. BoostLab does not automate those operations in Phase 93. AMD branch downloads AMD installer; Intel branch opens Intel driver page. |
 | `5 Graphics/4 Nvidia Settings.ps1` | Implemented as controlled manual handoff only in Phase 94 | Auto remains blocked pending 7-Zip/Profile Inspector/.nip/profile/registry/process/verification approvals | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; file mutation/cleanup; process execution; Default/Restore concerns | BoostLab exposes only manual handoff for Path B step 2. Automatic NVIDIA settings/profile behavior remains blocked. | Downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, writes NVIDIA registry values, writes/imports `.nip` profile data, opens NVIDIA Control Panel, and has a Default branch that deletes or changes NVIDIA values. |
 | `5 Graphics/5 Hdcp.ps1` | Implemented as controlled registry behavior in Phase 95 | Restore remains unavailable without selected captured-state restore flow | NVIDIA-only GPU-specific behavior; HKLM registry mutation; Default/Restore separation | Active HDCP behavior preserves source-defined `RMHdcpKeyglobZero` Apply/Default only after exact target discovery, NVIDIA-only validation, registry capture, and verification. | Writes `RMHdcpKeyglobZero` under NVIDIA display class registry instances with source-defined Apply/Default values; blocks non-NVIDIA or out-of-scope targets. |
-| `5 Graphics/6 P0 State.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; Default/Restore concerns | NVIDIA display-class registry behavior may be considered only with exact target discovery, capture, and verification. | Writes `DisableDynamicPstate` under display class registry instances with On/Default values. |
+| `5 Graphics/6 P0 State.ps1` | Implemented as controlled registry behavior in Phase 96 | Restore remains unavailable without selected captured-state restore flow | NVIDIA-only GPU-specific behavior; HKLM registry mutation; Default/Restore separation | Active P0 State behavior preserves source-defined `DisableDynamicPstate` Apply/Default only after exact target discovery, NVIDIA-only validation, registry capture, and verification. | Writes `DisableDynamicPstate` under NVIDIA display class registry instances with source-defined Apply/Default values; blocks non-NVIDIA or out-of-scope targets. |
 | `5 Graphics/7 Msi Mode.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; registry mutation; Default/Restore concerns; AMD/Intel unsupported behavior | Current source targets all display devices through `Get-PnpDevice -Class Display`; future BoostLab must constrain or clearly reject non-NVIDIA GPU-specific behavior under product scope. | Writes `MSISupported` under each display device's interrupt-management registry path. This touches device/driver registry state and needs exact device targeting, capture, verification, and rollback policy. |
 | `3 Setup/1 BitLocker.ps1` | Intake accepted for future source promotion | Security-sensitive Design needed | BitLocker/security-sensitive behavior; process/UI launch; Default/Restore concerns | Shared Windows security behavior is not blocked by product scope, but it is high-risk and security-sensitive. | Off branch calls `Disable-BitLocker` for protected or not fully decrypted volumes, opens BitLocker Control Panel, and runs `manage-bde -status`; On branch opens BitLocker Control Panel and runs status only. |
 
@@ -143,7 +145,7 @@ If accepted in a future source-promotion phase, the natural future destination p
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `source-ultimate/5 Graphics/2 Driver Install Latest.ps1` | Conflicts with current Graphics slot 2 (`DirectX`). Needs separate source-promotion order decision. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `source-ultimate/5 Graphics/4 Nvidia Settings.ps1` | Conflicts with current Graphics slot 4 (`Graphics Configuration Center`). Needs separate source-promotion order decision. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `source-ultimate/5 Graphics/5 Hdcp.ps1` | No current Graphics slot 5 file, but official catalog has only four active Graphics tools today. |
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `source-ultimate/5 Graphics/6 P0 State.ps1` | No current Graphics slot 6 file, but official catalog has only four active Graphics tools today. |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `source-ultimate/5 Graphics/6 P0 State.ps1` | Resolved through active Graphics order 5 controlled P0 State implementation; source mirror path remains the protected source reference. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `source-ultimate/5 Graphics/7 Msi Mode.ps1` | No current Graphics slot 7 file, but official catalog has only four active Graphics tools today. |
 | `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `source-ultimate/3 Setup/1 BitLocker.ps1` | Conflicts with current Setup slot 1 (`Memory Compression`). Needs separate source-promotion order decision. |
 

@@ -134,7 +134,7 @@ foreach ($tool in $tools) {
     }
     $hasRestoreAction = 'Restore' -in @($tool['Actions'])
     $restoreActionIsBlockedUntilSelectedState = (
-        [string]$tool['Id'] -eq 'hdcp' -and
+        [string]$tool['Id'] -in @('hdcp', 'p0-state') -and
         $hasRestoreAction -and
         -not [bool]$capabilities['SupportsRestore']
     )

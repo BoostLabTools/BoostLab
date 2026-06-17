@@ -1,4 +1,4 @@
-﻿# Final Deferred Tools Readiness Matrix
+# Final Deferred Tools Readiness Matrix
 
 ## Purpose
 
@@ -10,11 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **52**
-* Implemented tools: **34**
+* Active tools: **53**
+* Implemented tools: **35**
 * Deferred/placeholders: **18**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
-* Remaining unimplemented source-promoted intake candidates: **3**
+* Remaining unimplemented source-promoted intake candidates: **2**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
@@ -57,7 +57,13 @@ NVIDIA-only registry targeting. It verifies the source mirror checksum, discover
 only the source display-class registry scope, captures `RMHdcpKeyglobZero` before
 mutation, applies source-defined `DWORD 1`, defaults to source-defined `DWORD 0`,
 verifies results, and keeps Restore unavailable without selected captured state.
-P0 State and Msi Mode remain separate and unimplemented.
+
+Phase 96 note: `P0 State` is implemented as Path B step 4 using controlled
+NVIDIA-only registry targeting. It verifies the source mirror checksum, discovers
+only the source display-class registry scope, captures `DisableDynamicPstate`
+before mutation, applies source-defined `DWORD 1`, defaults to source-defined
+`DWORD 0`, verifies results, and keeps Restore unavailable without selected
+captured state. Msi Mode remains separate and unimplemented.
 
 ## Coverage Summary
 

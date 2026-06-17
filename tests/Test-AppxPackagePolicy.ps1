@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -788,15 +788,15 @@ try {
                 )
             }
     )
-    if ($allTools.Count -ne 52) {
-        $errors.Add("Expected 52 active tools, found $($allTools.Count).")
+    if ($allTools.Count -ne 53) {
+        $errors.Add("Expected 53 active tools, found $($allTools.Count).")
     }
     if ($placeholderModules.Count -ne 18) {
         $errors.Add(
             "Expected 18 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 34) {
+    if (($allTools.Count - $placeholderModules.Count) -ne 35) {
         $errors.Add('Implemented tool count changed from 30.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
@@ -852,8 +852,8 @@ if ($errors.Count -gt 0) {
     MockInventoryCaptured   = $true
     MockMutationVerified    = $true
     MockRestoreVerified     = $true
-    ActiveToolCount         = 52
-    ImplementedToolCount    = 34
+    ActiveToolCount         = 53
+    ImplementedToolCount    = 35
     PlaceholderToolCount    = 18
     SourceUltimateUnchanged = $true
     Message                 = 'AppX package inventory and restore foundation is deny-by-default and callback-only.'

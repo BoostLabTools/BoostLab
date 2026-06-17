@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -547,6 +547,7 @@ try {
     }
     $approvedPhase36CaptureConsumers = @(
         Join-Path $modulesRoot 'Graphics\hdcp.psm1'
+        Join-Path $modulesRoot 'Graphics\p0-state.psm1'
         Join-Path $modulesRoot 'Windows\write-cache-buffer-flushing.psm1'
     )
     foreach ($module in Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1') {
@@ -590,8 +591,8 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 52 -or
-        $implementedModules.Count -ne 34 -or
+        $allModules.Count -ne 53 -or
+        $implementedModules.Count -ne 35 -or
         $placeholderModules.Count -ne 18
     ) {
         $errors.Add(
@@ -678,7 +679,7 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount   = 34
+    ImplementedModuleCount   = 35
     PlaceholderModuleCount   = 18
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
