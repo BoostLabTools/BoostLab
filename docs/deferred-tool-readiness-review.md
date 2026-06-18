@@ -1,4 +1,4 @@
-﻿# Deferred Tool Readiness Review
+# Deferred Tool Readiness Review
 
 ## Purpose
 
@@ -127,10 +127,10 @@ This review is based on:
 
 Current inventory:
 
-* Active tools: **54**
-* Implemented tools: **36**
+* Active tools: **55**
+* Implemented tools: **37**
 * Deferred/placeholders: **18**
-* Remaining unimplemented source-promoted intake candidates: **1**
+* Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
 
@@ -214,8 +214,8 @@ The Updates Drivers Block tool-specific scope design is documented in
 
 ### Foundation-ready but needs artifact provenance approvals
 
-These mostly moved from â€œmissing foundationâ€ to â€œwaiting on exact artifact and
-execution approvalâ€:
+These mostly moved from “missing foundation” to “waiting on exact artifact and
+execution approval”:
 
 * Reinstall
 * Installers
@@ -293,7 +293,7 @@ installer approvals required by Phase 35.
 
 ## Remaining Blockers
 
-The biggest blockers after Phase 43 are no longer â€œwe need a new foundation.â€
+The biggest blockers after Phase 43 are no longer “we need a new foundation.”
 They are:
 
 * Exact production scopes remain empty across every heavy foundation.

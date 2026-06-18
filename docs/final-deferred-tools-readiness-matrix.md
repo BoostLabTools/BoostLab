@@ -1,4 +1,4 @@
-﻿# Final Deferred Tools Readiness Matrix
+# Final Deferred Tools Readiness Matrix
 
 ## Purpose
 
@@ -10,11 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **54**
-* Implemented tools: **36**
+* Active tools: **55**
+* Implemented tools: **37**
 * Deferred/placeholders: **18**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
-* Remaining unimplemented source-promoted intake candidates: **1**
+* Remaining unimplemented source-promoted intake candidates: **0**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**

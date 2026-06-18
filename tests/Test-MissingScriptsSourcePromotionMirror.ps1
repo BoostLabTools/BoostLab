@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -166,7 +166,7 @@ foreach ($requiredPhrase in @(
     'Path B: `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`',
     'mutually guided workflows',
     'prevent accidental workflow mixing',
-    'BitLocker requires security-sensitive design before implementation',
+    'BitLocker is accepted as a source-promoted controlled security assistant',
     'does not approve BitLocker mutation'
 )) {
     if (-not $decisionText.Contains($requiredPhrase)) {
@@ -209,14 +209,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 54) {
-    throw "Expected 54 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 55) {
+    throw "Expected 55 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 36) {
-    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 37) {
+    throw "Expected 37 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 if (@($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' }).Count -ne 0) {

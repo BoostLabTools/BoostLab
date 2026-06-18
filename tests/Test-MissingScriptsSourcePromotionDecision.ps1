@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -183,8 +183,8 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'BitLocker is accepted as a future source-promotion candidate',
-    'requires security-sensitive design before implementation',
+    'BitLocker is accepted as a source-promoted controlled security assistant',
+    'Phase 98 implements BitLocker as read-only `Analyze` plus manual-handoff `Open` only',
     'does not approve BitLocker mutation',
     'encryption/decryption',
     'suspend/resume'
@@ -223,12 +223,12 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Active tools: **54**',
-    'Implemented tools: **36**',
+    'Active tools: **55**',
+    'Implemented tools: **37**',
     'Deferred/placeholders: **18**',
     'Intake files: **7**',
     'Source-promoted mirror files: **7**',
-    'Remaining unimplemented source-promoted intake candidates: **1 separate from official counts**',
+    'Remaining unimplemented source-promoted intake candidates: **0 separate from official counts**',
     'No existing `source-ultimate` files outside `_intake-promoted` were modified',
     'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
@@ -256,14 +256,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 54) {
-    throw "Expected 54 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 55) {
+    throw "Expected 55 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 36) {
-    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 37) {
+    throw "Expected 37 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

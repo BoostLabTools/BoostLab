@@ -1,4 +1,4 @@
-﻿# Missing Ultimate Scripts Intake Review
+# Missing Ultimate Scripts Intake Review
 
 ## Purpose
 
@@ -15,11 +15,11 @@ review only.
 
 Current BoostLab counts after Phase 96:
 
-* Active tools: **54**
-* Implemented tools: **36**
+* Active tools: **55**
+* Implemented tools: **37**
 * Deferred/placeholders: **18**
 * Intake candidate scripts reviewed here: **7**
-* Remaining unimplemented source-promoted intake candidates: **1**
+* Remaining unimplemented source-promoted intake candidates: **0**
 
 The intake scripts were later source-promoted into the protected mirror. Driver
 Clean was then promoted in Phase 92 as a controlled manual-handoff active tool.
@@ -130,8 +130,8 @@ These five scripts must not be merged into one tool during intake. Any future im
 | `5 Graphics/4 Nvidia Settings.ps1` | Implemented as controlled manual handoff only in Phase 94 | Auto remains blocked pending 7-Zip/Profile Inspector/.nip/profile/registry/process/verification approvals | downloads/artifacts/installers; driver install/profile/settings; NVIDIA-only GPU-specific behavior; registry mutation; file mutation/cleanup; process execution; Default/Restore concerns | BoostLab exposes only manual handoff for Path B step 2. Automatic NVIDIA settings/profile behavior remains blocked. | Downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, writes NVIDIA registry values, writes/imports `.nip` profile data, opens NVIDIA Control Panel, and has a Default branch that deletes or changes NVIDIA values. |
 | `5 Graphics/5 Hdcp.ps1` | Implemented as controlled registry behavior in Phase 95 | Restore remains unavailable without selected captured-state restore flow | NVIDIA-only GPU-specific behavior; HKLM registry mutation; Default/Restore separation | Active HDCP behavior preserves source-defined `RMHdcpKeyglobZero` Apply/Default only after exact target discovery, NVIDIA-only validation, registry capture, and verification. | Writes `RMHdcpKeyglobZero` under NVIDIA display class registry instances with source-defined Apply/Default values; blocks non-NVIDIA or out-of-scope targets. |
 | `5 Graphics/6 P0 State.ps1` | Implemented as controlled registry behavior in Phase 96 | Restore remains unavailable without selected captured-state restore flow | NVIDIA-only GPU-specific behavior; HKLM registry mutation; Default/Restore separation | Active P0 State behavior preserves source-defined `DisableDynamicPstate` Apply/Default only after exact target discovery, NVIDIA-only validation, registry capture, and verification. | Writes `DisableDynamicPstate` under NVIDIA display class registry instances with source-defined Apply/Default values; blocks non-NVIDIA or out-of-scope targets. |
-| `5 Graphics/7 Msi Mode.ps1` | Intake accepted for future source promotion | Driver/Profile Design needed | driver install/profile/settings; registry mutation; Default/Restore concerns; AMD/Intel unsupported behavior | Current source targets all display devices through `Get-PnpDevice -Class Display`; future BoostLab must constrain or clearly reject non-NVIDIA GPU-specific behavior under product scope. | Writes `MSISupported` under each display device's interrupt-management registry path. This touches device/driver registry state and needs exact device targeting, capture, verification, and rollback policy. |
-| `3 Setup/1 BitLocker.ps1` | Intake accepted for future source promotion | Security-sensitive Design needed | BitLocker/security-sensitive behavior; process/UI launch; Default/Restore concerns | Shared Windows security behavior is not blocked by product scope, but it is high-risk and security-sensitive. | Off branch calls `Disable-BitLocker` for protected or not fully decrypted volumes, opens BitLocker Control Panel, and runs `manage-bde -status`; On branch opens BitLocker Control Panel and runs status only. |
+| `5 Graphics/7 Msi Mode.ps1` | Implemented as controlled NVIDIA-only registry behavior in Phase 97 | Restore remains unavailable without selected captured-state restore flow | NVIDIA-only GPU-specific behavior; HKLM device registry mutation; Default/Restore separation | Active Msi Mode behavior preserves source-defined `MSISupported` Apply/Default only after exact device discovery, NVIDIA-only validation, registry capture, and verification. | Writes `MSISupported` under eligible NVIDIA display device interrupt-management registry paths; skips non-NVIDIA/ambiguous targets. |
+| `3 Setup/1 BitLocker.ps1` | Implemented as controlled security assistant in Phase 98 | Mutation remains blocked pending security/recovery-key design | BitLocker/security-sensitive behavior; process/UI launch; Default/Restore concerns | Shared Windows security behavior is not blocked by product scope, but BitLocker mutation is high-risk and security-sensitive. | Off branch calls `Disable-BitLocker` for protected or not fully decrypted volumes, opens BitLocker Control Panel, and runs `manage-bde -status`; BoostLab implements read-only analysis and manual handoff only. |
 
 ## Source-Order Reconciliation Plan
 
@@ -146,8 +146,8 @@ If accepted in a future source-promotion phase, the natural future destination p
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `source-ultimate/5 Graphics/4 Nvidia Settings.ps1` | Conflicts with current Graphics slot 4 (`Graphics Configuration Center`). Needs separate source-promotion order decision. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `source-ultimate/5 Graphics/5 Hdcp.ps1` | No current Graphics slot 5 file, but official catalog has only four active Graphics tools today. |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `source-ultimate/5 Graphics/6 P0 State.ps1` | Resolved through active Graphics order 5 controlled P0 State implementation; source mirror path remains the protected source reference. |
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `source-ultimate/5 Graphics/7 Msi Mode.ps1` | No current Graphics slot 7 file, but official catalog has only four active Graphics tools today. |
-| `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `source-ultimate/3 Setup/1 BitLocker.ps1` | Conflicts with current Setup slot 1 (`Memory Compression`). Needs separate source-promotion order decision. |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `source-ultimate/5 Graphics/7 Msi Mode.ps1` | Resolved through active Graphics order 6 controlled Msi Mode implementation; source mirror path remains the protected source reference. |
+| `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `source-ultimate/3 Setup/1 BitLocker.ps1` | Resolved through active Setup order 9 controlled BitLocker security assistant; source mirror path remains the protected source reference. |
 
 A future promotion phase would need to decide whether these files keep their original Ultimate numbering in `source-ultimate/`, receive a documented source-order remap, or remain in a separate intake/reference area. That phase would also need to update:
 

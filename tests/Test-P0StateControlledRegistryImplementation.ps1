@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -143,7 +143,7 @@ foreach ($falseCapability in @(
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain separate from P0 State.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'p0-state' })) -eq 1) 'P0 State must be implemented as its own active tool.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 1) 'Msi Mode must be implemented as its own active tool.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'bitlocker' })) -eq 0) 'BitLocker must remain outside active catalog.'
+Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'bitlocker' })) -eq 1) 'BitLocker must remain active as a separate Setup security assistant outside NVIDIA Path B.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' })) -eq 0) 'Standalone DDU must not be introduced.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' })) -eq 0) 'Loudness EQ must remain deleted.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'NVME Faster Driver' -or $_.Id -eq 'nvme-faster-driver' })) -eq 0) 'NVME Faster Driver must remain deleted.'
@@ -152,9 +152,9 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 54) "Expected 54 active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq 55) "Expected 55 active tools, found $($allTools.Count)."
 Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 36) "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 37) "Expected 37 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
@@ -167,10 +167,11 @@ $remainingSourcePromoted = @(
             '5 Hdcp.ps1',
             '6 P0 State.ps1',
             '7 Msi Mode.ps1'
+            '1 BitLocker.ps1'
         )
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 1) "Expected 1 remaining unimplemented source-promoted intake candidate, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
@@ -547,11 +548,11 @@ finally {
 
 [pscustomobject]@{
     Success = $true
-    ActiveToolCount = 54
-    ImplementedToolCount = 36
+    ActiveToolCount = 55
+    ImplementedToolCount = 37
     PlaceholderToolCount = 18
     SourcePromotedMirrorFileCount = 7
-    RemainingUnimplementedSourcePromotedIntakeCandidates = 1
+    RemainingUnimplementedSourcePromotedIntakeCandidates = 0
     Message = 'P0 State controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'
     Timestamp = Get-Date
 }

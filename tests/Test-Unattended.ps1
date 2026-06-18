@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -422,8 +422,8 @@ $implementedCount = @(
         Where-Object { $_.Directory.Parent.FullName -eq (Join-Path $ProjectRoot 'modules') } |
         Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }
 ).Count
-$placeholderCount = 54 - $implementedCount
-if ($implementedCount -ne 36 -or $placeholderCount -ne 18) {
+$placeholderCount = 55 - $implementedCount
+if ($implementedCount -ne 37 -or $placeholderCount -ne 18) {
     throw "Unexpected Phase 33 inventory: $implementedCount implemented, $placeholderCount placeholders."
 }
 

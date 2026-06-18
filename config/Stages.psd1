@@ -173,6 +173,17 @@
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
+                @{
+                    Id          = 'bitlocker'
+                    Title       = 'BitLocker'
+                    Stage       = 'Setup'
+                    Order       = 9
+                    Type        = 'assistant'
+                    RiskLevel   = 'high'
+                    Description = 'Analyze BitLocker state and prepare security-sensitive manual handoff only. Apply, Default, and Restore remain blocked until recovery-key and encryption-state policy is approved.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
             )
         }
         @{

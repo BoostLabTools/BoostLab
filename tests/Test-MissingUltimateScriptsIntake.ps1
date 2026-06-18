@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -174,10 +174,12 @@ foreach ($requiredPhrase in @(
 
 foreach ($classification in @(
     'Yazan-approved intake exception for future source promotion',
-    'Intake accepted for future source promotion',
     'Scope + Provenance Design needed',
-    'Driver/Profile Design needed',
-    'Security-sensitive Design needed'
+    'Implemented as controlled manual handoff only in Phase 93',
+    'Implemented as controlled registry behavior in Phase 95',
+    'Implemented as controlled NVIDIA-only registry behavior in Phase 97',
+    'Implemented as controlled security assistant in Phase 98',
+    'Mutation remains blocked pending security/recovery-key design'
 )) {
     if (-not $docText.Contains($classification)) {
         throw "Intake review is missing classification: $classification"
@@ -211,14 +213,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 54) {
-    throw "Expected 54 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 55) {
+    throw "Expected 55 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 36) {
-    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 37) {
+    throw "Expected 37 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

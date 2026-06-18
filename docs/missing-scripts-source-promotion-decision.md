@@ -1,4 +1,4 @@
-﻿# Missing Scripts Source Promotion Decision
+# Missing Scripts Source Promotion Decision
 
 ## Purpose
 
@@ -29,12 +29,12 @@ verification, and source-defined Apply/Default behavior only.
 
 Current BoostLab counts after Phase 97:
 
-* Active tools: **54**
-* Implemented tools: **36**
+* Active tools: **55**
+* Implemented tools: **37**
 * Deferred/placeholders: **18**
 * Intake files: **7**
 * Source-promoted mirror files: **7**
-* Remaining unimplemented source-promoted intake candidates: **1 separate from official counts**
+* Remaining unimplemented source-promoted intake candidates: **0 separate from official counts**
 
 ## Phase 72 Mirror Promotion Status
 
@@ -75,8 +75,8 @@ explicitly changes `config/Stages.psd1` and module scaffolding.
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | Intake accepted for future source promotion | Implemented as controlled manual handoff only in Phase 94; Auto blocked | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | Yes | Yes, resolved by adding an explicit Graphics order 3 tool and moving Path A to order 4 | Active manual handoff only; no automated 7-Zip/Profile Inspector/.nip/registry/profile behavior approved | NVIDIA profile/settings design; NVIDIA Profile Inspector provenance; `.nip` generated artifact policy; registry/file capture; Default/Restore distinction; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 95 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict; active Graphics order 4 is now HDCP and Path A shifted to order 5 | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; P0 State and Msi Mode remain separate Path B steps |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 96 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | Yes | Yes, resolved by adding active Graphics order 5 and shifting later Graphics tools | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; Msi Mode remains separate Path B step 5 |
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 97 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | Yes | Yes, resolved by adding active Graphics order 6 and shifting Path A/later Graphics tools | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; BitLocker remains the only unimplemented source-promoted intake candidate |
-| `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1` | Intake accepted for future source promotion | Source-promoted into mirror, not implemented | `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1` | Yes | Yes, conflicts with current Setup slot 1 | Completed in mirror only; catalog promotion still separate | Security-sensitive design; BitLocker state/volume analysis; explicit confirmation; recovery-key warning; no mutation without approved security workflow; Default/Restore distinction |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 97 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | Yes | Yes, resolved by adding active Graphics order 6 and shifting Path A/later Graphics tools | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; BitLocker remains separate from NVIDIA Path B |
+| `intake/missing-ultimate-scripts/Ultimate/3 Setup/1 BitLocker.ps1` | `1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1` | Intake accepted for future source promotion | Implemented as controlled security assistant in Phase 98; mutation blocked | `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1` | Yes | Yes, resolved by adding active Setup order 9 | Active read-only analysis and manual handoff only; no BitLocker mutation, Control Panel launch, `manage-bde`, or external process behavior approved | Security-sensitive mutation still requires recovery-key, encryption-state, protector-state, volume-selection, verification, support, Default, and Restore contracts |
 
 ## Driver Clean Decision
 
@@ -122,11 +122,11 @@ Future UI must present Path A and Path B as mutually guided workflows. Future UI
 
 ## BitLocker Decision
 
-BitLocker is accepted as a future source-promotion candidate.
+BitLocker is accepted as a source-promoted controlled security assistant.
 
-BitLocker requires security-sensitive design before implementation. This phase does not approve BitLocker mutation, encryption/decryption, suspend/resume, registry changes, service changes, policy operations, or any live BitLocker command execution.
+Phase 98 implements BitLocker as read-only `Analyze` plus manual-handoff `Open` only. It does not approve BitLocker mutation, encryption/decryption, suspend/resume, registry changes, service changes, policy operations, `manage-bde`, Control Panel launch, or any live BitLocker state-changing command execution.
 
-Future BitLocker design must address volume state detection, recovery-key risk, technician warnings, user confirmation, logging, verification, support boundaries, and the distinction between source-defined On/Off behavior and BoostLab `Default` or `Restore` semantics.
+Future BitLocker mutation design must address recovery-key risk, explicit volume selection, encryption-state contracts, protector-state contracts, technician warnings, user confirmation, logging, verification, support boundaries, and the distinction between source-defined On/Off behavior and BoostLab `Default` or `Restore` semantics.
 
 ## Source-Order Reconciliation Strategy
 

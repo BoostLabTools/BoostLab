@@ -1,4 +1,4 @@
-﻿# Deferred Tools Execution Plan
+# Deferred Tools Execution Plan
 
 ## Purpose
 
@@ -132,10 +132,10 @@ Tool-specific scope designs created after the first-pass review:
 
 Current inventory at the time of this plan:
 
-* Active approved tools: **54**
-* Implemented tools: **36**
+* Active approved tools: **55**
+* Implemented tools: **37**
 * Remaining placeholders: **18**
-* Remaining unimplemented source-promoted intake candidates: **1**
+* Remaining unimplemented source-promoted intake candidates: **0**
 * Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
 
 ## Product Scope Context
@@ -379,7 +379,7 @@ still needs a reviewed captured-state selection flow.
 
 ### Destructive cleanup policy
 
-Needed for tools that remove files, folders, extracted components, package debris, or registry trees where â€œdelete what Ultimate deletedâ€ is not automatically safe enough for BoostLab.
+Needed for tools that remove files, folders, extracted components, package debris, or registry trees where “delete what Ultimate deleted” is not automatically safe enough for BoostLab.
 
 Phase 38 establishes exact bounded target scopes, broad-root and reparse-point denial, recursive file-count/byte limits, mandatory confirmation, state-capture evidence requirements, callback-only execution, and integrity-protected quarantine records. It approves no production cleanup targets and does not perform real deletion or quarantine.
 
@@ -457,7 +457,7 @@ Affected tools:
 * Refused tools are blocked, not abandoned.
 * A future phase should pick one foundation at a time, implement that foundation, and then migrate only the tools unlocked by it.
 * Visual-only or disabled cards are the correct state for these tools until their prerequisites exist.
-* No future phase should â€œjust do the safe partâ€ of one of these tools when that would weaken the effective Ultimate behavior.
+* No future phase should “just do the safe part” of one of these tools when that would weaken the effective Ultimate behavior.
 
 ## First-Pass Completion State
 

@@ -334,6 +334,21 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
         'Set CacheIsPowerProtected to 1 on source-targeted storage Disk registry paths after capturing each prior value state.'
     }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
+        'Analyze BitLocker volume state read-only and explain why the source Off branch is blocked in BoostLab.'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
+        'Prepare BitLocker manual handoff guidance only; do not open external tools, run manage-bde, or mutate BitLocker state.'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
+        'Block the source Off branch because it disables BitLocker on matched volumes and requires approved recovery-key and encryption-state policy first.'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
+        'Block Default because the source On branch is UI/status-only and does not define a safe default mutation.'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Restore') {
+        'Block Restore because no captured BitLocker state restore contract exists.'
+    }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         'Apply the source-defined Ultimate power scheme, registry values, hibernation state, and power settings.'
     }
@@ -563,6 +578,38 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Require a valid selected captured rollback record from this Msi Mode tool before any Restore operation can be planned.')
         $plannedChanges.Add('Fail closed when no selected captured state is available.')
         $plannedChanges.Add('Perform no registry mutation in the current runtime path.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the BitLocker source mirror checksum.')
+        $plannedChanges.Add('Query BitLocker volume state read-only when Get-BitLockerVolume is available.')
+        $plannedChanges.Add('Report matched volumes for the source Off branch without disabling, decrypting, suspending, resuming, enabling, or removing protectors.')
+        $plannedChanges.Add('Report missing recovery-key, volume-selection, encryption-state, protector-state, verification, support, and Restore contracts.')
+        $plannedChanges.Add('Perform no external process, Control Panel launch, manage-bde call, registry mutation, BitLocker mutation, reboot, or recovery-key operation.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual BitLocker handoff instructions only.')
+        $plannedChanges.Add('Do not open BitLocker Control Panel, a browser, manage-bde, PowerShell BitLocker commands, or any external tool.')
+        $plannedChanges.Add('Do not enable, disable, decrypt, suspend, resume, unlock, remove protectors, add protectors, or mutate recovery-key state.')
+        $plannedChanges.Add('Explain that the source Off branch remains blocked until approved security, recovery-key, volume-selection, verification, and support contracts exist.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Apply before any operational step.')
+        $plannedChanges.Add('Do not execute the source Off branch because it calls Disable-BitLocker on every matched protected or not fully decrypted volume.')
+        $plannedChanges.Add('Report missing recovery-key, encryption-state, protector-state, volume-selection, verification, Default/Restore, and support policies.')
+        $plannedChanges.Add('Perform no BitLocker command, manage-bde command, external process, registry mutation, decrypt operation, suspend/resume operation, protector operation, reboot, or recovery-key operation.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Block Default before any operational step.')
+        $plannedChanges.Add('Do not treat the source On branch as BoostLab Default because it only opens BitLocker UI and status output.')
+        $plannedChanges.Add('Do not enable BitLocker, add protectors, remove protectors, or change encryption state.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore before any operational step.')
+        $plannedChanges.Add('Require a valid selected captured BitLocker state and an approved restore contract before any Restore can be planned.')
+        $plannedChanges.Add('Do not treat source On, source Off, Apply, or Default as captured-state Restore.')
+        $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
@@ -802,7 +849,8 @@ function New-BoostLabActionPlan {
     }
 
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
-    if ($isPotentialChangeAction) {
+    $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -935,6 +983,28 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
         $sideEffects.Add('Restore is blocked without a selected captured rollback record from this Msi Mode tool.')
         $sideEffects.Add('No registry mutation occurs in the current Restore path.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; BitLocker analysis is read-only.')
+        $sideEffects.Add('Get-BitLockerVolume may be queried to report sanitized volume, protection, encryption, and key-protector type state.')
+        $sideEffects.Add('Recovery-key values are not collected or logged.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff guidance is prepared inside BoostLab only.')
+        $sideEffects.Add('No BitLocker Control Panel, manage-bde command, PowerShell BitLocker command, browser, or external tool is opened.')
+        $sideEffects.Add('No BitLocker state, protector state, recovery-key state, registry state, or reboot state changes.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Apply is blocked before execution.')
+        $sideEffects.Add('No Disable-BitLocker, Enable-BitLocker, manage-bde, decrypt, suspend/resume, protector, recovery-key, external process, registry, or reboot operation occurs.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Default is blocked before execution because the source On branch is UI/status-only, not a BoostLab default mutation.')
+        $sideEffects.Add('No BitLocker state, protector state, recovery-key state, external process, registry, or reboot operation occurs.')
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Restore') {
+        $sideEffects.Add('Restore is blocked without selected captured BitLocker state and an approved restore contract.')
+        $sideEffects.Add('No BitLocker state, protector state, recovery-key state, external process, registry, or reboot operation occurs.')
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
@@ -1114,7 +1184,7 @@ function New-BoostLabActionPlan {
     if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet) {
@@ -1129,7 +1199,7 @@ function New-BoostLabActionPlan {
     if ($isPotentialChangeAction -and $capabilities.CanModifyDrivers) {
         $sideEffects.Add('Driver changes may affect display, devices, stability, or hardware availability.')
     }
-    if ($isPotentialChangeAction -and $capabilities.CanModifySecurity) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and $capabilities.CanModifySecurity) {
         $sideEffects.Add('Security changes may alter system protection or compatibility.')
     }
     if ($isPotentialChangeAction -and $capabilities.CanDeleteFiles) {
@@ -1204,6 +1274,18 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
         'Msi Mode Restore requires a selected captured rollback record from this Msi Mode tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare BitLocker manual handoff guidance only. It will not open BitLocker Control Panel, run manage-bde, run BitLocker PowerShell commands, enable, disable, decrypt, suspend, resume, remove protectors, mutate recovery-key state, or reboot. Continue?'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
+        'BitLocker Apply is blocked. The source Off branch disables BitLocker on matched volumes, and BoostLab has no approved recovery-key, encryption-state, protector-state, volume-selection, verification, or support contract for that mutation. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
+        'BitLocker Default is unavailable. The source On branch opens UI/status only and does not define a safe default mutation. Default is not Restore. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Restore') {
+        'BitLocker Restore requires a selected captured BitLocker state and an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'

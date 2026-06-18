@@ -129,12 +129,18 @@ foreach ($tool in $tools) {
     ) {
         $errors.Add("$toolName uses Safe Mode but does not require explicit confirmation.")
     }
-    if ([bool]$capabilities['SupportsDefault'] -ne ('Default' -in @($tool['Actions']))) {
+    $hasDefaultAction = 'Default' -in @($tool['Actions'])
+    $defaultActionIsBlockedUntilApprovedContract = (
+        [string]$tool['Id'] -eq 'bitlocker' -and
+        $hasDefaultAction -and
+        -not [bool]$capabilities['SupportsDefault']
+    )
+    if ([bool]$capabilities['SupportsDefault'] -ne $hasDefaultAction -and -not $defaultActionIsBlockedUntilApprovedContract) {
         $errors.Add("$toolName SupportsDefault does not match its action list.")
     }
     $hasRestoreAction = 'Restore' -in @($tool['Actions'])
     $restoreActionIsBlockedUntilSelectedState = (
-        [string]$tool['Id'] -in @('hdcp', 'p0-state', 'msi-mode') -and
+        [string]$tool['Id'] -in @('hdcp', 'p0-state', 'msi-mode', 'bitlocker') -and
         $hasRestoreAction -and
         -not [bool]$capabilities['SupportsRestore']
     )

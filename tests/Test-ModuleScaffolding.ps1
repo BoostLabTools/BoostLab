@@ -61,6 +61,10 @@ $implementedModules = @{
         RelativePath          = 'Setup\MemoryCompression.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'bitlocker' = @{
+        RelativePath          = 'Setup\bitlocker.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'', ''Open'')'
+    }
     'spectre-meltdown-assistant' = @{
         RelativePath          = 'Advanced\spectre-meltdown-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
@@ -446,6 +450,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'memory-compression') {
+            0
+        }
+        elseif ($toolId -eq 'bitlocker') {
             0
         }
         elseif ($toolId -eq 'spectre-meltdown-assistant') {
