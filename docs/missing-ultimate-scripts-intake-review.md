@@ -13,11 +13,11 @@ This is an intake review only. It does not promote the scripts into `source-ulti
 Official BoostLab counts do not change in this phase. Phase 69 was intake
 review only.
 
-Current BoostLab counts after Phase 96:
+Current BoostLab counts after Phase 99:
 
 * Active tools: **55**
-* Implemented tools: **37**
-* Deferred/placeholders: **18**
+* Implemented tools: **38**
+* Deferred/placeholders: **17**
 * Intake candidate scripts reviewed here: **7**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
@@ -28,10 +28,13 @@ only. Nvidia Settings was promoted in Phase 94 as controlled manual handoff
 only. HDCP was promoted in Phase 95 as controlled NVIDIA-only registry behavior
 with source-defined Apply/Default and capture before mutation. P0 State was
 promoted in Phase 96 as controlled NVIDIA-only registry behavior with
-source-defined Apply/Default and capture before mutation. The remaining
-two intake scripts should not be counted as active or deferred
-BoostLab tools unless a future source-promotion phase explicitly accepts them
-into the official catalog.
+source-defined Apply/Default and capture before mutation. Msi Mode was promoted
+in Phase 97 as controlled NVIDIA-only registry behavior with source-defined
+Apply/Default and capture before mutation. BitLocker was promoted in Phase 98 as
+a controlled security assistant with fail-closed mutation behavior. Driver
+Install Debloat & Settings was promoted in Phase 99 as controlled manual handoff
+only; Auto remains blocked. No source-promoted intake candidates remain
+unimplemented.
 
 ## Intake File List
 

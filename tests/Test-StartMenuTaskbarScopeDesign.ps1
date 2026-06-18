@@ -161,11 +161,11 @@ $placeholderModules = @(
 if ($activeTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($activeTools.Count)."
 }
-if ($placeholderModules.Count -ne 18) {
-    throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 17) {
+    throw "Expected 17 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 37) {
-    throw "Expected 37 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 38) {
+    throw "Expected 38 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $policyMentions = @(

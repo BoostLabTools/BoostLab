@@ -77,11 +77,11 @@ $placeholderTools = foreach ($module in $placeholderModules) {
 if ($allTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($allTools.Count)."
 }
-if ($placeholderTools.Count -ne 18) {
-    throw "Expected 18 deferred/placeholders, found $($placeholderTools.Count)."
+if ($placeholderTools.Count -ne 17) {
+    throw "Expected 17 deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 37) {
-    throw "Expected 37 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne 38) {
+    throw "Expected 38 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(
@@ -89,7 +89,6 @@ $expectedDeferred = @(
     @{ Id = 'updates-drivers-block'; Title = 'Updates Drivers Block'; Link = 'docs/tool-designs/updates-drivers-block-scope-design.md'; Source = 'source-ultimate/2 Refresh/3 Updates Drivers Block.ps1'; Hash = '4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991' }
     @{ Id = 'edge-settings'; Title = 'Edge Settings'; Link = 'docs/tool-designs/edge-settings-scope-design.md'; Source = 'source-ultimate/3 Setup/6 Edge Settings.ps1'; Hash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28' }
     @{ Id = 'installers'; Title = 'Installers'; Link = 'docs/tool-designs/installers-scope-provenance-design.md'; Source = 'source-ultimate/4 Installers/1 Installers.ps1'; Hash = '1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67' }
-    @{ Id = 'driver-install-debloat-settings'; Title = 'Driver Install Debloat & Settings'; Link = 'docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md'; Source = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'; Hash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F' }
     @{ Id = 'directx'; Title = 'DirectX'; Link = 'docs/directx-provenance-review.md'; Source = 'source-ultimate/5 Graphics/2 DirectX.ps1'; Hash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05' }
     @{ Id = 'visual-cpp'; Title = 'Visual C++'; Link = 'docs/visual-cpp-provenance-review.md'; Source = 'source-ultimate/5 Graphics/3 C++.ps1'; Hash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09' }
     @{ Id = 'start-menu-taskbar'; Title = 'Start Menu Taskbar'; Link = 'docs/tool-designs/start-menu-taskbar-scope-design.md'; Source = 'source-ultimate/6 Windows/1 Start Menu Taskbar.ps1'; Hash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91' }
@@ -136,8 +135,8 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    '18/18 deferred tools covered',
-    'Scope or scope/provenance design covered tools: **16**',
+    '17/17 deferred tools covered',
+    'Scope or scope/provenance design covered tools: **15**',
     'Standalone provenance review covered tools: **2**',
     'No deferred tool is marked ready for implementation by this matrix.',
     'The presence of a scope design or provenance review is evidence for planning, not permission to execute.',
@@ -154,7 +153,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing artifact provenance | 8 |',
+    '| Missing artifact provenance | 7 |',
     '| Missing production allowlist | 3 |',
     '| Missing scheduled task governance | 1 |',
     '| Missing process handling governance | 1 |',
@@ -280,7 +279,7 @@ if (
     DeferredToolCount         = $placeholderTools.Count
     ImplementedToolCount      = $allTools.Count - $placeholderTools.Count
     ActiveToolCount           = $allTools.Count
-    ScopeDesignCoverage       = 16
+    ScopeDesignCoverage       = 15
     ProvenanceReviewCoverage  = 2
     ProductionArtifactScopes  = $artifactPolicy.Artifacts.Count
     ProductionAppxScopes      = $appxPolicy.PackageScopes.Count

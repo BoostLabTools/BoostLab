@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -54,8 +54,8 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($placeholderTools.Count -ne 18) {
-    throw "Expected 18 remaining placeholder tools, found $($placeholderTools.Count)."
+if ($placeholderTools.Count -ne 17) {
+    throw "Expected 17 remaining placeholder tools, found $($placeholderTools.Count)."
 }
 
 foreach ($requiredSection in @(

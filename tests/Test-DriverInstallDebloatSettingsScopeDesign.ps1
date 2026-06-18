@@ -117,7 +117,7 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F`',
-    'Driver Install Debloat & Settings remains a refused placeholder',
+    'Driver Install Debloat & Settings was implemented in Phase 99 as controlled',
     'No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes',
     'The NVIDIA branch is the only branch that may be considered',
     'The AMD branch is unsupported',
@@ -247,11 +247,38 @@ if (-not $planText.Contains('docs/tool-designs/driver-install-debloat-settings-s
     throw 'Deferred tools execution plan does not link to the Driver Install Debloat & Settings scope/provenance design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Driver Install Debloat & Settings module is no longer a placeholder.'
+$tokens = $null
+$parseErrors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($modulePath, [ref]$tokens, [ref]$parseErrors)
+$actualParseErrors = @($parseErrors | Where-Object { $null -ne $_ })
+if ($actualParseErrors.Count -ne 0) {
+    throw "Driver Install Debloat & Settings module parse errors: $(@($actualParseErrors | ForEach-Object { $_.Message }) -join '; ')"
 }
-if ($moduleText -match 'IWR|Invoke-WebRequest|Start-BitsTransfer|Start-Process|winget|Get-AppxPackage|Remove-AppxPackage|Get-PnpDevice|7z\.exe|setup\.exe|inspector|reg add|reg delete|Remove-Item|sc stop|sc delete|shutdown') {
-    throw 'Driver Install Debloat & Settings placeholder module appears to contain real download, launch, or mutation behavior.'
+$commands = @(
+    $ast.FindAll(
+        { param($node) $node -is [System.Management.Automation.Language.CommandAst] },
+        $true
+    ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
+)
+foreach ($forbiddenCommand in @(
+    'IWR',
+    'Invoke-WebRequest',
+    'Start-BitsTransfer',
+    'Start-Process',
+    'winget',
+    'Get-AppxPackage',
+    'Remove-AppxPackage',
+    'Get-PnpDevice',
+    'Set-ItemProperty',
+    'New-ItemProperty',
+    'Remove-Item',
+    'Stop-Service',
+    'Set-Service',
+    'Restart-Computer'
+)) {
+    if ($forbiddenCommand -in $commands) {
+        throw "Driver Install Debloat & Settings module contains prohibited executable command: $forbiddenCommand"
+    }
 }
 
 if (@($artifactPolicy.Artifacts).Count -ne 0) {
@@ -282,7 +309,7 @@ $tool = $allTools |
 if (-not $tool) {
     throw 'Driver Install Debloat & Settings catalog entry was not found.'
 }
-if (-not (@($tool.Actions) -contains 'Analyze') -or -not (@($tool.Actions) -contains 'Apply') -or -not (@($tool.Actions) -contains 'Restore')) {
+if ((@($tool.Actions) -join '|') -ne 'Analyze|Open|Apply|Default|Restore') {
     throw 'Driver Install Debloat & Settings catalog actions changed unexpectedly.'
 }
 
@@ -294,11 +321,11 @@ $placeholderModules = @(
 if ($activeTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($activeTools.Count)."
 }
-if ($placeholderModules.Count -ne 18) {
-    throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 17) {
+    throw "Expected 17 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 37) {
-    throw "Expected 37 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 38) {
+    throw "Expected 38 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

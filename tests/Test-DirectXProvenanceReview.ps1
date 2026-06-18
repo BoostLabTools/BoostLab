@@ -120,7 +120,7 @@ foreach ($requiredPhrase in @(
 
 $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 foreach ($requiredPhrase in @(
-    'Foundation-ready but needs artifact provenance approvals: **8**'
+    'Foundation-ready but needs artifact provenance approvals: **7**'
     'Candidate for next implementation attempt: **0**'
     'Refused placeholder after Phase 45 provenance review'
     'docs/directx-provenance-review.md'
@@ -153,8 +153,8 @@ $placeholderModules = @(
 if (
     $tools.Count -ne 55 -or
     $allModules.Count -ne 55 -or
-    $implementedModules.Count -ne 37 -or
-    $placeholderModules.Count -ne 18
+    $implementedModules.Count -ne 38 -or
+    $placeholderModules.Count -ne 17
 ) {
     $errors.Add(
         "Tool inventory changed: tools=$($tools.Count), modules=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."

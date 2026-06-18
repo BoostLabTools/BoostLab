@@ -31,7 +31,7 @@ The shared Process Handling Policy foundation is documented in
 
 Phase 69 intake for seven manually supplied Ultimate scripts is documented in
 `docs/missing-ultimate-scripts-intake-review.md`. These scripts are not part of
-the 18-tool deferred queue unless a future phase promotes accepted scripts into
+the 17-tool deferred queue unless a future phase promotes accepted scripts into
 the official source/catalog.
 
 Phase 70 records `Driver Clean.ps1` as a Yazan-approved intake exception
@@ -41,7 +41,7 @@ production scopes, and tool behavior unapproved.
 
 Phase 71 source-promotion planning is documented in
 `docs/missing-scripts-source-promotion-decision.md`. The seven intake scripts
-remain outside the 18-tool deferred queue until a future catalog phase changes
+remain outside the 17-tool deferred queue until a future catalog phase changes
 the official tool inventory.
 
 Phase 72 completed the mirror copy into
@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **37**
-* Deferred/placeholders: **18**
+* Implemented tools: **38**
+* Deferred/placeholders: **17**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -152,7 +152,7 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **3**
-* Foundation-ready but needs artifact provenance approvals: **8**
+* Foundation-ready but needs artifact provenance approvals: **7**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
 
@@ -164,7 +164,7 @@ Current inventory:
 | Updates Drivers Block | `updates-drivers-block` | Refresh | Refused placeholder | Mixed live HKLM Windows Update and driver-delivery policy changes, custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands | File/registry rollback, cleanup/generated-script policy, reboot workflow | No exact production registry scopes, no approved update-server URL scope, no approved generated-script/media file scope, no approved reboot workflow scope | Exact live-policy scopes, exact update-server URL approval, exact generated-script/media scopes, exact reboot workflow scope, exact decision on whether media-generation branches stay deferred | No | Foundation-ready but needs production allowlists | Use `docs/tool-designs/updates-drivers-block-scope-design.md` before any second attempt |
 | Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Use `docs/tool-designs/edge-settings-scope-design.md`, then decompose the source into policy, service, task, process, and repair behaviors before any migration phase |
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install registry, service, task, shortcut, config, and uninstall side effects | Download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | No approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/installers-scope-provenance-design.md` before any second attempt |
-| Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Refused placeholder | NVIDIA path still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | No approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` before any second attempt |
+| Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Implemented in Phase 99 as controlled manual handoff | Full Auto behavior still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | Auto remains blocked: no approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | Complete for manual handoff only | Phase 99 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` |
 | DirectX | `directx` | Graphics | Refused placeholder after Phase 45 provenance review | Downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Download provenance, installer policy, file/registry rollback, and cleanup policy | Source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/directx-provenance-review.md` exists |
 | Visual C++ | `visual-cpp` | Graphics | Refused placeholder after Phase 46 provenance review | Downloads twelve redistributables from mutable mirror URLs and installs every x86/x64 package with version-specific switches | Download provenance and installer policy | All source URLs are mutable branch references; no approved hashes, sizes, package versions, signers, authoritative source evidence, exit-code rules, installer execution, or temp ownership scopes | Immutable artifact sources and exact hash/size/version/signer evidence for all twelve packages, approved installer requests and exit-code rules, and exact generated-temp-path scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/visual-cpp-provenance-review.md` exists |
 | Start Menu Taskbar | `start-menu-taskbar` | Windows | Refused placeholder | Replaces layout files, deletes state, writes policy, and restarts Explorer | File/registry rollback and cleanup policy | No approved file/registry/cleanup scopes, no approved ownership rule for replaced user state | Exact file targets, exact registry targets, exact cleanup ownership rules, exact rollback design | No | Foundation-ready but needs production allowlists | Use `docs/tool-designs/start-menu-taskbar-scope-design.md` before any second attempt |
@@ -219,7 +219,6 @@ execution approval”:
 
 * Reinstall
 * Installers
-* Driver Install Debloat & Settings
 * DirectX
 * Visual C++
 * Edge & WebView
@@ -232,8 +231,8 @@ The Reinstall tool-specific scope/provenance design is documented in
 The Installers tool-specific scope/provenance design is documented in
 `docs/tool-designs/installers-scope-provenance-design.md`.
 
-The Driver Install Debloat & Settings tool-specific scope/provenance design is
-documented in
+Driver Install Debloat & Settings manual handoff is implemented in Phase 99.
+Its Auto path still requires the exact approvals documented in
 `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md`.
 
 The Edge & WebView tool-specific scope design is documented in

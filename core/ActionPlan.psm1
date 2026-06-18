@@ -211,6 +211,21 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
         'Auto mode is blocked for Driver Install Latest because NVIDIA artifact, installer, driver-state, process, reboot/session, and recovery approvals do not exist.'
     }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
+        'Analyze the Driver Install Debloat & Settings source and report blocked approvals without running any driver install, debloat, profile, registry, package, or reboot operation.'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
+        'Prepare Driver Install Debloat & Settings manual handoff instructions only; no browser, external tool, download, installer, driver mutation, cleanup, profile import, package action, or reboot is opened or executed.'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for Driver Install Debloat & Settings because artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, reboot, and recovery approvals do not exist.'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
+        'Default is unavailable because the source does not define a safe overall default mutation for the driver install/debloat workflow.'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
+        'Restore is unavailable because no captured driver/profile/package/registry/file/reboot state restore contract exists.'
+    }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         'Read the Nvidia Settings source mirror and report blocked 7-Zip, Profile Inspector, .nip, NVIDIA profile, registry, process, and verification approvals without changing settings.'
     }
@@ -461,6 +476,38 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
         $plannedChanges.Add('Report missing NVIDIA driver artifact/download approval, installer execution descriptor approval, driver state capture/rollback approval, process handoff approval, reboot/session handling approval, and recovery handling approval.')
         $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, external process start, registry/system/driver mutation, reboot, or session change.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
+        $plannedChanges.Add('Report source behavior summary, unsupported AMD/Intel branches, and missing 7-Zip, NVIDIA driver, installer, extraction, cleanup/debloat, winget/AppX/package, Profile Inspector/.nip, registry/profile, driver-state, process, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Keep Driver Install Debloat & Settings separate from Driver Clean and NVIDIA Path B.')
+        $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
+        $plannedChanges.Add('Do not open a browser, NVIDIA driver page, NVIDIA Control Panel, winget, 7-Zip installer, Profile Inspector, setup.exe, or any external tool.')
+        $plannedChanges.Add('Do not download 7-Zip, NVIDIA driver artifacts, Profile Inspector, .nip files, or package content.')
+        $plannedChanges.Add('Do not extract driver packages, delete driver components, run setup.exe, import profiles, install NVIDIA Control Panel, or remove AppX/winget packages.')
+        $plannedChanges.Add('Do not modify registry, services, drivers, files, profiles, display settings, sound settings, sessions, or reboot state.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing 7-Zip, NVIDIA driver, installer, extraction, cleanup/debloat, winget/AppX/package, Profile Inspector/.nip, registry/profile, driver-state, process, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Block Default before any operational step.')
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Do not invent a default driver, profile, package, registry, file, service, or reboot mutation.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore before any operational step.')
+        $plannedChanges.Add('Require valid selected captured driver/profile/package/registry/file/reboot state and an approved Restore contract before any Restore can be planned.')
+        $plannedChanges.Add('Do not treat source install/debloat, Apply, or Default as captured-state Restore.')
+        $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Nvidia Settings source mirror checksum and implementation status.')
@@ -850,7 +897,8 @@ function New-BoostLabActionPlan {
 
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Apply', 'Default', 'Restore')
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction) {
+    $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -918,6 +966,27 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Auto mode is blocked before execution.')
         $sideEffects.Add('No approved Auto behavior, NVIDIA driver download, installer execution, external process, registry mutation, driver mutation, reboot, or session change occurs.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Driver Install Debloat & Settings analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('Driver Install Debloat & Settings remains separate from Driver Clean and NVIDIA Path B.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No browser, external tool, 7-Zip download/install, driver download, installer execution, driver extraction/debloat, Profile Inspector execution, .nip import, winget/AppX action, registry/service/driver mutation, display/sound launch, reboot, or session change occurs.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, download, installer execution, external process, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change occurs.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Default is blocked before execution.')
+        $sideEffects.Add('No driver, package, profile, registry, file, service, reboot, or session state changes occur.')
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
+        $sideEffects.Add('Restore is blocked without selected captured driver/profile/package/registry/file/reboot state and an approved restore contract.')
+        $sideEffects.Add('No system-changing operation occurs.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Nvidia Settings analysis is read-only.')
@@ -1181,10 +1250,10 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'nvidia-settings')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'nvidia-settings', 'bitlocker')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet) {
@@ -1193,7 +1262,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
-    if ($isPotentialChangeAction -and $capabilities.CanModifyServices) {
+    if ($isPotentialChangeAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and $capabilities.CanModifyServices) {
         $sideEffects.Add('Service changes may affect dependent Windows or application features.')
     }
     if ($isPotentialChangeAction -and $capabilities.CanModifyDrivers) {
@@ -1241,6 +1310,18 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
         'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare Driver Install Debloat & Settings manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, driver page, NVIDIA Control Panel, winget, Profile Inspector, or setup.exe; download artifacts; run installers; debloat files; import profiles; mutate registry, services, packages, drivers, sessions; or reboot. Continue?'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
+        'Driver Install Debloat & Settings Auto mode is blocked. BoostLab will not execute Auto behavior because artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
+        'Driver Install Debloat & Settings Default is unavailable. The source does not define a safe overall default mutation, and Default is not Restore. Continue only to record the blocked Default result?'
+    }
+    elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
+        'Driver Install Debloat & Settings Restore requires selected captured driver/profile/package/registry/file/reboot state and an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Nvidia Settings manual handoff instructions only. It will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, open a browser or external process, modify registry or NVIDIA profiles, or change system state. Continue?'

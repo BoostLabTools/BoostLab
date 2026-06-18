@@ -70,7 +70,9 @@ Observed inventory counts from the source:
 
 ## Current Decision
 
-Driver Install Debloat & Settings remains a refused placeholder.
+Driver Install Debloat & Settings was implemented in Phase 99 as controlled
+manual handoff only. Auto remains refused until exact production approvals
+exist.
 
 No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes
 are approved in this phase.
@@ -1333,5 +1335,5 @@ Current approved production scopes for Driver Install Debloat & Settings:
 * Reboot/recovery scopes: none.
 * Default/Restore scopes: none.
 
-Driver Install Debloat & Settings must remain a refused placeholder until these
+Driver Install Debloat & Settings Auto must remain refused until these
 approvals are supplied in future explicit implementation phases.

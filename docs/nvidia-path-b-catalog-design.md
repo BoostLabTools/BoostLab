@@ -17,7 +17,7 @@ Official BoostLab counts remain unchanged:
 
 * Active tools: **48**
 * Implemented tools: **30**
-* Deferred/placeholders: **18**
+* Deferred/placeholders: **17**
 * Source-promoted intake candidates: **7 separate from official counts**
 
 Phase 94 current-state note: `Driver Install Latest` and `Nvidia Settings`

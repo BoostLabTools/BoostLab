@@ -221,7 +221,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($tools.Count -ne 55 -or $implementedCount -ne 37 -or $placeholderCount -ne 18) {
+if ($tools.Count -ne 55 -or $implementedCount -ne 38 -or $placeholderCount -ne 17) {
     throw "Unexpected To BIOS inventory: $($tools.Count) tools, $implementedCount implemented, $placeholderCount placeholders."
 }
 
