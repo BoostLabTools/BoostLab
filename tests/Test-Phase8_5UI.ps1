@@ -112,7 +112,7 @@ try {
     $biosInformationTool = $tools | Where-Object { $_['Id'] -eq 'bios-information' } | Select-Object -First 1
     $biosSettingsTool = $tools | Where-Object { $_['Id'] -eq 'bios-settings' } | Select-Object -First 1
     $powerPlanTool = $tools | Where-Object { $_['Id'] -eq 'power-plan' } | Select-Object -First 1
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'directx' } | Select-Object -First 1
+    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'visual-cpp' } | Select-Object -First 1
 
     $biosInformationModule = Import-Module `
         -Name $biosInformationPath `

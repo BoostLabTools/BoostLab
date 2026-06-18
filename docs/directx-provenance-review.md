@@ -2,9 +2,19 @@
 
 ## Phase 45 Decision
 
-DirectX remains a refused placeholder. Phase 45 does not add artifact records,
-implement `Analyze` or `Apply`, enable downloads, extract files, launch an
-installer, or change the current DirectX module.
+Phase 45 refused automated DirectX implementation because the source workflow
+could not pass artifact provenance and installer execution policy.
+
+## Phase 100 Manual Handoff Decision
+
+DirectX is implemented as a controlled manual-handoff tool only. Phase 100
+adds `Analyze`, `Open`, `Apply`, `Default`, and `Restore` result handling, but
+does not add artifact records, enable downloads, extract files, launch an
+installer, approve side-effect scopes, or execute the source workflow.
+
+`Analyze` is read-only. `Open` prepares manual handoff instructions inside
+BoostLab only and opens no browser or external tool. `Apply` fails closed with
+`AutoBlockedUntilArtifactApproval`. `Default` and `Restore` are unavailable.
 
 The Ultimate workflow cannot pass the Phase 35 provenance and installer
 execution policy with the evidence currently available in the repository.
@@ -72,10 +82,11 @@ weaken the approved Ultimate behavior.
 
 * `config/ArtifactProvenance.psd1` remains empty.
 * No real DirectX or 7-Zip artifact is approved.
-* `modules/Graphics/DirectX.psm1` remains a placeholder.
-* No DirectX migration record is created because the tool is not implemented.
+* `modules/Graphics/directx.psm1` is a controlled manual-handoff
+  implementation.
+* `docs/migrations/directx.md` records the manual-handoff migration.
 * No download, extraction, installer launch, registry write, shortcut change,
-  cleanup, or DirectX system change is enabled by Phase 45.
+  cleanup, or DirectX system change is enabled by Phase 45 or Phase 100.
 
 ## Required Approval Package for a Future Retry
 
@@ -97,4 +108,6 @@ implementation:
 7. Mocked tests covering mismatched hashes, invalid signers, unexpected
    extraction output, installer failure, and bounded cleanup.
 
-Until that package exists, DirectX remains disabled and visual-only.
+Until that package exists, DirectX Auto remains blocked. The only approved
+BoostLab behavior is read-only analysis and manual handoff text prepared inside
+the UI.

@@ -14,9 +14,8 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the Driver Install Debloat & Settings validator path.'
+        throw 'Unable to determine the DirectX controlled manual handoff validator path.'
     }
-
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
 else {
@@ -39,7 +38,7 @@ function Assert-BoostLabCondition {
 
 function Assert-BoostLabTextContains {
     param(
-        [Parameter(Mandatory)]
+        [AllowNull()]
         [string]$Text,
 
         [Parameter(Mandatory)]
@@ -49,22 +48,9 @@ function Assert-BoostLabTextContains {
         [string]$Description
     )
 
-    if (-not $Text.Contains($Needle)) {
-        throw "$Description is missing: $Needle"
+    if ([string]::IsNullOrEmpty($Text) -or -not $Text.Contains($Needle)) {
+        throw "$Description missing expected text: $Needle"
     }
-}
-
-function Get-BoostLabItemCount {
-    param(
-        [AllowNull()]
-        [object]$Value
-    )
-
-    if ($null -eq $Value) {
-        return 0
-    }
-
-    return @($Value).Count
 }
 
 function Assert-BoostLabNoDuplicateWarnings {
@@ -76,58 +62,70 @@ function Assert-BoostLabNoDuplicateWarnings {
         [string]$Description
     )
 
-    $resultWarnings = @($Result.Warnings)
-    $dataWarnings = if ($null -ne $Result.Data -and $null -ne $Result.Data.PSObject.Properties['Warnings']) {
-        @($Result.Data.Warnings)
+    $resultWarnings = @($Result.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    $dataWarnings = if ($null -ne $Result.Data -and $Result.Data.PSObject.Properties.Name -contains 'Warnings') {
+        @($Result.Data.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
     }
     else {
         @()
     }
-    $combinedWarnings = @($resultWarnings + $dataWarnings)
-    $uniqueWarnings = @($combinedWarnings | Select-Object -Unique)
 
-    Assert-BoostLabCondition ($resultWarnings.Count -eq 0) "$Description should not duplicate Data warnings at result level."
-    Assert-BoostLabCondition ($combinedWarnings.Count -eq $uniqueWarnings.Count) "$Description contains duplicate warning text."
+    foreach ($warning in $resultWarnings) {
+        Assert-BoostLabCondition ($warning -notin $dataWarnings) "$Description duplicates warning at result and data level: $warning"
+    }
+    Assert-BoostLabCondition ((@($resultWarnings + $dataWarnings | Select-Object -Unique)).Count -eq @($resultWarnings + $dataWarnings).Count) "$Description contains duplicate warning entries."
 }
 
-$stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\2 DirectX.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
-$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\1 Driver Install Debloat & Settings.ps1'
-$designPath = Join-Path $ProjectRoot 'docs\tool-designs\driver-install-debloat-settings-scope-provenance-design.md'
-$migrationPath = Join-Path $ProjectRoot 'docs\migrations\driver-install-debloat-settings.md'
+$artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\directx.md'
+$provenanceReviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-foreach ($path in @($stagesPath, $executionPath, $actionPlanPath, $modulePath, $sourcePath, $designPath, $migrationPath)) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 99 file was not found: $path"
+foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $artifactPath, $productionAllowlistPath, $migrationPath, $provenanceReviewPath)) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 100 file was not found: $path"
 }
 
-$expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
+$expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Driver Install Debloat & Settings source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "DirectX source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
-$config = Import-PowerShellDataFile -LiteralPath $stagesPath
+$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+foreach ($needle in @(
+    'refs/heads/main/7zip.exe'
+    'refs/heads/main/directx.exe'
+    'DXSETUP.exe'
+    'HKEY_CURRENT_USER\Software\7-Zip\Options'
+)) {
+    Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'DirectX Ultimate source behavior'
+}
+
+$config = Import-PowerShellDataFile -LiteralPath $configPath
+$allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
-Assert-BoostLabCondition ($null -ne $graphicsStage) 'Graphics stage was not found.'
+$directXTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'directx' })[0]
+Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX is missing from Graphics stage.'
+Assert-BoostLabCondition ([string]$directXTool.Title -eq 'DirectX') 'DirectX title mismatch.'
+Assert-BoostLabCondition ([int]$directXTool.Order -eq 8) 'DirectX must remain Graphics order 8.'
+Assert-BoostLabCondition ([string]$directXTool.Type -eq 'assistant') 'DirectX must be an assistant.'
+Assert-BoostLabCondition ([string]$directXTool.RiskLevel -eq 'high') 'DirectX must remain high risk.'
+Assert-BoostLabCondition ((@($directXTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'DirectX must expose canonical Analyze/Open/Apply/Default/Restore actions.'
+Assert-BoostLabTextContains -Text ([string]$directXTool.Description) -Needle 'Controlled manual handoff only' -Description 'DirectX description'
 
-$tool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })[0]
-Assert-BoostLabCondition ($null -ne $tool) 'Driver Install Debloat & Settings was not found as an active Graphics tool.'
-Assert-BoostLabCondition ([string]$tool.Title -eq 'Driver Install Debloat & Settings') 'Driver Install Debloat & Settings title mismatch.'
-Assert-BoostLabCondition ([int]$tool.Order -eq 7) 'Driver Install Debloat & Settings must remain after NVIDIA Path B step 5.'
-Assert-BoostLabCondition ([string]$tool.Type -eq 'assistant') 'Driver Install Debloat & Settings must be an assistant.'
-Assert-BoostLabCondition ([string]$tool.RiskLevel -eq 'high') 'Driver Install Debloat & Settings must remain high risk.'
-Assert-BoostLabCondition ((@($tool.Actions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Driver Install Debloat & Settings must expose canonical Analyze, Open, Apply, Default, Restore actions.'
-Assert-BoostLabTextContains -Text ([string]$tool.Description) -Needle 'Manual handoff only' -Description 'Driver Install Debloat & Settings description'
-Assert-BoostLabTextContains -Text ([string]$tool.Description) -Needle 'without automated downloads' -Description 'Driver Install Debloat & Settings description'
-
-$capabilities = $tool.Capabilities
+$capabilities = $directXTool.Capabilities
+Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'DirectX manual handoff should require explicit confirmation.'
 foreach ($falseCapability in @(
     'RequiresAdmin',
     'RequiresInternet',
     'CanReboot',
     'CanModifyRegistry',
+    'CanModifyServices',
     'CanInstallSoftware',
     'CanDownload',
     'CanModifyDrivers',
@@ -138,12 +136,9 @@ foreach ($falseCapability in @(
     'SupportsDefault',
     'SupportsRestore'
 )) {
-    Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "Current manual-handoff capability should be false: $falseCapability"
+    Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "DirectX capability should be false: $falseCapability"
 }
-Assert-BoostLabCondition ([bool]$capabilities['CanModifyServices']) 'Source-proven service capability should be declared while Auto remains blocked.'
-Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'Manual handoff should require explicit confirmation.'
 
-$allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
@@ -169,22 +164,10 @@ $remainingSourcePromoted = @(
 )
 Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
-foreach ($pathB in @(
-    @{ Id = 'driver-install-latest'; Order = 2 },
-    @{ Id = 'nvidia-settings'; Order = 3 },
-    @{ Id = 'hdcp'; Order = 4 },
-    @{ Id = 'p0-state'; Order = 5 },
-    @{ Id = 'msi-mode'; Order = 6 }
-)) {
-    $pathBTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq $pathB.Id })[0]
-    Assert-BoostLabCondition ($null -ne $pathBTool) "NVIDIA Path B tool missing: $($pathB.Id)"
-    Assert-BoostLabCondition ([int]$pathBTool.Order -eq [int]$pathB.Order) "NVIDIA Path B order changed for $($pathB.Id)."
-}
-
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
-    "'driver-install-debloat-settings'",
-    "Graphics\driver-install-debloat-settings.psm1",
+    "'directx'"
+    "Graphics\directx.psm1"
     "'Analyze', 'Open', 'Apply', 'Default', 'Restore'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Execution registry'
@@ -192,30 +175,37 @@ foreach ($needle in @(
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened for display labels.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action plan ValidateSet must not include display label Manual Handoff.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action plan ValidateSet must not include display label Apply Auto.'
 foreach ($needle in @(
-    'Analyze the Driver Install Debloat & Settings source',
-    'Prepare Driver Install Debloat & Settings manual handoff instructions only',
-    'Auto mode is blocked for Driver Install Debloat & Settings',
-    'Default is unavailable because the source does not define a safe overall default mutation',
-    'Restore is unavailable because no captured driver/profile/package/registry/file/reboot state restore contract exists'
+    'Prepare DirectX manual handoff instructions only'
+    'Auto mode is blocked for DirectX'
+    'Do not open a browser, external tool, 7-Zip installer, DirectX runtime package, extraction tool, or DirectX setup executable.'
+    'Do not download 7-Zip or DirectX artifacts.'
+    'No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurs.'
+    'DirectX Restore requires selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract.'
 )) {
-    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Driver Install Debloat & Settings action plan'
+    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'DirectX action plan wording'
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
-    'ManualHandoffOnly',
-    'AutoBlockedUntilArtifactApproval',
-    'NoInstallerExecutionOccurred',
-    'NoDriverMutationOccurred',
-    'NoRegistryMutationOccurred',
-    'NoRebootOrSessionChangeOccurred',
-    'Default is not Restore',
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     $expectedSourceHash
+    'ManualHandoffPrepared'
+    'AutoBlockedUntilArtifactApproval'
+    'DefaultUnavailable'
+    'RestoreUnavailable'
+    'NoAutomatedExecution'
+    'NoDownloadOccurred'
+    'NoInstallerExecutionOccurred'
+    'NoExternalProcessStarted'
+    'NoRegistryMutationOccurred'
+    'NoShortcutMutationOccurred'
+    'NoFileCleanupOccurred'
+    'NoSystemMutationOccurred'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Driver Install Debloat & Settings module'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'DirectX module text'
 }
 
 foreach ($commandPattern in @(
@@ -224,26 +214,22 @@ foreach ($commandPattern in @(
     '(?im)^\s*iwr\b',
     '(?im)^\s*Invoke-RestMethod\b',
     '(?im)^\s*Set-ItemProperty\b',
-    '(?im)^\s*New-ItemProperty\b',
-    '(?im)^\s*Remove-ItemProperty\b',
-    '(?im)^\s*Set-Content\b',
+    '(?im)^\s*reg\b',
     '(?im)^\s*New-Item\b',
     '(?im)^\s*Remove-Item\b',
     '(?im)^\s*Move-Item\b',
-    '(?im)^\s*Stop-Service\b',
-    '(?im)^\s*Set-Service\b',
-    '(?im)^\s*bcdedit\b',
+    '(?im)^\s*Remove-ItemProperty\b',
+    '(?im)^\s*cmd\b',
     '(?im)^\s*shutdown\b',
-    '(?im)^\s*Restart-Computer\b',
-    '(?im)^\s*winget\b'
+    '(?im)^\s*Restart-Computer\b'
 )) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "Module contains prohibited executable command pattern: $commandPattern"
+    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "DirectX module contains prohibited executable command pattern: $commandPattern"
 }
 
 $module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
-    Assert-BoostLabCondition ([string]$info.Id -eq 'driver-install-debloat-settings') 'Module info Id mismatch.'
+    Assert-BoostLabCondition ([string]$info.Id -eq 'directx') 'Module info Id mismatch.'
     Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Implemented actions mismatch.'
     Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Confirmation actions mismatch.'
 
@@ -259,26 +245,24 @@ try {
         'NoDownloadOccurred',
         'NoInstallerExecutionOccurred',
         'NoExternalProcessStarted',
-        'NoDriverMutationOccurred',
         'NoRegistryMutationOccurred',
+        'NoShortcutMutationOccurred',
         'NoFileCleanupOccurred',
-        'NoServiceMutationOccurred',
-        'NoProfileImportOccurred',
-        'NoAppxOrWingetMutationOccurred',
-        'NoRebootOrSessionChangeOccurred'
+        'NoSystemMutationOccurred'
     )) {
         Assert-BoostLabCondition ([bool]$analysis.Data.$flag) "Analyze flag should be true: $flag"
     }
     Assert-BoostLabNoDuplicateWarnings -Result $analysis -Description 'Analyze'
 
     foreach ($approval in @(
-        '7-Zip artifact/download/installer approval',
-        'NVIDIA driver artifact or user-selected installer validation approval',
-        'NVIDIA installer execution descriptor approval',
-        'NVIDIA driver component deletion/debloat cleanup scope approval',
-        'NVIDIA Profile Inspector artifact/execution/profile-import approval',
-        'Driver state capture/rollback approval',
-        'Reboot/session handling approval'
+        '7-Zip artifact SHA-256, size, signer, and redistributability approval',
+        '7-Zip installer execution descriptor approval',
+        'Immutable DirectX runtime artifact source approval',
+        'DirectX artifact SHA-256, size, signer, and redistributability approval',
+        'DirectX extraction inventory and generated-temp-path approval',
+        'Extracted DXSETUP executable provenance approval',
+        'DirectX setup execution descriptor approval',
+        'File, shortcut, registry, and cleanup scope approval'
     )) {
         Assert-BoostLabCondition ($approval -in @($analysis.Data.MissingApprovals)) "Missing approval was not reported: $approval"
     }
@@ -286,7 +270,7 @@ try {
     $cancelled = Invoke-BoostLabToolAction -ActionName 'Open'
     Assert-BoostLabCondition (-not [bool]$cancelled.Success) 'Unconfirmed Open should not proceed.'
     Assert-BoostLabCondition ([bool]$cancelled.Cancelled) 'Unconfirmed Open should be cancelled.'
-    Assert-BoostLabTextContains -Text ([string]$cancelled.Message) -Needle 'No download' -Description 'Cancelled Open message'
+    Assert-BoostLabTextContains -Text ([string]$cancelled.Message) -Needle 'No browser' -Description 'Cancelled Open message'
 
     $open = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
     Assert-BoostLabCondition ([bool]$open.Success) 'Confirmed Open should prepare manual handoff.'
@@ -297,14 +281,13 @@ try {
         'No browser',
         'external tool',
         '7-Zip download/install',
-        'driver download',
-        'installer execution',
-        'driver extraction/debloat',
-        'Profile Inspector execution',
-        '.nip import',
-        'winget/AppX action',
-        'registry/service/driver mutation',
-        'reboot'
+        'DirectX download',
+        'extraction',
+        'setup launch',
+        'registry change',
+        'shortcut cleanup',
+        'file cleanup',
+        'system mutation'
     )) {
         Assert-BoostLabTextContains -Text ([string]$open.Message) -Needle $messagePart -Description 'Open result message'
     }
@@ -328,7 +311,7 @@ try {
     $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
     Assert-BoostLabCondition (-not [bool]$restore.Success) 'Restore must fail closed.'
     Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'Restore status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured driver/profile/package/registry/file/reboot state' -Description 'Restore message'
+    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured artifact, registry, shortcut, file, installer, and cleanup state' -Description 'Restore message'
 }
 finally {
     Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
@@ -341,12 +324,12 @@ $stateModule = Import-Module -Name (Join-Path $ProjectRoot 'core\State.psm1') -F
 Initialize-BoostLabState | Out-Null
 $executionModule = Import-Module -Name $executionPath -Force -PassThru -ErrorAction Stop
 try {
-    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $tool -ActionName 'Analyze'
+    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Analyze'
     Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'report blocked approvals without running any driver install' -Description 'Runtime Analyze Action Plan summary'
+    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without running any DirectX or 7-Zip workflow' -Description 'Runtime Analyze Action Plan summary'
     Assert-BoostLabNoDuplicateWarnings -Result $runtimeAnalyze -Description 'Runtime Analyze'
 
-    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $tool -ActionName 'Open'
+    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Open'
     Assert-BoostLabCondition (-not [bool]$runtimeOpen.Success) 'Runtime Open without confirmation should be gated.'
     Assert-BoostLabCondition ([bool]$runtimeOpen.Cancelled) 'Runtime Open should be cancelled when confirmation is missing.'
     Assert-BoostLabCondition ($null -ne $runtimeOpen.ActionPlan) 'Runtime Open should include an Action Plan.'
@@ -357,17 +340,18 @@ try {
         @($runtimeOpen.ActionPlan.ConfirmationMessage)
     ) -join "`n"
     foreach ($needle in @(
-        'manual handoff instructions',
+        'manual handoff instructions only',
         'Do not open a browser',
-        'Do not download 7-Zip',
-        'Do not extract driver packages',
-        'Perform no system-changing operation'
+        'Do not download 7-Zip or DirectX artifacts',
+        'Do not install 7-Zip',
+        'No browser, external tool',
+        'system mutation occurs'
     )) {
         Assert-BoostLabTextContains -Text $runtimeOpenPlanText -Needle $needle -Description 'Runtime Open Action Plan'
     }
     Assert-BoostLabCondition (-not $runtimeOpenPlanText.Contains('approved external resource may be opened')) 'Runtime Open Action Plan must not use generic external resource wording.'
 
-    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $tool -ActionName 'Apply' -RiskConfirmed
+    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Apply' -RiskConfirmed
     Assert-BoostLabCondition (-not [bool]$runtimeApply.Success) 'Runtime Apply should fail closed.'
     Assert-BoostLabCondition ([string]$runtimeApply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply status mismatch.'
     $runtimeApplyPlanText = @(
@@ -378,13 +362,13 @@ try {
     ) -join "`n"
     foreach ($needle in @(
         'Auto mode is blocked',
-        'Do not execute any approved Auto behavior',
-        'Report missing 7-Zip',
+        'will not execute Auto behavior',
+        'Report missing 7-Zip artifact',
         'No approved Auto behavior'
     )) {
         Assert-BoostLabTextContains -Text $runtimeApplyPlanText -Needle $needle -Description 'Runtime Apply Action Plan'
     }
-    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved Driver Install Debloat & Settings behavior')) 'Runtime Apply plan must not use generic Apply wording.'
+    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved DirectX behavior')) 'Runtime Apply plan must not use generic Apply wording.'
 }
 finally {
     Remove-Module -ModuleInfo $executionModule -Force -ErrorAction SilentlyContinue
@@ -393,22 +377,35 @@ finally {
     $env:ProgramData = $originalProgramData
 }
 
-$artifactText = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1') -Raw
-$allowlistText = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1') -Raw
-Assert-BoostLabCondition (-not ($artifactText -match '(?i)driver-install-debloat|nvidia driver|profile inspector|7-zip|7zip')) 'Unexpected artifact approval was added for Driver Install Debloat & Settings.'
-Assert-BoostLabCondition (-not ($allowlistText -match '(?i)driver-install-debloat|nvidia driver|profile inspector|7-zip|7zip')) 'Unexpected production allowlist approval was added for Driver Install Debloat & Settings.'
-Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
-Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
-Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\23 NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'
+$artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
+$artifactText = Get-Content -LiteralPath $artifactPath -Raw
+foreach ($forbiddenArtifactText in @('directx.exe', 'DXSETUP.exe', '7zip.exe', '7-Zip', 'FR33THYFR33THY')) {
+    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to DirectX: $forbiddenArtifactText"
+}
+if ($artifactConfig.ContainsKey('Artifacts')) {
+    Assert-BoostLabCondition (@($artifactConfig.Artifacts).Count -eq 0) 'Production artifact approvals should remain empty.'
+}
+
+$productionPolicy = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
+if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
+    Assert-BoostLabCondition (@($productionPolicy.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals should remain empty.'
+}
+
+foreach ($deletedPath in @(
+    'source-ultimate\6 Windows\17 Loudness EQ.ps1',
+    'source-ultimate\6 Windows\30 NVME Faster Driver.ps1'
+)) {
+    Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot $deletedPath))) "Deleted source was reintroduced: $deletedPath"
+}
 
 [pscustomobject]@{
-    Passed                          = $true
-    ActiveTools                     = $allTools.Count
-    ImplementedTools                = $allTools.Count - $placeholderModules.Count
-    DeferredPlaceholders            = $placeholderModules.Count
-    SourcePromotedMirrorFiles       = $sourcePromotedFiles.Count
-    RemainingSourcePromotedIntake   = $remainingSourcePromoted.Count
-    Mode                            = 'ManualHandoffOnly'
-    AutoMode                        = 'AutoBlockedUntilArtifactApproval'
-    Message                         = 'Driver Install Debloat & Settings controlled manual handoff implementation is active, inert, and fail-closed for Auto.'
+    TestName                                     = 'DirectX controlled manual handoff implementation'
+    ActiveTools                                  = $allTools.Count
+    ImplementedTools                             = $allTools.Count - $placeholderModules.Count
+    DeferredPlaceholders                         = $placeholderModules.Count
+    SourcePromotedMirrorFiles                    = $sourcePromotedFiles.Count
+    RemainingUnimplementedSourcePromotedCandidates = $remainingSourcePromoted.Count
+    SourceHash                                   = $actualSourceHash
+    DirectXActions                               = @($directXTool.Actions)
+    AutoMode                                     = 'AutoBlockedUntilArtifactApproval'
 }

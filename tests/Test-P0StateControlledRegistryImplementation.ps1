@@ -153,8 +153,8 @@ $placeholderModules = @(
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
 Assert-BoostLabCondition ($allTools.Count -eq 55) "Expected 55 active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq 17) "Expected 17 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 38) "Expected 38 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq 16) "Expected 16 deferred/placeholders, found $($placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 39) "Expected 39 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
@@ -549,8 +549,8 @@ finally {
 [pscustomobject]@{
     Success = $true
     ActiveToolCount = 55
-    ImplementedToolCount = 38
-    PlaceholderToolCount = 17
+    ImplementedToolCount      = 39
+    PlaceholderToolCount      = 16
     SourcePromotedMirrorFileCount = 7
     RemainingUnimplementedSourcePromotedIntakeCandidates = 0
     Message = 'P0 State controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'

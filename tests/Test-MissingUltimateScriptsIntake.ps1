@@ -216,11 +216,11 @@ $placeholderModules = @(
 if ($allTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($allTools.Count)."
 }
-if ($placeholderModules.Count -ne 17) {
-    throw "Expected 17 deferred/placeholders, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 16) {
+    throw "Expected 16 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 38) {
-    throw "Expected 38 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 39) {
+    throw "Expected 39 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

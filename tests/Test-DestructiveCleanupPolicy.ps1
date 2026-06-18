@@ -863,8 +863,8 @@ try {
     )
     if (
         $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 38 -or
-        $placeholderModules.Count -ne 17
+        $implementedModules.Count -ne 39 -or
+        $placeholderModules.Count -ne 16
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), " +
@@ -964,7 +964,7 @@ if ($errors.Count -gt 0) {
     MockQuarantineRestorePassed = $true
     RealFilesDeleted           = $false
     ImplementedModuleCount     = 35
-    PlaceholderModuleCount     = 17
+    PlaceholderModuleCount = 16
     SourceUltimateUnchanged    = $true
     Message                    = 'Destructive cleanup policy is bounded, confirmed, verified, mocked, and deny-by-default.'
     Timestamp                  = Get-Date

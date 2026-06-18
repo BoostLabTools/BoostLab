@@ -88,6 +88,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-debloat-settings.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
+    'directx' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\directx.psm1'
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

@@ -666,12 +666,12 @@ try {
     if ($allTools.Count -ne 55) {
         $errors.Add("Expected 55 active tools, found $($allTools.Count).")
     }
-    if ($placeholderModules.Count -ne 17) {
+    if ($placeholderModules.Count -ne 16) {
         $errors.Add(
-            "Expected 17 placeholder modules, found $($placeholderModules.Count)."
+            "Expected 16 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 38) {
+    if (($allTools.Count - $placeholderModules.Count) -ne 39) {
         $errors.Add('Implemented tool count changed from 30.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
@@ -729,8 +729,8 @@ if ($errors.Count -gt 0) {
     MockRollbackValidated   = $true
     RealDriverOperationRun  = $false
     ActiveToolCount         = 55
-    ImplementedToolCount    = 38
-    PlaceholderToolCount    = 17
+    ImplementedToolCount      = 39
+    PlaceholderToolCount      = 16
     SourceUltimateUnchanged = $true
     Message                 = 'Driver state and rollback foundation is deny-by-default and callback-only.'
     Timestamp               = Get-Date

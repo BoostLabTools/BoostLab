@@ -226,6 +226,21 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
         'Restore is unavailable because no captured driver/profile/package/registry/file/reboot state restore contract exists.'
     }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
+        'Analyze the DirectX source and report blocked artifact, extraction, installer, registry, shortcut, cleanup, and rollback approvals without running any DirectX or 7-Zip workflow.'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
+        'Prepare DirectX manual handoff instructions only; no browser, external tool, download, extraction, installer, registry change, shortcut cleanup, file cleanup, or system mutation is opened or executed.'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for DirectX because immutable artifact, extraction, installer, side-effect scope, cleanup, and rollback approvals do not exist.'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
+        'Default is unavailable because the source does not define a safe DirectX default branch.'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Restore') {
+        'Restore is unavailable because no captured artifact, registry, shortcut, file, installer, or cleanup state restore contract exists.'
+    }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         'Read the Nvidia Settings source mirror and report blocked 7-Zip, Profile Inspector, .nip, NVIDIA profile, registry, process, and verification approvals without changing settings.'
     }
@@ -507,6 +522,36 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Block Restore before any operational step.')
         $plannedChanges.Add('Require valid selected captured driver/profile/package/registry/file/reboot state and an approved Restore contract before any Restore can be planned.')
         $plannedChanges.Add('Do not treat source install/debloat, Apply, or Default as captured-state Restore.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the DirectX source checksum and implementation status.')
+        $plannedChanges.Add('Report source behavior summary and missing 7-Zip artifact, DirectX artifact, extraction inventory, installer execution, registry/shortcut/file side-effect, cleanup, and rollback approvals.')
+        $plannedChanges.Add('Perform no download, browser/external process launch, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
+        $plannedChanges.Add('Do not open a browser, external tool, 7-Zip installer, DirectX runtime package, extraction tool, or DirectX setup executable.')
+        $plannedChanges.Add('Do not download 7-Zip or DirectX artifacts.')
+        $plannedChanges.Add('Do not install 7-Zip, write 7-Zip registry options, move or remove 7-Zip Start Menu shortcuts, extract DirectX files, or launch DirectX setup.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing 7-Zip artifact, DirectX artifact, extraction inventory, installer execution, registry/shortcut/file side-effect, cleanup, and rollback approvals.')
+        $plannedChanges.Add('Perform no download, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Block Default before any operational step.')
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Do not invent a DirectX default artifact, installer, registry, shortcut, file, cleanup, or system mutation.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore before any operational step.')
+        $plannedChanges.Add('Require valid selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved Restore contract before any Restore can be planned.')
+        $plannedChanges.Add('Do not treat source installation, Apply, or Default as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
@@ -898,7 +943,8 @@ function New-BoostLabActionPlan {
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction) {
+    $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -919,7 +965,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin) {
+    if ($capabilities.RequiresAdmin -and $toolId -ne 'directx') {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -986,6 +1032,26 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
         $sideEffects.Add('Restore is blocked without selected captured driver/profile/package/registry/file/reboot state and an approved restore contract.')
+        $sideEffects.Add('No system-changing operation occurs.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; DirectX analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurs.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, download, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation occurs.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Default is blocked before execution.')
+        $sideEffects.Add('No artifact, installer, registry, shortcut, file, cleanup, or system state changes occur.')
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Restore') {
+        $sideEffects.Add('Restore is blocked without selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract.')
         $sideEffects.Add('No system-changing operation occurs.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
@@ -1250,31 +1316,31 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'nvidia-settings')) {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'nvidia-settings')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'nvidia-settings', 'bitlocker')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet) {
+    if ($capabilities.RequiresInternet -and $toolId -ne 'directx') {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and $capabilities.CanModifyServices) {
+    if ($isPotentialChangeAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and $capabilities.CanModifyServices) {
         $sideEffects.Add('Service changes may affect dependent Windows or application features.')
     }
-    if ($isPotentialChangeAction -and $capabilities.CanModifyDrivers) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and $capabilities.CanModifyDrivers) {
         $sideEffects.Add('Driver changes may affect display, devices, stability, or hardware availability.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and $capabilities.CanModifySecurity) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and $capabilities.CanModifySecurity) {
         $sideEffects.Add('Security changes may alter system protection or compatibility.')
     }
-    if ($isPotentialChangeAction -and $capabilities.CanDeleteFiles) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and $capabilities.CanDeleteFiles) {
         $sideEffects.Add('Deleted files may not be recoverable unless an approved checkpoint exists.')
     }
-    if ($isPotentialChangeAction -and $capabilities.CanInstallSoftware) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and $capabilities.CanInstallSoftware) {
         $sideEffects.Add('Installed software may add files, services, tasks, or application settings.')
     }
     if ($isPotentialChangeAction -and $capabilities.UsesTrustedInstaller) {
@@ -1322,6 +1388,18 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Restore') {
         'Driver Install Debloat & Settings Restore requires selected captured driver/profile/package/registry/file/reboot state and an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare DirectX manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, DirectX package, extraction tool, or setup executable; download artifacts; run installers; extract files; mutate registry, shortcuts, files, or system state. Continue?'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
+        'DirectX Auto mode is blocked. BoostLab will not execute Auto behavior because 7-Zip artifact, DirectX artifact, extraction, installer, side-effect scope, cleanup, and rollback approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
+        'DirectX Default is unavailable. The source does not define a safe Default branch, and Default is not Restore. Continue only to record the blocked Default result?'
+    }
+    elseif ($toolId -eq 'directx' -and $ActionName -eq 'Restore') {
+        'DirectX Restore requires selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Nvidia Settings manual handoff instructions only. It will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, open a browser or external process, modify registry or NVIDIA profiles, or change system state. Continue?'

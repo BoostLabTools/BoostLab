@@ -164,11 +164,11 @@ $placeholderModules = @(
 if ($activeTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($activeTools.Count)."
 }
-if ($placeholderModules.Count -ne 17) {
-    throw "Expected 17 placeholder modules, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 16) {
+    throw "Expected 16 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 38) {
-    throw "Expected 38 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 39) {
+    throw "Expected 39 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
