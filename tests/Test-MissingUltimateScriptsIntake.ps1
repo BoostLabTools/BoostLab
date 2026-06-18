@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -211,14 +211,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 53) {
-    throw "Expected 53 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 54) {
+    throw "Expected 54 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 35) {
-    throw "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 36) {
+    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })
@@ -355,5 +355,6 @@ if ($sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1
     SourceUltimateUnchanged  = $true
     Message                  = 'Missing Ultimate scripts intake review is documented and remains separate from official source/tool counts.'
 }
+
 
 

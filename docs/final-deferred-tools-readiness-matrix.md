@@ -1,4 +1,4 @@
-# Final Deferred Tools Readiness Matrix
+﻿# Final Deferred Tools Readiness Matrix
 
 ## Purpose
 
@@ -10,11 +10,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 
 ## Current Inventory
 
-* Active tools: **53**
-* Implemented tools: **35**
+* Active tools: **54**
+* Implemented tools: **36**
 * Deferred/placeholders: **18**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
-* Remaining unimplemented source-promoted intake candidates: **2**
+* Remaining unimplemented source-promoted intake candidates: **1**
 * Design/review coverage: **18/18 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
@@ -63,7 +63,14 @@ NVIDIA-only registry targeting. It verifies the source mirror checksum, discover
 only the source display-class registry scope, captures `DisableDynamicPstate`
 before mutation, applies source-defined `DWORD 1`, defaults to source-defined
 `DWORD 0`, verifies results, and keeps Restore unavailable without selected
-captured state. Msi Mode remains separate and unimplemented.
+captured state.
+
+Phase 97 note: `Msi Mode` is implemented as Path B step 5 using controlled
+NVIDIA-only display-device Enum registry targeting. It verifies the source
+mirror checksum, discovers source-targeted display-device interrupt-management
+registry scopes, captures `MSISupported` before mutation, applies
+source-defined `DWORD 1`, defaults to source-defined `DWORD 0`, verifies
+results, and keeps Restore unavailable without selected captured state.
 
 ## Coverage Summary
 
@@ -278,4 +285,5 @@ Phase 91 adds
 Driver Clean implementation plan. It chooses `ManualHandoffFirst`, keeps Auto
 blocked, and does not approve DDU/7-Zip downloads, artifacts, execution,
 production scopes, or tool behavior.
+
 

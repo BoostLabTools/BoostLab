@@ -107,6 +107,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\p0-state.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'msi-mode' = @{
+        RelativePath          = 'Graphics\msi-mode.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
         LaunchText            = 'Start-Process "ms-settings:display-advancedgraphics"'
@@ -395,6 +399,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'p0-state' -and
             $commandName -eq 'New-ItemProperty'
         )
+        $approvedMsiModeCommand = (
+            $toolId -eq 'msi-mode' -and
+            $commandName -eq 'New-ItemProperty'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -407,7 +415,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedUnattendedCommand -and
             -not $approvedWriteCacheCommand -and
             -not $approvedHdcpCommand -and
-            -not $approvedP0StateCommand
+            -not $approvedP0StateCommand -and
+            -not $approvedMsiModeCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -488,6 +497,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'p0-state') {
+            0
+        }
+        elseif ($toolId -eq 'msi-mode') {
             0
         }
         elseif ($toolId -eq 'power-plan') {
@@ -992,6 +1004,46 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated or unsafe P0 State behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'msi-mode') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
+                'HKLM:\SYSTEM\ControlSet001\Enum'
+                'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties'
+                'MSISupported'
+                'New-BoostLabRegistryStateCapture'
+                'Set-BoostLabRollbackMutationState'
+                'NeedsNvidiaTargeting'
+                'VEN_10DE'
+                'SupportsDefault = $true'
+                'SupportsRestore = $false'
+                'CanModifyDrivers = $false'
+                'function Test-BoostLabMsiModeState'
+                'Default is source-defined MSISupported DWORD 0 and is not Restore'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Msi Mode controlled registry behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Start-Process'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Set-Service'
+                'Stop-Service'
+                'bcdedit'
+                'reg add'
+                'reg delete'
+                'Remove-ItemProperty'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or unsafe Msi Mode behavior: $forbiddenText")
                 }
             }
         }

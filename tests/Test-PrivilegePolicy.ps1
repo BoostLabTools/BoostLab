@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -297,6 +297,7 @@ $implementedModules = [ordered]@{
     'graphics-configuration-center' = 'Graphics\GraphicsConfigurationCenter.psm1'
     'hdcp' = 'Graphics\hdcp.psm1'
     'p0-state' = 'Graphics\p0-state.psm1'
+    'msi-mode' = 'Graphics\msi-mode.psm1'
     'date-language-region-time' = 'Setup\date-language-region-time.psm1'
     'game-mode' = 'Windows\game-mode.psm1'
     'pointer-precision' = 'Windows\pointer-precision.psm1'
@@ -338,7 +339,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 35) {
+if ($implementedModuleFiles.Count -ne 36) {
     $errors.Add("Implemented module boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 
@@ -422,4 +423,5 @@ if ($errors.Count -gt 0) {
     Message                     = 'Administrator and TrustedInstaller privilege policy is valid without executing tool actions.'
     Timestamp                   = Get-Date
 }
+
 

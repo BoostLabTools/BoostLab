@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -160,21 +160,19 @@ $pathBOrder = @(
     'P0 State',
     'Msi Mode'
 )
-$previousIndex = -1
+$requiredPathBOrderText = 'Path B: `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`'
+if (-not $decisionText.Contains($requiredPathBOrderText)) {
+    throw 'Path B order is not preserved in the source-promotion decision text.'
+}
 foreach ($item in $pathBOrder) {
-    $index = $decisionText.IndexOf($item, [StringComparison]::Ordinal)
-    if ($index -lt 0) {
+    if (-not $decisionText.Contains($item)) {
         throw "Path B item missing from decision: $item"
     }
-    if ($index -le $previousIndex) {
-        throw "Path B order is not preserved for: $item"
-    }
-    $previousIndex = $index
 }
 
 foreach ($requiredPhrase in @(
     'Path A: `Driver Install Debloat & Settings`',
-    'Path B: `Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode`',
+    $requiredPathBOrderText,
     'mutually guided workflows',
     'prevent accidental workflow mixing',
     'must not be treated as unordered graphics tools'
@@ -225,12 +223,12 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Active tools: **53**',
-    'Implemented tools: **35**',
+    'Active tools: **54**',
+    'Implemented tools: **36**',
     'Deferred/placeholders: **18**',
     'Intake files: **7**',
     'Source-promoted mirror files: **7**',
-    'Remaining unimplemented source-promoted intake candidates: **2 separate from official counts**',
+    'Remaining unimplemented source-promoted intake candidates: **1 separate from official counts**',
     'No existing `source-ultimate` files outside `_intake-promoted` were modified',
     'Seven mirror files were created under `source-ultimate/_intake-promoted/Ultimate/`',
     'No intake files were renamed or moved',
@@ -258,14 +256,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 53) {
-    throw "Expected 53 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 54) {
+    throw "Expected 54 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 35) {
-    throw "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 36) {
+    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })
@@ -378,5 +376,6 @@ if ($sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1
     RecommendedStrategy      = 'Strategy C: source-ultimate/_intake-promoted/Ultimate/ mirror'
     Message                  = 'Missing scripts source-promotion decision is documented and remains non-executing.'
 }
+
 
 

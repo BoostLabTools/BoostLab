@@ -103,6 +103,7 @@ $driverInstallLatestTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'dr
 $nvidiaSettingsTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'nvidia-settings' })[0]
 $hdcpTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'hdcp' })[0]
 $p0StateTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'p0-state' })[0]
+$msiModeTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'msi-mode' })[0]
 $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })[0]
 
 Assert-BoostLabCondition ($null -ne $p0StateTool) 'P0 State must exist as an active Graphics tool.'
@@ -111,7 +112,8 @@ Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Ins
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 3) 'Nvidia Settings must remain Path B step 2.'
 Assert-BoostLabCondition ([int]$hdcpTool.Order -eq 4) 'HDCP must remain Path B step 3.'
 Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 5) 'P0 State must be Graphics order 5 as Path B step 4.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 6) 'Path A Driver Install Debloat & Settings must remain separate after P0 State.'
+Assert-BoostLabCondition ([int]$msiModeTool.Order -eq 6) 'Msi Mode must be Graphics order 6 as Path B step 5.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 7) 'Path A Driver Install Debloat & Settings must remain separate after Msi Mode.'
 Assert-BoostLabCondition ([string]$p0StateTool.Title -eq 'P0 State') 'P0 State title mismatch.'
 Assert-BoostLabCondition ([string]$p0StateTool.Type -eq 'action') 'P0 State must be an action tool.'
 Assert-BoostLabCondition ([string]$p0StateTool.RiskLevel -eq 'high') 'P0 State must remain high risk.'
@@ -140,7 +142,7 @@ foreach ($falseCapability in @(
 
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain separate from P0 State.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'p0-state' })) -eq 1) 'P0 State must be implemented as its own active tool.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 0) 'Msi Mode must remain unimplemented.'
+Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 1) 'Msi Mode must be implemented as its own active tool.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'bitlocker' })) -eq 0) 'BitLocker must remain outside active catalog.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' })) -eq 0) 'Standalone DDU must not be introduced.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' })) -eq 0) 'Loudness EQ must remain deleted.'
@@ -150,9 +152,9 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 53) "Expected 53 active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq 54) "Expected 54 active tools, found $($allTools.Count)."
 Assert-BoostLabCondition ($placeholderModules.Count -eq 18) "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 35) "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 36) "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
@@ -163,11 +165,12 @@ $remainingSourcePromoted = @(
             '2 Driver Install Latest.ps1',
             '4 Nvidia Settings.ps1',
             '5 Hdcp.ps1',
-            '6 P0 State.ps1'
+            '6 P0 State.ps1',
+            '7 Msi Mode.ps1'
         )
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 2) "Expected 2 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 1) "Expected 1 remaining unimplemented source-promoted intake candidate, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
@@ -544,11 +547,11 @@ finally {
 
 [pscustomobject]@{
     Success = $true
-    ActiveToolCount = 53
-    ImplementedToolCount = 35
+    ActiveToolCount = 54
+    ImplementedToolCount = 36
     PlaceholderToolCount = 18
     SourcePromotedMirrorFileCount = 7
-    RemainingUnimplementedSourcePromotedIntakeCandidates = 2
+    RemainingUnimplementedSourcePromotedIntakeCandidates = 1
     Message = 'P0 State controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'
     Timestamp = Get-Date
 }

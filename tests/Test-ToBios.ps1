@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -221,7 +221,7 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($tools.Count -ne 53 -or $implementedCount -ne 35 -or $placeholderCount -ne 18) {
+if ($tools.Count -ne 54 -or $implementedCount -ne 36 -or $placeholderCount -ne 18) {
     throw "Unexpected To BIOS inventory: $($tools.Count) tools, $implementedCount implemented, $placeholderCount placeholders."
 }
 
@@ -237,4 +237,5 @@ if ($tools.Count -ne 53 -or $implementedCount -ne 35 -or $placeholderCount -ne 1
     Message                 = 'To BIOS Analyze and confirmation guard validated without executing a restart.'
     Timestamp               = Get-Date
 }
+
 

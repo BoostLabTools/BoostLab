@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -97,7 +97,7 @@ $pathB = @(
         Mirror = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1'
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1'
         Hash = '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
-        FutureWork = 'NVIDIA-only targeting decision'
+        FutureWork = 'Controlled registry implementation is active'
     }
 )
 
@@ -133,7 +133,9 @@ foreach ($requiredPhrase in @(
     'mutually guided workflows',
     'warn against and prevent accidental mixing',
     'NVIDIA App features',
-    'Not implemented / design pending'
+    'Not implemented / design pending',
+    'Phase 97 current-state note',
+    'Controlled implementation active'
 )) {
     if (-not $designText.Contains($requiredPhrase)) {
         throw "NVIDIA Path B catalog design is missing required guidance: $requiredPhrase"
@@ -264,7 +266,7 @@ if (Test-Path -LiteralPath $optionalConfigPath -PathType Leaf) {
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
 $pathBTitles = @($pathB | ForEach-Object { $_.Title })
-foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State') })) {
+foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State', 'Msi Mode') })) {
     if (@($allTools | Where-Object { $_.Title -eq $title }).Count -ne 0) {
         throw "Path B source-promoted script was unexpectedly added as an active tool: $title"
     }
@@ -281,6 +283,14 @@ $hdcpTool = @($allTools | Where-Object { $_.Title -eq 'HDCP' -or $_.Id -eq 'hdcp
 if ($hdcpTool.Count -ne 1) {
     throw 'HDCP must be active exactly once as the Phase 95 controlled registry tool.'
 }
+$p0StateTool = @($allTools | Where-Object { $_.Title -eq 'P0 State' -or $_.Id -eq 'p0-state' })
+if ($p0StateTool.Count -ne 1) {
+    throw 'P0 State must be active exactly once as the Phase 96 controlled registry tool.'
+}
+$msiModeTool = @($allTools | Where-Object { $_.Title -eq 'Msi Mode' -or $_.Id -eq 'msi-mode' })
+if ($msiModeTool.Count -ne 1) {
+    throw 'Msi Mode must be active exactly once as the Phase 97 controlled registry tool.'
+}
 
 $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
@@ -290,14 +300,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 53) {
-    throw "Expected 53 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 54) {
+    throw "Expected 54 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 35) {
-    throw "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 36) {
+    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $forbiddenModuleNames = @(
@@ -409,4 +419,5 @@ if ($legacySourceHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D154
     RuntimeBehaviorChanged        = $false
     Message                       = 'NVIDIA Path B catalog design is documented and remains non-executing.'
 }
+
 

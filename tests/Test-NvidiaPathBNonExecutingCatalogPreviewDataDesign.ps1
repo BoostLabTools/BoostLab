@@ -432,7 +432,7 @@ if ($uiFilesWithPathB.Count -ne 0) {
 
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
-foreach ($title in @($pathB | Where-Object { $_.Title -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State') } | ForEach-Object { $_.Title })) {
+foreach ($title in @($pathB | Where-Object { $_.Title -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State', 'Msi Mode') } | ForEach-Object { $_.Title })) {
     if (@($allTools | Where-Object { $_.Title -eq $title }).Count -ne 0) {
         throw "Path B source-promoted script was unexpectedly added as an active tool: $title"
     }
@@ -454,17 +454,17 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 53) {
-    throw "Expected 53 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne 54) {
+    throw "Expected 54 active tools, found $($allTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 35) {
-    throw "Expected 35 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 36) {
+    throw "Expected 36 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
-foreach ($moduleName in @($pathB | Where-Object { $_.Title -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State') } | ForEach-Object { $_.ModuleName })) {
+foreach ($moduleName in @($pathB | Where-Object { $_.Title -notin @('Driver Install Latest', 'Nvidia Settings', 'Hdcp', 'P0 State', 'Msi Mode') } | ForEach-Object { $_.ModuleName })) {
     if (@(Get-ChildItem -Path $modulesRoot -Recurse -Filter "$moduleName.psm1").Count -ne 0) {
         throw "Executable tool module was unexpectedly created for Path B script: $moduleName"
     }
@@ -595,6 +595,7 @@ if ($legacySourceHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D154
     ProductionApprovalsAdded     = $false
     Message                      = 'NVIDIA Path B non-executing catalog preview data design is documented and remains non-executing.'
 }
+
 
 
 

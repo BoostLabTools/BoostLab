@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -131,7 +131,7 @@ try {
         }
     ).Count
 
-    if ($implementedCount -ne 35 -or $placeholderCount -ne 18) {
+    if ($implementedCount -ne 36 -or $placeholderCount -ne 18) {
         throw "Unexpected implementation counts: $implementedCount implemented, $placeholderCount placeholders."
     }
 
@@ -156,4 +156,5 @@ finally {
     Remove-Module -ModuleInfo $biosModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $environmentModule -Force -ErrorAction SilentlyContinue
 }
+
 

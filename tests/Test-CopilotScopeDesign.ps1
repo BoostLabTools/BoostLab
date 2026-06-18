@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -237,14 +237,14 @@ $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne 53) {
-    throw "Expected 53 active tools, found $($activeTools.Count)."
+if ($activeTools.Count -ne 54) {
+    throw "Expected 54 active tools, found $($activeTools.Count)."
 }
 if ($placeholderModules.Count -ne 18) {
     throw "Expected 18 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 35) {
-    throw "Expected 35 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 36) {
+    throw "Expected 36 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
@@ -306,5 +306,6 @@ if ($nvmeSource.Count -ne 0) {
     Message                       = 'Copilot scope design is present, linked, and non-executing.'
     Timestamp                     = Get-Date
 }
+
 
 

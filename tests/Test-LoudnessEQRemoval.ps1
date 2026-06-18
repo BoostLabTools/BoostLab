@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -33,8 +33,8 @@ $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $stages = @($configuration['Stages'] | Sort-Object { [int]$_['Order'] })
 $tools = @($stages | ForEach-Object { $_['Tools'] })
 
-if ($tools.Count -ne 53) {
-    throw "Expected 53 active tools after Phase 96, found $($tools.Count)."
+if ($tools.Count -ne 54) {
+    throw "Expected 54 active tools after Phase 96, found $($tools.Count)."
 }
 
 $loudnessTools = @(
@@ -69,8 +69,8 @@ $placeholderModules = @(
     }
 )
 if (
-    $moduleFiles.Count -ne 53 -or
-    $implementedModules.Count -ne 35 -or
+    $moduleFiles.Count -ne 54 -or
+    $implementedModules.Count -ne 36 -or
     $placeholderModules.Count -ne 18
 ) {
     throw "Unexpected Phase 95 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
@@ -167,5 +167,6 @@ foreach ($requiredText in $requiredRemovalText) {
     RemovedSourceSHA256      = '2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE'
     ProtectedFileCount       = $protectedHashes.Count
 }
+
 
 

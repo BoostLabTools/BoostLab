@@ -254,10 +254,21 @@
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
+                    Id          = 'msi-mode'
+                    Title       = 'Msi Mode'
+                    Stage       = 'Graphics'
+                    Order       = 6
+                    Type        = 'action'
+                    RiskLevel   = 'high'
+                    Description = 'Path B step 5 of 5. Apply or default the source-defined NVIDIA MSI mode registry value only after NVIDIA-only target discovery and registry state capture.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'driver-install-debloat-settings'
                     Title       = 'Driver Install Debloat & Settings'
                     Stage       = 'Graphics'
-                    Order       = 6
+                    Order       = 7
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Analyze graphics hardware and prepare a guided driver installation workflow.'
@@ -268,7 +279,7 @@
                     Id          = 'directx'
                     Title       = 'DirectX'
                     Stage       = 'Graphics'
-                    Order       = 7
+                    Order       = 8
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare the approved DirectX runtime installation.'
@@ -279,7 +290,7 @@
                     Id          = 'visual-cpp'
                     Title       = 'Visual C++'
                     Stage       = 'Graphics'
-                    Order       = 8
+                    Order       = 9
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Review and prepare approved Microsoft Visual C++ runtime installation.'
@@ -290,7 +301,7 @@
                     Id          = 'graphics-configuration-center'
                     Title       = 'Graphics Configuration Center'
                     Stage       = 'Graphics'
-                    Order       = 9
+                    Order       = 10
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the installed graphics control center for guided configuration.'

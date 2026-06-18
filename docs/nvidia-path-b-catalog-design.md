@@ -40,8 +40,14 @@ Phase 96 current-state note: `P0 State` has since been promoted as Path B step
 source-defined `DisableDynamicPstate` Apply value `DWORD 1` and Default value
 `DWORD 0` only after source checksum validation, NVIDIA-only target discovery,
 registry state capture, and verification. Restore remains unavailable without a
-selected captured-state restore flow. Msi Mode remains separate and
-unimplemented.
+selected captured-state restore flow.
+
+Phase 97 current-state note: `Msi Mode` has since been promoted as Path B step
+5 with controlled NVIDIA-only display-device Enum registry targeting. It
+preserves the source-defined `MSISupported` Apply value `DWORD 1` and Default
+value `DWORD 0` only after source checksum validation, NVIDIA-only target
+discovery, registry state capture, and verification. Restore remains unavailable
+without a selected captured-state restore flow.
 
 ## Path A vs Path B
 
@@ -79,7 +85,7 @@ Path B steps must preserve this exact order:
 | 2 | Nvidia Settings | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | `5 Graphics/4 Nvidia Settings.ps1` | Graphics | Runs after driver installation in Path B. Prepares NVIDIA registry/profile settings before focused display-device steps. | Controlled manual handoff is implemented; Auto remains blocked until 7-Zip, NVIDIA Profile Inspector, `.nip`, profile capture/restore, registry/file rollback, process, and verification approvals exist. | Downloads, installer execution, registry mutation, generated `.nip` profile data, NVIDIA Profile Inspector execution, Control Panel launch, file cleanup, Default behavior. | Manual handoff only | Required artifacts, profile import rules, registry scopes, generated-artifact ownership, process handling, verification, and Default/Restore semantics are not approved. |
 | 3 | Hdcp | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | `5 Graphics/5 Hdcp.ps1` | Graphics | Runs after broad NVIDIA settings. Applies a focused NVIDIA display-class registry behavior before P0 State. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, source-defined Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
 | 4 | P0 State | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | `5 Graphics/6 P0 State.ps1` | Graphics | Runs after Hdcp and before Msi Mode. Applies another focused NVIDIA display-class registry behavior. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
-| 5 | Msi Mode | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | `5 Graphics/7 Msi Mode.ps1` | Graphics | Final Path B step. Must not be exposed as an unordered independent graphics tweak. | Driver/profile/settings design plus NVIDIA-only targeting decision, exact display-device registry scopes, state capture, verification, and Default/Restore distinction. | Device registry discovery, interrupt-management registry mutation, display driver state, broad display-device targeting risk, AMD/Intel product-scope exclusion, Default behavior. | No | Source-style broad display-device targeting must be reconciled with NVIDIA-only scope, exact device scopes, capture, verification, and rollback policy before implementation. |
+| 5 | Msi Mode | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1` | `94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7` | `5 Graphics/7 Msi Mode.ps1` | Graphics | Final Path B step. Must not be exposed as an unordered independent graphics tweak. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display-device Enum registry discovery, interrupt-management registry mutation, display driver state, Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
 
 ## Required Future Design Work
 
@@ -147,11 +153,12 @@ The current implementation requires:
 
 ### Msi Mode
 
-Future work must define a driver/profile/settings design and a NVIDIA-only
-targeting decision because the source discovers display devices and writes
-`MSISupported` under interrupt-management registry paths.
+Phase 97 implemented a controlled NVIDIA display-device Enum registry path for
+the source-defined `MSISupported` behavior. Future work for this step is limited
+to captured-state Restore selection and any later workflow UI that links Path B
+steps together.
 
-Required future approvals include:
+The current implementation requires:
 
 * Exact display-device identity rules.
 * NVIDIA-only GPU target validation.
@@ -212,10 +219,11 @@ who want NVIDIA App features such as recording or related NVIDIA App features.
 
 Any future mixed Path A/Path B workflow requires explicit design approval.
 
-Until future implementation phases approve each step, the UI status for Path B
-must remain `Not implemented / design pending` or equivalent visual-only text.
-No visible action button should imply that these source-promoted scripts are
-safe to run.
+Until future implementation phases approve any remaining workflow UI, the UI
+status for unimplemented or design-only Path B behavior must remain
+`Not implemented / design pending` or equivalent visual-only text. No visible
+action button should imply that unapproved source-promoted behavior is safe to
+run.
 
 ## Related Source-Promoted Scripts Outside Path B
 
