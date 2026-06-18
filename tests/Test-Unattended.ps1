@@ -423,7 +423,7 @@ $implementedCount = @(
         Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }
 ).Count
 $placeholderCount = 55 - $implementedCount
-if ($implementedCount -ne 39 -or $placeholderCount -ne 16) {
+if ($implementedCount -ne 40 -or $placeholderCount -ne 15) {
     throw "Unexpected Phase 33 inventory: $implementedCount implemented, $placeholderCount placeholders."
 }
 

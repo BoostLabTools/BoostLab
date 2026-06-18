@@ -224,8 +224,8 @@ foreach ($requiredPhrase in @(
 
 foreach ($requiredPhrase in @(
     'Active tools: **55**',
-    'Implemented tools: **39**',
-    'Deferred/placeholders: **16**',
+    'Implemented tools: **40**',
+    'Deferred/placeholders: **15**',
     'Intake files: **7**',
     'Source-promoted mirror files: **7**',
     'Remaining unimplemented source-promoted intake candidates: **0 separate from official counts**',
@@ -259,11 +259,11 @@ $placeholderModules = @(
 if ($allTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($allTools.Count)."
 }
-if ($placeholderModules.Count -ne 16) {
-    throw "Expected 16 deferred/placeholders, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 15) {
+    throw "Expected 15 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 39) {
-    throw "Expected 39 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 40) {
+    throw "Expected 40 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 $dduTools = @($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })

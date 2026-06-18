@@ -437,11 +437,11 @@ $placeholderModules = @(
 if ($allTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($allTools.Count)."
 }
-if ($placeholderModules.Count -ne 16) {
-    throw "Expected 16 deferred/placeholders, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 15) {
+    throw "Expected 15 deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 39) {
-    throw "Expected 39 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne 40) {
+    throw "Expected 40 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 foreach ($moduleName in @('DriverInstallLatest', 'NvidiaSettings', 'P0State', 'MsiMode')) {

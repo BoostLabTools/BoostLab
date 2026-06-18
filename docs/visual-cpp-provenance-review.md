@@ -2,12 +2,21 @@
 
 ## Phase 46 Decision
 
-Visual C++ remains a refused placeholder. Phase 46 does not add artifact
-records, implement `Analyze` or `Apply`, enable downloads, launch installers,
-or change the current Visual C++ module.
+Phase 46 refused automated Visual C++ implementation because the source
+workflow could not pass artifact provenance and installer execution policy.
 
 The complete Ultimate workflow cannot pass the Phase 35 provenance and
 installer execution policy with the evidence available in the repository.
+
+## Phase 101 Manual Handoff Decision
+
+Visual C++ is implemented as a controlled manual-handoff tool only. Phase 101
+adds `Analyze`, `Open`, `Apply`, `Default`, and `Restore` result handling, but
+it does not approve automated downloads or installer execution.
+
+`Analyze` is read-only. `Open` prepares manual handoff instructions inside
+BoostLab only and opens no browser or external tool. `Apply` fails closed with
+`AutoBlockedUntilArtifactApproval`. `Default` and `Restore` are unavailable.
 
 ## Source Reference
 
@@ -89,11 +98,11 @@ list and operation order.
 
 * `config/ArtifactProvenance.psd1` remains empty.
 * No real Visual C++ redistributable is approved.
-* `modules/Graphics/visual-cpp.psm1` remains a placeholder.
-* No Visual C++ migration record is created because the tool is not
-  implemented.
+* `modules/Graphics/visual-cpp.psm1` is a controlled manual-handoff
+  implementation.
+* `docs/migrations/visual-cpp.md` records the manual-handoff migration.
 * No download, installer launch, registry change, temp-file cleanup, or Visual
-  C++ installation-state change is enabled by Phase 46.
+  C++ installation-state change is enabled by Phase 46 or Phase 101.
 
 ## Required Approval Package for a Future Retry
 
@@ -116,5 +125,6 @@ source-defined packages:
 9. A separately approved installer execution implementation that does not
    weaken the Phase 35 verified-path and confirmation requirements.
 
-Until the complete twelve-artifact approval package exists, Visual C++ remains
-disabled and visual-only.
+Until the complete twelve-artifact approval package exists, Visual C++ Auto
+remains blocked. The only approved BoostLab behavior is read-only analysis and
+manual handoff text prepared inside the UI.

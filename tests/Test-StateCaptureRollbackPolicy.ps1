@@ -593,8 +593,8 @@ try {
     )
     if (
         $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 39 -or
-        $placeholderModules.Count -ne 16
+        $implementedModules.Count -ne 40 -or
+        $placeholderModules.Count -ne 15
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -680,8 +680,8 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount = 39
-    PlaceholderModuleCount = 16
+    ImplementedModuleCount = 40
+    PlaceholderModuleCount = 15
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
     Timestamp                = Get-Date

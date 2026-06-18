@@ -30,8 +30,8 @@ verification, and source-defined Apply/Default behavior only.
 Current BoostLab counts after Phase 97:
 
 * Active tools: **55**
-* Implemented tools: **39**
-* Deferred/placeholders: **16**
+* Implemented tools: **40**
+* Deferred/placeholders: **15**
 * Intake files: **7**
 * Source-promoted mirror files: **7**
 * Remaining unimplemented source-promoted intake candidates: **0 separate from official counts**

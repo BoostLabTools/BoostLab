@@ -107,6 +107,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\directx.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'visual-cpp' = @{
+        RelativePath          = 'Graphics\visual-cpp.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'nvidia-settings' = @{
         RelativePath          = 'Graphics\nvidia-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
@@ -481,7 +485,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-latest') {
             0
         }
-        elseif ($toolId -in @('driver-install-debloat-settings', 'directx')) {
+        elseif ($toolId -in @('driver-install-debloat-settings', 'directx', 'visual-cpp')) {
             0
         }
         elseif ($toolId -eq 'nvidia-settings') {

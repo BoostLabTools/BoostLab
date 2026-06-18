@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **39**
-* Deferred/placeholders: **16**
+* Implemented tools: **40**
+* Deferred/placeholders: **15**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -152,7 +152,7 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **3**
-* Foundation-ready but needs artifact provenance approvals: **6**
+* Foundation-ready but needs artifact provenance approvals: **5**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
 
@@ -166,7 +166,7 @@ Current inventory:
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install registry, service, task, shortcut, config, and uninstall side effects | Download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | No approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/installers-scope-provenance-design.md` before any second attempt |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Implemented in Phase 99 as controlled manual handoff | Full Auto behavior still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | Auto remains blocked: no approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | Complete for manual handoff only | Phase 99 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` |
 | DirectX | `directx` | Graphics | Implemented in Phase 100 as controlled manual handoff | Automated source behavior downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Manual handoff pattern, download provenance, installer policy, file/registry rollback, and cleanup policy | Auto remains blocked: source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Future Auto would require immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | Complete for manual handoff only | Phase 100 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires the complete approval package in `docs/directx-provenance-review.md` |
-| Visual C++ | `visual-cpp` | Graphics | Refused placeholder after Phase 46 provenance review | Downloads twelve redistributables from mutable mirror URLs and installs every x86/x64 package with version-specific switches | Download provenance and installer policy | All source URLs are mutable branch references; no approved hashes, sizes, package versions, signers, authoritative source evidence, exit-code rules, installer execution, or temp ownership scopes | Immutable artifact sources and exact hash/size/version/signer evidence for all twelve packages, approved installer requests and exit-code rules, and exact generated-temp-path scopes | No | Foundation-ready but needs artifact provenance approvals | Keep disabled until the complete approval package in `docs/visual-cpp-provenance-review.md` exists |
+| Visual C++ | `visual-cpp` | Graphics | Implemented in Phase 101 as controlled manual handoff | Automated source behavior downloads twelve redistributables from mutable mirror URLs and installs every x86/x64 package with version-specific switches | Manual handoff pattern, download provenance, and installer policy | Auto remains blocked: all source URLs are mutable branch references; no approved hashes, sizes, package versions, signers, authoritative source evidence, exit-code rules, installer execution, or temp ownership scopes | Future Auto would require immutable artifact sources and exact hash/size/version/signer evidence for all twelve packages, approved installer requests and exit-code rules, and exact generated-temp-path scopes | Complete for manual handoff only | Phase 101 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires the complete approval package in `docs/visual-cpp-provenance-review.md` |
 | Start Menu Taskbar | `start-menu-taskbar` | Windows | Refused placeholder | Replaces layout files, deletes state, writes policy, and restarts Explorer | File/registry rollback and cleanup policy | No approved file/registry/cleanup scopes, no approved ownership rule for replaced user state | Exact file targets, exact registry targets, exact cleanup ownership rules, exact rollback design | No | Foundation-ready but needs production allowlists | Use `docs/tool-designs/start-menu-taskbar-scope-design.md` before any second attempt |
 | Copilot | `copilot` | Windows | Refused placeholder | Registry-only implementation would weaken Ultimate; full source removes/re-registers AppX and stops many processes | AppX inventory and restore foundation | No process-handling governance, no exact package/process policy for this tool | Exact package scope and a separately approved process-handling model | No | Not ready | Use `docs/tool-designs/copilot-scope-design.md`, then keep deferred until process-stop governance is defined or the tool is redesigned |
 | Bloatware | `bloatware` | Windows | Refused placeholder | Broad AppX, service, cleanup, download, and repair workflow | AppX inventory, service rollback, cleanup policy, download/installer policy | No approved package list, no approved service scopes, no approved cleanup ownership map, no unified restore design | Exact package allowlists, exact service scopes, exact cleanup scopes, any artifact approvals | No | Foundation-ready but needs tool-specific design | Use `docs/tool-designs/bloatware-scope-design.md` before any second attempt |
@@ -219,7 +219,6 @@ execution approval”:
 
 * Reinstall
 * Installers
-* Visual C++
 * Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
@@ -282,10 +281,11 @@ In conservative order:
 
 DirectX was implemented in Phase 100 as controlled manual handoff only. Auto remains blocked by the Phase 45 provenance review because its source uses mutable branch downloads and lacks hashes, signer evidence, extraction inventory, and approved installer execution required by Phase 35.
 
-Visual C++ was removed from the candidate list by the Phase 46 provenance
-review. All twelve source packages use mutable branch downloads and lack the
-complete hash, size, version, signer, authoritative-source, exit-code, and
-installer approvals required by Phase 35.
+Visual C++ was implemented in Phase 101 as controlled manual handoff only. Auto
+remains blocked by the Phase 46 provenance review because all twelve source
+packages use mutable branch downloads and lack the complete hash, size,
+version, signer, authoritative-source, exit-code, temp-file, and installer
+approvals required by Phase 35.
 
 ## Remaining Blockers
 

@@ -968,7 +968,7 @@ $allModules = @(
 )
 $implementedCount = @($allModules | Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }).Count
 $placeholderCount = @($allModules | Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1') }).Count
-if ($implementedCount -ne 39 -or $placeholderCount -ne 16) {
+if ($implementedCount -ne 40 -or $placeholderCount -ne 15) {
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 

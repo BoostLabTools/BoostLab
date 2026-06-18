@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the DirectX controlled manual handoff validator path.'
+        throw 'Unable to determine the Visual C++ controlled manual handoff validator path.'
     }
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
@@ -77,49 +77,69 @@ function Assert-BoostLabNoDuplicateWarnings {
 }
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
-$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\2 DirectX.ps1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\3 C++.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
-$migrationPath = Join-Path $ProjectRoot 'docs\migrations\directx.md'
-$provenanceReviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\visual-cpp.md'
+$provenanceReviewPath = Join-Path $ProjectRoot 'docs\visual-cpp-provenance-review.md'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $artifactPath, $productionAllowlistPath, $migrationPath, $provenanceReviewPath)) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 100 file was not found: $path"
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 101 file was not found: $path"
 }
 
-$expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
+$expectedSourceHash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "DirectX source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Visual C++ source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw
+$packageFiles = @(
+    'vcredist2005_x64.exe',
+    'vcredist2005_x86.exe',
+    'vcredist2008_x64.exe',
+    'vcredist2008_x86.exe',
+    'vcredist2010_x64.exe',
+    'vcredist2010_x86.exe',
+    'vcredist2012_x64.exe',
+    'vcredist2012_x86.exe',
+    'vcredist2013_x64.exe',
+    'vcredist2013_x86.exe',
+    'vcredist2015_2017_2019_2022_x64.exe',
+    'vcredist2015_2017_2019_2022_x86.exe'
+)
+foreach ($packageFile in $packageFiles) {
+    Assert-BoostLabTextContains -Text $sourceText -Needle "refs/heads/main/$packageFile" -Description 'Visual C++ Ultimate source package URL'
+    Assert-BoostLabTextContains -Text $sourceText -Needle "Temp\$packageFile" -Description 'Visual C++ Ultimate source temp target'
+}
 foreach ($needle in @(
-    'refs/heads/main/7zip.exe'
-    'refs/heads/main/directx.exe'
-    'DXSETUP.exe'
-    'HKEY_CURRENT_USER\Software\7-Zip\Options'
+    'vcredist2005_x86.exe" -ArgumentList "/q"',
+    'vcredist2008_x86.exe" -ArgumentList "/qb"',
+    'vcredist2010_x86.exe" -ArgumentList "/passive /norestart"',
+    'vcredist2012_x64.exe" -ArgumentList "/passive /norestart"',
+    'vcredist2013_x64.exe" -ArgumentList "/passive /norestart"',
+    'vcredist2015_2017_2019_2022_x64.exe" -ArgumentList "/passive /norestart"'
 )) {
-    Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'DirectX Ultimate source behavior'
+    Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'Visual C++ Ultimate installer behavior'
 }
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
-$directXTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'directx' })[0]
-Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX is missing from Graphics stage.'
-Assert-BoostLabCondition ([string]$directXTool.Title -eq 'DirectX') 'DirectX title mismatch.'
-Assert-BoostLabCondition ([int]$directXTool.Order -eq 8) 'DirectX must remain Graphics order 8.'
-Assert-BoostLabCondition ([string]$directXTool.Type -eq 'assistant') 'DirectX must be an assistant.'
-Assert-BoostLabCondition ([string]$directXTool.RiskLevel -eq 'high') 'DirectX must remain high risk.'
-Assert-BoostLabCondition ((@($directXTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'DirectX must expose canonical Analyze/Open/Apply/Default/Restore actions.'
-Assert-BoostLabTextContains -Text ([string]$directXTool.Description) -Needle 'Controlled manual handoff only' -Description 'DirectX description'
+$visualCppTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'visual-cpp' })[0]
+Assert-BoostLabCondition ($null -ne $visualCppTool) 'Visual C++ is missing from Graphics stage.'
+Assert-BoostLabCondition ([string]$visualCppTool.Title -eq 'Visual C++') 'Visual C++ title mismatch.'
+Assert-BoostLabCondition ([int]$visualCppTool.Order -eq 9) 'Visual C++ must remain Graphics order 9.'
+Assert-BoostLabCondition ([string]$visualCppTool.Type -eq 'assistant') 'Visual C++ must be an assistant.'
+Assert-BoostLabCondition ([string]$visualCppTool.RiskLevel -eq 'high') 'Visual C++ must remain high risk.'
+Assert-BoostLabCondition ((@($visualCppTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'Visual C++ must expose canonical Analyze/Open/Apply/Default/Restore actions.'
+Assert-BoostLabTextContains -Text ([string]$visualCppTool.Description) -Needle 'Controlled manual handoff only' -Description 'Visual C++ description'
 
-$capabilities = $directXTool.Capabilities
-Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'DirectX manual handoff should require explicit confirmation.'
+$capabilities = $visualCppTool.Capabilities
+Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'Visual C++ manual handoff should require explicit confirmation.'
 foreach ($falseCapability in @(
     'RequiresAdmin',
     'RequiresInternet',
@@ -136,7 +156,7 @@ foreach ($falseCapability in @(
     'SupportsDefault',
     'SupportsRestore'
 )) {
-    Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "DirectX capability should be false: $falseCapability"
+    Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "Visual C++ capability should be false: $falseCapability"
 }
 
 $placeholderModules = @(
@@ -166,8 +186,8 @@ Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 rema
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
-    "'directx'"
-    "Graphics\directx.psm1"
+    "'visual-cpp'"
+    "Graphics\visual-cpp.psm1"
     "'Analyze', 'Open', 'Apply', 'Default', 'Restore'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Execution registry'
@@ -178,14 +198,14 @@ Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply',
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action plan ValidateSet must not include display label Manual Handoff.'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action plan ValidateSet must not include display label Apply Auto.'
 foreach ($needle in @(
-    'Prepare DirectX manual handoff instructions only'
-    'Auto mode is blocked for DirectX'
-    'Do not open a browser, external tool, 7-Zip installer, DirectX runtime package, extraction tool, or DirectX setup executable.'
-    'Do not download 7-Zip or DirectX artifacts.'
-    'No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurs.'
-    'DirectX Restore requires selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract.'
+    'Prepare Visual C++ manual handoff instructions only'
+    'Auto mode is blocked for Visual C++'
+    'Do not open a browser, external tool, Visual C++ redistributable package, or Visual C++ installer executable.'
+    'Do not download Visual C++ artifacts.'
+    'No browser, external tool, Visual C++ download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurs.'
+    'Visual C++ Restore requires selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract.'
 )) {
-    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'DirectX action plan wording'
+    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Visual C++ action plan wording'
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
@@ -200,12 +220,13 @@ foreach ($needle in @(
     'NoDownloadOccurred'
     'NoInstallerExecutionOccurred'
     'NoExternalProcessStarted'
+    'NoPackageMutationOccurred'
+    'NoTempFileMutationOccurred'
     'NoRegistryMutationOccurred'
-    'NoShortcutMutationOccurred'
     'NoFileCleanupOccurred'
     'NoSystemMutationOccurred'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'DirectX module text'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Visual C++ module text'
 }
 
 foreach ($commandPattern in @(
@@ -223,13 +244,13 @@ foreach ($commandPattern in @(
     '(?im)^\s*shutdown\b',
     '(?im)^\s*Restart-Computer\b'
 )) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "DirectX module contains prohibited executable command pattern: $commandPattern"
+    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "Visual C++ module contains prohibited executable command pattern: $commandPattern"
 }
 
 $module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
-    Assert-BoostLabCondition ([string]$info.Id -eq 'directx') 'Module info Id mismatch.'
+    Assert-BoostLabCondition ([string]$info.Id -eq 'visual-cpp') 'Module info Id mismatch.'
     Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Implemented actions mismatch.'
     Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Confirmation actions mismatch.'
 
@@ -245,8 +266,9 @@ try {
         'NoDownloadOccurred',
         'NoInstallerExecutionOccurred',
         'NoExternalProcessStarted',
+        'NoPackageMutationOccurred',
+        'NoTempFileMutationOccurred',
         'NoRegistryMutationOccurred',
-        'NoShortcutMutationOccurred',
         'NoFileCleanupOccurred',
         'NoSystemMutationOccurred'
     )) {
@@ -255,14 +277,13 @@ try {
     Assert-BoostLabNoDuplicateWarnings -Result $analysis -Description 'Analyze'
 
     foreach ($approval in @(
-        '7-Zip artifact SHA-256, size, signer, and redistributability approval',
-        '7-Zip installer execution descriptor approval',
-        'Immutable DirectX runtime artifact source approval',
-        'DirectX artifact SHA-256, size, signer, and redistributability approval',
-        'DirectX extraction inventory and generated-temp-path approval',
-        'Extracted DXSETUP executable provenance approval',
-        'DirectX setup execution descriptor approval',
-        'File, shortcut, registry, and cleanup scope approval'
+        'Immutable Visual C++ redistributable artifact source approval for all twelve packages',
+        'Visual C++ package SHA-256, size, version, architecture, signer, and redistributability approval for every package',
+        'Visual C++ installer execution descriptor approval for every source-defined switch',
+        'Visual C++ installer exit-code interpretation approval',
+        'Generated temp-file ownership, verification, and cleanup scope approval',
+        'Artifact provenance records tied to visual-cpp',
+        'Installer timeout, logging, and rollback/support approval'
     )) {
         Assert-BoostLabCondition ($approval -in @($analysis.Data.MissingApprovals)) "Missing approval was not reported: $approval"
     }
@@ -280,12 +301,11 @@ try {
     foreach ($messagePart in @(
         'No browser',
         'external tool',
-        '7-Zip download/install',
-        'DirectX download',
-        'extraction',
-        'setup launch',
+        'Visual C++ download',
+        'installer launch',
+        'package change',
         'registry change',
-        'shortcut cleanup',
+        'temp-file change',
         'file cleanup',
         'system mutation'
     )) {
@@ -311,7 +331,7 @@ try {
     $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
     Assert-BoostLabCondition (-not [bool]$restore.Success) 'Restore must fail closed.'
     Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'Restore status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured artifact, registry, shortcut, file, installer, and cleanup state' -Description 'Restore message'
+    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured artifact, package, registry, temp-file, installer, and cleanup state' -Description 'Restore message'
 }
 finally {
     Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
@@ -324,12 +344,12 @@ $stateModule = Import-Module -Name (Join-Path $ProjectRoot 'core\State.psm1') -F
 Initialize-BoostLabState | Out-Null
 $executionModule = Import-Module -Name $executionPath -Force -PassThru -ErrorAction Stop
 try {
-    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Analyze'
+    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Analyze'
     Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without running any DirectX or 7-Zip workflow' -Description 'Runtime Analyze Action Plan summary'
+    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without running any Visual C++ workflow' -Description 'Runtime Analyze Action Plan summary'
     Assert-BoostLabNoDuplicateWarnings -Result $runtimeAnalyze -Description 'Runtime Analyze'
 
-    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Open'
+    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Open'
     Assert-BoostLabCondition (-not [bool]$runtimeOpen.Success) 'Runtime Open without confirmation should be gated.'
     Assert-BoostLabCondition ([bool]$runtimeOpen.Cancelled) 'Runtime Open should be cancelled when confirmation is missing.'
     Assert-BoostLabCondition ($null -ne $runtimeOpen.ActionPlan) 'Runtime Open should include an Action Plan.'
@@ -342,8 +362,8 @@ try {
     foreach ($needle in @(
         'manual handoff instructions only',
         'Do not open a browser',
-        'Do not download 7-Zip or DirectX artifacts',
-        'Do not install 7-Zip',
+        'Do not download Visual C++ artifacts',
+        'Do not launch Visual C++ installers',
         'No browser, external tool',
         'system mutation occurs'
     )) {
@@ -351,7 +371,7 @@ try {
     }
     Assert-BoostLabCondition (-not $runtimeOpenPlanText.Contains('approved external resource may be opened')) 'Runtime Open Action Plan must not use generic external resource wording.'
 
-    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Apply' -RiskConfirmed
+    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Apply' -RiskConfirmed
     Assert-BoostLabCondition (-not [bool]$runtimeApply.Success) 'Runtime Apply should fail closed.'
     Assert-BoostLabCondition ([string]$runtimeApply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply status mismatch.'
     $runtimeApplyPlanText = @(
@@ -363,12 +383,12 @@ try {
     foreach ($needle in @(
         'Auto mode is blocked',
         'will not execute Auto behavior',
-        'Report missing 7-Zip artifact',
+        'Report missing twelve-package Visual C++ artifact provenance',
         'No approved Auto behavior'
     )) {
         Assert-BoostLabTextContains -Text $runtimeApplyPlanText -Needle $needle -Description 'Runtime Apply Action Plan'
     }
-    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved DirectX behavior')) 'Runtime Apply plan must not use generic Apply wording.'
+    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved Visual C++ behavior')) 'Runtime Apply plan must not use generic Apply wording.'
 }
 finally {
     Remove-Module -ModuleInfo $executionModule -Force -ErrorAction SilentlyContinue
@@ -377,11 +397,11 @@ finally {
     $env:ProgramData = $originalProgramData
 }
 
-$artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
 $artifactText = Get-Content -LiteralPath $artifactPath -Raw
-foreach ($forbiddenArtifactText in @('directx.exe', 'DXSETUP.exe', '7zip.exe', '7-Zip', 'FR33THYFR33THY')) {
-    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to DirectX: $forbiddenArtifactText"
+foreach ($forbiddenArtifactText in @('visual-cpp.exe', 'vcredist', 'Visual C++', 'FR33THYFR33THY')) {
+    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to Visual C++: $forbiddenArtifactText"
 }
+$artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
 if ($artifactConfig.ContainsKey('Artifacts')) {
     Assert-BoostLabCondition (@($artifactConfig.Artifacts).Count -eq 0) 'Production artifact approvals should remain empty.'
 }
@@ -399,13 +419,13 @@ foreach ($deletedPath in @(
 }
 
 [pscustomobject]@{
-    TestName                                     = 'DirectX controlled manual handoff implementation'
+    TestName                                     = 'Visual C++ controlled manual handoff implementation'
     ActiveTools                                  = $allTools.Count
     ImplementedTools                             = $allTools.Count - $placeholderModules.Count
     DeferredPlaceholders                         = $placeholderModules.Count
     SourcePromotedMirrorFiles                    = $sourcePromotedFiles.Count
     RemainingUnimplementedSourcePromotedCandidates = $remainingSourcePromoted.Count
     SourceHash                                   = $actualSourceHash
-    DirectXActions                               = @($directXTool.Actions)
+    VisualCppActions                              = @($visualCppTool.Actions)
     AutoMode                                     = 'AutoBlockedUntilArtifactApproval'
 }

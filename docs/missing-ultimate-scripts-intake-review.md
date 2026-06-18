@@ -16,8 +16,8 @@ review only.
 Current BoostLab counts after Phase 99:
 
 * Active tools: **55**
-* Implemented tools: **39**
-* Deferred/placeholders: **16**
+* Implemented tools: **40**
+* Deferred/placeholders: **15**
 * Intake candidate scripts reviewed here: **7**
 * Remaining unimplemented source-promoted intake candidates: **0**
 

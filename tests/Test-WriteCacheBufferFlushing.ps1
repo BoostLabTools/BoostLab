@@ -413,8 +413,8 @@ try {
         }
     )
     Assert-BoostLabCondition ($allModules.Count -eq 55) "Expected 55 active modules, found $($allModules.Count)."
-    Assert-BoostLabCondition ($implementedModules.Count -eq 39) "Expected 39 implemented modules, found $($implementedModules.Count)."
-    Assert-BoostLabCondition ($placeholderModules.Count -eq 16) "Expected 16 placeholder modules, found $($placeholderModules.Count)."
+    Assert-BoostLabCondition ($implementedModules.Count -eq 40) "Expected 40 implemented modules, found $($implementedModules.Count)."
+    Assert-BoostLabCondition ($placeholderModules.Count -eq 15) "Expected 15 placeholder modules, found $($placeholderModules.Count)."
 
     Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
     Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*NVME Faster Driver*.ps1').Count -eq 0) 'NVME Faster Driver source was reintroduced.'

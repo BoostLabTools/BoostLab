@@ -619,13 +619,13 @@ try {
     if ($allTools.Count -ne 55) {
         $errors.Add("Expected 55 active tools, found $($allTools.Count).")
     }
-    if ($placeholderModules.Count -ne 16) {
+    if ($placeholderModules.Count -ne 15) {
         $errors.Add(
-            "Expected 16 placeholder modules, found $($placeholderModules.Count)."
+            "Expected 15 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 39) {
-        $errors.Add('Implemented tool count changed from 30.')
+    if (($allTools.Count - $placeholderModules.Count) -ne 40) {
+        $errors.Add('Implemented tool count changed from 40.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
         if ($deletedTool -in @($allTools.Title)) {
@@ -682,8 +682,8 @@ if ($errors.Count -gt 0) {
     ProcessStarted             = $false
     CommandExecuted            = $false
     ActiveToolCount            = 55
-    ImplementedToolCount      = 39
-    PlaceholderToolCount      = 16
+    ImplementedToolCount      = 40
+    PlaceholderToolCount      = 15
     SourceUltimateUnchanged    = $true
     Message                    = 'TrustedInstaller foundation is deny-by-default and non-executing.'
     Timestamp                  = Get-Date

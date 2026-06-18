@@ -140,7 +140,7 @@ foreach ($requiredPhrase in @(
 
 $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 foreach ($requiredPhrase in @(
-    'Foundation-ready but needs artifact provenance approvals: **6**'
+    'Foundation-ready but needs artifact provenance approvals: **5**'
     'Candidate for next implementation attempt: **0**'
     'Implemented in Phase 100 as controlled manual handoff'
     'Phase 100 manual handoff complete; Auto remains blocked'
@@ -188,8 +188,8 @@ $placeholderModules = @(
 )
 Assert-BoostLabCondition ($tools.Count -eq 55) "Expected 55 active tools, found $($tools.Count)."
 Assert-BoostLabCondition ($allModules.Count -eq 55) "Expected 55 modules, found $($allModules.Count)."
-Assert-BoostLabCondition ($implementedModules.Count -eq 39) "Expected 39 implemented modules, found $($implementedModules.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq 16) "Expected 16 placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition ($implementedModules.Count -eq 40) "Expected 40 implemented modules, found $($implementedModules.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq 15) "Expected 15 placeholder modules, found $($placeholderModules.Count)."
 
 $activeNames = @(
     $tools | ForEach-Object {

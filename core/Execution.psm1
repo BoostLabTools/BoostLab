@@ -92,6 +92,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\directx.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
+    'visual-cpp' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\visual-cpp.psm1'
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')
