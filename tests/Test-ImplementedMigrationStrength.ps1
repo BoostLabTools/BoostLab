@@ -244,10 +244,20 @@ foreach ($toolName in $implementedTools.Keys) {
                 '[System.Uri]::EscapeDataString'
                 'https://www.google.com/search?q='
                 'Start-Process $searchUrl'
-                '''BIOS update'''
+                'Get-BoostLabBiosInformationSearchQuery'
+                'MotherboardModelUnavailable'
             )) {
                 if (-not $moduleSource.Contains($requiredText)) {
                     throw "BIOS Information redesigned assistant behavior is missing: $requiredText"
+                }
+            }
+            foreach ($forbiddenText in @(
+                '$analysis.MotherboardManufacturer'
+                '$analysis.BiosVersion'
+                '''BIOS update'''
+            )) {
+                if ($moduleSource.Contains($forbiddenText)) {
+                    throw "BIOS Information Open query includes widened source behavior: $forbiddenText"
                 }
             }
         }

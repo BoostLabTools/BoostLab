@@ -14,7 +14,7 @@ Read the motherboard product with `Get-CimInstance Win32_BaseBoard`, escape it f
 
 ## Approved BoostLab Behavior
 
-`Analyze` performs read-only collection of motherboard, BIOS, system, Secure Boot, TPM, CPU, and Windows information. `Open` launches an escaped Google search for BIOS update information using detected motherboard and BIOS values. It does not download or run an updater.
+`Analyze` performs read-only collection of motherboard, BIOS, system, Secure Boot, TPM, CPU, and Windows information. `Open` launches an escaped Google search using only the detected motherboard/baseboard product model. It does not download or run an updater.
 
 ## Preserved Commands
 
@@ -24,7 +24,7 @@ Read the motherboard product with `Get-CimInstance Win32_BaseBoard`, escape it f
 
 ## Intentional Deviations
 
-The assistant collects additional read-only information and adds an explicit `Analyze` action. The search query is more specific than the original product-only query. Internet availability and individual detection failures are handled gracefully.
+The assistant collects additional read-only information and adds an explicit `Analyze` action. The `Open` search query preserves the original product-only source behavior. Internet availability and individual detection failures are handled gracefully. If the motherboard/baseboard product model is unavailable, `Open` fails closed with `MotherboardModelUnavailable` instead of broadening the query with vendor, BIOS version, or generic update text.
 
 ## Side Effects
 

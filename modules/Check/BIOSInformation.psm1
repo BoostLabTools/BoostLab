@@ -220,6 +220,24 @@ function Get-BoostLabBiosAnalysis {
     }
 }
 
+function Get-BoostLabBiosInformationSearchQuery {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Analysis
+    )
+
+    $motherboardModel = Get-BoostLabKnownValue -Value (
+        Get-BoostLabObjectPropertyValue -InputObject $Analysis -PropertyName 'MotherboardModel'
+    )
+    if ($motherboardModel -eq 'Unknown') {
+        return ''
+    }
+
+    return $motherboardModel
+}
+
 function Test-BoostLabBiosInternet {
     try {
         $internetCommand = Get-Command -Name 'Test-BoostLabInternet' -ErrorAction SilentlyContinue
@@ -331,13 +349,22 @@ function Invoke-BoostLabToolAction {
     }
 
     $analysis = Get-BoostLabBiosAnalysis
-    $queryParts = @(
-        $analysis.MotherboardManufacturer
-        $analysis.MotherboardModel
-        $analysis.BiosVersion
-        'BIOS update'
-    ) | Where-Object { $_ -ne 'Unknown' -and -not [string]::IsNullOrWhiteSpace($_) }
-    $searchQuery = $queryParts -join ' '
+    $searchQuery = Get-BoostLabBiosInformationSearchQuery -Analysis $analysis
+    if ([string]::IsNullOrWhiteSpace($searchQuery)) {
+        return [pscustomobject]@{
+            Success         = $false
+            ToolId          = [string]$script:BoostLabToolMetadata['Id']
+            ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
+            Action          = 'Open'
+            Message         = 'MotherboardModelUnavailable'
+            RestartRequired = $false
+            Timestamp       = Get-Date
+            Data            = [pscustomobject]@{
+                Reason = 'A reliable motherboard/baseboard product model was not detected.'
+            }
+        }
+    }
+
     $escapedQuery = [System.Uri]::EscapeDataString($searchQuery)
     $searchUrl = "https://www.google.com/search?q=$escapedQuery"
 
@@ -388,4 +415,4 @@ function Restore-BoostLabToolDefault {
     }
 }
 
-Export-ModuleMember -Function @('Get-BoostLabToolInfo', 'Test-BoostLabToolCompatibility', 'Get-BoostLabToolState', 'Invoke-BoostLabToolAction', 'Restore-BoostLabToolDefault')
+Export-ModuleMember -Function @('Get-BoostLabToolInfo', 'Test-BoostLabToolCompatibility', 'Get-BoostLabToolState', 'Invoke-BoostLabToolAction', 'Restore-BoostLabToolDefault', 'Get-BoostLabBiosInformationSearchQuery')

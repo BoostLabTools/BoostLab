@@ -63,6 +63,17 @@ try {
     $compatibility = Test-BiosToolBoostLabToolCompatibility
     $analysisResult = Invoke-BiosToolBoostLabToolAction -ActionName 'Analyze'
     $blockedResult = Invoke-BiosToolBoostLabToolAction -ActionName 'Apply'
+    $msiQuery = Get-BiosToolBoostLabBiosInformationSearchQuery -Analysis ([pscustomobject]@{
+        MotherboardManufacturer = 'Micro-Star International Co., Ltd.'
+        MotherboardModel        = 'MS-B9331'
+        BiosManufacturer        = 'American Megatrends International, LLC.'
+        BiosVersion             = '8.10'
+    })
+    $missingModelQuery = Get-BiosToolBoostLabBiosInformationSearchQuery -Analysis ([pscustomobject]@{
+        MotherboardManufacturer = 'Micro-Star International Co., Ltd.'
+        MotherboardModel        = 'Unknown'
+        BiosVersion             = '8.10'
+    })
 
     if (-not $compatibility.Supported) {
         throw 'BIOS Information compatibility must be supported.'
@@ -110,6 +121,23 @@ try {
     if ($blockedResult.Success) {
         throw 'BIOS Information allowed an unsupported action.'
     }
+    if ($msiQuery -ne 'MS-B9331') {
+        throw "BIOS Information Open query builder returned '$msiQuery' instead of 'MS-B9331'."
+    }
+    foreach ($forbiddenQueryText in @(
+        'Micro-Star'
+        'International'
+        '8.10'
+        'BIOS'
+        'BIOS update'
+    )) {
+        if ($msiQuery.Contains($forbiddenQueryText)) {
+            throw "BIOS Information Open query includes forbidden text: $forbiddenQueryText"
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($missingModelQuery)) {
+        throw 'BIOS Information Open query builder must not broaden the query when motherboard model is unavailable.'
+    }
 
     $allModules = @(
         Get-ChildItem `
@@ -142,12 +170,25 @@ try {
     if ($biosSource.Contains('source-ultimate')) {
         throw 'BIOS Information references source-ultimate.'
     }
+    foreach ($forbiddenSourceText in @(
+        '$analysis.MotherboardManufacturer'
+        '$analysis.BiosVersion'
+        '''BIOS update'''
+    )) {
+        if ($biosSource.Contains($forbiddenSourceText)) {
+            throw "BIOS Information Open query must not include widened query term: $forbiddenSourceText"
+        }
+    }
+    if (-not $biosSource.Contains('MotherboardModelUnavailable')) {
+        throw 'BIOS Information Open must fail closed when the motherboard model is unavailable.'
+    }
 
     [pscustomobject]@{
         Success             = $true
         ToolId              = $toolInfo.Id
         ImplementedActions  = @($toolInfo.ImplementedActions)
         AnalysisFieldCount  = $requiredDataFields.Count
+        ExampleOpenQuery    = $msiQuery
         ImplementedModules  = $implementedCount
         PlaceholderModules  = $placeholderCount
         OpenActionExecuted  = $false
