@@ -10,10 +10,10 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 17
+        NearParityControlled = 18
         ControlledSubset = 2
         ManualHandoffOnly = 8
-        SecurityAssistantOnly = 1
+        SecurityAssistantOnly = 0
         DeferredForParityWork = 11
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
@@ -222,13 +222,13 @@
             DisplayName = 'BitLocker'
             Stage = 'Setup'
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'SecurityAssistantOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Needs explicit Yazan BitLocker mutation, recovery-key, protector, decryption, volume-selection, verification, support, Default, and Restore policy; source Off disables matched BitLocker volumes and source On is UI/status-only.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved GUI confirmation and test-safe execution mechanics around source-equivalent BitLocker Off and On/status behavior; Default and Restore remain unavailable because the source defines no captured-state semantics.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'DeferredNeedsYazanDecision'
-            NextParityAction = 'Ask Yazan for BitLocker final policy decision before continuing.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'installers'

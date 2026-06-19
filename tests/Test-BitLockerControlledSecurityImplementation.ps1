@@ -24,7 +24,6 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
     param(
@@ -57,18 +56,9 @@ function Assert-BoostLabTextContains {
     }
 }
 
-function Get-BoostLabItemCount {
-    param(
-        [AllowNull()]
-        [object]$Value
-    )
-
-    if ($null -eq $Value) {
-        return 0
-    }
-
-    return @($Value).Count
-}
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+$inventoryBaseline = $inventoryAssertion.Baseline
+$inventorySnapshot = $inventoryAssertion.Snapshot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
@@ -79,8 +69,6 @@ $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $migrationRecordPath = Join-Path $ProjectRoot 'docs\migrations\bitlocker.md'
-$modulesRoot = Join-Path $ProjectRoot 'modules'
-$sourcePromotedRoot = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate'
 
 foreach ($path in @(
     $configPath,
@@ -93,7 +81,7 @@ foreach ($path in @(
     $productionAllowlistPath,
     $migrationRecordPath
 )) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 98 file is missing: $path"
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required BitLocker file is missing: $path"
 }
 
 $expectedSourceHash = '1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1'
@@ -110,8 +98,8 @@ Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 9) 'BitLocker must use t
 Assert-BoostLabCondition ([string]$bitLockerTool.Type -eq 'assistant') 'BitLocker must remain an assistant.'
 Assert-BoostLabCondition ([string]$bitLockerTool.RiskLevel -eq 'high') 'BitLocker must remain high risk.'
 Assert-BoostLabCondition ((@($bitLockerTool.Actions) -join '|') -eq 'Analyze|Apply|Default|Restore|Open') 'BitLocker must expose only canonical Analyze, Apply, Default, Restore, and Open actions.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($setupTools | Where-Object { $_.Id -eq 'bitlocker' })) -eq 1) 'BitLocker must appear exactly once in Setup.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Stage -eq 'Graphics' -and $_.Id -eq 'bitlocker' })) -eq 0) 'BitLocker must not be merged into NVIDIA Path B.'
+Assert-BoostLabCondition (@($setupTools | Where-Object { $_.Id -eq 'bitlocker' }).Count -eq 1) 'BitLocker must appear exactly once in Setup.'
+Assert-BoostLabCondition (@($allTools | Where-Object { $_.Stage -eq 'Graphics' -and $_.Id -eq 'bitlocker' }).Count -eq 0) 'BitLocker must not be merged into NVIDIA Path B.'
 
 $caps = $bitLockerTool.Capabilities
 Assert-BoostLabCondition ([bool]$caps.RequiresAdmin) 'BitLocker must preserve Administrator capability.'
@@ -134,33 +122,14 @@ foreach ($falseCapability in @(
     Assert-BoostLabCondition (-not [bool]$caps[$falseCapability]) "BitLocker capability should be false: $falseCapability"
 }
 
-$placeholderModules = @(
-    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
-        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
-)
-Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
-
-$sourcePromotedFiles = @(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File)
-Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq $inventoryBaseline.SourcePromotedMirrorFiles) "Expected $($inventoryBaseline.SourcePromotedMirrorFiles) source-promoted mirror files, found $($sourcePromotedFiles.Count)."
-$remainingSourcePromoted = @(
-    $sourcePromotedFiles | Where-Object {
-        $_.Name -notin @(
-            '1 Driver Clean.ps1'
-            '2 Driver Install Latest.ps1'
-            '4 Nvidia Settings.ps1'
-            '5 Hdcp.ps1'
-            '6 P0 State.ps1'
-            '7 Msi Mode.ps1'
-            '1 BitLocker.ps1'
-        )
-    }
-)
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' })) -eq 0) 'Standalone DDU must not be introduced.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' })) -eq 0) 'Loudness EQ must remain deleted.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'NVME Faster Driver' -or $_.Id -eq 'nvme-faster-driver' })) -eq 0) 'NVME Faster Driver must remain deleted.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq [int]$inventoryBaseline.SourcePromotedMirrorFiles) 'Source-promoted mirror count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.RemainingSourcePromotedIntakeCandidates -eq [int]$inventoryBaseline.RemainingSourcePromotedIntakeCandidates) 'Remaining source-promoted intake count changed.'
+Assert-BoostLabCondition (@($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' }).Count -eq 0) 'Standalone DDU must not be introduced.'
+Assert-BoostLabCondition (@($allTools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' }).Count -eq 0) 'Loudness EQ must remain deleted.'
+Assert-BoostLabCondition (@($allTools | Where-Object { $_.Title -eq 'NVME Faster Driver' -or $_.Id -eq 'nvme-faster-driver' }).Count -eq 0) 'NVME Faster Driver must remain deleted.'
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
@@ -175,160 +144,77 @@ $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened for BitLocker.'
 foreach ($needle in @(
-    'Analyze BitLocker volume state read-only',
-    'Prepare BitLocker manual handoff guidance only',
-    'Block the source Off branch because it disables BitLocker',
-    'Block Default because the source On branch is UI/status-only',
-    'Block Restore because no captured BitLocker state restore contract exists',
-    'Do not open BitLocker Control Panel, a browser, manage-bde, PowerShell BitLocker commands, or any external tool.',
-    'No Disable-BitLocker, Enable-BitLocker, manage-bde, decrypt, suspend/resume, protector, recovery-key, external process, registry, or reboot operation occurs.'
+    'Run the source-equivalent BitLocker On/status branch',
+    'Open BitLocker Drive Encryption Control Panel with control.exe /name microsoft.bitlockerdriveencryption.',
+    'Run manage-bde -status for source-equivalent status output.',
+    'Run the source-equivalent BitLocker Off branch',
+    'Query Get-BitLockerVolume and filter volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted.',
+    'Run Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue only for the filtered target MountPoints.',
+    'Block Default before any operational step.',
+    'Block Restore before any operational step.'
 )) {
     Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'BitLocker action plan'
 }
 
-$moduleText = Get-Content -LiteralPath $modulePath -Raw
-foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'', ''Open'')',
-    $expectedSourceHash,
-    'Get-BitLockerVolume',
-    'NeedsSecurityDecision',
-    'NeedsRecoveryKeyPolicy',
-    'NeedsEncryptionStateContract',
-    'ManualHandoffOnly',
-    'DefaultUnavailable',
-    'RestoreUnavailable',
-    'NoSilentEnableDisableDecryptSuspendOrProtectorMutation',
-    'BitLocker remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
-)) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'BitLocker module'
-}
-
-$tokens = $null
-$parseErrors = $null
-$ast = [System.Management.Automation.Language.Parser]::ParseFile($modulePath, [ref]$tokens, [ref]$parseErrors)
-$actualParseErrors = @($parseErrors | Where-Object { $null -ne $_ })
-Assert-BoostLabCondition ($actualParseErrors.Count -eq 0) "BitLocker module parse errors: $(@($actualParseErrors | ForEach-Object { $_.Message }) -join '; ')"
-$commands = @(
-    $ast.FindAll(
-        { param($node) $node -is [System.Management.Automation.Language.CommandAst] },
-        $true
-    ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
-)
-foreach ($forbiddenCommand in @(
-    'Disable-BitLocker',
-    'Enable-BitLocker',
-    'Suspend-BitLocker',
-    'Resume-BitLocker',
-    'Unlock-BitLocker',
-    'Remove-BitLockerKeyProtector',
-    'Add-BitLockerKeyProtector',
-    'manage-bde',
-    'Start-Process',
-    'Set-ItemProperty',
-    'New-ItemProperty',
-    'Remove-ItemProperty',
-    'Restart-Computer',
-    'bcdedit'
-)) {
-    Assert-BoostLabCondition ($forbiddenCommand -notin $commands) "BitLocker module must not execute command: $forbiddenCommand"
-}
-
-$artifactText = Get-Content -LiteralPath $artifactPath -Raw
-$allowlistText = Get-Content -LiteralPath $productionAllowlistPath -Raw
-Assert-BoostLabCondition (-not $artifactText.Contains('bitlocker')) 'BitLocker must not add artifact provenance approvals.'
-Assert-BoostLabCondition (-not $allowlistText.Contains('bitlocker')) 'BitLocker must not add production allowlist approvals.'
-
 $actionPlanModule = Import-Module -Name $actionPlanPath -Force -PassThru -Scope Local -ErrorAction Stop
 $bitLockerModule = Import-Module -Name $modulePath -Force -PassThru -Scope Local -ErrorAction Stop
 try {
-    $analysisPlan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName 'Analyze'
-    Assert-BoostLabCondition ([bool]$analysisPlan.NeedsExplicitConfirmation) 'BitLocker Analyze plan must preserve high-risk confirmation metadata.'
-    Assert-BoostLabCondition ((@($analysisPlan.PlannedChanges) -join ' ') -match 'no external process|Perform no external process') 'BitLocker Analyze plan must be read-only.'
-
-    $openPlan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName 'Open'
-    $openPlanText = @(
-        @($openPlan.PlannedChanges)
-        @($openPlan.SideEffects)
-        $openPlan.ConfirmationMessage
-    ) -join ' '
-    foreach ($needle in @(
-        'manual BitLocker handoff instructions only',
-        'Do not open BitLocker Control Panel',
-        'do not open BitLocker Control Panel',
-        'no BitLocker state',
-        'run manage-bde'
-    )) {
-        Assert-BoostLabCondition ($openPlanText -match [regex]::Escape($needle)) "BitLocker Open plan missing: $needle"
-    }
-    foreach ($forbiddenOpenText in @(
-        'approved external resource may be opened',
-        'A Windows interface or approved external resource may be opened.'
-    )) {
-        Assert-BoostLabCondition (-not $openPlanText.Contains($forbiddenOpenText)) "BitLocker Open plan must not claim external resource behavior: $forbiddenOpenText"
+    foreach ($blockedAction in @('Default', 'Restore')) {
+        $plan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName $blockedAction
+        $planText = @(@($plan.PlannedChanges), @($plan.SideEffects), $plan.ConfirmationMessage) -join ' '
+        Assert-BoostLabCondition (-not $planText.Contains('Modify approved Windows security configuration.')) "BitLocker $blockedAction plan must not claim planned security mutation."
     }
 
-    $applyPlan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName 'Apply'
-    $applyPlanText = @(
-        @($applyPlan.PlannedChanges)
-        @($applyPlan.SideEffects)
-        $applyPlan.ConfirmationMessage
-    ) -join ' '
+    $moduleText = Get-Content -LiteralPath $modulePath -Raw
     foreach ($needle in @(
-        'Block Apply before any operational step',
-        'Do not execute the source Off branch',
-        'recovery-key',
-        'No Disable-BitLocker'
+        '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'', ''Open'')',
+        $expectedSourceHash,
+        'Get-BitLockerVolume',
+        'Disable-BitLocker -MountPoint $MountPoint -ErrorAction SilentlyContinue',
+        'Start-Process -FilePath ''control.exe'' -ArgumentList ''/name microsoft.bitlockerdriveencryption''',
+        'manage-bde -status',
+        'SourceEquivalentControlled',
+        'SourceEquivalentOffAvailable',
+        'SourceEquivalentOnStatusAvailable',
+        'DefaultUnavailable',
+        'RestoreUnavailable',
+        'BitLocker remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
     )) {
-        Assert-BoostLabCondition ($applyPlanText -match [regex]::Escape($needle)) "BitLocker Apply plan missing: $needle"
+        Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'BitLocker module'
     }
-    foreach ($forbiddenBlockedText in @(
-        'Modify approved Windows security configuration.',
-        'Security changes may alter system protection or compatibility.'
+    Assert-BoostLabCondition (-not $moduleText.Contains('NeedsRecoveryKeyPolicy')) 'BitLocker Apply must no longer be blocked on recovery-key policy.'
+
+    $tokens = $null
+    $parseErrors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($modulePath, [ref]$tokens, [ref]$parseErrors)
+    $actualParseErrors = @($parseErrors | Where-Object { $null -ne $_ })
+    Assert-BoostLabCondition ($actualParseErrors.Count -eq 0) "BitLocker module parse errors: $(@($actualParseErrors | ForEach-Object { $_.Message }) -join '; ')"
+    $commands = @(
+        $ast.FindAll(
+            { param($node) $node -is [System.Management.Automation.Language.CommandAst] },
+            $true
+        ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
+    )
+    foreach ($forbiddenCommand in @(
+        'Enable-BitLocker',
+        'Suspend-BitLocker',
+        'Resume-BitLocker',
+        'Unlock-BitLocker',
+        'Remove-BitLockerKeyProtector',
+        'Add-BitLockerKeyProtector',
+        'Set-ItemProperty',
+        'New-ItemProperty',
+        'Remove-ItemProperty',
+        'Restart-Computer',
+        'bcdedit'
     )) {
-        Assert-BoostLabCondition (-not $applyPlanText.Contains($forbiddenBlockedText)) "BitLocker Apply plan must not claim planned security mutation: $forbiddenBlockedText"
+        Assert-BoostLabCondition ($forbiddenCommand -notin $commands) "BitLocker module must not execute unrelated command: $forbiddenCommand"
     }
 
-    $defaultPlan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName 'Default'
-    $defaultPlanText = @(
-        @($defaultPlan.PlannedChanges)
-        @($defaultPlan.SideEffects)
-        $defaultPlan.ConfirmationMessage
-    ) -join ' '
-    foreach ($needle in @(
-        'Block Default before any operational step',
-        'source On branch',
-        'Default is not Restore',
-        'No BitLocker state'
-    )) {
-        Assert-BoostLabCondition ($defaultPlanText -match [regex]::Escape($needle)) "BitLocker Default plan missing: $needle"
-    }
-    foreach ($forbiddenBlockedText in @(
-        'Modify approved Windows security configuration.',
-        'Security changes may alter system protection or compatibility.'
-    )) {
-        Assert-BoostLabCondition (-not $defaultPlanText.Contains($forbiddenBlockedText)) "BitLocker Default plan must not claim planned security mutation: $forbiddenBlockedText"
-    }
-
-    $restorePlan = New-BoostLabActionPlan -ToolMetadata $bitLockerTool -ActionName 'Restore'
-    $restorePlanText = @(
-        @($restorePlan.PlannedChanges)
-        @($restorePlan.SideEffects)
-        $restorePlan.ConfirmationMessage
-    ) -join ' '
-    foreach ($needle in @(
-        'Block Restore before any operational step',
-        'selected captured BitLocker state',
-        'approved restore contract',
-        'No BitLocker state'
-    )) {
-        Assert-BoostLabCondition ($restorePlanText -match [regex]::Escape($needle)) "BitLocker Restore plan missing: $needle"
-    }
-    foreach ($forbiddenBlockedText in @(
-        'Modify approved Windows security configuration.',
-        'Security changes may alter system protection or compatibility.'
-    )) {
-        Assert-BoostLabCondition (-not $restorePlanText.Contains($forbiddenBlockedText)) "BitLocker Restore plan must not claim planned security mutation: $forbiddenBlockedText"
-    }
+    $artifactText = Get-Content -LiteralPath $artifactPath -Raw
+    $allowlistText = Get-Content -LiteralPath $productionAllowlistPath -Raw
+    Assert-BoostLabCondition (-not $artifactText.Contains('bitlocker')) 'BitLocker must not add artifact provenance approvals.'
+    Assert-BoostLabCondition (-not $allowlistText.Contains('bitlocker')) 'BitLocker must not add production allowlist approvals.'
 
     $mockVolumeReader = {
         @(
@@ -339,46 +225,119 @@ try {
                 EncryptionPercentage = 100
                 LockStatus           = 'Unlocked'
                 KeyProtector         = @(
-                    [pscustomobject]@{ KeyProtectorType = 'Tpm' }
-                    [pscustomobject]@{ KeyProtectorType = 'RecoveryPassword' }
+                    [pscustomobject]@{ KeyProtectorType = 'Tpm'; KeyProtectorId = '{TPM-SECRET-ID}' }
+                    [pscustomobject]@{ KeyProtectorType = 'RecoveryPassword'; RecoveryPassword = '000000-111111-222222-333333-444444-555555-666666-777777' }
                 )
+            }
+            [pscustomobject]@{
+                MountPoint           = 'D:'
+                VolumeStatus         = 'FullyDecrypted'
+                ProtectionStatus     = 'Off'
+                EncryptionPercentage = 0
+                LockStatus           = 'Unlocked'
+                KeyProtector         = @()
+            }
+            [pscustomobject]@{
+                MountPoint           = 'E:'
+                VolumeStatus         = 'EncryptionInProgress'
+                ProtectionStatus     = 'Off'
+                EncryptionPercentage = 20
+                LockStatus           = 'Unlocked'
+                KeyProtector         = @()
             }
         )
     }
+
+    $disableCalls = [System.Collections.Generic.List[string]]::new()
+    $controlCalls = [System.Collections.Generic.List[string]]::new()
+    $manageBdeCalls = [System.Collections.Generic.List[string]]::new()
+    $disableExecutor = {
+        param([string]$MountPoint)
+        $disableCalls.Add($MountPoint)
+        [pscustomobject]@{
+            Success = $true
+            CommandStatus = 'Completed'
+            Message = "Mock Disable-BitLocker for $MountPoint."
+        }
+    }.GetNewClosure()
+    $controlPanelLauncher = {
+        param([string]$FilePath, [string]$ArgumentList)
+        $controlCalls.Add("$FilePath $ArgumentList")
+        [pscustomobject]@{
+            Success = $true
+            CommandStatus = 'Completed'
+            Message = 'Mock Control Panel launch.'
+        }
+    }.GetNewClosure()
+    $manageBdeStatusExecutor = {
+        param([string[]]$ArgumentList)
+        $manageBdeCalls.Add(($ArgumentList -join ' '))
+        [pscustomobject]@{
+            Success = $true
+            CommandStatus = 'Completed'
+            ExitCode = 0
+            Message = 'Mock manage-bde status.'
+            OutputLineCount = 0
+        }
+    }.GetNewClosure()
 
     $analyzeResult = Invoke-BoostLabToolAction -ActionName 'Analyze' -VolumeReader $mockVolumeReader
     Assert-BoostLabCondition ([bool]$analyzeResult.Success) 'BitLocker Analyze should succeed with mocked read-only volume data.'
     Assert-BoostLabCondition ([string]$analyzeResult.Status -eq 'Analyzed') 'BitLocker Analyze status must be Analyzed.'
     Assert-BoostLabCondition ([string]$analyzeResult.CommandStatus -eq 'No execution performed') 'BitLocker Analyze must not execute a command.'
     Assert-BoostLabCondition (-not [bool]$analyzeResult.ChangesExecuted) 'BitLocker Analyze must not execute changes.'
-    Assert-BoostLabCondition (-not [bool]$analyzeResult.Data.ApplyAvailable) 'BitLocker Apply must not be available after Analyze.'
-    Assert-BoostLabCondition ([int]$analyzeResult.Data.VolumeDiscovery.SourceOffMatchedVolumeCount -eq 1) 'BitLocker Analyze must report source Off matched volume count.'
-    Assert-BoostLabCondition ([bool]@($analyzeResult.Data.VolumeDiscovery.Volumes)[0].HasRecoveryPasswordProtector) 'BitLocker Analyze must report recovery protector type without exposing key values.'
+    Assert-BoostLabCondition ([string]$analyzeResult.Data.Mode -eq 'SourceEquivalentControlled') 'BitLocker Analyze mode mismatch.'
+    Assert-BoostLabCondition ([bool]$analyzeResult.Data.ApplyAvailable) 'BitLocker Apply must be available after Phase 115 Yazan approval.'
+    Assert-BoostLabCondition ([bool]$analyzeResult.Data.OpenAvailable) 'BitLocker Open/status must be available.'
+    Assert-BoostLabCondition ([int]$analyzeResult.Data.VolumeDiscovery.SourceOffMatchedVolumeCount -eq 2) 'BitLocker Analyze must report source Off matched volume count.'
+    Assert-BoostLabCondition ((@($analyzeResult.Data.SourceOffTargetMountPoints) -join '|') -eq 'C:|E:') 'BitLocker Analyze must expose exact source Off target MountPoints.'
     Assert-BoostLabCondition (@($analyzeResult.Warnings).Count -eq 0) 'BitLocker Analyze top-level warnings must not duplicate structured warning details.'
     $structuredAnalyzeWarnings = @($analyzeResult.Data.Warnings)
     Assert-BoostLabCondition ($structuredAnalyzeWarnings.Count -gt 0) 'BitLocker Analyze must keep warning details in structured data.'
     Assert-BoostLabCondition (($structuredAnalyzeWarnings | Select-Object -Unique).Count -eq $structuredAnalyzeWarnings.Count) 'BitLocker Analyze structured warnings must not be duplicated.'
-    Assert-BoostLabCondition ((($analyzeResult | ConvertTo-Json -Depth 12) -notmatch '(?i)recoverypassword\\s*[0-9]{2,}|[0-9]{6}-[0-9]{6}-[0-9]{6}') ) 'BitLocker Analyze must not expose recovery key values.'
+    Assert-BoostLabCondition ((($analyzeResult | ConvertTo-Json -Depth 12) -notmatch '(?i)recoverypassword\\s*[0-9]{2,}|[0-9]{6}-[0-9]{6}-[0-9]{6}|TPM-SECRET-ID') ) 'BitLocker Analyze must not expose recovery key values or protector ids.'
 
     $openCancelled = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$false -VolumeReader $mockVolumeReader
     Assert-BoostLabCondition (-not [bool]$openCancelled.Success) 'BitLocker Open without confirmation must not succeed.'
     Assert-BoostLabCondition ([bool]$openCancelled.Cancelled) 'BitLocker Open without confirmation must be cancelled.'
     Assert-BoostLabCondition (-not [bool]$openCancelled.ChangesExecuted) 'Cancelled BitLocker Open must not execute changes.'
 
-    $openResult = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true -VolumeReader $mockVolumeReader
-    Assert-BoostLabCondition ([bool]$openResult.Success) 'BitLocker Open manual handoff should succeed when confirmed.'
-    Assert-BoostLabCondition ([string]$openResult.Status -eq 'ManualHandoffPrepared') 'BitLocker Open must prepare manual handoff only.'
-    Assert-BoostLabCondition ([string]$openResult.CommandStatus -eq 'No execution performed') 'BitLocker Open command status must show no execution.'
-    Assert-BoostLabCondition (-not [bool]$openResult.ChangesExecuted) 'BitLocker Open must not execute changes.'
-    Assert-BoostLabCondition ([bool]$openResult.Data.NoExternalToolOpened) 'BitLocker Open must not open an external tool.'
-    Assert-BoostLabCondition ([bool]$openResult.Data.NoBitLockerMutation) 'BitLocker Open must not mutate BitLocker.'
+    $openResult = Invoke-BoostLabToolAction `
+        -ActionName 'Open' `
+        -Confirmed:$true `
+        -VolumeReader $mockVolumeReader `
+        -ControlPanelLauncher $controlPanelLauncher `
+        -ManageBdeStatusExecutor $manageBdeStatusExecutor
+    Assert-BoostLabCondition ([bool]$openResult.Success) 'BitLocker Open/status should succeed with mocked executors.'
+    Assert-BoostLabCondition ([string]$openResult.Status -eq 'StatusOpened') 'BitLocker Open must report source-equivalent status branch.'
+    Assert-BoostLabCondition ([string]$openResult.CommandStatus -eq 'Completed') 'BitLocker Open command status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$openResult.ChangesExecuted) 'BitLocker Open/status must not mutate BitLocker state.'
+    Assert-BoostLabCondition (-not [bool]$openResult.Data.AutomaticEnableBitLocker) 'BitLocker Open must not enable BitLocker automatically.'
+    Assert-BoostLabCondition (-not [bool]$openResult.Data.BitLockerStateMutation) 'BitLocker Open must not mutate BitLocker state.'
+    Assert-BoostLabCondition ([bool]$openResult.Data.ExternalProcessRequested) 'BitLocker Open should request source-equivalent status UI/process.'
+    Assert-BoostLabCondition ($controlCalls.Count -eq 1) 'BitLocker Open must route one mocked Control Panel launch.'
+    Assert-BoostLabCondition ($manageBdeCalls.Count -eq 1) 'BitLocker Open must route one mocked manage-bde status request.'
+    Assert-BoostLabCondition ($disableCalls.Count -eq 0) 'BitLocker Open must not call Disable-BitLocker.'
 
-    $applyResult = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -VolumeReader $mockVolumeReader
-    Assert-BoostLabCondition (-not [bool]$applyResult.Success) 'BitLocker Apply must fail closed.'
-    Assert-BoostLabCondition ([string]$applyResult.Status -eq 'NeedsRecoveryKeyPolicy') 'BitLocker Apply must report recovery-key policy blocker.'
-    Assert-BoostLabCondition ([string]$applyResult.CommandStatus -eq 'Blocked before execution') 'BitLocker Apply command status must be blocked before execution.'
-    Assert-BoostLabCondition (-not [bool]$applyResult.ChangesExecuted) 'BitLocker Apply must not execute changes.'
-    Assert-BoostLabCondition ('NeedsEncryptionStateContract' -in @($applyResult.Data.Blockers)) 'BitLocker Apply must report encryption-state blocker.'
+    $applyResult = Invoke-BoostLabToolAction `
+        -ActionName 'Apply' `
+        -Confirmed:$true `
+        -VolumeReader $mockVolumeReader `
+        -DisableBitLockerExecutor $disableExecutor `
+        -ControlPanelLauncher $controlPanelLauncher `
+        -ManageBdeStatusExecutor $manageBdeStatusExecutor
+    Assert-BoostLabCondition ([bool]$applyResult.Success) 'BitLocker Apply should route source-equivalent Off behavior through mocks.'
+    Assert-BoostLabCondition ([string]$applyResult.Status -eq 'Completed') 'BitLocker Apply status mismatch.'
+    Assert-BoostLabCondition ([string]$applyResult.CommandStatus -eq 'Completed') 'BitLocker Apply command status mismatch.'
+    Assert-BoostLabCondition ([bool]$applyResult.ChangesExecuted) 'BitLocker Apply should report changes when source-matched targets exist.'
+    Assert-BoostLabCondition ([int]$applyResult.Data.TargetVolumeCount -eq 2) 'BitLocker Apply target count mismatch.'
+    Assert-BoostLabCondition ((@($applyResult.Data.TargetMountPoints) -join '|') -eq 'C:|E:') 'BitLocker Apply must target only source-matched MountPoints.'
+    Assert-BoostLabCondition (($disableCalls -join '|') -eq 'C:|E:') 'BitLocker Apply must call Disable-BitLocker only for source-matched MountPoints.'
+    Assert-BoostLabCondition ($controlCalls.Count -eq 2) 'BitLocker Apply must request the post-action Control Panel launch through the mock.'
+    Assert-BoostLabCondition ($manageBdeCalls.Count -eq 2) 'BitLocker Apply must request the post-action manage-bde status through the mock.'
+    Assert-BoostLabCondition (-not [bool]$applyResult.Data.AutomaticEnableBitLocker) 'BitLocker Apply must not enable BitLocker automatically.'
+    Assert-BoostLabCondition (-not [bool]$applyResult.Data.RecoveryKeysCollectedDisplayedOrPersisted) 'BitLocker Apply must not collect or expose recovery keys.'
+    Assert-BoostLabCondition ((($applyResult | ConvertTo-Json -Depth 12) -notmatch '(?i)000000-111111|TPM-SECRET-ID') ) 'BitLocker Apply result must not expose recovery secrets.'
 
     $defaultResult = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true -VolumeReader $mockVolumeReader
     Assert-BoostLabCondition (-not [bool]$defaultResult.Success) 'BitLocker Default must fail closed.'
@@ -403,13 +362,10 @@ $migrationText = Get-Content -LiteralPath $migrationRecordPath -Raw
 foreach ($needle in @(
     'BitLocker Migration Record',
     $expectedSourceHash,
-    'Analyze',
-    'Open',
-    'Apply',
-    'Default',
-    'Restore',
-    'Disable-BitLocker',
-    'manual handoff',
+    'Phase 115 Yazan-approved source-equivalent BitLocker Off and On/status behavior',
+    'Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue',
+    'Start-Process control.exe -ArgumentList "/name microsoft.bitlockerdriveencryption"',
+    'manage-bde -status',
     'Default is not Restore'
 )) {
     Assert-BoostLabTextContains -Text $migrationText -Needle $needle -Description 'BitLocker migration record'
@@ -417,11 +373,11 @@ foreach ($needle in @(
 
 [pscustomobject]@{
     Success                                      = $true
-    ActiveToolCount                              = $allTools.Count
-    ImplementedToolCount                         = $allTools.Count - $placeholderModules.Count
-    PlaceholderToolCount                         = $placeholderModules.Count
-    SourcePromotedMirrorFileCount                = $sourcePromotedFiles.Count
-    RemainingUnimplementedSourcePromotedIntake   = $remainingSourcePromoted.Count
-    Message                                      = 'BitLocker controlled security implementation is fail-closed and non-mutating.'
+    ActiveToolCount                              = $inventorySnapshot.ActiveTools
+    ImplementedToolCount                         = $inventorySnapshot.ImplementedTools
+    PlaceholderToolCount                         = $inventorySnapshot.DeferredPlaceholders
+    SourcePromotedMirrorFileCount                = $inventorySnapshot.SourcePromotedMirrorFiles
+    RemainingUnimplementedSourcePromotedIntake   = $inventorySnapshot.RemainingSourcePromotedIntakeCandidates
+    Message                                      = 'BitLocker controlled implementation preserves source-equivalent Off and On/status behavior through mockable execution seams.'
     Timestamp                                    = Get-Date
 }

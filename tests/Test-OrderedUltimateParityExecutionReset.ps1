@@ -212,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'bitlocker') 'The first ordered pending parity target should be BitLocker after the Phase 114 Setup correction.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'edge-settings') 'The first ordered pending parity target should advance past accepted BitLocker near-parity.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

@@ -437,13 +437,13 @@ function New-BoostLabActionPlan {
         'Set CacheIsPowerProtected to 1 on source-targeted storage Disk registry paths after capturing each prior value state.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
-        'Analyze BitLocker volume state read-only and explain why the source Off branch is blocked in BoostLab.'
+        'Analyze BitLocker volume state read-only and preview the source-equivalent Off and On/status behavior without changing encryption state.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        'Prepare BitLocker manual handoff guidance only; do not open external tools, run manage-bde, or mutate BitLocker state.'
+        'Run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status without enabling BitLocker automatically.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        'Block the source Off branch because it disables BitLocker on matched volumes and requires approved recovery-key and encryption-state policy first.'
+        'Run the source-equivalent BitLocker Off branch: disable BitLocker only on source-matched volumes, then open BitLocker status UI and run manage-bde -status.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         'Block Default because the source On branch is UI/status-only and does not define a safe default mutation.'
@@ -905,21 +905,23 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum.')
         $plannedChanges.Add('Query BitLocker volume state read-only when Get-BitLockerVolume is available.')
         $plannedChanges.Add('Report matched volumes for the source Off branch without disabling, decrypting, suspending, resuming, enabling, or removing protectors.')
-        $plannedChanges.Add('Report missing recovery-key, volume-selection, encryption-state, protector-state, verification, support, and Restore contracts.')
+        $plannedChanges.Add('Preview that Apply maps to the source Off branch and Open maps to the source On/status branch.')
         $plannedChanges.Add('Perform no external process, Control Panel launch, manage-bde call, registry mutation, BitLocker mutation, reboot, or recovery-key operation.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual BitLocker handoff instructions only.')
-        $plannedChanges.Add('Do not open BitLocker Control Panel, a browser, manage-bde, PowerShell BitLocker commands, or any external tool.')
-        $plannedChanges.Add('Do not enable, disable, decrypt, suspend, resume, unlock, remove protectors, add protectors, or mutate recovery-key state.')
-        $plannedChanges.Add('Explain that the source Off branch remains blocked until approved security, recovery-key, volume-selection, verification, and support contracts exist.')
-        $plannedChanges.Add('Perform no system-changing operation.')
+        $plannedChanges.Add('Verify the BitLocker source mirror checksum before any status action.')
+        $plannedChanges.Add('Open BitLocker Drive Encryption Control Panel with control.exe /name microsoft.bitlockerdriveencryption.')
+        $plannedChanges.Add('Run manage-bde -status for source-equivalent status output.')
+        $plannedChanges.Add('Do not enable BitLocker automatically; the Ultimate On branch is UI/status-only.')
+        $plannedChanges.Add('Do not collect, display, persist, add, remove, suspend, or resume recovery keys or protectors.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Apply before any operational step.')
-        $plannedChanges.Add('Do not execute the source Off branch because it calls Disable-BitLocker on every matched protected or not fully decrypted volume.')
-        $plannedChanges.Add('Report missing recovery-key, encryption-state, protector-state, volume-selection, verification, Default/Restore, and support policies.')
-        $plannedChanges.Add('Perform no BitLocker command, manage-bde command, external process, registry mutation, decrypt operation, suspend/resume operation, protector operation, reboot, or recovery-key operation.')
+        $plannedChanges.Add('Verify the BitLocker source mirror checksum before any mutation.')
+        $plannedChanges.Add('Query Get-BitLockerVolume and filter volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted.')
+        $plannedChanges.Add('Run Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue only for the filtered target MountPoints.')
+        $plannedChanges.Add('Open BitLocker Drive Encryption Control Panel after the disable requests.')
+        $plannedChanges.Add('Run manage-bde -status after the disable requests.')
+        $plannedChanges.Add('Do not collect, display, persist, add, remove, suspend, or resume recovery keys or protectors.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1171,7 +1173,7 @@ function New-BoostLabActionPlan {
     }
 
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
-    $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
     $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
@@ -1461,13 +1463,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Recovery-key values are not collected or logged.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff guidance is prepared inside BoostLab only.')
-        $sideEffects.Add('No BitLocker Control Panel, manage-bde command, PowerShell BitLocker command, browser, or external tool is opened.')
-        $sideEffects.Add('No BitLocker state, protector state, recovery-key state, registry state, or reboot state changes.')
+        $sideEffects.Add('BitLocker Drive Encryption Control Panel is opened.')
+        $sideEffects.Add('manage-bde -status is run for status output.')
+        $sideEffects.Add('No automatic BitLocker enable, disable, protector, recovery-key, registry, or reboot state change occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Apply is blocked before execution.')
-        $sideEffects.Add('No Disable-BitLocker, Enable-BitLocker, manage-bde, decrypt, suspend/resume, protector, recovery-key, external process, registry, or reboot operation occurs.')
+        $sideEffects.Add('Disable-BitLocker is invoked only for source-matched protected or not fully decrypted MountPoints.')
+        $sideEffects.Add('Matched volumes may begin decryption or protection disable behavior after confirmation.')
+        $sideEffects.Add('BitLocker Drive Encryption Control Panel is opened and manage-bde -status is run after the disable requests.')
+        $sideEffects.Add('Recovery keys are not collected, displayed, or stored; no automatic enable, protector add/remove, registry, or reboot operation occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution because the source On branch is UI/status-only, not a BoostLab default mutation.')
@@ -1828,10 +1832,10 @@ function New-BoostLabActionPlan {
         'Msi Mode Restore requires a selected captured rollback record from this Msi Mode tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare BitLocker manual handoff guidance only. It will not open BitLocker Control Panel, run manage-bde, run BitLocker PowerShell commands, enable, disable, decrypt, suspend, resume, remove protectors, mutate recovery-key state, or reboot. Continue?'
+        'BoostLab will run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status. It will not enable BitLocker automatically, collect recovery keys, change protectors, or reboot. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        'BitLocker Apply is blocked. The source Off branch disables BitLocker on matched volumes, and BoostLab has no approved recovery-key, encryption-state, protector-state, volume-selection, verification, or support contract for that mutation. Continue only to record the blocked result?'
+        'BoostLab will run the source-equivalent BitLocker Off branch. It will query BitLocker volumes, call Disable-BitLocker only for volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted, then open BitLocker Control Panel and run manage-bde -status. This may decrypt or disable protection on matched volumes. Recovery keys are not collected or stored. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         'BitLocker Default is unavailable. The source On branch opens UI/status only and does not define a safe default mutation. Default is not Restore. Continue only to record the blocked result?'

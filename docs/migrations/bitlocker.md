@@ -7,7 +7,7 @@
 - Stage: Setup
 - Source script path: `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1`
 - Source SHA-256: `1678E97FB5AFF851F1491A2D96C82A5716B1FA07CB4E3A4A5E0F3FB1B086FBA1`
-- Yazan approval status: Approved for controlled security assistant intake only.
+- Yazan approval status: Phase 115 Yazan-approved source-equivalent BitLocker Off and On/status behavior with explicit GUI confirmation and test-safe execution seams.
 
 ## Original Ultimate Behavior
 
@@ -20,17 +20,17 @@ The source includes administrator self-elevation and console-only menu, pause, c
 
 ## Approved BoostLab Behavior
 
-BoostLab implements BitLocker as a security-sensitive assistant:
+BoostLab implements BitLocker as a security-sensitive source-equivalent controlled assistant:
 
 - `Analyze`: read-only source/hash validation and sanitized BitLocker volume-state reporting.
-- `Open`: manual handoff guidance only; no external process is opened.
-- `Apply`: blocked because the source Off branch disables BitLocker on matched volumes.
+- `Open`: source-equivalent On/status behavior; opens BitLocker Drive Encryption Control Panel and runs `manage-bde -status` after explicit confirmation. It does not enable BitLocker automatically.
+- `Apply`: source-equivalent Off behavior; reads BitLocker volumes, filters the same source-matched volumes, invokes `Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue` only for those target MountPoints, opens BitLocker Drive Encryption Control Panel, then runs `manage-bde -status`.
 - `Default`: unavailable because the source On branch is UI/status-only and does not define a BoostLab default mutation.
 - `Restore`: unavailable without selected captured BitLocker state and an approved restore contract.
 
 ## Preserved Intent
 
-BoostLab preserves the source intent by documenting the exact Off and On branches and by refusing to weaken the Off branch into a partial or softer mutation. Because disabling BitLocker can affect encryption, recovery keys, protectors, and support posture, BoostLab does not execute mutation until a recovery-key, volume-selection, encryption-state, protector-state, verification, support, and restore policy is approved.
+BoostLab preserves the source intent by implementing the exact practical Off and On/status branches behind explicit GUI confirmation and structured results. Because disabling BitLocker can affect encryption, recovery keys, protectors, and support posture, the module warns clearly, reports target MountPoints and command outcomes, and never collects, displays, stores, adds, removes, suspends, or resumes recovery keys or protectors.
 
 ## Commands Preserved As Source Reference
 
@@ -39,20 +39,23 @@ BoostLab preserves the source intent by documenting the exact Off and On branche
 - `Start-Process control.exe -ArgumentList "/name microsoft.bitlockerdriveencryption"`
 - `manage-bde -status`
 
-Only read-only BitLocker state collection is implemented. The mutation, Control Panel launch, and `manage-bde` status execution are not executed by BoostLab in this phase.
+Phase 115 implements `Disable-BitLocker`, Control Panel launch, and `manage-bde -status` in runtime only after explicit confirmation. Automated validators use mocks and never execute these commands.
 
 ## Intentional Deviations
 
 - Console menu interaction is replaced by GUI actions.
 - Console-only behavior such as `Clear-Host`, `Pause`, `Write-Host`, and `Exit` is replaced by structured result/log output.
-- Manual handoff does not open Control Panel automatically because this phase is explicitly controlled and non-mutating.
-- `Apply`, `Default`, and `Restore` return blocked structured results rather than performing BitLocker state changes.
+- Source console menu choices are mapped to BoostLab canonical actions: `Apply` is Off, and `Open` is On/status.
+- Explicit GUI confirmation replaces console input.
+- Test-safe executor seams let validators verify command routing without disabling BitLocker, running `manage-bde`, launching Control Panel, or mutating encryption state.
+- `Default` and `Restore` return blocked structured results rather than inventing behavior not present in the source.
 
 ## Side Effects
 
 - `Analyze`: no system-changing side effects; may query BitLocker volume state read-only.
-- `Open`: no system-changing side effects; prepares manual handoff guidance only.
-- `Apply`, `Default`, `Restore`: no system-changing side effects; fail closed.
+- `Open`: opens BitLocker Control Panel and runs `manage-bde -status`; no automatic BitLocker enable or protector/recovery-key mutation.
+- `Apply`: may disable BitLocker or start decryption on source-matched target volumes, then opens BitLocker Control Panel and runs `manage-bde -status`.
+- `Default`, `Restore`: no system-changing side effects; fail closed.
 
 ## Required Privileges
 
@@ -82,7 +85,7 @@ High. BitLocker mutation affects encryption and recovery-key workflows.
 
 ## Confirmation Requirements
 
-All non-analysis actions require explicit confirmation through the Action Plan framework. Confirmation records only the controlled handoff or blocked result; it does not permit mutation.
+All non-analysis actions require explicit confirmation through the Action Plan framework. Confirmation for `Apply` permits the source-equivalent Off branch. Confirmation for `Open` permits the source-equivalent On/status branch.
 
 ## Rollback / Default Behavior
 
@@ -97,7 +100,8 @@ No restart behavior is implemented or approved.
 - Validate source checksum.
 - Validate BitLocker catalog metadata and runtime registration.
 - Validate `Analyze` returns structured read-only volume state with no recovery-key values.
-- Validate `Open` prepares manual handoff only and opens no external process.
-- Validate `Apply`, `Default`, and `Restore` fail closed with explicit blockers.
-- Validate no BitLocker mutation command is executed by the module.
+- Validate `Open` builds and routes the source-equivalent On/status branch through mocks only.
+- Validate `Apply` builds and routes the source-equivalent Off branch through mocks only.
+- Validate `Default` and `Restore` fail closed with explicit blockers.
+- Validate validators never execute real BitLocker mutation commands, `manage-bde`, or Control Panel launch.
 - Validate source mirror and legacy source are untouched.

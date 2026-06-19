@@ -491,7 +491,7 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'bitlocker') {
-            0
+            1
         }
         elseif ($toolId -eq 'spectre-meltdown-assistant') {
             0

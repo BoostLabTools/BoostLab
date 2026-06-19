@@ -7,7 +7,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 9
     Type = 'assistant'
     RiskLevel = 'high'
-    Description = 'Analyze BitLocker state and prepare security-sensitive manual handoff only. Apply, Default, and Restore remain blocked until recovery-key and encryption-state policy is approved.'
+    Description = 'Analyze BitLocker state, run source-equivalent Off behavior, or open source-equivalent On/status behavior with explicit confirmation.'
     Actions = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
     Capabilities = [ordered]@{
         RequiresAdmin = $true
@@ -106,7 +106,7 @@ function Get-BoostLabBitLockerSourceBehavior {
             '1. BitLocker: Off (Recommended)'
             '2. BitLocker: On'
         )
-        ApplyMapping = 'Apply would correspond to the source Off branch, but BoostLab blocks it because it disables BitLocker volumes.'
+        ApplyMapping = 'Apply corresponds to the source Off branch and disables BitLocker for matched volumes after explicit confirmation.'
         SourceOffBehavior = @(
             'Queries Get-BitLockerVolume.'
             'Filters volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted.'
@@ -142,13 +142,8 @@ function Get-BoostLabBitLockerBlockers {
     param()
 
     @(
-        'NeedsSecurityDecision'
-        'NeedsRecoveryKeyPolicy'
-        'NeedsEncryptionStateContract'
-        'NeedsProtectorStateContract'
-        'NeedsExplicitVolumeSelectionPolicy'
-        'NeedsApprovedDisableBitLockerBehavior'
-        'NeedsVerificationAndSupportBoundary'
+        'DefaultUnavailable'
+        'RestoreUnavailableWithoutCapturedBitLockerState'
     )
 }
 
@@ -159,11 +154,235 @@ function Get-BoostLabBitLockerRiskWarnings {
 
     @(
         'Original Ultimate Off branch disables BitLocker on every matched protected or not fully decrypted volume.'
-        'BoostLab does not silently enable BitLocker, disable BitLocker, decrypt a drive, suspend protection, or remove protectors.'
-        'BoostLab does not assume recovery keys are backed up.'
+        'BoostLab does not silently enable BitLocker, suspend protection, resume protection, or remove protectors.'
+        'BoostLab does not collect, display, or store recovery keys.'
         'Default is not Restore, and Restore is unavailable without valid captured BitLocker state.'
-        'Manual handoff provides instructions and warnings only; it does not open external tools or change system state.'
+        'Open maps to the source On/status branch and does not enable BitLocker automatically.'
     )
+}
+
+function New-BoostLabBitLockerCommandResult {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [bool]$Success = $true,
+
+        [string]$CommandStatus = 'Completed',
+
+        [AllowNull()]
+        [string]$Target = $null,
+
+        [AllowNull()]
+        [object]$ExitCode = $null,
+
+        [string]$Message = '',
+
+        [int]$OutputLineCount = 0
+    )
+
+    [pscustomobject]@{
+        Name            = $Name
+        Success         = $Success
+        CommandStatus   = $CommandStatus
+        Target          = $Target
+        ExitCode        = $ExitCode
+        Message         = $Message
+        OutputLineCount = $OutputLineCount
+        Timestamp       = Get-Date
+    }
+}
+
+function ConvertTo-BoostLabBitLockerCommandResult {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [AllowNull()]
+        [object]$RawResult = $null,
+
+        [AllowNull()]
+        [string]$Target = $null,
+
+        [string]$DefaultMessage = ''
+    )
+
+    if ($null -eq $RawResult) {
+        return New-BoostLabBitLockerCommandResult -Name $Name -Target $Target -Message $DefaultMessage
+    }
+
+    $success = Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'Success' -Default $true
+    $commandStatus = [string](Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'CommandStatus' -Default $(if ([bool]$success) { 'Completed' } else { 'Failed' }))
+    $exitCode = Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'ExitCode' -Default $null
+    $message = [string](Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'Message' -Default $DefaultMessage)
+    $output = @(Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'Output' -Default @())
+    $outputLineCount = [int](Get-BoostLabBitLockerPropertyValue -InputObject $RawResult -Name 'OutputLineCount' -Default $output.Count)
+
+    return New-BoostLabBitLockerCommandResult `
+        -Name $Name `
+        -Success:([bool]$success) `
+        -CommandStatus $commandStatus `
+        -Target $Target `
+        -ExitCode $exitCode `
+        -Message $message `
+        -OutputLineCount $outputLineCount
+}
+
+function Invoke-BoostLabBitLockerDisableForMountPoint {
+    param(
+        [Parameter(Mandatory)]
+        [string]$MountPoint,
+
+        [scriptblock]$DisableBitLockerExecutor
+    )
+
+    try {
+        if ($null -ne $DisableBitLockerExecutor) {
+            $rawResult = & $DisableBitLockerExecutor -MountPoint $MountPoint
+            return ConvertTo-BoostLabBitLockerCommandResult `
+                -Name 'Disable-BitLocker' `
+                -RawResult $rawResult `
+                -Target $MountPoint `
+                -DefaultMessage "Disable-BitLocker invoked for $MountPoint."
+        }
+
+        Disable-BitLocker -MountPoint $MountPoint -ErrorAction SilentlyContinue | Out-Null
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'Disable-BitLocker' `
+            -Target $MountPoint `
+            -Message "Disable-BitLocker invoked for $MountPoint with ErrorAction SilentlyContinue."
+    }
+    catch {
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'Disable-BitLocker' `
+            -Success $false `
+            -CommandStatus 'Failed' `
+            -Target $MountPoint `
+            -Message "Disable-BitLocker failed for ${MountPoint}: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-BoostLabBitLockerControlPanel {
+    param(
+        [scriptblock]$ControlPanelLauncher
+    )
+
+    try {
+        if ($null -ne $ControlPanelLauncher) {
+            $rawResult = & $ControlPanelLauncher -FilePath 'control.exe' -ArgumentList '/name microsoft.bitlockerdriveencryption'
+            return ConvertTo-BoostLabBitLockerCommandResult `
+                -Name 'Start-Process control.exe' `
+                -RawResult $rawResult `
+                -DefaultMessage 'BitLocker Drive Encryption Control Panel launch requested.'
+        }
+
+        Start-Process -FilePath 'control.exe' -ArgumentList '/name microsoft.bitlockerdriveencryption' -ErrorAction Stop
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'Start-Process control.exe' `
+            -Message 'BitLocker Drive Encryption Control Panel launch requested.'
+    }
+    catch {
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'Start-Process control.exe' `
+            -Success $false `
+            -CommandStatus 'Failed' `
+            -Message "BitLocker Drive Encryption Control Panel launch failed: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-BoostLabBitLockerManageBdeStatus {
+    param(
+        [scriptblock]$ManageBdeStatusExecutor
+    )
+
+    try {
+        if ($null -ne $ManageBdeStatusExecutor) {
+            $rawResult = & $ManageBdeStatusExecutor -ArgumentList @('-status')
+            return ConvertTo-BoostLabBitLockerCommandResult `
+                -Name 'manage-bde -status' `
+                -RawResult $rawResult `
+                -DefaultMessage 'manage-bde status requested.'
+        }
+
+        $manageBdePath = Join-Path $env:SystemRoot 'System32\manage-bde.exe'
+        $output = if (Test-Path -LiteralPath $manageBdePath -PathType Leaf) {
+            @(& $manageBdePath -status 2>&1)
+        }
+        else {
+            @(& manage-bde -status 2>&1)
+        }
+        $exitCode = $LASTEXITCODE
+
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'manage-bde -status' `
+            -Success:($exitCode -eq 0) `
+            -CommandStatus $(if ($exitCode -eq 0) { 'Completed' } else { 'Completed with errors' }) `
+            -ExitCode $exitCode `
+            -Message $(if ($exitCode -eq 0) { 'manage-bde status completed.' } else { "manage-bde status returned exit code $exitCode." }) `
+            -OutputLineCount @($output).Count
+    }
+    catch {
+        return New-BoostLabBitLockerCommandResult `
+            -Name 'manage-bde -status' `
+            -Success $false `
+            -CommandStatus 'Failed' `
+            -Message "manage-bde status failed: $($_.Exception.Message)"
+    }
+}
+
+function Get-BoostLabBitLockerSourceOffTargetVolumes {
+    param(
+        [Parameter(Mandatory)]
+        [object]$VolumeSnapshot
+    )
+
+    @(
+        @($VolumeSnapshot.Volumes) |
+            Where-Object { [bool]$_.WouldMatchSourceOffFilter }
+    )
+}
+
+function New-BoostLabBitLockerOperationPlan {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Off', 'OnStatus')]
+        [string]$Branch,
+
+        [object[]]$TargetVolumes = @()
+    )
+
+    $targetMountPoints = @(
+        @($TargetVolumes) |
+            ForEach-Object { [string]$_.MountPoint } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and $_ -ne 'Unknown' }
+    )
+
+    [pscustomobject]@{
+        Branch = $Branch
+        SourceEquivalent = $true
+        TargetMountPoints = @($targetMountPoints)
+        TargetVolumeCount = @($targetMountPoints).Count
+        Commands = if ($Branch -eq 'Off') {
+            @(
+                'Get-BitLockerVolume'
+                'Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue'
+                'Start-Process control.exe -ArgumentList "/name microsoft.bitlockerdriveencryption"'
+                'manage-bde -status'
+            )
+        }
+        else {
+            @(
+                'Start-Process control.exe -ArgumentList "/name microsoft.bitlockerdriveencryption"'
+                'manage-bde -status'
+            )
+        }
+        RecoveryKeysCollected = $false
+        RecoveryKeysDisplayed = $false
+        RecoveryKeysPersisted = $false
+        AutomaticEnableBitLocker = $false
+        DefaultIsRestore = $false
+        RestoreAvailable = $false
+    }
 }
 
 function Get-BoostLabBitLockerVolumeSnapshot {
@@ -280,7 +499,9 @@ function New-BoostLabBitLockerResult {
 
         [string[]]$Errors = @(),
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
     )
 
     [pscustomobject]@{
@@ -294,7 +515,7 @@ function New-BoostLabBitLockerResult {
         Message = $Message
         RestartRequired = $false
         Cancelled = $Cancelled
-        ChangesExecuted = $false
+        ChangesExecuted = $ChangesExecuted
         Timestamp = Get-Date
         Data = $Data
         Warnings = @($Warnings)
@@ -312,27 +533,39 @@ function Get-BoostLabBitLockerAnalysis {
     $source = Get-BoostLabBitLockerSourceStatus
     $volumeSnapshot = Get-BoostLabBitLockerVolumeSnapshot -VolumeReader $VolumeReader
     $blockers = @(Get-BoostLabBitLockerBlockers)
+    $offTargetVolumes = @(Get-BoostLabBitLockerSourceOffTargetVolumes -VolumeSnapshot $volumeSnapshot)
 
     [pscustomobject]@{
-        Mode = 'ManualHandoffOnly'
-        ApplyStatus = 'NeedsRecoveryKeyPolicy'
+        Mode = 'SourceEquivalentControlled'
+        ApplyStatus = 'SourceEquivalentOffAvailable'
+        OpenStatus = 'SourceEquivalentOnStatusAvailable'
         DefaultStatus = 'DefaultUnavailable'
         RestoreStatus = 'RestoreUnavailable'
         Source = $source
         SourceBehavior = Get-BoostLabBitLockerSourceBehavior
         VolumeDiscovery = $volumeSnapshot
+        SourceOffTargetMountPoints = @(
+            $offTargetVolumes |
+                ForEach-Object { [string]$_.MountPoint } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and $_ -ne 'Unknown' }
+        )
+        SourceOffTargetCount = @($offTargetVolumes).Count
+        SourceOffOperationPlan = New-BoostLabBitLockerOperationPlan -Branch 'Off' -TargetVolumes $offTargetVolumes
+        SourceOnStatusOperationPlan = New-BoostLabBitLockerOperationPlan -Branch 'OnStatus'
         Blockers = @($blockers)
         Warnings = @(Get-BoostLabBitLockerRiskWarnings)
-        ApplyAvailable = $false
+        ApplyAvailable = $true
+        OpenAvailable = $true
         DefaultAvailable = $false
         RestoreAvailable = $false
         NoMutationOccurred = $true
-        NoSilentEnableDisableDecryptSuspendOrProtectorMutation = $true
+        NoRecoveryKeysCollectedDisplayedOrPersisted = $true
+        NoAutomaticEnableBitLocker = $true
         PathBRelationship = 'BitLocker remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
     }
 }
 
-function New-BoostLabBitLockerManualHandoffPlan {
+function New-BoostLabBitLockerStatusPlan {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -341,33 +574,30 @@ function New-BoostLabBitLockerManualHandoffPlan {
 
     $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
     [pscustomobject]@{
-        PlanType = 'ManualHandoffOnly'
+        PlanType = 'SourceEquivalentOnStatus'
         SourceChecksumStatus = [string]$analysis.Source.ChecksumStatus
         Instructions = @(
-            'Review BitLocker state and recovery-key readiness outside automated BoostLab mutation.'
-            'Use Windows BitLocker Drive Encryption settings manually if a technician intentionally chooses to continue.'
-            'Confirm recovery keys are backed up before any BitLocker disable, decrypt, suspend, or protector operation.'
+            'Open the BitLocker Drive Encryption Control Panel.'
+            'Run manage-bde -status.'
+            'Do not enable BitLocker automatically; the Ultimate On branch is UI/status-only.'
             'Do not treat Default as Restore; no captured BitLocker restore state exists.'
-            'No external tool is opened by BoostLab.'
-            'No BitLocker state mutation is executed by BoostLab.'
+            'Do not collect, display, or store recovery keys.'
         )
         BlockedActions = @(
-            'Disable-BitLocker'
             'Enable-BitLocker'
             'Suspend-BitLocker'
             'Resume-BitLocker'
-            'manage-bde mutation'
             'protector add/remove'
-            'decrypt drive'
-            'silent Control Panel launch'
             'Default'
             'Restore'
         )
         Blockers = @($analysis.Blockers)
         Warnings = @($analysis.Warnings)
         VolumeDiscovery = $analysis.VolumeDiscovery
-        NoExternalToolOpened = $true
+        OperationPlan = $analysis.SourceOnStatusOperationPlan
+        NoAutomaticEnableBitLocker = $true
         NoBitLockerMutation = $true
+        NoRecoveryKeysCollectedDisplayedOrPersisted = $true
         NoDownload = $true
         NoReboot = $true
     }
@@ -390,7 +620,7 @@ function Get-BoostLabToolInfo {
         Capabilities = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions = @($script:BoostLabImplementedActions)
         ConfirmationRequiredActions = @('Open', 'Apply', 'Default', 'Restore')
-        ConfirmationText = 'BitLocker is security-sensitive. BoostLab will not enable, disable, decrypt, suspend, resume, remove protectors, or mutate recovery-key state. Continue with the selected non-mutating result?'
+        ConfirmationText = 'BitLocker is security-sensitive. Apply may disable or decrypt matched BitLocker volumes. Open launches the BitLocker status UI and manage-bde status. Recovery keys are not collected or stored. Continue?'
     }
 }
 
@@ -404,7 +634,7 @@ function Test-BoostLabToolCompatibility {
         Supported = $true
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Reason = 'BitLocker Analyze and manual handoff are available. BitLocker mutation actions remain blocked.'
+        Reason = 'BitLocker Analyze, source-equivalent Off, and source-equivalent On/status actions are available with explicit confirmation.'
         SourceChecksumStatus = [string]$sourceStatus.ChecksumStatus
         Timestamp = Get-Date
     }
@@ -418,7 +648,7 @@ function Get-BoostLabToolState {
     [pscustomobject]@{
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Status = 'ManualHandoffOnly'
+        Status = 'SourceEquivalentControlled'
         LastAction = $null
         LastResult = $null
         RestartRequired = $false
@@ -435,7 +665,13 @@ function Invoke-BoostLabToolAction {
 
         [bool]$Confirmed = $false,
 
-        [scriptblock]$VolumeReader
+        [scriptblock]$VolumeReader,
+
+        [scriptblock]$DisableBitLockerExecutor,
+
+        [scriptblock]$ControlPanelLauncher,
+
+        [scriptblock]$ManageBdeStatusExecutor
     )
 
     $canonicalActionName = switch ($ActionName) {
@@ -474,7 +710,7 @@ function Invoke-BoostLabToolAction {
             -Status $(if ($sourceOk) { 'Analyzed' } else { 'SourceVerificationFailed' }) `
             -CommandStatus 'No execution performed' `
             -VerificationStatus $verificationStatus `
-            -Message $(if ($sourceOk) { 'BitLocker analyzed read-only. Apply, Default, and Restore remain blocked.' } else { 'BitLocker source checksum verification failed or source mirror is missing.' }) `
+            -Message $(if ($sourceOk) { 'BitLocker analyzed read-only. Apply maps to the source Off branch, Open maps to the source On/status branch, and Default/Restore remain unavailable.' } else { 'BitLocker source checksum verification failed or source mirror is missing.' }) `
             -Data $analysis `
             -Warnings @() `
             -Errors $(if ($sourceOk) { @() } else { @('BitLocker source mirror checksum did not match the expected value or the source mirror is missing.') })
@@ -488,44 +724,137 @@ function Invoke-BoostLabToolAction {
                 -Status 'Cancelled' `
                 -CommandStatus 'Cancelled before execution' `
                 -VerificationStatus 'NotApplicable' `
-                -Message 'BitLocker manual handoff cancelled. No BitLocker state mutation occurred.' `
+                -Message 'BitLocker On/status action cancelled. No Control Panel launch, manage-bde status command, or BitLocker state mutation occurred.' `
                 -Cancelled $true
         }
 
-        $plan = New-BoostLabBitLockerManualHandoffPlan -VolumeReader $VolumeReader
+        $plan = New-BoostLabBitLockerStatusPlan -VolumeReader $VolumeReader
         $sourceOk = [string]$plan.SourceChecksumStatus -eq 'Passed'
         if (-not $sourceOk) {
             return New-BoostLabBitLockerResult `
                 -Success $false `
                 -Action 'Open' `
                 -Status 'SourceVerificationFailed' `
-                -CommandStatus 'Blocked before handoff' `
+                -CommandStatus 'Blocked before execution' `
                 -VerificationStatus ([string]$plan.SourceChecksumStatus) `
-                -Message 'BitLocker manual handoff blocked because source checksum verification failed or the source mirror is missing.' `
+                -Message 'BitLocker On/status action blocked because source checksum verification failed or the source mirror is missing.' `
                 -Data $plan `
                 -Errors @('BitLocker source mirror checksum did not match the expected value or the source mirror is missing.')
         }
 
+        $controlPanelResult = Invoke-BoostLabBitLockerControlPanel -ControlPanelLauncher $ControlPanelLauncher
+        $manageBdeResult = Invoke-BoostLabBitLockerManageBdeStatus -ManageBdeStatusExecutor $ManageBdeStatusExecutor
+        $warnings = @(
+            @($controlPanelResult, $manageBdeResult) |
+                Where-Object { -not [bool]$_.Success } |
+                ForEach-Object { [string]$_.Message }
+        )
+        $success = @($warnings).Count -eq 0
+
         return New-BoostLabBitLockerResult `
-            -Success $true `
+            -Success:$success `
             -Action 'Open' `
-            -Status 'ManualHandoffPrepared' `
-            -CommandStatus 'No execution performed' `
-            -VerificationStatus 'Passed' `
-            -Message 'BitLocker manual handoff prepared. No external tool was opened and no BitLocker state mutation occurred.' `
-            -Data $plan
+            -Status $(if ($success) { 'StatusOpened' } else { 'StatusOpenedWithWarnings' }) `
+            -CommandStatus $(if ($success) { 'Completed' } else { 'Completed with warnings' }) `
+            -VerificationStatus $(if ($success) { 'Passed' } else { 'Warning' }) `
+            -Message $(if ($success) { 'BitLocker On/status branch completed. Control Panel launch and manage-bde status were requested; no automatic enable occurred.' } else { 'BitLocker On/status branch completed with warnings. No automatic enable occurred.' }) `
+            -Data ([pscustomobject]@{
+                Plan                                      = $plan
+                ControlPanelResult                        = $controlPanelResult
+                ManageBdeStatusResult                     = $manageBdeResult
+                AutomaticEnableBitLocker                  = $false
+                RecoveryKeysCollectedDisplayedOrPersisted = $false
+                BitLockerStateMutation                    = $false
+                ExternalProcessRequested                  = $true
+            }) `
+            -Warnings $warnings
     }
 
     if ($canonicalActionName -eq 'Apply') {
+        if (-not $Confirmed) {
+            return New-BoostLabBitLockerResult `
+                -Success $false `
+                -Action 'Apply' `
+                -Status 'Cancelled' `
+                -CommandStatus 'Cancelled before execution' `
+                -VerificationStatus 'NotApplicable' `
+                -Message 'BitLocker Off action cancelled. No Disable-BitLocker, Control Panel launch, manage-bde status command, or BitLocker state mutation occurred.' `
+                -Cancelled $true
+        }
+
         $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+        $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
+        if (-not $sourceOk) {
+            return New-BoostLabBitLockerResult `
+                -Success $false `
+                -Action 'Apply' `
+                -Status 'SourceVerificationFailed' `
+                -CommandStatus 'Blocked before execution' `
+                -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
+                -Message 'BitLocker Off action blocked because source checksum verification failed or the source mirror is missing.' `
+                -Data $analysis `
+                -Errors @('BitLocker source mirror checksum did not match the expected value or the source mirror is missing.')
+        }
+
+        $targetVolumes = @(Get-BoostLabBitLockerSourceOffTargetVolumes -VolumeSnapshot $analysis.VolumeDiscovery)
+        $ambiguousTargets = @(
+            $targetVolumes |
+                Where-Object {
+                    [string]::IsNullOrWhiteSpace([string]$_.MountPoint) -or [string]$_.MountPoint -eq 'Unknown'
+                }
+        )
+        if (@($ambiguousTargets).Count -gt 0) {
+            return New-BoostLabBitLockerResult `
+                -Success $false `
+                -Action 'Apply' `
+                -Status 'TargetVolumeAmbiguous' `
+                -CommandStatus 'Blocked before execution' `
+                -VerificationStatus 'Failed' `
+                -Message 'BitLocker Off action blocked because one or more source-matched volumes has no reliable MountPoint.' `
+                -Data $analysis `
+                -Errors @('A source-matched BitLocker volume had no reliable MountPoint for Disable-BitLocker.')
+        }
+
+        $operationPlan = New-BoostLabBitLockerOperationPlan -Branch 'Off' -TargetVolumes $targetVolumes
+        $disableResults = @(
+            foreach ($mountPoint in @($operationPlan.TargetMountPoints)) {
+                Invoke-BoostLabBitLockerDisableForMountPoint `
+                    -MountPoint $mountPoint `
+                    -DisableBitLockerExecutor $DisableBitLockerExecutor
+            }
+        )
+        $controlPanelResult = Invoke-BoostLabBitLockerControlPanel -ControlPanelLauncher $ControlPanelLauncher
+        $manageBdeResult = Invoke-BoostLabBitLockerManageBdeStatus -ManageBdeStatusExecutor $ManageBdeStatusExecutor
+        $commandResults = @($disableResults) + @($controlPanelResult, $manageBdeResult)
+        $warnings = @(
+            $commandResults |
+                Where-Object { -not [bool]$_.Success } |
+                ForEach-Object { [string]$_.Message }
+        )
+        $success = @($warnings).Count -eq 0
+        $changesExecuted = @($disableResults).Count -gt 0
+
         return New-BoostLabBitLockerResult `
-            -Success $false `
+            -Success:$success `
             -Action 'Apply' `
-            -Status 'NeedsRecoveryKeyPolicy' `
-            -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Blocked' `
-            -Message 'BitLocker Apply is blocked. The source Off branch disables BitLocker on matched volumes, and BoostLab has no approved recovery-key, volume-selection, encryption-state, protector-state, verification, or support contract for that mutation.' `
-            -Data $analysis
+            -Status $(if ($success) { 'Completed' } else { 'CompletedWithWarnings' }) `
+            -CommandStatus $(if ($success) { 'Completed' } else { 'Completed with warnings' }) `
+            -VerificationStatus $(if ($success) { 'Passed' } else { 'Warning' }) `
+            -Message $(if ($success) { 'BitLocker Off branch completed. Disable-BitLocker was invoked for each source-matched target MountPoint, then Control Panel launch and manage-bde status were requested.' } else { 'BitLocker Off branch completed with warnings. Review command outcomes for individual targets.' }) `
+            -Data ([pscustomobject]@{
+                Analysis                                  = $analysis
+                OperationPlan                             = $operationPlan
+                DisableResults                            = @($disableResults)
+                ControlPanelResult                        = $controlPanelResult
+                ManageBdeStatusResult                     = $manageBdeResult
+                TargetMountPoints                         = @($operationPlan.TargetMountPoints)
+                TargetVolumeCount                         = [int]$operationPlan.TargetVolumeCount
+                RecoveryKeysCollectedDisplayedOrPersisted = $false
+                AutomaticEnableBitLocker                  = $false
+                DisableBitLockerInvoked                   = @($disableResults).Count -gt 0
+            }) `
+            -Warnings $warnings `
+            -ChangesExecuted:$changesExecuted
     }
 
     if ($canonicalActionName -eq 'Default') {

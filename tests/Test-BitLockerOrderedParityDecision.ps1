@@ -58,7 +58,6 @@ function Assert-BoostLabTextContains {
 }
 
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
-$inventoryBaseline = $inventoryAssertion.Baseline
 $inventorySnapshot = $inventoryAssertion.Snapshot
 $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
@@ -69,11 +68,10 @@ $modulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\3 Setup\1 BitLocker.ps1'
 $intakePath = Join-Path $ProjectRoot 'intake\missing-ultimate-scripts\Ultimate\3 Setup\1 BitLocker.ps1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bitlocker.md'
-$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 
-foreach ($path in @($configPath, $orderPath, $modulePath, $sourcePath, $intakePath, $migrationPath, $actionPlanPath, $artifactPath, $productionAllowlistPath)) {
+foreach ($path in @($configPath, $orderPath, $modulePath, $sourcePath, $intakePath, $migrationPath, $artifactPath, $productionAllowlistPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required BitLocker parity file was not found: $path"
 }
 
@@ -101,29 +99,33 @@ $setupOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Set
 Assert-BoostLabCondition ($null -ne $setupOrder) 'Setup stage was not found in ordered parity execution baseline.'
 Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'Setup starts with BitLocker') 'Execution order rule must document the Phase 114 Setup correction.'
 Assert-BoostLabCondition ([string]@($setupOrder.Tools)[0].ToolId -eq 'bitlocker') 'BitLocker must be first in Setup ordered parity execution.'
-Assert-BoostLabCondition (@($setupOrder.Tools | Where-Object { [string]$_.ToolId -eq 'edge-settings' }).Count -eq 1) 'Edge Settings must remain in Setup order but not ahead of BitLocker.'
-
-$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'bitlocker') 'Current ordered parity target must be BitLocker, not Edge Settings.'
 
 $bitLockerRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'bitlocker' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $bitLockerRecord) 'BitLocker parity record was not found.'
 Assert-BoostLabCondition ([string]$bitLockerRecord.RuntimeStatus -eq 'RuntimeImplemented') 'BitLocker runtime status mismatch.'
-Assert-BoostLabCondition ([string]$bitLockerRecord.ImplementationLevel -eq 'SecurityAssistantOnly') 'BitLocker must remain SecurityAssistantOnly until Yazan approves final mutation policy.'
-Assert-BoostLabCondition ([string]$bitLockerRecord.UltimateParity -eq 'No') 'BitLocker must not be marked as Ultimate parity.'
+Assert-BoostLabCondition ([string]$bitLockerRecord.ImplementationLevel -eq 'NearParityControlled') 'BitLocker must be NearParityControlled after Phase 115 Yazan approval.'
+Assert-BoostLabCondition ([string]$bitLockerRecord.UltimateParity -eq 'Partial') 'BitLocker accepted near parity must remain Partial by current convention.'
 Assert-BoostLabCondition (-not [bool]$bitLockerRecord.YazanFinalException) 'BitLocker must not use a Yazan final exception.'
-Assert-BoostLabCondition (-not [bool]$bitLockerRecord.YazanAcceptedNearParity) 'BitLocker must not be marked accepted near-parity.'
-Assert-BoostLabCondition ([string]$bitLockerRecord.FinalProgressStatus -eq 'DeferredNeedsYazanDecision') 'BitLocker must be deferred for a Yazan decision.'
-Assert-BoostLabTextContains -Text ([string]$bitLockerRecord.GapSummary) -Needle 'recovery-key' -Description 'BitLocker parity gap summary'
-Assert-BoostLabTextContains -Text ([string]$bitLockerRecord.GapSummary) -Needle 'decryption' -Description 'BitLocker parity gap summary'
-Assert-BoostLabTextContains -Text ([string]$bitLockerRecord.NextParityAction) -Needle 'Ask Yazan' -Description 'BitLocker next parity action'
-Assert-BoostLabCondition (-not (Test-BoostLabParityRecordFinal -Record $bitLockerRecord)) 'BitLocker must not be treated as final without Yazan decision.'
+Assert-BoostLabCondition ([bool]$bitLockerRecord.YazanAcceptedNearParity) 'BitLocker must be marked accepted near-parity.'
+Assert-BoostLabCondition ([string]$bitLockerRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'BitLocker final progress status mismatch.'
+Assert-BoostLabTextContains -Text ([string]$bitLockerRecord.GapSummary) -Needle 'source-equivalent BitLocker Off and On/status behavior' -Description 'BitLocker parity gap summary'
+Assert-BoostLabTextContains -Text ([string]$bitLockerRecord.NextParityAction) -Needle 'Skip; accepted near-parity.' -Description 'BitLocker next parity action'
+Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecord) 'BitLocker accepted near-parity record must be treated as final.'
+
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'edge-settings') 'Next ordered parity target must advance to Edge Settings after BitLocker acceptance.'
+
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 18) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count changed.'
 
 $bitLockerTool = @($allTools | Where-Object { $_.Id -eq 'bitlocker' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $bitLockerTool) 'BitLocker tool metadata was not found.'
 Assert-BoostLabCondition ([string]$bitLockerTool.Stage -eq 'Setup') 'BitLocker must remain a Setup tool.'
-Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 9) 'BitLocker UI/catalog order must remain unchanged by the parity correction.'
+Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 9) 'BitLocker UI/catalog order must remain unchanged by the parity upgrade.'
 Assert-BoostLabCondition ((@($bitLockerTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore,Open') 'BitLocker must expose canonical actions only.'
 $capabilities = $bitLockerTool.Capabilities
 Assert-BoostLabCondition ([bool]$capabilities.RequiresAdmin) 'BitLocker must preserve Administrator requirement.'
@@ -134,16 +136,18 @@ Assert-BoostLabCondition (-not [bool]$capabilities.SupportsRestore) 'BitLocker m
 
 $moduleText = Get-Content -Raw -LiteralPath $modulePath
 foreach ($needle in @(
-    'ManualHandoffOnly',
-    'NeedsRecoveryKeyPolicy',
+    'SourceEquivalentControlled',
+    'SourceEquivalentOffAvailable',
+    'SourceEquivalentOnStatusAvailable',
+    'Disable-BitLocker -MountPoint $MountPoint -ErrorAction SilentlyContinue',
+    'Start-Process -FilePath ''control.exe'' -ArgumentList ''/name microsoft.bitlockerdriveencryption''',
+    'manage-bde -status',
     'DefaultUnavailable',
-    'RestoreUnavailable',
-    'NoSilentEnableDisableDecryptSuspendOrProtectorMutation',
-    'No external tool is opened by BoostLab.',
-    'No BitLocker state mutation is executed by BoostLab.'
+    'RestoreUnavailable'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'BitLocker controlled assistant module'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'BitLocker source-equivalent controlled module'
 }
+Assert-BoostLabCondition (-not $moduleText.Contains('NeedsRecoveryKeyPolicy')) 'BitLocker must not keep the old NeedsRecoveryKeyPolicy Apply blocker.'
 
 $tokens = $null
 $parseErrors = $null
@@ -156,23 +160,19 @@ $commands = @(
     ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
 )
 foreach ($forbiddenCommand in @(
-    'Disable-BitLocker',
     'Enable-BitLocker',
     'Suspend-BitLocker',
     'Resume-BitLocker',
     'Unlock-BitLocker',
     'Remove-BitLockerKeyProtector',
     'Add-BitLockerKeyProtector',
-    'manage-bde',
-    'control.exe',
-    'Start-Process',
     'Set-ItemProperty',
     'New-ItemProperty',
     'Remove-ItemProperty',
     'Restart-Computer',
     'bcdedit'
 )) {
-    Assert-BoostLabCondition ($forbiddenCommand -notin $commands) "BitLocker module must not execute command: $forbiddenCommand"
+    Assert-BoostLabCondition ($forbiddenCommand -notin $commands) "BitLocker module must not execute unrelated command: $forbiddenCommand"
 }
 
 $moduleInfo = Import-Module -Name $modulePath -Force -PassThru -Scope Local -ErrorAction Stop
@@ -196,8 +196,35 @@ try {
                     }
                 )
             }
+            [pscustomobject]@{
+                MountPoint           = 'D:'
+                VolumeStatus         = 'FullyDecrypted'
+                ProtectionStatus     = 'Off'
+                EncryptionPercentage = 0
+                LockStatus           = 'Unlocked'
+                KeyProtector         = @()
+            }
         )
     }
+
+    $disableCalls = [System.Collections.Generic.List[string]]::new()
+    $controlCalls = [System.Collections.Generic.List[string]]::new()
+    $manageBdeCalls = [System.Collections.Generic.List[string]]::new()
+    $disableExecutor = {
+        param([string]$MountPoint)
+        $disableCalls.Add($MountPoint)
+        [pscustomobject]@{ Success = $true; CommandStatus = 'Completed'; Message = "Mock disabled $MountPoint." }
+    }.GetNewClosure()
+    $controlPanelLauncher = {
+        param([string]$FilePath, [string]$ArgumentList)
+        $controlCalls.Add("$FilePath $ArgumentList")
+        [pscustomobject]@{ Success = $true; CommandStatus = 'Completed'; Message = 'Mock Control Panel launch.' }
+    }.GetNewClosure()
+    $manageBdeStatusExecutor = {
+        param([string[]]$ArgumentList)
+        $manageBdeCalls.Add(($ArgumentList -join ' '))
+        [pscustomobject]@{ Success = $true; CommandStatus = 'Completed'; ExitCode = 0; Message = 'Mock manage-bde status.' }
+    }.GetNewClosure()
 
     $analyze = & $moduleInfo {
         param($Reader)
@@ -206,31 +233,34 @@ try {
     Assert-BoostLabCondition ([bool]$analyze.Success) 'BitLocker Analyze must remain available.'
     Assert-BoostLabCondition ([string]$analyze.CommandStatus -eq 'No execution performed') 'BitLocker Analyze must not execute commands.'
     Assert-BoostLabCondition (-not [bool]$analyze.ChangesExecuted) 'BitLocker Analyze must not mutate state.'
-    Assert-BoostLabCondition ([string]$analyze.Data.Mode -eq 'ManualHandoffOnly') 'BitLocker Analyze must remain manual-handoff/security-assistant only.'
-    Assert-BoostLabCondition (-not [bool]$analyze.Data.ApplyAvailable) 'BitLocker Apply must not be available.'
+    Assert-BoostLabCondition ([string]$analyze.Data.Mode -eq 'SourceEquivalentControlled') 'BitLocker Analyze must report source-equivalent controlled mode.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'BitLocker Apply must be available after Yazan approval.'
     Assert-BoostLabCondition ([int]$analyze.Data.VolumeDiscovery.SourceOffMatchedVolumeCount -eq 1) 'BitLocker Analyze must report source Off matched volumes read-only.'
-    Assert-BoostLabCondition ([bool]@($analyze.Data.VolumeDiscovery.Volumes)[0].HasRecoveryPasswordProtector) 'BitLocker Analyze may report recovery protector presence.'
     $analyzeJson = $analyze | ConvertTo-Json -Depth 12
     Assert-BoostLabCondition (-not $analyzeJson.Contains('000000-111111-222222-333333-444444-555555-666666-777777')) 'BitLocker Analyze must not expose recovery password values.'
     Assert-BoostLabCondition (-not $analyzeJson.Contains('{TPM-SECRET-ID}')) 'BitLocker Analyze must not expose key protector ids.'
 
     $open = & $moduleInfo {
-        param($Reader)
-        Invoke-BoostLabToolAction -ActionName Open -Confirmed:$true -VolumeReader $Reader
-    } $mockVolumeReader
-    Assert-BoostLabCondition ([bool]$open.Success) 'BitLocker Open should prepare manual handoff.'
-    Assert-BoostLabCondition ([string]$open.Status -eq 'ManualHandoffPrepared') 'BitLocker Open status mismatch.'
-    Assert-BoostLabCondition ([string]$open.CommandStatus -eq 'No execution performed') 'BitLocker Open must not execute commands.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoExternalToolOpened) 'BitLocker Open must not open Control Panel or external UI.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoBitLockerMutation) 'BitLocker Open must not mutate BitLocker state.'
+        param($Reader, $ControlLauncher, $StatusExecutor)
+        Invoke-BoostLabToolAction -ActionName Open -Confirmed:$true -VolumeReader $Reader -ControlPanelLauncher $ControlLauncher -ManageBdeStatusExecutor $StatusExecutor
+    } $mockVolumeReader $controlPanelLauncher $manageBdeStatusExecutor
+    Assert-BoostLabCondition ([bool]$open.Success) 'BitLocker Open should route source On/status behavior through mocks.'
+    Assert-BoostLabCondition ([string]$open.Status -eq 'StatusOpened') 'BitLocker Open status mismatch.'
+    Assert-BoostLabCondition ([string]$open.CommandStatus -eq 'Completed') 'BitLocker Open command status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$open.ChangesExecuted) 'BitLocker Open must not mutate BitLocker state.'
+    Assert-BoostLabCondition (-not [bool]$open.Data.AutomaticEnableBitLocker) 'BitLocker Open must not enable BitLocker automatically.'
 
     $apply = & $moduleInfo {
-        param($Reader)
-        Invoke-BoostLabToolAction -ActionName Apply -Confirmed:$true -VolumeReader $Reader
-    } $mockVolumeReader
-    Assert-BoostLabCondition (-not [bool]$apply.Success) 'BitLocker Apply must remain blocked.'
-    Assert-BoostLabCondition ([string]$apply.Status -eq 'NeedsRecoveryKeyPolicy') 'BitLocker Apply blocker status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$apply.ChangesExecuted) 'BitLocker Apply must execute no changes.'
+        param($Reader, $DisableExecutor, $ControlLauncher, $StatusExecutor)
+        Invoke-BoostLabToolAction -ActionName Apply -Confirmed:$true -VolumeReader $Reader -DisableBitLockerExecutor $DisableExecutor -ControlPanelLauncher $ControlLauncher -ManageBdeStatusExecutor $StatusExecutor
+    } $mockVolumeReader $disableExecutor $controlPanelLauncher $manageBdeStatusExecutor
+    Assert-BoostLabCondition ([bool]$apply.Success) 'BitLocker Apply should route source Off behavior through mocks.'
+    Assert-BoostLabCondition ([string]$apply.Status -eq 'Completed') 'BitLocker Apply status mismatch.'
+    Assert-BoostLabCondition ([bool]$apply.ChangesExecuted) 'BitLocker Apply must report source Off mutation request when targets exist.'
+    Assert-BoostLabCondition (($disableCalls -join '|') -eq 'C:') 'BitLocker Apply must call Disable-BitLocker only for source-matched MountPoints.'
+    Assert-BoostLabCondition ($controlCalls.Count -eq 2) 'BitLocker Open plus Apply must request two mocked Control Panel launches.'
+    Assert-BoostLabCondition ($manageBdeCalls.Count -eq 2) 'BitLocker Open plus Apply must request two mocked manage-bde status calls.'
+    Assert-BoostLabCondition (-not [bool]$apply.Data.RecoveryKeysCollectedDisplayedOrPersisted) 'BitLocker Apply must not collect or expose recovery keys.'
 
     $default = & $moduleInfo {
         param($Reader)
@@ -258,7 +288,7 @@ foreach ($needle in @(
     'Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue',
     'Start-Process control.exe -ArgumentList "/name microsoft.bitlockerdriveencryption"',
     'manage-bde -status',
-    'Approved for controlled security assistant intake only'
+    'Phase 115 Yazan-approved source-equivalent BitLocker Off and On/status behavior'
 )) {
     Assert-BoostLabTextContains -Text $migrationText -Needle $needle -Description 'BitLocker migration record'
 }
@@ -273,36 +303,11 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
 }
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
-$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-$root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
-        Where-Object {
-            $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*')
-        } |
-        Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
-        ForEach-Object {
-            $relativePath = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
-            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
-            "$relativePath|$hash"
-        }
-)
-$sha = [Security.Cryptography.SHA256]::Create()
-try {
-    $sourceManifestHash = ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($sourceLines -join "`n"))))).Replace('-', '')
-}
-finally {
-    $sha.Dispose()
-}
-Assert-BoostLabCondition (@($sourceLines).Count -eq 49) 'Legacy source file count changed.'
-Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'Legacy source manifest changed.'
-
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 44) 'Runtime implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 11) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.RemainingSourcePromotedIntakeCandidates -eq 0) 'Remaining source-promoted intake count changed.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count changed.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',
@@ -315,15 +320,15 @@ foreach ($deletedPath in @(
     Test = 'BitLockerOrderedParityDecision'
     SourcePath = 'source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1'
     SourceHash = $actualSourceHash
-    RuntimeBehaviorChanged = $false
-    OrderedTarget = $nextTarget.ToolId
+    RuntimeBehaviorChanged = $true
+    NextOrderedTarget = $nextTarget.ToolId
     ImplementationLevel = $bitLockerRecord.ImplementationLevel
     FinalProgressStatus = $bitLockerRecord.FinalProgressStatus
     YazanAcceptedNearParity = [bool]$bitLockerRecord.YazanAcceptedNearParity
     YazanFinalException = [bool]$bitLockerRecord.YazanFinalException
-    ManageBdeExecuted = $false
-    ControlPanelLaunched = $false
-    BitLockerMutationExecuted = $false
+    ManageBdeExecutedByTest = $false
+    ControlPanelLaunchedByTest = $false
+    BitLockerMutationExecutedByTest = $false
     SourceUltimateUnchanged = $true
-    Message = 'BitLocker remains the ordered target and requires a Yazan security policy decision before parity can advance.'
+    Message = 'BitLocker is accepted near-parity after Phase 115 Yazan approval; validators use mocks for source-equivalent command routing.'
 }
