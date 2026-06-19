@@ -434,7 +434,6 @@ $refusedPlaceholders = @(
     'Windows\start-menu-taskbar.psm1'
     'Windows\bloatware.psm1'
     'Windows\game-bar.psm1'
-    'Windows\edge-webview.psm1'
     'Windows\control-panel-settings.psm1'
     'Windows\cleanup.psm1'
     'Advanced\resizable-bar-assistant.psm1'

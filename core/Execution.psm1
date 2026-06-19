@@ -108,6 +108,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\visual-cpp.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
+    'edge-webview' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\edge-webview.psm1'
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
     'graphics-configuration-center' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\GraphicsConfigurationCenter.psm1'
         Actions = @('Open')

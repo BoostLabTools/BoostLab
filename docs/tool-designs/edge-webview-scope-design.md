@@ -2,25 +2,25 @@
 
 ## Purpose
 
-This Phase 52 document defines the future implementation scope for the
-`Edge & WebView` tool. It is design-only.
+This Phase 52 document defines the future Auto implementation scope for the
+`Edge & WebView` tool.
 
-No Edge or WebView behavior is implemented by this document. No runtime
-behavior, module behavior, production AppX package allowlist, download artifact
-approval, installer execution approval, cleanup scope, file scope, registry
-scope, service scope, scheduled-task scope, DISM/CBS scope, Default behavior,
-or Restore behavior is approved here.
+Phase 106 implements controlled manual handoff only. No automated Edge or
+WebView removal, repair, download, installer execution, package action,
+process handling, file mutation, registry mutation, service mutation, task
+mutation, cleanup, Default behavior, or Restore behavior is approved here.
 
-Edge & WebView remains a refused placeholder until a later approved phase adds
-exact bounded production scopes and implementation.
+Edge & WebView Auto remains blocked until a later approved phase adds exact
+bounded production scopes and implementation.
 
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/13 Edge & WebView.ps1`
 * Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`
 * Current BoostLab module path: `modules/Windows/edge-webview.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status: controlled manual handoff only
+* Current implemented actions: `Analyze`, `Open`, `Apply`, `Default`, `Restore`
+* Migration record: `docs/migrations/edge-webview.md`
 
 Relevant foundations:
 
@@ -65,14 +65,17 @@ Browser Helper Object registry keys.
 
 ## Current Decision
 
-Do not implement Analyze, Apply, Default, or Restore yet.
+Edge & WebView is implemented as controlled manual handoff only in Phase 106.
+Analyze is read-only, Open prepares instructions inside BoostLab only, Apply is
+blocked as `AutoBlockedUntilArtifactApproval`, and Default/Restore remain
+unavailable.
 
-The source combines package repair/removal, download and installer execution,
+Auto remains blocked because the source combines package repair/removal, download and installer execution,
 process termination, service deletion, scheduled task removal, broad file and
 directory deletion, registry mutation, RunOnce and Active Setup deletion, and a
 Windows 10 CBS/DISM package removal branch. These require exact production
 allowlists and several tool-specific governance decisions before implementation
-can preserve Ultimate behavior safely.
+can preserve Ultimate Auto behavior safely.
 
 ## Behavior Groups
 
@@ -589,6 +592,6 @@ Specifically, this document does not approve:
 * Default behavior
 * Restore behavior
 
-Edge & WebView remains refused and disabled as a placeholder until a future
-phase explicitly approves exact bounded scopes and implements a narrower
-reviewed workflow.
+Edge & WebView manual handoff is implemented in Phase 106. Auto, Default, and
+Restore remain blocked until a future phase explicitly approves exact bounded
+scopes and implements a narrower reviewed workflow.

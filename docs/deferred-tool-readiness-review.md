@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **43**
-* Deferred/placeholders: **12**
+* Implemented tools: **44**
+* Deferred/placeholders: **11**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -152,7 +152,7 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **2**
-* Foundation-ready but needs artifact provenance approvals: **3**
+* Foundation-ready but needs artifact provenance approvals: **2**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
 
@@ -171,7 +171,7 @@ Current inventory:
 | Copilot | `copilot` | Windows | Refused placeholder | Registry-only implementation would weaken Ultimate; full source removes/re-registers AppX and stops many processes | AppX inventory and restore foundation | No process-handling governance, no exact package/process policy for this tool | Exact package scope and a separately approved process-handling model | No | Not ready | Use `docs/tool-designs/copilot-scope-design.md`, then keep deferred until process-stop governance is defined or the tool is redesigned |
 | Bloatware | `bloatware` | Windows | Refused placeholder | Broad AppX, service, cleanup, download, and repair workflow | AppX inventory, service rollback, cleanup policy, download/installer policy | No approved package list, no approved service scopes, no approved cleanup ownership map, no unified restore design | Exact package allowlists, exact service scopes, exact cleanup scopes, any artifact approvals | No | Foundation-ready but needs tool-specific design | Use `docs/tool-designs/bloatware-scope-design.md` before any second attempt |
 | GameBar | `game-bar` | Windows | Refused placeholder | AppX, service, download, repair, and TrustedInstaller workflow | AppX inventory, service rollback, download/installer policy, TrustedInstaller policy | No approved package scopes, no approved TI scope, no approved repair artifacts, no exact service targets | Exact package/service/TI scopes and exact repair artifact approvals | No | Foundation-ready but needs tool-specific design | Use `docs/tool-designs/gamebar-scope-design.md` before any second attempt |
-| Edge & WebView | `edge-webview` | Windows | Refused placeholder | File/service deletion plus repair installers and RunOnce changes | File/registry rollback, cleanup policy, service rollback, download/installer policy | No approved repair artifacts, no approved service scopes, no approved file cleanup ownership map | Exact service scopes, exact cleanup scopes, exact repair artifacts and installer requests | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/edge-webview-scope-design.md` before any second attempt |
+| Edge & WebView | `edge-webview` | Windows | Implemented in Phase 106 as controlled manual handoff | Automated source behavior removes/repairs Edge and WebView with downloads, installers, process stops, service/task deletion, file cleanup, registry mutation, Active Setup/RunOnce/BHO changes, and Windows 10 legacy package removal | Manual handoff pattern, download provenance, installer policy, file/registry rollback, cleanup policy, service rollback | Auto remains blocked: no approved repair artifacts, no approved repair/installer descriptors, no approved package/process/service/task/file/registry cleanup scopes, and no approved restore/support contract | Future Auto would require exact repair artifacts, installer descriptors, package/process/service/task/file/registry cleanup scopes, inventory, rollback, restore, and support approvals | Complete for manual handoff only | Phase 106 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/edge-webview-scope-design.md` and `docs/migrations/edge-webview.md` |
 | Control Panel Settings | `control-panel-settings` | Windows | Refused placeholder | Very broad optimization source with services, security, deletion, and TrustedInstaller | File/registry rollback, service rollback, cleanup policy, TrustedInstaller policy | Still lacks decomposition into implementable slices; too broad for direct scope approval | Any future work would require many exact sub-tool scopes, not one blanket approval | No | Not ready | Use `docs/tool-designs/control-panel-settings-scope-design.md`, then keep deferred until the source is split into smaller approved candidates |
 | Cleanup | `cleanup` | Windows | Refused placeholder | Broad recursive deletion with no restore path | Cleanup policy and file rollback foundations | No approved exact cleanup scopes, no approved ownership map, no decision on permanent delete versus quarantine per target | Exact bounded cleanup scopes and per-target ownership/rollback decisions | No | Foundation-ready but needs production allowlists | Use `docs/tool-designs/cleanup-scope-design.md` before any second attempt |
 | Resizable BAR Assistant | `resizable-bar-assistant` | Advanced | Refused placeholder | NVIDIA Profile Inspector download from mutable URL, generated `.nip` profile imports, NVIDIA DRS unblocking, driver profile mutation, and firmware restart path | Download provenance, file/registry rollback, driver rollback, reboot workflow | No approved NVIDIA artifact, no approved Inspector execution descriptor, no approved generated `.nip` file scopes, no approved NVIDIA driver profile scope, no approved firmware restart workflow | Exact NVIDIA artifact approval, exact Inspector command descriptors, exact generated `.nip` hashes, exact NVIDIA profile scopes, exact firmware restart scope | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/resizable-bar-assistant-scope-design.md` before any second attempt |
@@ -219,7 +219,6 @@ documented in `docs/tool-designs/updates-drivers-block-scope-design.md`.
 These mostly moved from “missing foundation” to “waiting on exact artifact and
 execution approval”:
 
-* Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
 
@@ -234,6 +233,12 @@ Auto remains blocked until the exact app artifact, installer, side-effect,
 inventory, cleanup, rollback, and support approvals documented in
 `docs/tool-designs/installers-scope-provenance-design.md` and
 `docs/migrations/installers.md` exist.
+
+Edge & WebView was implemented in Phase 106 as controlled manual handoff only.
+Auto remains blocked until the exact repair artifact, installer, package,
+process, service, task, file, registry, cleanup, rollback, and support
+approvals documented in `docs/tool-designs/edge-webview-scope-design.md` and
+`docs/migrations/edge-webview.md` exist.
 
 Driver Install Debloat & Settings manual handoff is implemented in Phase 99.
 Its Auto path still requires the exact approvals documented in

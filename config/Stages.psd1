@@ -464,10 +464,10 @@
                     Stage       = 'Windows'
                     Order       = 13
                     Type        = 'assistant'
-                    RiskLevel   = 'medium'
-                    Description = 'Review Microsoft Edge and WebView components before making changes.'
-                    Actions     = @('Analyze', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    RiskLevel   = 'high'
+                    Description = 'Controlled manual handoff only. Analyze the source-defined Edge and WebView removal/repair workflow without automated downloads, repair, installer execution, package actions, process handling, registry/service/file mutation, cleanup, or system mutation.'
+                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'notepad-settings'

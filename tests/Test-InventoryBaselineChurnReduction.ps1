@@ -51,8 +51,8 @@ $assertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -Include
 $snapshot = $assertion.Snapshot
 
 Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Inventory baseline ActiveTools must remain 55 for Phase 103.'
-Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 43) 'Inventory baseline ImplementedTools must remain 43 after Phase 105 Installers manual handoff.'
-Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 12) 'Inventory baseline DeferredPlaceholders must remain 12 after Phase 105 Installers manual handoff.'
+Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 44) 'Inventory baseline ImplementedTools must remain 44 after Phase 106 Edge & WebView manual handoff.'
+Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 11) 'Inventory baseline DeferredPlaceholders must remain 11 after Phase 106 Edge & WebView manual handoff.'
 Assert-BoostLabCondition ([int]$baseline.SourcePromotedMirrorFiles -eq 7) 'Inventory baseline SourcePromotedMirrorFiles must remain 7 for Phase 103.'
 Assert-BoostLabCondition ([int]$baseline.RemainingSourcePromotedIntakeCandidates -eq 0) 'Inventory baseline RemainingSourcePromotedIntakeCandidates must remain 0 for Phase 103.'
 Assert-BoostLabCondition ([int]$snapshot.RemainingSourcePromotedIntakeCandidates -eq [int]$baseline.RemainingSourcePromotedIntakeCandidates) 'Live remaining source-promoted intake count does not match the baseline.'
@@ -85,18 +85,18 @@ foreach ($file in $baselineUsingFiles) {
 
 $forbiddenHardcodedPatterns = @(
     'Expected 55 active tools',
-    'Expected 43 implemented tools',
-    'Expected 12 deferred/placeholders',
+    'Expected 44 implemented tools',
+    'Expected 11 deferred/placeholders',
     'Expected 7 source-promoted mirror files',
     'ActiveToolCount = 55',
-    'ImplementedModuleCount = 43',
-    'PlaceholderModuleCount = 12',
+    'ImplementedModuleCount = 44',
+    'PlaceholderModuleCount = 11',
     'SourcePromotedMirrorFileCount = 7',
     'RemainingSourcePromotedIntake = 0',
-    'implementedCount -ne 43',
-    'implementedCount -eq 43',
-    'placeholderCount -ne 12',
-    'placeholderCount -eq 12',
+    'implementedCount -ne 44',
+    'implementedCount -eq 44',
+    'placeholderCount -ne 11',
+    'placeholderCount -eq 11',
     'activeTools.Count -ne 55',
     'allTools.Count -ne 55',
     'allTools.Count -eq 55',

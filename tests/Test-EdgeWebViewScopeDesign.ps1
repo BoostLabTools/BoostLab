@@ -30,6 +30,7 @@ $readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\13 Edge & WebView.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\edge-webview.psm1'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\edge-webview.md'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $appxPolicyPath = Join-Path $ProjectRoot 'config\AppxPackagePolicy.psd1'
 $cleanupPolicyPath = Join-Path $ProjectRoot 'config\CleanupPolicy.psd1'
@@ -44,6 +45,7 @@ foreach ($path in @(
     $planPath,
     $sourcePath,
     $modulePath,
+    $migrationPath,
     $configPath,
     $appxPolicyPath,
     $cleanupPolicyPath,
@@ -105,7 +107,8 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`',
-    'Edge & WebView remains a refused placeholder',
+    'Edge & WebView is implemented as controlled manual handoff only in Phase 106.',
+    'docs/migrations/edge-webview.md',
     'No production AppX/package/download/installer/cleanup/file/registry/service/',
     'mutable `refs/heads/main` artifacts',
     'unknown packages remain denied',
@@ -170,11 +173,57 @@ if (-not $planText.Contains('docs/tool-designs/edge-webview-scope-design.md')) {
     throw 'Deferred tools execution plan does not link to the Edge & WebView scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Edge & WebView module is no longer a placeholder.'
+foreach ($requiredModuleNeedle in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
+    'ManualHandoffOnly',
+    'ManualHandoffPrepared',
+    'AutoBlockedUntilArtifactApproval',
+    'DefaultUnavailable',
+    'RestoreUnavailable',
+    'NoDownloadOccurred',
+    'NoRepairOccurred',
+    'NoInstallerExecutionOccurred',
+    'NoExternalProcessStarted',
+    'NoPackageMutationOccurred',
+    'NoAppxMutationOccurred',
+    'NoFileMutationOccurred',
+    'NoRegistryMutationOccurred',
+    'NoServiceMutationOccurred',
+    'NoScheduledTaskMutation',
+    'NoProcessMutationOccurred',
+    'NoCleanupOccurred',
+    'NoRebootOccurred',
+    'NoSystemMutationOccurred'
+)) {
+    if (-not $moduleText.Contains($requiredModuleNeedle)) {
+        throw "Edge & WebView manual-handoff module is missing expected text: $requiredModuleNeedle"
+    }
 }
-if ($moduleText -match 'Remove-Item|Start-Process|Stop-Process|Unregister-ScheduledTask|IWR|Invoke-WebRequest|dism|sc |reg |Remove-AppxPackage|Add-AppxPackage') {
-    throw 'Edge & WebView placeholder module appears to contain real mutation behavior.'
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Edge & WebView module still uses the placeholder contract.'
+}
+foreach ($commandPattern in @(
+    '(?m)^\s*IWR\b',
+    '(?m)^\s*Invoke-WebRequest\b',
+    '(?m)^\s*Start-BitsTransfer\b',
+    '(?m)^\s*Start-Process\b',
+    '(?m)^\s*Stop-Process\b',
+    '(?m)^\s*Get-Process\b',
+    '(?m)^\s*Get-Service\b',
+    '(?m)^\s*Get-ScheduledTask\b',
+    '(?m)^\s*Unregister-ScheduledTask\b',
+    '(?m)^\s*Remove-Item\b',
+    '(?m)^\s*New-Item\b',
+    '(?m)^\s*Copy-Item\b',
+    '(?m)^\s*cmd\b',
+    '(?m)^\s*dism\b',
+    '(?m)^\s*reg\s+(add|delete)\b',
+    '(?m)^\s*Remove-AppxPackage\b',
+    '(?m)^\s*Add-AppxPackage\b'
+)) {
+    if ([regex]::IsMatch($moduleText, $commandPattern)) {
+        throw "Edge & WebView module contains prohibited executable command pattern: $commandPattern"
+    }
 }
 
 if ($appxPolicy.PackageScopes.Count -ne 0) {
@@ -198,6 +247,23 @@ $edgeTool = $allTools |
     Select-Object -First 1
 if (-not $edgeTool) {
     throw 'Edge & WebView catalog entry was not found.'
+}
+if ((@($edgeTool.Actions) -join ',') -ne 'Analyze,Open,Apply,Default,Restore') {
+    throw 'Edge & WebView catalog actions changed unexpectedly.'
+}
+
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
+foreach ($migrationNeedle in @(
+    '# Edge & WebView Migration Record',
+    'Controlled manual handoff only',
+    'No downloads, repair, installer launches, package actions, process handling',
+    'AutoBlockedUntilArtifactApproval',
+    'DefaultUnavailable',
+    'RestoreUnavailable'
+)) {
+    if (-not $migrationText.Contains($migrationNeedle)) {
+        throw "Edge & WebView migration record is missing expected text: $migrationNeedle"
+    }
 }
 
 $activeTools = @($allTools)
@@ -271,7 +337,7 @@ if ($nvmeSource.Count -ne 0) {
     ArtifactApprovals         = $artifactPolicy.Artifacts.Count
     SourceUltimateUnchanged   = $true
     DeletedToolsRemainDeleted = $true
-    Message                   = 'Edge & WebView scope design is present, linked, and non-executing.'
+    Message                   = 'Edge & WebView scope design is present, linked, and implemented as non-executing manual handoff.'
     Timestamp                 = Get-Date
 }
 

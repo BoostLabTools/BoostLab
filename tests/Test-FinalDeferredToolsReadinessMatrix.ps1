@@ -93,7 +93,6 @@ $expectedDeferred = @(
     @{ Id = 'copilot'; Title = 'Copilot'; Link = 'docs/tool-designs/copilot-scope-design.md'; Source = 'source-ultimate/6 Windows/8 Copilot.ps1'; Hash = '21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90' }
     @{ Id = 'bloatware'; Title = 'Bloatware'; Link = 'docs/tool-designs/bloatware-scope-design.md'; Source = 'source-ultimate/6 Windows/11 Bloatware.ps1'; Hash = '36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5' }
     @{ Id = 'game-bar'; Title = 'GameBar'; Link = 'docs/tool-designs/gamebar-scope-design.md'; Source = 'source-ultimate/6 Windows/12 Gamebar.ps1'; Hash = '8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59' }
-    @{ Id = 'edge-webview'; Title = 'Edge & WebView'; Link = 'docs/tool-designs/edge-webview-scope-design.md'; Source = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'; Hash = '161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691' }
     @{ Id = 'control-panel-settings'; Title = 'Control Panel Settings'; Link = 'docs/tool-designs/control-panel-settings-scope-design.md'; Source = 'source-ultimate/6 Windows/15 Control Panel Settings.ps1'; Hash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B' }
     @{ Id = 'cleanup'; Title = 'Cleanup'; Link = 'docs/tool-designs/cleanup-scope-design.md'; Source = 'source-ultimate/6 Windows/22 Cleanup.ps1'; Hash = '3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA' }
     @{ Id = 'resizable-bar-assistant'; Title = 'Resizable BAR Assistant'; Link = 'docs/tool-designs/resizable-bar-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1'; Hash = 'E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443' }
@@ -133,10 +132,10 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    '12/12 deferred tools covered',
-    'Scope or scope/provenance design covered tools: **12**',
+    '11/11 deferred tools covered',
+    'Scope or scope/provenance design covered tools: **11**',
     'Standalone provenance review covered tools: **0**',
-    'Manual-handoff implemented with Auto provenance review still blocking automation: **5**',
+    'Manual-handoff implemented with Auto provenance review still blocking automation: **6**',
     'No deferred tool is marked ready for implementation by this matrix.',
     'The presence of a scope design or provenance review is evidence for planning, not permission to execute.',
     'Production Allowlist Governance',
@@ -152,7 +151,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing artifact provenance | 3 |',
+    '| Missing artifact provenance | 2 |',
     '| Missing production allowlist | 2 |',
     '| Missing scheduled task governance | 1 |',
     '| Missing process handling governance | 1 |',
@@ -277,7 +276,7 @@ if (
     DeferredToolCount         = $placeholderTools.Count
     ImplementedToolCount      = $allTools.Count - $placeholderTools.Count
     ActiveToolCount           = $allTools.Count
-    ScopeDesignCoverage       = 12
+    ScopeDesignCoverage       = 11
     ProvenanceReviewCoverage  = 0
     ProductionArtifactScopes  = $artifactPolicy.Artifacts.Count
     ProductionAppxScopes      = $appxPolicy.PackageScopes.Count
