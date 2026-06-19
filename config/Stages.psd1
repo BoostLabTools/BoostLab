@@ -237,9 +237,9 @@
                     Order       = 1
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Prepare a controlled manual handoff for driver cleanup. No automated DDU download, DDU execution, Safe Mode, RunOnce, reboot, or driver cleanup is performed.'
+                    Description = 'Source-equivalent Driver Clean workflow. Analyze is read-only; Apply runs the Ultimate DDU Auto branch after confirmation; Open runs the Ultimate DDU Manual branch after confirmation.'
                     Actions     = @('Analyze', 'Open', 'Apply')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $true; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'driver-install-debloat-settings'

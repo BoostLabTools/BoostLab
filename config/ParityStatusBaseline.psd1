@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 19
+        NearParityControlled = 20
         ControlledSubset = 3
-        ManualHandoffOnly = 7
+        ManualHandoffOnly = 6
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -284,11 +284,13 @@
             StageOrder = 5
             ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'DDU and 7-Zip automation remain blocked despite Yazan intake exception.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation and test-safe mechanics around exact source-equivalent Driver Clean DDU Auto/Manual behavior.'
             YazanFinalException = $false
-            NextParityAction = 'Resolve controlled DDU/7-Zip artifact, Safe Mode, process, reboot, and recovery approvals.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'driver-install-latest'

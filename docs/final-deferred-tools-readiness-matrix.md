@@ -20,7 +20,7 @@ This document does not approve production scopes, allowlists, artifacts, install
 * Tool behavior changed by this phase: **No**
 * `source-ultimate/` modified by this phase: **No**
 
-Phase 70 note: `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage. It remains separate from official active/deferred counts and does not approve standalone DDU, DDU execution, downloads, artifacts, production scopes, or tool behavior.
+Phase 70 note: `Driver Clean.ps1` is a Yazan-approved intake exception despite DDU usage. The original intake exception did not approve standalone DDU, DDU execution, downloads, artifacts, production scopes, or tool behavior.
 
 Phase 71 note: source-promotion planning for the seven intake scripts lives in `docs/missing-scripts-source-promotion-decision.md`. The recommended future strategy is a source-promotion mirror under `source-ultimate/_intake-promoted/Ultimate/`, with no count or behavior changes in this phase.
 
@@ -48,7 +48,9 @@ Phase 81 note: NVIDIA Path B runtime gating design lives in `docs/tool-designs/n
 
 Phase 82 note: NVIDIA Path B non-executing Workflow Registry schema design lives in `docs/tool-designs/nvidia-path-b-non-executing-workflow-registry-schema-design.md`. It defines future metadata fields and pseudo-schema only; it creates no active workflow registry, runtime config, production config, UI implementation, or tool behavior.
 
-Phase 92 note: `Driver Clean` is now an implemented active tool using controlled manual handoff only. It verifies the source mirror checksum, reports ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, performs no DDU or 7-Zip download/execution, performs no Safe Mode/RunOnce/bcdedit/reboot automation, and remains outside NVIDIA Path B.
+Phase 92 note: `Driver Clean` was first implemented as controlled manual handoff only.
+
+Phase 120 note: `Driver Clean` now preserves the exact source-equivalent Auto and Manual workflow after BoostLab confirmation. It downloads the source-defined 7-Zip and DDU artifacts, installs/configures 7-Zip, extracts/configures DDU, captures and sets the source driver-search policy value, creates the source-defined RunOnce/Safe Mode scripts, enables Safe Mode with `bcdedit`, and restarts. This approval is Driver Clean-specific only and does not approve standalone DDU or DDU use outside Driver Clean.
 
 Phase 93/94 note: `Driver Install Latest` and `Nvidia Settings` are implemented active tools using controlled manual handoff only for Path B steps 1 and 2. They verify source mirror checksums, report ManualHandoffOnly, keep Auto blocked as `AutoBlockedUntilArtifactApproval`, perform no NVIDIA driver download, installer execution, 7-Zip download/install, Profile Inspector execution, `.nip` import/export, browser opening, Control Panel launch, external process start, registry/profile/driver/system mutation, reboot, or session change, and leave the remaining Path B steps separate and unimplemented.
 

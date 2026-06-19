@@ -194,13 +194,13 @@ function New-BoostLabActionPlan {
         'Create the approved Windows 11 autounattend.xml on selected removable installation media.'
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Analyze') {
-        'Read the Driver Clean source mirror and report blocked approvals without running any driver-cleaning operation.'
+        'Read the Driver Clean source mirror and report the source-equivalent Auto and Manual DDU workflows without executing them.'
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
-        'Prepare Driver Clean manual handoff instructions only; no external tool, download, or system-changing operation is opened or executed.'
+        'Run the source-equivalent Driver Clean Manual branch after confirmation: prepare 7-Zip/DDU, create the manual DDU RunOnce flow, enable Safe Mode, and restart.'
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Driver Clean because DDU, 7-Zip, process, reboot, and recovery approvals do not exist.'
+        'Run the source-equivalent Driver Clean Auto branch after confirmation: prepare 7-Zip/DDU, create the automatic DDU RunOnce flow, enable Safe Mode, and restart.'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
         'Read the Driver Install Latest source mirror and report blocked NVIDIA driver approvals without downloading or installing anything.'
@@ -539,22 +539,25 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Persist destination, backup, ownership, source checksum, and verification state under ProgramData\BoostLab\State.')
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the Driver Clean source mirror checksum and implementation status.')
-        $plannedChanges.Add('Report missing DDU, 7-Zip, process, Safe Mode, RunOnce, bcdedit, reboot, recovery, generated-script, and driver-state approvals.')
+        $plannedChanges.Add('Read the Driver Clean source mirror checksum and source-defined Auto/Manual workflow descriptors.')
+        $plannedChanges.Add('Report the source-defined 7-Zip download/install/config, DDU download/extraction/config, driver-search policy value, temp scripts, RunOnce, bcdedit Safe Mode, restart, and DDU launch commands.')
         $plannedChanges.Add('Perform no download, external process start, registry mutation, Safe Mode change, RunOnce creation, bcdedit call, reboot, or driver cleanup.')
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions only.')
-        $plannedChanges.Add('Do not open any external tool or approved external resource.')
-        $plannedChanges.Add('Do not download DDU or 7-Zip.')
-        $plannedChanges.Add('Do not execute DDU or any driver-cleaning process.')
-        $plannedChanges.Add('Do not modify registry, create RunOnce, call bcdedit, switch Safe Mode, reboot, or perform any system-changing operation.')
+        $plannedChanges.Add('Verify the Driver Clean source checksum and require explicit confirmation.')
+        $plannedChanges.Add('Download the source-defined 7-Zip and DDU artifacts to Windows Temp, then install/configure 7-Zip.')
+        $plannedChanges.Add('Extract DDU, write the source-defined Settings.xml, and mark it read-only.')
+        $plannedChanges.Add('Capture and set HKLM:\Software\Microsoft\Windows\CurrentVersion\DriverSearching SearchOrderConfig = REG_DWORD 0.')
+        $plannedChanges.Add('Create the source-defined ddumanual.ps1 script and RunOnce entry, enable bcdedit Safe Mode minimal, wait five seconds, and restart.')
+        $plannedChanges.Add('After restart, the RunOnce script deletes Safe Mode and launches DDU manually.')
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing DDU artifact/provenance, 7-Zip artifact/provenance, process handling, Safe Mode, RunOnce, bcdedit, reboot/recovery, generated-script, and driver-state approvals.')
-        $plannedChanges.Add('Perform no download, external process start, registry mutation, Safe Mode change, RunOnce creation, bcdedit call, reboot, or driver cleanup.')
+        $plannedChanges.Add('Verify the Driver Clean source checksum and require explicit confirmation.')
+        $plannedChanges.Add('Download the source-defined 7-Zip and DDU artifacts to Windows Temp, then install/configure 7-Zip.')
+        $plannedChanges.Add('Extract DDU, write the source-defined Settings.xml, and mark it read-only.')
+        $plannedChanges.Add('Capture and set HKLM:\Software\Microsoft\Windows\CurrentVersion\DriverSearching SearchOrderConfig = REG_DWORD 0.')
+        $plannedChanges.Add('Create the source-defined ddu.ps1 script and RunOnce entry, enable bcdedit Safe Mode minimal, wait five seconds, and restart.')
+        $plannedChanges.Add('After restart, the RunOnce script deletes Safe Mode and launches DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Latest source mirror checksum and implementation status.')
@@ -1274,12 +1277,14 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No external tool is opened, no DDU or 7-Zip artifact is downloaded, and no system-changing operation occurs.')
+        $sideEffects.Add('7-Zip and DDU are downloaded from the exact source URLs, and 7-Zip is installed/configured.')
+        $sideEffects.Add('Windows driver-search policy, RunOnce, bcdedit Safe Mode, generated scripts, DDU files, and reboot state are changed.')
+        $sideEffects.Add('The Manual branch opens DDU after reboot through the source-defined RunOnce script.')
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, external process, download, registry mutation, reboot, or driver cleanup occurs.')
+        $sideEffects.Add('7-Zip and DDU are downloaded from the exact source URLs, and 7-Zip is installed/configured.')
+        $sideEffects.Add('Windows driver-search policy, RunOnce, bcdedit Safe Mode, generated scripts, DDU files, and reboot state are changed.')
+        $sideEffects.Add('The Auto branch runs DDU after reboot with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Driver Install Latest analysis is read-only.')
@@ -1751,10 +1756,10 @@ function New-BoostLabActionPlan {
         'This PC will restart immediately and attempt to enter BIOS/UEFI firmware settings. Save your work before continuing. Do you want to proceed?'
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Driver Clean manual handoff instructions only. It will not open an external tool, download DDU or 7-Zip, execute DDU, modify registry, create RunOnce, call bcdedit, switch Safe Mode, reboot, or clean drivers. Continue?'
+        'Driver Clean Manual will run the source-equivalent workflow: download 7-Zip and DDU, install/configure 7-Zip, extract/configure DDU, set driver-search policy, create ddumanual.ps1 and RunOnce, enable Safe Mode with bcdedit, and restart. Continue?'
     }
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
-        'Driver Clean Auto mode is blocked. BoostLab will not execute Auto behavior because DDU/7-Zip artifact provenance, process handling, reboot/recovery, generated-script, and driver-state approvals are missing. Continue only to record the blocked result?'
+        'Driver Clean Auto will run the source-equivalent workflow: download 7-Zip and DDU, install/configure 7-Zip, extract/configure DDU, set driver-search policy, create ddu.ps1 and RunOnce, enable Safe Mode with bcdedit, restart, and then run DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart. Continue?'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Driver Install Latest manual handoff instructions only. It will not open a browser or external tool, download an NVIDIA driver or 7-Zip, execute an NVIDIA installer, modify registry or drivers, change the session, or reboot. Continue?'

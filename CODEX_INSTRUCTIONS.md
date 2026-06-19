@@ -217,10 +217,11 @@ Do not implement or reintroduce:
 
 ### Phase 70 Driver Clean Intake Exception
 
-* Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution.
+* Driver Clean is a Yazan-approved intake exception despite DDU usage; the original intake exception did not approve standalone DDU or DDU execution.
 * This exception only allows `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` to be treated as a missing Ultimate script candidate for future source promotion.
 * Do not create a standalone DDU BoostLab tool.
-* Do not download, execute, approve artifacts for, or approve production scopes for DDU unless a future phase explicitly authorizes a dedicated Driver Clean implementation design.
+* Phase 120 explicitly authorizes only the Driver Clean tool to preserve the exact source-equivalent Auto and Manual DDU workflow after BoostLab confirmation.
+* Phase 120 does not approve standalone DDU, DDU use by other tools, broad DDU artifact approval, or any DDU production scope outside Driver Clean.
 * This exception does not weaken deleted-tool protection for Loudness EQ, NVME Faster Driver, or any other deleted tool.
 
 ---

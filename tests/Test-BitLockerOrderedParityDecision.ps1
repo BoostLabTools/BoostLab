@@ -114,11 +114,11 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecor
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Next ordered parity target must advance past the Installers Yazan final exception.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'Next ordered parity target must advance past Driver Clean near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 19) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 20) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count changed.'
 

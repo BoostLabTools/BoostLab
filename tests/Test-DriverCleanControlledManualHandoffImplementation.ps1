@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the Driver Clean manual handoff validator path.'
+        throw 'Unable to determine the Driver Clean exact parity validator path.'
     }
 
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
@@ -24,7 +24,10 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
     param(
@@ -57,19 +60,6 @@ function Assert-BoostLabTextContains {
     }
 }
 
-function Get-BoostLabItemCount {
-    param(
-        [AllowNull()]
-        [object]$Value
-    )
-
-    if ($null -eq $Value) {
-        return 0
-    }
-
-    return @($Value).Count
-}
-
 function Assert-BoostLabNoDuplicateWarnings {
     param(
         [Parameter(Mandatory)]
@@ -89,7 +79,7 @@ function Assert-BoostLabNoDuplicateWarnings {
     $combinedWarnings = @($resultWarnings + $dataWarnings)
     $uniqueWarnings = @($combinedWarnings | Select-Object -Unique)
 
-    Assert-BoostLabCondition ($resultWarnings.Count -eq 0) "$Description should not duplicate Data warnings at result level."
+    Assert-BoostLabCondition ($resultWarnings.Count -eq 0) "$Description should keep warnings in structured Data only."
     Assert-BoostLabCondition ($combinedWarnings.Count -eq $uniqueWarnings.Count) "$Description contains duplicate warning text."
 }
 
@@ -99,8 +89,8 @@ $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $modulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\1 Driver Clean.ps1'
-$modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
+$modulesRoot = Join-Path $ProjectRoot 'modules'
 
 foreach ($path in @($stagesPath, $executionPath, $actionPlanPath, $modulePath, $uiPath, $sourcePath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file was not found: $path"
@@ -115,36 +105,40 @@ $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
 Assert-BoostLabCondition ($null -ne $graphicsStage) 'Graphics stage was not found.'
 
 $driverCleanTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-clean' })[0]
-Assert-BoostLabCondition ($null -ne $driverCleanTool) 'Driver Clean was not added as an active Graphics tool.'
+Assert-BoostLabCondition ($null -ne $driverCleanTool) 'Driver Clean was not found as an active Graphics tool.'
 Assert-BoostLabCondition ([string]$driverCleanTool.Title -eq 'Driver Clean') 'Driver Clean title mismatch.'
-Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain a separate first Graphics tool.'
-Assert-BoostLabCondition ([string]$driverCleanTool.Type -eq 'assistant') 'Driver Clean must be an assistant tool.'
+Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain separate first Graphics tool.'
+Assert-BoostLabCondition ([string]$driverCleanTool.Type -eq 'assistant') 'Driver Clean must remain an assistant tool.'
 Assert-BoostLabCondition ([string]$driverCleanTool.RiskLevel -eq 'high') 'Driver Clean must remain high risk.'
-Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean actions must be canonical Analyze, Open, Apply.'
-Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'Manual handoff only' -Description 'Driver Clean description'
-Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'No automated DDU download' -Description 'Driver Clean description'
-Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'DDU execution' -Description 'Driver Clean description'
+Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean actions must remain canonical Analyze, Open, Apply.'
+Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'Source-equivalent Driver Clean workflow' -Description 'Driver Clean description'
+Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'Ultimate DDU Auto branch' -Description 'Driver Clean description'
+Assert-BoostLabTextContains -Text ([string]$driverCleanTool.Description) -Needle 'Ultimate DDU Manual branch' -Description 'Driver Clean description'
 
 $capabilities = $driverCleanTool.Capabilities
-foreach ($falseCapability in @(
+foreach ($trueCapability in @(
     'RequiresAdmin'
     'RequiresInternet'
     'CanReboot'
     'CanModifyRegistry'
-    'CanModifyServices'
     'CanInstallSoftware'
     'CanDownload'
     'CanModifyDrivers'
-    'CanModifySecurity'
     'CanDeleteFiles'
-    'UsesTrustedInstaller'
     'UsesSafeMode'
+    'NeedsExplicitConfirmation'
+)) {
+    Assert-BoostLabCondition ([bool]$capabilities[$trueCapability]) "Driver Clean capability should be true: $trueCapability"
+}
+foreach ($falseCapability in @(
+    'CanModifyServices'
+    'CanModifySecurity'
+    'UsesTrustedInstaller'
     'SupportsDefault'
     'SupportsRestore'
 )) {
     Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "Driver Clean capability should be false: $falseCapability"
 }
-Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'Driver Clean manual handoff should require explicit confirmation.'
 
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $placeholderModules = @(
@@ -152,30 +146,12 @@ $placeholderModules = @(
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
 Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholders, found $($placeholderModules.Count)."
 Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot '_intake-promoted\Ultimate') -Recurse -File)
 Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq $inventoryBaseline.SourcePromotedMirrorFiles) "Expected $($inventoryBaseline.SourcePromotedMirrorFiles) source-promoted mirror files, found $($sourcePromotedFiles.Count)."
-$remainingSourcePromoted = @(
-    $sourcePromotedFiles | Where-Object {
-        $_.FullName -ne $sourcePath -and
-        $_.Name -ne '2 Driver Install Latest.ps1' -and
-        $_.Name -ne '4 Nvidia Settings.ps1' -and
-        $_.Name -ne '5 Hdcp.ps1' -and
-        $_.Name -ne '6 P0 State.ps1' -and
-        $_.Name -ne '7 Msi Mode.ps1' -and
-        $_.Name -ne '1 BitLocker.ps1'
-    }
-)
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
-
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain active as its own separate controlled registry Path B step.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'p0-state' })) -eq 1) 'P0 State must remain active as its own separate controlled registry Path B step.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 1) 'Msi Mode must remain active as its own separate controlled registry Path B step.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'nvidia-settings' })) -eq 1) 'Nvidia Settings must remain active as its own separate controlled manual-handoff tool.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })) -eq 1) 'Path A Driver Install Debloat & Settings must remain active and separate.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'DDU' -or $_.Id -eq 'ddu' })) -eq 0) 'Standalone DDU was reintroduced into active config.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.RemainingSourcePromotedIntakeCandidates -eq 0) 'Remaining source-promoted intake candidates baseline must remain 0.'
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
@@ -189,201 +165,24 @@ foreach ($needle in @(
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')',
-    'ManualHandoffOnly',
-    'AutoBlockedUntilArtifactApproval',
-    'NoAutomatedDduExecutionOccurred',
-    'NoAutomatedDduDownloadOccurred',
-    'NoAutomatedRebootOccurred',
-    'Default is not Restore',
+    'SourceEquivalentDriverClean',
+    'SourceEquivalentAutoAvailable',
+    'SourceEquivalentManualAvailable',
+    'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe',
+    'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/ddu.exe',
+    'Display Driver Uninstaller.exe',
+    '-CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart',
+    'SearchOrderConfig',
+    'driver-clean-driver-search-policy',
+    'bcdedit /set {current} safeboot minimal',
+    'shutdown -r -t 00',
     $expectedSourceHash
 )) {
     Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Driver Clean module'
 }
 
-$actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains('Prepare Manual Handoff')) 'Action plan ValidateSet must not be widened for Driver Clean display labels.'
-Assert-BoostLabCondition (-not $actionPlanText.Contains('Apply Auto')) 'Action plan ValidateSet must not be widened for Driver Clean display labels.'
-
-$uiText = Get-Content -LiteralPath $uiPath -Raw
-foreach ($needle in @(
-    'Get-BoostLabToolActionDisplayLabel',
-    "'driver-clean', 'driver-install-latest', 'nvidia-settings'",
-    "'Open' { return 'Manual Handoff' }",
-    "'Apply' { return 'Apply Auto' }",
-    'ActionName   = $actionName',
-    'ActionLabel  = $actionDisplayLabel'
-)) {
-    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Driver Clean UI display label mapping'
-}
-
-foreach ($commandPattern in @(
-    '(?im)^\s*Start-Process\b',
-    '(?im)^\s*Invoke-WebRequest\b',
-    '(?im)^\s*iwr\b',
-    '(?im)^\s*Invoke-RestMethod\b',
-    '(?im)^\s*Set-ItemProperty\b',
-    '(?im)^\s*New-ItemProperty\b',
-    '(?im)^\s*Remove-ItemProperty\b',
-    '(?im)^\s*Set-Content\b',
-    '(?im)^\s*New-Item\b',
-    '(?im)^\s*Remove-Item\b',
-    '(?im)^\s*Move-Item\b',
-    '(?im)^\s*bcdedit\b',
-    '(?im)^\s*shutdown\b',
-    '(?im)^\s*Restart-Computer\b'
-)) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "Driver Clean module contains prohibited executable command pattern: $commandPattern"
-}
-
-$module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
-try {
-    $info = Get-BoostLabToolInfo
-    Assert-BoostLabCondition ([string]$info.Id -eq 'driver-clean') 'Driver Clean module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean implemented actions mismatch.'
-    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Clean confirmation-required actions must be canonical.'
-
-    $analysisResult = Invoke-BoostLabToolAction -ActionName 'Analyze'
-    Assert-BoostLabCondition ([bool]$analysisResult.Success) 'Driver Clean Analyze should succeed when source checksum matches.'
-    Assert-BoostLabCondition ([string]$analysisResult.Status -eq 'Analyzed') 'Driver Clean Analyze status mismatch.'
-    Assert-BoostLabCondition ([string]$analysisResult.CommandStatus -eq 'No execution performed') 'Analyze must not execute.'
-    Assert-BoostLabCondition ([string]$analysisResult.Data.Mode -eq 'ManualHandoffOnly') 'Analyze must report ManualHandoffOnly.'
-    Assert-BoostLabCondition ([string]$analysisResult.Data.AutoMode -eq 'AutoBlockedUntilArtifactApproval') 'Analyze must report Auto blocked.'
-    Assert-BoostLabCondition ([string]$analysisResult.Data.Source.ChecksumStatus -eq 'Passed') 'Analyze source checksum status mismatch.'
-    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoDduDownloaded) 'Analyze must report no DDU download.'
-    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoDduExecuted) 'Analyze must report no DDU execution.'
-    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoSevenZipDownloaded) 'Analyze must report no 7-Zip download.'
-    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoExternalProcessStarted) 'Analyze must report no external process.'
-    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoRegistryBootRunOnceOrRebootChange) 'Analyze must report no registry/boot/RunOnce/reboot change.'
-    Assert-BoostLabNoDuplicateWarnings -Result $analysisResult -Description 'Driver Clean Analyze'
-    foreach ($approval in @(
-        'DDU artifact/download approval'
-        '7-Zip artifact/download approval'
-        'Process handling approval for DDU'
-        'Safe Mode/RunOnce/reboot approval'
-        'Recovery handling approval'
-    )) {
-        Assert-BoostLabCondition ($approval -in @($analysisResult.Data.MissingApprovals)) "Analyze missing approval was not reported: $approval"
-    }
-
-    $handoffCancelled = Invoke-BoostLabToolAction -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$handoffCancelled.Success) 'Unconfirmed manual handoff should not proceed.'
-    Assert-BoostLabCondition ([bool]$handoffCancelled.Cancelled) 'Unconfirmed manual handoff should be marked cancelled.'
-    Assert-BoostLabCondition ([string]$handoffCancelled.Action -eq 'Open') 'Manual handoff cancellation should report canonical Open action.'
-    Assert-BoostLabTextContains -Text ([string]$handoffCancelled.Message) -Needle 'No automated DDU execution' -Description 'Cancelled handoff message'
-
-    $handoffResult = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
-    Assert-BoostLabCondition ([bool]$handoffResult.Success) 'Confirmed manual handoff should succeed.'
-    Assert-BoostLabCondition ([string]$handoffResult.Action -eq 'Open') 'Manual handoff should report canonical Open action.'
-    Assert-BoostLabCondition ([string]$handoffResult.Status -eq 'ManualHandoffPrepared') 'Manual handoff status mismatch.'
-    Assert-BoostLabCondition ([string]$handoffResult.CommandStatus -eq 'No execution performed') 'Manual handoff must not execute.'
-    Assert-BoostLabCondition (-not [bool]$handoffResult.ChangesExecuted) 'Manual handoff must not report changes executed.'
-    foreach ($messagePart in @(
-        'No automated DDU execution'
-        'DDU download'
-        '7-Zip download'
-        'external process start'
-        'registry change'
-        'RunOnce creation'
-        'bcdedit call'
-        'Safe Mode switch'
-        'reboot'
-        'driver cleanup'
-    )) {
-        Assert-BoostLabTextContains -Text ([string]$handoffResult.Message) -Needle $messagePart -Description 'Manual handoff result message'
-    }
-    Assert-BoostLabCondition ([bool]$handoffResult.Data.NoAutomatedDduExecutionOccurred) 'Manual handoff must report no DDU execution.'
-    Assert-BoostLabCondition ([bool]$handoffResult.Data.NoAutomatedDduDownloadOccurred) 'Manual handoff must report no DDU download.'
-    Assert-BoostLabCondition ([bool]$handoffResult.Data.NoAutomatedRebootOccurred) 'Manual handoff must report no reboot.'
-    Assert-BoostLabNoDuplicateWarnings -Result $handoffResult -Description 'Driver Clean Manual Handoff'
-
-    $autoResult = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$autoResult.Success) 'Apply Auto must fail closed.'
-    Assert-BoostLabCondition ([string]$autoResult.Action -eq 'Apply') 'Apply Auto should route through canonical Apply action.'
-    Assert-BoostLabCondition ([string]$autoResult.Status -eq 'AutoBlockedUntilArtifactApproval') 'Apply Auto must report AutoBlockedUntilArtifactApproval.'
-    Assert-BoostLabCondition ([string]$autoResult.CommandStatus -eq 'Blocked before execution') 'Apply Auto must block before execution.'
-    Assert-BoostLabTextContains -Text ([string]$autoResult.Message) -Needle 'AutoBlockedUntilArtifactApproval' -Description 'Apply Auto blocked message'
-    Assert-BoostLabNoDuplicateWarnings -Result $autoResult -Description 'Driver Clean Apply Auto'
-
-    foreach ($refusedAction in @('Default', 'Restore')) {
-        $refused = Invoke-BoostLabToolAction -ActionName $refusedAction
-        Assert-BoostLabCondition (-not [bool]$refused.Success) "$refusedAction must be unavailable."
-        Assert-BoostLabCondition ([string]$refused.Status -eq 'Unavailable') "$refusedAction status mismatch."
-        Assert-BoostLabTextContains -Text ([string]$refused.Message) -Needle 'Default is not Restore' -Description "$refusedAction refusal"
-        Assert-BoostLabTextContains -Text ([string]$refused.Message) -Needle 'real captured state' -Description "$refusedAction refusal"
-    }
-}
-finally {
-    Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
-}
-
-$originalProgramData = $env:ProgramData
-$env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) 'BoostLabTestProgramData'
-$loggingModule = Import-Module -Name (Join-Path $ProjectRoot 'core\Logging.psm1') -Force -PassThru -ErrorAction Stop
-$stateModule = Import-Module -Name (Join-Path $ProjectRoot 'core\State.psm1') -Force -PassThru -ErrorAction Stop
-Initialize-BoostLabState | Out-Null
-$executionModule = Import-Module -Name $executionPath -Force -PassThru -ErrorAction Stop
-try {
-    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $driverCleanTool -ActionName 'Analyze'
-    Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
-    Assert-BoostLabCondition ([string]$runtimeAnalyze.ActionPlan.Action -eq 'Analyze') 'Runtime Analyze Action Plan should use canonical Analyze action.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'report blocked approvals without running any driver-cleaning operation' -Description 'Runtime Analyze Action Plan summary'
-    Assert-BoostLabCondition (-not ((@($runtimeAnalyze.ActionPlan.PlannedChanges) -join "`n").Contains('Download'))) 'Runtime Analyze Action Plan should remain read-only.'
-    Assert-BoostLabNoDuplicateWarnings -Result $runtimeAnalyze -Description 'Runtime Driver Clean Analyze'
-
-    $runtimeHandoff = Invoke-BoostLabToolAction -ToolMetadata $driverCleanTool -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$runtimeHandoff.Success) 'Runtime manual handoff without confirmation should be gated, not crash.'
-    Assert-BoostLabCondition ([string]$runtimeHandoff.Action -eq 'Open') 'Runtime manual handoff should use canonical Open action.'
-    Assert-BoostLabCondition ([bool]$runtimeHandoff.Cancelled) 'Runtime manual handoff should be cancelled when confirmation is missing.'
-    Assert-BoostLabCondition ($null -ne $runtimeHandoff.ActionPlan) 'Runtime manual handoff should return an Action Plan.'
-    Assert-BoostLabCondition ([string]$runtimeHandoff.ActionPlan.Action -eq 'Open') 'Runtime Action Plan should use canonical Open action.'
-    Assert-BoostLabCondition ([bool]$runtimeHandoff.ActionPlan.NeedsExplicitConfirmation) 'Runtime manual handoff plan should require explicit confirmation.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeHandoff.ActionPlan.Summary) -Needle 'manual handoff instructions only' -Description 'Manual Handoff Action Plan summary'
-    $runtimeHandoffPlanText = @(
-        @($runtimeHandoff.ActionPlan.PlannedChanges)
-        @($runtimeHandoff.ActionPlan.SideEffects)
-        @($runtimeHandoff.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'manual handoff instructions only',
-        'Do not open any external tool',
-        'Do not download DDU or 7-Zip',
-        'Do not execute DDU',
-        'no system-changing operation occurs'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeHandoffPlanText -Needle $needle -Description 'Manual Handoff Action Plan text'
-    }
-    Assert-BoostLabCondition (-not $runtimeHandoffPlanText.Contains('approved external resource may be opened')) 'Manual Handoff Action Plan must not use generic Open resource wording.'
-
-    $runtimeAuto = Invoke-BoostLabToolAction -ToolMetadata $driverCleanTool -ActionName 'Apply' -RiskConfirmed
-    Assert-BoostLabCondition (-not [bool]$runtimeAuto.Success) 'Runtime Apply Auto should fail closed.'
-    Assert-BoostLabCondition ([string]$runtimeAuto.Action -eq 'Apply') 'Runtime Apply Auto should use canonical Apply action.'
-    Assert-BoostLabCondition ([string]$runtimeAuto.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply Auto status mismatch.'
-    Assert-BoostLabNoDuplicateWarnings -Result $runtimeAuto -Description 'Runtime Driver Clean Apply Auto'
-    $runtimeAutoPlanText = @(
-        @($runtimeAuto.ActionPlan.Summary)
-        @($runtimeAuto.ActionPlan.PlannedChanges)
-        @($runtimeAuto.ActionPlan.SideEffects)
-        @($runtimeAuto.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'Auto mode is blocked',
-        'Do not execute any approved Auto behavior',
-        'missing DDU artifact/provenance',
-        'process handling',
-        'reboot/recovery',
-        'No approved Auto behavior'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeAutoPlanText -Needle $needle -Description 'Apply Auto Action Plan text'
-    }
-    Assert-BoostLabCondition (-not $runtimeAutoPlanText.Contains('Apply the approved Driver Clean behavior')) 'Apply Auto Action Plan must not use generic Apply wording.'
-}
-finally {
-    Remove-Module -ModuleInfo $executionModule -Force -ErrorAction SilentlyContinue
-    Remove-Module -ModuleInfo $stateModule -Force -ErrorAction SilentlyContinue
-    Remove-Module -ModuleInfo $loggingModule -Force -ErrorAction SilentlyContinue
-    $env:ProgramData = $originalProgramData
-}
+$artifactText = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1') -Raw
+Assert-BoostLabCondition (-not ($artifactText -match '(?i)Display Driver Uninstaller|DDU|7-Zip|7zip')) 'DDU or 7-Zip artifact approval was unexpectedly added.'
 
 foreach ($forbiddenPath in @(
     'config\DriverCleanPolicy.psd1'
@@ -397,15 +196,207 @@ foreach ($forbiddenPath in @(
     Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot $forbiddenPath))) "Driver Clean/DDU production approval config was unexpectedly created: $forbiddenPath"
 }
 
-$artifactPolicy = Import-PowerShellDataFile -LiteralPath (Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1')
-$artifactText = Get-Content -LiteralPath (Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1') -Raw
-Assert-BoostLabCondition (-not ($artifactText -match '(?i)Display Driver Uninstaller|DDU|7-Zip|7zip')) 'DDU or 7-Zip artifact approval was unexpectedly added.'
-if ($artifactPolicy.Contains('Artifacts')) {
-    $approvedArtifacts = @($artifactPolicy.Artifacts | Where-Object {
-        ([string]$_.Id -match '(?i)ddu|7zip|7-zip') -or
-        ([string]$_.DisplayName -match '(?i)Display Driver Uninstaller|DDU|7-Zip|7zip')
-    })
-    Assert-BoostLabCondition ($approvedArtifacts.Count -eq 0) 'DDU or 7-Zip artifact approval was unexpectedly added.'
+$actionPlanModule = Import-Module -Name $actionPlanPath -Force -PassThru -Scope Local -ErrorAction Stop
+$module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
+try {
+    $info = Get-BoostLabToolInfo
+    Assert-BoostLabCondition ([string]$info.Id -eq 'driver-clean') 'Driver Clean module info Id mismatch.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean implemented actions mismatch.'
+    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Clean confirmation-required actions must remain canonical.'
+
+    $analysisResult = Invoke-BoostLabToolAction -ActionName 'Analyze'
+    Assert-BoostLabCondition ([bool]$analysisResult.Success) 'Driver Clean Analyze should pass when source checksum matches.'
+    Assert-BoostLabCondition ([string]$analysisResult.Status -eq 'Analyzed') 'Driver Clean Analyze status mismatch.'
+    Assert-BoostLabCondition ([string]$analysisResult.CommandStatus -eq 'No execution performed') 'Analyze must remain read-only.'
+    Assert-BoostLabCondition (-not [bool]$analysisResult.ChangesExecuted) 'Analyze must report no changes executed.'
+    Assert-BoostLabCondition ([string]$analysisResult.Data.Mode -eq 'SourceEquivalentDriverClean') 'Analyze mode mismatch.'
+    Assert-BoostLabCondition ([string]$analysisResult.Data.AutoMode -eq 'SourceEquivalentAutoAvailable') 'Analyze Auto mode mismatch.'
+    Assert-BoostLabCondition ([string]$analysisResult.Data.ManualMode -eq 'SourceEquivalentManualAvailable') 'Analyze Manual mode mismatch.'
+    Assert-BoostLabCondition ([string]$analysisResult.Data.Source.ChecksumStatus -eq 'Passed') 'Analyze source checksum status mismatch.'
+    Assert-BoostLabCondition ([int]$analysisResult.Data.ApplyPlan.OperationCount -eq 16) 'Auto operation count must match the source branch.'
+    Assert-BoostLabCondition ([int]$analysisResult.Data.OpenPlan.OperationCount -eq 16) 'Manual operation count must match the source branch.'
+    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoMutationOccurred) 'Analyze must report no mutation.'
+    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoDownloadOccurred) 'Analyze must report no download.'
+    Assert-BoostLabCondition ([bool]$analysisResult.Data.NoExternalProcessStarted) 'Analyze must report no external process.'
+    Assert-BoostLabNoDuplicateWarnings -Result $analysisResult -Description 'Driver Clean Analyze'
+
+    $autoPlan = $analysisResult.Data.ApplyPlan
+    $manualPlan = $analysisResult.Data.OpenPlan
+    Assert-BoostLabCondition ((@($autoPlan.Operations | ForEach-Object { $_.Type }) -join '|') -eq 'DownloadFile|StartProcess|Cmd|Cmd|MoveItem|RemoveItem|DownloadFile|ExternalCommand|WriteTextFile|SetFileReadOnly|SetDriverSearchPolicy|WriteTextFile|Cmd|Cmd|Sleep|ShutdownRestart') 'Auto operation sequence must preserve source order.'
+    Assert-BoostLabCondition ((@($manualPlan.Operations | ForEach-Object { $_.Type }) -join '|') -eq 'DownloadFile|StartProcess|Cmd|Cmd|MoveItem|RemoveItem|DownloadFile|ExternalCommand|WriteTextFile|SetFileReadOnly|SetDriverSearchPolicy|WriteTextFile|Cmd|Cmd|Sleep|ShutdownRestart') 'Manual operation sequence must preserve source order.'
+    Assert-BoostLabCondition ([string]$autoPlan.Downloads[0].Uri -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe') '7-Zip source URL mismatch.'
+    Assert-BoostLabCondition ([string]$autoPlan.Downloads[1].Uri -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/ddu.exe') 'DDU source URL mismatch.'
+    Assert-BoostLabCondition ([string]$autoPlan.DriverSearchPolicy.RegistryPath -eq 'HKLM:\Software\Microsoft\Windows\CurrentVersion\DriverSearching') 'Driver search policy path mismatch.'
+    Assert-BoostLabCondition ([string]$autoPlan.DriverSearchPolicy.ValueName -eq 'SearchOrderConfig') 'Driver search policy value name mismatch.'
+    Assert-BoostLabCondition ([int]$autoPlan.DriverSearchPolicy.ValueData -eq 0) 'Driver search policy value data mismatch.'
+    Assert-BoostLabCondition ((@($autoPlan.Operations | Where-Object { $_.SourceCommand -match 'RunOnce' -and $_.SourceCommand -match '\*ddu' }).Count -eq 1)) 'Auto RunOnce entry must use *ddu.'
+    Assert-BoostLabCondition ((@($manualPlan.Operations | Where-Object { $_.SourceCommand -match 'RunOnce' -and $_.SourceCommand -match '\*ddumanual' }).Count -eq 1)) 'Manual RunOnce entry must use *ddumanual.'
+    Assert-BoostLabCondition (($autoPlan.Operations[11].Parameters.Content.Contains('Start-Process "$env:SystemRoot\Temp\ddu\Display Driver Uninstaller.exe" -ArgumentList "-CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart" -Wait'))) 'Auto generated script must preserve DDU Auto command.'
+    Assert-BoostLabCondition (($manualPlan.Operations[11].Parameters.Content.Contains('Start-Process -Wait "$env:SystemRoot\Temp\ddu\Display Driver Uninstaller.exe"'))) 'Manual generated script must preserve DDU Manual launch.'
+
+    $executedOperations = [System.Collections.Generic.List[object]]::new()
+    $mockExecutor = {
+        param($Operation, $Mode)
+
+        $script:executedOperations.Add([pscustomobject]@{
+            Mode = $Mode
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            SourceCommand = [string]$Operation.SourceCommand
+            Parameters = $Operation.Parameters
+        }) | Out-Null
+
+        [pscustomobject]@{
+            Success = $true
+            Operation = $Operation
+            Message = 'Mocked operation completed.'
+            Captures = if ([string]$Operation.Type -eq 'SetDriverSearchPolicy') {
+                @([pscustomobject]@{ Success = $true; ScopeId = [string]$Operation.Parameters.ScopeId; RegistryPath = [string]$Operation.Parameters.RegistryPath; ValueName = [string]$Operation.Parameters.ValueName })
+            }
+            else {
+                @()
+            }
+            Errors = @()
+        }
+    }.GetNewClosure()
+
+    $script:executedOperations = $executedOperations
+    $applyResult = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -SkipEnvironmentChecks:$true -OperationExecutor $mockExecutor
+    Assert-BoostLabCondition ([bool]$applyResult.Success) 'Mocked Apply Auto should succeed.'
+    Assert-BoostLabCondition ([string]$applyResult.Status -eq 'AutoWorkflowScheduled') 'Apply Auto status mismatch.'
+    Assert-BoostLabCondition ([string]$applyResult.CommandStatus -eq 'Completed source-equivalent Driver Clean preparation; reboot requested') 'Apply Auto command status mismatch.'
+    Assert-BoostLabCondition ([bool]$applyResult.ChangesExecuted) 'Apply Auto must report changes executed.'
+    Assert-BoostLabCondition ([bool]$applyResult.RestartRequired) 'Apply Auto must report restart required.'
+    Assert-BoostLabCondition ([int]$applyResult.Data.CompletedOperationCount -eq 16) 'Apply Auto should execute all source operations with the mock executor.'
+    Assert-BoostLabCondition ((@($applyResult.Data.Captures).Count -eq 1)) 'Apply Auto should capture the source-defined driver-search policy value before mutation.'
+    Assert-BoostLabTextContains -Text ([string]$applyResult.Message) -Needle '-CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart' -Description 'Apply Auto result message'
+
+    $applyOperations = @($script:executedOperations | Where-Object { $_.Mode -eq 'Auto' })
+    Assert-BoostLabCondition ($applyOperations.Count -eq 16) 'Mocked Apply Auto operation count mismatch.'
+    Assert-BoostLabCondition ((@($applyOperations | Where-Object { $_.Type -eq 'ShutdownRestart' }).Count -eq 1)) 'Apply Auto must include restart operation.'
+    Assert-BoostLabCondition ((@($applyOperations | Where-Object { $_.SourceCommand -eq 'shutdown -r -t 00' }).Count -eq 1)) 'Apply Auto must preserve shutdown command.'
+
+    $script:executedOperations.Clear()
+    $openResult = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true -SkipEnvironmentChecks:$true -OperationExecutor $mockExecutor
+    Assert-BoostLabCondition ([bool]$openResult.Success) 'Mocked Open Manual should succeed.'
+    Assert-BoostLabCondition ([string]$openResult.Status -eq 'ManualWorkflowScheduled') 'Open Manual status mismatch.'
+    Assert-BoostLabCondition ([bool]$openResult.ChangesExecuted) 'Open Manual must report changes executed.'
+    Assert-BoostLabCondition ([bool]$openResult.RestartRequired) 'Open Manual must report restart required.'
+    Assert-BoostLabCondition ([int]$openResult.Data.CompletedOperationCount -eq 16) 'Open Manual should execute all source operations with the mock executor.'
+    Assert-BoostLabTextContains -Text ([string]$openResult.Message) -Needle 'RunOnce will launch DDU manually' -Description 'Open Manual result message'
+
+    $openOperations = @($script:executedOperations | Where-Object { $_.Mode -eq 'Manual' })
+    Assert-BoostLabCondition ($openOperations.Count -eq 16) 'Mocked Open Manual operation count mismatch.'
+    Assert-BoostLabCondition ((@($openOperations | Where-Object { $_.SourceCommand -match '\*ddumanual' }).Count -eq 1)) 'Open Manual must preserve *ddumanual RunOnce value.'
+
+    $failingExecutor = {
+        param($Operation, $Mode)
+        if ([string]$Operation.Type -eq 'SetDriverSearchPolicy') {
+            return [pscustomobject]@{
+                Success = $false
+                Operation = $Operation
+                Message = 'Capture failed.'
+                Captures = @()
+                Errors = @('Registry capture failed before mutation.')
+            }
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Operation = $Operation
+            Message = 'Mocked operation completed.'
+            Captures = @()
+            Errors = @()
+        }
+    }
+    $failedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -SkipEnvironmentChecks:$true -OperationExecutor $failingExecutor
+    Assert-BoostLabCondition (-not [bool]$failedApply.Success) 'Apply Auto must fail closed when capture/write preparation fails.'
+    Assert-BoostLabCondition ([string]$failedApply.Status -eq 'OperationFailed') 'Failed Apply status mismatch.'
+    Assert-BoostLabTextContains -Text ((@($failedApply.Errors) -join "`n")) -Needle 'Registry capture failed before mutation' -Description 'Failed Apply errors'
+
+    foreach ($refusedAction in @('Default', 'Restore')) {
+        $refused = Invoke-BoostLabToolAction -ActionName $refusedAction
+        Assert-BoostLabCondition (-not [bool]$refused.Success) "$refusedAction must remain unavailable."
+        Assert-BoostLabCondition ([string]$refused.Status -eq 'Unavailable') "$refusedAction status mismatch."
+        Assert-BoostLabTextContains -Text ([string]$refused.Message) -Needle 'Default is not Restore' -Description "$refusedAction refusal"
+        Assert-BoostLabTextContains -Text ([string]$refused.Message) -Needle 'selected captured state' -Description "$refusedAction refusal"
+    }
+
+    $analyzePlan = New-BoostLabActionPlan -ToolMetadata $driverCleanTool -ActionName 'Analyze'
+    Assert-BoostLabTextContains -Text ([string]$analyzePlan.Summary) -Needle 'source-equivalent Auto and Manual DDU workflows' -Description 'Analyze Action Plan summary'
+    Assert-BoostLabCondition (-not ((@($analyzePlan.PlannedChanges) -join "`n") -match 'Download the source-defined')) 'Analyze plan must remain read-only.'
+
+    $openPlan = New-BoostLabActionPlan -ToolMetadata $driverCleanTool -ActionName 'Open'
+    $openPlanText = @(
+        $openPlan.Summary
+        @($openPlan.PlannedChanges)
+        @($openPlan.SideEffects)
+        $openPlan.ConfirmationMessage
+    ) -join "`n"
+    foreach ($needle in @(
+        'source-equivalent Driver Clean Manual branch',
+        'Download the source-defined 7-Zip and DDU artifacts',
+        'Create the source-defined ddumanual.ps1 script and RunOnce entry',
+        'enable bcdedit Safe Mode minimal',
+        'restart'
+    )) {
+        Assert-BoostLabTextContains -Text $openPlanText -Needle $needle -Description 'Open Action Plan'
+    }
+    Assert-BoostLabCondition (-not $openPlanText.Contains('manual handoff instructions only')) 'Open Action Plan must not use old manual-only wording.'
+    Assert-BoostLabCondition (-not $openPlanText.Contains('Auto mode is blocked')) 'Open Action Plan must not use old blocked wording.'
+
+    $applyPlan = New-BoostLabActionPlan -ToolMetadata $driverCleanTool -ActionName 'Apply'
+    $applyPlanText = @(
+        $applyPlan.Summary
+        @($applyPlan.PlannedChanges)
+        @($applyPlan.SideEffects)
+        $applyPlan.ConfirmationMessage
+    ) -join "`n"
+    foreach ($needle in @(
+        'source-equivalent Driver Clean Auto branch',
+        'Create the source-defined ddu.ps1 script and RunOnce entry',
+        '-CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart',
+        'enable bcdedit Safe Mode minimal',
+        'restart'
+    )) {
+        Assert-BoostLabTextContains -Text $applyPlanText -Needle $needle -Description 'Apply Action Plan'
+    }
+    Assert-BoostLabCondition (-not $applyPlanText.Contains('Auto mode is blocked')) 'Apply Action Plan must not use old blocked wording.'
+    Assert-BoostLabCondition (-not $applyPlanText.Contains('Do not execute any approved Auto behavior')) 'Apply Action Plan must not use old no-execution wording.'
+}
+finally {
+    Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
+    Remove-Module -ModuleInfo $actionPlanModule -Force -ErrorAction SilentlyContinue
+}
+
+$driverCleanRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'driver-clean' })[0]
+Assert-BoostLabCondition ($null -ne $driverCleanRecord) 'Driver Clean parity record was not found.'
+Assert-BoostLabCondition ([string]$driverCleanRecord.ImplementationLevel -eq 'NearParityControlled') 'Driver Clean implementation level must be NearParityControlled after Phase 120.'
+Assert-BoostLabCondition ([string]$driverCleanRecord.UltimateParity -eq 'Partial') 'Driver Clean UltimateParity should remain Partial due BoostLab GUI confirmation/test-safe mechanics.'
+Assert-BoostLabCondition ([bool]$driverCleanRecord.YazanAcceptedNearParity) 'Driver Clean must be Yazan-accepted near parity.'
+Assert-BoostLabCondition ([string]$driverCleanRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Driver Clean final progress status mismatch.'
+Assert-BoostLabTextContains -Text ([string]$driverCleanRecord.GapSummary) -Needle 'exact source-equivalent Driver Clean DDU Auto/Manual behavior' -Description 'Driver Clean gap summary'
+
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 20) 'NearParityControlled baseline should be 20 after Driver Clean.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 6) 'ManualHandoffOnly baseline should be 6 after Driver Clean.'
+
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'Next ordered pending parity target should advance to Driver Install Debloat & Settings.'
+
+$uiText = Get-Content -LiteralPath $uiPath -Raw
+foreach ($needle in @(
+    'Get-BoostLabToolActionDisplayLabel',
+    "'driver-clean', 'driver-install-latest', 'nvidia-settings'",
+    "'Open' { return 'Manual Handoff' }",
+    "'Apply' { return 'Apply Auto' }",
+    'ActionName   = $actionName',
+    'ActionLabel  = $actionDisplayLabel'
+)) {
+    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Driver Clean UI display label mapping'
 }
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
@@ -414,15 +405,14 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\23 NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
-    Passed                          = $true
-    ActiveTools                     = $allTools.Count
-    ImplementedTools                = $allTools.Count - $placeholderModules.Count
-    DeferredPlaceholders            = $placeholderModules.Count
-    SourcePromotedMirrorFiles       = $sourcePromotedFiles.Count
-    RemainingSourcePromotedIntake   = $remainingSourcePromoted.Count
-    DriverCleanMode                 = 'ManualHandoffOnly'
-    AutoMode                        = 'AutoBlockedUntilArtifactApproval'
-    Message                         = 'Driver Clean controlled manual handoff implementation is active, inert, and fail-closed for Auto.'
+    Passed = $true
+    ActiveTools = $allTools.Count
+    ImplementedTools = $allTools.Count - $placeholderModules.Count
+    DeferredPlaceholders = $placeholderModules.Count
+    SourcePromotedMirrorFiles = $sourcePromotedFiles.Count
+    DriverCleanMode = 'SourceEquivalentDriverClean'
+    AutoOperationCount = 16
+    ManualOperationCount = 16
+    NextOrderedParityTarget = [string]$nextTarget.ToolId
+    Message = 'Driver Clean exact Ultimate Auto and Manual workflow parity is implemented with mock-safe validation.'
 }
-
-

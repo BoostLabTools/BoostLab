@@ -292,13 +292,13 @@ Assert-BoostLabCondition ([string]$installersRecord['FinalProgressStatus'] -eq '
 Assert-BoostLabContains -Text ([string]$installersRecord['GapSummary']) -Needle '11 Frame View' -Description 'Installers parity gap summary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'driver-clean') 'First pending ordered parity target should advance to Driver Clean after Installers Yazan final exception.'
+Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'driver-install-debloat-settings') 'First pending ordered parity target should advance past Driver Clean near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq 3) 'ControlledSubset baseline count should be 3 after Installers.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 7) 'ManualHandoffOnly baseline count should be 7 after Installers.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 6) 'ManualHandoffOnly baseline count should be 6 after Driver Clean.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted

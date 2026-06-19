@@ -455,6 +455,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'installers' -and
             $commandName -in @('Invoke-WebRequest', 'Set-Content', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item')
         )
+        $approvedDriverCleanCommand = (
+            $toolId -eq 'driver-clean' -and
+            $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -472,7 +476,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedUpdatesDriversBlockCommand -and
             -not $approvedReinstallCommand -and
             -not $approvedEdgeSettingsCommand -and
-            -not $approvedInstallersCommand
+            -not $approvedInstallersCommand -and
+            -not $approvedDriverCleanCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -520,7 +525,7 @@ foreach ($entry in $expectedModules.Values) {
             2
         }
         elseif ($toolId -eq 'driver-clean') {
-            0
+            1
         }
         elseif ($toolId -eq 'driver-install-latest') {
             0

@@ -87,12 +87,13 @@ It defines future metadata fields and pseudo-schema only; it creates no active
 workflow registry, runtime config, production config, UI implementation, tool
 card, placeholder enablement, or Path B execution behavior.
 
-Phase 92 implements `Driver Clean` as a controlled manual-handoff active tool
-outside NVIDIA Path B. It verifies the source mirror checksum, reports
-ManualHandoffOnly, keeps Auto blocked as `AutoBlockedUntilArtifactApproval`,
-and performs no DDU or 7-Zip download/execution, external process start, Safe
-Mode switch, RunOnce creation, `bcdedit` call, reboot, registry mutation, or
-driver cleanup.
+Phase 92 first implemented `Driver Clean` as a controlled manual-handoff active
+tool outside NVIDIA Path B.
+
+Phase 120 supersedes the manual-only Driver Clean path with Yazan-approved
+Driver Clean-specific source-equivalent Auto and Manual execution after
+BoostLab confirmation. It does not approve standalone DDU, DDU use by other
+tools, or broad DDU artifact/production scope outside Driver Clean.
 
 Phase 94 implements `Nvidia Settings` as a controlled manual-handoff active
 tool for Path B step 2 after the Phase 93 `Driver Install Latest` manual

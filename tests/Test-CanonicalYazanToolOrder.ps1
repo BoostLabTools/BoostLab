@@ -216,7 +216,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Canonical order must produce a next ordered parity target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Current first pending ordered parity target must advance past the Installers Yazan final exception.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'Current first pending ordered parity target must advance past Driver Clean near-parity acceptance.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

@@ -552,6 +552,7 @@ try {
         Join-Path $modulesRoot 'Graphics\hdcp.psm1'
         Join-Path $modulesRoot 'Graphics\p0-state.psm1'
         Join-Path $modulesRoot 'Graphics\msi-mode.psm1'
+        Join-Path $modulesRoot 'Graphics\driver-clean.psm1'
         Join-Path $modulesRoot 'Refresh\updates-drivers-block.psm1'
         Join-Path $modulesRoot 'Windows\write-cache-buffer-flushing.psm1'
     )

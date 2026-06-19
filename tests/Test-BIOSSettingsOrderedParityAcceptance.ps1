@@ -74,7 +74,7 @@ Assert-BoostLabCondition ([string]$resetTarget.ToolId -eq 'bios-settings') 'BIOS
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\1 Check\2 BIOS Settings.ps1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bios-settings.md'

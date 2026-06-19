@@ -54,7 +54,9 @@ Promoted mirror paths:
 * `source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1`
 * `source-ultimate/_intake-promoted/Ultimate/3 Setup/1 BitLocker.ps1`
 
-Driver Clean was promoted in Phase 92 as a controlled manual-handoff tool.
+Driver Clean was promoted in Phase 92 as a controlled manual-handoff tool and
+upgraded in Phase 120 to source-equivalent Driver Clean-specific Auto/Manual
+execution after BoostLab confirmation.
 Driver Install Latest was promoted in Phase 93 as Path B step 1 controlled
 manual handoff only. Nvidia Settings was promoted in Phase 94 as Path B step 2
 controlled manual handoff only. HDCP was promoted in Phase 95 as Path B step 3
@@ -70,7 +72,7 @@ explicitly changes `config/Stages.psd1` and module scaffolding.
 
 | Intake script | Current SHA-256 | Current classification | Source-promotion decision | Future proposed `source-ultimate` destination | Preserve original filename | Numbering conflict exists | Promotion allowed now | Required future design/review before implementation |
 |---|---|---|---|---|---|---|---|---|
-| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Source-promoted into mirror; Phase 92 implemented controlled manual handoff only | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with previous Graphics slot 1 | Implemented as active controlled manual handoff | Auto remains blocked until DDU/7-Zip artifact/download/execution policy, driver cleanup scope, Safe Mode/RunOnce/reboot workflow, process handling, and file/registry/cleanup/driver state capture and rollback approvals exist |
+| `intake/missing-ultimate-scripts/Ultimate/5 Graphics/1 Driver Clean.ps1` | `CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A` | Yazan-approved intake exception for future source promotion | Source-promoted into mirror; Phase 120 implements source-equivalent Driver Clean Auto/Manual behavior after confirmation | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1` | Yes | Yes, conflicts with previous Graphics slot 1 | Implemented as active Driver Clean-specific source-equivalent workflow | Standalone DDU, DDU use by other tools, broad artifact approval, and production scopes outside Driver Clean remain unapproved |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | Intake accepted for future source promotion | Implemented as controlled manual handoff only in Phase 93; Auto blocked | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | Yes | Yes, resolved by adding an explicit Graphics order 2 tool and moving Path A to order 3 | Active manual handoff only; no automated NVIDIA download/install behavior approved | NVIDIA-only branch design; download provenance; installer execution policy; driver operation scope; AMD/Intel branch exclusion; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | Intake accepted for future source promotion | Implemented as controlled manual handoff only in Phase 94; Auto blocked | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | Yes | Yes, resolved by adding an explicit Graphics order 3 tool and moving Path A to order 4 | Active manual handoff only; no automated 7-Zip/Profile Inspector/.nip/registry/profile behavior approved | NVIDIA profile/settings design; NVIDIA Profile Inspector provenance; `.nip` generated artifact policy; registry/file capture; Default/Restore distinction; Path B workflow design |
 | `intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | Intake accepted for future source promotion | Implemented as controlled NVIDIA-only registry behavior in Phase 95 | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | Yes | No direct current file conflict; active Graphics order 4 is now HDCP and Path A shifted to order 5 | Active controlled registry implementation; no external process/download/reboot behavior approved | Restore remains unavailable without selected captured state; P0 State and Msi Mode remain separate Path B steps |
@@ -82,24 +84,28 @@ explicitly changes `config/Stages.psd1` and module scaffolding.
 
 Driver Clean is accepted for future source promotion as a Yazan-approved intake exception despite DDU usage.
 
-This does not approve standalone DDU, DDU execution, DDU download, or DDU artifact provenance.
+The original intake exception did not approve standalone DDU, DDU execution, DDU download, or DDU artifact provenance.
 
-This decision does not approve:
+Phase 120 explicitly approves only the Driver Clean tool to preserve the exact source-equivalent Auto and Manual DDU workflow after BoostLab confirmation.
+
+This decision does not approve standalone DDU.
+
+This decision also does not approve:
 
 * standalone DDU as an independent BoostLab tool
-* DDU execution
-* DDU download
+* standalone DDU execution
+* DDU download outside Driver Clean
 * DDU artifact provenance
 * DDU installer/tool execution policy
-* Driver Clean implementation
-* driver cleanup behavior
-* Safe Mode, RunOnce, reboot, process, file, registry, cleanup, driver, Default, or Restore production scopes
+* DDU use by tools other than Driver Clean
+* broad Safe Mode, RunOnce, reboot, process, file, registry, cleanup, driver, Default, or Restore production scopes outside Driver Clean
 
-Phase 92 implemented Driver Clean manual handoff only. Auto still requires
-dedicated Driver Clean scope/provenance/safety design before implementation.
-That future design must explicitly address DDU provenance, DDU execution, Safe
-Mode, RunOnce, reboot, downloaded artifacts, driver cleanup scope, AMD/Intel
-exclusions, state capture, verification, and rollback/support limits.
+Phase 92 implemented Driver Clean manual handoff only. Phase 120 supersedes it
+with source-equivalent Driver Clean-specific Auto and Manual execution after
+BoostLab confirmation. The Driver Clean approval remains narrow and does not
+create standalone DDU or reusable DDU/artifact approval for other tools.
+The previously required dedicated Driver Clean scope/provenance/safety design
+is resolved only for the Driver Clean-specific source-equivalent workflow.
 
 ## NVIDIA App Path B Decision
 

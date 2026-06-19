@@ -82,11 +82,14 @@ It defines future metadata fields and pseudo-schema only; it creates no active
 workflow registry, runtime config, production config, UI implementation, tool
 cards, placeholder enablement, or Path B execution behavior.
 
-Phase 92 implements `Driver Clean` as a controlled manual-handoff active tool
-outside NVIDIA Path B. It is no longer one of the unimplemented
-source-promoted intake candidates, but the source-promoted mirror file remains
-protected reference material. Auto remains blocked as
-`AutoBlockedUntilArtifactApproval`.
+Phase 92 first implemented `Driver Clean` as a controlled manual-handoff active
+tool outside NVIDIA Path B.
+
+Phase 120 supersedes the manual-only Driver Clean path with Yazan-approved
+Driver Clean-specific source-equivalent Auto and Manual execution after
+BoostLab confirmation. The source-promoted mirror file remains protected
+reference material. Standalone DDU, DDU use by other tools, and broad DDU
+artifact/production approval remain unapproved.
 
 Phase 94 implements `Nvidia Settings` as a controlled manual-handoff active
 tool for Path B step 2 after the Phase 93 `Driver Install Latest` manual
@@ -383,5 +386,11 @@ Driver Clean implementation planning. The review remains unchanged: manual
 handoff is only a future plan, Auto remains blocked, and no DDU/7-Zip
 downloads, artifacts, execution, production scopes, UI controls, placeholder
 enablement, or tool behavior are approved.
+
+Phase 120 supersedes the Phase 91/92 Driver Clean manual-only path with
+Driver Clean-specific source-equivalent Auto and Manual execution after
+BoostLab confirmation. The approval remains narrow: standalone DDU, DDU use by
+other tools, and broad DDU artifact/production scope outside Driver Clean stay
+unapproved.
 
 

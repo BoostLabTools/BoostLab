@@ -155,9 +155,9 @@ Phase 25 intentionally deleted only `source-ultimate/6 Windows/17 Loudness EQ.ps
 
 ### Phase 70 Driver Clean Intake Exception
 
-Driver Clean is a Yazan-approved intake exception despite DDU usage; this does not approve standalone DDU or DDU execution. Phase 92 implements Driver Clean as controlled manual handoff only; Auto remains blocked until dedicated future approvals exist.
+Driver Clean is a Yazan-approved intake exception despite DDU usage. Phase 120 supersedes the Phase 92 manual-handoff-only implementation and preserves the exact source-equivalent Driver Clean Auto and Manual workflow behind BoostLab confirmation.
 
-No Driver Clean behavior, DDU download, DDU execution, artifact approval, production scope, module, placeholder, or tool card is approved by this exception. Standalone DDU remains excluded, and Loudness EQ and NVME Faster Driver remain permanently deleted.
+This approval is Driver Clean-specific only. It does not approve standalone DDU, DDU use by other tools, broad DDU artifact approval, or production scopes outside Driver Clean. Standalone DDU remains excluded, and Loudness EQ and NVME Faster Driver remain permanently deleted.
 
 ---
 
