@@ -162,8 +162,8 @@ $implementedModules = @($allModules | Where-Object { (Get-Content -LiteralPath $
 $placeholderModules = @($allModules | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') })
 Assert-BoostLabCondition ($tools.Count -eq 55) "Expected 55 active tools, found $($tools.Count)."
 Assert-BoostLabCondition ($allModules.Count -eq 55) "Expected 55 modules, found $($allModules.Count)."
-Assert-BoostLabCondition ($implementedModules.Count -eq 40) "Expected 40 implemented modules, found $($implementedModules.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq 15) "Expected 15 placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition ($implementedModules.Count -eq 41) "Expected 41 implemented modules, found $($implementedModules.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq 14) "Expected 14 placeholder modules, found $($placeholderModules.Count)."
 
 $activeNames = @($tools | ForEach-Object {
     ([string]$_.Id -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()

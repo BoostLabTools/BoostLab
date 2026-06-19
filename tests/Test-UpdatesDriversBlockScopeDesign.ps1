@@ -100,16 +100,17 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`',
-    'Updates Drivers Block remains a refused placeholder',
-    'No production registry/file/cleanup/reboot/update-server/bootable-media scopes',
+    'Phase 102 implemented only the bounded live Driver Updates policy branch',
+    'Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`',
+    'No production file/cleanup/reboot/update-server/bootable-media scopes',
     'No explicit Windows 10-only branch or option is present.',
     'WINDOWS PRO/LTSC/IOT/SERVER ONLY',
-    'custom update-server URL values',
+    'custom update-server URL',
     'https://fuckyoumicrosoft.com/',
     'setupcomplete.cmd',
     'shutdown /r /t 0',
-    'Current Default/Restore must remain unavailable.',
-    'Restore remains unavailable unless exact registry rollback',
+    'Driver Updates `Default` is implemented for the nine supported values.',
+    'Restore is implemented only from selected captured rollback records.',
     'Unknown, broad, wildcard, whole-key, or unrelated policy targets remain',
     'Deleting policy values can remove intentional existing policy.'
 )) {
@@ -215,11 +216,63 @@ if (-not $planText.Contains('docs/tool-designs/updates-drivers-block-scope-desig
     throw 'Deferred tools execution plan does not link to the Updates Drivers Block scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Updates Drivers Block module is no longer a placeholder.'
+$moduleAst = [Management.Automation.Language.Parser]::ParseFile($modulePath, [ref]$null, [ref]$null)
+$moduleCommands = @(
+    $moduleAst.FindAll({ param($node) $node -is [Management.Automation.Language.CommandAst] }, $true) |
+        ForEach-Object { $_.GetCommandName() } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        Sort-Object -Unique
+)
+
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Updates Drivers Block module is still a placeholder.'
 }
-if ($moduleText -match 'reg\s+(add|delete)|setupcomplete|Move-Item|Set-Content|New-Item|shutdown|WUServer|WindowsUpdate|DeviceInstall|DriverSearching|Start-Process') {
-    throw 'Updates Drivers Block placeholder module appears to contain real mutation behavior.'
+foreach ($requiredImplementationText in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
+    '$script:BoostLabExpectedSourceHash = ''4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991''',
+    'New-BoostLabRegistryStateCapture',
+    'Set-BoostLabRollbackMutationState',
+    'Invoke-BoostLabRegistryRollback',
+    'New-ItemProperty',
+    'Remove-ItemProperty'
+)) {
+    if (-not $moduleText.Contains($requiredImplementationText)) {
+        throw "Updates Drivers Block module is missing implementation text: $requiredImplementationText"
+    }
+}
+foreach ($forbiddenCommand in @(
+    'Start-Process',
+    'Invoke-WebRequest',
+    'Invoke-RestMethod',
+    'Set-Content',
+    'Move-Item',
+    'Restart-Computer',
+    'Stop-Service',
+    'Set-Service',
+    'Start-Service',
+    'pnputil',
+    'dism',
+    'wusa',
+    'UsoClient',
+    'wuauclt'
+)) {
+    if ($forbiddenCommand -in $moduleCommands) {
+        throw "Updates Drivers Block module contains forbidden command: $forbiddenCommand"
+    }
+}
+foreach ($forbiddenSourceBranchText in @(
+    'fuckyoumicrosoft.com',
+    'WUServer',
+    'WUStatusServer',
+    'UpdateServiceUrlAlternate',
+    'DoNotConnectToWindowsUpdateInternetLocations',
+    'NoAutoUpdate',
+    'UseWUServer',
+    'SetDisableUXWUAccess'
+)) {
+    if ($moduleText.Contains($forbiddenSourceBranchText)) {
+        throw "Updates Drivers Block module contains blocked broad Windows Update branch text: $forbiddenSourceBranchText"
+    }
 }
 
 if ($rollbackPolicy.FileScopes.Count -ne 0 -or $rollbackPolicy.RegistryScopes.Count -ne 0) {
@@ -247,11 +300,11 @@ $placeholderModules = @(
 if ($activeTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($activeTools.Count)."
 }
-if ($placeholderModules.Count -ne 15) {
-    throw "Expected 15 placeholder modules, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne 14) {
+    throw "Expected 14 placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 40) {
-    throw "Expected 40 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne 41) {
+    throw "Expected 41 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

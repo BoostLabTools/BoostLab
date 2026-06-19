@@ -111,6 +111,13 @@ unavailable without selected captured state. It performs no downloads, external
 process launch, device restart, reboot, driver operation, or production
 allowlist/artifact approval.
 
+Phase 102 implements `Updates Drivers Block` as a controlled live Driver
+Updates policy tool. It verifies the source checksum, supports Analyze, Apply,
+Default, and selected captured-state Restore for only the nine source-defined
+Driver Updates policy values, captures prior state before mutation, and keeps
+the broad Windows Updates, custom update-server URL, bootable-media,
+generated-script, external-process, and reboot branches blocked.
+
 Tool-specific scope designs created after the first-pass review:
 
 * Updates Drivers Block: `docs/tool-designs/updates-drivers-block-scope-design.md`
@@ -133,8 +140,8 @@ Tool-specific scope designs created after the first-pass review:
 Current inventory at the time of this plan:
 
 * Active approved tools: **55**
-* Implemented tools: **40**
-* Remaining placeholders: **15**
+* Implemented tools: **41**
+* Remaining placeholders: **14**
 * Remaining unimplemented source-promoted intake candidates: **0**
 * Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
 
@@ -159,7 +166,7 @@ In practice, every tool in this document is either still a placeholder and curre
 | Tool id | Title | Stage | Ultimate source | Source SHA-256 | Current status | Main blocker category | Why direct implementation was refused or unsafe | Required foundation before implementation | Product-scope effect | Suggested future phase | Visual-only / disabled until ready |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `reinstall` | Reinstall | Refresh | `source-ultimate/2 Refresh/1 Reinstall.ps1` | `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Refused | Download provenance and installer execution policy | Downloads and launches Windows 10/Windows 11 Media Creation Tool executables from mutable third-party mirror URLs. No approved artifact provenance, executable launch approval, or safe handoff contract exists yet. Phase 58 scope/provenance design: `docs/tool-designs/reinstall-scope-provenance-design.md`. | Download provenance and checksum/signature policy; installer execution policy; reboot/recovery workflow; file state capture for generated executable paths | Windows 10 branch is unsupported; a Windows 10 host may be considered only for a future approved Windows 11-targeted preparation/refresh workflow | `Refresh Reinstall Workflow` | Yes |
-| `updates-drivers-block` | Updates Drivers Block | Refresh | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1` | `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | Refused | Reboot/recovery workflow | Mixes live HKLM Windows Update and driver-delivery policy changes, custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands. Phase 57 scope design: `docs/tool-designs/updates-drivers-block-scope-design.md`. | Reboot/recovery workflow; file/registry state capture and rollback; destructive cleanup/generated-script ownership policy | Shared Windows behavior may be considered only with exact scopes; explicit Windows 10-only optimization branches remain unsupported | `Update and Driver Policy Assistant` | Yes |
+| `updates-drivers-block` | Updates Drivers Block | Refresh | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1` | `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | Implemented controlled live policy; broader branches blocked | Reboot/recovery workflow for blocked branches | Phase 102 implements only the bounded live Driver Updates policy branch. Broad Windows Updates, custom update-server URL, bootable-media `setupcomplete.cmd`, generated-script, external-process, and embedded reboot branches remain blocked. Scope design: `docs/tool-designs/updates-drivers-block-scope-design.md`. | Future broad Updates or bootable-media work still needs reboot/recovery workflow; file state capture; generated-script ownership policy; exact update-server URL approval | Shared Windows live Driver Updates policy behavior is implemented; explicit Windows 10-only optimization branches remain unsupported | `Update and Driver Policy Assistant - Broad Branch Approval` | No for live driver policy; Yes for blocked branches |
 | `edge-settings` | Edge Settings | Setup | `source-ultimate/3 Setup/6 Edge Settings.ps1` | `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | Refused | Download provenance and checksum/signature policy | Current catalog suggests an `Open`-style tool, but source changes policy, RunOnce, services, and downloads a repair installer. Phase 63 scope design: `docs/tool-designs/edge-settings-scope-design.md`. | Download provenance and checksum/signature policy; installer execution policy; service state capture and rollback; file/registry state capture and rollback | No scope exception | `Edge Policy and Repair Workflow` | Yes |
 | `installers` | Installers | Installers | `source-ultimate/4 Installers/1 Installers.ps1` | `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Refused | Installer execution policy | Downloads 24 external artifacts and launches installers/helpers with per-app post-install changes, shortcut cleanup, service deletion, task removal, uninstall calls, and policy/config edits. Phase 59 scope/provenance design: `docs/tool-designs/installers-scope-provenance-design.md`. | Download provenance and checksum/signature policy; installer execution policy; service state capture and rollback; file/registry state capture and rollback; destructive cleanup policy; scheduled task governance | NVIDIA-only scope helps only for FrameView/Nvidia App; most blockers are GPU-neutral multi-installer governance | `Approved Installer Framework` | Yes |
 | `driver-install-debloat-settings` | Driver Install Debloat & Settings | Graphics | `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1` | `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F` | Implemented manual handoff; Auto blocked | Driver state capture and rollback | Phase 99 implements Analyze/Open manual handoff only. Auto remains blocked because the NVIDIA path downloads unpinned tools, debloats extracted driver contents, installs drivers, imports profiles, writes registry, deletes files, removes packages, and restarts. AMD/Intel branches are product-scope unsupported. Phase 60 scope/provenance design: `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md`. | Download provenance and checksum/signature policy; installer execution policy; driver state capture and rollback; reboot/recovery workflow; file/registry state capture and rollback; AppX inventory/restore; destructive cleanup policy | AMD and Intel branches must stay disabled; only NVIDIA Auto could ever be considered later with exact artifacts, driver scopes, profile scopes, AppX scopes, cleanup scopes, and reboot workflow | `Graphics Driver Auto Approval Package` | No for manual handoff; Yes for Auto |
@@ -363,11 +370,15 @@ Phase 36 establishes integrity-protected records, bounded file and registry scop
 
 Affected tools:
 
-* `updates-drivers-block`
 * `start-menu-taskbar`
 * `edge-settings`
 * `edge-webview`
 * `control-panel-settings`
+
+`updates-drivers-block` used this foundation in Phase 102 for exact live Driver
+Updates policy value capture. It is no longer a remaining placeholder, but its
+broad Windows Updates and bootable-media branches still need future exact
+registry/file/reboot scope approval.
 
 `write-cache-buffer-flushing` used this foundation in Phase 47 for Apply-only
 value capture. It is no longer a remaining placeholder, but any future Restore
@@ -411,11 +422,14 @@ governance, or exact service and state plans.
 Affected tools:
 
 * `reinstall`
-* `updates-drivers-block`
 * `driver-install-debloat-settings`
 * `resizable-bar-assistant`
 * `services-optimizer`
 * `defender-optimize-assistant`
+
+`updates-drivers-block` no longer depends on reboot/recovery for its Phase 102
+live Driver Updates policy implementation. Its bootable-media generated-script
+branches remain blocked until a future reboot/recovery workflow is approved.
 
 ## Recommended Foundation Roadmap
 

@@ -31,7 +31,7 @@ The shared Process Handling Policy foundation is documented in
 
 Phase 69 intake for seven manually supplied Ultimate scripts is documented in
 `docs/missing-ultimate-scripts-intake-review.md`. These scripts are not part of
-the 16-tool deferred queue unless a future phase promotes accepted scripts into
+the current 14-tool deferred queue unless a future phase promotes accepted scripts into
 the official source/catalog.
 
 Phase 70 records `Driver Clean.ps1` as a Yazan-approved intake exception
@@ -41,7 +41,7 @@ production scopes, and tool behavior unapproved.
 
 Phase 71 source-promotion planning is documented in
 `docs/missing-scripts-source-promotion-decision.md`. The seven intake scripts
-remain outside the 16-tool deferred queue until a future catalog phase changes
+remain outside the current 14-tool deferred queue until a future catalog phase changes
 the official tool inventory.
 
 Phase 72 completed the mirror copy into
@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **40**
-* Deferred/placeholders: **15**
+* Implemented tools: **41**
+* Deferred/placeholders: **14**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -151,7 +151,7 @@ Current inventory:
 ## Readiness Summary
 
 * Not ready: **3**
-* Foundation-ready but needs production allowlists: **3**
+* Foundation-ready but needs production allowlists: **2**
 * Foundation-ready but needs artifact provenance approvals: **5**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
@@ -161,7 +161,7 @@ Current inventory:
 | Tool title | Tool id | Stage | Current status | Original refusal / defer reason | Foundations now available that help | Foundations still missing or not approved | Required production allowlists / artifact approvals before implementation | Can start next | Category | Recommended next action |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Reinstall | `reinstall` | Refresh | Refused placeholder | Windows 10 and Windows 11 Media Creation Tool download/launch workflow from mutable third-party mirror URLs | Download provenance, installer policy, reboot workflow | No approved Windows 11 setup artifact, no hash/signer/size/version evidence, no approved executable launch, no approved reboot or handoff scope for this tool; Windows 10 branch is unsupported | Exact Windows 11 media artifact, signer/hash/size evidence, exact command line, exact generated-file scope, exact reboot/handoff scope | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/reinstall-scope-provenance-design.md` before any second attempt |
-| Updates Drivers Block | `updates-drivers-block` | Refresh | Refused placeholder | Mixed live HKLM Windows Update and driver-delivery policy changes, custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands | File/registry rollback, cleanup/generated-script policy, reboot workflow | No exact production registry scopes, no approved update-server URL scope, no approved generated-script/media file scope, no approved reboot workflow scope | Exact live-policy scopes, exact update-server URL approval, exact generated-script/media scopes, exact reboot workflow scope, exact decision on whether media-generation branches stay deferred | No | Foundation-ready but needs production allowlists | Use `docs/tool-designs/updates-drivers-block-scope-design.md` before any second attempt |
+| Updates Drivers Block | `updates-drivers-block` | Refresh | Implemented in Phase 102 as controlled live Driver Updates policy | Broader source branches still include custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands | File/registry rollback supports the implemented live policy branch | No approved update-server URL scope, no approved generated-script/media file scope, and no approved reboot workflow scope for the remaining unsupported branches | Future broad Updates or bootable-media work would need exact update-server URL approval, exact generated-script/media scopes, exact reboot workflow scope, and a separate approval decision | Complete for live driver policy only | Phase 102 controlled policy complete; broader branches blocked | Keep broader Updates and bootable-media branches blocked until separately approved |
 | Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Use `docs/tool-designs/edge-settings-scope-design.md`, then decompose the source into policy, service, task, process, and repair behaviors before any migration phase |
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install registry, service, task, shortcut, config, and uninstall side effects | Download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | No approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/installers-scope-provenance-design.md` before any second attempt |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Implemented in Phase 99 as controlled manual handoff | Full Auto behavior still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | Auto remains blocked: no approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | Complete for manual handoff only | Phase 99 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` |
@@ -205,12 +205,14 @@ The Control Panel Settings tool-specific scope design is documented in
 These now have enough shared foundation coverage to plan a future migration,
 but they still need exact bounded production scopes:
 
-* Updates Drivers Block
 * Start Menu Taskbar
 * Cleanup
 
-The Updates Drivers Block tool-specific scope design is documented in
-`docs/tool-designs/updates-drivers-block-scope-design.md`.
+Updates Drivers Block is no longer a deferred placeholder for the live Driver
+Updates policy branch. Phase 102 implements that branch with source checksum
+verification, exact registry value capture, exact Apply/Default behavior, and
+selected captured-state Restore. The broader source branches remain blocked as
+documented in `docs/tool-designs/updates-drivers-block-scope-design.md`.
 
 ### Foundation-ready but needs artifact provenance approvals
 

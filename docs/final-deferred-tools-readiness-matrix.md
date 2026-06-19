@@ -11,11 +11,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 ## Current Inventory
 
 * Active tools: **55**
-* Implemented tools: **40**
-* Deferred/placeholders: **15**
+* Implemented tools: **41**
+* Deferred/placeholders: **14**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
 * Remaining unimplemented source-promoted intake candidates: **0**
-* Design/review coverage: **15/15 deferred tools covered**
+* Design/review coverage: **14/14 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
 * `source-ultimate/` modified by this phase: **No**
@@ -76,14 +76,13 @@ results, and keeps Restore unavailable without selected captured state.
 
 The current deferred queue has complete documentation coverage:
 
-* Scope or scope/provenance design covered tools: **15**
+* Scope or scope/provenance design covered tools: **14**
 * Standalone provenance review covered tools: **0**
 * Manual-handoff implemented with Auto provenance review still blocking automation: **3**
-* Total deferred tools covered by design or review: **15/15**
+* Total deferred tools covered by design or review: **14/14**
 
 Scope or scope/provenance design coverage:
 
-* `updates-drivers-block`
 * `reinstall`
 * `installers`
 * `start-menu-taskbar`
@@ -107,7 +106,6 @@ Standalone provenance review coverage:
 | Tool name | Tool id | Stage | Source path | Source checksum | Current status | Design/review document | Primary blocker category | Foundations already available | Foundations still missing | Production allowlists/scopes required | Default | Restore | Windows 10 branch-level scope | NVIDIA/AMD/Intel product scope | Risk level | Near-term implementation candidate | Recommended next action | Suggested phase priority |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Reinstall | `reinstall` | Refresh | `source-ultimate/2 Refresh/1 Reinstall.ps1` | `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Placeholder/refused; scope/provenance design complete | `docs/tool-designs/reinstall-scope-provenance-design.md` | Missing artifact provenance | Download provenance foundation; installer policy; reboot recovery foundation; file/registry rollback foundation | Approved Windows 11 media artifact, exact hash/size/signer evidence, exact execution descriptor, approved handoff/reboot workflow | Artifact manifest entries; installer execution descriptor; generated-file scope; reboot/handoff workflow scope | Not applicable | Refused until captured-state workflow exists | Windows 10 branch unsupported; Windows 10 host may be valid only for Windows 11 preparation output | Not GPU-specific | High | Maybe after one foundation | Artifact provenance review, then implementation reattempt only if exact Windows 11 artifact approval exists | P4 |
-| Updates Drivers Block | `updates-drivers-block` | Refresh | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1` | `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | Placeholder/refused; scope design complete | `docs/tool-designs/updates-drivers-block-scope-design.md` | Missing production allowlist | File/registry rollback foundation; reboot recovery foundation; generated-script ownership can be designed through file policy | Exact Windows Update policy scopes, generated media/script file scope, custom URL decision, reboot workflow approval | Registry scopes; generated script/media scopes; reboot workflow scope | Source has Default intent but not approved | Restore refused until exact captured-state selection exists | Shared Windows behavior may be considered; explicit Windows 10-only optimization remains unsupported | Not GPU-specific | High | Maybe after one foundation | Add production allowlists only after deciding live-policy versus media-script boundaries | P3 |
 | Edge Settings | `edge-settings` | Setup | `source-ultimate/3 Setup/6 Edge Settings.ps1` | `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | Placeholder/refused; scope design complete; not ready | `docs/tool-designs/edge-settings-scope-design.md` | Missing scheduled task governance | File/registry rollback foundation; service rollback foundation; download provenance foundation; installer policy | RunOnce/Active Setup governance, process handling governance, exact Edge repair artifact approval, exact service scopes | Registry scopes; service scopes; RunOnce/Active Setup scopes; artifact approvals; installer descriptor | Not applicable until design split | Refused until exact captured-state selection exists | No known product-scope exception; shared behavior only if otherwise approved | Not GPU-specific | High | No | Build RunOnce/Active Setup and process-handling policy before any implementation reattempt | P8 |
 | Installers | `installers` | Installers | `source-ultimate/4 Installers/1 Installers.ps1` | `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Placeholder/refused; scope/provenance design complete | `docs/tool-designs/installers-scope-provenance-design.md` | Missing artifact provenance | Download provenance foundation; installer policy; service rollback foundation; file/registry rollback foundation; cleanup policy | Approved per-app artifacts, exact installer descriptors, scheduled task governance, app inventory/uninstall model | Artifact approvals; installer descriptors; per-app service/file/registry/task/shortcut scopes | Not applicable | Refused until installer/app inventory and restore model exists | No Windows 10 optimization branch should be ported | NVIDIA-only affects only any GPU-specific installer branch; AMD/Intel remain unsupported | High | No | Artifact Approval Intake Process, then app-by-app approval packages | P7 |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1` | `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F` | Implemented manual handoff; Auto blocked | `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md`; `docs/migrations/driver-install-debloat-settings.md` | Missing driver/profile rollback approval for Auto | Manual handoff implemented; download provenance foundation; installer policy; driver rollback foundation; reboot recovery foundation; AppX foundation; cleanup policy; file/registry rollback foundation | Exact NVIDIA artifacts, driver/package scopes, profile import rollback, cleanup scopes, AppX scopes, reboot workflow | NVIDIA artifact approvals; driver scopes; profile scopes; cleanup scopes; AppX scopes; reboot scope | Unavailable | Restore unavailable until driver/profile/package/registry/file/reboot state is captured and approved | Shared Windows behavior only; Windows 10 optimization branches unsupported | NVIDIA manual handoff only; AMD/Intel branches disabled | High | Complete for manual handoff only | Auto requires artifact/driver/profile/package/reboot approval package | P13 |
@@ -127,12 +125,12 @@ Standalone provenance review coverage:
 
 ## Blocker Frequency Summary
 
-Primary blocker counts across the 15 deferred/placeholders:
+Primary blocker counts across the 14 deferred/placeholders:
 
 | Primary blocker category | Count | Tools |
 |---|---:|---|
 | Missing artifact provenance | 5 | Reinstall; Installers; Edge & WebView; Resizable BAR Assistant; Timer Resolution Assistant |
-| Missing production allowlist | 3 | Updates Drivers Block; Start Menu Taskbar; Cleanup |
+| Missing production allowlist | 2 | Start Menu Taskbar; Cleanup |
 | Missing scheduled task governance | 1 | Edge Settings |
 | Missing process handling governance | 1 | Copilot |
 | Missing AppX/package restore model | 1 | Bloatware |
@@ -149,12 +147,15 @@ These are not ready today. They are the comparatively safest next implementation
    Needs exact file/registry scopes, Explorer process handling rules, and a clear refusal of Default/Restore until captured-state restore selection exists.
 2. **Cleanup**
    Needs bounded cleanup scopes, quarantine/delete decisions, file-count and byte limits, and restore selection UI/runtime if any Restore claim is made.
-3. **Updates Drivers Block**
-   Needs exact registry and generated media/script scopes plus a decision on reboot/media branches.
-4. **Bloatware**
+3. **Bloatware**
    Could start as a package-inventory design reattempt only after exact package allowlists exist. It must not become a broad debloat pass.
-5. **Timer Resolution Assistant**
+4. **Timer Resolution Assistant**
    Could be reattempted after a generated script/temp artifact ownership policy and exact service scope approval. It remains high risk.
+
+Updates Drivers Block is implemented in Phase 102 for the live Driver Updates
+policy branch only. The broader Windows Updates, custom update-server URL,
+bootable-media, generated-script, and reboot branches remain blocked for any
+future approval package.
 
 ## Shared Foundation Roadmap
 
@@ -207,14 +208,14 @@ Current product-scope impact:
 
 * `driver-install-debloat-settings` and `resizable-bar-assistant` are constrained to NVIDIA-only future behavior.
 * `reinstall` may eventually support a Windows 10 host only for Windows 11 preparation/refresh output.
-* `updates-drivers-block`, `start-menu-taskbar`, `cleanup`, and most Windows tools are blocked by governance, not by host OS alone, unless a future source branch is explicitly Windows 10-only.
+* `start-menu-taskbar`, `cleanup`, and most Windows tools are blocked by governance, not by host OS alone, unless a future source branch is explicitly Windows 10-only.
 
 ## Recommended Next Phases
 
 1. **Scheduled Task State Capture / Rollback Foundation**
    Required by Edge Settings, Control Panel Settings, Defender Optimize Assistant, and installer-style workflows.
 2. **Generated Script / Temp Artifact Ownership Policy**
-   Required by Updates Drivers Block, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and several registry-import workflows.
+   Required by the broader Updates Drivers Block bootable-media branches, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and several registry-import workflows.
 3. **RunOnce / Active Setup Governance**
    Required before persistent startup or post-reboot repair behavior can be approved.
 4. **Start Menu Taskbar Allowlist Review**

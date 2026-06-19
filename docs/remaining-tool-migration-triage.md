@@ -93,7 +93,7 @@ These mismatches are documented here rather than changed during this planning-on
 
 * **Reinstall:** downloads and launches Windows media creation tools.
 * **Unattended:** builds installation media configuration, includes hardware requirement bypasses, and writes installation artifacts.
-* **Updates Drivers Block:** includes multiple policy modes, bootable-media scripts, forced update endpoints, and reboot commands.
+* **Updates Drivers Block:** Phase 102 implements only the bounded live Driver Updates policy branch. Broad Windows Updates, custom update-server URL, bootable-media script, external-process, and reboot branches remain blocked.
 * **To BIOS:** immediately requests restart to firmware.
 * **Edge Settings:** modifies policies, Active Setup, RunOnce, browser helper objects, and Edge services; Default downloads and launches an installer.
 * **Installers:** large download/install workflow with application-specific service and policy changes.
@@ -123,7 +123,7 @@ These mismatches are documented here rather than changed during this planning-on
 |---|---|---|---|---|---|---|---|---|---|
 | Reinstall | Refresh | `modules/Refresh/reinstall.psm1` | `source-ultimate/2 Refresh/1 Reinstall.ps1`<br>`137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Downloads; installer/UI launch | Deferred | Downloads and launches Windows 10/11 media creation executables. | No | No; workflow has no meaningful inverse | Phase: Refresh Reinstall Workflow |
 | Unattended | Refresh | `modules/Refresh/unattended.psm1` | `source-ultimate/2 Refresh/2 Unattended.ps1`<br>`0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338` | Windows Setup commands; file creation/deletion; installation-media UI | Implemented | Phase 33 preserves the Windows 11 artifact workflow with confirmation, removable-media validation, verified backups, ownership state, and structured verification. | No | No Default or Restore action is claimed | Phase 33 complete |
-| Updates Drivers Block | Refresh | `modules/Refresh/updates-drivers-block.psm1` | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1`<br>`4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | HKLM policy; file generation/move; UI launch; reboot | Deferred | Six distinct modes include live policy and bootable USB scripts. Some branches embed reboot commands and nonstandard update-server URLs. | Yes, Unblock branches | No for live policies; bootable-media rollback must be separately designed | Phase: Update and Driver Policy Assistant |
+| Updates Drivers Block | Refresh | `modules/Refresh/updates-drivers-block.psm1` | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1`<br>`4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | HKLM policy; file generation/move; UI launch; reboot | Implemented controlled live policy; broader branches blocked | Phase 102 preserves only the live Driver Updates Block/Unblock registry branch with exact value capture, Apply, Default, verification, and selected captured-state Restore. Bootable USB, broad Windows Updates, custom update-server URL, external-process, and reboot branches remain blocked. | Yes, Driver Updates Unblock maps to Default for nine supported values only | Restore requires selected captured state; bootable-media rollback must be separately designed | Phase 102 complete for live driver policy; future broad branch approval only |
 | To BIOS | Refresh | `modules/Refresh/to-bios.psm1` | `source-ultimate/2 Refresh/4 To Bios.ps1`<br>`A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C` | Reboot to firmware | Deferred | Executes `shutdown.exe /r /fw /t 0`; requires the established explicit reboot confirmation flow. | No | No | Phase: Firmware Restart Workflow |
 | Edge Settings | Setup | `modules/Setup/edge-settings.psm1` | `source-ultimate/3 Setup/6 Edge Settings.ps1`<br>`342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | HKLM policy; process; service deletion; RunOnce; downloads; installer; registry deletion | Deferred | Not an open-only tool. Default downloads and launches an Edge installer. Current catalog actions/capabilities understate source behavior. | Yes | No | Phase: Edge Policy and Repair Workflow |
 | Installers | Installers | `modules/Installers/installers.psm1` | `source-ultimate/4 Installers/1 Installers.ps1`<br>`1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Downloads; installers; HKLM policies; processes; services; file changes | Deferred | Large multi-application installer with application-specific post-install changes and uninstalls. | No global Default | No; each package needs independent state and uninstall policy | Phase: Approved Installer Framework |
@@ -180,6 +180,16 @@ Phase 32 implemented the source-defined Apply and Default behavior with exact No
 ### Unattended
 
 Phase 33 implemented the source-defined Windows 11 `autounattend.xml` generation workflow with Analyze and confirmed Apply actions. It preserves the complete Ultimate XML payload, account substitution, temporary-file sequence, removable-media destination, and folder launch while adding verified backup and ownership state before any overwrite. Windows 10 and Windows 11 may host this Windows 11 preparation workflow; Windows 10 optimization branches remain unsupported. No Default or Restore action is claimed. See `docs/migrations/unattended.md`.
+
+### Updates Drivers Block
+
+Phase 102 implemented the source-defined live Driver Updates policy branch with
+Analyze, confirmed Apply, confirmed Default, and selected captured-state
+Restore. Apply writes only the nine source-defined policy values after capture;
+Default removes only those same values after capture. Broad Windows Updates,
+custom update-server URL, bootable-media, generated-script, external-process,
+and reboot branches remain blocked. See
+`docs/migrations/updates-drivers-block.md`.
 
 ### Write Cache Buffer Flushing
 

@@ -2,18 +2,16 @@
 
 ## Purpose
 
-This Phase 57 document defines the future implementation scope for the
-`Updates Drivers Block` tool. It is design-only.
+This Phase 57 document defines the source behavior groups and safety boundaries
+for the `Updates Drivers Block` tool.
 
-No Updates Drivers Block behavior is implemented by this document. No runtime
-behavior, module behavior, production registry scope, file scope, cleanup
-scope, reboot scope, update-server scope, bootable-media scope, Default
-behavior, or Restore behavior is approved here.
+Phase 102 implemented only the bounded live Driver Updates policy branch:
+`Analyze`, `Apply`, `Default`, and selected captured-state `Restore`.
 
-Updates Drivers Block remains a refused placeholder until a later approved
-phase adds exact bounded production registry/file/reboot/media scopes,
-generated-script ownership rules, update-policy verification, captured-state
-rollback, and implementation.
+No bootable-media behavior, generated script behavior, broad Windows Updates
+block/unblock behavior, custom update-server URL behavior, file scope, cleanup
+scope, reboot scope, external process launch, or Windows Update execution is
+approved here.
 
 ## Source Reference
 
@@ -21,8 +19,8 @@ rollback, and implementation.
 * Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`
 * Current BoostLab module path:
   `modules/Refresh/updates-drivers-block.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status: Phase 102 controlled live Driver Updates policy implementation
+* Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`
 
 Relevant foundations:
 
@@ -82,15 +80,23 @@ The source contains no service control command such as `Stop-Service`,
 
 ## Current Decision
 
-Do not implement Analyze, Apply, Default, Restore, or any bootable-media action
-yet.
+Phase 102 implements the live Driver Updates policy subset only:
 
-The source combines live HKLM Windows Update policy mutation, live driver
-delivery policy mutation, custom update-server URL values, generated installation
-media scripts, immediate reboot commands embedded inside those generated
-scripts, user-selected removable-media paths, and policy deletion. These
-behaviors require exact registry/file/reboot/media scopes and high-risk
-confirmation before BoostLab can preserve the Ultimate behavior safely.
+* `Analyze`: read-only source identity and registry-state reporting.
+* `Apply`: captures prior state and writes only the nine source-defined Driver
+  Updates policy values.
+* `Default`: captures prior state and removes only those same nine
+  source-defined Driver Updates policy values.
+* `Restore`: requires a selected captured rollback record and restores only
+  that exact captured value state.
+
+The source also combines broader HKLM Windows Update policy mutation, custom
+update-server URL values, generated installation-media scripts, immediate
+reboot commands embedded inside those generated scripts, user-selected
+removable-media paths, and policy deletion. Those behaviors remain blocked
+until exact registry/file/reboot/media scopes, generated-script ownership
+rules, update-policy verification, captured-state restore selection, and
+approval are added in a later phase.
 
 ## Behavior Groups
 
@@ -176,7 +182,8 @@ confirmation before BoostLab can preserve the Ultimate behavior safely.
 * Risk level:
   * High
 * Later implementation decision:
-  * Can be reconsidered only with exact bounded registry scopes.
+  * Implemented in Phase 102 for the live Driver Updates branch only, with
+    exact value capture before mutation and exact value verification.
 
 ### 3. Custom Update Server / WSUS URL Behavior
 
@@ -398,8 +405,9 @@ confirmation before BoostLab can preserve the Ultimate behavior safely.
 * Required foundation:
   * Phase 36 registry state capture and rollback.
 * Required future production allowlist:
-  * Exact decision whether source `Unblock` maps to future `Default`.
-  * Separate exact Restore contract if prior values are captured.
+  * Phase 102 maps Driver Updates `Unblock` to `Default` for the nine supported
+    live Driver Updates policy values only.
+  * Separate exact Restore contract is required for selected captured state.
 * Required inventory/capture before mutation:
   * Existing values before deletion.
 * Required confirmation level:
@@ -414,7 +422,9 @@ confirmation before BoostLab can preserve the Ultimate behavior safely.
 * Risk level:
   * High
 * Later implementation decision:
-  * Current Default/Restore must remain unavailable.
+  * Driver Updates `Default` is implemented for the nine supported values.
+  * Restore is implemented only from selected captured rollback records.
+  * Broad Updates `Unblock` remains refused.
 
 ### 10. Unsupported Broad Registry or Policy Targets
 
@@ -547,24 +557,32 @@ A future safe implementation would require all of the following:
 The source `Unblock` options delete source-defined policy values. They are not
 the same thing as BoostLab Restore.
 
-Current Default/Restore must remain unavailable. A future Default would need
-the same registry capture and verification governance as Apply because deleting
-policy values can remove intentional existing policy.
+Phase 102 implements Driver Updates `Default` for the nine supported live
+driver-delivery values only. It captures current state first, removes only those
+exact values, and verifies absence. This Default is source-defined value
+deletion and is not captured-state Restore.
 
 Deleting policy values can remove intentional existing policy.
 
-Restore remains unavailable unless exact registry rollback, file rollback,
-generated-script ownership, update policy verification, and captured-state
-restore selection are approved. BoostLab must not infer prior Windows Update
+Restore is available only when a selected BoostLab rollback record from this
+tool is provided and validated. BoostLab must not infer prior Windows Update
 or driver-delivery policy from the source's Unblock paths.
+
+Broad Windows Updates `Unblock`, bootable-media cleanup, generated-script
+restore, and custom update-server policy restore remain unavailable unless
+exact registry rollback, file rollback, generated-script ownership, update
+policy verification, and captured-state restore selection are approved.
 
 ## Production Approval State
 
-No production registry/file/cleanup/reboot/update-server/bootable-media scopes are approved by this document.
+No production file/cleanup/reboot/update-server/bootable-media scopes are
+approved by this document.
 
-Updates Drivers Block remains a placeholder/refused tool.
+Phase 102 approves only the module-local exact live Driver Updates policy
+registry implementation documented in
+`docs/migrations/updates-drivers-block.md`. The tool is no longer a placeholder.
 
-The current placeholder module must remain non-executing. A future migration
-phase must not implement a partial "safe-looking" subset if doing so would
-weaken the source's effective Windows Update, driver-update, bootable-media, or
-reboot behavior.
+Future phases must not implement a partial "safe-looking" subset of the
+remaining Windows Updates, bootable-media, generated-script, custom URL, or
+reboot behavior if doing so would weaken the source's effective behavior or
+bypass current governance.

@@ -62,10 +62,10 @@
                     Stage       = 'Refresh'
                     Order       = 3
                     Type        = 'action'
-                    RiskLevel   = 'medium'
-                    Description = 'Manage the policy that controls driver delivery through Windows Update.'
-                    Actions     = @('Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    RiskLevel   = 'high'
+                    Description = 'Apply or default the source-defined live Driver Updates policy registry values after captured prior state.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'to-bios'

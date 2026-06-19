@@ -549,17 +549,25 @@ try {
         Join-Path $modulesRoot 'Graphics\hdcp.psm1'
         Join-Path $modulesRoot 'Graphics\p0-state.psm1'
         Join-Path $modulesRoot 'Graphics\msi-mode.psm1'
+        Join-Path $modulesRoot 'Refresh\updates-drivers-block.psm1'
         Join-Path $modulesRoot 'Windows\write-cache-buffer-flushing.psm1'
+    )
+    $approvedPhase36RegistryRollbackConsumers = @(
+        Join-Path $modulesRoot 'Refresh\updates-drivers-block.psm1'
     )
     foreach ($module in Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1') {
         $moduleSource = Get-Content -LiteralPath $module.FullName -Raw
         $isApprovedCaptureConsumer = $module.FullName -in $approvedPhase36CaptureConsumers
+        $isApprovedRegistryRollbackConsumer = $module.FullName -in $approvedPhase36RegistryRollbackConsumers
         if (
             $isApprovedCaptureConsumer -and
             (
                 $moduleSource.Contains('New-BoostLabFileStateCapture') -or
                 $moduleSource.Contains('Invoke-BoostLabFileRollback') -or
-                $moduleSource.Contains('Invoke-BoostLabRegistryRollback')
+                (
+                    -not $isApprovedRegistryRollbackConsumer -and
+                    $moduleSource.Contains('Invoke-BoostLabRegistryRollback')
+                )
             )
         ) {
             $errors.Add("Approved Phase 36 capture consumer used rollback or file-capture behavior: $($module.FullName)")
@@ -593,8 +601,8 @@ try {
     )
     if (
         $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 40 -or
-        $placeholderModules.Count -ne 15
+        $implementedModules.Count -ne 41 -or
+        $placeholderModules.Count -ne 14
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -680,8 +688,8 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount = 40
-    PlaceholderModuleCount = 15
+    ImplementedModuleCount = 41
+    PlaceholderModuleCount = 14
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
     Timestamp                = Get-Date

@@ -32,6 +32,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\unattended.psm1'
         Actions = @('Analyze', 'Apply')
     }
+    'updates-drivers-block' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\updates-drivers-block.psm1'
+        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+    }
     'startup-apps-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StartupAppsSettings.psm1'
         Actions = @('Open')

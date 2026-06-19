@@ -47,6 +47,10 @@ $implementedModules = @{
         RelativePath          = 'Refresh\unattended.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
     }
+    'updates-drivers-block' = @{
+        RelativePath          = 'Refresh\updates-drivers-block.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'startup-apps-settings' = @{
         RelativePath          = 'Setup\StartupAppsSettings.psm1'
         LaunchText            = 'Start-Process "ms-settings:startupapps"'
@@ -419,6 +423,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'msi-mode' -and
             $commandName -eq 'New-ItemProperty'
         )
+        $approvedUpdatesDriversBlockCommand = (
+            $toolId -eq 'updates-drivers-block' -and
+            $commandName -in @('New-ItemProperty', 'Remove-ItemProperty')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -432,7 +440,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedWriteCacheCommand -and
             -not $approvedHdcpCommand -and
             -not $approvedP0StateCommand -and
-            -not $approvedMsiModeCommand
+            -not $approvedMsiModeCommand -and
+            -not $approvedUpdatesDriversBlockCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -522,6 +531,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'msi-mode') {
+            0
+        }
+        elseif ($toolId -eq 'updates-drivers-block') {
             0
         }
         elseif ($toolId -eq 'power-plan') {

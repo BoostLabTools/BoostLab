@@ -77,16 +77,15 @@ $placeholderTools = foreach ($module in $placeholderModules) {
 if ($allTools.Count -ne 55) {
     throw "Expected 55 active tools, found $($allTools.Count)."
 }
-if ($placeholderTools.Count -ne 15) {
-    throw "Expected 15 deferred/placeholders, found $($placeholderTools.Count)."
+if ($placeholderTools.Count -ne 14) {
+    throw "Expected 14 deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 40) {
-    throw "Expected 40 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne 41) {
+    throw "Expected 41 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(
     @{ Id = 'reinstall'; Title = 'Reinstall'; Link = 'docs/tool-designs/reinstall-scope-provenance-design.md'; Source = 'source-ultimate/2 Refresh/1 Reinstall.ps1'; Hash = '137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB' }
-    @{ Id = 'updates-drivers-block'; Title = 'Updates Drivers Block'; Link = 'docs/tool-designs/updates-drivers-block-scope-design.md'; Source = 'source-ultimate/2 Refresh/3 Updates Drivers Block.ps1'; Hash = '4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991' }
     @{ Id = 'edge-settings'; Title = 'Edge Settings'; Link = 'docs/tool-designs/edge-settings-scope-design.md'; Source = 'source-ultimate/3 Setup/6 Edge Settings.ps1'; Hash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28' }
     @{ Id = 'installers'; Title = 'Installers'; Link = 'docs/tool-designs/installers-scope-provenance-design.md'; Source = 'source-ultimate/4 Installers/1 Installers.ps1'; Hash = '1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67' }
     @{ Id = 'start-menu-taskbar'; Title = 'Start Menu Taskbar'; Link = 'docs/tool-designs/start-menu-taskbar-scope-design.md'; Source = 'source-ultimate/6 Windows/1 Start Menu Taskbar.ps1'; Hash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91' }
@@ -133,8 +132,8 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    '15/15 deferred tools covered',
-    'Scope or scope/provenance design covered tools: **15**',
+    '14/14 deferred tools covered',
+    'Scope or scope/provenance design covered tools: **14**',
     'Standalone provenance review covered tools: **0**',
     'Manual-handoff implemented with Auto provenance review still blocking automation: **3**',
     'No deferred tool is marked ready for implementation by this matrix.',
@@ -153,7 +152,7 @@ foreach ($requiredPhrase in @(
 
 foreach ($requiredBlocker in @(
     '| Missing artifact provenance | 5 |',
-    '| Missing production allowlist | 3 |',
+    '| Missing production allowlist | 2 |',
     '| Missing scheduled task governance | 1 |',
     '| Missing process handling governance | 1 |',
     '| Missing AppX/package restore model | 1 |',
@@ -168,7 +167,6 @@ foreach ($requiredBlocker in @(
 foreach ($candidate in @(
     'Start Menu Taskbar',
     'Cleanup',
-    'Updates Drivers Block',
     'Bloatware',
     'Timer Resolution Assistant'
 )) {

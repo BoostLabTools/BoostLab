@@ -713,12 +713,12 @@ try {
     if ($allTools.Count -ne 55) {
         $errors.Add("Expected 55 active tools, found $($allTools.Count).")
     }
-    if ($placeholderModules.Count -ne 15) {
+    if ($placeholderModules.Count -ne 14) {
         $errors.Add(
-            "Expected 15 placeholder modules, found $($placeholderModules.Count)."
+            "Expected 14 placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 40) {
+    if (($allTools.Count - $placeholderModules.Count) -ne 41) {
         $errors.Add('Implemented tool count changed from 40.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
