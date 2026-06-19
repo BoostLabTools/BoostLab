@@ -215,9 +215,11 @@
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
-            GapSummary = 'Source is not open-only and includes policy, Active Setup, RunOnce, services, and repair download behavior.'
+            GapSummary = 'Phase 117 ordered parity review found that source-equivalent Edge Settings requires explicit Yazan approval for dynamic Active Setup, RunOnce, Edge service, scheduled task, BHO, broad Edge policy deletion, msedge launch/stop, and mutable GitHub edge.exe repair download/installer behavior; policy-only or Open-only behavior would weaken Ultimate.'
             YazanFinalException = $false
-            NextParityAction = 'Implement only after exact Edge repair artifacts, service scopes, RunOnce/Active Setup handling, and registry/file rollback are approved.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'DeferredNeedsYazanDecision'
+            NextParityAction = 'Ask Yazan whether Edge Settings may implement the full source workflow with exact production scopes/artifact provenance, or whether a final scope exception should be accepted before continuing ordered parity.'
         }
         @{
             ToolId = 'store-settings'

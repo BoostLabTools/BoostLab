@@ -93,12 +93,23 @@ Any policy-only implementation would weaken Ultimate behavior.
 
 ## Current Decision
 
-Do not implement Analyze, Open, Apply, Default, or Restore yet.
+Phase 117 ordered parity review keeps Edge Settings blocked as
+`DeferredNeedsYazanDecision`. Do not implement Analyze, Open, Apply, Default,
+or Restore yet.
 
 The current catalog suggests an `Open`-style assistant, but the approved source
 is not open-only. Direct implementation is refused until Edge Settings is
 decomposed into exact policy, service, task, process, repair, and rollback
 scopes. Policy-only implementation would weaken Ultimate behavior.
+
+The exact Yazan decision required before ordered parity can continue is whether
+BoostLab may implement the full source workflow with production approvals for
+dynamic Active Setup deletion, wildcard RunOnce deletion, dynamic Edge service
+stop/delete, broad Edge scheduled-task deletion, BHO key deletion, broad Edge
+policy key deletion, `msedge` launch/stop behavior, and the mutable GitHub
+`edge.exe` repair download/installer. If that full workflow is not approved,
+Yazan must explicitly define a final Edge Settings scope exception; otherwise
+the ordered parity cursor remains on `edge-settings`.
 
 ## Behavior Groups
 
