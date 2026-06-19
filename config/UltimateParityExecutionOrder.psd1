@@ -1,7 +1,7 @@
 @{
     SchemaVersion = 1
     Purpose = 'Phase 107 ordered Ultimate parity execution baseline'
-    Rule = 'Future parity work follows stage order and then tool order unless Yazan explicitly overrides.'
+    Rule = 'Future parity work follows stage order and Yazan-corrected stage/script order; Setup starts with BitLocker before the remaining Setup tools.'
     StageOrder = @(
         'Check'
         'Refresh'
@@ -34,15 +34,15 @@
             Name = 'Setup'
             Order = 3
             Tools = @(
-                @{ Order = 1; ToolId = 'memory-compression'; DisplayName = 'Memory Compression' }
-                @{ Order = 2; ToolId = 'date-language-region-time'; DisplayName = 'Date Language Region Time' }
-                @{ Order = 3; ToolId = 'startup-apps-settings'; DisplayName = 'Startup Apps (Settings)' }
-                @{ Order = 4; ToolId = 'startup-apps-task-manager'; DisplayName = 'Startup Apps (Task Manager)' }
-                @{ Order = 5; ToolId = 'background-apps'; DisplayName = 'Background Apps' }
-                @{ Order = 6; ToolId = 'edge-settings'; DisplayName = 'Edge Settings' }
-                @{ Order = 7; ToolId = 'store-settings'; DisplayName = 'Store Settings' }
-                @{ Order = 8; ToolId = 'updates-pause'; DisplayName = 'Updates Pause' }
-                @{ Order = 9; ToolId = 'bitlocker'; DisplayName = 'BitLocker' }
+                @{ Order = 1; ToolId = 'bitlocker'; DisplayName = 'BitLocker' }
+                @{ Order = 2; ToolId = 'memory-compression'; DisplayName = 'Memory Compression' }
+                @{ Order = 3; ToolId = 'date-language-region-time'; DisplayName = 'Date Language Region Time' }
+                @{ Order = 4; ToolId = 'startup-apps-settings'; DisplayName = 'Startup Apps (Settings)' }
+                @{ Order = 5; ToolId = 'startup-apps-task-manager'; DisplayName = 'Startup Apps (Task Manager)' }
+                @{ Order = 6; ToolId = 'background-apps'; DisplayName = 'Background Apps' }
+                @{ Order = 7; ToolId = 'edge-settings'; DisplayName = 'Edge Settings' }
+                @{ Order = 8; ToolId = 'store-settings'; DisplayName = 'Store Settings' }
+                @{ Order = 9; ToolId = 'updates-pause'; DisplayName = 'Updates Pause' }
             )
         }
         @{

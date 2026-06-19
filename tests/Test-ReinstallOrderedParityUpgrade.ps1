@@ -217,7 +217,7 @@ Assert-BoostLabCondition ([string]$reinstallRecord.FinalProgressStatus -eq 'Done
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'edge-settings') 'Next ordered pending parity target must advance to Edge Settings after To BIOS near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'bitlocker') 'Next ordered pending parity target must advance to BitLocker after To BIOS near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'

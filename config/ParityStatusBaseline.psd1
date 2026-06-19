@@ -224,9 +224,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'SecurityAssistantOnly'
             UltimateParity = 'No'
-            GapSummary = 'Security-sensitive mutation branches remain blocked; tool provides analysis and manual guidance only.'
+            GapSummary = 'Needs explicit Yazan BitLocker mutation, recovery-key, protector, decryption, volume-selection, verification, support, Default, and Restore policy; source Off disables matched BitLocker volumes and source On is UI/status-only.'
             YazanFinalException = $false
-            NextParityAction = 'Obtain Yazan-approved BitLocker mutation, recovery-key, protector, and restore policy or final advisory-only exception.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'DeferredNeedsYazanDecision'
+            NextParityAction = 'Ask Yazan for BitLocker final policy decision before continuing.'
         }
         @{
             ToolId = 'installers'

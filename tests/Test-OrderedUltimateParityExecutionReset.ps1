@@ -119,12 +119,17 @@ Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design 
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.UltimateParityIsDefaultFinalTarget) 'Ultimate parity default-final-target policy is missing.'
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.RuntimeImplementedIsNotUltimateParity) 'Runtime implementation separation policy is missing.'
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.WorkOrderFollowsStageToolOrder) 'Ordered parity work policy is missing.'
+Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'Setup starts with BitLocker') 'Ordered parity execution rule must record the Phase 114 Setup correction.'
 
 $expectedStageOrder = @($stages.Stages | ForEach-Object { [string]$_.Name })
 $actualStageOrder = @($executionOrder.StageOrder | ForEach-Object { [string]$_ })
 Assert-BoostLabCondition (($expectedStageOrder -join '|') -eq ($actualStageOrder -join '|')) 'Execution order stage list must match config/Stages.psd1.'
 
 $flattenedOrder = @()
+$catalogById = @{}
+foreach ($tool in $allTools) {
+    $catalogById[[string]$tool['Id']] = $tool
+}
 foreach ($stageIndex in 0..($stages.Stages.Count - 1)) {
     $stage = $stages.Stages[$stageIndex]
     $orderStage = $executionOrder.Stages[$stageIndex]
@@ -133,12 +138,18 @@ foreach ($stageIndex in 0..($stages.Stages.Count - 1)) {
     $stageTools = @($stage.Tools)
     $orderTools = @($orderStage.Tools)
     Assert-BoostLabCondition ($stageTools.Count -eq $orderTools.Count) "Execution order tool count mismatch for stage $($stage.Name)."
-    foreach ($toolIndex in 0..($stageTools.Count - 1)) {
-        $tool = $stageTools[$toolIndex]
+    $stageToolIds = @($stageTools | ForEach-Object { [string]$_['Id'] } | Sort-Object)
+    $orderToolIds = @($orderTools | ForEach-Object { [string]$_.ToolId } | Sort-Object)
+    Assert-BoostLabCondition (($stageToolIds -join '|') -eq ($orderToolIds -join '|')) "Execution order tool set mismatch for stage $($stage.Name)."
+    if ([string]$stage.Name -eq 'Setup') {
+        Assert-BoostLabCondition ([string]$orderTools[0].ToolId -eq 'bitlocker') 'Phase 114 correction requires BitLocker to be first in Setup parity order.'
+    }
+    foreach ($toolIndex in 0..($orderTools.Count - 1)) {
         $orderTool = $orderTools[$toolIndex]
-        Assert-BoostLabCondition ([int]$orderTool.Order -eq ($toolIndex + 1)) "Execution order tool number mismatch for $($tool['Id'])."
-        Assert-BoostLabCondition ([string]$orderTool.ToolId -eq [string]$tool['Id']) "Execution order tool id mismatch for $($tool['Id'])."
-        Assert-BoostLabCondition ([string]$orderTool.DisplayName -eq [string]$tool['Title']) "Execution order display name mismatch for $($tool['Id'])."
+        $catalogTool = $catalogById[[string]$orderTool.ToolId]
+        Assert-BoostLabCondition ($null -ne $catalogTool) "Execution order references unknown tool: $($orderTool.ToolId)."
+        Assert-BoostLabCondition ([int]$orderTool.Order -eq ($toolIndex + 1)) "Execution order tool number mismatch for $($orderTool.ToolId)."
+        Assert-BoostLabCondition ([string]$orderTool.DisplayName -eq [string]$catalogTool['Title']) "Execution order display name mismatch for $($orderTool.ToolId)."
         $flattenedOrder += [string]$orderTool.ToolId
     }
 }
@@ -201,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'edge-settings') 'The first ordered pending parity target should be Edge Settings after To BIOS near-parity acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'bitlocker') 'The first ordered pending parity target should be BitLocker after the Phase 114 Setup correction.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'
