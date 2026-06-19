@@ -55,7 +55,7 @@ $hasAcceptedNearParity = $biosRecord -is [System.Collections.IDictionary] -and $
 $hasDoneStatus = $biosRecord -is [System.Collections.IDictionary] -and $biosRecord.Contains('FinalProgressStatus') -and [string]$biosRecord['FinalProgressStatus'] -eq 'DoneYazanAcceptedNearParity'
 Assert-BoostLabCondition $hasAcceptedNearParity 'BIOS Settings must be marked YazanAcceptedNearParity.'
 Assert-BoostLabCondition $hasDoneStatus 'BIOS Settings final progress status is incorrect.'
-Assert-BoostLabCondition ([string]$biosRecord.NextParityAction -match 'reinstall') 'BIOS Settings NextParityAction must point to Reinstall.'
+Assert-BoostLabCondition ([string]$biosRecord.NextParityAction -match 'unattended') 'BIOS Settings NextParityAction must point to Unattended after Reinstall near-parity acceptance.'
 
 $resetTarget = $null
 foreach ($stage in @($executionOrder.Stages)) {
@@ -74,7 +74,7 @@ Assert-BoostLabCondition ([string]$resetTarget.ToolId -eq 'bios-settings') 'BIOS
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'reinstall') 'DoneYazanAcceptedNearParity tools must be skipped by next ordered target calculation.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'unattended') 'DoneYazanAcceptedNearParity tools must be skipped by next ordered target calculation.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\1 Check\2 BIOS Settings.ps1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bios-settings.md'

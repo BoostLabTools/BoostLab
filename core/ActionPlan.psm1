@@ -287,13 +287,13 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no captured artifact, package, registry, temp-file, installer, or cleanup state restore contract exists.'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
-        'Analyze the Reinstall source and report blocked Windows 11 Media Creation Tool artifact, setup execution, generated-file ownership, reboot/session, recovery, and support approvals without running any reinstall workflow.'
+        'Analyze the Reinstall source and report the controlled Windows 11 Media Creation Tool operation without downloading or launching anything.'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
-        'Prepare Reinstall manual handoff instructions only; no browser, Explorer, Settings, external tool, Windows media download, Media Creation Tool launch, setup command, file mutation, reboot, recovery, or system mutation is opened or executed.'
+        'Prepare Reinstall guidance only; no browser, Explorer, Settings, external tool, Windows media download, Media Creation Tool launch, setup command, file mutation, reboot, recovery, or system mutation is opened or executed.'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Reinstall because exact Windows 11 artifact provenance, executable launch, generated-file ownership, reboot/session, recovery, and support approvals do not exist.'
+        'Download the source-defined Windows 11 Media Creation Tool to Windows Temp and launch it after explicit confirmation.'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe Reinstall default branch.'
@@ -723,11 +723,11 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Reinstall source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary, Windows 11 target scope, unsupported Windows 10 branch, and missing artifact, executable launch, generated-file, reboot/session, recovery, and support approvals.')
+        $plannedChanges.Add('Report source behavior summary, Windows 11 target scope, unsupported Windows 10 branch, and the controlled Apply operation.')
         $plannedChanges.Add('Perform no download, browser/Explorer/Settings/external process launch, setup execution, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
+        $plannedChanges.Add('Prepare Reinstall guidance inside BoostLab only.')
         $plannedChanges.Add('Do not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or any external tool.')
         $plannedChanges.Add('Do not download Windows media, Media Creation Tool executables, installers, setup files, ISOs, scripts, or artifacts.')
         $plannedChanges.Add('Do not create, delete, or mutate setup files, media folders, temp files, boot files, recovery files, partitions, registry, services, scheduled tasks, packages, devices, or drivers.')
@@ -736,11 +736,13 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing Windows 11 Media Creation Tool artifact provenance, executable launch descriptor, generated-file ownership, reboot/session, recovery, and support approvals.')
+        $plannedChanges.Add('Verify the Reinstall source checksum before any operation.')
+        $plannedChanges.Add('Require explicit Action Plan confirmation, Administrator elevation, and internet connectivity.')
+        $plannedChanges.Add('Download the source-defined Windows 11 Media Creation Tool from the Ultimate source URL to %SystemRoot%\Temp\mediacreationtoolw11.exe.')
+        $plannedChanges.Add('Launch the downloaded Windows 11 Media Creation Tool with Start-Process.')
+        $plannedChanges.Add('Hand off all media creation, refresh, reinstall, session-change, and reboot decisions to the Microsoft tool after launch.')
         $plannedChanges.Add('Keep the Windows 10 Media Creation Tool branch unsupported.')
-        $plannedChanges.Add('Perform no download, executable launch, setup execution, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation.')
+        $plannedChanges.Add('Do not run setup.exe directly, pass installer switches, partition disks, format media, modify registry/services/packages/devices/drivers, or reboot from BoostLab.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1174,7 +1176,7 @@ function New-BoostLabActionPlan {
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
-    $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
     if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction) {
         $capabilityChanges = [ordered]@{
@@ -1194,10 +1196,10 @@ function New-BoostLabActionPlan {
             }
         }
     }
-    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
+    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp', 'reinstall')) {
+    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp')) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1352,12 +1354,13 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The Windows 10 Media Creation Tool branch is reported as unsupported while the target outcome remains Windows 11.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('Reinstall guidance is prepared inside BoostLab only.')
         $sideEffects.Add('No browser, Explorer, Settings, external tool, Windows media download, Media Creation Tool launch, setup command, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation occurs.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, executable launch, setup execution, file mutation, recovery workflow, reboot, or system mutation occurs.')
+        $sideEffects.Add('Downloads the source-defined Windows 11 Media Creation Tool to Windows Temp and launches it.')
+        $sideEffects.Add('Microsoft tooling may continue into media creation, refresh, reinstall, session changes, or reboot if the user proceeds inside it.')
+        $sideEffects.Add('BoostLab does not run setup.exe directly, partition disks, format media, mutate registry/services/packages/devices/drivers, or reboot by itself.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution.')
@@ -1654,10 +1657,10 @@ function New-BoostLabActionPlan {
     elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp', 'reinstall')) {
+    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
-    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
+    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
     if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
@@ -1770,10 +1773,10 @@ function New-BoostLabActionPlan {
         'Visual C++ Restore requires selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Reinstall manual handoff instructions only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'
+        'BoostLab will prepare Reinstall guidance only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
-        'Reinstall Auto mode is blocked. BoostLab will not execute Auto behavior because Windows 11 artifact provenance, executable launch, generated-file ownership, reboot/session, recovery, and support approvals are missing. Continue only to record the blocked result?'
+        'BoostLab will download the source-defined Windows 11 Media Creation Tool to %SystemRoot%\Temp\mediacreationtoolw11.exe and launch it. The Microsoft tool can continue into media creation, refresh, reinstall, session changes, or reboot after you proceed inside it. Windows 10 branch remains unsupported. Continue?'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
         'Reinstall Default is unavailable. The source does not define a safe Default branch, and Default is not Restore. Continue only to record the blocked Default result?'

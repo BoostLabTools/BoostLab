@@ -200,7 +200,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'reinstall') 'The first ordered pending parity target should be Reinstall after BIOS Settings acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'unattended') 'The first ordered pending parity target should be Unattended after Reinstall near-parity acceptance.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

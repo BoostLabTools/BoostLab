@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 16
+        NearParityControlled = 17
         ControlledSubset = 2
-        ManualHandoffOnly = 9
+        ManualHandoffOnly = 8
         SecurityAssistantOnly = 1
         DeferredForParityWork = 11
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -75,18 +75,20 @@
             YazanFinalException = $false
             YazanAcceptedNearParity = $true
             FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Next ordered pending parity target: reinstall.'
+            NextParityAction = 'Next ordered pending parity target: unattended.'
         }
         @{
             ToolId = 'reinstall'
             DisplayName = 'Reinstall'
             Stage = 'Refresh'
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Auto download and installer execution remain blocked.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Windows 11 source branch downloads and launches the source-defined Media Creation Tool after explicit confirmation; Windows 10 branch remains unsupported by product scope.'
             YazanFinalException = $false
-            NextParityAction = 'Add exact Windows 11 media artifact provenance, installer descriptor, generated-file ownership, reboot/session, recovery, and support approvals.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Next ordered pending parity target: unattended.'
         }
         @{
             ToolId = 'unattended'

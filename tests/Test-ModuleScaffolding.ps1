@@ -439,6 +439,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'updates-drivers-block' -and
             $commandName -in @('New-ItemProperty', 'Remove-ItemProperty')
         )
+        $approvedReinstallCommand = (
+            $toolId -eq 'reinstall' -and
+            $commandName -eq 'Invoke-WebRequest'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -453,7 +457,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedHdcpCommand -and
             -not $approvedP0StateCommand -and
             -not $approvedMsiModeCommand -and
-            -not $approvedUpdatesDriversBlockCommand
+            -not $approvedUpdatesDriversBlockCommand -and
+            -not $approvedReinstallCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -506,8 +511,11 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-latest') {
             0
         }
-        elseif ($toolId -in @('installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall')) {
+        elseif ($toolId -in @('installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp')) {
             0
+        }
+        elseif ($toolId -eq 'reinstall') {
+            1
         }
         elseif ($toolId -eq 'nvidia-settings') {
             0
