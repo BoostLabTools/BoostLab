@@ -39,6 +39,11 @@ BoostLab may run on a Windows 10 host when an approved preparation, refresh, mig
 
 AMD/Intel GPU-specific branches remain outside the supported scope unless Yazan explicitly changes scope later.
 
+Tool-specific exception: Phase 122 approves all source-defined NVIDIA, AMD, and
+INTEL branches for `Driver Install Debloat & Settings` only. This exception is
+for exact parity with `source-ultimate/5 Graphics/1 Driver Install Debloat &
+Settings.ps1`; it does not broaden AMD/Intel support anywhere else.
+
 GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwise approved. Unsupported Windows 10-only or AMD/Intel-specific branches should stay disabled, visual-only, or not implemented rather than being ported silently.
 
 ---

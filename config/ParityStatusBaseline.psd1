@@ -366,9 +366,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
-            GapSummary = 'NVIDIA Auto path remains blocked; AMD/Intel branches are unsupported by product scope.'
+            GapSummary = 'Phase 122 records Yazan approval for all source-defined NVIDIA, AMD, and INTEL branches for this tool only; runtime remains ManualHandoffOnly until exact three-branch source-equivalent implementation exists.'
+            BranchScopeDecision = 'Phase 122: Yazan approved all source-defined NVIDIA, AMD, and INTEL branches for Driver Install Debloat & Settings only. This does not expand project-wide AMD/Intel GPU scope.'
+            ApprovedSourceBranches = @('NVIDIA', 'AMD', 'INTEL')
             YazanFinalException = $false
-            NextParityAction = 'Approve NVIDIA artifact, driver/package, profile, AppX, cleanup, registry, and reboot scopes or accept final manual exception.'
+            NextParityAction = 'Implement exact source-equivalent NVIDIA, AMD, and INTEL branch behavior with descriptors, mocks, confirmation, logging, state capture, verification, and reboot/session planning; keep cursor here until done.'
         }
         @{
             ToolId = 'directx'

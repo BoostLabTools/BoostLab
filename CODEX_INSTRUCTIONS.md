@@ -46,6 +46,13 @@ AMD GPU-specific source branches are currently unsupported and must remain disab
 
 Intel GPU-specific source branches are currently unsupported and must remain disabled, visual-only, or not implemented unless Yazan explicitly expands scope later.
 
+Tool-specific exception: Phase 122 records Yazan approval to implement all
+source-defined NVIDIA, AMD, and INTEL branches for
+`driver-install-debloat-settings` only. This is a parity decision for
+`source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1`; it does
+not expand project-wide AMD/Intel GPU scope and must not be reused for any
+other tool.
+
 GPU-neutral behavior is allowed when otherwise approved. NVIDIA-specific behavior is allowed when otherwise approved. Do not block GPU-neutral behavior merely because it can run on AMD or Intel systems unless the source or a policy marks that behavior as AMD/Intel-specific.
 
 If a source script contains both supported and unsupported branches, future phases may implement only the supported shared Windows / Windows 11 target / NVIDIA behavior while leaving Windows 10-only optimization and AMD/Intel-specific branches disabled or visual-only. That is a product-scope decision, not accidental weakening.

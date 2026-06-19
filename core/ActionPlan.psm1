@@ -678,22 +678,22 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary, unsupported AMD/Intel branches, and missing 7-Zip, NVIDIA driver, installer, extraction, cleanup/debloat, winget/AppX/package, Profile Inspector/.nip, registry/profile, driver-state, process, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Report source behavior summary, Phase 122 NVIDIA/AMD/INTEL branch-scope decision, and missing 7-Zip, branch driver, installer, extraction, cleanup/debloat, winget/AppX/package, service/task/process, Profile Inspector/.nip, registry/profile, driver-state, reboot/session, and recovery approvals/descriptors.')
         $plannedChanges.Add('Keep Driver Install Debloat & Settings separate from Driver Clean and NVIDIA Path B.')
         $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
         $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
-        $plannedChanges.Add('Do not open a browser, NVIDIA driver page, NVIDIA Control Panel, winget, 7-Zip installer, Profile Inspector, setup.exe, or any external tool.')
-        $plannedChanges.Add('Do not download 7-Zip, NVIDIA driver artifacts, Profile Inspector, .nip files, or package content.')
-        $plannedChanges.Add('Do not extract driver packages, delete driver components, run setup.exe, import profiles, install NVIDIA Control Panel, or remove AppX/winget packages.')
+        $plannedChanges.Add('Do not open a browser, vendor driver pages, vendor control panels, winget, 7-Zip installer, Profile Inspector, setup.exe, ATISetup.exe, Intel Installer.exe, or any external tool.')
+        $plannedChanges.Add('Do not download 7-Zip, NVIDIA/AMD/Intel driver artifacts, Profile Inspector, .nip files, or package content.')
+        $plannedChanges.Add('Do not extract driver packages, delete driver components, edit AMD XML/JSON files, run setup.exe/ATISetup.exe/Intel Installer.exe, import profiles, install vendor control panels, remove AppX/winget packages, stop/delete services or drivers, unregister tasks, or stop vendor processes.')
         $plannedChanges.Add('Do not modify registry, services, drivers, files, profiles, display settings, sound settings, sessions, or reboot state.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Block Auto mode before any operational step.')
         $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing 7-Zip, NVIDIA driver, installer, extraction, cleanup/debloat, winget/AppX/package, Profile Inspector/.nip, registry/profile, driver-state, process, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Report missing 7-Zip, NVIDIA/AMD/Intel driver, installer, extraction, cleanup/debloat, winget/AppX/package, service/task/process, Profile Inspector/.nip, registry/profile, driver-state, reboot/session, and recovery approvals/descriptors.')
         $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
@@ -1768,10 +1768,10 @@ function New-BoostLabActionPlan {
         'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Driver Install Debloat & Settings manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, driver page, NVIDIA Control Panel, winget, Profile Inspector, or setup.exe; download artifacts; run installers; debloat files; import profiles; mutate registry, services, packages, drivers, sessions; or reboot. Continue?'
+        'BoostLab will prepare Driver Install Debloat & Settings manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, vendor driver page, vendor control panel, winget, Profile Inspector, setup.exe, ATISetup.exe, or Intel Installer.exe; download artifacts; run installers; debloat files; import profiles; mutate registry, services, packages, drivers, sessions; or reboot. Continue?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
-        'Driver Install Debloat & Settings Auto mode is blocked. BoostLab will not execute Auto behavior because artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
+        'Driver Install Debloat & Settings Auto mode is blocked. Phase 122 approves NVIDIA/AMD/INTEL branch scope for this tool only, but BoostLab will not execute Auto behavior because exact artifact, installer, driver-state, process, cleanup, AppX/package, service/task, profile, registry, reboot/session, and recovery approvals/descriptors are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
         'Driver Install Debloat & Settings Default is unavailable. The source does not define a safe overall default mutation, and Default is not Restore. Continue only to record the blocked Default result?'

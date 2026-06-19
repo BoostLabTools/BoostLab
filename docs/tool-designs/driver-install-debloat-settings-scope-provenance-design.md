@@ -21,19 +21,21 @@ service, task, cleanup, reboot, Default, or Restore scope.
 
 ## Product Scope Decision
 
-GPU-specific tooling is NVIDIA-only.
+GPU-specific tooling is NVIDIA-only project-wide unless Yazan approves a
+tool-specific exception.
 
-For this tool:
+Phase 122 records a tool-specific branch-scope decision for this tool only:
 
-* The NVIDIA branch is the only branch that may be considered for future
-  implementation.
-* The AMD branch is unsupported and must remain disabled, visual-only, or
-  NotApplicable.
-* The Intel branch is unsupported and must remain disabled, visual-only, or
-  NotApplicable.
-* Shared post-branch behavior must be reviewed carefully. Even if it is
-  GPU-neutral, it follows driver install/debloat work and includes registry
-  writes plus an unconditional restart, so it is not approved in this phase.
+* Yazan approved all source-defined Driver Install Debloat & Settings branches
+  for future exact parity implementation: NVIDIA, AMD, and INTEL.
+* This does not expand project-wide AMD or Intel GPU support.
+* This does not approve unrelated AMD/Intel behavior in any other tool.
+* This does not approve production execution yet. Every branch still needs exact
+  source-derived descriptors, confirmation, state capture, verification, and
+  mocked validators before automated runtime behavior can be enabled.
+* Shared post-branch behavior must be reviewed carefully. It follows driver
+  install/debloat work and includes registry writes plus an unconditional
+  restart, so it also needs explicit implementation coverage and safety gates.
 
 ## Source Behavior Summary
 
@@ -77,11 +79,11 @@ exist.
 No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes
 are approved in this phase.
 
-Partial registry-only, NVIDIA-page-only, or "install without debloat" behavior
-would weaken Ultimate behavior. The supported future NVIDIA path must preserve
-the source intent only when artifact provenance, driver inventory, rollback,
-cleanup, profile, registry, AppX, reboot, and verification requirements are all
-approved.
+Partial registry-only, vendor-page-only, or "install without debloat" behavior
+would weaken Ultimate behavior. The future implementation must preserve the
+source intent for NVIDIA, AMD, and INTEL branches only when artifact provenance,
+driver inventory, rollback, cleanup, profile, registry, AppX/package, service,
+task, process, reboot, and verification requirements are all approved.
 
 ## Behavior Groups
 
@@ -107,7 +109,8 @@ Required foundation:
 
 Required future production allowlist:
 
-* NVIDIA branch only.
+* Exact source-defined NVIDIA, AMD, and INTEL branch selection only for this
+  tool.
 
 Required artifact provenance before download/launch:
 
@@ -123,13 +126,14 @@ Required file/registry/AppX/service capture before mutation:
 
 Required confirmation level:
 
-* NVIDIA branch selection must lead to high-risk confirmation before any
-  download, driver extraction, installer launch, profile import, cleanup, or
-  reboot.
+* Any branch selection must lead to high-risk confirmation before any download,
+  driver extraction, installer launch, profile import, service/task/process
+  action, cleanup, registry mutation, or reboot.
 
 Required verification:
 
-* Confirm selected branch is NVIDIA before any future executable behavior.
+* Confirm selected branch is one of the exact source branches approved for this
+  tool: NVIDIA, AMD, or INTEL.
 
 Rollback/restore feasibility:
 
@@ -141,8 +145,8 @@ Risk level:
 
 Later implementation decision:
 
-* NVIDIA-only selection can be designed later. AMD/Intel selection must remain
-  unsupported.
+* Phase 122 requires future implementation to handle NVIDIA, AMD, and INTEL.
+  It must not silently omit AMD or INTEL and call the tool complete.
 
 ### 2. NVIDIA-Supported Branch Behavior
 
@@ -236,7 +240,7 @@ Later implementation decision:
 
 * Can be considered later only after NVIDIA-specific approvals exist.
 
-### 3. Unsupported AMD Branch Behavior If Present
+### 3. AMD Branch Behavior
 
 Exact source targets:
 
@@ -256,35 +260,49 @@ Intended mutation or launch type:
 
 Required foundation:
 
-* Not applicable under current product scope.
+* Phase 35 artifact/installer policy.
+* Phase 36 file/registry state capture.
+* Phase 37 service state capture and rollback.
+* Phase 38 cleanup policy.
+* Phase 40 reboot/recovery workflow.
+* Phase 41 driver state capture and rollback policy.
+* Future scheduled task and process-handling governance.
 
 Required future production allowlist:
 
-* None. AMD GPU-specific behavior is unsupported.
+* Exact AMD branch scopes for this tool only.
 
 Required artifact provenance before download/launch:
 
-* Not applicable because the branch is refused.
+* Verified selected AMD driver package and any executable launched from the
+  extracted package.
 
 Required driver inventory/capture before mutation:
 
-* Not applicable because no AMD driver mutation is approved.
+* Exact AMD device, package, driver version, INF, services/drivers, task state,
+  process state, and rollback eligibility before execution.
 
 Required file/registry/AppX/service capture before mutation:
 
-* Not applicable because no AMD branch mutation is approved.
+* Exact XML/JSON files, registry values, service/driver state, task state, start
+  menu paths, old driver folders, and process handling state where applicable.
 
 Required confirmation level:
 
-* Branch must remain disabled, visual-only, or NotApplicable.
+* High-risk confirmation before any AMD download handoff, extraction, installer,
+  XML/JSON edit, registry mutation, service/driver deletion, task deletion,
+  process stop, cleanup, or shared reboot action.
 
 Required verification:
 
-* Verify no AMD branch command can execute.
+* Verify exact AMD branch operations and targets, with no broad or invented AMD
+  behavior.
 
 Rollback/restore feasibility:
 
-* Not applicable.
+* Unavailable until exact AMD driver rollback, file restore, registry restore,
+  service/task restore, cleanup restore, and reboot workflow selection are
+  approved.
 
 Risk level:
 
@@ -292,9 +310,9 @@ Risk level:
 
 Later implementation decision:
 
-* Must remain refused unless Yazan expands GPU product scope.
+* Required for this tool's future exact parity implementation by Phase 122.
 
-### 4. Unsupported Intel Branch Behavior If Present
+### 4. Intel Branch Behavior
 
 Exact source targets:
 
@@ -314,35 +332,49 @@ Intended mutation or launch type:
 
 Required foundation:
 
-* Not applicable under current product scope.
+* Phase 35 artifact/installer policy.
+* Phase 36 file/registry state capture.
+* Phase 37 service state capture and rollback.
+* Phase 38 cleanup policy.
+* Phase 40 reboot/recovery workflow.
+* Phase 41 driver state capture and rollback policy.
+* Future process-handling governance.
 
 Required future production allowlist:
 
-* None. Intel GPU-specific behavior is unsupported.
+* Exact Intel branch scopes for this tool only.
 
 Required artifact provenance before download/launch:
 
-* Not applicable because the branch is refused.
+* Verified selected Intel driver package and any executable launched from the
+  extracted package.
 
 Required driver inventory/capture before mutation:
 
-* Not applicable because no Intel driver mutation is approved.
+* Exact Intel device, package, driver version, INF, services/drivers, process
+  state, and rollback eligibility before execution.
 
 Required file/registry/AppX/service capture before mutation:
 
-* Not applicable because no Intel branch mutation is approved.
+* Exact extracted files, registry values, service/driver state, start menu paths,
+  old driver folders, and process handling state where applicable.
 
 Required confirmation level:
 
-* Branch must remain disabled, visual-only, or NotApplicable.
+* High-risk confirmation before any Intel download handoff, extraction,
+  installer, registry mutation, service/driver deletion, process stop, cleanup,
+  or shared reboot action.
 
 Required verification:
 
-* Verify no Intel branch command can execute.
+* Verify exact Intel branch operations and targets, with no broad or invented
+  Intel behavior.
 
 Rollback/restore feasibility:
 
-* Not applicable.
+* Unavailable until exact Intel driver rollback, file restore, registry restore,
+  service/process restore, cleanup restore, and reboot workflow selection are
+  approved.
 
 Risk level:
 
@@ -350,7 +382,7 @@ Risk level:
 
 Later implementation decision:
 
-* Must remain refused unless Yazan expands GPU product scope.
+* Required for this tool's future exact parity implementation by Phase 122.
 
 ### 5. NVIDIA Driver Download Behavior
 
@@ -468,8 +500,8 @@ Later implementation decision:
 Exact source targets:
 
 * `& "$env:SystemDrive\Program Files\7-Zip\7z.exe" x "$InstallFile" -o"$env:SystemRoot\Temp\nvidiadriver" -y`
-* AMD extraction to `$env:SystemRoot\Temp\amddriver` is unsupported.
-* Intel extraction to `$env:SystemDrive\inteldriver` is unsupported.
+* AMD extraction to `$env:SystemRoot\Temp\amddriver`.
+* Intel extraction to `$env:SystemDrive\inteldriver`.
 
 Intended mutation or launch type:
 
@@ -483,16 +515,16 @@ Required foundation:
 
 Required future production allowlist:
 
-* Exact NVIDIA extraction root.
-* Exact extracted inventory and cleanup rules.
+* Exact NVIDIA, AMD, and Intel extraction roots.
+* Exact extracted inventory and cleanup rules for each source branch.
 
 Required artifact provenance before download/launch:
 
-* 7-Zip and selected NVIDIA driver package must be verified.
+* 7-Zip and the selected branch driver package must be verified.
 
 Required driver inventory/capture before mutation:
 
-* Current NVIDIA driver state before extraction/install.
+* Current branch-specific driver state before extraction/install.
 
 Required file/registry/AppX/service capture before mutation:
 
@@ -504,7 +536,7 @@ Required confirmation level:
 
 Required verification:
 
-* Extraction output exists and matches expected NVIDIA package structure.
+* Extraction output exists and matches the expected branch package structure.
 
 Rollback/restore feasibility:
 
@@ -516,7 +548,7 @@ Risk level:
 
 Later implementation decision:
 
-* Possible only with exact NVIDIA extraction and cleanup scope.
+* Possible only with exact NVIDIA, AMD, and Intel extraction and cleanup scopes.
 
 ### 8. Driver Install Behavior
 
@@ -538,16 +570,17 @@ Required foundation:
 
 Required future production allowlist:
 
-* NVIDIA setup execution descriptor only. AMD/Intel descriptors remain refused.
+* Exact NVIDIA setup, AMD `ATISetup.exe`, and Intel installer execution
+  descriptors for this tool only.
 
 Required artifact provenance before download/launch:
 
-* Verified NVIDIA package and extracted `setup.exe` identity.
+* Verified branch package and extracted installer identity.
 
 Required driver inventory/capture before mutation:
 
-* Exact NVIDIA device, package, driver version, INF, files, services, and
-  rollback eligibility before execution.
+* Exact branch device, package, driver version, INF, files, services/drivers,
+  and rollback eligibility before execution.
 
 Required file/registry/AppX/service capture before mutation:
 
@@ -572,7 +605,7 @@ Risk level:
 
 Later implementation decision:
 
-* NVIDIA only, and only after exact approvals.
+* NVIDIA, AMD, and INTEL only for this tool, and only after exact approvals.
 
 ### 9. Driver Debloat/Removal Behavior
 
@@ -902,8 +935,9 @@ Exact source targets:
 * NVIDIA: `Remove-Item "$InstallFile"`
 * NVIDIA: `Remove-Item "$env:SystemDrive\NVIDIA" -Recurse -Force`
 * 7-Zip Start Menu folder cleanup.
-* Unsupported AMD cleanup under `$env:SystemDrive\AMD` and AMD Start Menu paths.
-* Unsupported Intel cleanup under `$env:SystemDrive\Intel`, `$env:SystemDrive\inteldriver`, Intel Start Menu paths, and `PresentMonService.exe`.
+* AMD cleanup under `$env:SystemDrive\AMD` and AMD Start Menu paths.
+* Intel cleanup under `$env:SystemDrive\Intel`, `$env:SystemDrive\inteldriver`,
+  Intel Start Menu paths, and `PresentMonService.exe`.
 
 Intended mutation or launch type:
 
@@ -917,7 +951,7 @@ Required foundation:
 
 Required future production allowlist:
 
-* Exact NVIDIA cleanup scopes only.
+* Exact NVIDIA, AMD, and Intel cleanup scopes for this tool only.
 
 Required artifact provenance before download/launch:
 
@@ -955,7 +989,7 @@ Later implementation decision:
 
 Exact source targets:
 
-Unsupported AMD/Intel service targets:
+AMD/Intel service targets:
 
 * `AMD Crash Defender Service`
 * `amdfendr`
@@ -969,7 +1003,7 @@ Unsupported AMD/Intel service targets:
 * `GSCAuxDriver`
 * `GSCx64`
 
-Unsupported task target:
+Task target:
 
 * `Unregister-ScheduledTask -TaskName "StartCN" -Confirm:$false`
 
@@ -984,7 +1018,7 @@ Required foundation:
 
 Required future production allowlist:
 
-* None under current product scope because these are AMD/Intel branch targets.
+* Exact AMD and Intel service/driver/task scopes for this tool only.
 
 Required artifact provenance before download/launch:
 
@@ -992,23 +1026,23 @@ Required artifact provenance before download/launch:
 
 Required driver inventory/capture before mutation:
 
-* Not applicable because AMD/Intel branches are unsupported.
+* Required for every source-defined service/driver/task target before mutation.
 
 Required file/registry/AppX/service capture before mutation:
 
-* Not applicable unless product scope expands.
+* Required for every source-defined service/driver/task target before mutation.
 
 Required confirmation level:
 
-* Unsupported and non-executing.
+* High-risk confirmation before stop/delete/unregister behavior.
 
 Required verification:
 
-* Verify no AMD/Intel service/task mutation can execute.
+* Verify exact source-defined AMD/Intel service/driver/task targets only.
 
 Rollback/restore feasibility:
 
-* Not applicable.
+* Unavailable until exact service/task capture and restore contracts exist.
 
 Risk level:
 
@@ -1016,7 +1050,8 @@ Risk level:
 
 Later implementation decision:
 
-* Must remain refused under current NVIDIA-only scope.
+* Required for this tool's future exact parity implementation by Phase 122, but
+  not approved for production execution yet.
 
 ### 16. Process Stop Behavior If Present
 
@@ -1036,7 +1071,7 @@ Required foundation:
 
 Required future production allowlist:
 
-* None under current scope because these are AMD/Intel branch targets.
+* Exact AMD and Intel process targets for this tool only.
 
 Required artifact provenance before download/launch:
 
@@ -1044,23 +1079,23 @@ Required artifact provenance before download/launch:
 
 Required driver inventory/capture before mutation:
 
-* Not applicable.
+* Required where process state is tied to driver install/debloat workflow.
 
 Required file/registry/AppX/service capture before mutation:
 
-* Not applicable.
+* Required where process stop affects captured state or follow-up verification.
 
 Required confirmation level:
 
-* Unsupported and non-executing.
+* High-risk confirmation before force-stopping source-defined processes.
 
 Required verification:
 
-* Verify no AMD/Intel process stop can execute.
+* Verify only exact source-defined AMD/Intel process targets are stopped.
 
 Rollback/restore feasibility:
 
-* Not applicable.
+* Unavailable until exact process-handling and recovery contracts exist.
 
 Risk level:
 
@@ -1181,7 +1216,6 @@ Later implementation decision:
 
 Exact source targets:
 
-* AMD and Intel branches.
 * Mutable GitHub raw helper URLs.
 * User-selected driver package without provenance validation.
 * Dynamic display class registry traversal.
@@ -1192,7 +1226,7 @@ Exact source targets:
 
 Intended mutation or launch type:
 
-* Unsupported or currently over-broad mutation.
+* Currently over-broad or insufficiently bounded mutation.
 
 Required foundation:
 
@@ -1200,7 +1234,7 @@ Required foundation:
 
 Required future production allowlist:
 
-* Exact NVIDIA-only scopes. AMD/Intel scopes remain refused.
+* Exact NVIDIA, AMD, and Intel scopes for this tool only.
 
 Required artifact provenance before download/launch:
 
@@ -1216,12 +1250,12 @@ Required file/registry/AppX/service capture before mutation:
 
 Required confirmation level:
 
-* High-risk confirmation, but confirmation alone cannot approve unsupported
-  targets.
+* High-risk confirmation, but confirmation alone cannot approve broad targets.
 
 Required verification:
 
-* Verify unsupported branches and broad targets remain blocked.
+* Verify broad targets remain blocked and every NVIDIA/AMD/Intel operation is
+  exact, source-defined, and tool-specific.
 
 Rollback/restore feasibility:
 
@@ -1255,14 +1289,14 @@ Key NVIDIA paths and commands:
 * `Start-Process "$env:SystemRoot\Temp\nvidiadriver\setup.exe" -ArgumentList "-s -noreboot -noeula -clean" -Wait -NoNewWindow`
 * `Start-Process -wait "$env:SystemRoot\Temp\inspector.exe" -ArgumentList "-silentImport -silent $env:SystemRoot\Temp\inspector.nip"`
 
-Unsupported AMD paths and commands:
+AMD paths and commands:
 
 * `$env:SystemRoot\Temp\amddriver`
 * `$env:SystemRoot\Temp\amddriver\Bin64\ATISetup.exe`
 * `HKCU\Software\AMD\CN`
 * `Unregister-ScheduledTask -TaskName "StartCN" -Confirm:$false`
 
-Unsupported Intel paths and commands:
+Intel paths and commands:
 
 * `$env:SystemDrive\inteldriver`
 * `$env:SystemDrive\inteldriver\Installer.exe`
@@ -1281,31 +1315,36 @@ Shared post-branch targets:
 
 ## Future Safe Apply/Open/Install Requirements
 
-A future implementation can be considered only for the NVIDIA branch and only
-after:
+A future implementation must cover NVIDIA, AMD, and INTEL branches for this tool
+only, and only after:
 
 1. 7-Zip and NVIDIA Inspector artifacts have exact provenance approvals.
-2. NVIDIA driver package selection has an approved local-file validation model.
-3. Exact NVIDIA device and driver inventory is captured before mutation.
-4. Exact extraction, debloat, setup, registry, AppX, profile, cleanup, and
-   reboot scopes are approved.
+2. NVIDIA, AMD, and Intel driver package selection has an approved local-file
+   validation model.
+3. Exact branch-specific device and driver inventory is captured before
+   mutation.
+4. Exact extraction, debloat, installer, registry, AppX/package, profile,
+   cleanup, service/task/process, and reboot scopes are approved.
 5. Generated `inspector.nip` content is approved by hash and setting inventory.
-6. NVIDIA setup and Inspector execution descriptors are approved.
-7. AppX/winget package behavior is scoped or removed only with explicit Yazan
+6. NVIDIA setup, AMD ATISetup, Intel installer, NVIDIA Inspector, winget/AppX,
+   service/task/process, and external UI descriptors are approved.
+7. AppX/winget/package behavior is scoped or removed only with explicit Yazan
    approval.
 8. A reboot/recovery workflow is approved before any restart.
 9. The UI shows high-risk warnings about display loss, black screen, driver
-   rollback, Safe Mode recovery, network dependency, installer failure, NVIDIA
-   Control Panel/AppX side effects, and reboot requirements.
+   rollback, Safe Mode recovery, network dependency, installer failure, vendor
+   control panel/AppX/package side effects, service/task/process side effects,
+   and reboot requirements.
 
 Potential future actions:
 
 * `Analyze`: detect GPU vendor, show NVIDIA eligibility, list missing
-  approvals, and report AMD/Intel as unsupported.
-* `Open`: may open the NVIDIA driver page only if scoped as guidance and does
-  not imply download/install approval.
-* `Apply` or `Install`: NVIDIA only, and only after all production scopes and
-  provenance approvals exist.
+  approvals, and report that NVIDIA/AMD/Intel are all required by the Phase 122
+  tool-specific decision.
+* `Open`: may open vendor driver pages only if scoped as guidance and does not
+  imply download/install approval.
+* `Apply` or `Install`: selected source branch only, and only after all
+  production scopes and provenance approvals exist for NVIDIA, AMD, and INTEL.
 
 ## Default and Restore Boundary
 

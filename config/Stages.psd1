@@ -248,7 +248,7 @@
                     Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Analyze the source-defined NVIDIA driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
+                    Description = 'Manual handoff only. Analyze the source-defined NVIDIA/AMD/Intel driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
                     Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
                     Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

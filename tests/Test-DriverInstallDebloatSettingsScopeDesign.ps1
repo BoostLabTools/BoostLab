@@ -91,8 +91,8 @@ foreach ($requiredSection in @(
     '## Behavior Groups',
     '### 1. GPU/Vendor Detection Behavior',
     '### 2. NVIDIA-Supported Branch Behavior',
-    '### 3. Unsupported AMD Branch Behavior If Present',
-    '### 4. Unsupported Intel Branch Behavior If Present',
+    '### 3. AMD Branch Behavior',
+    '### 4. Intel Branch Behavior',
     '### 5. NVIDIA Driver Download Behavior',
     '### 6. External Helper/Tool Download Behavior',
     '### 7. Driver Extraction Behavior',
@@ -122,9 +122,9 @@ foreach ($requiredPhrase in @(
     'Source SHA-256: `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F`',
     'Driver Install Debloat & Settings was implemented in Phase 99 as controlled',
     'No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes',
-    'The NVIDIA branch is the only branch that may be considered',
-    'The AMD branch is unsupported',
-    'The Intel branch is unsupported',
+    'Phase 122 records a tool-specific branch-scope decision for this tool only',
+    'Yazan approved all source-defined Driver Install Debloat & Settings branches',
+    'This does not expand project-wide AMD or Intel GPU support',
     'Unique URL count: `5`',
     'Non-elevation `Start-Process` command count: `15`',
     '`Remove-Item` command count: `41`',
@@ -393,7 +393,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionRebootScopes    = @($rebootPolicy.WorkflowScopes).Count
     SourceUltimateUnchanged   = $true
     DeletedToolsRemainDeleted = $true
-    Message                   = 'Driver Install Debloat & Settings scope/provenance design is present, linked, NVIDIA-scoped, and non-executing.'
+    Message                   = 'Driver Install Debloat & Settings scope/provenance design is present, linked, Phase 122 branch-scoped for NVIDIA/AMD/INTEL, and non-executing.'
     Timestamp                 = Get-Date
 }
 

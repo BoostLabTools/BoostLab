@@ -7,7 +7,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 2
     Type = 'assistant'
     RiskLevel = 'high'
-    Description = 'Manual handoff only. Analyze the source-defined NVIDIA driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
+    Description = 'Manual handoff only. Analyze the source-defined NVIDIA/AMD/Intel driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
     Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     Capabilities = [ordered]@{
         RequiresAdmin              = $false
@@ -136,6 +136,12 @@ function Get-BoostLabDriverInstallDebloatSettingsBlockedApprovals {
         'NVIDIA Control Panel winget/AppX/package approval'
         'NVIDIA Profile Inspector artifact/execution/profile-import approval'
         'NVIDIA driver registry/profile scope approval'
+        'AMD driver artifact or user-selected installer validation approval'
+        'AMD installer execution descriptor approval'
+        'AMD XML/JSON edit, service/task/process, cleanup, registry, and driver-state approval'
+        'Intel driver artifact or user-selected installer validation approval'
+        'Intel installer execution descriptor approval'
+        'Intel service/process, cleanup, registry, and driver-state approval'
         'Driver state capture/rollback approval'
         'Process handling approval'
         'Reboot/session handling approval'
@@ -154,7 +160,7 @@ function Get-BoostLabDriverInstallDebloatSettingsRiskWarnings {
         'Original Ultimate source extracts NVIDIA driver files, removes many driver components, and launches setup.exe with silent install switches.'
         'Original Ultimate source uses winget/AppX behavior for NVIDIA Control Panel and removes a Winget source package.'
         'Original Ultimate source writes NVIDIA registry/profile settings, imports a Profile Inspector .nip file, changes MSI mode, and restarts the PC.'
-        'Original Ultimate source also contains AMD and Intel branches that are unsupported by the NVIDIA-only product scope.'
+        'Phase 122 approves NVIDIA, AMD, and Intel source branches for this tool only; project-wide AMD/Intel GPU scope remains unchanged.'
         'This BoostLab implementation prepares manual handoff instructions only and performs no automated driver, file, registry, service, profile, process, download, installer, or reboot operation.'
         'Default and Restore are unavailable because no captured driver/profile/package/registry/file/reboot state exists.'
     )
@@ -172,12 +178,15 @@ function Get-BoostLabDriverInstallDebloatSettingsAnalysis {
         Source                             = $sourceStatus
         SourceBehaviorSummary              = @(
             'Installs/configures 7-Zip from the Ultimate-Files mirror.'
-            'Offers NVIDIA, AMD, and Intel source branches; only NVIDIA is in current product scope.'
+            'Offers NVIDIA, AMD, and Intel source branches; Phase 122 approves all three branches for this tool only.'
             'NVIDIA branch opens the NVIDIA driver page, requires user-selected installer input, extracts with 7-Zip, removes source-defined driver components, runs setup.exe silently, installs NVIDIA Control Panel through winget, removes Winget source package, writes NVIDIA registry/profile settings, imports Profile Inspector .nip data, adjusts MSI mode, opens display/NVIDIA/sound interfaces, and restarts.'
-            'AMD and Intel branches are unsupported and remain disabled/not implemented.'
+            'AMD branch opens the AMD driver page, requires user-selected installer input, extracts with 7-Zip, edits AMD XML/JSON files, runs ATISetup.exe, removes source-defined AMD startup/task/service/driver/file targets, writes AMD registry settings, opens/closes Radeon Software, and participates in shared post-branch restart behavior.'
+            'Intel branch opens the Intel driver page, requires user-selected installer input, extracts with 7-Zip, runs the Intel installer and optional Intel Graphics Software installer, removes source-defined Intel startup/service/driver/process/file targets, writes Intel registry settings, and participates in shared post-branch restart behavior.'
         )
-        SupportedScope                     = 'NVIDIA manual handoff only'
-        UnsupportedBranches                = @('AMD GPU branch', 'Intel GPU branch')
+        SupportedScope                     = 'NVIDIA/AMD/Intel branch scope approved for this tool only; current runtime remains manual handoff only'
+        ApprovedSourceBranches             = @('NVIDIA', 'AMD', 'INTEL')
+        UnsupportedBranches                = @()
+        ToolSpecificBranchScopeDecision    = 'Phase 122: Yazan approved all source-defined NVIDIA, AMD, and INTEL branches for Driver Install Debloat & Settings only. This does not expand project-wide AMD/Intel GPU scope.'
         MissingApprovals                   = @(Get-BoostLabDriverInstallDebloatSettingsBlockedApprovals)
         Warnings                           = @(Get-BoostLabDriverInstallDebloatSettingsRiskWarnings)
         NoAutomatedExecution               = $true
@@ -210,25 +219,30 @@ function New-BoostLabDriverInstallDebloatSettingsManualHandoffPlan {
         Steps                            = @(
             'Review source checksum and blocked approvals.'
             'Prepare manual handoff instructions inside BoostLab only.'
-            'Do not open browser, NVIDIA driver page, NVIDIA Control Panel, winget, 7-Zip installer, Profile Inspector, setup.exe, or any external tool.'
-            'Do not download 7-Zip, NVIDIA driver artifacts, Profile Inspector, .nip files, or package content.'
-            'Do not extract driver packages, delete driver components, run setup.exe, import profiles, install NVIDIA Control Panel, or remove AppX/winget packages.'
+            'Do not open browser, vendor driver pages, vendor control panels, winget, 7-Zip installer, Profile Inspector, setup.exe, ATISetup.exe, Intel Installer.exe, or any external tool.'
+            'Do not download 7-Zip, NVIDIA/AMD/Intel driver artifacts, Profile Inspector, .nip files, or package content.'
+            'Do not extract driver packages, delete driver components, edit AMD XML/JSON files, run setup.exe/ATISetup.exe/Intel Installer.exe, import profiles, install vendor control panels, remove AppX/winget packages, stop/delete services or drivers, unregister tasks, or stop vendor processes.'
             'Do not modify registry, services, drivers, files, profiles, display settings, sound settings, sessions, or reboot state.'
-            'Explain that the NVIDIA branch remains manual outside BoostLab until exact artifact, installer, driver-state, process, cleanup, AppX, profile, registry, reboot, and recovery approvals exist.'
+            'Explain that NVIDIA, AMD, and INTEL branches are approved for this tool only but remain manual outside BoostLab until exact artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, service/task, reboot, and recovery approvals/descriptors exist.'
             'Record Latest Result and Activity Log with no automated execution.'
         )
         BlockedActions                   = @(
             'Apply Auto'
             '7-Zip download'
             '7-Zip installation'
-            'NVIDIA driver page/browser launch'
-            'NVIDIA driver download'
+            'vendor driver page/browser launch'
+            'NVIDIA/AMD/Intel driver download'
             'driver installer selection automation'
             'driver extraction'
             'driver component deletion/debloat'
             'NVIDIA setup.exe execution'
+            'AMD ATISetup.exe execution'
+            'Intel installer execution'
             'winget execution'
             'AppX/package removal'
+            'service/driver deletion'
+            'scheduled task deletion'
+            'process stop'
             'Profile Inspector execution'
             '.nip profile import'
             'registry mutation'
@@ -336,7 +350,7 @@ function Invoke-BoostLabToolAction {
         $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
         $status = if ($sourceOk) { 'Analyzed' } else { 'SourceVerificationFailed' }
         $message = if ($sourceOk) {
-            'Driver Install Debloat & Settings analyzed. Manual handoff only; Auto remains blocked until exact artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, reboot, and recovery approvals exist.'
+            'Driver Install Debloat & Settings analyzed. Phase 122 approves NVIDIA, AMD, and INTEL source branches for this tool only; runtime remains manual handoff only and Auto remains blocked until exact three-branch artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, service/task, reboot, and recovery approvals/descriptors exist.'
         }
         else {
             'Driver Install Debloat & Settings source checksum verification failed or source file is missing.'
@@ -404,7 +418,7 @@ function Invoke-BoostLabToolAction {
             -Status 'AutoBlockedUntilArtifactApproval' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'Blocked' `
-            -Message 'AutoBlockedUntilArtifactApproval. Auto mode is blocked until exact 7-Zip, NVIDIA driver, installer, extraction, cleanup/debloat, winget/AppX/package, Profile Inspector/.nip, registry/profile, driver-state, process, reboot/session, and recovery approvals exist. No automated download, installer execution, external process, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change occurred.' `
+            -Message 'AutoBlockedUntilArtifactApproval. Auto mode is blocked until exact 7-Zip, NVIDIA/AMD/Intel driver, installer, extraction, cleanup/debloat, winget/AppX/package, service/task/process, Profile Inspector/.nip, registry/profile, driver-state, reboot/session, and recovery approvals/descriptors exist. No automated download, installer execution, external process, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change occurred.' `
             -Data $analysis
     }
 
