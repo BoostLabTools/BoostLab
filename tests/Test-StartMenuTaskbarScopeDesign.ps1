@@ -173,7 +173,14 @@ if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.Impl
 
 $policyMentions = @(
     Get-ChildItem -LiteralPath $configRoot -Filter '*.psd1' -File |
-        Where-Object { $_.Name -notin @('Stages.psd1', 'ProcessHandlingPolicy.psd1') } |
+        Where-Object {
+            $_.Name -notin @(
+                'Stages.psd1',
+                'ProcessHandlingPolicy.psd1',
+                'ParityStatusBaseline.psd1',
+                'UltimateParityExecutionOrder.psd1'
+            )
+        } |
         Where-Object {
             $text = Get-Content -LiteralPath $_.FullName -Raw
             $text.Contains('start-menu-taskbar') -or $text.Contains('Start Menu Taskbar')

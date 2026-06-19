@@ -380,6 +380,38 @@ This policy applies to examples including:
 
 ---
 
+## Ordered Ultimate Parity Execution Policy
+
+BoostLab's final target is Ultimate-level practical power by default. Runtime implementation is not the same as Ultimate parity.
+
+Use `config/ParityStatusBaseline.psd1` to distinguish:
+
+* `ParityImplemented`
+* `NearParityControlled`
+* `ControlledSubset`
+* `ManualHandoffOnly`
+* `SecurityAssistantOnly`
+* `DeferredForParityWork`
+* `RefusedOrDeleted`
+
+Manual handoff, controlled subset, security-assistant-only, and near-parity controlled behavior are not final completion unless Yazan explicitly approves the weaker or safer behavior as a final exception.
+
+No tool should be treated as final done unless it is `ParityImplemented` or has an explicit `YazanFinalException`.
+
+Future parity work must follow `config/UltimateParityExecutionOrder.psd1`: stage order first, then tool order within each stage, unless Yazan explicitly overrides the order.
+
+Do not move past a non-final tool silently. The current ordered tool must be made parity-complete, marked with an explicit Yazan final exception, or recorded as concretely blocked with Yazan acceptance to move past it for now.
+
+Global governance should enable the approvals needed to reach parity. It must not become a permanent reason to leave BoostLab weaker than Ultimate.
+
+Current action buttons and test/runtime actions are development surfaces. The final customer UI must match Ultimate user-facing behavior or Yazan-approved UX, not temporary implementation scaffolding.
+
+Testing should trust proven Ultimate behavior, verify the BoostLab translation/integration/routing, and reserve full end-to-end clean-machine validation for project completion unless BoostLab rewrites the source behavior.
+
+Brand and Design System work should not begin until parity status is clear.
+
+---
+
 ## BoostLab Governance Decisions
 
 * Ultimate is the source of approved operational intent, not an untouchable source of defects.
