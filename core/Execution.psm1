@@ -68,6 +68,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\bitlocker.psm1'
         Actions = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
     }
+    'installers' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Installers\installers.psm1'
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
     'driver-clean' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-clean.psm1'
         Actions = @('Analyze', 'Open', 'Apply')

@@ -99,6 +99,10 @@ $implementedModules = @{
         LaunchText            = 'Start-Process ms-settings:windowsupdate -ErrorAction Stop'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'installers' = @{
+        RelativePath          = 'Installers\installers.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'driver-clean' = @{
         RelativePath          = 'Graphics\driver-clean.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
@@ -498,7 +502,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-latest') {
             0
         }
-        elseif ($toolId -in @('driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall')) {
+        elseif ($toolId -in @('installers', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall')) {
             0
         }
         elseif ($toolId -eq 'nvidia-settings') {

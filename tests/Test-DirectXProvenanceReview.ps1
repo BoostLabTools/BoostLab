@@ -143,7 +143,7 @@ foreach ($requiredPhrase in @(
 
 $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 foreach ($requiredPhrase in @(
-    'Foundation-ready but needs artifact provenance approvals: **4**'
+    'Foundation-ready but needs artifact provenance approvals: **3**'
     'Candidate for next implementation attempt: **0**'
     'Implemented in Phase 100 as controlled manual handoff'
     'Phase 100 manual handoff complete; Auto remains blocked'

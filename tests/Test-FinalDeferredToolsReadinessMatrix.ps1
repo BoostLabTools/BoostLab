@@ -89,7 +89,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 
 $expectedDeferred = @(
     @{ Id = 'edge-settings'; Title = 'Edge Settings'; Link = 'docs/tool-designs/edge-settings-scope-design.md'; Source = 'source-ultimate/3 Setup/6 Edge Settings.ps1'; Hash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28' }
-    @{ Id = 'installers'; Title = 'Installers'; Link = 'docs/tool-designs/installers-scope-provenance-design.md'; Source = 'source-ultimate/4 Installers/1 Installers.ps1'; Hash = '1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67' }
     @{ Id = 'start-menu-taskbar'; Title = 'Start Menu Taskbar'; Link = 'docs/tool-designs/start-menu-taskbar-scope-design.md'; Source = 'source-ultimate/6 Windows/1 Start Menu Taskbar.ps1'; Hash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91' }
     @{ Id = 'copilot'; Title = 'Copilot'; Link = 'docs/tool-designs/copilot-scope-design.md'; Source = 'source-ultimate/6 Windows/8 Copilot.ps1'; Hash = '21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90' }
     @{ Id = 'bloatware'; Title = 'Bloatware'; Link = 'docs/tool-designs/bloatware-scope-design.md'; Source = 'source-ultimate/6 Windows/11 Bloatware.ps1'; Hash = '36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5' }
@@ -134,10 +133,10 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    '13/13 deferred tools covered',
-    'Scope or scope/provenance design covered tools: **13**',
+    '12/12 deferred tools covered',
+    'Scope or scope/provenance design covered tools: **12**',
     'Standalone provenance review covered tools: **0**',
-    'Manual-handoff implemented with Auto provenance review still blocking automation: **4**',
+    'Manual-handoff implemented with Auto provenance review still blocking automation: **5**',
     'No deferred tool is marked ready for implementation by this matrix.',
     'The presence of a scope design or provenance review is evidence for planning, not permission to execute.',
     'Production Allowlist Governance',
@@ -153,7 +152,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing artifact provenance | 4 |',
+    '| Missing artifact provenance | 3 |',
     '| Missing production allowlist | 2 |',
     '| Missing scheduled task governance | 1 |',
     '| Missing process handling governance | 1 |',
@@ -278,7 +277,7 @@ if (
     DeferredToolCount         = $placeholderTools.Count
     ImplementedToolCount      = $allTools.Count - $placeholderTools.Count
     ActiveToolCount           = $allTools.Count
-    ScopeDesignCoverage       = 15
+    ScopeDesignCoverage       = 12
     ProvenanceReviewCoverage  = 0
     ProductionArtifactScopes  = $artifactPolicy.Artifacts.Count
     ProductionAppxScopes      = $appxPolicy.PackageScopes.Count

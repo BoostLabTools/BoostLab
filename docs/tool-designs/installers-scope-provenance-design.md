@@ -3,9 +3,9 @@
 ## Purpose
 
 This document defines the exact future scope and provenance requirements before
-the BoostLab `Installers` tool can be safely implemented.
+the BoostLab `Installers` Auto behavior can be safely implemented.
 
-This is documentation and planning only. It approves no production download,
+Phase 105 implements controlled manual handoff only. It approves no production download,
 installer, executable launch, registry, file, service, scheduled task,
 shortcut, config, uninstall, reboot, Default, or Restore scope.
 
@@ -68,17 +68,19 @@ download.
 
 ## Current Decision
 
-Installers remains a refused placeholder.
+Installers is implemented as controlled manual handoff only in Phase 105.
 
 No production download/installer/executable/registry/file/service/task/shortcut/config/uninstall/reboot scopes
 are approved in this phase.
 
-Partial implementation would weaken the source. The source is not just a list
-of download URLs; several choices include post-install registry policy, service
-deletion, scheduled task removal, config writes, shortcut cleanup, and uninstall
-steps. A future implementation must preserve each approved source behavior for
-the selected installer or refuse that installer until its full side effects are
-scoped.
+Automated installation remains blocked because partial Auto implementation would
+weaken the source. The source is not just a list of download URLs; several
+choices include post-install registry policy, service deletion, scheduled task
+removal, config writes, shortcut cleanup, and uninstall steps. A future Auto
+implementation must preserve each approved source behavior for the selected
+installer or refuse that installer until its full side effects are scoped.
+
+Migration record: `docs/migrations/installers.md`.
 
 ## Behavior Groups
 
@@ -1040,5 +1042,6 @@ Current approved production scopes for Installers:
 * Reboot/recovery scopes: none.
 * Default/Restore scopes: none.
 
-Installers must remain a refused placeholder until these approvals are supplied
-in future explicit implementation phases.
+Installers Auto must remain blocked until these approvals are supplied in
+future explicit implementation phases. The Phase 105 surface remains controlled
+manual handoff only.

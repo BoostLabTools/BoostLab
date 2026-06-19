@@ -31,6 +31,7 @@ $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\4 Installers\1 Installers.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\installers.md'
 $artifactPolicyPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $rollbackPolicyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
 $servicePolicyPath = Join-Path $ProjectRoot 'config\ServiceRollbackPolicy.psd1'
@@ -45,6 +46,7 @@ foreach ($path in @(
     $sourcePath,
     $modulePath,
     $configPath,
+    $migrationPath,
     $artifactPolicyPath,
     $rollbackPolicyPath,
     $servicePolicyPath,
@@ -109,7 +111,8 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67`',
-    'Installers remains a refused placeholder',
+    'Installers is implemented as controlled manual handoff only in Phase 105.',
+    'docs/migrations/installers.md',
     'No production download/installer/executable/registry/file/service/task/shortcut/config/uninstall/reboot scopes',
     'Download URL count: `24`',
     'Explicit AMD/Intel GPU-specific behavior is not present',
@@ -210,11 +213,51 @@ if (-not $planText.Contains('docs/tool-designs/installers-scope-provenance-desig
     throw 'Deferred tools execution plan does not link to the Installers scope/provenance design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Installers module is no longer a placeholder.'
+foreach ($requiredModuleNeedle in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
+    'ManualHandoffOnly',
+    'ManualHandoffPrepared',
+    'AutoBlockedUntilArtifactApproval',
+    'DefaultUnavailable',
+    'RestoreUnavailable',
+    'NoDownloadOccurred',
+    'NoInstallerExecutionOccurred',
+    'NoExternalProcessStarted',
+    'NoPackageMutationOccurred',
+    'NoFileMutationOccurred',
+    'NoRegistryMutationOccurred',
+    'NoServiceMutationOccurred',
+    'NoScheduledTaskMutation',
+    'NoShortcutMutationOccurred',
+    'NoAppConfigurationMutation',
+    'NoUninstallOccurred',
+    'NoCleanupOccurred',
+    'NoRebootOccurred',
+    'NoSystemMutationOccurred'
+)) {
+    if (-not $moduleText.Contains($requiredModuleNeedle)) {
+        throw "Installers manual-handoff module is missing expected text: $requiredModuleNeedle"
+    }
 }
-if ($moduleText -match 'IWR|Invoke-WebRequest|Start-BitsTransfer|Start-Process|msiexec|Get-Service|Get-ScheduledTask|reg add|reg delete|Remove-Item|Move-Item|Set-Content') {
-    throw 'Installers placeholder module appears to contain real download, launch, or mutation behavior.'
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Installers module still uses the placeholder contract.'
+}
+foreach ($commandPattern in @(
+    '(?m)^\s*IWR\b',
+    '(?m)^\s*Invoke-WebRequest\b',
+    '(?m)^\s*Start-BitsTransfer\b',
+    '(?m)^\s*Start-Process\b',
+    '(?m)^\s*msiexec\b',
+    '(?m)^\s*Get-Service\b',
+    '(?m)^\s*Get-ScheduledTask\b',
+    '(?m)^\s*reg\s+(add|delete)\b',
+    '(?m)^\s*Remove-Item\b',
+    '(?m)^\s*Move-Item\b',
+    '(?m)^\s*Set-Content\b'
+)) {
+    if ([regex]::IsMatch($moduleText, $commandPattern)) {
+        throw "Installers module contains prohibited executable command pattern: $commandPattern"
+    }
 }
 
 if (@($artifactPolicy.Artifacts).Count -ne 0) {
@@ -239,8 +282,22 @@ $tool = $allTools |
 if (-not $tool) {
     throw 'Installers catalog entry was not found.'
 }
-if (-not (@($tool.Actions) -contains 'Open') -or -not (@($tool.Actions) -contains 'Apply')) {
+if ((@($tool.Actions) -join ',') -ne 'Analyze,Open,Apply,Default,Restore') {
     throw 'Installers catalog actions changed unexpectedly.'
+}
+
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
+foreach ($migrationNeedle in @(
+    '# Installers Migration Record',
+    'Controlled manual handoff only',
+    'AutoBlockedUntilArtifactApproval',
+    'DefaultUnavailable',
+    'RestoreUnavailable',
+    'No downloads, installer launches, package changes, app configuration, cleanup, or system mutation are implemented.'
+)) {
+    if (-not $migrationText.Contains($migrationNeedle)) {
+        throw "Installers migration record is missing expected text: $migrationNeedle"
+    }
 }
 
 $activeTools = @($allTools)
@@ -316,7 +373,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionRebootScopes    = @($rebootPolicy.WorkflowScopes).Count
     SourceUltimateUnchanged   = $true
     DeletedToolsRemainDeleted = $true
-    Message                   = 'Installers scope/provenance design is present, linked, and non-executing.'
+    Message                   = 'Installers scope/provenance design is present, linked, and implemented as non-executing manual handoff.'
     Timestamp                 = Get-Date
 }
 

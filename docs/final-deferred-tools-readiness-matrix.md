@@ -11,11 +11,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 ## Current Inventory
 
 * Active tools: **55**
-* Implemented tools: **42**
-* Deferred/placeholders: **13**
+* Implemented tools: **43**
+* Deferred/placeholders: **12**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
 * Remaining unimplemented source-promoted intake candidates: **0**
-* Design/review coverage: **13/13 deferred tools covered**
+* Design/review coverage: **12/12 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
 * `source-ultimate/` modified by this phase: **No**
@@ -76,14 +76,13 @@ results, and keeps Restore unavailable without selected captured state.
 
 The current deferred queue has complete documentation coverage:
 
-* Scope or scope/provenance design covered tools: **13**
+* Scope or scope/provenance design covered tools: **12**
 * Standalone provenance review covered tools: **0**
-* Manual-handoff implemented with Auto provenance review still blocking automation: **4**
-* Total deferred tools covered by design or review: **13/13**
+* Manual-handoff implemented with Auto provenance review still blocking automation: **5**
+* Total deferred tools covered by design or review: **12/12**
 
 Scope or scope/provenance design coverage:
 
-* `installers`
 * `start-menu-taskbar`
 * `copilot`
 * `bloatware`
@@ -105,7 +104,7 @@ Standalone provenance review coverage:
 | Tool name | Tool id | Stage | Source path | Source checksum | Current status | Design/review document | Primary blocker category | Foundations already available | Foundations still missing | Production allowlists/scopes required | Default | Restore | Windows 10 branch-level scope | NVIDIA/AMD/Intel product scope | Risk level | Near-term implementation candidate | Recommended next action | Suggested phase priority |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Edge Settings | `edge-settings` | Setup | `source-ultimate/3 Setup/6 Edge Settings.ps1` | `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | Placeholder/refused; scope design complete; not ready | `docs/tool-designs/edge-settings-scope-design.md` | Missing scheduled task governance | File/registry rollback foundation; service rollback foundation; download provenance foundation; installer policy | RunOnce/Active Setup governance, process handling governance, exact Edge repair artifact approval, exact service scopes | Registry scopes; service scopes; RunOnce/Active Setup scopes; artifact approvals; installer descriptor | Not applicable until design split | Refused until exact captured-state selection exists | No known product-scope exception; shared behavior only if otherwise approved | Not GPU-specific | High | No | Build RunOnce/Active Setup and process-handling policy before any implementation reattempt | P8 |
-| Installers | `installers` | Installers | `source-ultimate/4 Installers/1 Installers.ps1` | `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Placeholder/refused; scope/provenance design complete | `docs/tool-designs/installers-scope-provenance-design.md` | Missing artifact provenance | Download provenance foundation; installer policy; service rollback foundation; file/registry rollback foundation; cleanup policy | Approved per-app artifacts, exact installer descriptors, scheduled task governance, app inventory/uninstall model | Artifact approvals; installer descriptors; per-app service/file/registry/task/shortcut scopes | Not applicable | Refused until installer/app inventory and restore model exists | No Windows 10 optimization branch should be ported | NVIDIA-only affects only any GPU-specific installer branch; AMD/Intel remain unsupported | High | No | Artifact Approval Intake Process, then app-by-app approval packages | P7 |
+| Installers | `installers` | Installers | `source-ultimate/4 Installers/1 Installers.ps1` | `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Implemented manual handoff; Auto blocked | `docs/tool-designs/installers-scope-provenance-design.md`; `docs/migrations/installers.md` | Missing artifact provenance for Auto | Manual handoff implemented; download provenance foundation; installer policy; service rollback foundation; file/registry rollback foundation; cleanup policy | Auto still needs approved per-app artifacts, exact installer descriptors, scheduled task governance, app inventory/uninstall model, cleanup, rollback, and support policy | Future Auto artifact approvals; installer descriptors; per-app service/file/registry/task/shortcut/config/uninstall scopes | Unavailable | Restore unavailable until captured-state restore contract exists | No Windows 10 optimization branch should be ported | NVIDIA-only affects only any GPU-specific installer branch; AMD/Intel remain unsupported | High | Complete for manual handoff only | Auto remains blocked until exact app-by-app approval packages exist | P7 |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1` | `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F` | Implemented manual handoff; Auto blocked | `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md`; `docs/migrations/driver-install-debloat-settings.md` | Missing driver/profile rollback approval for Auto | Manual handoff implemented; download provenance foundation; installer policy; driver rollback foundation; reboot recovery foundation; AppX foundation; cleanup policy; file/registry rollback foundation | Exact NVIDIA artifacts, driver/package scopes, profile import rollback, cleanup scopes, AppX scopes, reboot workflow | NVIDIA artifact approvals; driver scopes; profile scopes; cleanup scopes; AppX scopes; reboot scope | Unavailable | Restore unavailable until driver/profile/package/registry/file/reboot state is captured and approved | Shared Windows behavior only; Windows 10 optimization branches unsupported | NVIDIA manual handoff only; AMD/Intel branches disabled | High | Complete for manual handoff only | Auto requires artifact/driver/profile/package/reboot approval package | P13 |
 | DirectX | `directx` | Graphics | `source-ultimate/5 Graphics/2 DirectX.ps1` | `17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05` | Implemented manual handoff; Auto blocked | `docs/directx-provenance-review.md`; `docs/migrations/directx.md` | Missing artifact provenance for Auto | Manual handoff implemented; download provenance foundation; installer policy; file/registry rollback foundation; cleanup policy | Auto still needs immutable source URLs, exact hash/size/signer evidence, extracted `DXSETUP.exe` provenance, installer descriptor, temp ownership scopes | Future Auto artifact approvals; installer descriptor; extraction inventory; file/temp cleanup scopes | Unavailable | Restore unavailable until captured-state restore contract exists | No Windows 10 branch issue documented | Not GPU-specific | High | Complete for manual handoff only | Auto remains blocked until immutable artifact provenance package exists | P10 |
 | Visual C++ | `visual-cpp` | Graphics | `source-ultimate/5 Graphics/3 C++.ps1` | `7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09` | Implemented manual handoff; Auto blocked | `docs/visual-cpp-provenance-review.md`; `docs/migrations/visual-cpp.md` | Missing artifact provenance for Auto | Manual handoff implemented; download provenance foundation; installer policy | Auto still needs immutable sources, exact hash/size/version/signer evidence for all packages, exit-code rules, temp ownership scopes | Future Auto artifact approvals; installer descriptors; generated-temp-path scopes | Unavailable | Restore unavailable until captured-state restore contract exists | No Windows 10 branch issue documented | Not GPU-specific | High | Complete for manual handoff only | Auto remains blocked until all twelve redistributable approvals exist | P11 |
@@ -124,11 +123,11 @@ Standalone provenance review coverage:
 
 ## Blocker Frequency Summary
 
-Primary blocker counts across the 13 deferred/placeholders:
+Primary blocker counts across the 12 deferred/placeholders:
 
 | Primary blocker category | Count | Tools |
 |---|---:|---|
-| Missing artifact provenance | 4 | Installers; Edge & WebView; Resizable BAR Assistant; Timer Resolution Assistant |
+| Missing artifact provenance | 3 | Edge & WebView; Resizable BAR Assistant; Timer Resolution Assistant |
 | Missing production allowlist | 2 | Start Menu Taskbar; Cleanup |
 | Missing scheduled task governance | 1 | Edge Settings |
 | Missing process handling governance | 1 | Copilot |
@@ -188,7 +187,6 @@ These tools should remain late-stage because their sources combine driver, insta
 * Defender Optimize Assistant
 * GameBar
 * Control Panel Settings
-* Installers
 * Edge & WebView
 
 ## Product Scope Notes

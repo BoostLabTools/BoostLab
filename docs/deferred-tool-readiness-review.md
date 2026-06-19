@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **42**
-* Deferred/placeholders: **13**
+* Implemented tools: **43**
+* Deferred/placeholders: **12**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -152,7 +152,7 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **2**
-* Foundation-ready but needs artifact provenance approvals: **4**
+* Foundation-ready but needs artifact provenance approvals: **3**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
 
@@ -163,7 +163,7 @@ Current inventory:
 | Reinstall | `reinstall` | Refresh | Implemented in Phase 104 as controlled manual handoff | Automated source behavior downloads and launches Windows 10 and Windows 11 Media Creation Tool executables from mutable third-party mirror URLs | Manual handoff pattern, download provenance, installer policy, reboot workflow | Auto remains blocked: no approved Windows 11 setup artifact, no hash/signer/size/version evidence, no approved executable launch, no approved generated-file ownership, and no approved reboot or handoff scope for this tool; Windows 10 branch is unsupported | Future Auto would require exact Windows 11 media artifact, signer/hash/size evidence, exact command line, exact generated-file scope, exact reboot/handoff scope, and explicit refusal of the Windows 10 branch | Complete for manual handoff only | Phase 104 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/reinstall-scope-provenance-design.md` and `docs/migrations/reinstall.md` |
 | Updates Drivers Block | `updates-drivers-block` | Refresh | Implemented in Phase 102 as controlled live Driver Updates policy | Broader source branches still include custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands | File/registry rollback supports the implemented live policy branch | No approved update-server URL scope, no approved generated-script/media file scope, and no approved reboot workflow scope for the remaining unsupported branches | Future broad Updates or bootable-media work would need exact update-server URL approval, exact generated-script/media scopes, exact reboot workflow scope, and a separate approval decision | Complete for live driver policy only | Phase 102 controlled policy complete; broader branches blocked | Keep broader Updates and bootable-media branches blocked until separately approved |
 | Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Use `docs/tool-designs/edge-settings-scope-design.md`, then decompose the source into policy, service, task, process, and repair behaviors before any migration phase |
-| Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install registry, service, task, shortcut, config, and uninstall side effects | Download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | No approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/installers-scope-provenance-design.md` before any second attempt |
+| Installers | `installers` | Installers | Implemented in Phase 105 as controlled manual handoff | Automated source behavior downloads 24 artifacts, launches installers/helpers, and performs post-install registry, service, task, shortcut, config, cleanup, and uninstall side effects | Manual handoff pattern, download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | Auto remains blocked: no approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Future Auto would require exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists, inventory, cleanup, rollback, and support approvals | Complete for manual handoff only | Phase 105 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/installers-scope-provenance-design.md` and `docs/migrations/installers.md` |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Implemented in Phase 99 as controlled manual handoff | Full Auto behavior still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | Auto remains blocked: no approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | Complete for manual handoff only | Phase 99 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` |
 | DirectX | `directx` | Graphics | Implemented in Phase 100 as controlled manual handoff | Automated source behavior downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Manual handoff pattern, download provenance, installer policy, file/registry rollback, and cleanup policy | Auto remains blocked: source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Future Auto would require immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | Complete for manual handoff only | Phase 100 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires the complete approval package in `docs/directx-provenance-review.md` |
 | Visual C++ | `visual-cpp` | Graphics | Implemented in Phase 101 as controlled manual handoff | Automated source behavior downloads twelve redistributables from mutable mirror URLs and installs every x86/x64 package with version-specific switches | Manual handoff pattern, download provenance, and installer policy | Auto remains blocked: all source URLs are mutable branch references; no approved hashes, sizes, package versions, signers, authoritative source evidence, exit-code rules, installer execution, or temp ownership scopes | Future Auto would require immutable artifact sources and exact hash/size/version/signer evidence for all twelve packages, approved installer requests and exit-code rules, and exact generated-temp-path scopes | Complete for manual handoff only | Phase 101 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires the complete approval package in `docs/visual-cpp-provenance-review.md` |
@@ -219,7 +219,6 @@ documented in `docs/tool-designs/updates-drivers-block-scope-design.md`.
 These mostly moved from “missing foundation” to “waiting on exact artifact and
 execution approval”:
 
-* Installers
 * Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
@@ -230,8 +229,11 @@ branch downloads and lacks the complete artifact, executable launch,
 generated-file ownership, reboot/session, recovery, and support approvals
 required by Phase 35 and Phase 40.
 
-The Installers tool-specific scope/provenance design is documented in
-`docs/tool-designs/installers-scope-provenance-design.md`.
+Installers was implemented in Phase 105 as controlled manual handoff only.
+Auto remains blocked until the exact app artifact, installer, side-effect,
+inventory, cleanup, rollback, and support approvals documented in
+`docs/tool-designs/installers-scope-provenance-design.md` and
+`docs/migrations/installers.md` exist.
 
 Driver Install Debloat & Settings manual handoff is implemented in Phase 99.
 Its Auto path still requires the exact approvals documented in

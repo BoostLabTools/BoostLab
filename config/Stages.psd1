@@ -196,11 +196,11 @@
                     Title       = 'Installers'
                     Stage       = 'Installers'
                     Order       = 1
-                    Type        = 'action'
-                    RiskLevel   = 'medium'
-                    Description = 'Review and prepare approved application installation selections.'
-                    Actions     = @('Open', 'Apply')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Type        = 'assistant'
+                    RiskLevel   = 'high'
+                    Description = 'Controlled manual handoff only. Analyze the source-defined multi-app installer workflow without automated downloads, installer launches, package changes, app configuration, cleanup, or system mutation.'
+                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }

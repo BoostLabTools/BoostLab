@@ -86,7 +86,6 @@ $safeModeIds = @(
 )
 $serviceIds = @(
     'edge-settings'
-    'installers'
     'driver-install-debloat-settings'
     'bloatware'
     'game-bar'
@@ -294,6 +293,7 @@ $implementedModules = [ordered]@{
     'to-bios' = 'Refresh\to-bios.psm1'
     'reinstall' = 'Refresh\reinstall.psm1'
     'updates-drivers-block' = 'Refresh\updates-drivers-block.psm1'
+    'installers' = 'Installers\installers.psm1'
     'startup-apps-settings' = 'Setup\StartupAppsSettings.psm1'
     'startup-apps-task-manager' = 'Setup\StartupAppsTaskManager.psm1'
     'memory-compression' = 'Setup\MemoryCompression.psm1'

@@ -51,8 +51,8 @@ $assertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -Include
 $snapshot = $assertion.Snapshot
 
 Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Inventory baseline ActiveTools must remain 55 for Phase 103.'
-Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 42) 'Inventory baseline ImplementedTools must remain 42 after Phase 104 Reinstall manual handoff.'
-Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 13) 'Inventory baseline DeferredPlaceholders must remain 13 after Phase 104 Reinstall manual handoff.'
+Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 43) 'Inventory baseline ImplementedTools must remain 43 after Phase 105 Installers manual handoff.'
+Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 12) 'Inventory baseline DeferredPlaceholders must remain 12 after Phase 105 Installers manual handoff.'
 Assert-BoostLabCondition ([int]$baseline.SourcePromotedMirrorFiles -eq 7) 'Inventory baseline SourcePromotedMirrorFiles must remain 7 for Phase 103.'
 Assert-BoostLabCondition ([int]$baseline.RemainingSourcePromotedIntakeCandidates -eq 0) 'Inventory baseline RemainingSourcePromotedIntakeCandidates must remain 0 for Phase 103.'
 Assert-BoostLabCondition ([int]$snapshot.RemainingSourcePromotedIntakeCandidates -eq [int]$baseline.RemainingSourcePromotedIntakeCandidates) 'Live remaining source-promoted intake count does not match the baseline.'
@@ -85,18 +85,18 @@ foreach ($file in $baselineUsingFiles) {
 
 $forbiddenHardcodedPatterns = @(
     'Expected 55 active tools',
-    'Expected 42 implemented tools',
-    'Expected 13 deferred/placeholders',
+    'Expected 43 implemented tools',
+    'Expected 12 deferred/placeholders',
     'Expected 7 source-promoted mirror files',
     'ActiveToolCount = 55',
-    'ImplementedModuleCount = 42',
-    'PlaceholderModuleCount = 13',
+    'ImplementedModuleCount = 43',
+    'PlaceholderModuleCount = 12',
     'SourcePromotedMirrorFileCount = 7',
     'RemainingSourcePromotedIntake = 0',
-    'implementedCount -ne 42',
-    'implementedCount -eq 42',
-    'placeholderCount -ne 13',
-    'placeholderCount -eq 13',
+    'implementedCount -ne 43',
+    'implementedCount -eq 43',
+    'placeholderCount -ne 12',
+    'placeholderCount -eq 12',
     'activeTools.Count -ne 55',
     'allTools.Count -ne 55',
     'allTools.Count -eq 55',
