@@ -198,15 +198,9 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
 $firstNonFinal = $null
-foreach ($toolId in $flattenedOrder) {
-    $record = $parityTools | Where-Object { [string]$_.ToolId -eq $toolId } | Select-Object -First 1
-    if ([string]$record.ImplementationLevel -ne 'ParityImplemented' -and -not [bool]$record.YazanFinalException) {
-        $firstNonFinal = $record
-        break
-    }
-}
+$firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'bios-settings') 'The first ordered non-final parity target should be BIOS Settings.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'reinstall') 'The first ordered pending parity target should be Reinstall after BIOS Settings acceptance.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

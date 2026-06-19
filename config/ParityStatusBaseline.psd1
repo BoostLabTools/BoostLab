@@ -71,9 +71,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
-            GapSummary = 'Preserves firmware restart intent through visible confirmation and safer GUI routing.'
+            GapSummary = 'Preserves the firmware restart result through visible confirmation and safer GUI routing; Yazan accepts this confirmation as final near parity because no capability is removed.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm whether safer confirmation mechanics are accepted as final parity.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Next ordered pending parity target: reinstall.'
         }
         @{
             ToolId = 'reinstall'

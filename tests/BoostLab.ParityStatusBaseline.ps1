@@ -45,3 +45,77 @@ function Get-BoostLabParityCategoryCounts {
 
     return $counts
 }
+
+function Test-BoostLabParityRecordFinal {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Record
+    )
+
+    $implementationLevel = [string]$Record.ImplementationLevel
+    if ($implementationLevel -eq 'ParityImplemented') {
+        return $true
+    }
+
+    if (
+        $Record -is [System.Collections.IDictionary] -and
+        $Record.Contains('YazanFinalException') -and
+        [bool]$Record['YazanFinalException']
+    ) {
+        return $true
+    }
+    if (
+        $Record -isnot [System.Collections.IDictionary] -and
+        $Record.PSObject.Properties['YazanFinalException'] -and
+        [bool]$Record.YazanFinalException
+    ) {
+        return $true
+    }
+
+    $finalProgressStatus = if ($Record -is [System.Collections.IDictionary] -and $Record.Contains('FinalProgressStatus')) {
+        [string]$Record['FinalProgressStatus']
+    }
+    elseif ($Record -isnot [System.Collections.IDictionary] -and $Record.PSObject.Properties['FinalProgressStatus']) {
+        [string]$Record.FinalProgressStatus
+    }
+    else {
+        ''
+    }
+    $acceptedNearParity = if ($Record -is [System.Collections.IDictionary] -and $Record.Contains('YazanAcceptedNearParity')) {
+        [bool]$Record['YazanAcceptedNearParity']
+    }
+    elseif ($Record -isnot [System.Collections.IDictionary] -and $Record.PSObject.Properties['YazanAcceptedNearParity']) {
+        [bool]$Record.YazanAcceptedNearParity
+    }
+    else {
+        $false
+    }
+
+    return ($finalProgressStatus -eq 'DoneYazanAcceptedNearParity' -and $acceptedNearParity)
+}
+
+function Get-BoostLabNextOrderedParityTarget {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$ParityBaseline,
+
+        [Parameter(Mandatory)]
+        [hashtable]$ExecutionOrder
+    )
+
+    foreach ($stage in @($ExecutionOrder.Stages)) {
+        foreach ($tool in @($stage.Tools)) {
+            $toolId = [string]$tool.ToolId
+            $record = @($ParityBaseline.Tools | Where-Object { [string]$_.ToolId -eq $toolId }) | Select-Object -First 1
+            if ($null -eq $record) {
+                throw "Missing parity baseline record for ordered tool: $toolId"
+            }
+
+            if (-not (Test-BoostLabParityRecordFinal -Record $record)) {
+                return $record
+            }
+        }
+    }
+
+    return $null
+}
