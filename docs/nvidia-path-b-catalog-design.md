@@ -20,13 +20,16 @@ Official BoostLab counts remain unchanged:
 * Deferred/placeholders: **14**
 * Source-promoted intake candidates: **7 separate from official counts**
 
-Phase 94 current-state note: `Driver Install Latest` and `Nvidia Settings`
-have since been promoted as active controlled manual-handoff tools for Path B
-steps 1 and 2 only. This does not approve NVIDIA driver downloads, installer
-execution, 7-Zip download/install, NVIDIA Profile Inspector download/execution,
-`.nip` import/export, artifact provenance, NVIDIA registry/profile mutation,
-browser opening, Control Panel launch, external process launch, reboot/session
-handling, Default, Restore, or the remaining Path B steps.
+Phase 124 current-state note: `Driver Install Latest` has since been promoted
+as a source-equivalent, branch-selected runtime for its source-defined NVIDIA,
+AMD, and INTEL branches with BoostLab GUI confirmation and test-safe executor
+injection. `Nvidia Settings` remains an active controlled manual-handoff tool.
+This does not approve reusable/global NVIDIA, AMD, or INTEL artifact
+provenance, standalone driver artifacts, 7-Zip download/install, NVIDIA Profile
+Inspector download/execution, `.nip` import/export, production allowlists,
+NVIDIA registry/profile mutation beyond implemented source-equivalent tools,
+Control Panel launch, external process launch outside implemented tools,
+Default, Restore, or the remaining Path B steps.
 
 Phase 95 current-state note: `Hdcp` has since been promoted as Path B step 3
 with controlled NVIDIA-only registry targeting. It preserves the source-defined
@@ -81,7 +84,7 @@ Path B steps must preserve this exact order:
 
 | Path B step | Display name | Source mirror path | SHA-256 | Original Ultimate relative path | Stage | Relationship | Likely future design requirement | Major risk groups | Can be implemented now | Why not implemented now |
 |---:|---|---|---|---|---|---|---|---|---|---|
-| 1 | Driver Install Latest | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | `5 Graphics/2 Driver Install Latest.ps1` | Graphics | First Path B step. Must complete before NVIDIA settings/profile steps are considered. | Controlled manual handoff is implemented; Auto remains blocked until NVIDIA artifact/download, installer descriptor, driver state, process handoff, reboot/session, and recovery approvals exist. AMD/Intel branches remain unsupported. | Downloads, installer launch, driver install/update, NVIDIA API use, vendor branch selection, admin execution, process handoff, rollback/support boundaries. | Manual handoff only | No NVIDIA artifact provenance, installer execution descriptor, driver state scope, rollback/support design, or automated Path B execution is approved. |
+| 1 | Driver Install Latest | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1` | `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F` | `5 Graphics/2 Driver Install Latest.ps1` | Graphics | First Path B step. Must complete before NVIDIA settings/profile steps are considered. | Phase 124 source-equivalent branch runtime is implemented for NVIDIA, AMD, and INTEL in this tool only. It preserves admin/internet checks, dynamic vendor lookup/download/page handoff, installer/process launch, and source operation order with explicit BoostLab confirmation. | Downloads, installer launch, driver install/update, NVIDIA API use, AMD page scrape, Intel driver page handoff, vendor branch selection, admin execution, process handoff, rollback/support boundaries. | Source-equivalent controlled runtime active | No reusable/global artifact provenance, production allowlist, standalone driver artifact approval, Default, Restore, or cross-tool AMD/Intel scope is approved. |
 | 2 | Nvidia Settings | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1` | `903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5` | `5 Graphics/4 Nvidia Settings.ps1` | Graphics | Runs after driver installation in Path B. Prepares NVIDIA registry/profile settings before focused display-device steps. | Controlled manual handoff is implemented; Auto remains blocked until 7-Zip, NVIDIA Profile Inspector, `.nip`, profile capture/restore, registry/file rollback, process, and verification approvals exist. | Downloads, installer execution, registry mutation, generated `.nip` profile data, NVIDIA Profile Inspector execution, Control Panel launch, file cleanup, Default behavior. | Manual handoff only | Required artifacts, profile import rules, registry scopes, generated-artifact ownership, process handling, verification, and Default/Restore semantics are not approved. |
 | 3 | Hdcp | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1` | `5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A` | `5 Graphics/5 Hdcp.ps1` | Graphics | Runs after broad NVIDIA settings. Applies a focused NVIDIA display-class registry behavior before P0 State. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, source-defined Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
 | 4 | P0 State | `source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1` | `382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC` | `5 Graphics/6 P0 State.ps1` | Graphics | Runs after Hdcp and before Msi Mode. Applies another focused NVIDIA display-class registry behavior. | Controlled registry implementation is active for Analyze, Apply, Default, and blocked Restore. | NVIDIA display registry discovery, HKLM registry mutation, display driver state, Default behavior, verification and rollback boundaries. | Controlled implementation active | Apply/Default require checksum validation, NVIDIA-only targets, capture before mutation, and verification; Restore remains unavailable without selected captured state. |
@@ -91,20 +94,17 @@ Path B steps must preserve this exact order:
 
 ### Driver Install Latest
 
-Future work must define a scope plus provenance design because the source
-contains NVIDIA, AMD, and Intel branches and the NVIDIA branch includes latest
-driver discovery, download to `%SystemRoot%\Temp\nvidiadriver.exe`, and
-installer launch.
+Phase 124 implements the source-equivalent Driver Install Latest runtime for
+NVIDIA, AMD, and INTEL branches in this tool only. Future work here is limited
+to any later reusable/global artifact provenance or rollback model Yazan might
+approve; it is not required for the current source-equivalent branch runtime.
 
 Required future approvals include:
 
-* NVIDIA-only branch selection and explicit AMD/Intel exclusion.
-* Download provenance and checksum/signature approval for the exact NVIDIA
-  driver artifact strategy.
-* Installer execution descriptor and process handoff policy.
-* Driver state capture, verification, rollback/support limits, and reboot
-  expectations.
-* Action Plan confirmation and Latest Result reporting.
+* Any reusable/global artifact provenance approval for vendor driver artifacts.
+* Any future production allowlist entry for standalone driver artifacts.
+* Any captured-state driver rollback/support model beyond source handoff.
+* Any Default or Restore behavior, which the source does not define.
 
 ### Nvidia Settings
 

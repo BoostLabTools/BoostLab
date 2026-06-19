@@ -117,7 +117,7 @@ $implementedModules = @{
     }
     'driver-install-latest' = @{
         RelativePath          = 'Graphics\driver-install-latest.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     }
     'driver-install-debloat-settings' = @{
         RelativePath          = 'Graphics\driver-install-debloat-settings.psm1'
@@ -459,6 +459,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'driver-clean' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
         )
+        $approvedDriverInstallLatestCommand = (
+            $toolId -eq 'driver-install-latest' -and
+            $commandName -eq 'Invoke-WebRequest'
+        )
         $approvedDriverInstallDebloatSettingsCommand = (
             $toolId -eq 'driver-install-debloat-settings' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
@@ -482,6 +486,7 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedEdgeSettingsCommand -and
             -not $approvedInstallersCommand -and
             -not $approvedDriverCleanCommand -and
+            -not $approvedDriverInstallLatestCommand -and
             -not $approvedDriverInstallDebloatSettingsCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
@@ -533,7 +538,7 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'driver-install-latest') {
-            0
+            1
         }
         elseif ($toolId -eq 'installers') {
             2

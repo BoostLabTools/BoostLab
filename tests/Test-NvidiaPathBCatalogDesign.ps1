@@ -68,7 +68,7 @@ $pathB = @(
         Mirror = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
         Hash = '41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F'
-        FutureWork = 'scope plus provenance design'
+        FutureWork = 'source-equivalent branch runtime'
     }
     @{
         Step = 2
@@ -276,7 +276,7 @@ foreach ($title in @($pathBTitles | Where-Object { $_ -notin @('Driver Install L
 }
 $driverInstallLatestTool = @($allTools | Where-Object { $_.Title -eq 'Driver Install Latest' })
 if ($driverInstallLatestTool.Count -ne 1) {
-    throw 'Driver Install Latest must be active exactly once as the Phase 93 controlled manual-handoff tool.'
+    throw 'Driver Install Latest must be active exactly once as the Phase 124 source-equivalent Driver Install Latest tool.'
 }
 $nvidiaSettingsTool = @($allTools | Where-Object { $_.Title -eq 'Nvidia Settings' })
 if ($nvidiaSettingsTool.Count -ne 1) {

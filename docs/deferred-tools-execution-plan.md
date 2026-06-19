@@ -96,8 +96,9 @@ BoostLab confirmation. It does not approve standalone DDU, DDU use by other
 tools, or broad DDU artifact/production scope outside Driver Clean.
 
 Phase 94 implements `Nvidia Settings` as a controlled manual-handoff active
-tool for Path B step 2 after the Phase 93 `Driver Install Latest` manual
-handoff. It verifies the source mirror checksum, reports ManualHandoffOnly,
+tool for Path B step 2 after `Driver Install Latest`, which Phase 124 now
+implements as source-equivalent branch-selected runtime for this tool only.
+Nvidia Settings verifies the source mirror checksum, reports ManualHandoffOnly,
 keeps Auto blocked as `AutoBlockedUntilArtifactApproval`, and performs no
 7-Zip download/install, NVIDIA Profile Inspector download/execution, `.nip`
 import/export, browser opening, Control Panel launch, external process start,

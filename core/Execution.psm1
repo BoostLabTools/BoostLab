@@ -85,7 +85,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'driver-install-latest' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-latest.psm1'
-        Actions = @('Analyze', 'Open', 'Apply')
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
     'nvidia-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-settings.psm1'

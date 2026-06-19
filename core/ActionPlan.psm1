@@ -203,13 +203,19 @@ function New-BoostLabActionPlan {
         'Run the source-equivalent Driver Clean Auto branch after confirmation: prepare 7-Zip/DDU, create the automatic DDU RunOnce flow, enable Safe Mode, and restart.'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
-        'Read the Driver Install Latest source mirror and report blocked NVIDIA driver approvals without downloading or installing anything.'
+        'Read the Driver Install Latest source mirror and report the source-equivalent NVIDIA, AMD, and INTEL latest-driver branch plans without executing them.'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        'Prepare Driver Install Latest manual handoff instructions only; no browser, external tool, NVIDIA driver download, installer execution, or system-changing operation is opened or executed.'
+        'Open the INTEL source-defined Driver Install Latest page only after selecting the INTEL branch; NVIDIA and AMD Open are unavailable and run no operation.'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Driver Install Latest because NVIDIA artifact, installer, driver-state, process, reboot/session, and recovery approvals do not exist.'
+        'Run the selected source-equivalent Driver Install Latest NVIDIA, AMD, or INTEL branch after explicit confirmation.'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
+        'Default is unavailable because the Driver Install Latest source defines no Default branch.'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
+        'Restore is unavailable because no selected captured driver/download/installer/session state restore contract exists.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and checkbox multi-select queue model without running any installer workflow.'
@@ -561,23 +567,40 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Latest source mirror checksum and implementation status.')
-        $plannedChanges.Add('Report missing NVIDIA driver artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals.')
+        $plannedChanges.Add('Report the source Administrator and internet checks.')
+        $plannedChanges.Add('Report the NVIDIA branch: guidance, NVIDIA lookup API, dynamic latest driver URL construction, download to %SystemRoot%\Temp\nvidiadriver.exe, and installer launch.')
+        $plannedChanges.Add('Report the AMD branch: AMD support page scrape, minimal setup web-installer link discovery, spoofed browser headers, download to %SystemRoot%\Temp\amddriver.exe, and installer launch.')
+        $plannedChanges.Add('Report the INTEL branch: Intel Windows 11 graphics driver search page launch.')
         $plannedChanges.Add('Report Path B step 1 of 5 while keeping Driver Install Latest separate from Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
-        $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, browser opening, external process start, registry mutation, driver mutation, reboot, or session change.')
+        $plannedChanges.Add('Perform no vendor query, download, installer launch, browser/page launch, external process, file mutation, driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions only.')
-        $plannedChanges.Add('Do not open a browser, external tool, NVIDIA installer, or approved external resource.')
-        $plannedChanges.Add('Do not download an NVIDIA driver or 7-Zip.')
-        $plannedChanges.Add('Do not execute an NVIDIA installer.')
-        $plannedChanges.Add('Do not modify registry, drivers, services, files, sessions, or reboot state.')
+        $plannedChanges.Add('Require selecting exactly one source branch.')
+        $plannedChanges.Add('For INTEL, open only the source-defined Intel Windows 11 graphics driver search page.')
+        $plannedChanges.Add('For NVIDIA and AMD, report Open unavailable because those source branches perform their workflow through Apply, not a standalone browser/page action.')
+        $plannedChanges.Add('Do not download a driver installer from Open.')
+        $plannedChanges.Add('Do not execute a driver installer from Open.')
+        $plannedChanges.Add('Do not modify registry, drivers, services, files, sessions, or reboot state from Open.')
         $plannedChanges.Add('Keep Path B steps separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing NVIDIA driver artifact/download approval, installer execution descriptor approval, driver state capture/rollback approval, process handoff approval, reboot/session handling approval, and recovery handling approval.')
-        $plannedChanges.Add('Perform no NVIDIA driver download, installer execution, external process start, registry/system/driver mutation, reboot, or session change.')
+        $plannedChanges.Add('Require explicit confirmation and exactly one selected source branch: NVIDIA, AMD, or INTEL.')
+        $plannedChanges.Add('Run the source Administrator and internet checks.')
+        $plannedChanges.Add('For NVIDIA, query the source NVIDIA latest-driver API, build the dynamic source NVIDIA installer URL, download to %SystemRoot%\Temp\nvidiadriver.exe, and launch that installer.')
+        $plannedChanges.Add('For AMD, scrape the source AMD support page for the minimal setup web installer, download it with the source browser-spoof headers to %SystemRoot%\Temp\amddriver.exe, and launch that installer.')
+        $plannedChanges.Add('For INTEL, open the source-defined Intel Windows 11 graphics driver search page.')
+        $plannedChanges.Add('Log every operation, source command mapping, target URL, and target path returned by the selected branch workflow.')
+        $plannedChanges.Add('Do not run Nvidia Settings, HDCP, P0 State, Msi Mode, Driver Clean, or Driver Install Debloat & Settings from this tool.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Block Default because the source has no Default branch.')
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore because no selected captured driver/download/installer/session state exists for this tool.')
+        $plannedChanges.Add('Do not invent rollback for vendor driver installers.')
+        $plannedChanges.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Installers source checksum and implementation status.')
@@ -1225,13 +1248,14 @@ function New-BoostLabActionPlan {
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
     $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Default', 'Restore')
     $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedDriverInstallLatestNoMutationAction = $toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
     $isBlockedEdgeSettingsRestoreNoMutationAction = $toolId -eq 'edge-settings' -and $ActionName -eq 'Restore'
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -1252,7 +1276,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
+    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1291,16 +1315,24 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Driver Install Latest analysis is read-only.')
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('NVIDIA, AMD, and INTEL source branch plans are reported without vendor queries, downloads, installer launches, browser/page launches, driver mutation, reboot, or session changes.')
         $sideEffects.Add('Path B step 1 is reported without enabling the remaining Path B steps.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No browser, external tool, NVIDIA driver download, NVIDIA installer execution, or system-changing operation occurs.')
-        $sideEffects.Add('No registry, driver, reboot, or session change occurs.')
+        $sideEffects.Add('Open requires a selected branch and runs only the source-defined INTEL standalone browser/page behavior when INTEL is selected.')
+        $sideEffects.Add('The INTEL branch may open the source-defined Intel Windows 11 graphics driver search page.')
+        $sideEffects.Add('The NVIDIA and AMD branches have no standalone source Open behavior; BoostLab reports that without opening external processes.')
+        $sideEffects.Add('No driver installer is downloaded or launched by Open.')
+        $sideEffects.Add('No registry, driver, file, reboot, or session change occurs from Open.')
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, NVIDIA driver download, installer execution, external process, registry mutation, driver mutation, reboot, or session change occurs.')
+        $sideEffects.Add('Apply may query vendor APIs/pages, download source-defined driver installers, and launch the selected branch installer or driver page.')
+        $sideEffects.Add('Driver installer handoff may affect display output, driver state, session state, and reboot prompts controlled by the vendor installer.')
+        $sideEffects.Add('No registry/service/task/profile/debloat steps from other Graphics tools are run by Driver Install Latest.')
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')) {
+        $sideEffects.Add("$ActionName is blocked before execution.")
+        $sideEffects.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Installers analysis is read-only.')
@@ -1718,22 +1750,22 @@ function New-BoostLabActionPlan {
     if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
-    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
+    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
         $sideEffects.Add('Service changes may affect dependent Windows or application features.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyDrivers) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyDrivers) {
         $sideEffects.Add('Driver changes may affect display, devices, stability, or hardware availability.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifySecurity) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifySecurity) {
         $sideEffects.Add('Security changes may alter system protection or compatibility.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanDeleteFiles) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanDeleteFiles) {
         $sideEffects.Add('Deleted files may not be recoverable unless an approved checkpoint exists.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanInstallSoftware) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanInstallSoftware) {
         $sideEffects.Add('Installed software may add files, services, tasks, or application settings.')
     }
     if ($isPotentialChangeAction -and $capabilities.UsesTrustedInstaller) {
@@ -1765,10 +1797,16 @@ function New-BoostLabActionPlan {
         'Driver Clean Auto will run the source-equivalent workflow: download 7-Zip and DDU, install/configure 7-Zip, extract/configure DDU, set driver-search policy, create ddu.ps1 and RunOnce, enable Safe Mode with bcdedit, restart, and then run DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart. Continue?'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Driver Install Latest manual handoff instructions only. It will not open a browser or external tool, download an NVIDIA driver or 7-Zip, execute an NVIDIA installer, modify registry or drivers, change the session, or reboot. Continue?'
+        'Driver Install Latest Open is INTEL-only: it may open the source-defined Intel Windows 11 graphics driver search page when INTEL is selected. NVIDIA and AMD Open report unavailable because their source behavior runs through Apply Source Workflow. Continue?'
     }
     elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
+        'Driver Install Latest will run the selected NVIDIA, AMD, or INTEL source-equivalent latest-driver branch after confirmation. It may query vendor sources, download driver installers, launch installers or driver pages, and hand off to vendor driver behavior that can affect display/session/reboot state. Continue only if this exact selected branch should run.'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
+        'Driver Install Latest Default is unavailable because the source defines no Default branch. BoostLab will not mutate driver, installer, file, registry, process, reboot, or session state. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
+        'Driver Install Latest Restore is unavailable without approved selected captured driver/download/installer/session state. BoostLab will not mutate driver, installer, file, registry, process, reboot, or session state. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
         'BoostLab will open only the source-defined vendor driver page flow for the selected Driver Install Debloat & Settings branch. It will not download or install 7-Zip, run driver installers, extract or debloat files, import profiles, mutate registry/services/packages/drivers, open shared UI panels, or reboot from Open. Continue?'

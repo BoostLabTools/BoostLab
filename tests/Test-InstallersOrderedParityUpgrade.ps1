@@ -292,13 +292,13 @@ Assert-BoostLabCondition ([string]$installersRecord['FinalProgressStatus'] -eq '
 Assert-BoostLabContains -Text ([string]$installersRecord['GapSummary']) -Needle '11 Frame View' -Description 'Installers parity gap summary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'driver-install-latest') 'First pending ordered parity target should advance past Driver Install Debloat & Settings near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'nvidia-settings') 'First pending ordered parity target should advance past Driver Install Latest near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq 3) 'ControlledSubset baseline count should be 3 after Installers.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 5) 'ManualHandoffOnly baseline count should be 5 after Driver Install Debloat & Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 4) 'ManualHandoffOnly baseline count should be 4 after Driver Install Latest.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted

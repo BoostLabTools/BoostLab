@@ -67,7 +67,8 @@ $pathB = @(
         Mirror = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
         Hash = '41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F'
-        Requirement = 'Scope + provenance design'
+        Requirement = 'Phase 124 source-equivalent runtime'
+        ImplementationStatus = 'NearParityControlled / DoneYazanAcceptedNearParity'
     }
     @{
         Title = 'Nvidia Settings'
@@ -76,6 +77,7 @@ $pathB = @(
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
         Hash = '903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5'
         Requirement = 'Driver/profile/settings design'
+        ImplementationStatus = 'NotImplemented / ScopeDesignOnly'
     }
     @{
         Title = 'Hdcp'
@@ -84,6 +86,7 @@ $pathB = @(
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/5 Hdcp.ps1'
         Hash = '5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A'
         Requirement = 'Driver/profile/settings design'
+        ImplementationStatus = 'NotImplemented / ScopeDesignOnly'
     }
     @{
         Title = 'P0 State'
@@ -92,6 +95,7 @@ $pathB = @(
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/6 P0 State.ps1'
         Hash = '382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC'
         Requirement = 'Driver/profile/settings design'
+        ImplementationStatus = 'ImplementedControlled / RestoreUnavailable'
     }
     @{
         Title = 'Msi Mode'
@@ -100,6 +104,7 @@ $pathB = @(
         Intake = 'intake/missing-ultimate-scripts/Ultimate/5 Graphics/7 Msi Mode.ps1'
         Hash = '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
         Requirement = 'Driver/profile/settings design and NVIDIA-only targeting decision'
+        ImplementationStatus = 'NotImplemented / ScopeDesignOnly'
     }
 )
 
@@ -152,7 +157,7 @@ foreach ($item in $pathB) {
         $item.Mirror,
         $item.Hash,
         $item.Requirement,
-        'NotImplemented / ScopeDesignOnly'
+        $item.ImplementationStatus
     )) {
         if (-not $designText.Contains($requiredText)) {
             throw "Scope design is missing expected text for $($item.Title): $requiredText"
@@ -285,7 +290,7 @@ foreach ($title in @($pathB | Where-Object { $_.Title -notin @('Driver Install L
 }
 $driverInstallLatestTool = @($allTools | Where-Object { $_.Title -eq 'Driver Install Latest' })
 if ($driverInstallLatestTool.Count -ne 1) {
-    throw 'Driver Install Latest must be active exactly once as the Phase 93 controlled manual-handoff tool.'
+    throw 'Driver Install Latest must be active exactly once as the Phase 124 source-equivalent Driver Install Latest tool.'
 }
 $nvidiaSettingsTool = @($allTools | Where-Object { $_.Title -eq 'Nvidia Settings' })
 if ($nvidiaSettingsTool.Count -ne 1) {

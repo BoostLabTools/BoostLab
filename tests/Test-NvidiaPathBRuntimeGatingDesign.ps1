@@ -434,7 +434,7 @@ foreach ($title in @($pathB | Where-Object { $_.Title -notin @('Driver Install L
 }
 $driverInstallLatestTool = @($allTools | Where-Object { $_.Title -eq 'Driver Install Latest' })
 if ($driverInstallLatestTool.Count -ne 1) {
-    throw 'Driver Install Latest must be active exactly once as the Phase 93 controlled manual-handoff tool.'
+    throw 'Driver Install Latest must be active exactly once as the Phase 124 source-equivalent Driver Install Latest tool.'
 }
 $nvidiaSettingsTool = @($allTools | Where-Object { $_.Title -eq 'Nvidia Settings' })
 if ($nvidiaSettingsTool.Count -ne 1) {

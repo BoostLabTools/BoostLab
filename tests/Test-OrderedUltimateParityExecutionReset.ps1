@@ -212,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'driver-install-latest') 'The first ordered pending parity target should advance past Driver Install Debloat & Settings near-parity acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'nvidia-settings') 'The first ordered pending parity target should advance past Driver Install Latest near-parity acceptance.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

@@ -178,7 +178,7 @@ foreach ($requiredPhrase in @(
 foreach ($classification in @(
     'Yazan-approved intake exception for future source promotion',
     'Scope + Provenance Design needed',
-    'Implemented as controlled manual handoff only in Phase 93',
+    'Implemented as source-equivalent branch-selected runtime in Phase 124',
     'Implemented as controlled registry behavior in Phase 95',
     'Implemented as controlled NVIDIA-only registry behavior in Phase 97',
     'Implemented as controlled security assistant in Phase 98',

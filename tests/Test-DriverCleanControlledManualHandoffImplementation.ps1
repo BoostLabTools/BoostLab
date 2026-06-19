@@ -381,16 +381,16 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 21) 'NearParityControlled baseline should be 21 after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 5) 'ManualHandoffOnly baseline should be 5 after Driver Install Debloat & Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 22) 'NearParityControlled baseline should be 22 after Driver Install Latest.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 4) 'ManualHandoffOnly baseline should be 4 after Driver Install Latest.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-latest') 'Next ordered pending parity target should advance to Driver Install Latest.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Next ordered pending parity target should advance to Nvidia Settings.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
     'Get-BoostLabToolActionDisplayLabel',
-    "'driver-clean', 'driver-install-latest', 'nvidia-settings'",
+    "'driver-clean', 'nvidia-settings'",
     "'Open' { return 'Manual Handoff' }",
     "'Apply' { return 'Apply Auto' }",
     'ActionName   = $actionName',

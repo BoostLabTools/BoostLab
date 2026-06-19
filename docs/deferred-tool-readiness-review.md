@@ -92,8 +92,9 @@ reference material. Standalone DDU, DDU use by other tools, and broad DDU
 artifact/production approval remain unapproved.
 
 Phase 94 implements `Nvidia Settings` as a controlled manual-handoff active
-tool for Path B step 2 after the Phase 93 `Driver Install Latest` manual
-handoff. It is no longer one of the unimplemented source-promoted intake
+tool for Path B step 2 after `Driver Install Latest`, which Phase 124 now
+implements as source-equivalent branch-selected runtime for this tool only.
+Nvidia Settings is no longer one of the unimplemented source-promoted intake
 candidates, but the source-promoted mirror file remains protected reference
 material. Auto remains blocked as `AutoBlockedUntilArtifactApproval`, and no
 7-Zip download/install, NVIDIA Profile Inspector download/execution, `.nip`

@@ -104,18 +104,17 @@ Future Path B stepper:
   `source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1`
 * SHA-256:
   `41C9DEA9AA5D208C9ED1EB7F1512B24251FBF4DC01C6DE2858B5B1A26C631A2F`
-* Short user-facing purpose: Locate and install the source-defined latest
-  NVIDIA driver path when future artifact provenance and installer execution
-  policy allow it.
-* Design status: `DesignPending` / `NotImplemented`.
-* Required future approvals before enabling: NVIDIA driver artifact provenance,
-  download policy, installer execution descriptor, driver state capture,
-  rollback/recovery plan, reboot/session handling, NVIDIA-only targeting, and
-  production allowlist approval.
-* Required Action Plan information: source checksum, selected path, NVIDIA-only
-  target, artifact provenance status, download destination, installer command,
-  expected exit behavior, driver capture status, reboot risk, and refusal
-  conditions.
+* Short user-facing purpose: Run the source-defined latest driver workflow for
+  the selected NVIDIA, AMD, or INTEL branch.
+* Design status: `NearParityControlled` / `DoneYazanAcceptedNearParity`.
+* Required future approvals before enabling: already enabled by Phase 124 for
+  this tool-specific source-equivalent runtime only; any reusable/global
+  artifact provenance, standalone driver artifact, Default, Restore, or
+  cross-tool AMD/INTEL approval remains unapproved.
+* Required Action Plan information: source checksum, selected branch, source
+  operation order, admin/internet checks, download destination when applicable,
+  installer or page handoff command, expected exit behavior, reboot/session
+  risk, and refusal conditions.
 * Required confirmation level: high-risk explicit confirmation.
 * Expected Latest Result fields: WorkflowId, SelectedPath, StepId, StepNumber,
   SourceChecksum, ArtifactProvenanceStatus, DriverCaptureStatus,

@@ -259,9 +259,17 @@
                     Order       = 3
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Path B step 1 of 5. Prepare NVIDIA driver install guidance without automated download, installer execution, external process launch, driver mutation, or reboot.'
-                    Actions     = @('Analyze', 'Open', 'Apply')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Run the source-equivalent NVIDIA, AMD, or INTEL latest driver workflow for one selected branch after explicit confirmation.'
+                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    SelectionMode = 'SingleSelect'
+                    SelectionRequiredActions = @('Open', 'Apply')
+                    SelectionLabel = 'Select exactly one GPU branch'
+                    SelectionItems = @(
+                        @{ Id = 'NVIDIA'; Title = 'NVIDIA'; SourceMenuNumber = 1 }
+                        @{ Id = 'AMD'; Title = 'AMD'; SourceMenuNumber = 2 }
+                        @{ Id = 'INTEL'; Title = 'INTEL'; SourceMenuNumber = 3 }
+                    )
                 }
                 @{
                     Id          = 'nvidia-settings'

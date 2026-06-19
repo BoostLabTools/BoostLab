@@ -9,6 +9,12 @@ $script:BoostLabLatestResultToolMetadata = $null
 $script:BoostLabLatestResultActionName = ''
 $script:BoostLabLatestResultText = ''
 $script:BoostLabToolSelectionControls = @{}
+$script:BoostLabActionInProgress = $false
+$script:BoostLabActionInProgressKey = ''
+$script:BoostLabAsyncActionState = @{
+    InProgress = $false
+    Key        = ''
+}
 
 function Get-BoostLabUiElement {
     param(
@@ -504,7 +510,14 @@ function Get-BoostLabToolActionDisplayLabel {
     )
 
     $toolId = [string]$ToolMetadata['Id']
-    if ($toolId -in @('driver-clean', 'driver-install-latest', 'nvidia-settings')) {
+    if ($toolId -eq 'driver-install-latest') {
+        switch ($ActionName) {
+            'Open' { return 'Open Intel Driver Page' }
+            'Apply' { return 'Apply Source Workflow' }
+        }
+    }
+
+    if ($toolId -in @('driver-clean', 'nvidia-settings')) {
         switch ($ActionName) {
             'Open' { return 'Manual Handoff' }
             'Apply' { return 'Apply Auto' }
@@ -540,6 +553,73 @@ function New-BoostLabUiActionFailureResult {
         Data               = $null
         Timestamp          = Get-Date
     }
+}
+
+function New-BoostLabUiActionBusyResult {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    return [pscustomobject]@{
+        Success            = $false
+        ToolId             = [string]$ToolMetadata['Id']
+        ToolTitle          = [string]$ToolMetadata['Title']
+        Action             = $ActionName
+        Status             = 'Warning'
+        CommandStatus      = 'Blocked before execution'
+        VerificationStatus = 'NotApplicable'
+        Message            = $Message
+        RestartRequired    = $false
+        Cancelled          = $false
+        ChangesExecuted    = $false
+        ActionPlan         = $null
+        VerificationResult = $null
+        Data               = $null
+        Warnings           = @($Message)
+        Errors             = @()
+        Timestamp          = Get-Date
+    }
+}
+
+function Complete-BoostLabToolCardAction {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Context,
+
+        [Parameter(Mandatory)]
+        [object]$Result
+    )
+
+    $toolMetadata = $Context.ToolMetadata
+    $actionName = [string]$Context.ActionName
+
+    Add-BoostLabToolActionActivityEntry `
+        -ToolMetadata $toolMetadata `
+        -ActionName $actionName `
+        -Result $Result
+
+    Show-BoostLabActionResult `
+        -ToolMetadata $toolMetadata `
+        -ActionName $actionName `
+        -Result $Result
+
+    $Context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $Result)
+    $resultToolTitle = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'ToolTitle' `
+        -DefaultValue ([string]$toolMetadata['Title']))
+    $resultMessage = [string](Get-BoostLabObjectPropertyValue `
+        -InputObject $Result `
+        -PropertyName 'Message' `
+        -DefaultValue 'No result message was provided.')
+    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "${resultToolTitle}: $resultMessage"
 }
 
 function Show-BoostLabActionResult {
@@ -1413,6 +1493,22 @@ function Get-BoostLabToolCardActionOptions {
         }
         $options['SelectedAppIds'] = @($selectedIds)
     }
+    elseif ($selectionMode -eq 'SingleSelect' -and $actionName -in $selectionRequiredActions) {
+        $selectedIds = @()
+        if ($script:BoostLabToolSelectionControls.ContainsKey($toolId)) {
+            $selectedIds = @(
+                $script:BoostLabToolSelectionControls[$toolId] |
+                    Where-Object { [bool]$_.IsChecked } |
+                    ForEach-Object { [string]$_.Tag }
+            )
+        }
+        $options['Branch'] = if ($selectedIds.Count -eq 1) {
+            [string]$selectedIds[0]
+        }
+        else {
+            ''
+        }
+    }
 
     return $options
 }
@@ -1472,28 +1568,559 @@ function Invoke-BoostLabToolCardAction {
         }
     }
 
-    Add-BoostLabToolActionActivityEntry `
-        -ToolMetadata $toolMetadata `
-        -ActionName $actionName `
-        -Result $result
-
-    Show-BoostLabActionResult `
-        -ToolMetadata $toolMetadata `
-        -ActionName $actionName `
-        -Result $result
-
-    $Context.StatusText.Text = 'Status: {0}' -f (Get-BoostLabResultStatus -Result $result)
-    $resultToolTitle = [string](Get-BoostLabObjectPropertyValue `
-        -InputObject $result `
-        -PropertyName 'ToolTitle' `
-        -DefaultValue ([string]$toolMetadata['Title']))
-    $resultMessage = [string](Get-BoostLabObjectPropertyValue `
-        -InputObject $result `
-        -PropertyName 'Message' `
-        -DefaultValue 'No result message was provided.')
-    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "${resultToolTitle}: $resultMessage"
+    Complete-BoostLabToolCardAction -Context $Context -Result $result
 
     return $result
+}
+
+function Test-BoostLabToolUsesAsyncUiDispatch {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata
+    )
+
+    $toolId = [string]$ToolMetadata['Id']
+    return $toolId -in @(
+        'bios-information'
+        'bios-settings'
+        'reinstall'
+        'unattended'
+        'updates-drivers-block'
+        'to-bios'
+        'bitlocker'
+        'memory-compression'
+        'date-language-region-time'
+        'startup-apps-settings'
+        'startup-apps-task-manager'
+        'background-apps'
+        'edge-settings'
+        'store-settings'
+        'updates-pause'
+        'installers'
+        'driver-clean'
+        'driver-install-debloat-settings'
+        'driver-install-latest'
+    )
+}
+
+function Add-BoostLabAsyncDiagnosticsToResult {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Result,
+
+        [AllowNull()]
+        [object]$Diagnostics
+    )
+
+    if ($null -eq $Diagnostics) {
+        return $Result
+    }
+
+    $hasDiagnostics = $false
+    foreach ($propertyName in @('Output', 'Error', 'Warning', 'Progress', 'Verbose', 'Debug', 'Information')) {
+        $property = $Diagnostics.PSObject.Properties[$propertyName]
+        if ($null -ne $property -and @($property.Value).Count -gt 0) {
+            $hasDiagnostics = $true
+            break
+        }
+    }
+    if (-not $hasDiagnostics) {
+        return $Result
+    }
+
+    if ($null -eq $Result.PSObject.Properties['Data'] -or $null -eq $Result.Data) {
+        $Result | Add-Member -NotePropertyName 'Data' -NotePropertyValue ([pscustomobject]@{}) -Force
+    }
+
+    $Result.Data | Add-Member -NotePropertyName 'AsyncDiagnostics' -NotePropertyValue $Diagnostics -Force
+    return $Result
+}
+
+function Get-BoostLabAsyncExceptionDiagnosticMessage {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Prefix,
+
+        [Parameter(Mandatory)]
+        [System.Exception]$Exception
+    )
+
+    $parts = [System.Collections.Generic.List[string]]::new()
+    $parts.Add(('{0}: {1}' -f $Prefix, [string]$Exception.Message))
+
+    $innerException = $Exception.InnerException
+    while ($null -ne $innerException) {
+        $parts.Add(('Inner exception: {0}' -f [string]$innerException.Message))
+        $innerException = $innerException.InnerException
+    }
+
+    $errorRecord = $null
+    if ($null -ne $Exception.PSObject.Properties['ErrorRecord']) {
+        $errorRecord = $Exception.ErrorRecord
+    }
+    elseif ($null -ne $Exception.InnerException -and $null -ne $Exception.InnerException.PSObject.Properties['ErrorRecord']) {
+        $errorRecord = $Exception.InnerException.ErrorRecord
+    }
+
+    if ($null -ne $errorRecord) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$errorRecord.ScriptStackTrace)) {
+            $parts.Add(('Script stack: {0}' -f [string]$errorRecord.ScriptStackTrace))
+        }
+        if (
+            $null -ne $errorRecord.InvocationInfo -and
+            -not [string]::IsNullOrWhiteSpace([string]$errorRecord.InvocationInfo.PositionMessage)
+        ) {
+            $parts.Add(('Invocation: {0}' -f [string]$errorRecord.InvocationInfo.PositionMessage))
+        }
+    }
+
+    return ($parts -join ' | ')
+}
+
+function New-BoostLabAsyncRuntimeFailureResult {
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ToolMetadata,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [AllowNull()]
+        [object]$Diagnostics = $null
+    )
+
+    $result = New-BoostLabUiActionFailureResult `
+        -ToolMetadata $ToolMetadata `
+        -ActionName $ActionName `
+        -Message $Message
+    $result | Add-Member -NotePropertyName 'CommandStatus' -NotePropertyValue 'Completed with errors' -Force
+    $result | Add-Member -NotePropertyName 'VerificationStatus' -NotePropertyValue 'Failed' -Force
+    $result | Add-Member -NotePropertyName 'Errors' -NotePropertyValue @($Message) -Force
+    $result | Add-Member -NotePropertyName 'Warnings' -NotePropertyValue @() -Force
+    return Add-BoostLabAsyncDiagnosticsToResult -Result $result -Diagnostics $Diagnostics
+}
+
+function Get-BoostLabAsyncStreamDiagnostics {
+    param(
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PowerShell]$PowerShell,
+
+        [AllowNull()]
+        [object[]]$Output = @()
+    )
+
+    return [pscustomobject]@{
+        Output      = @($Output | ForEach-Object { ConvertTo-BoostLabDiagnosticValueText $_ })
+        Error       = @($PowerShell.Streams.Error | ForEach-Object { [string]$_ })
+        Warning     = @($PowerShell.Streams.Warning | ForEach-Object { [string]$_ })
+        Progress    = @($PowerShell.Streams.Progress | ForEach-Object {
+            '{0} {1} {2}%' -f $_.Activity, $_.StatusDescription, $_.PercentComplete
+        })
+        Verbose     = @($PowerShell.Streams.Verbose | ForEach-Object { [string]$_ })
+        Debug       = @($PowerShell.Streams.Debug | ForEach-Object { [string]$_ })
+        Information = @($PowerShell.Streams.Information | ForEach-Object { [string]$_.MessageData })
+    }
+}
+
+function Invoke-BoostLabToolCardActionAsync {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Context
+    )
+
+    $toolMetadata = $Context.ToolMetadata
+    $actionName = [string]$Context.ActionName
+    $toolId = [string]$toolMetadata['Id']
+    $actionKey = '{0}:{1}' -f $toolId, $actionName
+    $asyncActionState = $script:BoostLabAsyncActionState
+
+    if (-not (Test-BoostLabToolUsesAsyncUiDispatch -ToolMetadata $toolMetadata)) {
+        Invoke-BoostLabToolCardAction -Context $Context | Out-Null
+        return
+    }
+
+    if ([bool]$asyncActionState['InProgress']) {
+        $runningActionKey = [string]$asyncActionState['Key']
+        if ([string]::IsNullOrWhiteSpace($runningActionKey)) {
+            $runningActionKey = [string]$script:BoostLabActionInProgressKey
+        }
+        $busyResult = New-BoostLabUiActionBusyResult `
+            -ToolMetadata $toolMetadata `
+            -ActionName $actionName `
+            -Message ("Another BoostLab action is already running: {0}. Wait for it to finish before starting {1}." -f $runningActionKey, $actionKey)
+        Complete-BoostLabToolCardAction -Context $Context -Result $busyResult
+        return
+    }
+
+    $actionOptions = Get-BoostLabToolCardActionOptions -Context $Context
+    (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$toolMetadata['Title']
+    (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = $actionName.ToUpperInvariant()
+
+    try {
+        $actionPlan = New-BoostLabActionPlan `
+            -ToolMetadata $toolMetadata `
+            -ActionName $actionName `
+            -IsDryRun:$false
+    }
+    catch {
+        $failureResult = New-BoostLabUiActionFailureResult `
+            -ToolMetadata $toolMetadata `
+            -ActionName $actionName `
+            -Message "Tool action planning failed: $($_.Exception.Message)"
+        Complete-BoostLabToolCardAction -Context $Context -Result $failureResult
+        return
+    }
+
+    if ([bool]$actionPlan.NeedsExplicitConfirmation -and $actionName -ne 'Analyze') {
+        $confirmed = $false
+        try {
+            $confirmed = Show-BoostLabActionPlanConfirmation -ActionPlan $actionPlan
+        }
+        catch {
+            $failureResult = New-BoostLabUiActionFailureResult `
+                -ToolMetadata $toolMetadata `
+                -ActionName $actionName `
+                -Message "Tool action confirmation failed: $($_.Exception.Message)"
+            $failureResult | Add-Member -NotePropertyName 'ActionPlan' -NotePropertyValue $actionPlan -Force
+            Complete-BoostLabToolCardAction -Context $Context -Result $failureResult
+            return
+        }
+
+        if (-not $confirmed) {
+            $cancelledResult = [pscustomobject]@{
+                Success         = $false
+                ToolId          = [string]$toolMetadata['Id']
+                ToolTitle       = [string]$toolMetadata['Title']
+                Action          = $actionName
+                Status          = 'Cancelled'
+                CommandStatus   = 'Cancelled before execution'
+                Message         = 'Cancelled by user'
+                RestartRequired = $false
+                Cancelled       = $true
+                ChangesExecuted = $false
+                ActionPlan      = $actionPlan
+                Timestamp       = Get-Date
+            }
+            Complete-BoostLabToolCardAction -Context $Context -Result $cancelledResult
+            return
+        }
+    }
+
+    $asyncActionState['InProgress'] = $true
+    $asyncActionState['Key'] = $actionKey
+    $script:BoostLabActionInProgress = $true
+    $script:BoostLabActionInProgressKey = $actionKey
+    $Context.StatusText.Text = 'Status: Running...'
+    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = ('Running {0}: {1}...' -f [string]$toolMetadata['Title'], $actionName)
+    if ($null -ne $Context.PSObject.Properties['ActionButton'] -and $null -ne $Context.ActionButton) {
+        $Context.ActionButton.IsEnabled = $false
+        $Context.ActionButton.Content = 'Running...'
+    }
+
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $workerScript = {
+        param(
+            [Parameter(Mandatory)]
+            [string]$ProjectRoot,
+
+            [Parameter(Mandatory)]
+            [System.Collections.IDictionary]$ToolMetadata,
+
+            [Parameter(Mandatory)]
+            [string]$ActionName,
+
+            [AllowNull()]
+            [hashtable]$ActionOptions = @{}
+        )
+
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+
+        if ($null -eq $ActionOptions) {
+            $ActionOptions = @{}
+        }
+        else {
+            $normalizedActionOptions = @{}
+            foreach ($optionName in @($ActionOptions.Keys)) {
+                $optionValue = $ActionOptions[$optionName]
+                if ($null -eq $optionValue) {
+                    $normalizedActionOptions[[string]$optionName] = $null
+                }
+                elseif ($optionValue -is [array]) {
+                    $normalizedActionOptions[[string]$optionName] = @($optionValue)
+                }
+                else {
+                    $normalizedActionOptions[[string]$optionName] = $optionValue
+                }
+            }
+            $ActionOptions = $normalizedActionOptions
+        }
+
+        foreach ($relativeModulePath in @(
+            'core\Environment.psm1'
+            'core\Logging.psm1'
+            'core\ActionPlan.psm1'
+            'core\Safety.psm1'
+            'core\State.psm1'
+            'core\Verification.psm1'
+            'core\Execution.psm1'
+        )) {
+            $modulePath = Join-Path $ProjectRoot $relativeModulePath
+            if (Test-Path -LiteralPath $modulePath -PathType Leaf) {
+                Import-Module -Name $modulePath -Force -ErrorAction Stop
+            }
+        }
+
+        if (Get-Command -Name 'Initialize-BoostLabLogging' -ErrorAction SilentlyContinue) {
+            Initialize-BoostLabLogging | Out-Null
+        }
+        if (Get-Command -Name 'Initialize-BoostLabState' -ErrorAction SilentlyContinue) {
+            Initialize-BoostLabState | Out-Null
+        }
+
+        Invoke-BoostLabToolAction `
+            -ToolMetadata $ToolMetadata `
+            -ActionName $ActionName `
+            -ActionOptions $ActionOptions `
+            -RiskConfirmed
+    }
+
+    $runspace = [runspacefactory]::CreateRunspace()
+    $runspace.ApartmentState = [System.Threading.ApartmentState]::STA
+    $runspace.ThreadOptions = [System.Management.Automation.Runspaces.PSThreadOptions]::ReuseThread
+    $runspace.Open()
+
+    $powerShell = [powershell]::Create()
+    $powerShell.Runspace = $runspace
+    [void]$powerShell.AddScript($workerScript)
+    [void]$powerShell.AddArgument($projectRoot)
+    [void]$powerShell.AddArgument($toolMetadata)
+    [void]$powerShell.AddArgument($actionName)
+    [void]$powerShell.AddArgument($actionOptions)
+
+    try {
+        $asyncResult = $powerShell.BeginInvoke()
+    }
+    catch {
+        $asyncActionState['InProgress'] = $false
+        $asyncActionState['Key'] = ''
+        $script:BoostLabActionInProgress = $false
+        $script:BoostLabActionInProgressKey = ''
+        if ($null -ne $Context.PSObject.Properties['ActionButton'] -and $null -ne $Context.ActionButton) {
+            $Context.ActionButton.IsEnabled = $true
+            $Context.ActionButton.Content = [string]$Context.ActionLabel
+        }
+        $powerShell.Dispose()
+        $runspace.Dispose()
+        $failureResult = New-BoostLabUiActionFailureResult `
+            -ToolMetadata $toolMetadata `
+            -ActionName $actionName `
+            -Message "Tool background launch failed: $($_.Exception.Message)"
+        $failureResult | Add-Member -NotePropertyName 'ActionPlan' -NotePropertyValue $actionPlan -Force
+        Complete-BoostLabToolCardAction -Context $Context -Result $failureResult
+        return
+    }
+
+    $getDiagnosticsCommand = ${function:Get-BoostLabAsyncStreamDiagnostics}
+    $getExceptionMessageCommand = ${function:Get-BoostLabAsyncExceptionDiagnosticMessage}
+    $newFailureResultCommand = ${function:New-BoostLabAsyncRuntimeFailureResult}
+    $addDiagnosticsCommand = ${function:Add-BoostLabAsyncDiagnosticsToResult}
+    $completeActionCommand = ${function:Complete-BoostLabToolCardAction}
+    $newMinimalFailureResultCommand = {
+        param(
+            [Parameter(Mandatory)]
+            [System.Collections.IDictionary]$ToolMetadata,
+
+            [Parameter(Mandatory)]
+            [string]$ActionName,
+
+            [Parameter(Mandatory)]
+            [string]$Message,
+
+            [AllowNull()]
+            [object]$Diagnostics = $null
+        )
+
+        $data = [pscustomobject]@{}
+        if ($null -ne $Diagnostics) {
+            $data | Add-Member -NotePropertyName 'AsyncDiagnostics' -NotePropertyValue $Diagnostics -Force
+        }
+
+        return [pscustomobject]@{
+            Success            = $false
+            ToolId             = [string]$ToolMetadata['Id']
+            ToolTitle          = [string]$ToolMetadata['Title']
+            Action             = $ActionName
+            Status             = 'Error'
+            CommandStatus      = 'Completed with errors'
+            VerificationStatus = 'Failed'
+            Message            = $Message
+            RestartRequired    = $false
+            Cancelled          = $false
+            ChangesExecuted    = $false
+            ActionPlan         = $null
+            VerificationResult = $null
+            Data               = $data
+            Warnings           = @()
+            Errors             = @($Message)
+            Timestamp          = Get-Date
+        }
+    }.GetNewClosure()
+
+    $timer = [System.Windows.Threading.DispatcherTimer]::new()
+    $timer.Interval = [TimeSpan]::FromMilliseconds(250)
+    $timer.Add_Tick(({
+        if (-not $asyncResult.IsCompleted) {
+            return
+        }
+
+        $timer.Stop()
+        $output = @()
+        $result = $null
+        $diagnostics = $null
+        $completionError = $null
+        try {
+            try {
+                $output = @($powerShell.EndInvoke($asyncResult))
+            }
+            catch {
+                $completionError = $_.Exception
+            }
+
+            try {
+                $diagnostics = & $getDiagnosticsCommand -PowerShell $powerShell -Output $output
+            }
+            catch {
+                $diagnostics = [pscustomobject]@{
+                    Output      = @($output | ForEach-Object { [string]$_ })
+                    Error       = @("Async diagnostics collection failed: $($_.Exception.Message)")
+                    Warning     = @()
+                    Progress    = @()
+                    Verbose     = @()
+                    Debug       = @()
+                    Information = @()
+                }
+            }
+
+            if ($null -ne $completionError) {
+                $completionMessage = & $getExceptionMessageCommand `
+                    -Prefix 'Tool background execution failed' `
+                    -Exception $completionError
+                try {
+                    $result = & $newFailureResultCommand `
+                        -ToolMetadata $toolMetadata `
+                        -ActionName $actionName `
+                        -Message $completionMessage `
+                        -Diagnostics $diagnostics
+                }
+                catch {
+                    $result = & $newMinimalFailureResultCommand `
+                        -ToolMetadata $toolMetadata `
+                        -ActionName $actionName `
+                        -Message $completionMessage `
+                        -Diagnostics $diagnostics
+                }
+            }
+            elseif ($output.Count -gt 0) {
+                $result = $output[$output.Count - 1]
+            }
+            else {
+                try {
+                    $result = & $newFailureResultCommand `
+                        -ToolMetadata $toolMetadata `
+                        -ActionName $actionName `
+                        -Message 'Tool background execution returned no result.' `
+                        -Diagnostics $diagnostics
+                }
+                catch {
+                    $result = & $newMinimalFailureResultCommand `
+                        -ToolMetadata $toolMetadata `
+                        -ActionName $actionName `
+                        -Message 'Tool background execution returned no result.' `
+                        -Diagnostics $diagnostics
+                }
+            }
+        }
+        catch {
+            $completionMessage = & $getExceptionMessageCommand `
+                -Prefix 'Tool async completion failed' `
+                -Exception $_.Exception
+            try {
+                $result = & $newFailureResultCommand `
+                    -ToolMetadata $toolMetadata `
+                    -ActionName $actionName `
+                    -Message $completionMessage `
+                    -Diagnostics $diagnostics
+            }
+            catch {
+                $result = & $newMinimalFailureResultCommand `
+                    -ToolMetadata $toolMetadata `
+                    -ActionName $actionName `
+                    -Message $completionMessage `
+                    -Diagnostics $diagnostics
+            }
+        }
+        finally {
+            try {
+                $powerShell.Dispose()
+            }
+            catch {
+            }
+            try {
+                $runspace.Dispose()
+            }
+            catch {
+            }
+            $asyncActionState['InProgress'] = $false
+            $asyncActionState['Key'] = ''
+            $script:BoostLabActionInProgress = $false
+            $script:BoostLabActionInProgressKey = ''
+            if ($null -ne $Context.PSObject.Properties['ActionButton'] -and $null -ne $Context.ActionButton) {
+                $Context.ActionButton.IsEnabled = $true
+                $Context.ActionButton.Content = [string]$Context.ActionLabel
+            }
+        }
+
+        if ($null -eq $result) {
+            try {
+                $result = & $newFailureResultCommand `
+                    -ToolMetadata $toolMetadata `
+                    -ActionName $actionName `
+                    -Message 'Tool background execution returned no result.' `
+                    -Diagnostics $diagnostics
+            }
+            catch {
+                $result = & $newMinimalFailureResultCommand `
+                    -ToolMetadata $toolMetadata `
+                    -ActionName $actionName `
+                    -Message 'Tool background execution returned no result.' `
+                    -Diagnostics $diagnostics
+            }
+        }
+        elseif ($null -ne $diagnostics) {
+            try {
+                $result = & $addDiagnosticsCommand -Result $result -Diagnostics $diagnostics
+            }
+            catch {
+            }
+        }
+
+        try {
+            & $completeActionCommand -Context $Context -Result $result
+        }
+        catch {
+            try {
+                $Context.StatusText.Text = 'Status: Error'
+                (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = "Tool result rendering failed: $($_.Exception.Message)"
+            }
+            catch {
+            }
+        }
+    }).GetNewClosure())
+    $timer.Start()
 }
 
 function Add-BoostLabStartupActivityEntry {
@@ -1722,6 +2349,9 @@ function New-BoostLabToolCard {
     if ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect') {
         $card.Height = 458
     }
+    elseif ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'SingleSelect') {
+        $card.Height = 372
+    }
     $card.Margin = [System.Windows.Thickness]::new(0, 0, 14, 14)
     $card.Padding = [System.Windows.Thickness]::new(16)
     $card.CornerRadius = [System.Windows.CornerRadius]::new(10)
@@ -1829,31 +2459,51 @@ function New-BoostLabToolCard {
     $description.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
     $contentPanel.Children.Add($description) | Out-Null
 
-    if ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect' -and $Tool.Contains('SelectionItems')) {
+    $selectionMode = if ($Tool.Contains('SelectionMode')) {
+        [string]$Tool['SelectionMode']
+    }
+    else {
+        ''
+    }
+    if ($selectionMode -in @('MultiSelect', 'SingleSelect') -and $Tool.Contains('SelectionItems')) {
         $selectionLabel = [System.Windows.Controls.TextBlock]::new()
         $selectionLabel.Margin = [System.Windows.Thickness]::new(0, 10, 0, 5)
-        $selectionLabel.Text = 'Select apps for Apply'
+        $selectionLabel.Text = if ($Tool.Contains('SelectionLabel')) {
+            [string]$Tool['SelectionLabel']
+        }
+        elseif ($selectionMode -eq 'SingleSelect') {
+            'Select one option'
+        }
+        else {
+            'Select apps for Apply'
+        }
         $selectionLabel.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E0E7FF')
         $selectionLabel.FontSize = 11
         $selectionLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
         $contentPanel.Children.Add($selectionLabel) | Out-Null
 
         $selectionScroll = [System.Windows.Controls.ScrollViewer]::new()
-        $selectionScroll.MaxHeight = 172
+        $selectionScroll.MaxHeight = if ($selectionMode -eq 'SingleSelect') { 96 } else { 172 }
         $selectionScroll.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
         $selectionScroll.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
 
         $selectionPanel = [System.Windows.Controls.StackPanel]::new()
         $script:BoostLabToolSelectionControls[$toolId] = @()
         foreach ($selectionItem in @($Tool['SelectionItems'])) {
-            $checkBox = [System.Windows.Controls.CheckBox]::new()
-            $checkBox.Content = ('{0}. {1}' -f [int]$selectionItem['SourceMenuNumber'], [string]$selectionItem['Title'])
-            $checkBox.Tag = [string]$selectionItem['Id']
-            $checkBox.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
-            $checkBox.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#CBD5E1')
-            $checkBox.FontSize = 11
-            $selectionPanel.Children.Add($checkBox) | Out-Null
-            $script:BoostLabToolSelectionControls[$toolId] = @($script:BoostLabToolSelectionControls[$toolId]) + @($checkBox)
+            if ($selectionMode -eq 'SingleSelect') {
+                $selectionControl = [System.Windows.Controls.RadioButton]::new()
+                $selectionControl.GroupName = "BoostLab_$($toolId)_Selection"
+            }
+            else {
+                $selectionControl = [System.Windows.Controls.CheckBox]::new()
+            }
+            $selectionControl.Content = ('{0}. {1}' -f [int]$selectionItem['SourceMenuNumber'], [string]$selectionItem['Title'])
+            $selectionControl.Tag = [string]$selectionItem['Id']
+            $selectionControl.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
+            $selectionControl.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#CBD5E1')
+            $selectionControl.FontSize = 11
+            $selectionPanel.Children.Add($selectionControl) | Out-Null
+            $script:BoostLabToolSelectionControls[$toolId] = @($script:BoostLabToolSelectionControls[$toolId]) + @($selectionControl)
         }
         $selectionScroll.Content = $selectionPanel
         $contentPanel.Children.Add($selectionScroll) | Out-Null
@@ -1887,6 +2537,9 @@ function New-BoostLabToolCard {
         $actionDisplayLabel = Get-BoostLabToolActionDisplayLabel -ToolMetadata $Tool -ActionName $actionName
         $actionButton = [System.Windows.Controls.Button]::new()
         $actionButton.Content = $actionDisplayLabel
+        if ($toolId -eq 'driver-install-latest' -and $actionName -eq 'Open') {
+            $actionButton.ToolTip = 'Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.'
+        }
         $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $actionButton.Margin = [System.Windows.Thickness]::new(0, 0, 7, 0)
         $actionButton.Tag = [pscustomobject]@{
@@ -1894,12 +2547,13 @@ function New-BoostLabToolCard {
             ActionName   = $actionName
             ActionLabel  = $actionDisplayLabel
             StatusText   = $status
+            ActionButton = $actionButton
         }
         $actionButton.Style = $script:BoostLabWindow.FindResource('ActionButtonStyle')
         $actionButton.Add_Click({
             $context = $this.Tag
             try {
-                Invoke-BoostLabToolCardAction -Context $context | Out-Null
+                Invoke-BoostLabToolCardActionAsync -Context $context | Out-Null
             }
             catch {
                 $message = "Tool result presentation failed: $($_.Exception.Message)"

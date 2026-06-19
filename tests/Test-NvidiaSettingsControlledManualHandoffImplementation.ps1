@@ -176,7 +176,7 @@ foreach ($needle in @(
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
-    "'driver-clean', 'driver-install-latest', 'nvidia-settings'",
+    "'driver-clean', 'nvidia-settings'",
     "'Open' { return 'Manual Handoff' }",
     "'Apply' { return 'Apply Auto' }"
 )) {

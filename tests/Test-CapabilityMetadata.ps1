@@ -131,7 +131,7 @@ foreach ($tool in $tools) {
     }
     $hasDefaultAction = 'Default' -in @($tool['Actions'])
     $defaultActionIsBlockedUntilApprovedContract = (
-        [string]$tool['Id'] -in @('bitlocker', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'updates-drivers-block') -and
+        [string]$tool['Id'] -in @('bitlocker', 'installers', 'edge-webview', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'updates-drivers-block') -and
         $hasDefaultAction -and
         -not [bool]$capabilities['SupportsDefault']
     )
@@ -140,7 +140,7 @@ foreach ($tool in $tools) {
     }
     $hasRestoreAction = 'Restore' -in @($tool['Actions'])
     $restoreActionIsBlockedUntilSelectedState = (
-        [string]$tool['Id'] -in @('hdcp', 'p0-state', 'msi-mode', 'bitlocker', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'edge-settings') -and
+        [string]$tool['Id'] -in @('hdcp', 'p0-state', 'msi-mode', 'bitlocker', 'installers', 'edge-webview', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'edge-settings') -and
         $hasRestoreAction -and
         -not [bool]$capabilities['SupportsRestore']
     )

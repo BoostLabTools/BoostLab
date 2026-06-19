@@ -107,13 +107,13 @@ Assert-BoostLabCondition ((@($currentRecord.ApprovedSourceBranches) -join '|') -
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-latest') 'Next ordered parity target should advance to Driver Install Latest after Phase 123.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Next ordered parity target should advance to Nvidia Settings after Phase 124.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled baseline count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly baseline count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 21) 'NearParityControlled count should be 21 after Phase 123.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 5) 'ManualHandoffOnly count should be 5 after Phase 123.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 22) 'NearParityControlled count should be 22 after Phase 124.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 4) 'ManualHandoffOnly count should be 4 after Phase 124.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath

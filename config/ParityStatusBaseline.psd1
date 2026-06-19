@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 21
+        NearParityControlled = 22
         ControlledSubset = 3
-        ManualHandoffOnly = 5
+        ManualHandoffOnly = 4
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -299,11 +299,13 @@
             StageOrder = 5
             ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'NVIDIA driver download and installer execution remain blocked.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Driver Install Latest behavior.'
             YazanFinalException = $false
-            NextParityAction = 'Approve driver artifact/provenance, installer execution, driver rollback, and reboot/session handling.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'nvidia-settings'

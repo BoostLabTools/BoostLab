@@ -34,7 +34,7 @@ Phase 75 note: NVIDIA App Path B production allowlist planning lives in `docs/to
 
 Phase 76 note: NVIDIA App Path B artifact provenance review lives in `docs/tool-designs/nvidia-path-b-artifact-provenance-review.md`. It documents artifact evidence and approval blockers without approving artifacts, downloads, installers, production scopes, or provenance config.
 
-Phase 94 note: `Driver Install Latest` and `Nvidia Settings` are implemented as controlled manual-handoff active tools for Path B steps 1 and 2 only. Auto remains blocked as `AutoBlockedUntilArtifactApproval`; no NVIDIA driver download, installer execution, 7-Zip download/install, NVIDIA Profile Inspector execution, `.nip` import/export, browser opening, Control Panel launch, external process start, registry/profile/driver/system mutation, reboot, session change, Default, or Restore was approved.
+Phase 124 note: `Driver Install Latest` is implemented as a source-equivalent branch-selected runtime for its source-defined NVIDIA, AMD, and INTEL branches in this tool only. `Nvidia Settings` remains a controlled manual-handoff active tool for Path B step 2. No reusable/global artifact provenance, standalone driver artifact approval, 7-Zip download/install, NVIDIA Profile Inspector download/execution, `.nip` import/export, production allowlist, cross-tool AMD/Intel scope, Default, or Restore was approved.
 
 Phase 77 note: NVIDIA profile state capture model lives in `docs/nvidia-profile-state-capture-model.md`. It documents profile capture/restore/import/export requirements without approving NVIDIA Profile Inspector execution, `.nip` operations, profile writes, runtime behavior, or production scopes.
 
@@ -52,7 +52,7 @@ Phase 92 note: `Driver Clean` was first implemented as controlled manual handoff
 
 Phase 120 note: `Driver Clean` now preserves the exact source-equivalent Auto and Manual workflow after BoostLab confirmation. It downloads the source-defined 7-Zip and DDU artifacts, installs/configures 7-Zip, extracts/configures DDU, captures and sets the source driver-search policy value, creates the source-defined RunOnce/Safe Mode scripts, enables Safe Mode with `bcdedit`, and restarts. This approval is Driver Clean-specific only and does not approve standalone DDU or DDU use outside Driver Clean.
 
-Phase 93/94 note: `Driver Install Latest` and `Nvidia Settings` are implemented active tools using controlled manual handoff only for Path B steps 1 and 2. They verify source mirror checksums, report ManualHandoffOnly, keep Auto blocked as `AutoBlockedUntilArtifactApproval`, perform no NVIDIA driver download, installer execution, 7-Zip download/install, Profile Inspector execution, `.nip` import/export, browser opening, Control Panel launch, external process start, registry/profile/driver/system mutation, reboot, or session change, and leave the remaining Path B steps separate and unimplemented.
+Phase 124/94 note: `Driver Install Latest` is implemented as source-equivalent branch-selected runtime for Path B step 1 with explicit BoostLab confirmation and test-safe executor injection. `Nvidia Settings` remains controlled manual handoff only for Path B step 2. Driver Install Latest no longer reports ManualHandoffOnly; it preserves the source-defined NVIDIA, AMD, and INTEL branches for this tool only while leaving reusable/global artifact approvals, Default, Restore, and cross-tool AMD/Intel scope unapproved.
 
 Phase 95 note: `HDCP` is implemented as Path B step 3 using controlled
 NVIDIA-only registry targeting. It verifies the source mirror checksum, discovers
