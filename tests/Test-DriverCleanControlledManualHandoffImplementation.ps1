@@ -381,11 +381,11 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 20) 'NearParityControlled baseline should be 20 after Driver Clean.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 6) 'ManualHandoffOnly baseline should be 6 after Driver Clean.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 21) 'NearParityControlled baseline should be 21 after Driver Install Debloat & Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 5) 'ManualHandoffOnly baseline should be 5 after Driver Install Debloat & Settings.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'Next ordered pending parity target should advance to Driver Install Debloat & Settings.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-latest') 'Next ordered pending parity target should advance to Driver Install Latest.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(

@@ -2,13 +2,15 @@
 
 ## Purpose
 
-This document defines the exact future scope and provenance requirements before
-the BoostLab `Driver Install Debloat & Settings` tool can be safely
-implemented.
+This document defines the exact scope and provenance requirements for the
+BoostLab `Driver Install Debloat & Settings` tool.
 
-This is documentation and planning only. It approves no production download,
-installer, executable launch, driver, driver-profile, AppX, registry, file,
-service, task, cleanup, reboot, Default, or Restore scope.
+Phase 123 implements the source-equivalent NVIDIA, AMD, and INTEL runtime for
+this tool only using branch selection, GUI confirmation, operation descriptors,
+logging, and test-safe executor injection. This document still approves no
+reusable/global production download, installer, executable launch, driver,
+driver-profile, AppX, registry, file, service, task, cleanup, reboot, Default,
+or Restore scope outside that tool-specific module path.
 
 ## Source Reference
 
@@ -30,9 +32,8 @@ Phase 122 records a tool-specific branch-scope decision for this tool only:
   for future exact parity implementation: NVIDIA, AMD, and INTEL.
 * This does not expand project-wide AMD or Intel GPU support.
 * This does not approve unrelated AMD/Intel behavior in any other tool.
-* This does not approve production execution yet. Every branch still needs exact
-  source-derived descriptors, confirmation, state capture, verification, and
-  mocked validators before automated runtime behavior can be enabled.
+* Phase 123 implements exact source-derived descriptors, confirmation, logging,
+  and mocked validators for all three branches inside this tool only.
 * Shared post-branch behavior must be reviewed carefully. It follows driver
   install/debloat work and includes registry writes plus an unconditional
   restart, so it also needs explicit implementation coverage and safety gates.
@@ -73,11 +74,13 @@ Observed inventory counts from the source:
 ## Current Decision
 
 Driver Install Debloat & Settings was implemented in Phase 99 as controlled
-manual handoff only. Auto remains refused until exact production approvals
-exist.
+manual handoff only. Phase 123 supersedes that temporary state with
+source-equivalent NVIDIA, AMD, and INTEL controlled runtime behavior for this
+tool only.
 
-No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes
-are approved in this phase.
+No reusable/global production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes
+are approved in this design. Phase 123 behavior is module-scoped and
+source-derived.
 
 Partial registry-only, vendor-page-only, or "install without debloat" behavior
 would weaken Ultimate behavior. The future implementation must preserve the

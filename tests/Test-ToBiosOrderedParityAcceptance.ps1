@@ -126,7 +126,7 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $toBiosRecord) 
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-debloat-settings') 'First ordered pending parity target must advance past Driver Clean near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-install-latest') 'First ordered pending parity target must advance past Driver Install Debloat & Settings near-parity acceptance.'
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
@@ -239,9 +239,9 @@ foreach ($needle in @(
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 20) 'NearParityControlled count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 21) 'NearParityControlled count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq 3) 'ControlledSubset count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 6) 'ManualHandoffOnly count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 5) 'ManualHandoffOnly count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'

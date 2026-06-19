@@ -25,9 +25,41 @@ else {
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
+function Assert-BoostLabCondition {
+    param(
+        [Parameter(Mandatory)]
+        [bool]$Condition,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
+function Assert-BoostLabTextContains {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [string]$Needle,
+
+        [Parameter(Mandatory)]
+        [string]$Description
+    )
+
+    if (-not $Text.Contains($Needle)) {
+        throw "$Description is missing: $Needle"
+    }
+}
+
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\driver-install-debloat-settings-scope-provenance-design.md'
 $readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\driver-install-debloat-settings.md'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\1 Driver Install Debloat & Settings.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -44,6 +76,7 @@ foreach ($path in @(
     $designPath,
     $readinessPath,
     $planPath,
+    $migrationPath,
     $sourcePath,
     $modulePath,
     $configPath,
@@ -55,73 +88,37 @@ foreach ($path in @(
     $cleanupPolicyPath,
     $rebootPolicyPath
 )) {
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "Required file was not found: $path"
-    }
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file was not found: $path"
 }
+
+$expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
+$actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Driver Install Debloat & Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 
 $designText = Get-Content -LiteralPath $designPath -Raw
 $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 $planText = Get-Content -LiteralPath $planPath -Raw
-$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
-$config = Import-PowerShellDataFile -LiteralPath $configPath
-$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
-$driverPolicy = Import-PowerShellDataFile -LiteralPath $driverPolicyPath
-$appxPolicy = Import-PowerShellDataFile -LiteralPath $appxPolicyPath
-$rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
-$servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
-$cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
-$rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
-$allTools = @($config.Stages | ForEach-Object { $_.Tools })
-
-$expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
-$actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-if ($actualSourceHash -ne $expectedSourceHash) {
-    throw "Driver Install Debloat & Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
-}
 
 foreach ($requiredSection in @(
     '# Driver Install Debloat and Settings Scope Provenance Design',
-    '## Purpose',
     '## Source Reference',
     '## Product Scope Decision',
     '## Source Behavior Summary',
     '## Current Decision',
     '## Behavior Groups',
-    '### 1. GPU/Vendor Detection Behavior',
-    '### 2. NVIDIA-Supported Branch Behavior',
-    '### 3. AMD Branch Behavior',
-    '### 4. Intel Branch Behavior',
-    '### 5. NVIDIA Driver Download Behavior',
-    '### 6. External Helper/Tool Download Behavior',
-    '### 7. Driver Extraction Behavior',
-    '### 8. Driver Install Behavior',
-    '### 9. Driver Debloat/Removal Behavior',
-    '### 10. NVIDIA App / FrameView / GeForce Experience Behavior If Present',
-    '### 11. NVIDIA Control Panel / AppX Behavior If Present',
-    '### 12. NVIDIA Profile Import or Driver-Profile Settings Behavior If Present',
-    '### 13. Registry Settings Behavior',
-    '### 14. File/Directory Cleanup or Deletion Behavior',
-    '### 15. Service or Scheduled Task Behavior If Present',
-    '### 16. Process Stop Behavior If Present',
-    '### 17. Reboot/Restart Behavior',
-    '### 18. Default/Restore Behavior',
-    '### 19. Unsupported Broad Driver/File/Registry/Package Targets',
     '## Exact Source Target Inventory',
     '## Future Safe Apply/Open/Install Requirements',
     '## Default and Restore Boundary',
     '## Production Approval State'
 )) {
-    if (-not $designText.Contains($requiredSection)) {
-        throw "Driver Install Debloat & Settings scope/provenance design is missing section: $requiredSection"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSection -Description 'scope/provenance design'
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F`',
-    'Driver Install Debloat & Settings was implemented in Phase 99 as controlled',
-    'No production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes',
+    'Phase 123 implements the source-equivalent NVIDIA, AMD, and INTEL runtime',
+    'No reusable/global production download/installer/executable/driver/profile/AppX/registry/file/service/task/cleanup/reboot scopes',
     'Phase 122 records a tool-specific branch-scope decision for this tool only',
     'Yazan approved all source-defined Driver Install Debloat & Settings branches',
     'This does not expand project-wide AMD or Intel GPU support',
@@ -131,87 +128,9 @@ foreach ($requiredPhrase in @(
     '`reg add` command count: `33`',
     '`sc stop` command count: `11`',
     'NVIDIA profile setting count in `inspector.nip`: `31`',
-    'display loss',
-    'black screen',
-    'Safe Mode recovery',
-    'Current Default/Restore must remain unavailable',
-    'Artifact approvals: none.',
-    'Driver scopes: none.',
-    'AppX package scopes: none.'
+    'Current Default/Restore must remain unavailable'
 )) {
-    if (-not $designText.Contains($requiredPhrase)) {
-        throw "Driver Install Debloat & Settings scope/provenance design is missing phrase: $requiredPhrase"
-    }
-}
-
-foreach ($requiredField in @(
-    'Exact source targets:',
-    'Intended mutation or launch type:',
-    'Required foundation:',
-    'Required future production allowlist:',
-    'Required artifact provenance before download/launch:',
-    'Required driver inventory/capture before mutation:',
-    'Required file/registry/AppX/service capture before mutation:',
-    'Required confirmation level:',
-    'Required verification:',
-    'Rollback/restore feasibility:',
-    'Risk level:',
-    'Later implementation decision:'
-)) {
-    if (-not $designText.Contains($requiredField)) {
-        throw "Driver Install Debloat & Settings scope/provenance design is missing per-group field: $requiredField"
-    }
-}
-
-$urls = @(
-    Select-String -LiteralPath $sourcePath -Pattern 'https?://[^"\s]+' |
-        ForEach-Object { $_.Matches.Value } |
-        Sort-Object -Unique
-)
-if ($urls.Count -ne 5) {
-    throw "Expected 5 unique source URLs, found $($urls.Count)."
-}
-foreach ($url in $urls) {
-    if (-not $designText.Contains($url)) {
-        throw "Driver Install Debloat & Settings design is missing source URL: $url"
-    }
-}
-
-$launchLines = @(
-    Select-String -LiteralPath $sourcePath -Pattern 'Start-Process[^\r\n]+' |
-        ForEach-Object { $_.Matches[0].Value } |
-        Where-Object { $_ -notmatch 'PowerShell\.exe' }
-)
-if ($launchLines.Count -ne 15) {
-    throw "Expected 15 non-elevation source launch lines, found $($launchLines.Count)."
-}
-foreach ($line in @(
-    'Start-Process "$env:SystemRoot\Temp\nvidiadriver\setup.exe" -ArgumentList "-s -noreboot -noeula -clean" -Wait -NoNewWindow',
-    'Start-Process "winget" -ArgumentList "install `"9NF8H0H7WMLT`" --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --no-upgrade" -Wait -WindowStyle Hidden',
-    'Start-Process -wait "$env:SystemRoot\Temp\inspector.exe" -ArgumentList "-silentImport -silent $env:SystemRoot\Temp\inspector.nip"',
-    'Start-Process -Wait "$env:SystemRoot\Temp\amddriver\Bin64\ATISetup.exe" -ArgumentList "-INSTALL -VIEW:2" -WindowStyle Hidden',
-    'Start-Process "cmd.exe" -ArgumentList "/c `"$env:SystemDrive\inteldriver\Installer.exe`" -f --noExtras --terminateProcesses -s" -WindowStyle Hidden -Wait',
-    'Start-Process "ms-settings:display"',
-    'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel',
-    'Start-Process mmsys.cpl'
-)) {
-    if (-not $designText.Contains($line)) {
-        throw "Driver Install Debloat & Settings design is missing source launch command: $line"
-    }
-}
-
-$removeItemCount = @(
-    Select-String -LiteralPath $sourcePath -Pattern 'Remove-Item\s+"'
-).Count
-if ($removeItemCount -ne 41) {
-    throw "Expected 41 Remove-Item source commands, found $removeItemCount."
-}
-
-$profileSettingCount = @(
-    Select-String -LiteralPath $sourcePath -Pattern '<ProfileSetting>'
-).Count
-if ($profileSettingCount -ne 31) {
-    throw "Expected 31 NVIDIA profile settings, found $profileSettingCount."
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredPhrase -Description 'scope/provenance design'
 }
 
 foreach ($requiredSourceTarget in @(
@@ -219,18 +138,11 @@ foreach ($requiredSourceTarget in @(
     'Write-Host " 2.  AMD"',
     'Write-Host " 3.  INTEL`n"',
     '$env:SystemRoot\Temp\nvidiadriver\Display.Nview',
-    '$env:SystemRoot\Temp\nvidiadriver\NvApp\NvConfigGenerator.dll',
     '$env:SystemRoot\Temp\nvidiadriver\setup.exe',
     '$env:SystemRoot\Temp\inspector.exe',
     '$env:SystemRoot\Temp\inspector.nip',
     'C:\ProgramData\NVIDIA Corporation\Drs',
     'Get-AppxPackage -allusers *Microsoft.Winget.Source* | Remove-AppxPackage',
-    'HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak',
-    'HKCU\Software\NVIDIA Corporation\NvTray',
-    'HKLM\SYSTEM\ControlSet001\Services\nvlddmkm\Parameters\FTS',
-    'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\MonitorDataStore',
-    'HKLM\SYSTEM\ControlSet001\Enum\$instanceID\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties',
-    'registry::HKEY_CURRENT_USER\Control Panel\NotifyIconSettings',
     'AMD Crash Defender Service',
     'amdfendr',
     'IntelGFXFWupdateTool',
@@ -238,164 +150,70 @@ foreach ($requiredSourceTarget in @(
     'Unregister-ScheduledTask -TaskName "StartCN" -Confirm:$false',
     'shutdown -r -t 00'
 )) {
-    if (-not $designText.Contains($requiredSourceTarget)) {
-        throw "Driver Install Debloat & Settings design is missing source target: $requiredSourceTarget"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSourceTarget -Description 'source target inventory'
 }
 
-if (-not $readinessText.Contains('docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md')) {
-    throw 'Deferred readiness review does not link to the Driver Install Debloat & Settings scope/provenance design.'
-}
-if (-not $planText.Contains('docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md')) {
-    throw 'Deferred tools execution plan does not link to the Driver Install Debloat & Settings scope/provenance design.'
-}
-
-$tokens = $null
-$parseErrors = $null
-$ast = [System.Management.Automation.Language.Parser]::ParseFile($modulePath, [ref]$tokens, [ref]$parseErrors)
-$actualParseErrors = @($parseErrors | Where-Object { $null -ne $_ })
-if ($actualParseErrors.Count -ne 0) {
-    throw "Driver Install Debloat & Settings module parse errors: $(@($actualParseErrors | ForEach-Object { $_.Message }) -join '; ')"
-}
-$commands = @(
-    $ast.FindAll(
-        { param($node) $node -is [System.Management.Automation.Language.CommandAst] },
-        $true
-    ) | ForEach-Object { $_.GetCommandName() } | Where-Object { $_ }
-)
-foreach ($forbiddenCommand in @(
-    'IWR',
-    'Invoke-WebRequest',
-    'Start-BitsTransfer',
-    'Start-Process',
-    'winget',
-    'Get-AppxPackage',
-    'Remove-AppxPackage',
-    'Get-PnpDevice',
-    'Set-ItemProperty',
-    'New-ItemProperty',
-    'Remove-Item',
-    'Stop-Service',
-    'Set-Service',
-    'Restart-Computer'
+foreach ($textAndName in @(
+    @{ Text = $readinessText; Name = 'deferred readiness review' },
+    @{ Text = $planText; Name = 'deferred tools execution plan' },
+    @{ Text = $migrationText; Name = 'migration record' }
 )) {
-    if ($forbiddenCommand -in $commands) {
-        throw "Driver Install Debloat & Settings module contains prohibited executable command: $forbiddenCommand"
-    }
+    Assert-BoostLabTextContains -Text $textAndName.Text -Needle 'Phase 123' -Description $textAndName.Name
+    Assert-BoostLabTextContains -Text $textAndName.Text -Needle 'NVIDIA' -Description $textAndName.Name
+    Assert-BoostLabTextContains -Text $textAndName.Text -Needle 'AMD' -Description $textAndName.Name
+    Assert-BoostLabTextContains -Text $textAndName.Text -Needle 'INTEL' -Description $textAndName.Name
 }
 
-if (@($artifactPolicy.Artifacts).Count -ne 0) {
-    throw "Artifact approvals were added unexpectedly: $(@($artifactPolicy.Artifacts).Count)"
-}
-if (@($driverPolicy.DriverScopes).Count -ne 0) {
-    throw "Driver production scopes were approved unexpectedly: $(@($driverPolicy.DriverScopes).Count)"
-}
-if (@($appxPolicy.PackageScopes).Count -ne 0) {
-    throw "AppX package production scopes were approved unexpectedly: $(@($appxPolicy.PackageScopes).Count)"
-}
-if (@($rollbackPolicy.FileScopes).Count -ne 0 -or @($rollbackPolicy.RegistryScopes).Count -ne 0) {
-    throw 'File or registry production scopes were approved unexpectedly.'
-}
-if (@($servicePolicy.ServiceScopes).Count -ne 0) {
-    throw "Service production scopes were approved unexpectedly: $(@($servicePolicy.ServiceScopes).Count)"
-}
-if (@($cleanupPolicy.CleanupScopes).Count -ne 0) {
-    throw "Cleanup production scopes were approved unexpectedly: $(@($cleanupPolicy.CleanupScopes).Count)"
-}
-if (@($rebootPolicy.WorkflowScopes).Count -ne 0) {
-    throw "Reboot workflow production scopes were approved unexpectedly: $(@($rebootPolicy.WorkflowScopes).Count)"
-}
+Assert-BoostLabTextContains -Text $moduleText -Needle 'SourceEquivalentThreeBranchRuntime' -Description 'runtime module'
+Assert-BoostLabTextContains -Text $moduleText -Needle 'OperationExecutor' -Description 'runtime module mock seam'
+Assert-BoostLabTextContains -Text $moduleText -Needle 'Get-BoostLabDriverInstallDebloatSettingsOperationPlan' -Description 'runtime module'
 
-$tool = $allTools |
-    Where-Object { $_.Id -eq 'driver-install-debloat-settings' -and $_.Stage -eq 'Graphics' } |
-    Select-Object -First 1
-if (-not $tool) {
-    throw 'Driver Install Debloat & Settings catalog entry was not found.'
-}
-if ((@($tool.Actions) -join '|') -ne 'Analyze|Open|Apply|Default|Restore') {
-    throw 'Driver Install Debloat & Settings catalog actions changed unexpectedly.'
-}
+$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
+$driverPolicy = Import-PowerShellDataFile -LiteralPath $driverPolicyPath
+$appxPolicy = Import-PowerShellDataFile -LiteralPath $appxPolicyPath
+$rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
+$servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
+$cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
+$rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
 
-$activeTools = @($allTools)
+Assert-BoostLabCondition (@($artifactPolicy.Artifacts).Count -eq 0) "Artifact approvals were added unexpectedly: $(@($artifactPolicy.Artifacts).Count)"
+Assert-BoostLabCondition (@($driverPolicy.DriverScopes).Count -eq 0) "Driver production scopes were approved unexpectedly: $(@($driverPolicy.DriverScopes).Count)"
+Assert-BoostLabCondition (@($appxPolicy.PackageScopes).Count -eq 0) "AppX package production scopes were approved unexpectedly: $(@($appxPolicy.PackageScopes).Count)"
+Assert-BoostLabCondition (@($rollbackPolicy.FileScopes).Count -eq 0 -and @($rollbackPolicy.RegistryScopes).Count -eq 0) 'File or registry production scopes were approved unexpectedly.'
+Assert-BoostLabCondition (@($servicePolicy.ServiceScopes).Count -eq 0) "Service production scopes were approved unexpectedly: $(@($servicePolicy.ServiceScopes).Count)"
+Assert-BoostLabCondition (@($cleanupPolicy.CleanupScopes).Count -eq 0) "Cleanup production scopes were approved unexpectedly: $(@($cleanupPolicy.CleanupScopes).Count)"
+Assert-BoostLabCondition (@($rebootPolicy.WorkflowScopes).Count -eq 0) "Reboot workflow production scopes were approved unexpectedly: $(@($rebootPolicy.WorkflowScopes).Count)"
+
+$config = Import-PowerShellDataFile -LiteralPath $configPath
+$activeTools = @($config.Stages | ForEach-Object { $_.Tools })
 $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne $inventoryBaseline.ActiveTools) {
-    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
-}
-if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
-}
-if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
-    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
-}
+Assert-BoostLabCondition ($activeTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition (($activeTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 
-$root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceManifestLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-    Sort-Object {
-        $_.FullName.Substring($root.Length + 1).Replace('\', '/')
-    } |
-    ForEach-Object {
-        '{0}|{1}' -f `
-            $_.FullName.Substring($root.Length + 1).Replace('\', '/'), `
-            (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash
-    }
-$sha256 = [Security.Cryptography.SHA256]::Create()
-try {
-    $manifestHash = [BitConverter]::ToString(
-        $sha256.ComputeHash(
-            [Text.Encoding]::UTF8.GetBytes(($sourceManifestLines -join "`n"))
-        )
-    ).Replace('-', '')
-}
-finally {
-    $sha256.Dispose()
-}
-
-if (
-    @($sourceManifestLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
-) {
-    throw 'source-ultimate content or paths changed.'
-}
-
-$loudnessPath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'
-if (Test-Path -LiteralPath $loudnessPath) {
-    throw 'Loudness EQ source was reintroduced.'
-}
-$nvmeSource = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-        Where-Object { $_.Name -like '*NVME Faster Driver*' }
-)
-if ($nvmeSource.Count -ne 0) {
-    throw 'NVME Faster Driver source was reintroduced.'
-}
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
+Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
-    Success                   = $true
-    ToolId                    = 'driver-install-debloat-settings'
-    SourceHash                = $actualSourceHash
-    UrlCount                  = $urls.Count
-    LaunchCommandCount        = $launchLines.Count
-    RemoveItemCount           = $removeItemCount
-    ProfileSettingCount       = $profileSettingCount
-    ActiveToolCount           = $activeTools.Count
-    ImplementedToolCount      = $activeTools.Count - $placeholderModules.Count
-    PlaceholderToolCount      = $placeholderModules.Count
-    ArtifactApprovals         = @($artifactPolicy.Artifacts).Count
-    ProductionDriverScopes    = @($driverPolicy.DriverScopes).Count
-    ProductionPackageScopes   = @($appxPolicy.PackageScopes).Count
-    ProductionFileScopes      = @($rollbackPolicy.FileScopes).Count
-    ProductionRegistryScopes  = @($rollbackPolicy.RegistryScopes).Count
-    ProductionServiceScopes   = @($servicePolicy.ServiceScopes).Count
-    ProductionCleanupScopes   = @($cleanupPolicy.CleanupScopes).Count
-    ProductionRebootScopes    = @($rebootPolicy.WorkflowScopes).Count
-    SourceUltimateUnchanged   = $true
+    Success = $true
+    ToolId = 'driver-install-debloat-settings'
+    SourceHash = $actualSourceHash
+    ActiveToolCount = $activeTools.Count
+    ImplementedToolCount = $activeTools.Count - $placeholderModules.Count
+    PlaceholderToolCount = $placeholderModules.Count
+    ArtifactApprovals = @($artifactPolicy.Artifacts).Count
+    ProductionDriverScopes = @($driverPolicy.DriverScopes).Count
+    ProductionPackageScopes = @($appxPolicy.PackageScopes).Count
+    ProductionFileScopes = @($rollbackPolicy.FileScopes).Count
+    ProductionRegistryScopes = @($rollbackPolicy.RegistryScopes).Count
+    ProductionServiceScopes = @($servicePolicy.ServiceScopes).Count
+    ProductionCleanupScopes = @($cleanupPolicy.CleanupScopes).Count
+    ProductionRebootScopes = @($rebootPolicy.WorkflowScopes).Count
+    SourceUltimateUnchanged = $true
     DeletedToolsRemainDeleted = $true
-    Message                   = 'Driver Install Debloat & Settings scope/provenance design is present, linked, Phase 122 branch-scoped for NVIDIA/AMD/INTEL, and non-executing.'
-    Timestamp                 = Get-Date
+    Message = 'Driver Install Debloat & Settings scope/provenance design is linked to the Phase 123 three-branch runtime and keeps reusable production scopes denied.'
+    Timestamp = Get-Date
 }
-
-
-

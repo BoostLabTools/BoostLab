@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 20
+        NearParityControlled = 21
         ControlledSubset = 3
-        ManualHandoffOnly = 6
+        ManualHandoffOnly = 5
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -364,13 +364,15 @@
             StageOrder = 5
             ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Phase 122 records Yazan approval for all source-defined NVIDIA, AMD, and INTEL branches for this tool only; runtime remains ManualHandoffOnly until exact three-branch source-equivalent implementation exists.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent NVIDIA, AMD, and INTEL Driver Install Debloat & Settings behavior.'
             BranchScopeDecision = 'Phase 122: Yazan approved all source-defined NVIDIA, AMD, and INTEL branches for Driver Install Debloat & Settings only. This does not expand project-wide AMD/Intel GPU scope.'
             ApprovedSourceBranches = @('NVIDIA', 'AMD', 'INTEL')
             YazanFinalException = $false
-            NextParityAction = 'Implement exact source-equivalent NVIDIA, AMD, and INTEL branch behavior with descriptors, mocks, confirmation, logging, state capture, verification, and reboot/session planning; keep cursor here until done.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'directx'

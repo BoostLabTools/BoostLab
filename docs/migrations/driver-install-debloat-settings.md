@@ -8,8 +8,8 @@
 - Module: `modules/Graphics/driver-install-debloat-settings.psm1`
 - Source script path: `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1`
 - Source SHA-256: `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F`
-- Phase: `Phase 99 - Driver Install Debloat & Settings Controlled Manual Handoff Implementation`; `Phase 122 - Driver Install Debloat Settings Branch Scope Decision`
-- Yazan approval status: controlled manual handoff only at runtime; Phase 122 approves all source-defined NVIDIA/AMD/INTEL branches for this tool's future exact parity implementation
+- Phase: `Phase 99 - Driver Install Debloat & Settings Controlled Manual Handoff Implementation`; `Phase 122 - Driver Install Debloat Settings Branch Scope Decision`; `Phase 123 - Driver Install Debloat Settings Three Branch Exact Runtime Implementation`
+- Yazan approval status: Phase 122 approves all source-defined NVIDIA/AMD/INTEL branches for this tool only; Phase 123 implements those branches with BoostLab confirmation, operation planning, logging, and test-safe executor injection.
 
 ## Original Ultimate Behavior Summary
 
@@ -26,57 +26,62 @@ scope and does not approve unrelated AMD/Intel behavior elsewhere.
 
 ## Approved BoostLab Behavior
 
-BoostLab implements this tool as a controlled assistant only:
+BoostLab implements this tool as a source-equivalent controlled assistant:
 
-- `Analyze`: verifies source identity and reports source behavior, approved
-  source branches, blockers, and missing approvals.
-- `Open`: prepares manual handoff instructions inside BoostLab only.
-- `Apply`: fails closed with `AutoBlockedUntilArtifactApproval`.
+- `Analyze`: verifies source identity and reports source behavior plus exact
+  NVIDIA, AMD, and INTEL operation plans without mutation.
+- `Open`: opens only the selected branch source-defined vendor driver page flow
+  after confirmation.
+- `Apply`: requires explicit branch selection and confirmation, then runs the
+  selected source-equivalent NVIDIA, AMD, or INTEL workflow through operation
+  descriptors.
 - `Default`: fails closed with `DefaultUnavailable`.
 - `Restore`: fails closed with `RestoreUnavailable`.
 
 ## Preserved Commands
 
-No source commands are executed in this phase. The original source behavior is
-preserved as operational intent and blocker documentation only.
+Phase 123 preserves the source-defined admin/internet checks, 7-Zip
+download/install/config, vendor driver page handoff, installer selection,
+7-Zip extraction, branch-specific installer commands, component cleanup,
+winget/AppX behavior, NVIDIA Profile Inspector `.nip` import, AMD XML/JSON
+edits, AMD/Intel service/task/process cleanup, driver registry/profile writes,
+shared monitor color registry writes, NotifyIconSettings writes, MSI mode
+writes, display/NVIDIA/sound UI launches, and final restart operation.
 
 ## Intentional Deviations
 
-The full source behavior is not executed because the exact source-equivalent
-NVIDIA, AMD, and INTEL implementation has not yet been added and required
-production approvals/descriptors do not exist for artifacts, downloads,
-installer execution, process handling, driver state, profile import,
-AppX/package actions, service/task operations, cleanup/debloat scopes,
-registry/profile mutation, reboot/session handling, or recovery.
-
-This remains an intentional fail-closed manual handoff implementation until the
-three approved source branches are implemented. It must not be treated as a
-weakened partial driver installer or as NVIDIA-only final parity.
+BoostLab adds explicit GUI confirmation, structured operation-plan preview,
+structured results, and test-safe executor injection. These mechanics do not
+remove the source-defined NVIDIA, AMD, or INTEL branch behavior. Default and
+Restore remain unavailable because the source defines no safe overall Default
+branch and BoostLab has no selected captured-state Restore contract for the
+full driver/profile/package/registry/file/service/task/process/reboot surface.
 
 ## Side Effects
 
-No download, installer execution, external process launch, driver mutation,
-registry mutation, service mutation, package mutation, file cleanup, profile
-import, display/sound launch, reboot, or session change is performed.
+Apply can download tools, open vendor pages, run installers, extract driver
+packages, delete source-defined driver components/files, mutate packages/AppX
+or winget source state, write registry/profile settings, stop processes,
+remove services/drivers/tasks, open display/NVIDIA/sound interfaces, and
+restart. Validators use mocks and do not perform these host mutations.
 
 ## Required Privileges
 
-The current manual handoff implementation does not require Administrator rights.
-Future automated behavior would require new approval and accurate privilege
-metadata.
+Administrator rights and internet access are required for the source-equivalent
+Apply runtime.
 
 ## Capabilities
 
-- RequiresAdmin: false
-- RequiresInternet: false
-- CanReboot: false
-- CanModifyRegistry: false
+- RequiresAdmin: true
+- RequiresInternet: true
+- CanReboot: true
+- CanModifyRegistry: true
 - CanModifyServices: true
-- CanInstallSoftware: false
-- CanDownload: false
-- CanModifyDrivers: false
+- CanInstallSoftware: true
+- CanDownload: true
+- CanModifyDrivers: true
 - CanModifySecurity: false
-- CanDeleteFiles: false
+- CanDeleteFiles: true
 - UsesTrustedInstaller: false
 - UsesSafeMode: false
 - SupportsDefault: false
@@ -85,14 +90,13 @@ metadata.
 
 ## Risk Level
 
-High. The original source behavior is driver, installer, cleanup, profile,
-package, registry, and reboot sensitive, even though the current BoostLab
-implementation is non-mutating.
+High. The source-equivalent Apply path is driver, installer, cleanup, profile,
+package, registry, service/task/process, UI, and reboot sensitive.
 
 ## Confirmation Requirements
 
 `Open` and `Apply` require visible confirmation through the Action Plan runtime.
-Confirmation records only the manual handoff or blocked Auto result.
+Apply also requires selecting exactly one branch: NVIDIA, AMD, or INTEL.
 
 ## Default And Restore Behavior
 
@@ -105,7 +109,8 @@ or reboot state restore contract exists. Default is not Restore.
 ## Test Requirements
 
 Tests must verify source checksum, canonical actions, separation from NVIDIA
-Path B, read-only Analyze, manual handoff-only Open, fail-closed Apply, blocked
-Default/Restore, the Phase 122 NVIDIA/AMD/INTEL branch-scope decision, no
-project-wide AMD/Intel expansion, no production approvals, no executable
-command patterns, and updated inventory counts.
+Path B, read-only Analyze, exact NVIDIA/AMD/INTEL operation-plan mapping,
+mocked Apply execution for each branch, branch selection, Default/Restore
+unavailability, the Phase 122 branch-scope decision, no project-wide AMD/Intel
+expansion, no production approvals, protected source immutability, and updated
+parity counts.

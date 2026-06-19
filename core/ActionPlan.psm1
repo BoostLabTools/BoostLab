@@ -254,13 +254,13 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no approved captured Edge Settings restore contract exists for policy, Active Setup, RunOnce, service, scheduled-task, BHO, process, download, or installer state.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
-        'Analyze the Driver Install Debloat & Settings source and report blocked approvals without running any driver install, debloat, profile, registry, package, or reboot operation.'
+        'Analyze the Driver Install Debloat & Settings source and build source-equivalent NVIDIA, AMD, and INTEL branch operation plans without running any operation.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
-        'Prepare Driver Install Debloat & Settings manual handoff instructions only; no browser, external tool, download, installer, driver mutation, cleanup, profile import, package action, or reboot is opened or executed.'
+        'Open only the source-defined vendor driver page flow for the selected NVIDIA, AMD, or INTEL branch after confirmation; no install/debloat workflow runs.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Driver Install Debloat & Settings because artifact, installer, driver-state, process, cleanup, AppX/package, profile, registry, reboot, and recovery approvals do not exist.'
+        'Run one selected source-equivalent NVIDIA, AMD, or INTEL Driver Install Debloat & Settings branch after confirmation.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe overall default mutation for the driver install/debloat workflow.'
@@ -678,23 +678,25 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary, Phase 122 NVIDIA/AMD/INTEL branch-scope decision, and missing 7-Zip, branch driver, installer, extraction, cleanup/debloat, winget/AppX/package, service/task/process, Profile Inspector/.nip, registry/profile, driver-state, reboot/session, and recovery approvals/descriptors.')
+        $plannedChanges.Add('Report source behavior summary, Phase 122 NVIDIA/AMD/INTEL branch-scope decision, and exact branch operation plans.')
         $plannedChanges.Add('Keep Driver Install Debloat & Settings separate from Driver Clean and NVIDIA Path B.')
         $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
-        $plannedChanges.Add('Do not open a browser, vendor driver pages, vendor control panels, winget, 7-Zip installer, Profile Inspector, setup.exe, ATISetup.exe, Intel Installer.exe, or any external tool.')
-        $plannedChanges.Add('Do not download 7-Zip, NVIDIA/AMD/Intel driver artifacts, Profile Inspector, .nip files, or package content.')
-        $plannedChanges.Add('Do not extract driver packages, delete driver components, edit AMD XML/JSON files, run setup.exe/ATISetup.exe/Intel Installer.exe, import profiles, install vendor control panels, remove AppX/winget packages, stop/delete services or drivers, unregister tasks, or stop vendor processes.')
-        $plannedChanges.Add('Do not modify registry, services, drivers, files, profiles, display settings, sound settings, sessions, or reboot state.')
-        $plannedChanges.Add('Perform no system-changing operation.')
+        $plannedChanges.Add('Require selecting exactly one source branch: NVIDIA, AMD, or INTEL.')
+        $plannedChanges.Add('Open the selected branch vendor driver page flow only.')
+        $plannedChanges.Add('Do not download 7-Zip, download or run driver installers, extract driver packages, debloat files, mutate registry/profile/package/service/task/process/driver state, open shared display/sound panels, or reboot.')
+        $plannedChanges.Add('Record the selected branch and skipped mutation families in Latest Result.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing 7-Zip, NVIDIA/AMD/Intel driver, installer, extraction, cleanup/debloat, winget/AppX/package, service/task/process, Profile Inspector/.nip, registry/profile, driver-state, reboot/session, and recovery approvals/descriptors.')
-        $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
+        $plannedChanges.Add('Require selecting exactly one source branch: NVIDIA, AMD, or INTEL.')
+        $plannedChanges.Add('Run the source-defined admin and internet checks.')
+        $plannedChanges.Add('Run the source-defined 7-Zip download/install/config flow.')
+        $plannedChanges.Add('Open the selected vendor driver page, require selected installer input, extract the selected driver package, and execute only the selected source branch.')
+        $plannedChanges.Add('For NVIDIA: remove source-defined driver components, run setup.exe with -s -noreboot -noeula -clean, install NVIDIA Control Panel through winget, remove Microsoft.Winget.Source, write NVIDIA registry/profile settings, download Profile Inspector, write/import the source .nip, then run shared UI/MSI/color/tray/restart steps.')
+        $plannedChanges.Add('For AMD: edit source-defined XML/JSON files, run ATISetup.exe -INSTALL -VIEW:2, remove source-defined startup/task/service/driver/file targets, uninstall AMD Install Manager when present, open/stop Radeon Software, write AMD registry settings, then run shared UI/MSI/color/tray/restart steps.')
+        $plannedChanges.Add('For INTEL: run Installer.exe -f --noExtras --terminateProcesses -s, install Intel Graphics Software extra package when present, remove source-defined startup/service/driver/process/file targets, write Intel registry settings, then run shared UI/MSI/color/tray/restart steps.')
+        $plannedChanges.Add('Log every operation and target path; do not run branches in parallel.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1223,7 +1225,7 @@ function New-BoostLabActionPlan {
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
     $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Default', 'Restore')
     $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
-    $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
@@ -1346,12 +1348,13 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Driver Install Debloat & Settings remains separate from Driver Clean and NVIDIA Path B.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No browser, external tool, 7-Zip download/install, driver download, installer execution, driver extraction/debloat, Profile Inspector execution, .nip import, winget/AppX action, registry/service/driver mutation, display/sound launch, reboot, or session change occurs.')
+        $sideEffects.Add('The selected branch vendor driver page may open after confirmation.')
+        $sideEffects.Add('No 7-Zip download/install, driver download, installer execution, driver extraction/debloat, Profile Inspector execution, .nip import, winget/AppX action, registry/service/driver mutation, display/sound launch, reboot, or session change occurs from Open.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, installer execution, external process, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change occurs.')
+        $sideEffects.Add('Apply can download 7-Zip and Profile Inspector, open vendor pages, run driver installers, extract files, remove source-defined driver components, edit AMD XML/JSON files, change package/AppX/winget state, write registry/profile settings, stop processes, delete services/drivers/tasks, open UI panels, and restart.')
+        $sideEffects.Add('Only one selected branch runs; NVIDIA, AMD, and INTEL branches are not run in parallel.')
+        $sideEffects.Add('This approval is tool-specific and does not expand project-wide AMD/Intel GPU scope.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution.')
@@ -1768,10 +1771,10 @@ function New-BoostLabActionPlan {
         'Driver Install Latest Auto mode is blocked. BoostLab will not execute Auto behavior because NVIDIA artifact/download, installer descriptor, driver-state, process handoff, reboot/session, and recovery approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Driver Install Debloat & Settings manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, vendor driver page, vendor control panel, winget, Profile Inspector, setup.exe, ATISetup.exe, or Intel Installer.exe; download artifacts; run installers; debloat files; import profiles; mutate registry, services, packages, drivers, sessions; or reboot. Continue?'
+        'BoostLab will open only the source-defined vendor driver page flow for the selected Driver Install Debloat & Settings branch. It will not download or install 7-Zip, run driver installers, extract or debloat files, import profiles, mutate registry/services/packages/drivers, open shared UI panels, or reboot from Open. Continue?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Apply') {
-        'Driver Install Debloat & Settings Auto mode is blocked. Phase 122 approves NVIDIA/AMD/INTEL branch scope for this tool only, but BoostLab will not execute Auto behavior because exact artifact, installer, driver-state, process, cleanup, AppX/package, service/task, profile, registry, reboot/session, and recovery approvals/descriptors are missing. Continue only to record the blocked result?'
+        'Driver Install Debloat & Settings will run the selected NVIDIA, AMD, or INTEL source-equivalent branch after confirmation. It may download tools, open vendor pages, run installers, delete source-defined driver components/files, modify packages/AppX/winget, write registry/profile settings, stop processes, remove services/drivers/tasks, open display/NVIDIA/sound interfaces, and restart. Continue only if this exact selected branch should run.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Default') {
         'Driver Install Debloat & Settings Default is unavailable. The source does not define a safe overall default mutation, and Default is not Restore. Continue only to record the blocked Default result?'

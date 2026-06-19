@@ -248,9 +248,9 @@
                     Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Analyze the source-defined NVIDIA/AMD/Intel driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
+                    Description = 'Run the source-equivalent NVIDIA, AMD, or INTEL driver install/debloat workflow for one selected branch after explicit confirmation.'
                     Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'driver-install-latest'
