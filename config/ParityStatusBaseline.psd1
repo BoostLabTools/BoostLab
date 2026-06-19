@@ -110,9 +110,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ControlledSubset'
             UltimateParity = 'Partial'
-            GapSummary = 'Live Driver Updates policy branch is implemented; broader update-server, bootable-media, generated-script, and reboot branches remain blocked.'
-            YazanFinalException = $false
-            NextParityAction = 'Resolve broader source branches or obtain explicit final exception for omitted branches.'
+            GapSummary = 'Yazan-selected final scope is Driver Updates Block Bootable USB only; Unblock, live local default/unblock, broad Updates branches, and custom update-server behavior are intentionally excluded.'
+            YazanFinalException = $true
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'YazanFinalException'
+            NextParityAction = 'Skip; Yazan final scope exception accepted.'
         }
         @{
             ToolId = 'to-bios'

@@ -104,16 +104,18 @@ foreach ($requiredSection in @(
 foreach ($requiredPhrase in @(
     'Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`',
     'Phase 102 implemented only the bounded live Driver Updates policy branch',
+    'Phase 112 supersedes the Phase 102 final customer scope.',
+    'Yazan selected Driver Updates Block Bootable USB only as the final scope',
     'Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`',
-    'No production file/cleanup/reboot/update-server/bootable-media scopes',
+    'host registry mutation',
     'No explicit Windows 10-only branch or option is present.',
     'WINDOWS PRO/LTSC/IOT/SERVER ONLY',
     'custom update-server URL',
     'https://fuckyoumicrosoft.com/',
     'setupcomplete.cmd',
     'shutdown /r /t 0',
-    'Driver Updates `Default` is implemented for the nine supported values.',
-    'Restore is implemented only from selected captured rollback records.',
+    'Default is unavailable',
+    'Restore is selected captured USB file state only',
     'Unknown, broad, wildcard, whole-key, or unrelated policy targets remain',
     'Deleting policy values can remove intentional existing policy.'
 )) {
@@ -233,11 +235,13 @@ if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
 foreach ($requiredImplementationText in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
     '$script:BoostLabExpectedSourceHash = ''4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991''',
-    'New-BoostLabRegistryStateCapture',
+    '$script:BoostLabFinalScope = ''Driver Updates Block (Bootable USB) only''',
+    '$script:BoostLabSetupCompleteRelativePath = ''sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd''',
+    'New-BoostLabFileStateCapture',
     'Set-BoostLabRollbackMutationState',
-    'Invoke-BoostLabRegistryRollback',
-    'New-ItemProperty',
-    'Remove-ItemProperty'
+    'Invoke-BoostLabFileRollback',
+    'DefaultUnavailable',
+    'RestoreRequiresCapturedUsbFileState'
 )) {
     if (-not $moduleText.Contains($requiredImplementationText)) {
         throw "Updates Drivers Block module is missing implementation text: $requiredImplementationText"

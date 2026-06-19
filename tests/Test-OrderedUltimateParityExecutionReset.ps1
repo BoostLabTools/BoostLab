@@ -112,7 +112,8 @@ foreach ($temporaryLevel in @('ManualHandoffOnly', 'ControlledSubset', 'Security
 }
 
 $finalExceptions = @($parityTools | Where-Object { [bool]$_.YazanFinalException })
-Assert-BoostLabCondition ($finalExceptions.Count -eq 0) 'No YazanFinalException should be true in the Phase 107 reset baseline.'
+Assert-BoostLabCondition ($finalExceptions.Count -eq 1) 'Exactly one YazanFinalException should be true after Updates Drivers Block USB-only final scope.'
+Assert-BoostLabCondition ([string]$finalExceptions[0].ToolId -eq 'updates-drivers-block') 'Updates Drivers Block must be the recorded Yazan final exception.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false until parity status is clear.'
 
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.UltimateParityIsDefaultFinalTarget) 'Ultimate parity default-final-target policy is missing.'
@@ -200,7 +201,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'updates-drivers-block') 'The first ordered pending parity target should be Updates Drivers Block after Unattended near-parity acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'to-bios') 'The first ordered pending parity target should be To BIOS after Updates Drivers Block USB-only final scope.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

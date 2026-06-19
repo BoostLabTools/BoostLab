@@ -555,18 +555,25 @@ try {
         Join-Path $modulesRoot 'Refresh\updates-drivers-block.psm1'
         Join-Path $modulesRoot 'Windows\write-cache-buffer-flushing.psm1'
     )
-    $approvedPhase36RegistryRollbackConsumers = @(
+    $approvedPhase36FileRollbackConsumers = @(
         Join-Path $modulesRoot 'Refresh\updates-drivers-block.psm1'
     )
+    $approvedPhase36RegistryRollbackConsumers = @()
     foreach ($module in Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1') {
         $moduleSource = Get-Content -LiteralPath $module.FullName -Raw
         $isApprovedCaptureConsumer = $module.FullName -in $approvedPhase36CaptureConsumers
+        $isApprovedFileRollbackConsumer = $module.FullName -in $approvedPhase36FileRollbackConsumers
         $isApprovedRegistryRollbackConsumer = $module.FullName -in $approvedPhase36RegistryRollbackConsumers
         if (
             $isApprovedCaptureConsumer -and
             (
-                $moduleSource.Contains('New-BoostLabFileStateCapture') -or
-                $moduleSource.Contains('Invoke-BoostLabFileRollback') -or
+                (
+                    -not $isApprovedFileRollbackConsumer -and
+                    (
+                        $moduleSource.Contains('New-BoostLabFileStateCapture') -or
+                        $moduleSource.Contains('Invoke-BoostLabFileRollback')
+                    )
+                ) -or
                 (
                     -not $isApprovedRegistryRollbackConsumer -and
                     $moduleSource.Contains('Invoke-BoostLabRegistryRollback')

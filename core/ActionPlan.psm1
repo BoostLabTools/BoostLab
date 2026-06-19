@@ -302,16 +302,16 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no captured reinstall, setup, generated-file, reboot/session, recovery, or support state restore contract exists.'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
-        'Analyze the source-defined live Driver Updates policy registry values without changing the system.'
+        'Analyze the Yazan-selected Driver Updates Block Bootable USB scope without changing the system.'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
-        'Apply only the nine source-defined live Driver Updates policy registry values after source checksum validation and pre-change registry state capture.'
+        'Create only the source-equivalent Driver Updates Block setupcomplete.cmd on selected USB media after source validation and pre-change file state capture.'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Default') {
-        'Remove only the nine source-defined live Driver Updates policy registry values after source checksum validation and pre-change registry state capture. Default is not Restore.'
+        'Default is unavailable because Yazan final scope excludes Unblock and live local default behavior.'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
-        'Restore only from a valid selected captured rollback record from this Updates Drivers Block tool. No registry mutation is planned without selected captured state.'
+        'Restore only from a valid selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         'Read the Nvidia Settings source mirror and report blocked 7-Zip, Profile Inspector, .nip, NVIDIA profile, registry, process, and verification approvals without changing settings.'
@@ -758,30 +758,31 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the Updates Drivers Block source checksum.')
-        $plannedChanges.Add('Read the current state of the nine source-defined live Driver Updates policy registry values.')
-        $plannedChanges.Add('Report unsupported broad Windows Updates, custom update-server URL, bootable-media, generated-script, external-process, and reboot branches as blocked.')
-        $plannedChanges.Add('Perform no registry capture, registry write, registry deletion, driver/device mutation, Windows Update execution, download, external process launch, or reboot.')
+        $plannedChanges.Add('Report Yazan final scope: Driver Updates Block Bootable USB only.')
+        $plannedChanges.Add('Report unsupported live host registry Block/Unblock, broad Updates Block, broad Updates USB, custom update-server, Windows Update execution, external-process, and reboot branches as omitted.')
+        $plannedChanges.Add('Perform no file capture, file write, registry capture, registry write, registry deletion, driver/device mutation, Windows Update execution, download, external process launch, or reboot.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Verify the Updates Drivers Block source checksum before mutation.')
-        $plannedChanges.Add('Capture prior state for each of the nine source-defined live Driver Updates policy values.')
-        $plannedChanges.Add('Set only those nine values to their exact source-defined REG_DWORD data.')
-        $plannedChanges.Add('Verify every supported value after Apply and record post-mutation state for rollback evidence.')
-        $plannedChanges.Add('Do not write broad Windows Updates/custom update-server URL values, create setupcomplete.cmd, open folders, execute Windows Update, change drivers/devices, download, launch external tools, or reboot.')
+        $plannedChanges.Add('Require an explicit selected removable USB/root target before any file operation.')
+        $plannedChanges.Add('Capture the existing selected USB setupcomplete.cmd file state before create or overwrite.')
+        $plannedChanges.Add('Create or update only sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd on the selected USB target with the source-equivalent Driver Updates Block Bootable USB content.')
+        $plannedChanges.Add('Verify the generated setupcomplete.cmd content and record post-mutation file state for selected captured-state Restore.')
+        $plannedChanges.Add('Do not execute setupcomplete.cmd, write host registry policy values, delete host registry values, run Windows Update, change drivers/devices, download, launch external tools, or reboot.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Verify the Updates Drivers Block source checksum before mutation.')
-        $plannedChanges.Add('Capture prior state for each of the nine source-defined live Driver Updates policy values.')
-        $plannedChanges.Add('Remove only those nine exact source-defined values, matching the source Driver Updates Unblock branch.')
-        $plannedChanges.Add('Verify every supported value is absent after Default and record post-mutation state for rollback evidence.')
-        $plannedChanges.Add('Do not treat Default as Restore and do not remove broad Windows Update policy values outside the approved Driver Updates scope.')
+        $plannedChanges.Add('Block Default before any operational step.')
+        $plannedChanges.Add('Do not expose Unblock because Yazan final scope is Driver Updates Block Bootable USB only.')
+        $plannedChanges.Add('Do not delete live local Driver Updates policy values, broad Windows Update values, custom update-server values, or USB files.')
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
-        $plannedChanges.Add('Require a valid selected captured rollback record from this Updates Drivers Block tool before any Restore operation can be planned.')
-        $plannedChanges.Add('Validate that the selected record targets one of the nine supported Driver Updates policy values.')
-        $plannedChanges.Add('If a valid selected record is provided, restore only the exact captured prior value state from that selected record.')
-        $plannedChanges.Add('Fail closed when no selected captured state is available; no registry mutation is planned without selected captured state.')
-        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Require a valid selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool before any Restore operation can be planned.')
+        $plannedChanges.Add('Validate that the selected record targets sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd captured by Apply.')
+        $plannedChanges.Add('If a valid selected record is provided, restore only the exact captured prior USB file state from that selected record.')
+        $plannedChanges.Add('Fail closed when no selected captured USB file state is available; no file or registry mutation is planned without selected captured state.')
+        $plannedChanges.Add('Do not treat Restore as Unblock or Default.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Nvidia Settings source mirror checksum and implementation status.')
@@ -1386,22 +1387,22 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Updates Drivers Block analysis is read-only.')
-        $sideEffects.Add('The unsupported broad Windows Updates, custom update-server URL, bootable-media, generated-script, external-process, and reboot branches are reported as blocked.')
+        $sideEffects.Add('Yazan final scope is reported as Driver Updates Block Bootable USB only; Unblock and broad Updates branches remain unsupported.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Writes only the nine source-defined live Driver Updates policy values after source validation and capture succeed.')
-        $sideEffects.Add('No driver device is installed, removed, updated, or modified.')
-        $sideEffects.Add('No Windows Update execution, download, installer, external process, setupcomplete.cmd generation, service change, or reboot occurs.')
+        $sideEffects.Add('Creates or updates only the source-equivalent Driver Updates Block setupcomplete.cmd file on selected USB media after source validation and file capture succeed.')
+        $sideEffects.Add('No host registry policy value is written or deleted.')
+        $sideEffects.Add('No setupcomplete.cmd execution, Windows Update execution, download, installer, external process, service change, driver/device mutation, or BoostLab reboot occurs.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Removes only the nine source-defined live Driver Updates policy values after source validation and capture succeed.')
-        $sideEffects.Add('Default is source-defined Driver Updates Unblock behavior and is not captured-state Restore.')
-        $sideEffects.Add('No broad Windows Update policy values, custom update-server URL values, driver devices, services, downloads, external processes, or reboot behavior are touched.')
+        $sideEffects.Add('Default is unavailable because Yazan final scope excludes Unblock.')
+        $sideEffects.Add('No host registry values or USB files are changed.')
+        $sideEffects.Add('Default remains separate from Restore.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
-        $sideEffects.Add('Restore is blocked without a selected captured rollback record from this Updates Drivers Block tool.')
-        $sideEffects.Add('No registry mutation occurs when no selected captured state is provided.')
-        $sideEffects.Add('Default remains separate from Restore.')
+        $sideEffects.Add('Restore is blocked without a selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.')
+        $sideEffects.Add('No file or registry mutation occurs when no selected captured USB file state is provided.')
+        $sideEffects.Add('Restore is not Unblock and Default remains separate from Restore.')
     }
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; HDCP analysis is read-only.')
@@ -1791,13 +1792,13 @@ function New-BoostLabActionPlan {
         'Nvidia Settings Auto mode is blocked. BoostLab will not execute Auto behavior because 7-Zip, NVIDIA Profile Inspector, .nip, profile capture/restore, registry/file rollback, process, and verification approvals are missing. Continue only to record the blocked result?'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
-        'BoostLab will capture prior state and write only the nine source-defined live Driver Updates policy values. It will not run Windows Update, modify driver devices, create setupcomplete.cmd, download, launch external tools, change services, or reboot. Continue?'
+        'BoostLab will write only the source-equivalent Driver Updates Block setupcomplete.cmd to selected removable USB media after file state capture. It will not execute the script, write host registry values, run Windows Update, modify driver devices, download, launch external tools, change services, or reboot. Continue?'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Default') {
-        'BoostLab will capture prior state and remove only the nine source-defined live Driver Updates policy values. Default is not Restore. It will not remove broad Windows Update policy values, run Windows Update, modify driver devices, download, launch external tools, or reboot. Continue?'
+        'Updates Drivers Block Default is unavailable because Yazan final scope excludes Unblock. BoostLab will not delete live registry values or change USB files. Continue only to record the blocked Default result?'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
-        'Updates Drivers Block Restore requires a selected captured rollback record from this tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
+        'Updates Drivers Block Restore requires a selected captured USB setupcomplete.cmd file rollback record from this tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Apply') {
         'BoostLab will set only the source-defined HDCP registry value RMHdcpKeyglobZero to DWORD 1 on eligible NVIDIA display-class targets, after source checksum validation and pre-change registry capture. Microsoft/RDP/non-NVIDIA targets are skipped. No external process, download, profile import, driver change, or reboot will occur. Continue?'

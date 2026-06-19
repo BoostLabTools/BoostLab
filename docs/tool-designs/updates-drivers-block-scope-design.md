@@ -8,10 +8,15 @@ for the `Updates Drivers Block` tool.
 Phase 102 implemented only the bounded live Driver Updates policy branch:
 `Analyze`, `Apply`, `Default`, and selected captured-state `Restore`.
 
-No bootable-media behavior, generated script behavior, broad Windows Updates
-block/unblock behavior, custom update-server URL behavior, file scope, cleanup
-scope, reboot scope, external process launch, or Windows Update execution is
-approved here.
+Phase 112 supersedes the Phase 102 final customer scope. Yazan selected Driver Updates Block Bootable USB only as the final scope, with no Unblock, no broad
+Updates Block, no broad Updates USB, no custom update-server behavior, and no
+live local Driver Updates unblock/default behavior. The current implementation
+creates only the selected USB `setupcomplete.cmd` file after file state capture;
+Default is unavailable and Restore is selected captured USB file state only.
+
+No broad Windows Updates block/unblock behavior, custom update-server URL
+behavior, cleanup scope, reboot workflow, external process launch, host registry
+mutation, Windows Update execution, or script execution is approved here.
 
 ## Source Reference
 
@@ -19,7 +24,7 @@ approved here.
 * Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`
 * Current BoostLab module path:
   `modules/Refresh/updates-drivers-block.psm1`
-* Current status: Phase 102 controlled live Driver Updates policy implementation
+* Current status: Phase 112 USB-only Driver Updates Block final scope
 * Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`
 
 Relevant foundations:
@@ -80,15 +85,14 @@ The source contains no service control command such as `Stop-Service`,
 
 ## Current Decision
 
-Phase 102 implements the live Driver Updates policy subset only:
+Phase 112 supersedes the live Driver Updates policy subset as final customer
+scope. The current selected scope is Driver Updates Block Bootable USB only:
 
-* `Analyze`: read-only source identity and registry-state reporting.
-* `Apply`: captures prior state and writes only the nine source-defined Driver
-  Updates policy values.
-* `Default`: captures prior state and removes only those same nine
-  source-defined Driver Updates policy values.
-* `Restore`: requires a selected captured rollback record and restores only
-  that exact captured value state.
+* `Analyze`: read-only source identity and USB-only final-scope reporting.
+* `Apply`: captures selected USB file state and writes only the source-equivalent
+  Driver Updates Block `setupcomplete.cmd`.
+* `Default`: unavailable because Unblock is outside Yazan final scope.
+* `Restore`: requires selected captured USB file state and is not Unblock.
 
 The source also combines broader HKLM Windows Update policy mutation, custom
 update-server URL values, generated installation-media scripts, immediate
@@ -182,8 +186,8 @@ approval are added in a later phase.
 * Risk level:
   * High
 * Later implementation decision:
-  * Implemented in Phase 102 for the live Driver Updates branch only, with
-    exact value capture before mutation and exact value verification.
+  * Superseded by Phase 112 USB-only final scope. Live host registry
+    block/unblock is no longer final customer behavior.
 
 ### 3. Custom Update Server / WSUS URL Behavior
 
@@ -405,9 +409,9 @@ approval are added in a later phase.
 * Required foundation:
   * Phase 36 registry state capture and rollback.
 * Required future production allowlist:
-  * Phase 102 maps Driver Updates `Unblock` to `Default` for the nine supported
-    live Driver Updates policy values only.
-  * Separate exact Restore contract is required for selected captured state.
+  * Not approved for final behavior. Phase 112 excludes Driver Updates Unblock
+    and live host registry Default from the final tool scope.
+  * Restore remains selected captured USB file state only.
 * Required inventory/capture before mutation:
   * Existing values before deletion.
 * Required confirmation level:
@@ -557,30 +561,30 @@ A future safe implementation would require all of the following:
 The source `Unblock` options delete source-defined policy values. They are not
 the same thing as BoostLab Restore.
 
-Phase 102 implements Driver Updates `Default` for the nine supported live
-driver-delivery values only. It captures current state first, removes only those
-exact values, and verifies absence. This Default is source-defined value
-deletion and is not captured-state Restore.
+Phase 112 makes Driver Updates `Default` unavailable because Yazan excluded
+Unblock and live local Default from the final tool scope. BoostLab does not
+delete live host driver-delivery policy values for this tool.
 
 Deleting policy values can remove intentional existing policy.
 
-Restore is available only when a selected BoostLab rollback record from this
-tool is provided and validated. BoostLab must not infer prior Windows Update
-or driver-delivery policy from the source's Unblock paths.
+Restore is available only when a selected BoostLab USB file rollback record from
+this tool is provided and validated. BoostLab must not infer prior Windows
+Update or driver-delivery policy from the source's Unblock paths.
 
-Broad Windows Updates `Unblock`, bootable-media cleanup, generated-script
-restore, and custom update-server policy restore remain unavailable unless
-exact registry rollback, file rollback, generated-script ownership, update
-policy verification, and captured-state restore selection are approved.
+Broad Windows Updates `Unblock`, live Driver Updates `Unblock`, generated-script
+execution, generated-script cleanup, and custom update-server policy restore
+remain unavailable unless Yazan expands the final scope later.
 
 ## Production Approval State
 
-No production file/cleanup/reboot/update-server/bootable-media scopes are
-approved by this document.
+No production cleanup/reboot/update-server/script-execution scopes are approved
+by this document.
 
-Phase 102 approves only the module-local exact live Driver Updates policy
-registry implementation documented in
-`docs/migrations/updates-drivers-block.md`. The tool is no longer a placeholder.
+Phase 112 approves only selected USB `setupcomplete.cmd` creation after file
+state capture, as documented in `docs/migrations/updates-drivers-block.md`. The
+tool is no longer a placeholder.
+
+host registry mutation is not part of the Phase 112 final user-facing scope.
 
 Future phases must not implement a partial "safe-looking" subset of the
 remaining Windows Updates, bootable-media, generated-script, custom URL, or

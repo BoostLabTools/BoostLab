@@ -131,7 +131,7 @@ foreach ($tool in $tools) {
     }
     $hasDefaultAction = 'Default' -in @($tool['Actions'])
     $defaultActionIsBlockedUntilApprovedContract = (
-        [string]$tool['Id'] -in @('bitlocker', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall') -and
+        [string]$tool['Id'] -in @('bitlocker', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'updates-drivers-block') -and
         $hasDefaultAction -and
         -not [bool]$capabilities['SupportsDefault']
     )

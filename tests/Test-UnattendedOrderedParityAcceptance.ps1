@@ -250,7 +250,7 @@ Assert-BoostLabTextContains -Text ([string]$unattendedRecord.GapSummary) -Needle
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'updates-drivers-block') 'First pending ordered target must advance to Updates Drivers Block.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'to-bios') 'First pending ordered target must advance to To BIOS after Updates Drivers Block Yazan final exception.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'

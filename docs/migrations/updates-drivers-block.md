@@ -12,127 +12,150 @@
 ## Original Ultimate Behavior
 
 The Ultimate script requires Administrator rights and exposes six console menu
-branches. Phase 102 implements only the bounded live Driver Updates policy
-branch:
+branches:
 
-- menu option `1. Block` under `DRIVER UPDATES`
-- menu option `3. Unblock` under `DRIVER UPDATES`
+- Driver Updates `Block`
+- Driver Updates `Block (Bootable USB)`
+- Driver Updates `Unblock`
+- broad Updates `Block`
+- broad Updates `Block (Bootable USB)`
+- broad Updates `Unblock`
 
-The source also includes bootable-USB branches that generate
-`setupcomplete.cmd` with embedded reboot commands, plus broad Windows Update
-blocking branches with custom WSUS/update-server URL values. Those branches are
-not implemented in Phase 102.
+The selected source branch for Phase 112 is menu option `2`, `Driver Updates
+Block (Bootable USB)`. It creates `setupcomplete.cmd`, places it under
+`<DriveLetter>:\sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd`, and the
+generated script contains the nine Driver Updates policy `reg add` commands plus
+`shutdown /r /t 0` for Windows Setup context.
+
+## Yazan Final Scope Decision
+
+Yazan selected this final scope for BoostLab:
+
+- Driver Updates only
+- Bootable USB option only
+- no Unblock option
+- no broad Updates Block option
+- no broad Updates Block Bootable USB option
+- no custom WSUS/update-server behavior
+- no live local Driver Updates unblock/default option as final customer behavior
+
+This is recorded as a controlled subset with a Yazan final exception, not full
+Ultimate parity.
 
 ## Approved BoostLab Behavior
 
-- `Analyze`: verifies source identity and reports current state for the nine
-  supported live Driver Updates policy registry values.
-- `Apply`: captures each supported value, then writes only the exact
-  source-defined Driver Updates policy values.
-- `Default`: captures each supported value, then removes only the exact
-  source-defined Driver Updates policy values. Default is not Restore.
-- `Restore`: requires a selected captured rollback record from this tool and
-  restores only that exact captured registry value state.
+- `Analyze`: verifies source identity, reports the USB-only final scope,
+  reports omitted branches, and performs no mutation.
+- `Apply`: requires explicit confirmation and selected removable USB media,
+  captures the existing target `setupcomplete.cmd` file state, writes only the
+  source-equivalent Driver Updates Block USB script, verifies content, and
+  records post-mutation state.
+- `Default`: unavailable. It is not Unblock and does not delete live host
+  registry values or USB files.
+- `Restore`: requires a selected captured USB `setupcomplete.cmd` file rollback
+  record from Apply and restores only that captured file state.
 
-## Preserved Commands
+## Preserved Commands And Content
 
-BoostLab preserves the effective result of the source `reg add` and `reg
-delete` commands for the live Driver Updates policy branch using PowerShell
-registry APIs and BoostLab state capture. The source script is not executed.
+BoostLab preserves the source-equivalent generated `setupcomplete.cmd` content:
 
-## Exact Supported Registry Values
+- `PreventDeviceMetadataFromNetwork = REG_DWORD 1`
+- `DisableSendGenericDriverNotFoundToWER = REG_DWORD 1`
+- `DisableSendRequestAdditionalSoftwareToWER = REG_DWORD 1`
+- `SearchOrderConfig = REG_DWORD 0`
+- `SetAllowOptionalContent = REG_DWORD 0`
+- `AllowTemporaryEnterpriseFeatureControl = REG_DWORD 0`
+- `ExcludeWUDriversInQualityUpdate = REG_DWORD 1`
+- `IncludeRecommendedUpdates = REG_DWORD 0`
+- `EnableFeaturedSoftware = REG_DWORD 0`
+- `shutdown /r /t 0`
 
-- `HKLM:\Software\Policies\Microsoft\Windows\Device Metadata`
-  - `PreventDeviceMetadataFromNetwork` = `REG_DWORD 1`
-- `HKLM:\Software\Policies\Microsoft\Windows\DeviceInstall\Settings`
-  - `DisableSendGenericDriverNotFoundToWER` = `REG_DWORD 1`
-  - `DisableSendRequestAdditionalSoftwareToWER` = `REG_DWORD 1`
-- `HKLM:\Software\Policies\Microsoft\Windows\DriverSearching`
-  - `SearchOrderConfig` = `REG_DWORD 0`
-- `HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate`
-  - `SetAllowOptionalContent` = `REG_DWORD 0`
-  - `AllowTemporaryEnterpriseFeatureControl` = `REG_DWORD 0`
-  - `ExcludeWUDriversInQualityUpdate` = `REG_DWORD 1`
-- `HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU`
-  - `IncludeRecommendedUpdates` = `REG_DWORD 0`
-  - `EnableFeaturedSoftware` = `REG_DWORD 0`
+BoostLab writes the script to USB media only. It does not execute the script on
+the host.
 
 ## Intentional Deviations
 
-Phase 102 does not implement:
+The source's temporary `%SystemRoot%\Temp\setupcomplete.cmd` staging and folder
+opening are not preserved because Yazan's final scope requires no external tool
+launch and BoostLab can write the selected USB destination directly after file
+state capture.
 
-- Driver Updates Bootable USB generation
-- Windows Updates Block
-- Windows Updates Block Bootable USB generation
-- Windows Updates Unblock
-- custom WSUS/update-server URL writes
-- `setupcomplete.cmd` creation or movement
-- embedded reboot commands
-- folder opening or external process launch
+The following source branches are intentionally not implemented:
 
-These branches remain blocked because they require generated-script/media,
-custom URL, reboot/recovery, and broader policy approvals that are outside this
-phase.
+- live local Driver Updates Block
+- live local Driver Updates Unblock
+- broad Windows Updates Block
+- broad Windows Updates Block Bootable USB
+- broad Windows Updates Unblock
+- custom WSUS/update-server URL values
 
 ## Side Effects
 
-Implemented `Apply` and `Default` modify only the exact registry values listed
-above, after capture. No driver device mutation, driver installation/removal,
-Windows Update execution, service change, download, installer, external
-process, generated script, media write, or reboot behavior is added.
+Implemented `Apply` creates or overwrites only:
+
+`<SelectedUsbRoot>\sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd`
+
+No host registry mutation, host registry deletion, Windows Update execution,
+driver/device mutation, service change, download, installer, external process,
+source script execution, or BoostLab-triggered reboot is added.
 
 ## Capabilities
 
 - RequiresAdmin: true
 - RequiresInternet: false
 - CanReboot: false
-- CanModifyRegistry: true
+- CanModifyRegistry: false
 - CanModifyServices: false
 - CanInstallSoftware: false
 - CanDownload: false
 - CanModifyDrivers: false
 - CanModifySecurity: false
-- CanDeleteFiles: false
+- CanDeleteFiles: true
 - UsesTrustedInstaller: false
 - UsesSafeMode: false
-- SupportsDefault: true
+- SupportsDefault: false
 - SupportsRestore: true
 - NeedsExplicitConfirmation: true
 
 ## Risk Level
 
-High. The supported branch is bounded, but it changes HKLM Windows policy values
-that affect driver delivery through Windows Update.
+High. BoostLab only writes a USB file, but the generated script changes Windows
+driver-update policy and reboots when Windows Setup later executes it.
 
 ## Confirmation Requirements
 
-`Apply`, `Default`, and `Restore` require explicit confirmation. `Restore` also
-requires a selected captured rollback record.
+`Apply` and `Restore` require explicit confirmation. `Apply` also requires a
+selected removable USB target. `Restore` requires a selected captured USB file
+rollback record.
 
 ## Default And Restore
 
-Default removes only the source-defined Driver Updates policy values. Restore
-uses selected captured state and is not equivalent to Default.
+Default is unavailable because Yazan rejected Unblock for the final tool scope.
+Restore is selected captured USB file state only and is not Unblock.
 
 ## Restart Behavior
 
-No restart or reboot is implemented.
+BoostLab does not reboot. The generated `setupcomplete.cmd` preserves the
+source's `shutdown /r /t 0` line for Windows Setup context only.
 
 ## Test Requirements
 
 - Verify source path and SHA-256.
-- Verify Analyze is read-only.
-- Verify Apply writes only the nine supported values after capture.
-- Verify Default removes only the nine supported values after capture.
-- Verify Restore requires selected captured state and restores exact captured
-  value state.
-- Verify unsupported source branches remain blocked.
+- Verify Analyze is read-only and reports USB-only final scope.
+- Verify Apply requires selected removable USB media.
+- Verify Apply captures file state before writing.
+- Verify generated `setupcomplete.cmd` path/content matches the selected source
+  branch.
+- Verify the generated script is not executed on the host.
+- Verify Default is unavailable and does not delete host registry values.
+- Verify Restore requires selected captured USB file state and is not Unblock.
+- Verify broad Updates, custom update-server, live registry block/unblock,
+  Windows Update execution, downloads, external processes, and reboot behavior
+  remain unsupported.
 - Verify no artifact provenance or production allowlist entry is added.
 - Verify source paths remain untouched and deleted tools remain deleted.
 
 ## Yazan Approval Status
 
-Approved for Phase 102 controlled live Driver Updates policy implementation
-only. Bootable-media branches, broad Windows Update block/unblock branches,
-custom update-server URL values, generated setup scripts, folder opening, and
-reboot behavior remain unapproved.
+Phase 112 approved the USB-only final scope for Updates Drivers Block and marked
+the omitted Ultimate branches as an explicit Yazan final exception.

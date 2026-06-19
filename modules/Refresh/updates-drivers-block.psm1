@@ -4,10 +4,10 @@ $coreRoot = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'c
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $coreRoot 'Verification.psm1') -Scope Local -ErrorAction Stop
 }
-if (-not (Get-Command -Name 'New-BoostLabRegistryStateCapture' -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command -Name 'New-BoostLabFileStateCapture' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $coreRoot 'StateCapture.psm1') -Scope Local -ErrorAction Stop
 }
-if (-not (Get-Command -Name 'Invoke-BoostLabRegistryRollback' -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command -Name 'Invoke-BoostLabFileRollback' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $coreRoot 'Rollback.psm1') -Scope Local -ErrorAction Stop
 }
 
@@ -18,46 +18,53 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 3
     Type = 'action'
     RiskLevel = 'high'
-    Description = 'Apply or default the source-defined live Driver Updates policy registry values after captured prior state.'
+    Description = 'Create the Yazan-selected Driver Updates Block setupcomplete.cmd on selected bootable USB media only; Default/Unblock is unavailable.'
     Actions = @('Analyze', 'Apply', 'Default', 'Restore')
     Capabilities = [ordered]@{
         RequiresAdmin = $true
         RequiresInternet = $false
         CanReboot = $false
-        CanModifyRegistry = $true
+        CanModifyRegistry = $false
         CanModifyServices = $false
         CanInstallSoftware = $false
         CanDownload = $false
         CanModifyDrivers = $false
         CanModifySecurity = $false
-        CanDeleteFiles = $false
+        CanDeleteFiles = $true
         UsesTrustedInstaller = $false
         UsesSafeMode = $false
-        SupportsDefault = $true
+        SupportsDefault = $false
         SupportsRestore = $true
         NeedsExplicitConfirmation = $true
     }
 }
+
 $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default', 'Restore')
 $script:BoostLabExpectedSourceHash = '4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991'
 $script:BoostLabSourceRelativePath = 'source-ultimate/2 Refresh/3 Updates Drivers Block.ps1'
-$script:BoostLabSupportedSourceBranch = 'Driver Updates live policy branch: menu option 1 Block and menu option 3 Unblock'
+$script:BoostLabFinalScope = 'Driver Updates Block (Bootable USB) only'
+$script:BoostLabSupportedSourceBranch = 'Driver Updates Block (Bootable USB): Ultimate menu option 2'
+$script:BoostLabSetupCompleteRelativePath = 'sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd'
 $script:BoostLabUnsupportedSourceBranches = @(
-    'Driver Updates Block (Bootable USB): generates setupcomplete.cmd and embeds shutdown /r /t 0.',
-    'Updates Block: writes broad Windows Update blocking values and custom WSUS URL values.',
-    'Updates Block (Bootable USB): generates setupcomplete.cmd and embeds shutdown /r /t 0.',
-    'Updates Unblock: deletes broad Windows Update blocking values outside the approved driver-delivery scope.'
+    'Driver Updates Block live host registry branch: intentionally not final user-facing scope.',
+    'Driver Updates Unblock live host registry branch: intentionally not exposed as Default.',
+    'Broad Updates Block live host registry branch: unsupported.',
+    'Broad Updates Block Bootable USB branch: unsupported.',
+    'Broad Updates Unblock branch: unsupported.',
+    'Custom WSUS/update-server URL behavior: unsupported.'
 )
-$script:BoostLabDriverPolicyEntries = @(
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\Device Metadata'; ValueName = 'PreventDeviceMetadataFromNetwork'; ValueType = 'DWord'; ApplyValue = 1 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\DeviceInstall\Settings'; ValueName = 'DisableSendGenericDriverNotFoundToWER'; ValueType = 'DWord'; ApplyValue = 1 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\DeviceInstall\Settings'; ValueName = 'DisableSendRequestAdditionalSoftwareToWER'; ValueType = 'DWord'; ApplyValue = 1 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\DriverSearching'; ValueName = 'SearchOrderConfig'; ValueType = 'DWord'; ApplyValue = 0 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate'; ValueName = 'SetAllowOptionalContent'; ValueType = 'DWord'; ApplyValue = 0 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate'; ValueName = 'AllowTemporaryEnterpriseFeatureControl'; ValueType = 'DWord'; ApplyValue = 0 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate'; ValueName = 'ExcludeWUDriversInQualityUpdate'; ValueType = 'DWord'; ApplyValue = 1 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU'; ValueName = 'IncludeRecommendedUpdates'; ValueType = 'DWord'; ApplyValue = 0 },
-    [pscustomobject]@{ RegistryPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU'; ValueName = 'EnableFeaturedSoftware'; ValueType = 'DWord'; ApplyValue = 0 }
+$script:BoostLabSetupCompleteLines = @(
+    '@echo off',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\Device Metadata" /v "PreventDeviceMetadataFromNetwork" /t REG_DWORD /d 1 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\DeviceInstall\Settings" /v "DisableSendGenericDriverNotFoundToWER" /t REG_DWORD /d 1 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\DeviceInstall\Settings" /v "DisableSendRequestAdditionalSoftwareToWER" /t REG_DWORD /d 1 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v "SetAllowOptionalContent" /t REG_DWORD /d 0 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v "AllowTemporaryEnterpriseFeatureControl" /t REG_DWORD /d 0 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate" /v "ExcludeWUDriversInQualityUpdate" /t REG_DWORD /d 1 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate\AU" /v "IncludeRecommendedUpdates" /t REG_DWORD /d 0 /f',
+    'reg add "HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate\AU" /v "EnableFeaturedSoftware" /t REG_DWORD /d 0 /f',
+    'shutdown /r /t 0'
 )
 
 function Get-BoostLabUpdatesDriversSourcePath {
@@ -83,7 +90,7 @@ function Get-BoostLabUpdatesDriversSourceStatus {
         ''
     }
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         SourcePath = $sourcePath
         SourceRelativePath = $script:BoostLabSourceRelativePath
         Exists = $exists
@@ -101,7 +108,11 @@ function Get-BoostLabUpdatesDriversSourceStatus {
     }
 }
 
-function Test-BoostLabAdministrator {
+function Test-BoostLabUpdatesDriversAdministrator {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     try {
         $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [Security.Principal.WindowsPrincipal]::new($identity)
@@ -112,270 +123,272 @@ function Test-BoostLabAdministrator {
     }
 }
 
-function ConvertTo-BoostLabUpdatesDriversRegistryPath {
+function Get-BoostLabUpdatesDriversSetupCompleteContent {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    return ($script:BoostLabSetupCompleteLines -join "`r`n") + "`r`n"
+}
+
+function Get-BoostLabUpdatesDriversSetupCompleteHash {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return [BitConverter]::ToString(
+            $sha256.ComputeHash([Text.Encoding]::ASCII.GetBytes((Get-BoostLabUpdatesDriversSetupCompleteContent)))
+        ).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
+function ConvertTo-BoostLabUpdatesDriversUsbRoot {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [AllowNull()]
+        [string]$DriveRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($DriveRoot)) {
+        return ''
+    }
+
+    $trimmed = $DriveRoot.Trim()
+    if ($trimmed -match '^[a-zA-Z]:\\?$') {
+        return ('{0}:\' -f $trimmed.Substring(0, 1).ToUpperInvariant())
+    }
+
+    if ([IO.Path]::IsPathRooted($trimmed)) {
+        return ([IO.Path]::GetFullPath($trimmed).TrimEnd('\', '/') + '\')
+    }
+
+    return ''
+}
+
+function Get-BoostLabUpdatesDriversRemovableDrives {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param()
+
+    try {
+        return @(
+            Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DriveType = 2' -ErrorAction Stop |
+                Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.DeviceID) } |
+                ForEach-Object {
+                    [pscustomobject]@{
+                        Root = ('{0}\' -f ([string]$_.DeviceID).TrimEnd('\'))
+                        Label = [string]$_.VolumeName
+                        FreeSpace = [long]$_.FreeSpace
+                    }
+                }
+        )
+    }
+    catch {
+        return @()
+    }
+}
+
+function Get-BoostLabUpdatesDriversUsbPaths {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$DriveRoot
+    )
+
+    $normalizedRoot = ConvertTo-BoostLabUpdatesDriversUsbRoot -DriveRoot $DriveRoot
+    $scriptsDirectory = [IO.Path]::Combine(
+        $normalizedRoot,
+        'sources',
+        '$OEM$',
+        '$$',
+        'Setup',
+        'Scripts'
+    )
+
+    [pscustomobject]@{
+        DriveRoot = $normalizedRoot
+        ScriptsDirectory = $scriptsDirectory
+        DestinationPath = [IO.Path]::Combine($scriptsDirectory, 'setupcomplete.cmd')
+        RelativePath = $script:BoostLabSetupCompleteRelativePath
+    }
+}
+
+function Get-BoostLabUpdatesDriversFileState {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)]
         [string]$Path
     )
 
-    $normalized = $Path.Trim().TrimEnd('\')
-    $normalized = $normalized -replace '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
-    $normalized = $normalized -replace '^Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
-    $normalized = $normalized -replace '^HKEY_LOCAL_MACHINE\\', 'HKLM:\'
-    return $normalized
-}
-
-function Get-BoostLabUpdatesDriversPolicyEntries {
-    [CmdletBinding()]
-    [OutputType([object[]])]
-    param()
-
-    return @($script:BoostLabDriverPolicyEntries)
-}
-
-function Test-BoostLabUpdatesDriversRegistryTarget {
-    param(
-        [Parameter(Mandatory)]
-        [string]$RegistryPath,
-
-        [Parameter(Mandatory)]
-        [string]$ValueName
-    )
-
-    $normalized = ConvertTo-BoostLabUpdatesDriversRegistryPath -Path $RegistryPath
-    if ($normalized.IndexOfAny([char[]]'*?[]') -ge 0) {
-        return $false
-    }
-
-    foreach ($entry in Get-BoostLabUpdatesDriversPolicyEntries) {
-        if (
-            $normalized.Equals([string]$entry.RegistryPath, [StringComparison]::OrdinalIgnoreCase) -and
-            [string]$ValueName -eq [string]$entry.ValueName
-        ) {
-            return $true
-        }
-    }
-
-    return $false
-}
-
-function Get-BoostLabUpdatesDriversRegistryValueState {
-    param(
-        [Parameter(Mandatory)]
-        [string]$RegistryPath,
-
-        [string]$ItemType = 'RegistryValue',
-
-        [Parameter(Mandatory)]
-        [string]$ValueName
-    )
-
-    $path = ConvertTo-BoostLabUpdatesDriversRegistryPath -Path $RegistryPath
-    if (-not (Test-BoostLabUpdatesDriversRegistryTarget -RegistryPath $path -ValueName $ValueName)) {
+    if (-not [IO.File]::Exists($Path)) {
         return [pscustomobject]@{
-            ReadSucceeded = $false
-            KeyExists = $null
             Exists = $false
-            Metadata = $null
-            DisplayValue = 'Blocked'
-            Message = 'Registry path/value is outside the approved Updates Drivers Block driver-policy scope.'
+            Path = $Path
+            Sha256 = ''
+            Length = 0L
+            ReadSucceeded = $true
+            Message = 'File is absent.'
         }
     }
 
     try {
-        if (-not (Test-Path -LiteralPath $path -PathType Container)) {
-            return [pscustomobject]@{
-                ReadSucceeded = $true
-                KeyExists = $false
-                Exists = $false
-                Metadata = $null
-                DisplayValue = 'Absent'
-                Message = 'Registry key is absent.'
-            }
-        }
-
-        $key = Get-Item -LiteralPath $path -ErrorAction Stop
-        $valueExists = $ValueName -in @($key.GetValueNames())
-        if (-not $valueExists) {
-            return [pscustomobject]@{
-                ReadSucceeded = $true
-                KeyExists = $true
-                Exists = $false
-                Metadata = $null
-                DisplayValue = 'Absent'
-                Message = 'Registry value is absent.'
-            }
-        }
-
-        $valueType = [string]$key.GetValueKind($ValueName)
-        $valueData = $key.GetValue($ValueName, $null, 'DoNotExpandEnvironmentNames')
+        $file = [IO.FileInfo]::new($Path)
         return [pscustomobject]@{
-            ReadSucceeded = $true
-            KeyExists = $true
             Exists = $true
-            Metadata = [ordered]@{
-                ValueName = $ValueName
-                ValueType = $valueType
-                ValueData = $valueData
-            }
-            DisplayValue = '{0} {1}' -f $valueType, $valueData
-            Message = 'Registry value detected.'
+            Path = $Path
+            Sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256 -ErrorAction Stop).Hash
+            Length = [long]$file.Length
+            ReadSucceeded = $true
+            Message = 'File state detected.'
         }
     }
     catch {
         return [pscustomobject]@{
+            Exists = $true
+            Path = $Path
+            Sha256 = ''
+            Length = 0L
             ReadSucceeded = $false
-            KeyExists = $null
-            Exists = $false
-            Metadata = $null
-            DisplayValue = 'Unknown'
             Message = $_.Exception.Message
         }
     }
 }
 
-function ConvertTo-BoostLabUpdatesDriversRegistryState {
+function Write-BoostLabUpdatesDriversSetupComplete {
+    [CmdletBinding()]
     param(
-        [AllowNull()]
-        [object]$State
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Content
     )
 
-    if ($null -eq $State) {
-        return [pscustomobject]@{
-            ReadSucceeded = $false
-            KeyExists = $null
-            Exists = $false
-            Metadata = $null
-            DisplayValue = 'Unknown'
-            Message = 'Registry reader returned no state.'
-        }
-    }
-    if ($null -ne $State.PSObject.Properties['ReadSucceeded']) {
-        return $State
-    }
-
-    $exists = if ($null -ne $State.PSObject.Properties['Exists']) {
-        [bool]$State.Exists
-    }
-    else {
-        $false
-    }
-    $metadata = if ($null -ne $State.PSObject.Properties['Metadata']) {
-        $State.Metadata
-    }
-    else {
-        $null
-    }
-    $displayValue = if ($exists -and $null -ne $metadata) {
-        '{0} {1}' -f [string]$metadata.ValueType, [string]$metadata.ValueData
-    }
-    else {
-        'Absent'
-    }
-
-    return [pscustomobject]@{
-        ReadSucceeded = $true
-        KeyExists = $null
-        Exists = $exists
-        Metadata = $metadata
-        DisplayValue = $displayValue
-        Message = if ($exists) { 'Registry value detected.' } else { 'Registry value is absent.' }
-    }
+    [IO.Directory]::CreateDirectory((Split-Path -Parent $Path)) | Out-Null
+    [IO.File]::WriteAllText($Path, $Content, [Text.Encoding]::ASCII)
 }
 
-function Set-BoostLabUpdatesDriversRegistryValue {
+function Show-BoostLabUpdatesDriversUsbSelectionDialog {
+    [CmdletBinding()]
+    [OutputType([object])]
     param(
-        [Parameter(Mandatory)]
-        [object]$Entry
+        [object[]]$Drives = @(Get-BoostLabUpdatesDriversRemovableDrives)
     )
 
-    $path = ConvertTo-BoostLabUpdatesDriversRegistryPath -Path ([string]$Entry.RegistryPath)
-    $valueName = [string]$Entry.ValueName
-    if (-not (Test-BoostLabUpdatesDriversRegistryTarget -RegistryPath $path -ValueName $valueName)) {
-        throw "Registry target is outside the approved Updates Drivers Block scope: $path | $valueName"
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    if (@($Drives).Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show(
+            'Connect writable bootable USB media, then try again.',
+            'BoostLab Updates Drivers Block',
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Information
+        ) | Out-Null
+        return $null
     }
 
-    if ([string]$Entry.ValueType -ne 'DWord') {
-        throw "Unsupported registry value type for Updates Drivers Block: $($Entry.ValueType)"
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = 'BoostLab Updates Drivers Block - USB'
+    $form.StartPosition = 'CenterScreen'
+    $form.Size = New-Object System.Drawing.Size(580, 220)
+    $form.MinimizeBox = $false
+    $form.MaximizeBox = $false
+    $form.TopMost = $true
+
+    $warning = New-Object System.Windows.Forms.Label
+    $warning.Text = 'This writes only the Driver Updates Block setupcomplete.cmd to selected USB media. It does not execute the script, write host registry policy, run Windows Update, or reboot.'
+    $warning.AutoSize = $false
+    $warning.Size = New-Object System.Drawing.Size(540, 58)
+    $warning.Location = New-Object System.Drawing.Point(16, 12)
+    $form.Controls.Add($warning)
+
+    $driveLabel = New-Object System.Windows.Forms.Label
+    $driveLabel.Text = 'Removable bootable USB media:'
+    $driveLabel.AutoSize = $true
+    $driveLabel.Location = New-Object System.Drawing.Point(16, 82)
+    $form.Controls.Add($driveLabel)
+
+    $driveCombo = New-Object System.Windows.Forms.ComboBox
+    $driveCombo.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+    $driveCombo.Location = New-Object System.Drawing.Point(18, 104)
+    $driveCombo.Size = New-Object System.Drawing.Size(526, 24)
+    foreach ($drive in @($Drives)) {
+        $display = if ([string]::IsNullOrWhiteSpace([string]$drive.Label)) {
+            [string]$drive.Root
+        }
+        else {
+            '{0} ({1})' -f [string]$drive.Root, [string]$drive.Label
+        }
+        [void]$driveCombo.Items.Add([pscustomobject]@{
+            Display = $display
+            Root = [string]$drive.Root
+        })
+    }
+    $driveCombo.DisplayMember = 'Display'
+    $driveCombo.SelectedIndex = 0
+    $form.Controls.Add($driveCombo)
+
+    $createButton = New-Object System.Windows.Forms.Button
+    $createButton.Text = 'Create Script'
+    $createButton.Location = New-Object System.Drawing.Point(336, 144)
+    $createButton.Size = New-Object System.Drawing.Size(104, 28)
+    $createButton.Add_Click({
+        $form.Tag = [pscustomobject]@{
+            DriveRoot = [string]$driveCombo.SelectedItem.Root
+        }
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.Close()
+    })
+    $form.Controls.Add($createButton)
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Text = 'Cancel'
+    $cancelButton.Location = New-Object System.Drawing.Point(448, 144)
+    $cancelButton.Size = New-Object System.Drawing.Size(96, 28)
+    $cancelButton.Add_Click({
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $form.Close()
+    })
+    $form.Controls.Add($cancelButton)
+
+    $dialogResult = $form.ShowDialog()
+    if ($dialogResult -ne [System.Windows.Forms.DialogResult]::OK) {
+        return $null
     }
 
-    $subKeyPath = if ($path.StartsWith('HKLM:\', [StringComparison]::OrdinalIgnoreCase)) {
-        $path.Substring('HKLM:\'.Length)
-    }
-    elseif ($path.StartsWith('HKEY_LOCAL_MACHINE\', [StringComparison]::OrdinalIgnoreCase)) {
-        $path.Substring('HKEY_LOCAL_MACHINE\'.Length)
-    }
-    else {
-        throw "Unsupported registry hive for Updates Drivers Block: $path"
-    }
-
-    $baseKey = $null
-    $key = $null
-    try {
-        $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
-            [Microsoft.Win32.RegistryHive]::LocalMachine,
-            [Microsoft.Win32.RegistryView]::Default
-        )
-        $key = $baseKey.CreateSubKey($subKeyPath, $true)
-        if ($null -eq $key) {
-            throw "Could not create or open registry key: $path"
-        }
-        $key.SetValue($valueName, [int]$Entry.ApplyValue, [Microsoft.Win32.RegistryValueKind]::DWord)
-        $key.Flush()
-    }
-    finally {
-        if ($null -ne $key) {
-            $key.Dispose()
-        }
-        if ($null -ne $baseKey) {
-            $baseKey.Dispose()
-        }
-    }
+    return $form.Tag
 }
 
-function Remove-BoostLabUpdatesDriversRegistryValue {
+function New-BoostLabUpdatesDriversUsbFileCapturePolicy {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)]
-        [object]$Entry
-    )
-
-    $path = ConvertTo-BoostLabUpdatesDriversRegistryPath -Path ([string]$Entry.RegistryPath)
-    $valueName = [string]$Entry.ValueName
-    if (-not (Test-BoostLabUpdatesDriversRegistryTarget -RegistryPath $path -ValueName $valueName)) {
-        throw "Registry target is outside the approved Updates Drivers Block scope: $path | $valueName"
-    }
-    if (-not (Test-Path -LiteralPath $path -PathType Container)) {
-        return
-    }
-
-    $key = Get-Item -LiteralPath $path -ErrorAction Stop
-    if ($valueName -in @($key.GetValueNames())) {
-        Remove-ItemProperty -LiteralPath $path -Name $valueName -Force -ErrorAction Stop
-    }
-}
-
-function New-BoostLabUpdatesDriversCapturePolicy {
-    param(
-        [Parameter(Mandatory)]
-        [object]$Entry,
-
-        [Parameter(Mandatory)]
-        [string]$ScopeId
+        [string]$ScriptsDirectory
     )
 
     return @{
         SchemaVersion = '1.0'
-        FileScopes = @()
-        RegistryScopes = @(
+        FileScopes = @(
             @{
-                ScopeId = $ScopeId
+                ScopeId = 'updates-drivers-block-usb-setupcomplete'
                 ToolIds = @([string]$script:BoostLabToolMetadata['Id'])
-                AllowedPath = [string]$Entry.RegistryPath
-                AllowedValueNames = @([string]$Entry.ValueName)
-                AllowKeyCapture = $false
-                AllowProtectedSystem = $true
+                AllowedRoot = $ScriptsDirectory
+                AllowDirectories = $false
+                MaxFiles = 1
+                MaxBytes = 65536
             }
         )
+        RegistryScopes = @()
         DeniedRegistryPrefixes = @(
             'HKLM:\SYSTEM'
             'Registry::HKEY_LOCAL_MACHINE\SYSTEM'
@@ -418,7 +431,7 @@ function New-BoostLabUpdatesDriversResult {
         [bool]$ChangesExecuted = $false
     )
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Success = $Success
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
@@ -438,465 +451,482 @@ function New-BoostLabUpdatesDriversResult {
     }
 }
 
-function Test-BoostLabUpdatesDriversPolicyState {
+function Get-BoostLabUpdatesDriversAnalysis {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [scriptblock]$DriveReader = { Get-BoostLabUpdatesDriversRemovableDrives }
+    )
+
+    $source = Get-BoostLabUpdatesDriversSourceStatus
+    $drives = @(& $DriveReader)
+    [pscustomobject]@{
+        Source = $source
+        FinalScope = $script:BoostLabFinalScope
+        SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
+        SetupCompleteRelativePath = $script:BoostLabSetupCompleteRelativePath
+        SetupCompleteSha256 = Get-BoostLabUpdatesDriversSetupCompleteHash
+        SetupCompleteLines = @($script:BoostLabSetupCompleteLines)
+        RemovableMediaCount = $drives.Count
+        UnsupportedSourceBranches = @($script:BoostLabUnsupportedSourceBranches)
+        UnsupportedBehavior = @(
+            'No Unblock option is exposed.'
+            'No broad Updates Block or broad Updates USB branch is implemented.'
+            'No custom WSUS/update-server behavior is implemented.'
+            'No live host registry block/unblock behavior remains final user-facing scope.'
+        )
+        NoHostRegistryMutation = $true
+        NoDriverDeviceMutation = $true
+        NoWindowsUpdateExecution = $true
+        NoDownloadOrInstaller = $true
+        NoExternalProcess = $true
+        NoRebootByBoostLab = $true
+        ChangesExecuted = $false
+        Warnings = @(
+            'The generated setupcomplete.cmd contains registry commands and shutdown /r /t 0 for Windows Setup context only.'
+            'BoostLab writes the script to selected USB media but does not execute it on the host.'
+            'Default/Unblock is intentionally unavailable by Yazan final scope decision.'
+        )
+    }
+}
+
+function New-BoostLabUpdatesDriversAnalyzeVerification {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Analyze', 'Apply', 'Default')]
-        [string]$ActionName,
-
-        [AllowNull()]
-        [object[]]$Entries = @(),
-
-        [AllowNull()]
-        [object[]]$CaptureRecords = @(),
-
-        [AllowNull()]
-        [scriptblock]$RegistryReader = $null
+        [object]$Analysis
     )
 
-    $checks = [System.Collections.Generic.List[object]]::new()
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        { param($Path, $ItemType, $ValueName) Get-BoostLabUpdatesDriversRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
-    }
-
-    $entryCount = @($Entries).Count
-    $captureCount = @($CaptureRecords).Count
-    $checks.Add(
+    $checks = @(
         (New-BoostLabVerificationCheck `
-            -Name 'Source-defined driver policy scope' `
-            -Expected 'Exactly 9 Driver Updates policy registry values from Ultimate menu options 1 and 3' `
-            -Actual "$entryCount value(s)" `
-            -Status $(if ($entryCount -eq 9) { 'Passed' } else { 'Failed' }) `
-            -Message 'BoostLab only supports the bounded live Driver Updates policy branch in this phase.')
+            -Name 'Source checksum' `
+            -Expected $script:BoostLabExpectedSourceHash `
+            -Actual ([string]$Analysis.Source.DetectedSha256) `
+            -Status ([string]$Analysis.Source.ChecksumStatus) `
+            -Message 'The approved Ultimate source identity must match before any operation can run.'),
+        (New-BoostLabVerificationCheck `
+            -Name 'Yazan final scope' `
+            -Expected 'Driver Updates Block Bootable USB only' `
+            -Actual ([string]$Analysis.FinalScope) `
+            -Status 'Passed' `
+            -Message 'Unblock, broad Updates, custom update-server, and live host registry branches are intentionally excluded.'),
+        (New-BoostLabVerificationCheck `
+            -Name 'Host mutation' `
+            -Expected 'None during Analyze' `
+            -Actual 'No mutation' `
+            -Status 'Passed' `
+            -Message 'Analyze is read-only.')
     )
-
-    if ($ActionName -ne 'Analyze') {
-        $checks.Add(
-            (New-BoostLabVerificationCheck `
-                -Name 'Pre-mutation capture records' `
-                -Expected "$entryCount capture record(s)" `
-                -Actual "$captureCount capture record(s)" `
-                -Status $(if ($entryCount -gt 0 -and $captureCount -eq $entryCount) { 'Passed' } else { 'Failed' }) `
-                -Message 'Each source-defined policy value must be captured before mutation.')
-        )
-    }
-
-    foreach ($entry in @($Entries)) {
-        $state = ConvertTo-BoostLabUpdatesDriversRegistryState -State (& $reader ([string]$entry.RegistryPath) 'RegistryValue' ([string]$entry.ValueName))
-        if ($ActionName -eq 'Analyze') {
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) { 'Warning' } else { 'Passed' }
-            $expected = 'Readable current registry policy state'
-        }
-        elseif ($ActionName -eq 'Apply') {
-            $valueType = if ($null -ne $state -and $null -ne $state.Metadata) { [string]$state.Metadata.ValueType } else { '' }
-            $valueData = if ($null -ne $state -and $null -ne $state.Metadata) { $state.Metadata.ValueData } else { $null }
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            elseif (-not [bool]$state.Exists) {
-                'Failed'
-            }
-            elseif ($valueType -notin @('DWord', 'REG_DWORD') -or [string]$valueData -ne [string]$entry.ApplyValue) {
-                'Failed'
-            }
-            else {
-                'Passed'
-            }
-            $expected = '{0} DWORD {1}' -f [string]$entry.ValueName, [int]$entry.ApplyValue
-        }
-        else {
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            elseif ([bool]$state.Exists) {
-                'Failed'
-            }
-            else {
-                'Passed'
-            }
-            $expected = '{0} absent' -f [string]$entry.ValueName
-        }
-
-        $checks.Add(
-            (New-BoostLabVerificationCheck `
-                -Name ('{0} | {1}' -f [string]$entry.ValueName, [string]$entry.RegistryPath) `
-                -Expected $expected `
-                -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) `
-                -Status $status `
-                -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Registry reader returned no state.' }))
-        )
-    }
-
-    $overallStatus = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) {
-        'Failed'
-    }
-    elseif (@($checks | Where-Object { $_.Status -eq 'Warning' }).Count -gt 0) {
-        'Warning'
-    }
-    else {
-        'Passed'
-    }
 
     return New-BoostLabVerificationResult `
         -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
         -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
-        -Action $ActionName `
-        -Status $overallStatus `
-        -ExpectedState ([pscustomobject]@{
-            SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
-            ValueCount = $entryCount
-            ExpectedState = if ($ActionName -eq 'Default') { 'Absent' } elseif ($ActionName -eq 'Apply') { 'Source-defined DWORD values' } else { 'Read-only analysis' }
-        }) `
+        -Action 'Analyze' `
+        -Status $(if ([string]$Analysis.Source.ChecksumStatus -eq 'Passed') { 'Passed' } else { 'Failed' }) `
+        -ExpectedState 'Driver Updates Block Bootable USB final scope available after source verification.' `
         -DetectedState ([pscustomobject]@{
-            ValueCount = $entryCount
-            CaptureRecordCount = $captureCount
-            FailedChecks = @($checks | Where-Object { $_.Status -eq 'Failed' }).Count
-            WarningChecks = @($checks | Where-Object { $_.Status -eq 'Warning' }).Count
+            FinalScope = [string]$Analysis.FinalScope
+            SourceChecksumStatus = [string]$Analysis.Source.ChecksumStatus
+            RemovableMediaCount = [int]$Analysis.RemovableMediaCount
         }) `
-        -Checks $checks.ToArray() `
-        -Message $(switch ($overallStatus) {
-            'Passed' { if ($ActionName -eq 'Apply') { 'All source-defined driver update block policy values are set.' } elseif ($ActionName -eq 'Default') { 'All source-defined driver update block policy values are absent.' } else { 'Driver update policy state was analyzed.' } }
-            'Warning' { 'Driver update policy state was analyzed with warnings.' }
-            default { 'One or more source-defined driver update policy values did not match the expected state.' }
-        })
+        -Checks $checks `
+        -Message 'Updates Drivers Block USB-only scope analysis completed.'
 }
 
-function Get-BoostLabUpdatesDriversCurrentState {
+function New-BoostLabUpdatesDriversApplyVerification {
     param(
-        [AllowNull()]
-        [scriptblock]$RegistryReader = $null
+        [Parameter(Mandatory)]
+        [object]$Source,
+
+        [Parameter(Mandatory)]
+        [object]$Paths,
+
+        [Parameter(Mandatory)]
+        [object]$Capture,
+
+        [Parameter(Mandatory)]
+        [object]$MutationRecord,
+
+        [Parameter(Mandatory)]
+        [object]$DestinationState,
+
+        [Parameter(Mandatory)]
+        [string]$DetectedContent
     )
 
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        { param($Path, $ItemType, $ValueName) Get-BoostLabUpdatesDriversRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
-    }
+    $expectedContent = Get-BoostLabUpdatesDriversSetupCompleteContent
+    $expectedHash = Get-BoostLabUpdatesDriversSetupCompleteHash
+    $contentMatches = $DetectedContent -eq $expectedContent
+    $checks = @(
+        (New-BoostLabVerificationCheck `
+            -Name 'Source checksum' `
+            -Expected $script:BoostLabExpectedSourceHash `
+            -Actual ([string]$Source.DetectedSha256) `
+            -Status ([string]$Source.ChecksumStatus) `
+            -Message 'The approved Ultimate source identity was verified.'),
+        (New-BoostLabVerificationCheck `
+            -Name 'Selected USB setupcomplete.cmd target' `
+            -Expected $script:BoostLabSetupCompleteRelativePath `
+            -Actual ([string]$Paths.DestinationPath) `
+            -Status 'Passed' `
+            -Message 'Only the selected USB media setupcomplete.cmd path is targeted.'),
+        (New-BoostLabVerificationCheck `
+            -Name 'Pre-mutation file capture' `
+            -Expected 'Captured before create or overwrite' `
+            -Actual ([string]$Capture.Status) `
+            -Status $(if ([bool]$Capture.Success) { 'Passed' } else { 'Failed' }) `
+            -Message ([string]$Capture.Message)),
+        (New-BoostLabVerificationCheck `
+            -Name 'Destination file' `
+            -Expected 'Exists after Apply' `
+            -Actual $(if ([bool]$DestinationState.Exists) { 'Exists' } else { 'Absent' }) `
+            -Status $(if ([bool]$DestinationState.Exists) { 'Passed' } else { 'Failed' }) `
+            -Message ([string]$DestinationState.Message)),
+        (New-BoostLabVerificationCheck `
+            -Name 'Destination content hash' `
+            -Expected $expectedHash `
+            -Actual ([string]$DestinationState.Sha256) `
+            -Status $(if ([string]$DestinationState.Sha256 -eq $expectedHash -and $contentMatches) { 'Passed' } else { 'Failed' }) `
+            -Message 'Generated setupcomplete.cmd must match the source-equivalent Driver Updates USB branch.'),
+        (New-BoostLabVerificationCheck `
+            -Name 'Post-mutation rollback state' `
+            -Expected 'Recorded' `
+            -Actual ([string]$MutationRecord.Status) `
+            -Status $(if ([bool]$MutationRecord.Success) { 'Passed' } else { 'Failed' }) `
+            -Message ([string]$MutationRecord.Message)),
+        (New-BoostLabVerificationCheck `
+            -Name 'Host execution' `
+            -Expected 'No host execution' `
+            -Actual 'No setupcomplete.cmd execution, Windows Update execution, registry mutation, driver mutation, external process, or reboot' `
+            -Status 'Passed' `
+            -Message 'BoostLab only writes the USB file.')
+    )
 
-    foreach ($entry in Get-BoostLabUpdatesDriversPolicyEntries) {
-        $state = ConvertTo-BoostLabUpdatesDriversRegistryState -State (& $reader ([string]$entry.RegistryPath) 'RegistryValue' ([string]$entry.ValueName))
-        [pscustomobject]@{
-            RegistryPath = [string]$entry.RegistryPath
-            ValueName = [string]$entry.ValueName
-            SourceApplyValue = [int]$entry.ApplyValue
-            CurrentState = if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }
-            Exists = if ($null -ne $state) { [bool]$state.Exists } else { $false }
-            ReadSucceeded = if ($null -ne $state) { [bool]$state.ReadSucceeded } else { $false }
-            Message = if ($null -ne $state) { [string]$state.Message } else { 'Registry reader returned no state.' }
+    $status = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) { 'Failed' } else { 'Passed' }
+    return New-BoostLabVerificationResult `
+        -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+        -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
+        -Action 'Apply' `
+        -Status $status `
+        -ExpectedState ([pscustomobject]@{
+            FinalScope = $script:BoostLabFinalScope
+            DestinationPath = [string]$Paths.DestinationPath
+            SetupCompleteSha256 = $expectedHash
+        }) `
+        -DetectedState ([pscustomobject]@{
+            DestinationPath = [string]$DestinationState.Path
+            FileExists = [bool]$DestinationState.Exists
+            Sha256 = [string]$DestinationState.Sha256
+            ContentMatches = $contentMatches
+            CaptureRecordPath = [string]$Capture.RecordPath
+            MutationRecorded = [bool]$MutationRecord.Success
+        }) `
+        -Checks $checks `
+        -Message $(if ($status -eq 'Passed') {
+            'The Driver Updates Block USB setupcomplete.cmd file was created and verified.'
         }
-    }
+        else {
+            'The Driver Updates Block USB setupcomplete.cmd file did not pass verification.'
+        })
 }
 
 function Invoke-BoostLabUpdatesDriversAnalyze {
     param(
-        [AllowNull()]
-        [scriptblock]$RegistryReader = $null
+        [scriptblock]$DriveReader = { Get-BoostLabUpdatesDriversRemovableDrives }
     )
 
-    $source = Get-BoostLabUpdatesDriversSourceStatus
-    $entries = @(Get-BoostLabUpdatesDriversPolicyEntries)
-    $verification = Test-BoostLabUpdatesDriversPolicyState -ActionName 'Analyze' -Entries $entries -RegistryReader $RegistryReader
-    $data = [pscustomobject]@{
-        Source = $source
-        SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
-        UnsupportedSourceBranches = @($script:BoostLabUnsupportedSourceBranches)
-        SupportedRegistryValues = $entries
-        SupportedValueCount = @($entries).Count
-        CurrentPolicyState = @(Get-BoostLabUpdatesDriversCurrentState -RegistryReader $RegistryReader)
-        ApplyAvailable = [string]$source.ChecksumStatus -eq 'Passed'
-        DefaultAvailable = [string]$source.ChecksumStatus -eq 'Passed'
-        RestoreAvailable = 'Requires selected captured rollback record from Apply or Default.'
-        ChangesExecuted = $false
-        NoDriverDeviceMutation = $true
-        NoWindowsUpdateExecution = $true
-        NoDownloadOrInstaller = $true
-    }
-
-    if ([string]$source.ChecksumStatus -ne 'Passed') {
-        return New-BoostLabUpdatesDriversResult `
-            -Success $false `
-            -Action 'Analyze' `
-            -Status 'NeedsSourceIdentity' `
-            -CommandStatus 'No execution performed' `
-            -VerificationStatus 'Failed' `
-            -Message 'Updates Drivers Block source identity could not be verified. No mutation is available.' `
-            -Data $data `
-            -VerificationResult $verification `
-            -Errors @('Source checksum failed or source file is missing.')
-    }
+    $analysis = Get-BoostLabUpdatesDriversAnalysis -DriveReader $DriveReader
+    $verification = New-BoostLabUpdatesDriversAnalyzeVerification -Analysis $analysis
+    $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
 
     return New-BoostLabUpdatesDriversResult `
-        -Success $true `
+        -Success $sourceOk `
         -Action 'Analyze' `
-        -Status 'Analyzed' `
+        -Status $(if ($sourceOk) { 'Analyzed' } else { 'NeedsSourceIdentity' }) `
         -CommandStatus 'No execution performed' `
         -VerificationStatus ([string]$verification.Status) `
-        -Message 'Updates Drivers Block analyzed the source-defined live Driver Updates policy registry scope. No mutation occurred.' `
-        -Data $data `
+        -Message $(if ($sourceOk) {
+            'Updates Drivers Block analyzed. Yazan final scope is Driver Updates Block Bootable USB only.'
+        }
+        else {
+            'Updates Drivers Block source identity could not be verified.'
+        }) `
+        -Data $analysis `
         -VerificationResult $verification `
-        -Warnings @($script:BoostLabUnsupportedSourceBranches)
+        -Warnings @($analysis.Warnings) `
+        -Errors $(if ($sourceOk) { @() } else { @('Source checksum failed or source file is missing.') })
 }
 
-function Invoke-BoostLabUpdatesDriversPolicyMutation {
+function Invoke-BoostLabUpdatesDriversApply {
     param(
-        [Parameter(Mandatory)]
-        [ValidateSet('Apply', 'Default')]
-        [string]$ActionName,
-
         [bool]$Confirmed = $false,
 
-        [AllowNull()]
-        [scriptblock]$AdministratorChecker = $null,
+        [scriptblock]$AdministratorChecker = { Test-BoostLabUpdatesDriversAdministrator },
 
-        [AllowNull()]
-        [scriptblock]$RegistryReader = $null,
+        [scriptblock]$DriveReader = { Get-BoostLabUpdatesDriversRemovableDrives },
 
-        [AllowNull()]
-        [scriptblock]$RegistryWriter = $null,
+        [scriptblock]$SelectionProvider = {
+            param($Drives)
+            Show-BoostLabUpdatesDriversUsbSelectionDialog -Drives $Drives
+        },
 
-        [AllowNull()]
-        [scriptblock]$RegistryRemover = $null,
+        [scriptblock]$FileStateReader = {
+            param($Path)
+            Get-BoostLabUpdatesDriversFileState -Path $Path
+        },
+
+        [scriptblock]$FileCapture = {
+            param($TargetPath, $ScriptsDirectory, $StateRoot)
+            New-BoostLabFileStateCapture `
+                -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+                -ActionId 'Apply' `
+                -ScopeId 'updates-drivers-block-usb-setupcomplete' `
+                -TargetPath $TargetPath `
+                -ItemType File `
+                -IntendedMutation Overwrite `
+                -RiskClassification High `
+                -VerificationRequirement 'Verify setupcomplete.cmd content and post-mutation hash.' `
+                -Policy (New-BoostLabUpdatesDriversUsbFileCapturePolicy -ScriptsDirectory $ScriptsDirectory) `
+                -StateRoot $StateRoot
+        },
+
+        [scriptblock]$TextWriter = {
+            param($Path, $Content)
+            Write-BoostLabUpdatesDriversSetupComplete -Path $Path -Content $Content
+        },
+
+        [scriptblock]$TextReader = {
+            param($Path)
+            Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+        },
+
+        [scriptblock]$MutationRecorder = {
+            param($RecordPath, $StateRoot, $DestinationState)
+            Set-BoostLabRollbackMutationState `
+                -RecordPath $RecordPath `
+                -StateRoot $StateRoot `
+                -PostMutationExists ([bool]$DestinationState.Exists) `
+                -PostMutationHash ([string]$DestinationState.Sha256) `
+                -PostMutationMetadata ([pscustomobject]@{
+                    Path = [string]$DestinationState.Path
+                    Length = [long]$DestinationState.Length
+                })
+        },
 
         [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
     )
 
+    $analysis = Get-BoostLabUpdatesDriversAnalysis -DriveReader $DriveReader
     if (-not $Confirmed) {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
-            -Action $ActionName `
+            -Action 'Apply' `
             -Status 'Cancelled' `
             -CommandStatus 'Cancelled before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message "Updates Drivers Block $ActionName cancelled before registry capture or mutation." `
-            -Cancelled:$true `
-            -Data ([pscustomobject]@{ ChangesExecuted = $false; CaptureAttempted = $false; RegistryWriteAttempted = $false })
+            -Message 'Updates Drivers Block Apply requires explicit confirmation before writing setupcomplete.cmd to selected USB media.' `
+            -Data $analysis `
+            -Warnings @($analysis.Warnings) `
+            -Cancelled $true
     }
 
-    $source = Get-BoostLabUpdatesDriversSourceStatus
-    if ([string]$source.ChecksumStatus -ne 'Passed') {
+    if ([string]$analysis.Source.ChecksumStatus -ne 'Passed') {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
-            -Action $ActionName `
+            -Action 'Apply' `
             -Status 'NeedsSourceIdentity' `
             -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Failed' `
-            -Message 'Updates Drivers Block source identity could not be verified. No mutation occurred.' `
-            -Data ([pscustomobject]@{ Source = $source; ChangesExecuted = $false; CaptureAttempted = $false; RegistryWriteAttempted = $false }) `
+            -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
+            -Message 'Updates Drivers Block source identity could not be verified. No USB file was created.' `
+            -Data $analysis `
+            -Warnings @($analysis.Warnings) `
             -Errors @('Source checksum failed or source file is missing.')
     }
 
-    $isAdmin = if ($null -ne $AdministratorChecker) {
-        [bool](& $AdministratorChecker)
-    }
-    else {
-        Test-BoostLabAdministrator
-    }
-    if (-not $isAdmin) {
+    if (-not (& $AdministratorChecker)) {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
-            -Action $ActionName `
-            -Status 'Error' `
+            -Action 'Apply' `
+            -Status 'AdministratorRequired' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Administrator rights are required to modify HKLM Windows Update driver policy values.' `
-            -Data ([pscustomobject]@{ ChangesExecuted = $false; CaptureAttempted = $false; RegistryWriteAttempted = $false }) `
-            -Errors @('Administrator rights are required.')
+            -Message 'Administrator rights are required before creating the source-defined USB setupcomplete.cmd file.' `
+            -Data $analysis `
+            -Warnings @($analysis.Warnings) `
+            -Errors @('Relaunch BoostLab through bootstrap.ps1.')
     }
 
-    $entries = @(Get-BoostLabUpdatesDriversPolicyEntries)
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        { param($Path, $ItemType, $ValueName) Get-BoostLabUpdatesDriversRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
-    }
-    $writer = if ($null -ne $RegistryWriter) {
-        $RegistryWriter
-    }
-    else {
-        { param($Entry) Set-BoostLabUpdatesDriversRegistryValue -Entry $Entry }
-    }
-    $remover = if ($null -ne $RegistryRemover) {
-        $RegistryRemover
-    }
-    else {
-        { param($Entry) Remove-BoostLabUpdatesDriversRegistryValue -Entry $Entry }
-    }
-
-    $captureRecords = [System.Collections.Generic.List[object]]::new()
-    $errors = [System.Collections.Generic.List[string]]::new()
-    $changesAttempted = [System.Collections.Generic.List[string]]::new()
-    $changesCompleted = [System.Collections.Generic.List[string]]::new()
-
-    for ($i = 0; $i -lt $entries.Count; $i++) {
-        $entry = $entries[$i]
-        $scopeId = 'updates-drivers-block-{0}-{1}' -f $ActionName.ToLowerInvariant(), ($i + 1)
-        $capture = New-BoostLabRegistryStateCapture `
-            -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
-            -ActionId $ActionName `
-            -ScopeId $scopeId `
-            -RegistryPath ([string]$entry.RegistryPath) `
-            -ItemType RegistryValue `
-            -ValueName ([string]$entry.ValueName) `
-            -IntendedMutation $(if ($ActionName -eq 'Apply') { 'RegistrySet' } else { 'RegistryDelete' }) `
-            -RiskClassification High `
-            -VerificationRequirement $(if ($ActionName -eq 'Apply') { 'Verify exact source-defined DWORD value after Apply.' } else { 'Verify exact source-defined policy value is absent after Default.' }) `
-            -Policy (New-BoostLabUpdatesDriversCapturePolicy -Entry $entry -ScopeId $scopeId) `
-            -RegistryReader $reader `
-            -StateRoot $StateRoot
-        if (-not [bool]$capture.Success) {
-            $errors.Add(('State capture failed for {0} | {1}: {2}' -f [string]$entry.RegistryPath, [string]$entry.ValueName, (@($capture.Errors) -join '; ')))
-            continue
-        }
-
-        $captureRecords.Add([pscustomobject]@{
-            RegistryPath = [string]$entry.RegistryPath
-            ValueName = [string]$entry.ValueName
-            ScopeId = $scopeId
-            OperationId = [string]$capture.OperationId
-            RecordPath = [string]$capture.RecordPath
-            OriginalExists = [bool]$capture.Record.OriginalExists
-            OriginalMetadata = $capture.Record.OriginalMetadata
-        })
-    }
-
-    if ($errors.Count -gt 0) {
+    $drives = @(& $DriveReader)
+    $selection = & $SelectionProvider $drives
+    if ($null -eq $selection) {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
-            -Action $ActionName `
-            -Status 'Error' `
+            -Action 'Apply' `
+            -Status 'UsbTargetRequired' `
             -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Failed' `
-            -Message 'Registry state capture failed before mutation. No changes were executed.' `
-            -Data ([pscustomobject]@{ Source = $source; ChangesExecuted = $false; CaptureRecords = $captureRecords.ToArray(); Errors = $errors.ToArray() }) `
-            -Errors $errors.ToArray()
+            -VerificationStatus 'NotApplicable' `
+            -Message 'Select writable removable USB media before creating setupcomplete.cmd. No changes were executed.' `
+            -Data ([pscustomobject]@{
+                Source = $analysis.Source
+                FinalScope = $script:BoostLabFinalScope
+                RemovableMediaCount = $drives.Count
+                ChangesExecuted = $false
+            }) `
+            -Warnings @($analysis.Warnings)
     }
 
-    foreach ($entry in $entries) {
-        $targetText = '{0} | {1}' -f [string]$entry.RegistryPath, [string]$entry.ValueName
-        $changesAttempted.Add($targetText)
-        try {
-            if ($ActionName -eq 'Apply') {
-                & $writer $entry
+    $driveRoot = ConvertTo-BoostLabUpdatesDriversUsbRoot -DriveRoot ([string]$selection.DriveRoot)
+    $approvedDriveRoots = @($drives | ForEach-Object {
+        ConvertTo-BoostLabUpdatesDriversUsbRoot -DriveRoot ([string]$_.Root)
+    })
+    if (
+        [string]::IsNullOrWhiteSpace($driveRoot) -or
+        $driveRoot -notin $approvedDriveRoots -or
+        -not (Test-Path -LiteralPath $driveRoot -PathType Container)
+    ) {
+        return New-BoostLabUpdatesDriversResult `
+            -Success $false `
+            -Action 'Apply' `
+            -Status 'UsbTargetRequired' `
+            -CommandStatus 'Blocked before execution' `
+            -VerificationStatus 'NotApplicable' `
+            -Message 'The selected destination is not a currently detected removable USB target. No changes were executed.' `
+            -Data ([pscustomobject]@{
+                Source = $analysis.Source
+                FinalScope = $script:BoostLabFinalScope
+                SelectedDriveRoot = [string]$selection.DriveRoot
+                ApprovedDriveRoots = @($approvedDriveRoots)
+                ChangesExecuted = $false
+            }) `
+            -Warnings @($analysis.Warnings)
+    }
+
+    $paths = Get-BoostLabUpdatesDriversUsbPaths -DriveRoot $driveRoot
+    $content = Get-BoostLabUpdatesDriversSetupCompleteContent
+    $capture = $null
+    $mutationRecord = $null
+    try {
+        $capture = & $FileCapture $paths.DestinationPath $paths.ScriptsDirectory $StateRoot
+        if (-not [bool]$capture.Success) {
+            return New-BoostLabUpdatesDriversResult `
+                -Success $false `
+                -Action 'Apply' `
+                -Status 'CaptureFailed' `
+                -CommandStatus 'Blocked before mutation' `
+                -VerificationStatus 'Failed' `
+                -Message 'Updates Drivers Block Apply was blocked because target file state could not be captured.' `
+                -Data ([pscustomobject]@{
+                    Source = $analysis.Source
+                    FinalScope = $script:BoostLabFinalScope
+                    DestinationPath = [string]$paths.DestinationPath
+                    Capture = $capture
+                    ChangesExecuted = $false
+                }) `
+                -Warnings @($analysis.Warnings) `
+                -Errors @($capture.Errors)
+        }
+
+        & $TextWriter $paths.DestinationPath $content
+        $destinationState = & $FileStateReader $paths.DestinationPath
+        if (-not [bool]$destinationState.ReadSucceeded) {
+            throw "Could not read destination file after writing: $($destinationState.Message)"
+        }
+
+        $detectedContent = [string](& $TextReader $paths.DestinationPath)
+        $mutationRecord = & $MutationRecorder $capture.RecordPath $StateRoot $destinationState
+        $verification = New-BoostLabUpdatesDriversApplyVerification `
+            -Source $analysis.Source `
+            -Paths $paths `
+            -Capture $capture `
+            -MutationRecord $mutationRecord `
+            -DestinationState $destinationState `
+            -DetectedContent $detectedContent
+
+        $success = [string]$verification.Status -eq 'Passed'
+        return New-BoostLabUpdatesDriversResult `
+            -Success $success `
+            -Action 'Apply' `
+            -Status $(if ($success) { 'Completed' } else { 'VerificationFailed' }) `
+            -CommandStatus $(if ($success) { 'Completed' } else { 'Completed with verification failure' }) `
+            -VerificationStatus ([string]$verification.Status) `
+            -Message $(if ($success) {
+                'Driver Updates Block Bootable USB setupcomplete.cmd was created and verified. The script was not executed on the host.'
             }
             else {
-                & $remover $entry
-            }
-
-            $postWriteState = ConvertTo-BoostLabUpdatesDriversRegistryState -State (& $reader ([string]$entry.RegistryPath) 'RegistryValue' ([string]$entry.ValueName))
-            if ($null -eq $postWriteState -or -not [bool]$postWriteState.ReadSucceeded) {
-                throw "Post-$ActionName verification could not read $targetText."
-            }
-            if ($ActionName -eq 'Apply') {
-                $postValueType = if ($null -ne $postWriteState.Metadata) { [string]$postWriteState.Metadata.ValueType } else { '' }
-                $postValueData = if ($null -ne $postWriteState.Metadata) { $postWriteState.Metadata.ValueData } else { $null }
-                if (
-                    -not [bool]$postWriteState.Exists -or
-                    $postValueType -notin @('DWord', 'REG_DWORD') -or
-                    [int]$postValueData -ne [int]$entry.ApplyValue
-                ) {
-                    throw ('Post-Apply verification failed for {0}. Expected REG_DWORD {1}; detected {2}.' -f $targetText, [int]$entry.ApplyValue, [string]$postWriteState.DisplayValue)
-                }
-            }
-            elseif ([bool]$postWriteState.Exists) {
-                throw ('Post-Default verification failed for {0}. Expected Absent; detected {1}.' -f $targetText, [string]$postWriteState.DisplayValue)
-            }
-            $changesCompleted.Add($targetText)
-        }
-        catch {
-            $errors.Add(('{0} failed for {1}: {2}' -f $ActionName, $targetText, $_.Exception.Message))
-        }
+                'Driver Updates Block Bootable USB setupcomplete.cmd was written, but verification failed.'
+            }) `
+            -Data ([pscustomobject]@{
+                Source = $analysis.Source
+                FinalScope = $script:BoostLabFinalScope
+                SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
+                DestinationRoot = [string]$paths.DriveRoot
+                ScriptsDirectory = [string]$paths.ScriptsDirectory
+                DestinationPath = [string]$paths.DestinationPath
+                RelativePath = [string]$paths.RelativePath
+                SetupCompleteSha256 = [string]$destinationState.Sha256
+                ExpectedSetupCompleteSha256 = Get-BoostLabUpdatesDriversSetupCompleteHash
+                CaptureRecord = $capture
+                CaptureRecordPath = [string]$capture.RecordPath
+                MutationRecord = $mutationRecord
+                SetupCompleteExecuted = $false
+                HostRegistryWrites = $false
+                WindowsUpdateExecuted = $false
+                ExternalProcessStarted = $false
+                RebootTriggered = $false
+                ChangesExecuted = $true
+            }) `
+            -VerificationResult $verification `
+            -Warnings @($analysis.Warnings) `
+            -Errors $(if ($success) { @() } else { @($verification.Message) }) `
+            -ChangesExecuted $true
     }
-
-    foreach ($captureRecord in $captureRecords) {
-        $postState = ConvertTo-BoostLabUpdatesDriversRegistryState -State (& $reader ([string]$captureRecord.RegistryPath) 'RegistryValue' ([string]$captureRecord.ValueName))
-        if ($null -eq $postState -or -not [bool]$postState.ReadSucceeded) {
-            $errors.Add("Post-mutation state could not be read for $($captureRecord.RegistryPath) | $($captureRecord.ValueName).")
-            continue
-        }
-
-        $recordResult = Set-BoostLabRollbackMutationState `
-            -RecordPath ([string]$captureRecord.RecordPath) `
-            -StateRoot $StateRoot `
-            -PostMutationExists ([bool]$postState.Exists) `
-            -PostMutationMetadata $postState.Metadata
-        if (-not [bool]$recordResult.Success) {
-            $errors.Add(('Recording post-mutation state failed for {0} | {1}: {2}' -f [string]$captureRecord.RegistryPath, [string]$captureRecord.ValueName, (@($recordResult.Errors) -join '; ')))
-        }
-    }
-
-    $verification = Test-BoostLabUpdatesDriversPolicyState `
-        -ActionName $ActionName `
-        -Entries $entries `
-        -CaptureRecords $captureRecords.ToArray() `
-        -RegistryReader $reader
-
-    $data = [pscustomobject]@{
-        Source = $source
-        SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
-        UnsupportedSourceBranches = @($script:BoostLabUnsupportedSourceBranches)
-        SupportedValueCount = @($entries).Count
-        ChangesExecuted = $changesCompleted.Count -gt 0
-        RegistryChangesAttempted = $changesAttempted.ToArray()
-        RegistryChangesCompleted = $changesCompleted.ToArray()
-        CaptureRecords = $captureRecords.ToArray()
-        VerificationStatus = [string]$verification.Status
-        DefaultIsRestore = $false
-        RestoreRequiresCapturedState = $true
-        NoDriverDeviceMutation = $true
-        NoWindowsUpdateExecution = $true
-        NoDownloadOrInstaller = $true
-        Errors = $errors.ToArray()
-    }
-
-    if ($errors.Count -gt 0) {
+    catch {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
-            -Action $ActionName `
+            -Action 'Apply' `
             -Status 'Error' `
-            -CommandStatus 'Failed with errors' `
-            -VerificationStatus ([string]$verification.Status) `
-            -Message ("Updates Drivers Block $ActionName completed with errors: {0}" -f ($errors -join '; ')) `
-            -Data $data `
-            -VerificationResult $verification `
-            -ChangesExecuted:($changesCompleted.Count -gt 0) `
-            -Errors $errors.ToArray()
+            -CommandStatus 'Failed' `
+            -VerificationStatus 'Failed' `
+            -Message "Updates Drivers Block USB setupcomplete.cmd creation failed: $($_.Exception.Message)" `
+            -Data ([pscustomobject]@{
+                Source = $analysis.Source
+                FinalScope = $script:BoostLabFinalScope
+                DestinationPath = if ($null -ne $paths) { [string]$paths.DestinationPath } else { '' }
+                CaptureRecord = $capture
+                MutationRecord = $mutationRecord
+                SetupCompleteExecuted = $false
+                HostRegistryWrites = $false
+                WindowsUpdateExecuted = $false
+                ExternalProcessStarted = $false
+                RebootTriggered = $false
+                ChangesExecuted = $null -ne $capture -and [bool]$capture.Success
+            }) `
+            -Warnings @($analysis.Warnings) `
+            -Errors @($_.Exception.Message) `
+            -ChangesExecuted:($null -ne $capture -and [bool]$capture.Success)
     }
+}
 
-    if ([string]$verification.Status -eq 'Failed') {
-        return New-BoostLabUpdatesDriversResult `
-            -Success $false `
-            -Action $ActionName `
-            -Status 'Error' `
-            -CommandStatus 'Failed verification' `
-            -VerificationStatus ([string]$verification.Status) `
-            -Message "Updates Drivers Block $ActionName completed, but verification failed." `
-            -Data $data `
-            -VerificationResult $verification `
-            -ChangesExecuted:($changesCompleted.Count -gt 0) `
-            -Errors @("Updates Drivers Block $ActionName verification failed.")
-    }
+function Invoke-BoostLabUpdatesDriversDefault {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
 
-    $message = if ($ActionName -eq 'Apply') {
-        'Updates Drivers Block Apply wrote only the nine source-defined Driver Updates policy values after captured prior state.'
-    }
-    else {
-        'Updates Drivers Block Default removed only the nine source-defined Driver Updates policy values after captured prior state.'
-    }
+    $analysis = Get-BoostLabUpdatesDriversAnalysis
     return New-BoostLabUpdatesDriversResult `
-        -Success $true `
-        -Action $ActionName `
-        -Status $(if ([string]$verification.Status -eq 'Warning') { 'Warning' } else { 'Completed' }) `
-        -CommandStatus $(if ([string]$verification.Status -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }) `
-        -VerificationStatus ([string]$verification.Status) `
-        -Message $message `
-        -Data $data `
-        -VerificationResult $verification `
-        -ChangesExecuted:($changesCompleted.Count -gt 0)
+        -Success $false `
+        -Action 'Default' `
+        -Status 'DefaultUnavailable' `
+        -CommandStatus 'Unavailable' `
+        -VerificationStatus 'NotApplicable' `
+        -Message 'Default is unavailable for Updates Drivers Block. Yazan final scope excludes Unblock, and Default is not Restore. No host registry values or USB files were changed.' `
+        -Data ([pscustomobject]@{
+            Source = $analysis.Source
+            FinalScope = $script:BoostLabFinalScope
+            DefaultIsUnblock = $false
+            DefaultIsRestore = $false
+            ChangesExecuted = $false
+        }) `
+        -Warnings @('No Unblock option is exposed for this tool by Yazan final scope decision.')
 }
 
 function Invoke-BoostLabUpdatesDriversRestore {
@@ -905,17 +935,7 @@ function Invoke-BoostLabUpdatesDriversRestore {
 
         [string]$SelectedCapturePath = '',
 
-        [AllowNull()]
-        [scriptblock]$AdministratorChecker = $null,
-
-        [AllowNull()]
-        [scriptblock]$RegistryReader = $null,
-
-        [AllowNull()]
-        [scriptblock]$RegistryWriter = $null,
-
-        [AllowNull()]
-        [scriptblock]$RegistryRemover = $null,
+        [scriptblock]$AdministratorChecker = { Test-BoostLabUpdatesDriversAdministrator },
 
         [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
     )
@@ -927,8 +947,8 @@ function Invoke-BoostLabUpdatesDriversRestore {
             -Status 'Cancelled' `
             -CommandStatus 'Cancelled before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Updates Drivers Block Restore cancelled before captured-state validation.' `
-            -Cancelled:$true `
+            -Message 'Updates Drivers Block Restore cancelled before captured USB file state validation.' `
+            -Cancelled $true `
             -Data ([pscustomobject]@{ ChangesExecuted = $false; RestoreAttempted = $false })
     }
 
@@ -936,14 +956,15 @@ function Invoke-BoostLabUpdatesDriversRestore {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
             -Action 'Restore' `
-            -Status 'RestoreRequiresCapturedState' `
+            -Status 'RestoreRequiresCapturedUsbFileState' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Updates Drivers Block Restore requires a selected captured rollback record from this tool. Default is source-defined value deletion and is not Restore.' `
+            -Message 'Updates Drivers Block Restore requires a selected captured USB setupcomplete.cmd file state. Restore is not Unblock and no registry mutation is planned.' `
             -Data ([pscustomobject]@{
                 ChangesExecuted = $false
                 RestoreAttempted = $false
                 RestoreRequiresCapturedState = $true
+                RestoreIsUnblock = $false
                 DefaultIsRestore = $false
             })
     }
@@ -961,152 +982,16 @@ function Invoke-BoostLabUpdatesDriversRestore {
             -Errors @('Source checksum failed or source file is missing.')
     }
 
-    $isAdmin = if ($null -ne $AdministratorChecker) {
-        [bool](& $AdministratorChecker)
-    }
-    else {
-        Test-BoostLabAdministrator
-    }
-    if (-not $isAdmin) {
+    if (-not (& $AdministratorChecker)) {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
             -Action 'Restore' `
-            -Status 'Error' `
+            -Status 'AdministratorRequired' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Administrator rights are required to restore HKLM Windows Update driver policy values.' `
+            -Message 'Administrator rights are required before restoring selected USB setupcomplete.cmd captured state.' `
             -Data ([pscustomobject]@{ ChangesExecuted = $false; RestoreAttempted = $false }) `
-            -Errors @('Administrator rights are required.')
-    }
-
-    $restoreTargets = @{}
-    foreach ($entry in Get-BoostLabUpdatesDriversPolicyEntries) {
-        $restoreTargets[('{0}|{1}' -f [string]$entry.RegistryPath, [string]$entry.ValueName)] = $true
-    }
-    $normalizeRestorePath = {
-        param([string]$Path)
-        if ($Path.StartsWith('HKEY_LOCAL_MACHINE\', [StringComparison]::OrdinalIgnoreCase)) {
-            return 'HKLM:\' + $Path.Substring('HKEY_LOCAL_MACHINE\'.Length)
-        }
-        if ($Path.StartsWith('HKLM\', [StringComparison]::OrdinalIgnoreCase)) {
-            return 'HKLM:\' + $Path.Substring('HKLM\'.Length)
-        }
-        return $Path
-    }
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        {
-            param($Path, $ItemType, $ValueName)
-            $normalizedPath = & $normalizeRestorePath ([string]$Path)
-            if (-not $restoreTargets.ContainsKey(('{0}|{1}' -f $normalizedPath, [string]$ValueName))) {
-                throw "Registry restore read target is outside the approved Updates Drivers Block scope: $normalizedPath | $ValueName"
-            }
-            try {
-                if (-not (Test-Path -LiteralPath $normalizedPath)) {
-                    return [pscustomobject]@{
-                        ReadSucceeded = $true
-                        KeyExists = $false
-                        Exists = $false
-                        Metadata = $null
-                        DisplayValue = 'Absent'
-                        Message = 'Registry key is absent.'
-                    }
-                }
-                $key = Get-Item -LiteralPath $normalizedPath -ErrorAction Stop
-                $names = @($key.GetValueNames())
-                if ($ValueName -notin $names) {
-                    return [pscustomobject]@{
-                        ReadSucceeded = $true
-                        KeyExists = $true
-                        Exists = $false
-                        Metadata = $null
-                        DisplayValue = 'Absent'
-                        Message = 'Registry value is absent.'
-                    }
-                }
-                $valueType = [string]$key.GetValueKind($ValueName)
-                $valueData = $key.GetValue($ValueName, $null, 'DoNotExpandEnvironmentNames')
-                return [pscustomobject]@{
-                    ReadSucceeded = $true
-                    KeyExists = $true
-                    Exists = $true
-                    Metadata = [ordered]@{
-                        ValueName = $ValueName
-                        ValueType = $valueType
-                        ValueData = $valueData
-                    }
-                    DisplayValue = '{0} {1}' -f $valueType, $valueData
-                    Message = 'Registry value detected.'
-                }
-            }
-            catch {
-                return [pscustomobject]@{
-                    ReadSucceeded = $false
-                    KeyExists = $null
-                    Exists = $false
-                    Metadata = $null
-                    DisplayValue = 'Unknown'
-                    Message = $_.Exception.Message
-                }
-            }
-        }.GetNewClosure()
-    }
-    $writer = if ($null -ne $RegistryWriter) {
-        {
-            param($RegistryPath, $ItemType, $ValueName, $Metadata)
-            $path = & $normalizeRestorePath ([string]$RegistryPath)
-            if (-not $restoreTargets.ContainsKey(('{0}|{1}' -f $path, [string]$ValueName))) {
-                throw "Registry restore target is outside the approved Updates Drivers Block scope: $path | $ValueName"
-            }
-            & $RegistryWriter ([pscustomobject]@{
-                RegistryPath = $path
-                ValueName = $ValueName
-                ValueType = [string]$Metadata.ValueType
-                ApplyValue = $Metadata.ValueData
-            })
-        }.GetNewClosure()
-    }
-    else {
-        {
-            param($RegistryPath, $ItemType, $ValueName, $Metadata)
-            $path = & $normalizeRestorePath ([string]$RegistryPath)
-            if (-not $restoreTargets.ContainsKey(('{0}|{1}' -f $path, [string]$ValueName))) {
-                throw "Registry restore target is outside the approved Updates Drivers Block scope: $path | $ValueName"
-            }
-            $valueType = [string]$Metadata.ValueType
-            $valueData = $Metadata.ValueData
-            New-Item -Path $path -Force -ErrorAction Stop | Out-Null
-            New-ItemProperty -LiteralPath $path -Name $ValueName -PropertyType $valueType -Value $valueData -Force -ErrorAction Stop | Out-Null
-        }.GetNewClosure()
-    }
-    $remover = if ($null -ne $RegistryRemover) {
-        {
-            param($RegistryPath, $ItemType, $ValueName)
-            $path = & $normalizeRestorePath ([string]$RegistryPath)
-            if (-not $restoreTargets.ContainsKey(('{0}|{1}' -f $path, [string]$ValueName))) {
-                throw "Registry restore target is outside the approved Updates Drivers Block scope: $path | $ValueName"
-            }
-            & $RegistryRemover ([pscustomobject]@{
-                RegistryPath = $path
-                ValueName = $ValueName
-                ValueType = 'DWord'
-                ApplyValue = 0
-            })
-        }.GetNewClosure()
-    }
-    else {
-        {
-            param($RegistryPath, $ItemType, $ValueName)
-            $path = & $normalizeRestorePath ([string]$RegistryPath)
-            if (-not $restoreTargets.ContainsKey(('{0}|{1}' -f $path, [string]$ValueName))) {
-                throw "Registry restore target is outside the approved Updates Drivers Block scope: $path | $ValueName"
-            }
-            if (Test-Path -LiteralPath $path) {
-                Remove-ItemProperty -LiteralPath $path -Name $ValueName -ErrorAction SilentlyContinue
-            }
-        }.GetNewClosure()
+            -Errors @('Relaunch BoostLab through bootstrap.ps1.')
     }
 
     $imported = Import-BoostLabRollbackRecord -RecordPath $SelectedCapturePath -StateRoot $StateRoot
@@ -1114,48 +999,41 @@ function Invoke-BoostLabUpdatesDriversRestore {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
             -Action 'Restore' `
-            -Status 'Error' `
+            -Status 'RestoreRecordInvalid' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'Failed' `
-            -Message 'Selected rollback record is missing or invalid. Restore did not run.' `
+            -Message 'Selected USB file rollback record is missing or invalid. Restore did not run.' `
             -Data ([pscustomobject]@{ RecordPath = $SelectedCapturePath; ChangesExecuted = $false; RestoreAttempted = $false }) `
             -Errors @($imported.Errors)
     }
 
     $record = $imported.Record
-    $recordAction = [string]$record.ActionId
-    $recordPath = [string]$record.RegistryPath
-    $recordValue = [string]$record.ValueName
-    $entry = @(Get-BoostLabUpdatesDriversPolicyEntries | Where-Object {
-        [string]$_.ValueName -eq $recordValue -and
-        [string]$_.RegistryPath -eq $recordPath
-    }) | Select-Object -First 1
+    $targetPath = [string]$record.SourcePath
+    $normalizedTarget = $targetPath.Replace('/', '\')
     if (
         [string]$record.ToolId -ne [string]$script:BoostLabToolMetadata['Id'] -or
-        $recordAction -notin @('Apply', 'Default') -or
-        $null -eq $entry -or
-        [string]$record.ItemType -ne 'RegistryValue'
+        [string]$record.ActionId -ne 'Apply' -or
+        [string]$record.ItemType -ne 'File' -or
+        -not $normalizedTarget.EndsWith('\sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd', [StringComparison]::OrdinalIgnoreCase)
     ) {
         return New-BoostLabUpdatesDriversResult `
             -Success $false `
             -Action 'Restore' `
-            -Status 'Error' `
+            -Status 'RestoreRecordOutOfScope' `
             -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'Failed' `
-            -Message 'Selected rollback record is outside the approved Updates Drivers Block restore scope.' `
+            -Message 'Selected rollback record is outside the approved Updates Drivers Block USB file restore scope.' `
             -Data ([pscustomobject]@{ RecordPath = $SelectedCapturePath; ChangesExecuted = $false; RestoreAttempted = $false }) `
-            -Errors @('Selected rollback record does not match this tool, source action, registry value, or item type.')
+            -Errors @('Selected rollback record does not match this tool, Apply action, file type, or setupcomplete.cmd target path.')
     }
 
-    $policy = New-BoostLabUpdatesDriversCapturePolicy -Entry $entry -ScopeId ([string]$record.ScopeId)
-    $rollback = Invoke-BoostLabRegistryRollback `
+    $scriptsDirectory = Split-Path -Parent $targetPath
+    $policy = New-BoostLabUpdatesDriversUsbFileCapturePolicy -ScriptsDirectory $scriptsDirectory
+    $rollback = Invoke-BoostLabFileRollback `
         -RecordPath $SelectedCapturePath `
         -StateRoot $StateRoot `
         -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
-        -ActionId $recordAction `
-        -RegistryReader $reader `
-        -RegistryWriter $writer `
-        -RegistryRemover $remover `
+        -ActionId 'Apply' `
         -Policy $policy
 
     $verification = New-BoostLabVerificationResult `
@@ -1163,11 +1041,11 @@ function Invoke-BoostLabUpdatesDriversRestore {
         -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
         -Action 'Restore' `
         -Status $(if ([bool]$rollback.Success) { 'Passed' } else { 'Failed' }) `
-        -ExpectedState 'Selected captured registry value prior state restored exactly.' `
+        -ExpectedState 'Selected captured USB setupcomplete.cmd prior file state restored exactly.' `
         -DetectedState ([string]$rollback.Status) `
         -Checks @(
             (New-BoostLabVerificationCheck `
-                -Name 'Captured-state rollback' `
+                -Name 'Captured USB file rollback' `
                 -Expected 'Restored' `
                 -Actual ([string]$rollback.Status) `
                 -Status $(if ([bool]$rollback.Success) { 'Passed' } else { 'Failed' }) `
@@ -1179,17 +1057,18 @@ function Invoke-BoostLabUpdatesDriversRestore {
         -Success ([bool]$rollback.Success) `
         -Action 'Restore' `
         -Status $(if ([bool]$rollback.Success) { 'Restored' } else { [string]$rollback.Status }) `
-        -CommandStatus $(if ([bool]$rollback.Success) { 'Restored captured state' } else { 'Blocked or failed' }) `
+        -CommandStatus $(if ([bool]$rollback.Success) { 'Restored captured USB file state' } else { 'Blocked or failed' }) `
         -VerificationStatus ([string]$verification.Status) `
         -Message ([string]$rollback.Message) `
         -Data ([pscustomobject]@{
             RecordPath = [string]$rollback.RecordPath
-            RegistryPath = [string]$rollback.RegistryPath
-            ValueName = $recordValue
-            SourceAction = $recordAction
+            TargetPath = [string]$rollback.TargetPath
+            SourceAction = 'Apply'
+            RestoreIsUnblock = $false
+            DefaultIsRestore = $false
+            HostRegistryWrites = $false
             ChangesExecuted = [bool]$rollback.RestoreAttempted
             RestoreAttempted = [bool]$rollback.RestoreAttempted
-            DefaultIsRestore = $false
             Errors = @($rollback.Errors)
         }) `
         -VerificationResult $verification `
@@ -1202,7 +1081,7 @@ function Get-BoostLabToolInfo {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Id = [string]$script:BoostLabToolMetadata['Id']
         Title = [string]$script:BoostLabToolMetadata['Title']
         Stage = [string]$script:BoostLabToolMetadata['Stage']
@@ -1213,7 +1092,7 @@ function Get-BoostLabToolInfo {
         Actions = @($script:BoostLabToolMetadata['Actions'])
         ImplementedActions = @($script:BoostLabImplementedActions)
         Capabilities = $script:BoostLabToolMetadata['Capabilities']
-        ConfirmationRequiredActions = @('Apply', 'Default', 'Restore')
+        ConfirmationRequiredActions = @('Apply', 'Restore')
     }
 }
 
@@ -1222,9 +1101,13 @@ function Test-BoostLabToolCompatibility {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Supported = $true
-        Reason = 'Updates Drivers Block supports the shared Windows live Driver Updates policy branch. Bootable-media and broad Updates branches remain unsupported.'
+        ToolId = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
+        Reason = 'Updates Drivers Block supports only Yazan-selected Driver Updates Block Bootable USB setupcomplete.cmd generation.'
+        FinalScope = $script:BoostLabFinalScope
+        Timestamp = Get-Date
     }
 }
 
@@ -1233,10 +1116,12 @@ function Get-BoostLabToolState {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
-        Current = 'ControlledPolicy'
+    [pscustomobject]@{
+        Current = 'UsbOnlyFinalScope'
         Source = Get-BoostLabUpdatesDriversSourceStatus
-        SupportedRegistryValues = @(Get-BoostLabUpdatesDriversPolicyEntries)
+        FinalScope = $script:BoostLabFinalScope
+        SupportedSourceBranch = $script:BoostLabSupportedSourceBranch
+        SetupCompleteRelativePath = $script:BoostLabSetupCompleteRelativePath
         UnsupportedSourceBranches = @($script:BoostLabUnsupportedSourceBranches)
         ImplementedActions = @($script:BoostLabImplementedActions)
     }
@@ -1258,48 +1143,61 @@ function Invoke-BoostLabToolAction {
         [scriptblock]$AdministratorChecker = $null,
 
         [AllowNull()]
-        [scriptblock]$RegistryReader = $null,
+        [scriptblock]$DriveReader = $null,
 
         [AllowNull()]
-        [scriptblock]$RegistryWriter = $null,
+        [scriptblock]$SelectionProvider = $null,
 
         [AllowNull()]
-        [scriptblock]$RegistryRemover = $null,
+        [scriptblock]$FileStateReader = $null,
+
+        [AllowNull()]
+        [scriptblock]$FileCapture = $null,
+
+        [AllowNull()]
+        [scriptblock]$TextWriter = $null,
+
+        [AllowNull()]
+        [scriptblock]$TextReader = $null,
+
+        [AllowNull()]
+        [scriptblock]$MutationRecorder = $null,
 
         [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
     )
 
     switch ($ActionName) {
         'Analyze' {
-            return Invoke-BoostLabUpdatesDriversAnalyze -RegistryReader $RegistryReader
+            $params = @{}
+            if ($null -ne $DriveReader) { $params['DriveReader'] = $DriveReader }
+            return Invoke-BoostLabUpdatesDriversAnalyze @params
         }
         'Apply' {
-            return Invoke-BoostLabUpdatesDriversPolicyMutation `
-                -ActionName 'Apply' `
-                -Confirmed:$Confirmed `
-                -AdministratorChecker $AdministratorChecker `
-                -RegistryReader $RegistryReader `
-                -RegistryWriter $RegistryWriter `
-                -StateRoot $StateRoot
+            $params = @{
+                Confirmed = $Confirmed
+                StateRoot = $StateRoot
+            }
+            if ($null -ne $AdministratorChecker) { $params['AdministratorChecker'] = $AdministratorChecker }
+            if ($null -ne $DriveReader) { $params['DriveReader'] = $DriveReader }
+            if ($null -ne $SelectionProvider) { $params['SelectionProvider'] = $SelectionProvider }
+            if ($null -ne $FileStateReader) { $params['FileStateReader'] = $FileStateReader }
+            if ($null -ne $FileCapture) { $params['FileCapture'] = $FileCapture }
+            if ($null -ne $TextWriter) { $params['TextWriter'] = $TextWriter }
+            if ($null -ne $TextReader) { $params['TextReader'] = $TextReader }
+            if ($null -ne $MutationRecorder) { $params['MutationRecorder'] = $MutationRecorder }
+            return Invoke-BoostLabUpdatesDriversApply @params
         }
         'Default' {
-            return Invoke-BoostLabUpdatesDriversPolicyMutation `
-                -ActionName 'Default' `
-                -Confirmed:$Confirmed `
-                -AdministratorChecker $AdministratorChecker `
-                -RegistryReader $RegistryReader `
-                -RegistryRemover $RegistryRemover `
-                -StateRoot $StateRoot
+            return Invoke-BoostLabUpdatesDriversDefault
         }
         'Restore' {
-            return Invoke-BoostLabUpdatesDriversRestore `
-                -Confirmed:$Confirmed `
-                -SelectedCapturePath $SelectedCapturePath `
-                -AdministratorChecker $AdministratorChecker `
-                -RegistryReader $RegistryReader `
-                -RegistryWriter $RegistryWriter `
-                -RegistryRemover $RegistryRemover `
-                -StateRoot $StateRoot
+            $params = @{
+                Confirmed = $Confirmed
+                SelectedCapturePath = $SelectedCapturePath
+                StateRoot = $StateRoot
+            }
+            if ($null -ne $AdministratorChecker) { $params['AdministratorChecker'] = $AdministratorChecker }
+            return Invoke-BoostLabUpdatesDriversRestore @params
         }
     }
 }
@@ -1309,7 +1207,7 @@ function Restore-BoostLabToolDefault {
     [OutputType([pscustomobject])]
     param()
 
-    return Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
+    return Invoke-BoostLabToolAction -ActionName 'Default'
 }
 
 Export-ModuleMember -Function @(

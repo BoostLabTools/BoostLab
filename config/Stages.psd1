@@ -63,9 +63,9 @@
                     Order       = 3
                     Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Apply or default the source-defined live Driver Updates policy registry values after captured prior state.'
+                    Description = 'Create the Yazan-selected Driver Updates Block setupcomplete.cmd on selected bootable USB media only; Default/Unblock is unavailable.'
                     Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'to-bios'
