@@ -6,7 +6,7 @@
 * **Stage:** Refresh
 * **Source:** `source-ultimate/2 Refresh/2 Unattended.ps1`
 * **Source SHA-256:** `0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338`
-* **Yazan approval status:** Approved for Phase 33 as a Windows 11-targeted preparation tool that may run from Windows 10 or Windows 11
+* **Yazan approval status:** Phase 111 accepted as `DoneYazanAcceptedNearParity`; the source-equivalent Windows 11 payload behavior is preserved with safer GUI confirmation, removable-media validation, backup/state capture, and verification.
 
 ## Original Ultimate Behavior
 
@@ -119,3 +119,18 @@ Tests must validate:
 * No Default or Restore claim.
 * No download, setup launch, disk partitioning, formatting, or reboot behavior.
 * Runtime mapping, Action Plan text, source integrity, and deleted-tool exclusion.
+
+## Ordered Parity Status
+
+Phase 111 outcome: `DoneYazanAcceptedNearParity`.
+
+BoostLab preserves the practical Ultimate Unattended capability: it creates the
+same Windows 11-targeted unattended payload, performs the same account
+substitution, uses the same temporary file names, moves the final
+`autounattend.xml` to selected installation media, and opens the destination
+root after generation.
+
+The differences are accepted safety mechanics: explicit GUI confirmation,
+removable-media selection instead of raw drive-letter input, account-name
+validation, verified backups, persisted state, and structured verification.
+The source has no Default or Restore branch, and BoostLab does not claim one.

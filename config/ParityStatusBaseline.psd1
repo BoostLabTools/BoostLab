@@ -97,9 +97,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
-            GapSummary = 'Windows 11 unattended payload generation is implemented with safety gates; unsupported Windows 10 optimization branches remain out of scope.'
+            GapSummary = 'Source-equivalent Windows 11 unattended payload generation is implemented with safer GUI confirmation, removable-media validation, backup/state capture, and verification; no source branch is omitted.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm Windows 11-supported payload scope is accepted as final parity for this product scope.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Next ordered pending parity target: updates-drivers-block.'
         }
         @{
             ToolId = 'updates-drivers-block'
