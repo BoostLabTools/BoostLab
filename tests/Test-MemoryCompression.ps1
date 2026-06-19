@@ -44,7 +44,7 @@ if ($null -eq $tool) {
 }
 if (
     [string]$tool['Stage'] -ne 'Setup' -or
-    [int]$tool['Order'] -ne 1 -or
+    [int]$tool['Order'] -ne 2 -or
     [string]$tool['RiskLevel'] -ne 'low' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'
 ) {

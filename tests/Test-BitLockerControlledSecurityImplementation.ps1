@@ -94,7 +94,7 @@ $setupTools = @($configuration.Stages | Where-Object { $_.Name -eq 'Setup' } | F
 $bitLockerTool = $allTools | Where-Object { $_.Id -eq 'bitlocker' } | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $bitLockerTool) 'BitLocker must be active in config.'
 Assert-BoostLabCondition ([string]$bitLockerTool.Stage -eq 'Setup') 'BitLocker must be a Setup tool, not a Graphics Path B tool.'
-Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 9) 'BitLocker must use the approved Setup order.'
+Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 1) 'BitLocker must use the canonical Setup order.'
 Assert-BoostLabCondition ([string]$bitLockerTool.Type -eq 'assistant') 'BitLocker must remain an assistant.'
 Assert-BoostLabCondition ([string]$bitLockerTool.RiskLevel -eq 'high') 'BitLocker must remain high risk.'
 Assert-BoostLabCondition ((@($bitLockerTool.Actions) -join '|') -eq 'Analyze|Apply|Default|Restore|Open') 'BitLocker must expose only canonical Analyze, Apply, Default, Restore, and Open actions.'

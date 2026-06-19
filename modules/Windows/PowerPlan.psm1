@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'power-plan'; Title = 'Power Plan'; Stage = 'Windows'; Order = 21
+    Id = 'power-plan'; Title = 'Power Plan'; Stage = 'Windows'; Order = 20
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Apply the approved Ultimate power configuration or restore Windows default power schemes.'
     Actions = @('Apply', 'Default')

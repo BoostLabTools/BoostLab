@@ -118,7 +118,7 @@ Assert-BoostLabCondition ($null -ne $graphicsStage) 'Graphics stage was not foun
 $tool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-debloat-settings' })[0]
 Assert-BoostLabCondition ($null -ne $tool) 'Driver Install Debloat & Settings was not found as an active Graphics tool.'
 Assert-BoostLabCondition ([string]$tool.Title -eq 'Driver Install Debloat & Settings') 'Driver Install Debloat & Settings title mismatch.'
-Assert-BoostLabCondition ([int]$tool.Order -eq 7) 'Driver Install Debloat & Settings must remain after NVIDIA Path B step 5.'
+Assert-BoostLabCondition ([int]$tool.Order -eq 2) 'Driver Install Debloat & Settings must follow Driver Clean in canonical Graphics order.'
 Assert-BoostLabCondition ([string]$tool.Type -eq 'assistant') 'Driver Install Debloat & Settings must be an assistant.'
 Assert-BoostLabCondition ([string]$tool.RiskLevel -eq 'high') 'Driver Install Debloat & Settings must remain high risk.'
 Assert-BoostLabCondition ((@($tool.Actions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Driver Install Debloat & Settings must expose canonical Analyze, Open, Apply, Default, Restore actions.'
@@ -173,11 +173,11 @@ $remainingSourcePromoted = @(
 Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 foreach ($pathB in @(
-    @{ Id = 'driver-install-latest'; Order = 2 },
-    @{ Id = 'nvidia-settings'; Order = 3 },
-    @{ Id = 'hdcp'; Order = 4 },
-    @{ Id = 'p0-state'; Order = 5 },
-    @{ Id = 'msi-mode'; Order = 6 }
+    @{ Id = 'driver-install-latest'; Order = 3 },
+    @{ Id = 'nvidia-settings'; Order = 4 },
+    @{ Id = 'hdcp'; Order = 5 },
+    @{ Id = 'p0-state'; Order = 6 },
+    @{ Id = 'msi-mode'; Order = 7 }
 )) {
     $pathBTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq $pathB.Id })[0]
     Assert-BoostLabCondition ($null -ne $pathBTool) "NVIDIA Path B tool missing: $($pathB.Id)"

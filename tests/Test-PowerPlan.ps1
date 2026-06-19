@@ -49,7 +49,7 @@ if ($null -eq $tool) {
 }
 if (
     [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 21 -or
+    [int]$tool['Order'] -ne 20 -or
     [string]$tool['Type'] -ne 'action' -or
     [string]$tool['RiskLevel'] -ne 'medium' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'
@@ -931,7 +931,7 @@ foreach ($requiredText in @(
 }
 
 $protectedModules = [ordered]@{
-    'Network Adapter Power Savings & Wake' = @{ Path = 'Windows\NetworkAdapterPowerSavingsWake.psm1'; Hash = '74844D91EC7E03817FB9D9D440CDBC2798DE19D68DDAB74C351E8A354F21E163'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
+    'Network Adapter Power Savings & Wake' = @{ Path = 'Windows\NetworkAdapterPowerSavingsWake.psm1'; Hash = '4A0A213032E31B3D4F5A676F0706B8FB354CC0EA3EA6498D6FB51A81B24B3C77'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Signout LockScreen Wallpaper Black' = @{ Path = 'Windows\SignoutLockScreenWallpaperBlack.psm1'; Hash = 'FAE90C7491B3B72936D1D293D6435BF6893C8082DCEF4C6F6FDE5E1817F55D74'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Context Menu' = @{ Path = 'Windows\ContextMenu.psm1'; Hash = '93325E76B02F80B1A105C83F6E268EA3652B4AB9F74582E759A4490CF30D1082'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Start Menu Layout' = @{ Path = 'Windows\StartMenuLayout.psm1'; Hash = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }

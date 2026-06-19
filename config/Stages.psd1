@@ -86,10 +86,21 @@
             Description = 'Complete initial Windows and application setup tasks.'
             Tools       = @(
                 @{
+                    Id          = 'bitlocker'
+                    Title       = 'BitLocker'
+                    Stage       = 'Setup'
+                    Order       = 1
+                    Type        = 'assistant'
+                    RiskLevel   = 'high'
+                    Description = 'Analyze BitLocker state, run source-equivalent Off behavior, or open source-equivalent On/status behavior with explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'memory-compression'
                     Title       = 'Memory Compression'
                     Stage       = 'Setup'
-                    Order       = 1
+                    Order       = 2
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Disable Windows memory compression using the approved recommendation or restore the default enabled state.'
@@ -100,7 +111,7 @@
                     Id          = 'date-language-region-time'
                     Title       = 'Date Language Region Time'
                     Stage       = 'Setup'
-                    Order       = 2
+                    Order       = 3
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the Windows Date & time settings page.'
@@ -111,7 +122,7 @@
                     Id          = 'startup-apps-settings'
                     Title       = 'Startup Apps (Settings)'
                     Stage       = 'Setup'
-                    Order       = 3
+                    Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the Windows Settings page for startup application management.'
@@ -122,7 +133,7 @@
                     Id          = 'startup-apps-task-manager'
                     Title       = 'Startup Apps (Task Manager)'
                     Stage       = 'Setup'
-                    Order       = 4
+                    Order       = 5
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open Task Manager for detailed startup application review.'
@@ -133,7 +144,7 @@
                     Id          = 'background-apps'
                     Title       = 'Background Apps'
                     Stage       = 'Setup'
-                    Order       = 5
+                    Order       = 6
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Disable background apps by machine policy or restore the approved default behavior.'
@@ -144,7 +155,7 @@
                     Id          = 'edge-settings'
                     Title       = 'Edge Settings'
                     Stage       = 'Setup'
-                    Order       = 6
+                    Order       = 7
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open Microsoft Edge settings for technician-guided configuration.'
@@ -155,7 +166,7 @@
                     Id          = 'store-settings'
                     Title       = 'Store Settings'
                     Stage       = 'Setup'
-                    Order       = 7
+                    Order       = 8
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Optimize Microsoft Store update and preference settings or restore the approved default behavior.'
@@ -166,23 +177,12 @@
                     Id          = 'updates-pause'
                     Title       = 'Updates Pause'
                     Stage       = 'Setup'
-                    Order       = 8
+                    Order       = 9
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Pause Windows Update for 365 days or restore the default unpaused registry state.'
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'bitlocker'
-                    Title       = 'BitLocker'
-                    Stage       = 'Setup'
-                    Order       = 9
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Analyze BitLocker state, run source-equivalent Off behavior, or open source-equivalent On/status behavior with explicit confirmation.'
-                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }
@@ -221,10 +221,21 @@
                     Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
+                    Id          = 'driver-install-debloat-settings'
+                    Title       = 'Driver Install Debloat & Settings'
+                    Stage       = 'Graphics'
+                    Order       = 2
+                    Type        = 'assistant'
+                    RiskLevel   = 'high'
+                    Description = 'Manual handoff only. Analyze the source-defined NVIDIA driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
+                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'driver-install-latest'
                     Title       = 'Driver Install Latest'
                     Stage       = 'Graphics'
-                    Order       = 2
+                    Order       = 3
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Manual handoff only. Path B step 1 of 5. Prepare NVIDIA driver install guidance without automated download, installer execution, external process launch, driver mutation, or reboot.'
@@ -235,7 +246,7 @@
                     Id          = 'nvidia-settings'
                     Title       = 'Nvidia Settings'
                     Stage       = 'Graphics'
-                    Order       = 3
+                    Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Manual handoff only. Path B step 2 of 5. Prepare NVIDIA settings/profile guidance without 7-Zip download, Profile Inspector execution, .nip import/export, registry/profile mutation, external process launch, or Control Panel launch.'
@@ -246,7 +257,7 @@
                     Id          = 'hdcp'
                     Title       = 'HDCP'
                     Stage       = 'Graphics'
-                    Order       = 4
+                    Order       = 5
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Path B step 3 of 5. Apply or default the source-defined NVIDIA HDCP registry value only after NVIDIA-only target discovery and registry state capture.'
@@ -257,7 +268,7 @@
                     Id          = 'p0-state'
                     Title       = 'P0 State'
                     Stage       = 'Graphics'
-                    Order       = 5
+                    Order       = 6
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Path B step 4 of 5. Apply or default the source-defined NVIDIA P0 State registry value only after NVIDIA-only target discovery and registry state capture.'
@@ -268,23 +279,12 @@
                     Id          = 'msi-mode'
                     Title       = 'Msi Mode'
                     Stage       = 'Graphics'
-                    Order       = 6
+                    Order       = 7
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Path B step 5 of 5. Apply or default the source-defined NVIDIA MSI mode registry value only after NVIDIA-only target discovery and registry state capture.'
                     Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'driver-install-debloat-settings'
-                    Title       = 'Driver Install Debloat & Settings'
-                    Stage       = 'Graphics'
-                    Order       = 7
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Analyze the source-defined NVIDIA driver install/debloat workflow without automated downloads, installer execution, external process launch, driver mutation, cleanup, profile import, registry changes, or reboot.'
-                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'directx'
@@ -506,7 +506,7 @@
                     Id          = 'device-manager-power-savings-wake'
                     Title       = 'Device Manager Power Savings & Wake'
                     Stage       = 'Windows'
-                    Order       = 18
+                    Order       = 17
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Disable source-approved device power-saving and wake values or restore the Ultimate default value removals.'
@@ -517,7 +517,7 @@
                     Id          = 'network-adapter-power-savings-wake'
                     Title       = 'Network Adapter Power Savings & Wake'
                     Stage       = 'Windows'
-                    Order       = 19
+                    Order       = 18
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Disable approved network adapter power-saving and wake values or restore their default absent state.'
@@ -528,7 +528,7 @@
                     Id          = 'write-cache-buffer-flushing'
                     Title       = 'Write Cache Buffer Flushing'
                     Stage       = 'Windows'
-                    Order       = 20
+                    Order       = 19
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Analyze and apply the approved storage write-cache buffer flushing registry value with captured prior state.'
@@ -539,7 +539,7 @@
                     Id          = 'power-plan'
                     Title       = 'Power Plan'
                     Stage       = 'Windows'
-                    Order       = 21
+                    Order       = 20
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Apply the approved Ultimate power configuration or restore Windows default power schemes.'
@@ -550,7 +550,7 @@
                     Id          = 'cleanup'
                     Title       = 'Cleanup'
                     Stage       = 'Windows'
-                    Order       = 22
+                    Order       = 21
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Analyze removable temporary data before preparing a cleanup operation.'
@@ -561,7 +561,7 @@
                     Id          = 'restore-point'
                     Title       = 'Restore Point'
                     Stage       = 'Windows'
-                    Order       = 23
+                    Order       = 22
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Create an approved Windows restore point or open System Protection and System Restore.'

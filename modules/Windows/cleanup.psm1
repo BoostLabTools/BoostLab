@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'cleanup'; Title = 'Cleanup'; Stage = 'Windows'; Order = 22
+    Id = 'cleanup'; Title = 'Cleanup'; Stage = 'Windows'; Order = 21
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Analyze removable temporary data before preparing a cleanup operation.'
     Actions = @('Analyze', 'Apply')

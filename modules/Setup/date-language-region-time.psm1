@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'date-language-region-time'; Title = 'Date Language Region Time'; Stage = 'Setup'; Order = 2
+    Id = 'date-language-region-time'; Title = 'Date Language Region Time'; Stage = 'Setup'; Order = 3
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open the Windows Date & time settings page.'
     Actions = @('Open')

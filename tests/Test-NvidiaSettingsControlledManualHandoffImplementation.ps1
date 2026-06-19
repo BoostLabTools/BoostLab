@@ -116,9 +116,9 @@ $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-d
 
 Assert-BoostLabCondition ($null -ne $nvidiaSettingsTool) 'Nvidia Settings is missing from Graphics stage.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1.'
-Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Install Latest must remain Graphics order 2.'
-Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 3) 'Nvidia Settings must be Graphics order 3 as Path B step 2.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 7) 'Path A Driver Install Debloat & Settings must remain separate after Msi Mode.'
+Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 3) 'Driver Install Latest must remain Graphics order 3.'
+Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 4) 'Nvidia Settings must be Graphics order 4 as Path B step 2.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([string]$nvidiaSettingsTool.Type -eq 'assistant') 'Nvidia Settings must be an assistant.'
 Assert-BoostLabCondition ([string]$nvidiaSettingsTool.RiskLevel -eq 'high') 'Nvidia Settings must remain high risk.'
 Assert-BoostLabCondition ((@($nvidiaSettingsTool.Actions) -join ',') -eq 'Analyze,Open,Apply') 'Nvidia Settings actions must stay canonical Analyze/Open/Apply.'

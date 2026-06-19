@@ -119,7 +119,7 @@ Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design 
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.UltimateParityIsDefaultFinalTarget) 'Ultimate parity default-final-target policy is missing.'
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.RuntimeImplementedIsNotUltimateParity) 'Runtime implementation separation policy is missing.'
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.WorkOrderFollowsStageToolOrder) 'Ordered parity work policy is missing.'
-Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'Setup starts with BitLocker') 'Ordered parity execution rule must record the Phase 114 Setup correction.'
+Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'final canonical') 'Ordered parity execution rule must record the Phase 116 canonical Yazan order.'
 
 $expectedStageOrder = @($stages.Stages | ForEach-Object { [string]$_.Name })
 $actualStageOrder = @($executionOrder.StageOrder | ForEach-Object { [string]$_ })
@@ -142,7 +142,7 @@ foreach ($stageIndex in 0..($stages.Stages.Count - 1)) {
     $orderToolIds = @($orderTools | ForEach-Object { [string]$_.ToolId } | Sort-Object)
     Assert-BoostLabCondition (($stageToolIds -join '|') -eq ($orderToolIds -join '|')) "Execution order tool set mismatch for stage $($stage.Name)."
     if ([string]$stage.Name -eq 'Setup') {
-        Assert-BoostLabCondition ([string]$orderTools[0].ToolId -eq 'bitlocker') 'Phase 114 correction requires BitLocker to be first in Setup parity order.'
+        Assert-BoostLabCondition ([string]$orderTools[0].ToolId -eq 'bitlocker') 'Canonical Yazan order requires BitLocker to be first in Setup parity order.'
     }
     foreach ($toolIndex in 0..($orderTools.Count - 1)) {
         $orderTool = $orderTools[$toolIndex]

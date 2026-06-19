@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'restore-point'; Title = 'Restore Point'; Stage = 'Windows'; Order = 23
+    Id = 'restore-point'; Title = 'Restore Point'; Stage = 'Windows'; Order = 22
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Create an approved Windows restore point or open System Protection and System Restore.'
     Actions = @('Apply', 'Open')

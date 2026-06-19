@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'updates-pause'; Title = 'Updates Pause'; Stage = 'Setup'; Order = 8
+    Id = 'updates-pause'; Title = 'Updates Pause'; Stage = 'Setup'; Order = 9
     Type = 'action'; RiskLevel = 'low'
     Description = 'Pause Windows Update for 365 days or restore the default unpaused registry state.'
     Actions = @('Apply', 'Default')

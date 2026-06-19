@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'background-apps'; Title = 'Background Apps'; Stage = 'Setup'; Order = 5
+    Id = 'background-apps'; Title = 'Background Apps'; Stage = 'Setup'; Order = 6
     Type = 'action'; RiskLevel = 'low'
     Description = 'Disable background apps by machine policy or restore the approved default behavior.'
     Actions = @('Apply', 'Default')

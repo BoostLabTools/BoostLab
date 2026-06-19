@@ -1,7 +1,7 @@
 @{
     SchemaVersion = 1
-    Purpose = 'Phase 107 ordered Ultimate parity execution baseline'
-    Rule = 'Future parity work follows stage order and Yazan-corrected stage/script order; Setup starts with BitLocker before the remaining Setup tools.'
+    Purpose = 'Phase 116 canonical Yazan stage/tool order baseline'
+    Rule = 'Future parity work follows Yazan''s final canonical stage/tool order across runtime, customer UI, reporting, and ordered parity execution.'
     StageOrder = @(
         'Check'
         'Refresh'
@@ -57,12 +57,12 @@
             Order = 5
             Tools = @(
                 @{ Order = 1; ToolId = 'driver-clean'; DisplayName = 'Driver Clean' }
-                @{ Order = 2; ToolId = 'driver-install-latest'; DisplayName = 'Driver Install Latest' }
-                @{ Order = 3; ToolId = 'nvidia-settings'; DisplayName = 'Nvidia Settings' }
-                @{ Order = 4; ToolId = 'hdcp'; DisplayName = 'HDCP' }
-                @{ Order = 5; ToolId = 'p0-state'; DisplayName = 'P0 State' }
-                @{ Order = 6; ToolId = 'msi-mode'; DisplayName = 'Msi Mode' }
-                @{ Order = 7; ToolId = 'driver-install-debloat-settings'; DisplayName = 'Driver Install Debloat & Settings' }
+                @{ Order = 2; ToolId = 'driver-install-debloat-settings'; DisplayName = 'Driver Install Debloat & Settings' }
+                @{ Order = 3; ToolId = 'driver-install-latest'; DisplayName = 'Driver Install Latest' }
+                @{ Order = 4; ToolId = 'nvidia-settings'; DisplayName = 'Nvidia Settings' }
+                @{ Order = 5; ToolId = 'hdcp'; DisplayName = 'HDCP' }
+                @{ Order = 6; ToolId = 'p0-state'; DisplayName = 'P0 State' }
+                @{ Order = 7; ToolId = 'msi-mode'; DisplayName = 'Msi Mode' }
                 @{ Order = 8; ToolId = 'directx'; DisplayName = 'DirectX' }
                 @{ Order = 9; ToolId = 'visual-cpp'; DisplayName = 'Visual C++' }
                 @{ Order = 10; ToolId = 'graphics-configuration-center'; DisplayName = 'Graphics Configuration Center' }

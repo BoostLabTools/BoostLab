@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'memory-compression'; Title = 'Memory Compression'; Stage = 'Setup'; Order = 1
+    Id = 'memory-compression'; Title = 'Memory Compression'; Stage = 'Setup'; Order = 2
     Type = 'action'; RiskLevel = 'low'
     Description = 'Disable Windows memory compression using the approved recommendation or restore the default enabled state.'
     Actions = @('Apply', 'Default')

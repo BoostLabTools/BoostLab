@@ -59,14 +59,15 @@ GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwis
 
 ### Stage 3 - Setup
 
-1. Memory Compression
-2. Date Language Region Time
-3. Startup Apps (Settings)
-4. Startup Apps (Task Manager)
-5. Background Apps
-6. Edge Settings
-7. Store Settings
-8. Updates Pause
+1. BitLocker
+2. Memory Compression
+3. Date Language Region Time
+4. Startup Apps (Settings)
+5. Startup Apps (Task Manager)
+6. Background Apps
+7. Edge Settings
+8. Store Settings
+9. Updates Pause
 
 ### Stage 4 - Installers
 
@@ -75,12 +76,12 @@ GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwis
 ### Stage 5 - Graphics
 
 1. Driver Clean
-2. Driver Install Latest
-3. Nvidia Settings
-4. HDCP
-5. P0 State
-6. Msi Mode
-7. Driver Install Debloat & Settings
+2. Driver Install Debloat & Settings
+3. Driver Install Latest
+4. Nvidia Settings
+5. HDCP
+6. P0 State
+7. Msi Mode
 8. DirectX
 9. Visual C++
 10. Graphics Configuration Center

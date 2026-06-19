@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'edge-settings'; Title = 'Edge Settings'; Stage = 'Setup'; Order = 6
+    Id = 'edge-settings'; Title = 'Edge Settings'; Stage = 'Setup'; Order = 7
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open Microsoft Edge settings for technician-guided configuration.'
     Actions = @('Open')

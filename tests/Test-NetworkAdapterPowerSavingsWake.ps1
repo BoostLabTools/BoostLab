@@ -66,7 +66,7 @@ if ($null -eq $tool) {
 }
 if (
     [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 19 -or
+    [int]$tool['Order'] -ne 18 -or
     [string]$tool['Type'] -ne 'action' -or
     [string]$tool['RiskLevel'] -ne 'medium' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'

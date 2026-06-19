@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'store-settings'; Title = 'Store Settings'; Stage = 'Setup'; Order = 7
+    Id = 'store-settings'; Title = 'Store Settings'; Stage = 'Setup'; Order = 8
     Type = 'action'; RiskLevel = 'low'
     Description = 'Optimize Microsoft Store update and preference settings or restore the approved default behavior.'
     Actions = @('Apply', 'Default')

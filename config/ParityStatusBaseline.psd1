@@ -57,6 +57,8 @@
             ToolId = 'bios-information'
             DisplayName = 'BIOS Information'
             Stage = 'Check'
+            StageOrder = 1
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -68,6 +70,8 @@
             ToolId = 'bios-settings'
             DisplayName = 'BIOS Settings'
             Stage = 'Check'
+            StageOrder = 1
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -81,6 +85,8 @@
             ToolId = 'reinstall'
             DisplayName = 'Reinstall'
             Stage = 'Refresh'
+            StageOrder = 2
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -94,6 +100,8 @@
             ToolId = 'unattended'
             DisplayName = 'Unattended'
             Stage = 'Refresh'
+            StageOrder = 2
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -107,6 +115,8 @@
             ToolId = 'updates-drivers-block'
             DisplayName = 'Updates Drivers Block'
             Stage = 'Refresh'
+            StageOrder = 2
+            ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ControlledSubset'
             UltimateParity = 'Partial'
@@ -120,6 +130,8 @@
             ToolId = 'to-bios'
             DisplayName = 'To BIOS'
             Stage = 'Refresh'
+            StageOrder = 2
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -133,6 +145,8 @@
             ToolId = 'memory-compression'
             DisplayName = 'Memory Compression'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -144,6 +158,8 @@
             ToolId = 'date-language-region-time'
             DisplayName = 'Date Language Region Time'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -155,6 +171,8 @@
             ToolId = 'startup-apps-settings'
             DisplayName = 'Startup Apps (Settings)'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -166,6 +184,8 @@
             ToolId = 'startup-apps-task-manager'
             DisplayName = 'Startup Apps (Task Manager)'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -177,6 +197,8 @@
             ToolId = 'background-apps'
             DisplayName = 'Background Apps'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -188,6 +210,8 @@
             ToolId = 'edge-settings'
             DisplayName = 'Edge Settings'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 7
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -199,6 +223,8 @@
             ToolId = 'store-settings'
             DisplayName = 'Store Settings'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 8
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -210,6 +236,8 @@
             ToolId = 'updates-pause'
             DisplayName = 'Updates Pause'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -221,6 +249,8 @@
             ToolId = 'bitlocker'
             DisplayName = 'BitLocker'
             Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -234,6 +264,8 @@
             ToolId = 'installers'
             DisplayName = 'Installers'
             Stage = 'Installers'
+            StageOrder = 4
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -245,6 +277,8 @@
             ToolId = 'driver-clean'
             DisplayName = 'Driver Clean'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -256,6 +290,8 @@
             ToolId = 'driver-install-latest'
             DisplayName = 'Driver Install Latest'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -267,6 +303,8 @@
             ToolId = 'nvidia-settings'
             DisplayName = 'Nvidia Settings'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -278,6 +316,8 @@
             ToolId = 'hdcp'
             DisplayName = 'HDCP'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -289,6 +329,8 @@
             ToolId = 'p0-state'
             DisplayName = 'P0 State'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -300,6 +342,8 @@
             ToolId = 'msi-mode'
             DisplayName = 'Msi Mode'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 7
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -311,6 +355,8 @@
             ToolId = 'driver-install-debloat-settings'
             DisplayName = 'Driver Install Debloat & Settings'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -322,6 +368,8 @@
             ToolId = 'directx'
             DisplayName = 'DirectX'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 8
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -333,6 +381,8 @@
             ToolId = 'visual-cpp'
             DisplayName = 'Visual C++'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -344,6 +394,8 @@
             ToolId = 'graphics-configuration-center'
             DisplayName = 'Graphics Configuration Center'
             Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -355,6 +407,8 @@
             ToolId = 'start-menu-taskbar'
             DisplayName = 'Start Menu Taskbar'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 1
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -366,6 +420,8 @@
             ToolId = 'start-menu-layout'
             DisplayName = 'Start Menu Layout'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -377,6 +433,8 @@
             ToolId = 'context-menu'
             DisplayName = 'Context Menu'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -388,6 +446,8 @@
             ToolId = 'theme-black'
             DisplayName = 'Theme Black'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -399,6 +459,8 @@
             ToolId = 'signout-lockscreen-wallpaper-black'
             DisplayName = 'Signout LockScreen Wallpaper Black'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -410,6 +472,8 @@
             ToolId = 'user-account-pictures-black'
             DisplayName = 'User Account Pictures Black'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -421,6 +485,8 @@
             ToolId = 'widgets'
             DisplayName = 'Widgets'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 7
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -432,6 +498,8 @@
             ToolId = 'copilot'
             DisplayName = 'Copilot'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 8
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -443,6 +511,8 @@
             ToolId = 'game-mode'
             DisplayName = 'GameMode'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -454,6 +524,8 @@
             ToolId = 'pointer-precision'
             DisplayName = 'Pointer Precision'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -465,6 +537,8 @@
             ToolId = 'bloatware'
             DisplayName = 'Bloatware'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 11
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -476,6 +550,8 @@
             ToolId = 'game-bar'
             DisplayName = 'GameBar'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 12
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -487,6 +563,8 @@
             ToolId = 'edge-webview'
             DisplayName = 'Edge & WebView'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 13
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ManualHandoffOnly'
             UltimateParity = 'No'
@@ -498,6 +576,8 @@
             ToolId = 'notepad-settings'
             DisplayName = 'Notepad Settings'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 14
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -509,6 +589,8 @@
             ToolId = 'control-panel-settings'
             DisplayName = 'Control Panel Settings'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 15
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -520,6 +602,8 @@
             ToolId = 'sound'
             DisplayName = 'Sound'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 16
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -531,6 +615,8 @@
             ToolId = 'device-manager-power-savings-wake'
             DisplayName = 'Device Manager Power Savings & Wake'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 17
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -542,6 +628,8 @@
             ToolId = 'network-adapter-power-savings-wake'
             DisplayName = 'Network Adapter Power Savings & Wake'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 18
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -553,6 +641,8 @@
             ToolId = 'write-cache-buffer-flushing'
             DisplayName = 'Write Cache Buffer Flushing'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 19
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ControlledSubset'
             UltimateParity = 'Partial'
@@ -564,6 +654,8 @@
             ToolId = 'power-plan'
             DisplayName = 'Power Plan'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 20
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -575,6 +667,8 @@
             ToolId = 'cleanup'
             DisplayName = 'Cleanup'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 21
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -586,6 +680,8 @@
             ToolId = 'restore-point'
             DisplayName = 'Restore Point'
             Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 22
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -597,6 +693,8 @@
             ToolId = 'spectre-meltdown-assistant'
             DisplayName = 'Spectre / Meltdown Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -608,6 +706,8 @@
             ToolId = 'mmagent-assistant'
             DisplayName = 'MMAgent Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -619,6 +719,8 @@
             ToolId = 'resizable-bar-assistant'
             DisplayName = 'Resizable BAR Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 3
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -630,6 +732,8 @@
             ToolId = 'smt-ht-assistant'
             DisplayName = 'SMT / HT Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -641,6 +745,8 @@
             ToolId = 'services-optimizer'
             DisplayName = 'Services Optimizer'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 5
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -652,6 +758,8 @@
             ToolId = 'timer-resolution-assistant'
             DisplayName = 'Timer Resolution Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 6
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -663,6 +771,8 @@
             ToolId = 'defender-optimize-assistant'
             DisplayName = 'Defender Optimize Assistant'
             Stage = 'Advanced'
+            StageOrder = 7
+            ToolOrder = 7
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'

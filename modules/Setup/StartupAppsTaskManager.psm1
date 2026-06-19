@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'startup-apps-task-manager'; Title = 'Startup Apps (Task Manager)'; Stage = 'Setup'; Order = 4
+    Id = 'startup-apps-task-manager'; Title = 'Startup Apps (Task Manager)'; Stage = 'Setup'; Order = 5
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open Task Manager for detailed startup application review.'
     Actions = @('Open')

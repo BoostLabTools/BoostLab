@@ -97,7 +97,7 @@ $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $setupOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Setup' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $setupOrder) 'Setup stage was not found in ordered parity execution baseline.'
-Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'Setup starts with BitLocker') 'Execution order rule must document the Phase 114 Setup correction.'
+Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'final canonical') 'Execution order rule must document the Phase 116 canonical Yazan order.'
 Assert-BoostLabCondition ([string]@($setupOrder.Tools)[0].ToolId -eq 'bitlocker') 'BitLocker must be first in Setup ordered parity execution.'
 
 $bitLockerRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'bitlocker' }) | Select-Object -First 1
@@ -125,7 +125,7 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented 
 $bitLockerTool = @($allTools | Where-Object { $_.Id -eq 'bitlocker' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $bitLockerTool) 'BitLocker tool metadata was not found.'
 Assert-BoostLabCondition ([string]$bitLockerTool.Stage -eq 'Setup') 'BitLocker must remain a Setup tool.'
-Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 9) 'BitLocker UI/catalog order must remain unchanged by the parity upgrade.'
+Assert-BoostLabCondition ([int]$bitLockerTool.Order -eq 1) 'BitLocker UI/catalog order must follow the canonical Setup order.'
 Assert-BoostLabCondition ((@($bitLockerTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore,Open') 'BitLocker must expose canonical actions only.'
 $capabilities = $bitLockerTool.Capabilities
 Assert-BoostLabCondition ([bool]$capabilities.RequiresAdmin) 'BitLocker must preserve Administrator requirement.'

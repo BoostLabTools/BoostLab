@@ -115,9 +115,9 @@ $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-d
 
 Assert-BoostLabCondition ($null -ne $driverInstallLatestTool) 'Driver Install Latest is missing from Graphics stage.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1.'
-Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 2) 'Driver Install Latest must be Graphics order 2.'
-Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 3) 'Nvidia Settings must be Graphics order 3 as Path B step 2.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 7) 'Path A Driver Install Debloat & Settings must remain separate after Msi Mode.'
+Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 3) 'Driver Install Latest must be Graphics order 3.'
+Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 4) 'Nvidia Settings must be Graphics order 4 as Path B step 2.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.Type -eq 'assistant') 'Driver Install Latest must be an assistant.'
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.RiskLevel -eq 'high') 'Driver Install Latest must remain high risk.'
 Assert-BoostLabCondition ((@($driverInstallLatestTool.Actions) -join ',') -eq 'Analyze,Open,Apply') 'Driver Install Latest actions must stay canonical Analyze/Open/Apply.'

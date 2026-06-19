@@ -6,7 +6,7 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction Silent
 }
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'network-adapter-power-savings-wake'; Title = 'Network Adapter Power Savings & Wake'; Stage = 'Windows'; Order = 19
+    Id = 'network-adapter-power-savings-wake'; Title = 'Network Adapter Power Savings & Wake'; Stage = 'Windows'; Order = 18
     Type = 'action'; RiskLevel = 'medium'
     Description = 'Disable approved network adapter power-saving and wake values or restore their default absent state.'
     Actions = @('Apply', 'Default')

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'startup-apps-settings'; Title = 'Startup Apps (Settings)'; Stage = 'Setup'; Order = 3
+    Id = 'startup-apps-settings'; Title = 'Startup Apps (Settings)'; Stage = 'Setup'; Order = 4
     Type = 'assistant'; RiskLevel = 'low'
     Description = 'Open the Windows Settings page for startup application management.'
     Actions = @('Open')

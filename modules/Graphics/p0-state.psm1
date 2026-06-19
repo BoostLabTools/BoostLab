@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 $coreRoot = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core'
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
@@ -12,7 +12,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Id = 'p0-state'
     Title = 'P0 State'
     Stage = 'Graphics'
-    Order = 5
+    Order = 6
     Type = 'action'
     RiskLevel = 'high'
     Description = 'Path B step 4 of 5. Apply or default the source-defined NVIDIA P0 State registry value only after NVIDIA-only target discovery and registry state capture.'

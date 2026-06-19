@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 $coreRoot = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core'
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
@@ -12,7 +12,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Id = 'msi-mode'
     Title = 'Msi Mode'
     Stage = 'Graphics'
-    Order = 6
+    Order = 7
     Type = 'action'
     RiskLevel = 'high'
     Description = 'Path B step 5 of 5. Apply or default the source-defined NVIDIA MSI mode registry value only after NVIDIA-only target discovery and registry state capture.'
