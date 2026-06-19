@@ -41,9 +41,9 @@
                     Order       = 1
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Review prerequisites and prepare a guided Windows reinstall workflow.'
-                    Actions     = @('Analyze', 'Apply')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Controlled manual handoff only. Analyze the source-defined Windows reinstall workflow without automated downloads, Media Creation Tool launch, setup execution, file mutation, reboot, recovery, or external process behavior.'
+                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'unattended'

@@ -24,6 +24,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Check\BIOSSettings.psm1'
         Actions = @('Analyze', 'Open')
     }
+    'reinstall' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\reinstall.psm1'
+        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
     'to-bios' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Refresh\to-bios.psm1'
         Actions = @('Analyze', 'Open')

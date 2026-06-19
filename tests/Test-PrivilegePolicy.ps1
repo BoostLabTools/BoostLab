@@ -31,6 +31,10 @@ $bootstrapPath = Join-Path $ProjectRoot 'bootstrap.ps1'
 $startPath = Join-Path $ProjectRoot 'Start-BoostLab.ps1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
+$inventoryBaselineHelperPath = Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1'
+
+. $inventoryBaselineHelperPath
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
@@ -288,6 +292,7 @@ $implementedModules = [ordered]@{
     'bios-information' = 'Check\BIOSInformation.psm1'
     'bios-settings' = 'Check\BIOSSettings.psm1'
     'to-bios' = 'Refresh\to-bios.psm1'
+    'reinstall' = 'Refresh\reinstall.psm1'
     'updates-drivers-block' = 'Refresh\updates-drivers-block.psm1'
     'startup-apps-settings' = 'Setup\StartupAppsSettings.psm1'
     'startup-apps-task-manager' = 'Setup\StartupAppsTaskManager.psm1'
@@ -340,7 +345,7 @@ $implementedModuleFiles = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
     }
 )
-if ($implementedModuleFiles.Count -ne 41) {
+if ($implementedModuleFiles.Count -ne [int]$inventoryBaseline.ImplementedTools) {
     $errors.Add("Implemented module boundary changed: found $($implementedModuleFiles.Count) implemented modules.")
 }
 

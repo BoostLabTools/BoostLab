@@ -47,6 +47,10 @@ $implementedModules = @{
         RelativePath          = 'Refresh\unattended.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
     }
+    'reinstall' = @{
+        RelativePath          = 'Refresh\reinstall.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'updates-drivers-block' = @{
         RelativePath          = 'Refresh\updates-drivers-block.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
@@ -494,7 +498,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-latest') {
             0
         }
-        elseif ($toolId -in @('driver-install-debloat-settings', 'directx', 'visual-cpp')) {
+        elseif ($toolId -in @('driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall')) {
             0
         }
         elseif ($toolId -eq 'nvidia-settings') {

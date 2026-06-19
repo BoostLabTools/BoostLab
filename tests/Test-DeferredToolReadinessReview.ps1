@@ -63,7 +63,7 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($placeholderTools.Count -ne 14) {
+if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
     throw "Expected $($inventoryBaseline.DeferredPlaceholders) remaining placeholder tools, found $($placeholderTools.Count)."
 }
 
@@ -86,7 +86,7 @@ foreach ($requiredSection in @(
 foreach ($requiredCategory in @(
     'Not ready: **3**'
     'Foundation-ready but needs production allowlists: **2**'
-    'Foundation-ready but needs artifact provenance approvals: **5**'
+    'Foundation-ready but needs artifact provenance approvals: **4**'
     'Foundation-ready but needs tool-specific design: **4**'
     'Candidate for next implementation attempt: **0**'
 )) {

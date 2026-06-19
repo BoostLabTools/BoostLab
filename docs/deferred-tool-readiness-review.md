@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **41**
-* Deferred/placeholders: **14**
+* Implemented tools: **42**
+* Deferred/placeholders: **13**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -152,7 +152,7 @@ Current inventory:
 
 * Not ready: **3**
 * Foundation-ready but needs production allowlists: **2**
-* Foundation-ready but needs artifact provenance approvals: **5**
+* Foundation-ready but needs artifact provenance approvals: **4**
 * Foundation-ready but needs tool-specific design: **4**
 * Candidate for next implementation attempt: **0**
 
@@ -160,7 +160,7 @@ Current inventory:
 
 | Tool title | Tool id | Stage | Current status | Original refusal / defer reason | Foundations now available that help | Foundations still missing or not approved | Required production allowlists / artifact approvals before implementation | Can start next | Category | Recommended next action |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Reinstall | `reinstall` | Refresh | Refused placeholder | Windows 10 and Windows 11 Media Creation Tool download/launch workflow from mutable third-party mirror URLs | Download provenance, installer policy, reboot workflow | No approved Windows 11 setup artifact, no hash/signer/size/version evidence, no approved executable launch, no approved reboot or handoff scope for this tool; Windows 10 branch is unsupported | Exact Windows 11 media artifact, signer/hash/size evidence, exact command line, exact generated-file scope, exact reboot/handoff scope | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/reinstall-scope-provenance-design.md` before any second attempt |
+| Reinstall | `reinstall` | Refresh | Implemented in Phase 104 as controlled manual handoff | Automated source behavior downloads and launches Windows 10 and Windows 11 Media Creation Tool executables from mutable third-party mirror URLs | Manual handoff pattern, download provenance, installer policy, reboot workflow | Auto remains blocked: no approved Windows 11 setup artifact, no hash/signer/size/version evidence, no approved executable launch, no approved generated-file ownership, and no approved reboot or handoff scope for this tool; Windows 10 branch is unsupported | Future Auto would require exact Windows 11 media artifact, signer/hash/size evidence, exact command line, exact generated-file scope, exact reboot/handoff scope, and explicit refusal of the Windows 10 branch | Complete for manual handoff only | Phase 104 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/reinstall-scope-provenance-design.md` and `docs/migrations/reinstall.md` |
 | Updates Drivers Block | `updates-drivers-block` | Refresh | Implemented in Phase 102 as controlled live Driver Updates policy | Broader source branches still include custom update-server URL values, bootable-media `setupcomplete.cmd` generation, and embedded reboot commands | File/registry rollback supports the implemented live policy branch | No approved update-server URL scope, no approved generated-script/media file scope, and no approved reboot workflow scope for the remaining unsupported branches | Future broad Updates or bootable-media work would need exact update-server URL approval, exact generated-script/media scopes, exact reboot workflow scope, and a separate approval decision | Complete for live driver policy only | Phase 102 controlled policy complete; broader branches blocked | Keep broader Updates and bootable-media branches blocked until separately approved |
 | Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Use `docs/tool-designs/edge-settings-scope-design.md`, then decompose the source into policy, service, task, process, and repair behaviors before any migration phase |
 | Installers | `installers` | Installers | Refused placeholder | Multi-app download/install workflow with post-install registry, service, task, shortcut, config, and uninstall side effects | Download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | No approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists | No | Foundation-ready but needs artifact provenance approvals | Use `docs/tool-designs/installers-scope-provenance-design.md` before any second attempt |
@@ -219,14 +219,16 @@ documented in `docs/tool-designs/updates-drivers-block-scope-design.md`.
 These mostly moved from “missing foundation” to “waiting on exact artifact and
 execution approval”:
 
-* Reinstall
 * Installers
 * Edge & WebView
 * Resizable BAR Assistant
 * Timer Resolution Assistant
 
-The Reinstall tool-specific scope/provenance design is documented in
-`docs/tool-designs/reinstall-scope-provenance-design.md`.
+Reinstall was implemented in Phase 104 as controlled manual handoff only. Auto
+remains blocked because its Windows 11 Media Creation Tool source uses mutable
+branch downloads and lacks the complete artifact, executable launch,
+generated-file ownership, reboot/session, recovery, and support approvals
+required by Phase 35 and Phase 40.
 
 The Installers tool-specific scope/provenance design is documented in
 `docs/tool-designs/installers-scope-provenance-design.md`.
@@ -288,6 +290,12 @@ remains blocked by the Phase 46 provenance review because all twelve source
 packages use mutable branch downloads and lack the complete hash, size,
 version, signer, authoritative-source, exit-code, temp-file, and installer
 approvals required by Phase 35.
+
+Reinstall was implemented in Phase 104 as controlled manual handoff only. Auto
+remains blocked by the Phase 58 scope/provenance design because the source
+downloads and launches mutable Media Creation Tool executables and lacks exact
+artifact provenance, executable launch, generated-file ownership,
+reboot/session, recovery, and support approvals.
 
 ## Remaining Blockers
 

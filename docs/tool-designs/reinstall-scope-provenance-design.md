@@ -70,15 +70,20 @@ scope.
 
 ## Current Decision
 
-Reinstall remains a refused placeholder.
+Reinstall is implemented as controlled manual handoff only in Phase 104.
 
 No production download/executable/installer/reinstall/reboot/file/registry scopes
-are approved for Reinstall in this phase.
+are approved for Reinstall.
 
-Partial implementation would weaken or distort Ultimate behavior. A browser
-link, generic Windows Settings page, or locally invented reinstall assistant
-would not preserve the source-defined behavior, which downloads and launches a
-specific Media Creation Tool executable.
+Automated implementation would still weaken or distort Ultimate behavior unless
+the exact source-defined Media Creation Tool workflow is approved with artifact
+provenance, executable launch descriptors, generated-file ownership, and
+reboot/recovery handoff rules. BoostLab therefore exposes read-only Analyze,
+in-app manual handoff, blocked Auto, unavailable Default, and unavailable
+Restore.
+
+The manual handoff path does not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or any external tool.
+It does not download, create, delete, mutate, reboot, or launch anything.
 
 ## Behavior Groups
 
@@ -203,8 +208,9 @@ Risk level:
 
 Later implementation decision:
 
-* Can be reconsidered only after real artifact provenance and execution scopes
-  are approved.
+* Manual handoff is complete in Phase 104.
+* Auto can be reconsidered only after real artifact provenance and execution
+  scopes are approved.
 
 ### 3. Media Creation Tool Download Behavior
 
@@ -830,6 +836,12 @@ Windows setup side effects may remain outside BoostLab control.
 
 ## Production Approval State
 
+Phase 104 approves controlled manual handoff only and records the migration in
+`docs/migrations/reinstall.md`.
+
+No automated Media Creation Tool download, setup execution, generated-file
+mutation, recovery workflow, reboot, production allowlist entry, or artifact
+provenance entry is approved.
 Current approved production scopes for Reinstall:
 
 * Artifact approvals: none.
@@ -843,5 +855,6 @@ Current approved production scopes for Reinstall:
 * Cleanup scopes: none.
 * Default/Restore scopes: none.
 
-Reinstall must remain a refused placeholder until these approvals are supplied
-in a future explicit implementation phase.
+Reinstall Auto must remain blocked until these approvals are supplied in a
+future explicit implementation phase. The implemented Phase 104 surface remains
+manual handoff only.

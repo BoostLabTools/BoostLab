@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $definitions = [ordered]@{
     'date-language-region-time' = @{
         Source = 'source-ultimate\3 Setup\2 Date Language Region Time.ps1'
@@ -202,7 +205,10 @@ $placeholderModules = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 )
-if ($implementedModules.Count -ne 41 -or $placeholderModules.Count -ne 14) {
+if (
+    $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+    $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
+) {
     throw "Unexpected module counts: $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }
 

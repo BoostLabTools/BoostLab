@@ -256,6 +256,21 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Restore') {
         'Restore is unavailable because no captured artifact, package, registry, temp-file, installer, or cleanup state restore contract exists.'
     }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
+        'Analyze the Reinstall source and report blocked Windows 11 Media Creation Tool artifact, setup execution, generated-file ownership, reboot/session, recovery, and support approvals without running any reinstall workflow.'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
+        'Prepare Reinstall manual handoff instructions only; no browser, Explorer, Settings, external tool, Windows media download, Media Creation Tool launch, setup command, file mutation, reboot, recovery, or system mutation is opened or executed.'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
+        'Auto mode is blocked for Reinstall because exact Windows 11 artifact provenance, executable launch, generated-file ownership, reboot/session, recovery, and support approvals do not exist.'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
+        'Default is unavailable because the source does not define a safe Reinstall default branch.'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
+        'Restore is unavailable because no captured reinstall, setup, generated-file, reboot/session, recovery, or support state restore contract exists.'
+    }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
         'Analyze the source-defined live Driver Updates policy registry values without changing the system.'
     }
@@ -609,6 +624,39 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Block Restore before any operational step.')
         $plannedChanges.Add('Require valid selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved Restore contract before any Restore can be planned.')
         $plannedChanges.Add('Do not treat source installation, Apply, or Default as captured-state Restore.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Read the Reinstall source checksum and implementation status.')
+        $plannedChanges.Add('Report source behavior summary, Windows 11 target scope, unsupported Windows 10 branch, and missing artifact, executable launch, generated-file, reboot/session, recovery, and support approvals.')
+        $plannedChanges.Add('Perform no download, browser/Explorer/Settings/external process launch, setup execution, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
+        $plannedChanges.Add('Do not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or any external tool.')
+        $plannedChanges.Add('Do not download Windows media, Media Creation Tool executables, installers, setup files, ISOs, scripts, or artifacts.')
+        $plannedChanges.Add('Do not create, delete, or mutate setup files, media folders, temp files, boot files, recovery files, partitions, registry, services, scheduled tasks, packages, devices, or drivers.')
+        $plannedChanges.Add('Do not start setup, media creation, repair, refresh, recovery, or reinstall workflows.')
+        $plannedChanges.Add('Do not reboot or change session state.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Block Auto mode before any operational step.')
+        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
+        $plannedChanges.Add('Report missing Windows 11 Media Creation Tool artifact provenance, executable launch descriptor, generated-file ownership, reboot/session, recovery, and support approvals.')
+        $plannedChanges.Add('Keep the Windows 10 Media Creation Tool branch unsupported.')
+        $plannedChanges.Add('Perform no download, executable launch, setup execution, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Block Default before any operational step.')
+        $plannedChanges.Add('Do not treat Default as Restore.')
+        $plannedChanges.Add('Do not invent a reinstall, setup, file, registry, service, package, recovery, reboot, or system mutation.')
+        $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore before any operational step.')
+        $plannedChanges.Add('Require valid selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved Restore contract before any Restore can be planned.')
+        $plannedChanges.Add('Do not treat source download/launch behavior, Apply, or Default as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
@@ -1029,8 +1077,9 @@ function New-BoostLabActionPlan {
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -1051,7 +1100,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and $toolId -notin @('directx', 'visual-cpp')) {
+    if ($capabilities.RequiresAdmin -and $toolId -notin @('directx', 'visual-cpp', 'reinstall')) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1158,6 +1207,27 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Restore') {
         $sideEffects.Add('Restore is blocked without selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract.')
+        $sideEffects.Add('No system-changing operation occurs.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Reinstall analysis is read-only.')
+        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('The Windows 10 Media Creation Tool branch is reported as unsupported while the target outcome remains Windows 11.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('No browser, Explorer, Settings, external tool, Windows media download, Media Creation Tool launch, setup command, file mutation, registry/service/package/device/driver mutation, recovery workflow, reboot, or system mutation occurs.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Auto mode is blocked before execution.')
+        $sideEffects.Add('No approved Auto behavior, download, executable launch, setup execution, file mutation, recovery workflow, reboot, or system mutation occurs.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Default is blocked before execution.')
+        $sideEffects.Add('No reinstall, setup, generated-file, recovery, reboot, or system state changes occur.')
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
+        $sideEffects.Add('Restore is blocked without selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved restore contract.')
         $sideEffects.Add('No system-changing operation occurs.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
@@ -1441,31 +1511,31 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'nvidia-settings')) {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'nvidia-settings', 'bitlocker')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet -and $toolId -notin @('directx', 'visual-cpp')) {
+    if ($capabilities.RequiresInternet -and $toolId -notin @('directx', 'visual-cpp', 'reinstall')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze') {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and $capabilities.CanModifyServices) {
+    if ($isPotentialChangeAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
         $sideEffects.Add('Service changes may affect dependent Windows or application features.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and $capabilities.CanModifyDrivers) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyDrivers) {
         $sideEffects.Add('Driver changes may affect display, devices, stability, or hardware availability.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and $capabilities.CanModifySecurity) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifySecurity) {
         $sideEffects.Add('Security changes may alter system protection or compatibility.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and $capabilities.CanDeleteFiles) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanDeleteFiles) {
         $sideEffects.Add('Deleted files may not be recoverable unless an approved checkpoint exists.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and $capabilities.CanInstallSoftware) {
+    if ($isPotentialChangeAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanInstallSoftware) {
         $sideEffects.Add('Installed software may add files, services, tasks, or application settings.')
     }
     if ($isPotentialChangeAction -and $capabilities.UsesTrustedInstaller) {
@@ -1537,6 +1607,18 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Restore') {
         'Visual C++ Restore requires selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
+        'BoostLab will prepare Reinstall manual handoff instructions only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Apply') {
+        'Reinstall Auto mode is blocked. BoostLab will not execute Auto behavior because Windows 11 artifact provenance, executable launch, generated-file ownership, reboot/session, recovery, and support approvals are missing. Continue only to record the blocked result?'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Default') {
+        'Reinstall Default is unavailable. The source does not define a safe Default branch, and Default is not Restore. Continue only to record the blocked Default result?'
+    }
+    elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
+        'Reinstall Restore requires selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Nvidia Settings manual handoff instructions only. It will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, open a browser or external process, modify registry or NVIDIA profiles, or change system state. Continue?'

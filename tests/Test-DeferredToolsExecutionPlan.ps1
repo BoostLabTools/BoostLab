@@ -57,7 +57,7 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($placeholderTools.Count -ne 14) {
+if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
     throw "Expected $($inventoryBaseline.DeferredPlaceholders) remaining placeholder tools, found $($placeholderTools.Count)."
 }
 

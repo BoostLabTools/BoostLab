@@ -34,6 +34,7 @@ $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $artifactPolicyPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $rollbackPolicyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
 $rebootPolicyPath = Join-Path $ProjectRoot 'config\RebootRecoveryPolicy.psd1'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\reinstall.md'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 foreach ($path in @(
@@ -45,7 +46,8 @@ foreach ($path in @(
     $configPath,
     $artifactPolicyPath,
     $rollbackPolicyPath,
-    $rebootPolicyPath
+    $rebootPolicyPath,
+    $migrationPath
 )) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Required file was not found: $path"
@@ -57,6 +59,7 @@ $readinessText = Get-Content -LiteralPath $readinessPath -Raw
 $planText = Get-Content -LiteralPath $planPath -Raw
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
 $rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
@@ -102,7 +105,10 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB`',
-    'Reinstall remains a refused placeholder',
+    'Reinstall is implemented as controlled manual handoff only in Phase 104.',
+    'The manual handoff path does not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or any external tool.',
+    'It does not download, create, delete, mutate, reboot, or launch anything.',
+    'docs/migrations/reinstall.md',
     'No production download/executable/installer/reinstall/reboot/file/registry scopes',
     'Windows 10 Media Creation Tool branch is unsupported',
     'Windows 11 Media Creation Tool branch',
@@ -170,11 +176,60 @@ if (-not $planText.Contains('docs/tool-designs/reinstall-scope-provenance-design
     throw 'Deferred tools execution plan does not link to the Reinstall scope/provenance design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Reinstall module is no longer a placeholder.'
+foreach ($requiredModuleNeedle in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
+    'ManualHandoffOnly',
+    'ManualHandoffPrepared',
+    'AutoBlockedUntilArtifactApproval',
+    'DefaultUnavailable',
+    'RestoreUnavailable',
+    'NoDownloadOccurred',
+    'NoInstallerExecutionOccurred',
+    'NoSetupExecutionOccurred',
+    'NoExternalProcessStarted',
+    'NoFileMutationOccurred',
+    'NoRegistryMutationOccurred',
+    'NoRecoveryWorkflowStarted',
+    'NoRebootOccurred',
+    'NoSystemMutationOccurred'
+)) {
+    if (-not $moduleText.Contains($requiredModuleNeedle)) {
+        throw "Reinstall manual-handoff module is missing expected text: $requiredModuleNeedle"
+    }
 }
-if ($moduleText -match 'IWR|Invoke-WebRequest|Start-BitsTransfer|mediacreationtool|Start-Process|setup|shutdown|Mount-DiskImage|msiexec') {
-    throw 'Reinstall placeholder module appears to contain real download, launch, or setup behavior.'
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Reinstall module still uses the placeholder contract.'
+}
+foreach ($commandPattern in @(
+    '(?im)^\s*Start-Process\b',
+    '(?im)^\s*Invoke-WebRequest\b',
+    '(?im)^\s*iwr\b',
+    '(?im)^\s*Start-BitsTransfer\b',
+    '(?im)^\s*New-Item\b',
+    '(?im)^\s*Remove-Item\b',
+    '(?im)^\s*Set-ItemProperty\b',
+    '(?im)^\s*Remove-ItemProperty\b',
+    '(?im)^\s*reg\b',
+    '(?im)^\s*shutdown\b',
+    '(?im)^\s*Restart-Computer\b',
+    '(?im)^\s*Mount-DiskImage\b',
+    '(?im)^\s*msiexec\b'
+)) {
+    if ([regex]::IsMatch($moduleText, $commandPattern)) {
+        throw "Reinstall module contains prohibited executable command pattern: $commandPattern"
+    }
+}
+
+foreach ($migrationNeedle in @(
+    '# Reinstall Migration Record',
+    'Phase 104 implements controlled manual handoff only',
+    'AutoBlockedUntilArtifactApproval',
+    'No source command is executed in Phase 104.',
+    'Default is not Restore.'
+)) {
+    if (-not $migrationText.Contains($migrationNeedle)) {
+        throw "Reinstall migration record is missing expected text: $migrationNeedle"
+    }
 }
 
 if (@($artifactPolicy.Artifacts).Count -ne 0) {
@@ -193,7 +248,7 @@ $tool = $allTools |
 if (-not $tool) {
     throw 'Reinstall catalog entry was not found.'
 }
-if (-not (@($tool.Actions) -contains 'Analyze') -or -not (@($tool.Actions) -contains 'Apply')) {
+if ((@($tool.Actions) -join ',') -ne 'Analyze,Open,Apply,Default,Restore') {
     throw 'Reinstall catalog actions changed unexpectedly.'
 }
 
@@ -266,7 +321,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionRebootScopes     = @($rebootPolicy.WorkflowScopes).Count
     SourceUltimateUnchanged    = $true
     DeletedToolsRemainDeleted  = $true
-    Message                    = 'Reinstall scope/provenance design is present, linked, and non-executing.'
+    Message                    = 'Reinstall scope/provenance design is present, linked, and implemented as non-executing manual handoff.'
     Timestamp                  = Get-Date
 }
 
