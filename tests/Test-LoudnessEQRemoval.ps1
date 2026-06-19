@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
@@ -33,8 +36,8 @@ $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $stages = @($configuration['Stages'] | Sort-Object { [int]$_['Order'] })
 $tools = @($stages | ForEach-Object { $_['Tools'] })
 
-if ($tools.Count -ne 55) {
-    throw "Expected 55 active tools after Phase 96, found $($tools.Count)."
+if ($tools.Count -ne $inventoryBaseline.ActiveTools) {
+    throw "Expected $($inventoryBaseline.ActiveTools) active tools after Phase 96, found $($tools.Count)."
 }
 
 $loudnessTools = @(
@@ -70,8 +73,8 @@ $placeholderModules = @(
 )
 if (
     $moduleFiles.Count -ne 55 -or
-    $implementedModules.Count -ne 41 -or
-    $placeholderModules.Count -ne 14
+    $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+    $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
 ) {
     throw "Unexpected Phase 95 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }

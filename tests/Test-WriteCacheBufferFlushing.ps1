@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 function Assert-BoostLabCondition {
     param(
         [Parameter(Mandatory)]
@@ -412,9 +415,9 @@ try {
             (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1')
         }
     )
-    Assert-BoostLabCondition ($allModules.Count -eq 55) "Expected 55 active modules, found $($allModules.Count)."
-    Assert-BoostLabCondition ($implementedModules.Count -eq 41) "Expected 41 implemented modules, found $($implementedModules.Count)."
-    Assert-BoostLabCondition ($placeholderModules.Count -eq 14) "Expected 14 placeholder modules, found $($placeholderModules.Count)."
+    Assert-BoostLabCondition ($allModules.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active modules, found $($allModules.Count)."
+    Assert-BoostLabCondition ($implementedModules.Count -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented modules, found $($implementedModules.Count)."
+    Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
 
     Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
     Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*NVME Faster Driver*.ps1').Count -eq 0) 'NVME Faster Driver source was reintroduced.'

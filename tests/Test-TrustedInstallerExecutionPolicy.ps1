@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $policyPath = Join-Path $ProjectRoot 'config\TrustedInstallerPolicy.psd1'
 $policyModulePath = Join-Path $ProjectRoot 'core\TrustedInstaller.psm1'
 $executionModulePath = Join-Path $ProjectRoot 'core\TrustedInstallerExecution.psm1'
@@ -616,15 +619,15 @@ try {
                 )
             }
     )
-    if ($allTools.Count -ne 55) {
-        $errors.Add("Expected 55 active tools, found $($allTools.Count).")
+    if ($allTools.Count -ne $inventoryBaseline.ActiveTools) {
+        $errors.Add("Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count).")
     }
-    if ($placeholderModules.Count -ne 14) {
+    if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
         $errors.Add(
-            "Expected 14 placeholder modules, found $($placeholderModules.Count)."
+            "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
         )
     }
-    if (($allTools.Count - $placeholderModules.Count) -ne 41) {
+    if (($allTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
         $errors.Add('Implemented tool count changed from 40.')
     }
     foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
@@ -681,7 +684,7 @@ if ($errors.Count -gt 0) {
     MockResultValidated        = $true
     ProcessStarted             = $false
     CommandExecuted            = $false
-    ActiveToolCount            = 55
+    ActiveToolCount            = $inventoryBaseline.ActiveTools
     ImplementedToolCount      = 40
     PlaceholderToolCount      = 15
     SourceUltimateUnchanged    = $true

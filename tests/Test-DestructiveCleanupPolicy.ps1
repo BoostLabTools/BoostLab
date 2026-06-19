@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $policyPath = Join-Path $ProjectRoot 'config\CleanupPolicy.psd1'
 $policyModulePath = Join-Path $ProjectRoot 'core\CleanupPolicy.psm1'
 $executionModulePath = Join-Path $ProjectRoot 'core\CleanupExecution.psm1'
@@ -862,9 +865,9 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 41 -or
-        $placeholderModules.Count -ne 14
+        $allModules.Count -ne $inventoryBaseline.ActiveTools -or
+        $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+        $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), " +
@@ -964,7 +967,7 @@ if ($errors.Count -gt 0) {
     MockQuarantineRestorePassed = $true
     RealFilesDeleted           = $false
     ImplementedModuleCount     = 35
-    PlaceholderModuleCount = 14
+    PlaceholderModuleCount = $inventoryBaseline.DeferredPlaceholders
     SourceUltimateUnchanged    = $true
     Message                    = 'Destructive cleanup policy is bounded, confirmed, verified, mocked, and deny-by-default.'
     Timestamp                  = Get-Date

@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $policyPath = Join-Path $ProjectRoot 'config\ServiceRollbackPolicy.psd1'
 $stateModulePath = Join-Path $ProjectRoot 'core\ServiceState.psm1'
 $rollbackModulePath = Join-Path $ProjectRoot 'core\ServiceRollback.psm1'
@@ -657,9 +660,9 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 41 -or
-        $placeholderModules.Count -ne 14
+        $allModules.Count -ne $inventoryBaseline.ActiveTools -or
+        $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+        $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), " +
@@ -753,8 +756,8 @@ if ($errors.Count -gt 0) {
     MockServiceRollbackPassed     = $true
     RollbackFailureReported       = $true
     LiveServiceCommandsPresent    = $false
-    ImplementedModuleCount = 41
-    PlaceholderModuleCount = 14
+    ImplementedModuleCount = $inventoryBaseline.ImplementedTools
+    PlaceholderModuleCount = $inventoryBaseline.DeferredPlaceholders
     SourceUltimateUnchanged       = $true
     Message                       = 'Service state capture and rollback is exact, guarded, mocked, and deny-by-default.'
     Timestamp                     = Get-Date

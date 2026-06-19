@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\PowerPlan.psm1'
 $legacyModulePath = Join-Path $ProjectRoot 'modules\Windows\power-plan.psm1'
@@ -968,7 +971,7 @@ $allModules = @(
 )
 $implementedCount = @($allModules | Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }).Count
 $placeholderCount = @($allModules | Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1') }).Count
-if ($implementedCount -ne 41 -or $placeholderCount -ne 14) {
+if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 

@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $environmentPath = Join-Path $ProjectRoot 'core\Environment.psm1'
 $modulePath = Join-Path $ProjectRoot 'modules\Check\BIOSInformation.psm1'
@@ -131,7 +134,7 @@ try {
         }
     ).Count
 
-    if ($implementedCount -ne 41 -or $placeholderCount -ne 14) {
+    if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
         throw "Unexpected implementation counts: $implementedCount implemented, $placeholderCount placeholders."
     }
 

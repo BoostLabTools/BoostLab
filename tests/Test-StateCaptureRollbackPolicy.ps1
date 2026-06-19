@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $policyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
 $captureModulePath = Join-Path $ProjectRoot 'core\StateCapture.psm1'
 $rollbackModulePath = Join-Path $ProjectRoot 'core\Rollback.psm1'
@@ -600,9 +603,9 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 41 -or
-        $placeholderModules.Count -ne 14
+        $allModules.Count -ne $inventoryBaseline.ActiveTools -or
+        $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+        $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -688,8 +691,8 @@ if ($errors.Count -gt 0) {
     BroadRegistryHiveBlocked = $true
     ProtectedHklmBlocked     = $true
     MockRegistryRollbackPassed = $true
-    ImplementedModuleCount = 41
-    PlaceholderModuleCount = 14
+    ImplementedModuleCount = $inventoryBaseline.ImplementedTools
+    PlaceholderModuleCount = $inventoryBaseline.DeferredPlaceholders
     SourceUltimateUnchanged  = $true
     Message                  = 'File and registry state capture and rollback policy is bounded and deny-by-default.'
     Timestamp                = Get-Date

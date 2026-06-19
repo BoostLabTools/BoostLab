@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $matrixPath = Join-Path $ProjectRoot 'docs\final-deferred-tools-readiness-matrix.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $reviewPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
@@ -74,14 +77,14 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     $tool
 }
 
-if ($allTools.Count -ne 55) {
-    throw "Expected 55 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne $inventoryBaseline.ActiveTools) {
+    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
 }
-if ($placeholderTools.Count -ne 14) {
-    throw "Expected 14 deferred/placeholders, found $($placeholderTools.Count)."
+if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
+    throw "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderTools.Count)."
 }
-if (($allTools.Count - $placeholderTools.Count) -ne 41) {
-    throw "Expected 41 implemented tools, found $($allTools.Count - $placeholderTools.Count)."
+if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.ImplementedTools) {
+    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
 
 $expectedDeferred = @(

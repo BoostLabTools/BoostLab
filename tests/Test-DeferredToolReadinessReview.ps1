@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $reviewPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -61,7 +64,7 @@ $placeholderTools = foreach ($module in $placeholderModules) {
 }
 
 if ($placeholderTools.Count -ne 14) {
-    throw "Expected 14 remaining placeholder tools, found $($placeholderTools.Count)."
+    throw "Expected $($inventoryBaseline.DeferredPlaceholders) remaining placeholder tools, found $($placeholderTools.Count)."
 }
 
 foreach ($requiredSection in @(

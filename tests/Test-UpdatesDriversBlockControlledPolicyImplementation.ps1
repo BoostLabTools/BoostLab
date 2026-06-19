@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 function Assert-BoostLabCondition {
     param(
         [Parameter(Mandatory)]
@@ -136,12 +139,12 @@ $placeholderModules = @(
     Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-Assert-BoostLabCondition ($allTools.Count -eq 55) "Expected 55 active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq 14) "Expected 14 deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq 41) "Expected 41 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $sourcePromotedFiles = @(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File)
-Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq 7) "Expected 7 source-promoted mirror files, found $($sourcePromotedFiles.Count)."
+Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq $inventoryBaseline.SourcePromotedMirrorFiles) "Expected $($inventoryBaseline.SourcePromotedMirrorFiles) source-promoted mirror files, found $($sourcePromotedFiles.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
@@ -526,7 +529,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     ImplementedToolCount            = $allTools.Count - $placeholderModules.Count
     PlaceholderToolCount            = $placeholderModules.Count
     SourcePromotedMirrorFileCount   = $sourcePromotedFiles.Count
-    RemainingSourcePromotedIntake   = 0
+    RemainingSourcePromotedIntake   = $inventoryBaseline.RemainingSourcePromotedIntakeCandidates
     SupportedPolicyValueCount       = $expectedEntries.Count
     SourceUltimateUnchanged         = $true
     DeletedToolsRemainDeleted       = $true

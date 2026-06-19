@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 function Get-BoostLabManifestHash {
     param(
         [Parameter(Mandatory)]
@@ -292,14 +295,14 @@ $placeholderModules = @(
             )
         }
 )
-if ($allTools.Count -ne 55) {
-    throw "Expected 55 active tools, found $($allTools.Count)."
+if ($allTools.Count -ne $inventoryBaseline.ActiveTools) {
+    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
 }
-if ($placeholderModules.Count -ne 14) {
-    throw "Expected 14 deferred/placeholders, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
+    throw "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
 }
-if (($allTools.Count - $placeholderModules.Count) -ne 41) {
-    throw "Expected 41 implemented tools, found $($allTools.Count - $placeholderModules.Count)."
+if (($allTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
+    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 }
 
 foreach ($moduleName in @('DriverInstallLatest', 'NvidiaSettings', 'P0State', 'MsiMode')) {

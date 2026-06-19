@@ -23,6 +23,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $manifestPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $downloadModulePath = Join-Path $ProjectRoot 'core\DownloadProvenance.psm1'
 $installerModulePath = Join-Path $ProjectRoot 'core\InstallerExecution.psm1'
@@ -371,9 +374,9 @@ try {
         }
     )
     if (
-        $allModules.Count -ne 55 -or
-        $implementedModules.Count -ne 41 -or
-        $placeholderModules.Count -ne 14
+        $allModules.Count -ne $inventoryBaseline.ActiveTools -or
+        $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
+        $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
     ) {
         $errors.Add(
             "Tool inventory changed: total=$($allModules.Count), implemented=$($implementedModules.Count), placeholders=$($placeholderModules.Count)."
@@ -458,7 +461,7 @@ if ($errors.Count -gt 0) {
     ConfirmationRequired    = $true
     InstallerExecuted       = $false
     ImplementedModuleCount  = 35
-    PlaceholderModuleCount = 14
+    PlaceholderModuleCount = $inventoryBaseline.DeferredPlaceholders
     SourceUltimateUnchanged = $true
     Message                 = 'Download provenance and installer execution policies are valid and inert.'
     Timestamp               = Get-Date

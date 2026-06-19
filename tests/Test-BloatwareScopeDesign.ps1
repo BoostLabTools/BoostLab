@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\bloatware-scope-design.md'
 $readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
@@ -205,14 +208,14 @@ $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne 55) {
-    throw "Expected 55 active tools, found $($activeTools.Count)."
+if ($activeTools.Count -ne $inventoryBaseline.ActiveTools) {
+    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
 }
-if ($placeholderModules.Count -ne 14) {
-    throw "Expected 14 placeholder modules, found $($placeholderModules.Count)."
+if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
+    throw "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
 }
-if (($activeTools.Count - $placeholderModules.Count) -ne 41) {
-    throw "Expected 41 implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
+if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
+    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 }
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

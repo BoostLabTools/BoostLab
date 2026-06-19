@@ -22,6 +22,9 @@ else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot -ErrorAction Stop).Path
 }
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 function Assert-BoostLabCondition {
     param([Parameter(Mandatory)][bool]$Condition, [Parameter(Mandatory)][string]$Message)
     if (-not $Condition) { throw $Message }
@@ -160,10 +163,10 @@ $tools = @($configuration.Stages | ForEach-Object { $_.Tools })
 $allModules = @(Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1' | Where-Object { $_.Directory.Parent.FullName -eq $modulesRoot })
 $implementedModules = @($allModules | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('$script:BoostLabImplementedActions') })
 $placeholderModules = @($allModules | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') })
-Assert-BoostLabCondition ($tools.Count -eq 55) "Expected 55 active tools, found $($tools.Count)."
-Assert-BoostLabCondition ($allModules.Count -eq 55) "Expected 55 modules, found $($allModules.Count)."
-Assert-BoostLabCondition ($implementedModules.Count -eq 41) "Expected 41 implemented modules, found $($implementedModules.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq 14) "Expected 14 placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition ($tools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($tools.Count)."
+Assert-BoostLabCondition ($allModules.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) modules, found $($allModules.Count)."
+Assert-BoostLabCondition ($implementedModules.Count -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented modules, found $($implementedModules.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
 
 $activeNames = @($tools | ForEach-Object {
     ([string]$_.Id -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
