@@ -5,16 +5,16 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 44
-        DeferredPlaceholders = 11
+        RuntimeImplementedTools = 45
+        DeferredPlaceholders = 10
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 18
+        NearParityControlled = 19
         ControlledSubset = 2
         ManualHandoffOnly = 8
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 11
+        DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
@@ -212,14 +212,14 @@
             Stage = 'Setup'
             StageOrder = 3
             ToolOrder = 7
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Phase 117 ordered parity review found that source-equivalent Edge Settings requires explicit Yazan approval for dynamic Active Setup, RunOnce, Edge service, scheduled task, BHO, broad Edge policy deletion, msedge launch/stop, and mutable GitHub edge.exe repair download/installer behavior; policy-only or Open-only behavior would weaken Ultimate.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved safer BoostLab confirmation and test-safe mechanics around source-equivalent Edge Settings behavior: Edge policies, uBlock force-install policy, Active Setup cleanup, RunOnce cleanup, Edge service stop/delete, Edge scheduled-task removal, IE-to-Edge BHO cleanup, Edge stop/start/stop, source-defined edge.exe download, and edge.exe start.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'DeferredNeedsYazanDecision'
-            NextParityAction = 'Ask Yazan whether Edge Settings may implement the full source workflow with exact production scopes/artifact provenance, or whether a final scope exception should be accepted before continuing ordered parity.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'store-settings'

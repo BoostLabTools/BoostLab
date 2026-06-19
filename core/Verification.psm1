@@ -110,7 +110,7 @@ function New-BoostLabVerificationResult {
     }
 }
 
-function Test-BoostLabVerificationResult {
+function Get-BoostLabVerificationValidation {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -192,8 +192,30 @@ function Test-BoostLabVerificationResult {
     }
 }
 
+function Test-BoostLabVerificationResult {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$VerificationResult,
+
+        [string]$ExpectedToolId = '',
+
+        [string]$ExpectedToolTitle = '',
+
+        [string]$ExpectedAction = ''
+    )
+
+    Get-BoostLabVerificationValidation `
+        -VerificationResult $VerificationResult `
+        -ExpectedToolId $ExpectedToolId `
+        -ExpectedToolTitle $ExpectedToolTitle `
+        -ExpectedAction $ExpectedAction
+}
+
 Export-ModuleMember -Function @(
     'New-BoostLabVerificationCheck'
     'New-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
     'Test-BoostLabVerificationResult'
 )

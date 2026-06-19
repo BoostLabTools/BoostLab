@@ -11,6 +11,9 @@ Import-Module `
     -Name (Join-Path $PSScriptRoot 'Verification.psm1') `
     -Scope Local `
     -ErrorAction Stop
+$script:BoostLabVerificationValidationCommand = Get-Command `
+    -Name 'Get-BoostLabVerificationValidation' `
+    -ErrorAction Stop
 if (-not (Get-Command -Name 'Test-BoostLabAdministrator' -ErrorAction SilentlyContinue)) {
     Import-Module -Name (Join-Path $PSScriptRoot 'Environment.psm1') -Scope Local -Force -ErrorAction Stop
 }
@@ -55,6 +58,10 @@ $script:BoostLabImplementedToolModules = @{
     'background-apps' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\BackgroundApps.psm1'
         Actions = @('Apply', 'Default')
+    }
+    'edge-settings' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\edge-settings.psm1'
+        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
     }
     'store-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\StoreSettings.psm1'
@@ -747,7 +754,7 @@ function Invoke-BoostLabToolAction {
         if ($null -ne $verificationResult) {
             $verificationValidation = $null
             try {
-                $verificationValidation = Test-BoostLabVerificationResult `
+                $verificationValidation = & $script:BoostLabVerificationValidationCommand `
                     -VerificationResult $verificationResult `
                     -ExpectedToolId $toolId `
                     -ExpectedToolTitle $toolTitle `
@@ -765,7 +772,7 @@ function Invoke-BoostLabToolAction {
                     Checks        = @(
                         [pscustomobject]@{
                             Name     = 'Verification runtime'
-                            Expected = 'Test-BoostLabVerificationResult is imported and callable'
+                            Expected = 'Get-BoostLabVerificationValidation is imported and callable'
                             Actual   = $_.Exception.Message
                             Status   = 'Failed'
                             Message  = $verificationFailureMessage

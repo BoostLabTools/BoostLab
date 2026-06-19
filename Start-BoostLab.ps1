@@ -110,7 +110,7 @@ foreach ($relativeModulePath in $modulePaths) {
 foreach ($verificationCommand in @(
     'New-BoostLabVerificationCheck'
     'New-BoostLabVerificationResult'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (
         -not $verificationModule.ExportedCommands.ContainsKey($verificationCommand) -or

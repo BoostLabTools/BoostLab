@@ -204,7 +204,7 @@ try {
         throw 'TrustedInstaller capability is not visible in the Action Plan.'
     }
 
-    $placeholderModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.psm1'
+    $placeholderModulePath = Join-Path $ProjectRoot 'modules\Windows\start-menu-taskbar.psm1'
     $placeholderSource = Get-Content -Raw -LiteralPath $placeholderModulePath
     if (
         -not $placeholderSource.Contains('ToolModule.Placeholder.ps1') -or
@@ -212,7 +212,7 @@ try {
     ) {
         throw 'The placeholder module execution boundary changed.'
     }
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'edge-settings' } | Select-Object -First 1
+    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'start-menu-taskbar' } | Select-Object -First 1
     $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName 'Open'
     if (-not $placeholderPlan.IsDryRun) {
         throw 'Placeholder planning is not marked as a dry run.'

@@ -512,7 +512,7 @@ foreach ($requiredText in @(
     '''Setup\UpdatesPause.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Updates Pause runtime mapping is missing: $requiredText"

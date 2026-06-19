@@ -83,7 +83,6 @@ $expectedPlaceholderPaths = @(
     'modules\Windows\game-bar.psm1'
     'modules\Windows\copilot.psm1'
     'modules\Windows\control-panel-settings.psm1'
-    'modules\Setup\edge-settings.psm1'
 )
 foreach ($relativePath in $expectedPlaceholderPaths) {
     $path = Join-Path $ProjectRoot $relativePath
@@ -106,7 +105,7 @@ $protectedHashes = [ordered]@{
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
     'modules\Windows\sound.psm1' = 'B20CBF149CDAA562011AABD05D5828100D0B3810A565A4B7E305EBD50C91FDE3'
     'modules\Windows\control-panel-settings.psm1' = '6B02392A74AEF177C3249F0A686E48D418693A683F36A7F4C3E9C7BF764941BE'
-    'modules\Setup\edge-settings.psm1' = '0AD960534BE681E4CC78E9253FC342F16AC9FEAE8070259EC68630F6112A485A'
+    'modules\Setup\edge-settings.psm1' = '00F32DC6FDB0FCB796EF4083ADDF20478ED5C003122606FEFC85746231A6EF0A'
     'modules\Windows\PowerPlan.psm1' = '785A352F3453C71F33A8F4BFE0A381D02CB3A70C7307C77EDADACE98F7FFCF25'
 }
 foreach ($relativePath in $protectedHashes.Keys) {

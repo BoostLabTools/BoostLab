@@ -711,7 +711,7 @@ foreach ($requiredText in @(
     '''Windows\NetworkAdapterPowerSavingsWake.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Network Adapter Power Savings & Wake runtime mapping is missing: $requiredText"

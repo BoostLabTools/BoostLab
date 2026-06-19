@@ -248,12 +248,12 @@ try {
     $runtimeFailureResult = Invoke-BoostLabToolCardAction `
         -Context $failureContext `
         -ActionInvoker {
-            throw "The term 'Test-BoostLabVerificationResult' is not recognized as the name of a cmdlet, function, script file, or operable program."
+            throw "The term 'Get-BoostLabVerificationValidation' is not recognized as the name of a cmdlet, function, script file, or operable program."
         }
     if (
         [bool]$runtimeFailureResult.Success -or
         [string]$runtimeFailureResult.Status -ne 'Failed' -or
-        -not ([string]$runtimeFailureResult.Message).Contains('Test-BoostLabVerificationResult') -or
+        -not ([string]$runtimeFailureResult.Message).Contains('Get-BoostLabVerificationValidation') -or
         [string]$failureStatusText.Text -ne 'Status: Error'
     ) {
         throw 'The WPF action boundary did not return a structured Failed result for a missing verification helper.'
@@ -264,7 +264,7 @@ try {
     $failureLogEntry = [string]$script:BoostLabVisibleLogText[$script:BoostLabVisibleLogText.Count - 1]
     if (
         -not $failureLogEntry.Contains('[ERROR]') -or
-        -not $failureLogEntry.Contains('Test-BoostLabVerificationResult')
+        -not $failureLogEntry.Contains('Get-BoostLabVerificationValidation')
     ) {
         throw 'The verification helper failure Activity Log entry is incomplete.'
     }
@@ -273,7 +273,7 @@ try {
         'Status:'
         'Error'
         'Message:'
-        'Test-BoostLabVerificationResult'
+        'Get-BoostLabVerificationValidation'
     )) {
         if (-not (@($runtimeFailureText | Where-Object { $_ -like "*$expectedText*" }).Count -gt 0)) {
             throw "Latest Result did not render the verification helper failure: $expectedText"

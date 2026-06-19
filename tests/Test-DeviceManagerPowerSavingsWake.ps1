@@ -524,7 +524,7 @@ $protectedHashes = [ordered]@{
     'modules\Windows\copilot.psm1' = '740FEDE65972C413A7BF0938F3409AB683B45C914281BDDD6C25222FD39E617D'
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
     'modules\Windows\control-panel-settings.psm1' = '6B02392A74AEF177C3249F0A686E48D418693A683F36A7F4C3E9C7BF764941BE'
-    'modules\Setup\edge-settings.psm1' = '0AD960534BE681E4CC78E9253FC342F16AC9FEAE8070259EC68630F6112A485A'
+    'modules\Setup\edge-settings.psm1' = '00F32DC6FDB0FCB796EF4083ADDF20478ED5C003122606FEFC85746231A6EF0A'
     'modules\Windows\cleanup.psm1' = '8F916456D7EE24C884AE3450A8127FA52F7013546912D9E5FAD65C28811A5CEB'
 }
 foreach ($relativePath in $protectedHashes.Keys) {
@@ -538,7 +538,6 @@ foreach ($placeholderPath in @(
     'modules\Windows\game-bar.psm1'
     'modules\Windows\copilot.psm1'
     'modules\Windows\control-panel-settings.psm1'
-    'modules\Setup\edge-settings.psm1'
     'modules\Windows\cleanup.psm1'
 )) {
     if (-not (Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot $placeholderPath)).Contains('ToolModule.Placeholder.ps1')) {

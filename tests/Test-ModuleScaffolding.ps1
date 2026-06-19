@@ -55,6 +55,10 @@ $implementedModules = @{
         RelativePath          = 'Refresh\updates-drivers-block.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'edge-settings' = @{
+        RelativePath          = 'Setup\edge-settings.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+    }
     'startup-apps-settings' = @{
         RelativePath          = 'Setup\StartupAppsSettings.psm1'
         LaunchText            = 'Start-Process "ms-settings:startupapps"'
@@ -443,6 +447,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'reinstall' -and
             $commandName -eq 'Invoke-WebRequest'
         )
+        $approvedEdgeSettingsCommand = (
+            $toolId -eq 'edge-settings' -and
+            $commandName -in @('New-ItemProperty', 'Remove-Item', 'Remove-ItemProperty', 'Invoke-WebRequest')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -458,7 +466,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedP0StateCommand -and
             -not $approvedMsiModeCommand -and
             -not $approvedUpdatesDriversBlockCommand -and
-            -not $approvedReinstallCommand
+            -not $approvedReinstallCommand -and
+            -not $approvedEdgeSettingsCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }

@@ -436,7 +436,7 @@ foreach ($requiredText in @(
     '''Setup\MemoryCompression.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Memory Compression runtime mapping is missing: $requiredText"

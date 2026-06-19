@@ -156,11 +156,11 @@
                     Title       = 'Edge Settings'
                     Stage       = 'Setup'
                     Order       = 7
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open Microsoft Edge settings for technician-guided configuration.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Type        = 'action'
+                    RiskLevel   = 'high'
+                    Description = 'Apply the full source-defined Microsoft Edge optimization workflow or run the source-defined Default repair/reset workflow with explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'store-settings'

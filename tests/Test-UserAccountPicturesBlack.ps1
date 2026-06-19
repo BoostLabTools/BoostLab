@@ -506,7 +506,6 @@ foreach ($placeholderPath in @(
     'modules\Windows\game-bar.psm1'
     'modules\Windows\copilot.psm1'
     'modules\Windows\control-panel-settings.psm1'
-    'modules\Setup\edge-settings.psm1'
     'modules\Windows\cleanup.psm1'
 )) {
     if (-not (Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot $placeholderPath)).Contains('ToolModule.Placeholder.ps1')) {

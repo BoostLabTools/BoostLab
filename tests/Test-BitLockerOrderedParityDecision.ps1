@@ -114,11 +114,11 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecor
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'edge-settings') 'Next ordered parity target must advance to Edge Settings after BitLocker acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Next ordered parity target must advance past accepted Edge Settings near-parity.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 18) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 19) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count changed.'
 
@@ -304,8 +304,8 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 44) 'Runtime implemented tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 11) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.RemainingSourcePromotedIntakeCandidates -eq 0) 'Remaining source-promoted intake count changed.'
 

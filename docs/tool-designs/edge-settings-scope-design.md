@@ -2,25 +2,24 @@
 
 ## Purpose
 
-This Phase 63 document defines the future implementation scope for the
-`Edge Settings` tool. It is design-only.
+This Phase 63 document defined the implementation scope for the `Edge Settings`
+tool. Phase 118 supersedes the earlier refusal by implementing Yazan-approved
+source-equivalent, confirmation-gated Edge Settings behavior with test-safe
+execution seams.
 
-No Edge Settings behavior is implemented by this document. No runtime behavior,
-module behavior, production Edge policy scope, registry scope, service scope,
-scheduled task scope, file scope, cleanup scope, download artifact approval,
-installer execution approval, process scope, Active Setup scope, RunOnce scope,
-BHO scope, Default behavior, or Restore behavior is approved here.
-
-Edge Settings remains a refused placeholder until a later approved phase adds
-exact bounded production scopes and implementation.
+This document still does not approve broad reusable production scopes,
+production artifact approvals, production installer approvals, or global
+allowlists. Phase 118 approval is tool-specific for the Edge Settings module and
+does not approve unrelated Edge, WebView, download, installer, service, task,
+RunOnce, Active Setup, BHO, Default, or Restore behavior.
 
 ## Source Reference
 
 * Source path: `source-ultimate/3 Setup/6 Edge Settings.ps1`
 * Source SHA-256: `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28`
 * Current BoostLab module path: `modules/Setup/edge-settings.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status: Phase 118 implemented near-parity controlled workflow
+* Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`
 
 Relevant foundations:
 
@@ -38,10 +37,9 @@ behavior may be preserved if it otherwise passes governance. Explicit Windows
 `NotApplicable`.
 
 No Windows 10-only branch was found in `source-ultimate/3 Setup/6 Edge Settings.ps1`.
-The source behavior is shared Windows behavior, but it remains blocked because
-it requires HKLM Edge policy writes/deletes, Active Setup deletion, RunOnce
-deletion, Edge service deletion, scheduled task deletion, BHO deletion, Edge
-process handling, and mutable repair-installer download/execution.
+The source behavior is shared Windows behavior. Phase 118 implements the full
+source behavior as a source-equivalent controlled workflow with explicit
+confirmation and mocked validator seams.
 
 ## Source Behavior Summary
 
@@ -51,7 +49,6 @@ The Ultimate source exposes two console menu actions:
 2. `Edge Settings: Default`
 
 The source requires Administrator and internet connectivity up front.
-No scheduled task mutation is approved in this phase; no scheduled task mutation is approved in this phase.
 
 The Optimize branch:
 
@@ -75,15 +72,19 @@ The Default branch:
 * Starts `$env:SystemRoot\Temp\edge.exe`.
 
 Per Phase 36, every registry and file mutation needs exact bounded targets and
-capture before mutation. Broad policy-key deletion remains refused unless exact
-rollback is approved.
+capture before mutation. Phase 118 captures the Edge policy key before the
+source-defined Default deletion.
 
-Per Phase 37, service changes or deletions require exact future allowlist,
-capture, confirmation, verification, and rollback design.
+Per Phase 37, service changes or deletions require capture, confirmation,
+verification, and rollback design. Phase 118 keeps the source-defined dynamic
+Edge service match inside the Edge Settings module only and does not create a
+global production service allowlist.
 
 Per Phase 35, no external download or executable can be approved without exact
 provenance, filename, version, size, hash, signer when applicable, and allowed
-consumer. Mutable or unverified URLs remain refused.
+consumer. Phase 118 preserves the source-defined Default download/start behavior
+only under explicit Edge Settings confirmation; it does not create a reusable
+artifact approval.
 
 Do not implement a policy-only subset: applying only the Edge policy values
 would weaken and misrepresent the approved Ultimate behavior because the source
@@ -93,23 +94,16 @@ Any policy-only implementation would weaken Ultimate behavior.
 
 ## Current Decision
 
-Phase 117 ordered parity review keeps Edge Settings blocked as
-`DeferredNeedsYazanDecision`. Do not implement Analyze, Open, Apply, Default,
-or Restore yet.
+Phase 118 implements Yazan's option 1: source-equivalent Edge Settings behavior
+with safer BoostLab confirmation and test-safe mechanics. The parity record is
+`DoneYazanAcceptedNearParity` because the practical Ultimate behavior remains
+available while BoostLab adds confirmation, structured results, and mocked
+validation seams.
 
-The current catalog suggests an `Open`-style assistant, but the approved source
-is not open-only. Direct implementation is refused until Edge Settings is
-decomposed into exact policy, service, task, process, repair, and rollback
-scopes. Policy-only implementation would weaken Ultimate behavior.
-
-The exact Yazan decision required before ordered parity can continue is whether
-BoostLab may implement the full source workflow with production approvals for
-dynamic Active Setup deletion, wildcard RunOnce deletion, dynamic Edge service
-stop/delete, broad Edge scheduled-task deletion, BHO key deletion, broad Edge
-policy key deletion, `msedge` launch/stop behavior, and the mutable GitHub
-`edge.exe` repair download/installer. If that full workflow is not approved,
-Yazan must explicitly define a final Edge Settings scope exception; otherwise
-the ordered parity cursor remains on `edge-settings`.
+The implementation is not policy-only and is not Open-only. Apply preserves the
+Optimize branch operation families. Default preserves the source-defined Default
+sequence. Restore remains unavailable unless a future phase approves selected
+captured-state restore semantics.
 
 ## Behavior Groups
 
@@ -656,36 +650,38 @@ rollback, file rollback, cleanup restore, repair provenance, and captured-state
 restore selection are implemented. Restore must be record-based and
 target-specific.
 
-Current Default/Restore must remain unavailable because the source Default
-deletes the entire Edge policy key, stops Edge, launches Edge with restore
-arguments, downloads an unapproved executable, and launches it without
-capturing the previous Edge policy, service, task, file, or extension state.
+Current Restore must remain unavailable because no selected captured-state
+restore contract exists for Edge policy, Active Setup, RunOnce, service,
+scheduled-task, BHO, process, download, or installer state. Default is separate
+from Restore and is implemented in Phase 118 as the source-defined Default
+sequence with capture before the Edge policy key deletion.
 
 ## Production Approval State
 
-No production Edge policy, extension, registry, service, task, file, cleanup,
-download, installer, process, Active Setup, RunOnce, BHO, Default, or Restore
-scope is approved by this document.
+No broad production Edge policy, extension, registry, service, task, file,
+cleanup, download, installer, process, Active Setup, RunOnce, BHO, Default, or
+Restore scope is approved by this document. Phase 118 approval is limited to the
+Edge Settings module's source-equivalent controlled workflow.
 
 Specifically, this document does not approve:
 
-* Edge policy writes
-* Extension force-install policy
-* Edge policy key deletion
-* Active Setup deletion
-* RunOnce deletion
-* Edge service stop
-* Edge service deletion
-* Scheduled task deletion
-* BHO deletion
-* Edge process stop
-* Edge restore-session launch
-* `edge.exe` download
-* `edge.exe` installer execution
+* reusable Edge policy writes outside Edge Settings
+* reusable extension force-install policy outside Edge Settings
+* reusable Edge policy key deletion outside Edge Settings
+* reusable Active Setup deletion outside Edge Settings
+* reusable RunOnce deletion outside Edge Settings
+* reusable Edge service stop outside Edge Settings
+* reusable Edge service deletion outside Edge Settings
+* reusable scheduled task deletion outside Edge Settings
+* reusable BHO deletion outside Edge Settings
+* reusable Edge process stop outside Edge Settings
+* reusable Edge restore-session launch outside Edge Settings
+* reusable `edge.exe` download outside Edge Settings
+* reusable `edge.exe` installer execution outside Edge Settings
 * File overwrite or cleanup under `%SystemRoot%\Temp`
 * Policy-only implementation
-* Default behavior
 * Restore behavior
 
-Edge Settings remains a refused placeholder until a future phase explicitly
-approves exact bounded scopes and implements a reviewed workflow.
+Edge Settings is no longer a refused placeholder after Phase 118. It remains a
+tool-specific near-parity controlled implementation with no reusable production
+scope, allowlist, artifact approval, or Restore approval.

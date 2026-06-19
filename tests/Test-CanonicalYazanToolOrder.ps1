@@ -201,8 +201,8 @@ for ($stageIndex = 0; $stageIndex -lt $canonical.Count; $stageIndex++) {
 Assert-BoostLabCondition (($stagesFlat -join '|') -eq ($orderFlat -join '|')) 'Runtime and ordered parity tool order must agree exactly.'
 Assert-BoostLabCondition ($stagesFlat.Count -eq [int]$inventoryBaseline.ActiveTools) 'Canonical order must include every active tool.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count must remain unchanged.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 44) 'Runtime implemented tool count must remain unchanged.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 11) 'Deferred placeholder count must remain unchanged.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count must remain unchanged.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count must remain unchanged.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count must remain unchanged.'
 
 $windowsStage = @($stages.Stages | Where-Object { $_.Name -eq 'Windows' })[0]
@@ -216,7 +216,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Canonical order must produce a next ordered parity target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'edge-settings') 'Current first pending ordered parity target must be Edge Settings after BitLocker completion.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Current first pending ordered parity target must advance past accepted Edge Settings near-parity.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

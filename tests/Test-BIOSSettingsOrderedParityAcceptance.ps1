@@ -74,7 +74,7 @@ Assert-BoostLabCondition ([string]$resetTarget.ToolId -eq 'bios-settings') 'BIOS
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'edge-settings') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\1 Check\2 BIOS Settings.ps1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bios-settings.md'
@@ -118,8 +118,8 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.RuntimeImplementedTools -e
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count must remain 16 after near-parity acceptance.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.RuntimeImplementedTools -ne [int]$parityBaseline.Counts.UltimateParityImplemented) 'Runtime implemented and Ultimate parity implemented counts must remain separate.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 44) 'Runtime implemented tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 11) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror file count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.RemainingSourcePromotedIntakeCandidates -eq 0) 'Remaining source-promoted intake count changed.'
 

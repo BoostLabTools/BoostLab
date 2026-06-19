@@ -293,10 +293,10 @@ $executionModule = Import-Module `
     -ErrorAction Stop
 try {
     $validatorBeforeDispatch = & $executionModule {
-        [bool](Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)
+        [bool](Get-Command -Name 'Get-BoostLabVerificationValidation' -ErrorAction SilentlyContinue)
     }
     if (-not $validatorBeforeDispatch) {
-        throw 'Execution did not import Test-BoostLabVerificationResult before Spectre dispatch.'
+        throw 'Execution did not import Get-BoostLabVerificationValidation before Spectre dispatch.'
     }
 
     $runtimeAnalyzeResult = & $executionModule {
@@ -311,15 +311,15 @@ try {
     }
 
     $validatorAfterDispatch = & $executionModule {
-        [bool](Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)
+        [bool](Get-Command -Name 'Get-BoostLabVerificationValidation' -ErrorAction SilentlyContinue)
     }
     if (-not $validatorAfterDispatch) {
-        throw 'Spectre module unload removed Test-BoostLabVerificationResult from the production runtime.'
+        throw 'Spectre module unload removed Get-BoostLabVerificationValidation from the production runtime.'
     }
 
     $runtimeValidation = & $executionModule {
         param($VerificationResult)
-        Test-BoostLabVerificationResult `
+        Get-BoostLabVerificationValidation `
             -VerificationResult $VerificationResult `
             -ExpectedToolId 'spectre-meltdown-assistant' `
             -ExpectedToolTitle 'Spectre / Meltdown Assistant' `

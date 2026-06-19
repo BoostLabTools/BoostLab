@@ -141,8 +141,8 @@ Tool-specific scope designs created after the first-pass review:
 Current inventory at the time of this plan:
 
 * Active approved tools: **55**
-* Implemented tools: **44**
-* Remaining placeholders: **11**
+* Implemented tools: **45**
+* Remaining placeholders: **10**
 * Remaining unimplemented source-promoted intake candidates: **0**
 * Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
 
@@ -168,7 +168,7 @@ In practice, every tool in this document is either still a placeholder and curre
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `reinstall` | Reinstall | Refresh | `source-ultimate/2 Refresh/1 Reinstall.ps1` | `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Implemented manual handoff; Auto blocked | Download provenance and installer execution policy | Phase 104 implements Analyze/Open manual handoff only. Auto remains blocked because the source downloads and launches Windows 10/Windows 11 Media Creation Tool executables from mutable third-party mirror URLs. No approved artifact provenance, executable launch approval, generated-file ownership, reboot/session, recovery, or support contract exists yet. Phase 58 scope/provenance design: `docs/tool-designs/reinstall-scope-provenance-design.md`; migration record: `docs/migrations/reinstall.md`. | Future Auto requires download provenance and checksum/signature policy; installer execution policy; reboot/recovery workflow; file state capture for generated executable paths | Windows 10 branch is unsupported; Windows 10 host use is limited to manual handoff for the Windows 11 target outcome | `Refresh Reinstall Auto Approval Package` | No for manual handoff; Yes for Auto |
 | `updates-drivers-block` | Updates Drivers Block | Refresh | `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1` | `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991` | Implemented USB-only final scope; omitted branches blocked by Yazan final exception | Selected USB file capture/restore | Phase 112 implements only the Driver Updates Block Bootable USB branch by writing selected USB `setupcomplete.cmd` after capture. Broad Windows Updates, custom update-server URL, live host registry block/unblock, external-process, script execution, and host reboot branches remain blocked. Scope design: `docs/tool-designs/updates-drivers-block-scope-design.md`. | No further foundation needed for selected final scope; omitted branches require Yazan scope expansion before future work | Shared Windows USB-media preparation behavior is implemented; no Windows 10-only branch exists | `Updates Drivers Block USB Scope Maintenance` | No for final scope; omitted branches stay blocked |
-| `edge-settings` | Edge Settings | Setup | `source-ultimate/3 Setup/6 Edge Settings.ps1` | `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | Refused | Download provenance and checksum/signature policy | Current catalog suggests an `Open`-style tool, but source changes policy, RunOnce, services, and downloads a repair installer. Phase 63 scope design: `docs/tool-designs/edge-settings-scope-design.md`. | Download provenance and checksum/signature policy; installer execution policy; service state capture and rollback; file/registry state capture and rollback | No scope exception | `Edge Policy and Repair Workflow` | Yes |
+| `edge-settings` | Edge Settings | Setup | `source-ultimate/3 Setup/6 Edge Settings.ps1` | `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28` | Implemented near parity in Phase 118 | Source-equivalent controlled workflow | Phase 118 implements the full source Optimize and Default behavior with explicit confirmation, pre-change capture where practical, structured verification, and test-safe seams. Policy-only/Open-only behavior remains rejected because it would weaken Ultimate. Scope design: `docs/tool-designs/edge-settings-scope-design.md`. | Restore remains unavailable without selected captured-state restore semantics; no reusable production artifact or allowlist approval exists outside the module | No reusable scope exception; Phase 118 is tool-specific | `Edge Settings Restore Contract Review` | No for Phase 118 Apply/Default; Yes only for future Restore |
 | `installers` | Installers | Installers | `source-ultimate/4 Installers/1 Installers.ps1` | `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67` | Implemented manual handoff; Auto blocked | Installer execution policy | Phase 105 implements Analyze/Open manual handoff only. Auto remains blocked because the source downloads 24 external artifacts and launches installers/helpers with per-app post-install changes, shortcut cleanup, service deletion, task removal, uninstall calls, and policy/config edits. Phase 59 scope/provenance design: `docs/tool-designs/installers-scope-provenance-design.md`; migration record: `docs/migrations/installers.md`. | Future Auto requires download provenance and checksum/signature policy; installer execution policy; service state capture and rollback; file/registry state capture and rollback; destructive cleanup policy; scheduled task governance; app inventory and support policy | NVIDIA-only scope helps only for FrameView/Nvidia App; most blockers are GPU-neutral multi-installer governance | `Approved Installer Framework` | No for manual handoff; Yes for Auto |
 | `driver-install-debloat-settings` | Driver Install Debloat & Settings | Graphics | `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1` | `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F` | Implemented manual handoff; Auto blocked | Driver state capture and rollback | Phase 99 implements Analyze/Open manual handoff only. Auto remains blocked because the NVIDIA path downloads unpinned tools, debloats extracted driver contents, installs drivers, imports profiles, writes registry, deletes files, removes packages, and restarts. AMD/Intel branches are product-scope unsupported. Phase 60 scope/provenance design: `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md`. | Download provenance and checksum/signature policy; installer execution policy; driver state capture and rollback; reboot/recovery workflow; file/registry state capture and rollback; AppX inventory/restore; destructive cleanup policy | AMD and Intel branches must stay disabled; only NVIDIA Auto could ever be considered later with exact artifacts, driver scopes, profile scopes, AppX scopes, cleanup scopes, and reboot workflow | `Graphics Driver Auto Approval Package` | No for manual handoff; Yes for Auto |
 | `directx` | DirectX | Graphics | `source-ultimate/5 Graphics/2 DirectX.ps1` | `17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05` | Implemented manual handoff; Auto blocked | Download provenance and checksum/signature policy | Phase 100 implements Analyze/Open manual handoff only. Auto remains blocked because the source uses mutable `refs/heads/main` downloads for unverified `7zip.exe` and `directx.exe`, then installs/configures 7-Zip, changes Start Menu state, extracts DirectX, and launches an independently unverified `DXSETUP.exe`. | Future Auto requires immutable artifact sources; exact hash, size, signer, license, extraction inventory, and `DXSETUP.exe` provenance; approved installer execution; exact file/registry/shortcut/temp scopes | No scope exception | `DirectX Artifact Approval and Installer Execution` | No for manual handoff; Yes for Auto |
@@ -208,7 +208,6 @@ installer or temp-file scope is approved.
 
 Affected tools:
 
-* `edge-settings`
 * `installers`
 * `game-bar`
 * `edge-webview`
@@ -223,7 +222,6 @@ Phase 35 establishes the request-validation and non-executing runtime boundary. 
 
 Affected tools:
 
-* `edge-settings`
 * `installers`
 * `driver-install-debloat-settings`
 * `game-bar`
@@ -249,7 +247,6 @@ Affected tools:
 * `copilot`
 * `start-menu-taskbar`
 * `game-bar`
-* `edge-settings`
 * `edge-webview`
 * `control-panel-settings`
 * `defender-optimize-assistant`
@@ -330,7 +327,6 @@ The affected tools below remain deferred because their Ultimate behavior also de
 
 Affected tools:
 
-* `edge-settings`
 * `installers`
 * `driver-install-debloat-settings`
 * `bloatware`
@@ -370,7 +366,6 @@ Phase 36 establishes integrity-protected records, bounded file and registry scop
 Affected tools:
 
 * `start-menu-taskbar`
-* `edge-settings`
 * `edge-webview`
 * `control-panel-settings`
 

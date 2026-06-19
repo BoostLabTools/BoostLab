@@ -49,6 +49,7 @@ foreach (`$modulePath in @(
 foreach (`$commandName in @(
     'New-BoostLabVerificationCheck'
     'New-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
     'Test-BoostLabVerificationResult'
 )) {
     if (
@@ -86,6 +87,7 @@ try {
     foreach ($requiredCommand in @(
         'New-BoostLabVerificationCheck'
         'New-BoostLabVerificationResult'
+        'Get-BoostLabVerificationValidation'
         'Test-BoostLabVerificationResult'
     )) {
         if (-not $verificationModule.ExportedCommands.ContainsKey($requiredCommand)) {
@@ -146,6 +148,15 @@ try {
         if (-not $validation.IsValid) {
             throw "Valid verification result failed validation: $($validation.Errors -join '; ')"
         }
+
+        $productionValidation = Get-BoostLabVerificationValidation `
+            -VerificationResult $result `
+            -ExpectedToolId 'contract-test' `
+            -ExpectedToolTitle 'Contract Test' `
+            -ExpectedAction 'Apply'
+        if (-not $productionValidation.IsValid) {
+            throw "Valid verification result failed production validation: $($productionValidation.Errors -join '; ')"
+        }
     }
 
     $mismatchResult = New-BoostLabVerificationResult `
@@ -182,7 +193,7 @@ try {
     foreach ($requiredCommand in @(
         'New-BoostLabVerificationCheck'
         'New-BoostLabVerificationResult'
-        'Test-BoostLabVerificationResult'
+        'Get-BoostLabVerificationValidation'
     )) {
         $executionCommandAvailable = & $executionModule {
             param($CommandName)
@@ -205,10 +216,10 @@ try {
     $phase22Module = $null
 
     $validatorStillAvailable = & $executionModule {
-        [bool](Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)
+        [bool](Get-Command -Name 'Get-BoostLabVerificationValidation' -ErrorAction SilentlyContinue)
     }
     if (-not $validatorStillAvailable) {
-        throw 'Execution lost its private verification validator after the Phase 22 module was unloaded.'
+        throw 'Execution lost its private production verification validator after the Phase 22 module was unloaded.'
     }
 
     $spectreModule = Import-Module `
@@ -223,10 +234,10 @@ try {
     $spectreModule = $null
 
     $validatorStillAvailable = & $executionModule {
-        [bool](Get-Command -Name 'Test-BoostLabVerificationResult' -ErrorAction SilentlyContinue)
+        [bool](Get-Command -Name 'Get-BoostLabVerificationValidation' -ErrorAction SilentlyContinue)
     }
     if (-not $validatorStillAvailable) {
-        throw 'Execution lost its private verification validator after the Spectre module was unloaded.'
+        throw 'Execution lost its private production verification validator after the Spectre module was unloaded.'
     }
 }
 finally {
@@ -243,7 +254,8 @@ $executionSource = Get-Content -Raw -LiteralPath $executionPath
 foreach ($requiredText in @(
     'Verification.psm1'
     '-Scope Local'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
+    '$script:BoostLabVerificationValidationCommand'
     'ToolAction.VerificationRuntimeFailed'
     'Verification contract validation failed'
     '-ExpectedToolId $toolId'
@@ -254,6 +266,9 @@ foreach ($requiredText in @(
     if (-not $executionSource.Contains($requiredText)) {
         throw "Execution runtime is missing verification behavior: $requiredText"
     }
+}
+if ($executionSource.Contains('Test-BoostLabVerificationResult')) {
+    throw 'Execution runtime must not call the legacy Test-BoostLabVerificationResult helper.'
 }
 $executionVerificationImportIndex = $executionSource.IndexOf(
     "-Name (Join-Path `$PSScriptRoot 'Verification.psm1')"
@@ -281,12 +296,29 @@ foreach ($requiredText in @(
     '-Module $verificationModule.Name'
     '''New-BoostLabVerificationCheck'''
     '''New-BoostLabVerificationResult'''
-    '''Test-BoostLabVerificationResult'''
+    '''Get-BoostLabVerificationValidation'''
     'BoostLab verification runtime command was not imported'
 )) {
     if (-not $startSource.Contains($requiredText)) {
         throw "Start-BoostLab verification import guard is missing: $requiredText"
     }
+}
+if ($startSource.Contains('Test-BoostLabVerificationResult')) {
+    throw 'Start-BoostLab startup guard must not require the legacy Test-BoostLabVerificationResult helper.'
+}
+
+$productionReferenceRoots = @(
+    (Join-Path $ProjectRoot 'core')
+    (Join-Path $ProjectRoot 'modules')
+    (Join-Path $ProjectRoot 'ui')
+)
+$forbiddenRuntimeReferences = @(
+    Get-ChildItem -LiteralPath $productionReferenceRoots -Recurse -File -Include '*.ps1', '*.psm1' |
+        Where-Object { $_.FullName -ne $verificationPath } |
+        Select-String -Pattern 'Test-BoostLabVerificationResult' -SimpleMatch
+)
+if (@($forbiddenRuntimeReferences).Count -gt 0) {
+    throw "Production runtime files must not reference Test-BoostLabVerificationResult: $((@($forbiddenRuntimeReferences) | ForEach-Object { $_.Path }) -join ', ')"
 }
 $verificationImportIndex = $startSource.IndexOf('$verificationModule = Import-Module')
 $verificationGuardIndex = $startSource.IndexOf('$verificationModule.ExportedCommands.ContainsKey($verificationCommand)')
@@ -347,7 +379,7 @@ if (
     VerificationStatusCount = $statuses.Count
     ResultFieldCount        = $requiredResultFields.Count
     CheckFieldCount         = $requiredCheckFields.Count
-    ExportedHelperCount     = 3
+    ExportedHelperCount     = 4
     CleanSessionImport      = $true
     StartupImportSmokeTest  = $true
     StartupImportOrder      = $true

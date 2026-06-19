@@ -241,6 +241,18 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Restore') {
         'Restore is unavailable because no captured Edge/WebView package, installer, file, registry, service, task, process, cleanup, or support state restore contract exists.'
     }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Analyze') {
+        'Analyze the Edge Settings source identity and source-equivalent Apply/Default operation families without changing Edge.'
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Apply') {
+        'Run the source-equivalent Edge Settings Optimize branch: write Edge/uBlock policies and remove source-matched Active Setup, RunOnce, Edge services, Edge scheduled tasks, and IE-to-Edge BHO entries.'
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Default') {
+        'Run the source-equivalent Edge Settings Default branch: delete the Edge policy key, stop/start/stop Edge, download the source-defined edge.exe, and start it.'
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Restore') {
+        'Restore is unavailable because no approved captured Edge Settings restore contract exists for policy, Active Setup, RunOnce, service, scheduled-task, BHO, process, download, or installer state.'
+    }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         'Analyze the Driver Install Debloat & Settings source and report blocked approvals without running any driver install, debloat, profile, registry, package, or reboot operation.'
     }
@@ -628,6 +640,35 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Require valid selected captured Edge/WebView package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus an approved Restore contract before any Restore can be planned.')
         $plannedChanges.Add('Do not treat source uninstall, Default repair, or Apply behavior as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the Edge Settings source checksum and report the source-equivalent Optimize and Default operation families.')
+        $plannedChanges.Add('Report Edge policy, uBlock force-install, Active Setup, RunOnce, Edge service, scheduled task, BHO, process, download, and installer behavior without executing it.')
+        $plannedChanges.Add('Perform no registry, service, scheduled-task, process, file, download, installer, Edge, or system mutation.')
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Verify the Edge Settings source checksum before any mutation.')
+        $plannedChanges.Add('Capture source-targeted registry/service/task metadata where practical before mutation.')
+        $plannedChanges.Add('Write the source-defined uBlock force-install policy and three Edge policy values.')
+        $plannedChanges.Add('Delete Active Setup child keys whose default value matches *Edge*.')
+        $plannedChanges.Add('Delete RunOnce values whose names match *msedge*.')
+        $plannedChanges.Add('Stop and delete services whose names match Edge using the source-derived dynamic match.')
+        $plannedChanges.Add('Unregister scheduled tasks whose names match *Edge* using the source-derived wildcard.')
+        $plannedChanges.Add('Delete both source-defined IE-to-Edge BHO registry keys.')
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Verify the Edge Settings source checksum before any mutation.')
+        $plannedChanges.Add('Capture the Edge policy key state before source-defined deletion.')
+        $plannedChanges.Add('Delete HKLM:\SOFTWARE\Policies\Microsoft\Edge recursively, matching the source Default branch.')
+        $plannedChanges.Add('Stop msedge, launch msedge.exe with --restore-last-session --disable-extensions, then stop msedge again.')
+        $plannedChanges.Add('Download the source-defined edge.exe from the Ultimate source URL to Windows Temp.')
+        $plannedChanges.Add('Start the downloaded edge.exe repair installer path.')
+    }
+    elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Restore') {
+        $plannedChanges.Add('Block Restore before any operational step.')
+        $plannedChanges.Add('Require an approved selected captured-state restore contract before any Edge Settings Restore can be planned.')
+        $plannedChanges.Add('Do not treat source Default as Restore.')
+        $plannedChanges.Add('No Edge Settings registry, service, scheduled-task, process, download, installer, Edge, or system mutation is planned.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
@@ -1181,7 +1222,8 @@ function New-BoostLabActionPlan {
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction) {
+    $isBlockedEdgeSettingsRestoreNoMutationAction = $toolId -eq 'edge-settings' -and $ActionName -eq 'Restore'
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -1202,7 +1244,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp')) {
+    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {

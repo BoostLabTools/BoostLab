@@ -880,7 +880,7 @@ foreach ($requiredText in @(
     '''Windows\PowerPlan.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Power Plan runtime mapping is missing: $requiredText"

@@ -128,8 +128,8 @@ This review is based on:
 Current inventory:
 
 * Active tools: **55**
-* Implemented tools: **44**
-* Deferred/placeholders: **11**
+* Implemented tools: **45**
+* Deferred/placeholders: **10**
 * Remaining unimplemented source-promoted intake candidates: **0**
 
 ## Category Definitions
@@ -150,7 +150,7 @@ Current inventory:
 
 ## Readiness Summary
 
-* Not ready: **3**
+* Not ready: **2**
 * Foundation-ready but needs production allowlists: **2**
 * Foundation-ready but needs artifact provenance approvals: **2**
 * Foundation-ready but needs tool-specific design: **4**
@@ -162,7 +162,7 @@ Current inventory:
 |---|---|---|---|---|---|---|---|---|---|---|
 | Reinstall | `reinstall` | Refresh | Implemented in Phase 104 as controlled manual handoff | Automated source behavior downloads and launches Windows 10 and Windows 11 Media Creation Tool executables from mutable third-party mirror URLs | Manual handoff pattern, download provenance, installer policy, reboot workflow | Auto remains blocked: no approved Windows 11 setup artifact, no hash/signer/size/version evidence, no approved executable launch, no approved generated-file ownership, and no approved reboot or handoff scope for this tool; Windows 10 branch is unsupported | Future Auto would require exact Windows 11 media artifact, signer/hash/size evidence, exact command line, exact generated-file scope, exact reboot/handoff scope, and explicit refusal of the Windows 10 branch | Complete for manual handoff only | Phase 104 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/reinstall-scope-provenance-design.md` and `docs/migrations/reinstall.md` |
 | Updates Drivers Block | `updates-drivers-block` | Refresh | Implemented in Phase 112 as USB-only Driver Updates final scope | Yazan selected Driver Updates Block Bootable USB only and rejected Unblock, broad Updates, custom update-server, and live host registry default/unblock as final scope | File rollback supports selected USB `setupcomplete.cmd` capture and Restore | No approved update-server URL scope, no broad Updates scope, no host registry Unblock/Default scope, and no reboot workflow execution scope for omitted branches | Omitted branches are not future blockers for this tool unless Yazan changes the final scope decision | Complete as Yazan final exception for USB-only Driver Updates scope | Phase 112 USB-only final scope complete | Keep broad Updates, custom update-server, live host registry Unblock/Default, and script execution blocked |
-| Edge Settings | `edge-settings` | Setup | Refused placeholder | Source is not open-only; uses policy, Active Setup, RunOnce, services, and repair download | File/registry rollback, service rollback, download/installer policy | No dedicated RunOnce/Active Setup governance, no approved repair artifacts, no approved service scopes | Exact policy/service/file scopes and any repair artifact approvals | No | Not ready | Use `docs/tool-designs/edge-settings-scope-design.md`, then decompose the source into policy, service, task, process, and repair behaviors before any migration phase |
+| Edge Settings | `edge-settings` | Setup | Implemented in Phase 118 as source-equivalent controlled near parity | Phase 117 blocked policy-only/Open-only behavior because it would weaken Ultimate; Phase 118 implements the full source workflow with confirmation and test-safe seams | File/registry rollback, service rollback, download/installer policy, process handling policy, scope design | Restore remains unavailable without selected captured-state restore semantics; no reusable production artifact or allowlist approval was created | No further approval is required for the Phase 118 module path; future Restore would require exact captured-state restore approval | Complete as accepted near parity | Phase 118 near-parity complete | Keep reusable Edge scopes, artifact approvals, and Restore blocked outside the Edge Settings module |
 | Installers | `installers` | Installers | Implemented in Phase 105 as controlled manual handoff | Automated source behavior downloads 24 artifacts, launches installers/helpers, and performs post-install registry, service, task, shortcut, config, cleanup, and uninstall side effects | Manual handoff pattern, download provenance, installer policy, service rollback, file/registry rollback, cleanup policy | Auto remains blocked: no approved app list, no approved artifacts, no approved execution descriptors, no scheduled task governance, no approved per-app side-effect design | Future Auto would require exact artifact records, exact install commands, exact per-app service/policy/file/task/shortcut/config/uninstall allowlists, inventory, cleanup, rollback, and support approvals | Complete for manual handoff only | Phase 105 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/installers-scope-provenance-design.md` and `docs/migrations/installers.md` |
 | Driver Install Debloat & Settings | `driver-install-debloat-settings` | Graphics | Implemented in Phase 99 as controlled manual handoff | Full Auto behavior still downloads tools, installs drivers, imports profiles, removes components, and reboots; AMD/Intel branches are product-scope unsupported | Download provenance, installer policy, driver rollback, reboot workflow, file/registry rollback, AppX policy, cleanup policy | Auto remains blocked: no approved NVIDIA artifacts, no approved user-selected-driver validation, no approved driver scopes, no approved profile/AppX/cleanup/reboot scopes; AMD/Intel branches remain disabled | Exact NVIDIA device/package scopes, exact artifact approvals, exact profile/AppX/cleanup/registry scopes, exact reboot workflow, exact refusal of AMD/Intel branches | Complete for manual handoff only | Phase 99 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires exact approvals in `docs/tool-designs/driver-install-debloat-settings-scope-provenance-design.md` |
 | DirectX | `directx` | Graphics | Implemented in Phase 100 as controlled manual handoff | Automated source behavior downloads/extracts tools, installs/configures 7-Zip, changes Start Menu state, and launches DirectX runtime installer | Manual handoff pattern, download provenance, installer policy, file/registry rollback, and cleanup policy | Auto remains blocked: source URLs are mutable branch references; no approved hashes, sizes, signers, extraction inventory, `DXSETUP.exe` provenance, installer execution, or exact side-effect scopes | Future Auto would require immutable artifact sources, exact hash/size/signer evidence for downloads and extracted executables, approved installer requests, and exact registry/file/shortcut/temp scopes | Complete for manual handoff only | Phase 100 manual handoff complete; Auto remains blocked | Manual handoff is implemented; future Auto requires the complete approval package in `docs/directx-provenance-review.md` |
@@ -187,12 +187,12 @@ Current inventory:
 These still need a major governance or decomposition step before exact scopes
 would be meaningful:
 
-* Edge Settings
 * Copilot
 * Control Panel Settings
 
-The Edge Settings tool-specific scope design is documented in
-`docs/tool-designs/edge-settings-scope-design.md`.
+Edge Settings is no longer a deferred placeholder. Phase 118 implements the
+source-equivalent controlled workflow and keeps Restore unavailable without a
+future selected captured-state restore contract.
 
 The Copilot tool-specific scope design is documented in
 `docs/tool-designs/copilot-scope-design.md`.

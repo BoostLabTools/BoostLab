@@ -416,7 +416,7 @@ foreach ($requiredText in @(
     '''Setup\BackgroundApps.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Background Apps runtime mapping is missing: $requiredText"

@@ -521,7 +521,7 @@ foreach ($requiredText in @(
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
     'ToolAction.Completed'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Widgets runtime mapping is missing: $requiredText"

@@ -583,7 +583,7 @@ foreach ($requiredText in @(
     '''Setup\StoreSettings.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Store Settings runtime mapping is missing: $requiredText"

@@ -25,6 +25,35 @@ else {
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
+function Assert-BoostLabCondition {
+    param(
+        [Parameter(Mandatory)]
+        [bool]$Condition,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
+function Assert-BoostLabTextContains {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [string]$Needle,
+
+        [Parameter(Mandatory)]
+        [string]$Description
+    )
+
+    Assert-BoostLabCondition ($Text.Contains($Needle)) "$Description is missing expected text: $Needle"
+}
+
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\edge-settings-scope-design.md'
 $readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
@@ -36,6 +65,7 @@ $cleanupPolicyPath = Join-Path $ProjectRoot 'config\CleanupPolicy.psd1'
 $rollbackPolicyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
 $servicePolicyPath = Join-Path $ProjectRoot 'config\ServiceRollbackPolicy.psd1'
 $rebootPolicyPath = Join-Path $ProjectRoot 'config\RebootRecoveryPolicy.psd1'
+$productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 foreach ($path in @(
@@ -49,11 +79,10 @@ foreach ($path in @(
     $cleanupPolicyPath,
     $rollbackPolicyPath,
     $servicePolicyPath,
-    $rebootPolicyPath
+    $rebootPolicyPath,
+    $productionAllowlistPath
 )) {
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "Required file was not found: $path"
-    }
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file was not found: $path"
 }
 
 $designText = Get-Content -LiteralPath $designPath -Raw
@@ -67,13 +96,12 @@ $cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
 $rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
 $servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
 $rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
+$productionAllowlist = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
 $expectedSourceHash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-if ($actualSourceHash -ne $expectedSourceHash) {
-    throw "Edge Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
-}
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Edge Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 
 foreach ($requiredSection in @(
     '# Edge Settings Scope Design',
@@ -101,50 +129,27 @@ foreach ($requiredSection in @(
     '## Default and Restore Boundary',
     '## Production Approval State'
 )) {
-    if (-not $designText.Contains($requiredSection)) {
-        throw "Edge Settings scope design is missing section: $requiredSection"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSection -Description 'Edge Settings scope design'
 }
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28`',
-    'Edge Settings remains a refused placeholder',
-    'No production Edge policy',
+    'Phase 118 implements Yazan''s option 1',
+    'source-equivalent Edge Settings behavior',
+    'not policy-only and is not Open-only',
+    'Restore remains unavailable',
     'No Windows 10-only branch was found',
     'Do not implement a policy-only subset',
-    'policy-only implementation would weaken Ultimate behavior',
-    'Broad policy-key deletion remains refused',
-    'service changes or deletions require exact future allowlist',
-    'no scheduled task mutation is approved in this phase',
-    'mutable GitHub raw URL remains refused',
-    'Current Default/Restore must remain unavailable'
+    'Any policy-only implementation would weaken Ultimate behavior',
+    'No broad production Edge policy',
+    'does not create a reusable'
 )) {
-    if (-not $designText.Contains($requiredPhrase)) {
-        throw "Edge Settings scope design is missing phrase: $requiredPhrase"
-    }
-}
-
-foreach ($requiredField in @(
-    'Intended mutation or launch type:',
-    'Required foundation:',
-    'Required future production allowlist:',
-    'Required inventory/capture before mutation:',
-    'Required confirmation level:',
-    'Required verification:',
-    'Rollback/restore feasibility:',
-    'Risk level:',
-    'Whether it can be implemented later:',
-    'Whether it must remain refused:'
-)) {
-    if (-not $designText.Contains($requiredField)) {
-        throw "Edge Settings scope design is missing per-group field: $requiredField"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredPhrase -Description 'Edge Settings scope design'
 }
 
 foreach ($requiredSourceTarget in @(
     'HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist',
     'odfafepnkmbhccpbejgmiehpchacaeak;https://edge.microsoft.com/extensionwebstorebase/v1/crx',
-    'HKLM\SOFTWARE\Policies\Microsoft\Edge',
     'HardwareAccelerationModeEnabled',
     'BackgroundModeEnabled',
     'StartupBoostEnabled',
@@ -157,9 +162,7 @@ foreach ($requiredSourceTarget in @(
     'sc delete',
     'Get-ScheduledTask | Where-Object { $_.TaskName -like ''*Edge*'' }',
     'Unregister-ScheduledTask -Confirm:$false',
-    'HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}',
-    'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}',
-    'msedge',
+    'Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}',
     'Stop-Process -Name "msedge" -Force -ErrorAction SilentlyContinue',
     'Start-Process "msedge.exe" -ArgumentList "--restore-last-session --disable-extensions"',
     'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe',
@@ -167,94 +170,54 @@ foreach ($requiredSourceTarget in @(
     'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe" -OutFile "$env:SystemRoot\Temp\edge.exe"',
     'Start-Process "$env:SystemRoot\Temp\edge.exe"'
 )) {
-    if (-not $designText.Contains($requiredSourceTarget)) {
-        throw "Edge Settings scope design is missing source target: $requiredSourceTarget"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSourceTarget -Description 'Edge Settings scope design source target inventory'
 }
 
 $urls = [regex]::Matches($sourceText, 'https?://[^\s"`]+') |
     ForEach-Object { $_.Value } |
     Sort-Object -Unique
-if (@($urls).Count -ne 2) {
-    throw "Expected 2 Edge Settings source URLs, found $(@($urls).Count)."
-}
+Assert-BoostLabCondition (@($urls).Count -eq 2) "Expected 2 Edge Settings source URLs, found $(@($urls).Count)."
 foreach ($url in $urls) {
-    if (-not $designText.Contains($url)) {
-        throw "Edge Settings scope design is missing source URL: $url"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $url -Description 'Edge Settings scope design URL inventory'
 }
 
-$nonElevationStartProcess = @(
-    [regex]::Matches($sourceText, 'Start-Process') |
-        ForEach-Object { $_.Value }
-).Count - 1
-if ($nonElevationStartProcess -ne 2) {
-    throw "Expected 2 non-elevation Start-Process calls, found $nonElevationStartProcess."
-}
-foreach ($commandSnippet in @(
-    'Start-Process "msedge.exe"',
-    'Start-Process "$env:SystemRoot\Temp\edge.exe"'
+Assert-BoostLabCondition (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) 'Edge Settings module must be implemented after Phase 118.'
+foreach ($moduleNeedle in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
+    'Invoke-BoostLabEdgeSettingsApply',
+    'Invoke-BoostLabEdgeSettingsDefault',
+    'Get-BoostLabEdgeSettingsOperationPlan',
+    'Invoke-BoostLabEdgeSettingsDownload',
+    'RestoreUnavailable'
 )) {
-    if (-not $designText.Contains($commandSnippet)) {
-        throw "Edge Settings scope design is missing Start-Process snippet: $commandSnippet"
-    }
+    Assert-BoostLabTextContains -Text $moduleText -Needle $moduleNeedle -Description 'Edge Settings module implementation'
 }
 
-if ($sourceText -match 'Restart-Computer|shutdown\s|bcdedit') {
-    throw 'Edge Settings source unexpectedly contains direct reboot or BCD behavior.'
-}
+Assert-BoostLabTextContains -Text $readinessText -Needle 'Edge Settings is no longer a deferred placeholder. Phase 118 implements' -Description 'Deferred readiness review'
+Assert-BoostLabTextContains -Text $planText -Needle '| `edge-settings` | Edge Settings | Setup |' -Description 'Deferred tools execution plan'
+Assert-BoostLabTextContains -Text $planText -Needle 'Implemented near parity in Phase 118' -Description 'Deferred tools execution plan'
 
-if (-not $readinessText.Contains('docs/tool-designs/edge-settings-scope-design.md')) {
-    throw 'Deferred readiness review does not link to the Edge Settings scope design.'
-}
-if (-not $planText.Contains('docs/tool-designs/edge-settings-scope-design.md')) {
-    throw 'Deferred tools execution plan does not link to the Edge Settings scope design.'
-}
-
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Edge Settings module is no longer a placeholder.'
-}
-if ($moduleText -match 'reg add|reg delete|Start-Process|IWR|Invoke-WebRequest|Stop-Process|Get-Service|sc stop|sc delete|Get-ScheduledTask|Unregister-ScheduledTask|Remove-Item|Remove-ItemProperty') {
-    throw 'Edge Settings placeholder module appears to contain real mutation behavior.'
-}
-
-if ($artifactPolicy.Artifacts.Count -ne 0) {
-    throw "Artifact approvals were added unexpectedly: $($artifactPolicy.Artifacts.Count)"
-}
-if ($cleanupPolicy.CleanupScopes.Count -ne 0) {
-    throw "Cleanup production scopes were approved unexpectedly: $($cleanupPolicy.CleanupScopes.Count)"
-}
-if ($rollbackPolicy.FileScopes.Count -ne 0 -or $rollbackPolicy.RegistryScopes.Count -ne 0) {
-    throw 'File or registry production scopes were approved unexpectedly.'
-}
-if ($servicePolicy.ServiceScopes.Count -ne 0) {
-    throw "Service production scopes were approved unexpectedly: $($servicePolicy.ServiceScopes.Count)"
-}
-if ($rebootPolicy.WorkflowScopes.Count -ne 0) {
-    throw "Reboot workflow production scopes were approved unexpectedly: $($rebootPolicy.WorkflowScopes.Count)"
-}
+Assert-BoostLabCondition (@($artifactPolicy.Artifacts).Count -eq 0) "Artifact approvals were added unexpectedly: $(@($artifactPolicy.Artifacts).Count)"
+Assert-BoostLabCondition (@($cleanupPolicy.CleanupScopes).Count -eq 0) "Cleanup production scopes were approved unexpectedly: $(@($cleanupPolicy.CleanupScopes).Count)"
+Assert-BoostLabCondition (@($rollbackPolicy.FileScopes).Count -eq 0 -and @($rollbackPolicy.RegistryScopes).Count -eq 0) 'File or registry production scopes were approved unexpectedly.'
+Assert-BoostLabCondition (@($servicePolicy.ServiceScopes).Count -eq 0) "Service production scopes were approved unexpectedly: $(@($servicePolicy.ServiceScopes).Count)"
+Assert-BoostLabCondition (@($rebootPolicy.WorkflowScopes).Count -eq 0) "Reboot workflow production scopes were approved unexpectedly: $(@($rebootPolicy.WorkflowScopes).Count)"
+Assert-BoostLabCondition (@($productionAllowlist.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals were added unexpectedly.'
 
 $edgeSettingsTool = $allTools |
     Where-Object { $_.Id -eq 'edge-settings' -and $_.Stage -eq 'Setup' } |
     Select-Object -First 1
-if (-not $edgeSettingsTool) {
-    throw 'Edge Settings catalog entry was not found.'
-}
+Assert-BoostLabCondition ($null -ne $edgeSettingsTool) 'Edge Settings catalog entry was not found.'
+Assert-BoostLabCondition ((@($edgeSettingsTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'Edge Settings catalog actions are incorrect.'
 
 $activeTools = @($allTools)
 $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne $inventoryBaseline.ActiveTools) {
-    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
-}
-if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
-}
-if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
-    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
-}
+Assert-BoostLabCondition ($activeTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition (($activeTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
@@ -278,24 +241,10 @@ finally {
     $sha256.Dispose()
 }
 
-if (
-    @($sourceLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
-) {
-    throw 'source-ultimate content or paths changed.'
-}
-
-$loudnessPath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'
-if (Test-Path -LiteralPath $loudnessPath) {
-    throw 'Loudness EQ source was reintroduced.'
-}
-$nvmeSource = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-        Where-Object { $_.Name -like '*NVME Faster Driver*' }
-)
-if ($nvmeSource.Count -ne 0) {
-    throw 'NVME Faster Driver source was reintroduced.'
-}
+Assert-BoostLabCondition (@($sourceLines).Count -eq 49) 'source-ultimate file count changed.'
+Assert-BoostLabCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
+Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
     Success                       = $true
@@ -304,17 +253,14 @@ if ($nvmeSource.Count -ne 0) {
     ActiveToolCount               = $activeTools.Count
     ImplementedToolCount          = $activeTools.Count - $placeholderModules.Count
     PlaceholderToolCount          = $placeholderModules.Count
-    ProductionArtifactApprovals   = $artifactPolicy.Artifacts.Count
-    ProductionCleanupScopes       = $cleanupPolicy.CleanupScopes.Count
-    ProductionFileScopes          = $rollbackPolicy.FileScopes.Count
-    ProductionRegistryScopes      = $rollbackPolicy.RegistryScopes.Count
-    ProductionServiceScopes       = $servicePolicy.ServiceScopes.Count
-    ProductionRebootScopes        = $rebootPolicy.WorkflowScopes.Count
+    ProductionArtifactApprovals   = @($artifactPolicy.Artifacts).Count
+    ProductionCleanupScopes       = @($cleanupPolicy.CleanupScopes).Count
+    ProductionFileScopes          = @($rollbackPolicy.FileScopes).Count
+    ProductionRegistryScopes      = @($rollbackPolicy.RegistryScopes).Count
+    ProductionServiceScopes       = @($servicePolicy.ServiceScopes).Count
+    ProductionRebootScopes        = @($rebootPolicy.WorkflowScopes).Count
     SourceUltimateUnchanged       = $true
     DeletedToolsRemainDeleted     = $true
-    Message                       = 'Edge Settings scope design is present, linked, and non-executing.'
+    Message                       = 'Edge Settings scope design reflects the Phase 118 source-equivalent near-parity implementation.'
     Timestamp                     = Get-Date
 }
-
-
-

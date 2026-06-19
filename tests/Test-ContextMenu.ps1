@@ -577,7 +577,7 @@ foreach ($requiredText in @(
     '''Windows\ContextMenu.psm1'''
     'Actions = @(''Apply'', ''Default'')'
     '$actionCommand.Parameters.ContainsKey(''Confirmed'')'
-    'Test-BoostLabVerificationResult'
+    'Get-BoostLabVerificationValidation'
 )) {
     if (-not $executionSource.Contains($requiredText)) {
         throw "Context Menu runtime mapping is missing: $requiredText"
