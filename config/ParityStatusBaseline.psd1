@@ -123,9 +123,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
-            GapSummary = 'Preserves firmware restart command path with explicit confirmation.'
+            GapSummary = 'Yazan-approved GUI confirmation before source-equivalent restart-to-firmware action; the underlying firmware restart capability remains available.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm confirmation-gated restart is accepted as final parity.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'memory-compression'

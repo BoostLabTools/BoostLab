@@ -201,7 +201,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'to-bios') 'The first ordered pending parity target should be To BIOS after Updates Drivers Block USB-only final scope.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'edge-settings') 'The first ordered pending parity target should be Edge Settings after To BIOS near-parity acceptance.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'
