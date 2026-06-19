@@ -2,12 +2,14 @@
 
 ## Purpose
 
-This document defines the exact future scope and provenance requirements before
-the BoostLab `Installers` Auto behavior can be safely implemented.
+This document records the Installers source scope and the Phase 119 selected-app
+implementation boundary.
 
-Phase 105 implements controlled manual handoff only. It approves no production download,
-installer, executable launch, registry, file, service, scheduled task,
-shortcut, config, uninstall, reboot, Default, or Restore scope.
+Phase 119 supersedes the Phase 105 manual-handoff-only boundary for retained
+apps. BoostLab now implements a Yazan-scoped checkbox multi-select queue for
+retained source app choices only. It does not approve any global artifact
+provenance entry, production allowlist entry, removed app, Default, Restore, or
+parallel installer workflow.
 
 ## Source Reference
 
@@ -68,17 +70,23 @@ download.
 
 ## Current Decision
 
-Installers is implemented as controlled manual handoff only in Phase 105.
+Installers is implemented as a Yazan-scoped selected-app sequential queue in
+Phase 119.
 
 No production download/installer/executable/registry/file/service/task/shortcut/config/uninstall/reboot scopes
-are approved in this phase.
+are approved as reusable/global allowlists in this phase. The implemented
+Installers module contains source-derived retained-app descriptors and executes
+only selected retained app operations after explicit confirmation.
 
-Automated installation remains blocked because partial Auto implementation would
-weaken the source. The source is not just a list of download URLs; several
-choices include post-install registry policy, service deletion, scheduled task
-removal, config writes, shortcut cleanup, and uninstall steps. A future Auto
-implementation must preserve each approved source behavior for the selected
-installer or refuse that installer until its full side effects are scoped.
+Yazan excluded exactly these source menu entries from the visible/selectable
+catalog: 11 Frame View, 12 GOG launcher, 15 Notepad ++, 16 Nvidia App, 18
+Onboard Memory Manager, and 19 Pot Player. Google Chrome, OBS Studio, and
+Rockstar Games remain retained. Because these omissions are intentional, the
+parity record uses `YazanFinalException` rather than `ParityImplemented`.
+
+Retained selected apps preserve source-defined URLs, destinations,
+installer/helper commands, arguments, and post-install operation families in
+source order. The queue stops on the first failed selected app by default.
 
 Migration record: `docs/migrations/installers.md`.
 

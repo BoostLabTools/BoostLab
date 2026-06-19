@@ -140,7 +140,7 @@ foreach ($priorToolId in $priorToolIds) {
     Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $priorRecord) "Prior ordered target must already be final: $priorToolId"
 }
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Next ordered pending parity target must advance past accepted Edge Settings near-parity.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Next ordered pending parity target must advance past the Installers Yazan final exception.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(

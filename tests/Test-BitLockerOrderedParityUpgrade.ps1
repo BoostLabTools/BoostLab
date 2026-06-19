@@ -86,7 +86,7 @@ Assert-BoostLabCondition (-not [bool]$bitLockerRecord.YazanFinalException) 'BitL
 Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecord) 'BitLocker accepted near-parity must be final for ordered target calculation.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Next ordered pending parity target must advance after accepted Edge Settings near-parity.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Next ordered pending parity target must advance past the Installers Yazan final exception.'
 
 $sourceText = Get-Content -Raw -LiteralPath $sourcePath
 foreach ($sourceNeedle in @(

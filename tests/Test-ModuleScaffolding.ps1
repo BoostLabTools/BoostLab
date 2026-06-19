@@ -451,6 +451,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'edge-settings' -and
             $commandName -in @('New-ItemProperty', 'Remove-Item', 'Remove-ItemProperty', 'Invoke-WebRequest')
         )
+        $approvedInstallersCommand = (
+            $toolId -eq 'installers' -and
+            $commandName -in @('Invoke-WebRequest', 'Set-Content', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -467,7 +471,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedMsiModeCommand -and
             -not $approvedUpdatesDriversBlockCommand -and
             -not $approvedReinstallCommand -and
-            -not $approvedEdgeSettingsCommand
+            -not $approvedEdgeSettingsCommand -and
+            -not $approvedInstallersCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -520,7 +525,10 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-latest') {
             0
         }
-        elseif ($toolId -in @('installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp')) {
+        elseif ($toolId -eq 'installers') {
+            2
+        }
+        elseif ($toolId -in @('edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp')) {
             0
         }
         elseif ($toolId -eq 'reinstall') {

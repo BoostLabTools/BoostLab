@@ -6,8 +6,8 @@
 - Module: `modules/Installers/installers.psm1`
 - Source script path: `source-ultimate/4 Installers/1 Installers.ps1`
 - Source SHA-256: `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67`
-- Migration status: Controlled manual handoff only
-- Yazan approval status: Approved for Phase 105 manual handoff only
+- Migration status: Controlled selected-app sequential queue with Yazan final app-list exception
+- Yazan approval status: Approved for Phase 119 retained-app multi-select queue; Yazan excluded source menu entries 11, 12, 15, 16, 18, and 19
 
 ## Original Ultimate Behavior
 
@@ -26,53 +26,68 @@ selected cleanup.
 
 ## Approved BoostLab Behavior
 
-BoostLab implements only:
+BoostLab implements:
 
-- `Analyze`: read-only source/checksum/status analysis.
-- `Open`: controlled manual handoff instructions prepared inside BoostLab only.
-- `Apply`: blocked with `AutoBlockedUntilArtifactApproval`.
+- `Analyze`: read-only source/checksum/status analysis, full source menu mapping, Yazan-excluded app mapping, retained visible app catalog, retained app count, retained artifact count, and queue model reporting.
+- `Open`: retained catalog and selection guidance prepared inside BoostLab only.
+- `Apply`: selected retained app IDs are processed one app at a time in retained source order after explicit confirmation. Each selected retained app downloads only its source-defined artifact(s), runs only its source-defined installer/helper command and arguments, and performs only its source-defined post-install side effects.
 - `Default`: blocked with `DefaultUnavailable`.
 - `Restore`: blocked with `RestoreUnavailable`.
 
-No downloads, installer launches, package changes, app configuration, cleanup, or system mutation are implemented.
+Removed Yazan-excluded source menu entries are not visible, selectable, downloadable, installable, or plannable:
+
+- 11 Frame View
+- 12 GOG launcher
+- 15 Notepad ++
+- 16 Nvidia App
+- 18 Onboard Memory Manager
+- 19 Pot Player
+
+Google Chrome, OBS Studio, and Rockstar Games remain retained and selectable.
 
 ## Preserved Commands
 
-No operational source commands are executed in Phase 105. The source behavior is
-preserved as documented operational intent and remains blocked for Auto until
-all required artifact and execution approvals exist.
+For retained apps, BoostLab preserves the source-defined URLs, destination
+paths, installer/helper commands, arguments, and post-install operation
+families in a data-driven catalog. The queue is sequential and stops on the
+first failed selected app by default, reporting completed, failed, and remaining
+not-started apps.
 
 ## Intentional Deviations
 
-Automated download, installer launch, post-install configuration, cleanup,
-uninstall, Default, and Restore behavior are not implemented. This is an
-intentional controlled-manual-handoff boundary because the source requires
-unapproved artifacts, installer descriptors, side-effect scopes, and rollback
-contracts.
+Yazan intentionally removed six source menu entries from BoostLab's visible
+Installers catalog. This is recorded as `YazanFinalException` rather than full
+parity. Default and Restore remain unavailable because the source does not
+define one safe global Default branch and BoostLab does not have a captured-state
+restore contract for installed apps and side effects.
 
 ## Side Effects
 
-None in Phase 105.
+Apply can perform source-defined selected-app side effects for retained apps
+after explicit confirmation, including downloads, installer/helper execution,
+app configuration writes, browser policy writes, shortcut changes, service/task
+cleanup, startup-value cleanup, component uninstall calls, and file cleanup where
+the retained source app defines those operations.
 
 ## Required Privileges
 
-The original Ultimate source requires Administrator rights. The Phase 105
-manual-handoff implementation does not perform privileged operations, so the
-implemented metadata does not require Administrator for Analyze/Open/blocked
-Apply/Default/Restore.
+The original Ultimate source requires Administrator rights. BoostLab preserves
+that requirement for the selected-app Apply path. Analyze and Open remain
+read-only/no-mutation paths, but the tool metadata declares the full Apply
+capability surface because the card exposes one implemented selected-app queue.
 
 ## Capabilities
 
-- RequiresAdmin: false
-- RequiresInternet: false
+- RequiresAdmin: true
+- RequiresInternet: true
 - CanReboot: false
-- CanModifyRegistry: false
-- CanModifyServices: false
-- CanInstallSoftware: false
-- CanDownload: false
+- CanModifyRegistry: true
+- CanModifyServices: true
+- CanInstallSoftware: true
+- CanDownload: true
 - CanModifyDrivers: false
 - CanModifySecurity: false
-- CanDeleteFiles: false
+- CanDeleteFiles: true
 - UsesTrustedInstaller: false
 - UsesSafeMode: false
 - SupportsDefault: false
@@ -86,8 +101,8 @@ artifacts and per-app side effects.
 
 ## Confirmation Requirements
 
-Manual handoff and blocked Auto paths require explicit confirmation before the
-result is recorded through the Action Plan surface.
+Apply requires explicit Action Plan confirmation for the selected queue before
+downloads, installer/helper execution, or source-defined side effects begin.
 
 ## Default And Restore
 
@@ -105,9 +120,13 @@ installer restart/session effects before approval.
 
 - Verify source path and SHA-256.
 - Verify Analyze is read-only.
-- Verify Open/manual handoff opens no browser or external tool and downloads,
-  runs, mutates, installs, uninstalls, repairs, or cleans up nothing.
-- Verify Apply is blocked as `AutoBlockedUntilArtifactApproval`.
+- Verify Open opens no browser or external tool and downloads, runs, mutates,
+  installs, uninstalls, repairs, or cleans up nothing.
+- Verify Apply accepts multiple retained selected app IDs.
+- Verify selected retained apps are executed sequentially in source order.
+- Verify failure stops the queue and reports completed, failed, and remaining apps.
+- Verify removed Yazan-excluded apps are not visible or selectable.
+- Verify retained apps include Google Chrome, OBS Studio, and Rockstar Games.
 - Verify Default and Restore are unavailable and separate.
 - Verify no artifact provenance or production allowlist entries are added.
 - Verify source-ultimate, source mirror, and intake files are untouched.

@@ -8,6 +8,7 @@ $script:BoostLabLatestResult = $null
 $script:BoostLabLatestResultToolMetadata = $null
 $script:BoostLabLatestResultActionName = ''
 $script:BoostLabLatestResultText = ''
+$script:BoostLabToolSelectionControls = @{}
 
 function Get-BoostLabUiElement {
     param(
@@ -1372,17 +1373,62 @@ function Add-BoostLabToolActionActivityEntry {
     })
 }
 
+function Get-BoostLabToolCardActionOptions {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Context
+    )
+
+    $options = @{}
+    $toolMetadata = $Context.ToolMetadata
+    $actionName = [string]$Context.ActionName
+    $toolId = [string]$toolMetadata['Id']
+    $selectionMode = if (
+        $toolMetadata -is [System.Collections.IDictionary] -and
+        $toolMetadata.Contains('SelectionMode')
+    ) {
+        [string]$toolMetadata['SelectionMode']
+    }
+    else {
+        ''
+    }
+    $selectionRequiredActions = if (
+        $toolMetadata -is [System.Collections.IDictionary] -and
+        $toolMetadata.Contains('SelectionRequiredActions')
+    ) {
+        @($toolMetadata['SelectionRequiredActions'])
+    }
+    else {
+        @()
+    }
+
+    if ($selectionMode -eq 'MultiSelect' -and $actionName -in $selectionRequiredActions) {
+        $selectedIds = @()
+        if ($script:BoostLabToolSelectionControls.ContainsKey($toolId)) {
+            $selectedIds = @(
+                $script:BoostLabToolSelectionControls[$toolId] |
+                    Where-Object { [bool]$_.IsChecked } |
+                    ForEach-Object { [string]$_.Tag }
+            )
+        }
+        $options['SelectedAppIds'] = @($selectedIds)
+    }
+
+    return $options
+}
+
 function Invoke-BoostLabToolCardAction {
     param(
         [Parameter(Mandatory)]
         [object]$Context,
 
         [scriptblock]$ActionInvoker = {
-            param($ToolMetadata, $ActionName)
+            param($ToolMetadata, $ActionName, $ActionOptions)
 
             Invoke-BoostLabToolAction `
                 -ToolMetadata $ToolMetadata `
                 -ActionName $ActionName `
+                -ActionOptions $ActionOptions `
                 -ConfirmationCallback {
                     param($ActionPlan)
                     Show-BoostLabActionPlanConfirmation -ActionPlan $ActionPlan
@@ -1392,11 +1438,12 @@ function Invoke-BoostLabToolCardAction {
 
     $toolMetadata = $Context.ToolMetadata
     $actionName = [string]$Context.ActionName
+    $actionOptions = Get-BoostLabToolCardActionOptions -Context $Context
     (Get-BoostLabUiElement -Name 'SelectedToolNameText').Text = [string]$toolMetadata['Title']
     (Get-BoostLabUiElement -Name 'SelectedToolActionText').Text = $actionName.ToUpperInvariant()
 
     try {
-        $result = & $ActionInvoker $toolMetadata $actionName
+        $result = & $ActionInvoker $toolMetadata $actionName $actionOptions
         if ($null -eq $result) {
             throw 'Tool execution returned no result.'
         }
@@ -1672,6 +1719,9 @@ function New-BoostLabToolCard {
     $card = [System.Windows.Controls.Border]::new()
     $card.Width = 304
     $card.Height = 282
+    if ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect') {
+        $card.Height = 458
+    }
     $card.Margin = [System.Windows.Thickness]::new(0, 0, 14, 14)
     $card.Padding = [System.Windows.Thickness]::new(16)
     $card.CornerRadius = [System.Windows.CornerRadius]::new(10)
@@ -1766,16 +1816,51 @@ function New-BoostLabToolCard {
     [System.Windows.Controls.Grid]::SetRow($badges, 1)
     $layout.Children.Add($badges) | Out-Null
 
+    $contentPanel = [System.Windows.Controls.StackPanel]::new()
+    $contentPanel.Margin = [System.Windows.Thickness]::new(0, 12, 0, 8)
+    $contentPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
+
     $description = [System.Windows.Controls.TextBlock]::new()
-    $description.Margin = [System.Windows.Thickness]::new(0, 12, 0, 8)
     $description.Text = [string]$Tool['Description']
     $description.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#9EABC2')
     $description.FontSize = 12
     $description.LineHeight = 18
     $description.TextWrapping = [System.Windows.TextWrapping]::Wrap
     $description.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
-    [System.Windows.Controls.Grid]::SetRow($description, 2)
-    $layout.Children.Add($description) | Out-Null
+    $contentPanel.Children.Add($description) | Out-Null
+
+    if ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect' -and $Tool.Contains('SelectionItems')) {
+        $selectionLabel = [System.Windows.Controls.TextBlock]::new()
+        $selectionLabel.Margin = [System.Windows.Thickness]::new(0, 10, 0, 5)
+        $selectionLabel.Text = 'Select apps for Apply'
+        $selectionLabel.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E0E7FF')
+        $selectionLabel.FontSize = 11
+        $selectionLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $contentPanel.Children.Add($selectionLabel) | Out-Null
+
+        $selectionScroll = [System.Windows.Controls.ScrollViewer]::new()
+        $selectionScroll.MaxHeight = 172
+        $selectionScroll.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+        $selectionScroll.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
+
+        $selectionPanel = [System.Windows.Controls.StackPanel]::new()
+        $script:BoostLabToolSelectionControls[$toolId] = @()
+        foreach ($selectionItem in @($Tool['SelectionItems'])) {
+            $checkBox = [System.Windows.Controls.CheckBox]::new()
+            $checkBox.Content = ('{0}. {1}' -f [int]$selectionItem['SourceMenuNumber'], [string]$selectionItem['Title'])
+            $checkBox.Tag = [string]$selectionItem['Id']
+            $checkBox.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
+            $checkBox.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#CBD5E1')
+            $checkBox.FontSize = 11
+            $selectionPanel.Children.Add($checkBox) | Out-Null
+            $script:BoostLabToolSelectionControls[$toolId] = @($script:BoostLabToolSelectionControls[$toolId]) + @($checkBox)
+        }
+        $selectionScroll.Content = $selectionPanel
+        $contentPanel.Children.Add($selectionScroll) | Out-Null
+    }
+
+    [System.Windows.Controls.Grid]::SetRow($contentPanel, 2)
+    $layout.Children.Add($contentPanel) | Out-Null
 
     $statusContainer = [System.Windows.Controls.Border]::new()
     $statusContainer.Padding = [System.Windows.Thickness]::new(9, 6, 9, 6)
@@ -1900,6 +1985,7 @@ function Show-BoostLabStage {
 
     $cardsPanel = Get-BoostLabUiElement -Name 'ToolCardsPanel'
     $cardsPanel.Children.Clear()
+    $script:BoostLabToolSelectionControls = @{}
 
     foreach ($tool in $tools) {
         $cardsPanel.Children.Add((New-BoostLabToolCard -Tool $tool)) | Out-Null
@@ -1933,6 +2019,7 @@ function Initialize-BoostLabMainWindow {
     $script:BoostLabLatestResultToolMetadata = $null
     $script:BoostLabLatestResultActionName = ''
     $script:BoostLabLatestResultText = ''
+    $script:BoostLabToolSelectionControls = @{}
 
     Initialize-BoostLabState
 

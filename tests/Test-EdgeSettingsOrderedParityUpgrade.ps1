@@ -76,7 +76,7 @@ Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'sour
 Assert-BoostLabTextContains -Text ([string]$edgeRecord.NextParityAction) -Needle 'Skip; accepted near-parity.' -Description 'Edge Settings NextParityAction'
 
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity must identify a next pending target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Ordered parity cursor must advance past accepted Edge Settings near-parity.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Ordered parity cursor must advance past the Installers Yazan final exception.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\3 Setup\6 Edge Settings.ps1'
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\edge-settings-scope-design.md'

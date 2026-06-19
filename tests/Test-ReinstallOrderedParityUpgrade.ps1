@@ -217,12 +217,12 @@ Assert-BoostLabCondition ([string]$reinstallRecord.FinalProgressStatus -eq 'Done
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Next ordered pending parity target must advance past accepted Edge Settings near-parity.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Next ordered pending parity target must advance past the Installers Yazan final exception.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 19) 'NearParityControlled count mismatch.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 8) 'ManualHandoffOnly count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 7) 'ManualHandoffOnly count mismatch.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'

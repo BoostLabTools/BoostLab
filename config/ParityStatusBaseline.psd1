@@ -11,8 +11,8 @@
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
         NearParityControlled = 19
-        ControlledSubset = 2
-        ManualHandoffOnly = 8
+        ControlledSubset = 3
+        ManualHandoffOnly = 7
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -269,11 +269,13 @@
             StageOrder = 4
             ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Source downloads and runs installers; Auto remains blocked.'
-            YazanFinalException = $false
-            NextParityAction = 'Approve per-app artifacts, installer descriptors, side-effect scopes, cleanup, rollback, and support policy.'
+            ImplementationLevel = 'ControlledSubset'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan excluded source menu entries 11 Frame View, 12 GOG launcher, 15 Notepad ++, 16 Nvidia App, 18 Onboard Memory Manager, and 19 Pot Player; retained apps use source-equivalent selected-app sequential install flows.'
+            YazanFinalException = $true
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'YazanFinalException'
+            NextParityAction = 'Skip; Yazan final app-list scope exception accepted.'
         }
         @{
             ToolId = 'driver-clean'

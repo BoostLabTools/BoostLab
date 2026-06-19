@@ -212,13 +212,13 @@ function New-BoostLabActionPlan {
         'Auto mode is blocked for Driver Install Latest because NVIDIA artifact, installer, driver-state, process, reboot/session, and recovery approvals do not exist.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
-        'Analyze the Installers source and report blocked per-app artifact, installer, package, side-effect, cleanup, rollback, and support approvals without running any installer workflow.'
+        'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and checkbox multi-select queue model without running any installer workflow.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Open') {
-        'Prepare Installers manual handoff instructions only; no browser, Explorer, Settings, Store, external tool, download, installer, package action, file mutation, registry change, service change, task change, cleanup, reboot, or system mutation is opened or executed.'
+        'Show retained Installers catalog and selection guidance inside BoostLab only; no browser, external tool, download, installer, package action, file mutation, registry change, service change, task change, cleanup, reboot, or system mutation is opened or executed.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Installers because per-app artifact provenance, installer execution, side-effect scopes, inventory, cleanup, rollback, and support approvals do not exist.'
+        'Run the selected retained Installers app queue one app at a time in source order after explicit confirmation.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe global Installers default branch.'
@@ -578,11 +578,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Installers source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary and missing per-app artifact provenance, installer execution, switch validation, exit-code, side-effect, inventory, cleanup, rollback, and support approvals.')
+        $plannedChanges.Add('Report full source menu mapping, Yazan-excluded entries, retained visible catalog, retained app count, and retained artifact count.')
+        $plannedChanges.Add('Report checkbox multi-select and sequential queue behavior.')
         $plannedChanges.Add('Perform no download, browser/Explorer/Settings/Store/external process launch, installer execution, package action, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
+        $plannedChanges.Add('Show retained catalog and checkbox selection guidance inside BoostLab only.')
         $plannedChanges.Add('Do not open a browser, Explorer, Settings, Store, app installer, package manager, script, or external tool.')
         $plannedChanges.Add('Do not download app installers, archives, scripts, packages, or artifacts.')
         $plannedChanges.Add('Do not run installers, setup executables, package managers, Store actions, AppX actions, MSI packages, scripts, or helpers.')
@@ -591,10 +592,12 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing per-app artifact provenance, installer descriptors, silent-switch validation, exit-code handling, generated-file ownership, cleanup, side-effect scopes, rollback, and support approvals.')
-        $plannedChanges.Add('Perform no download, installer execution, package action, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation.')
+        $plannedChanges.Add('Require checkbox selection of one or more retained Yazan-approved source apps.')
+        $plannedChanges.Add('Confirm the full selected queue once before starting.')
+        $plannedChanges.Add('Process selected apps sequentially in retained source order; do not download or run selected installers in parallel.')
+        $plannedChanges.Add('For each selected app, download only its source-defined artifact(s), run only its source-defined installer/helper command and arguments, and perform only its source-defined post-install side effects.')
+        $plannedChanges.Add('Stop the queue on the first failed selected app and report completed, failed, and remaining not-started apps.')
+        $plannedChanges.Add('Removed app choices are hidden and cannot be selected, planned, downloaded, or installed.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1215,7 +1218,7 @@ function New-BoostLabActionPlan {
 
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
-    $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Default', 'Restore')
     $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')

@@ -434,7 +434,9 @@ function Invoke-BoostLabImplementedModuleAction {
         [Parameter(Mandatory)]
         [string]$ActionName,
 
-        [bool]$Confirmed = $false
+        [bool]$Confirmed = $false,
+
+        [hashtable]$ActionOptions = @{}
     )
 
     $toolId = [string]$ToolMetadata['Id']
@@ -529,6 +531,13 @@ function Invoke-BoostLabImplementedModuleAction {
         if ($actionCommand.Parameters.ContainsKey('Confirmed')) {
             $actionParameters['Confirmed'] = $Confirmed
         }
+        if ($null -ne $ActionOptions) {
+            foreach ($optionName in @($ActionOptions.Keys)) {
+                if ($actionCommand.Parameters.ContainsKey([string]$optionName)) {
+                    $actionParameters[[string]$optionName] = $ActionOptions[$optionName]
+                }
+            }
+        }
 
         return & $actionCommand @actionParameters
     }
@@ -556,6 +565,8 @@ function Invoke-BoostLabToolAction {
 
         [Parameter(Mandatory)]
         [string]$ActionName,
+
+        [hashtable]$ActionOptions = @{},
 
         [switch]$RiskConfirmed,
 
@@ -742,7 +753,8 @@ function Invoke-BoostLabToolAction {
     $moduleResult = Invoke-BoostLabImplementedModuleAction `
         -ToolMetadata $ToolMetadata `
         -ActionName $ActionName `
-        -Confirmed:([bool]$safetyGate.Confirmed)
+        -Confirmed:([bool]$safetyGate.Confirmed) `
+        -ActionOptions $ActionOptions
     if ($null -ne $moduleResult) {
         $moduleResult | Add-Member -NotePropertyName 'ActionPlan' -NotePropertyValue $actionPlan -Force
         $verificationResult = if ($null -ne $moduleResult.PSObject.Properties['VerificationResult']) {

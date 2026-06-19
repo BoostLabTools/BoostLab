@@ -345,7 +345,7 @@ Assert-BoostLabCondition (-not [bool]$edgeRecord.YazanFinalException) 'Edge Sett
 Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'source-equivalent Edge Settings behavior' -Description 'Edge Settings parity GapSummary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'installers') 'Next ordered pending parity target must advance to Installers.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'driver-clean') 'Next ordered pending parity target must advance past the Installers Yazan final exception.'
 
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline must remain 55.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Implemented tool baseline must be 45 after Edge Settings.'

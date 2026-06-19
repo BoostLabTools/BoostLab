@@ -198,9 +198,30 @@
                     Order       = 1
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Controlled manual handoff only. Analyze the source-defined multi-app installer workflow without automated downloads, installer launches, package changes, app configuration, cleanup, or system mutation.'
+                    Description = 'Selected-app installer queue. Installs only Yazan-retained Ultimate app choices in source order after confirmation; removed app choices are hidden and unavailable.'
                     Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    SelectionMode = 'MultiSelect'
+                    SelectionRequiredActions = @('Apply')
+                    SelectionItems = @(
+                        @{ Id = 'discord'; Title = 'Discord'; SourceMenuNumber = 2 }
+                        @{ Id = 'roblox'; Title = 'Roblox'; SourceMenuNumber = 3 }
+                        @{ Id = 'seven-zip'; Title = '7-Zip'; SourceMenuNumber = 4 }
+                        @{ Id = 'battle-net'; Title = 'Battle.net'; SourceMenuNumber = 5 }
+                        @{ Id = 'brave'; Title = 'Brave'; SourceMenuNumber = 6 }
+                        @{ Id = 'electronic-arts'; Title = 'Electronic Arts'; SourceMenuNumber = 7 }
+                        @{ Id = 'epic-games'; Title = 'Epic Games'; SourceMenuNumber = 8 }
+                        @{ Id = 'escape-from-tarkov'; Title = 'Escape From Tarkov'; SourceMenuNumber = 9 }
+                        @{ Id = 'firefox'; Title = 'Firefox'; SourceMenuNumber = 10 }
+                        @{ Id = 'google-chrome'; Title = 'Google Chrome'; SourceMenuNumber = 13 }
+                        @{ Id = 'league-of-legends'; Title = 'League Of Legends'; SourceMenuNumber = 14 }
+                        @{ Id = 'obs-studio'; Title = 'OBS Studio'; SourceMenuNumber = 17 }
+                        @{ Id = 'rockstar-games'; Title = 'Rockstar Games'; SourceMenuNumber = 20 }
+                        @{ Id = 'spotify'; Title = 'Spotify'; SourceMenuNumber = 21 }
+                        @{ Id = 'steam'; Title = 'Steam'; SourceMenuNumber = 22 }
+                        @{ Id = 'ubisoft-connect'; Title = 'Ubisoft Connect'; SourceMenuNumber = 23 }
+                        @{ Id = 'valorant'; Title = 'Valorant'; SourceMenuNumber = 24 }
+                    )
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }

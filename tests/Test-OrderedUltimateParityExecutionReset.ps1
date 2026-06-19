@@ -112,7 +112,7 @@ foreach ($temporaryLevel in @('ManualHandoffOnly', 'ControlledSubset', 'Security
 }
 
 $finalExceptions = @($parityTools | Where-Object { [bool]$_.YazanFinalException })
-Assert-BoostLabCondition ($finalExceptions.Count -eq 1) 'Exactly one YazanFinalException should be true after Updates Drivers Block USB-only final scope.'
+Assert-BoostLabCondition ($finalExceptions.Count -eq 2) 'Exactly two YazanFinalException records should be true after Updates Drivers Block and Installers final scopes.'
 Assert-BoostLabCondition ([string]$finalExceptions[0].ToolId -eq 'updates-drivers-block') 'Updates Drivers Block must be the recorded Yazan final exception.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false until parity status is clear.'
 
@@ -212,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'installers') 'The first ordered pending parity target should advance past accepted Edge Settings near-parity.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'driver-clean') 'The first ordered pending parity target should advance past the Installers Yazan final exception.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'
