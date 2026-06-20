@@ -286,9 +286,9 @@
                     Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Manual handoff only. Path B step 2 of 5. Prepare NVIDIA settings/profile guidance without 7-Zip download, Profile Inspector execution, .nip import/export, registry/profile mutation, external process launch, or Control Panel launch.'
-                    Actions     = @('Analyze', 'Open', 'Apply')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Source-equivalent controlled runtime. Path B step 2 of 5. Run the Ultimate Nvidia Settings On (Recommended) or Default branch after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'hdcp'

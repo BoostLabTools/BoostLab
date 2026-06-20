@@ -314,6 +314,7 @@ $reachedToolIds = @(
     'driver-clean'
     'driver-install-debloat-settings'
     'driver-install-latest'
+    'nvidia-settings'
 )
 foreach ($toolId in $reachedToolIds) {
     Assert-BoostLabTextContains -Text $asyncScopeText -Needle "'$toolId'" -Description 'Async reached-tool scope'
@@ -321,7 +322,6 @@ foreach ($toolId in $reachedToolIds) {
 }
 
 foreach ($outOfScopeToolId in @(
-    'nvidia-settings'
     'hdcp'
     'p0-state'
     'msi-mode'
@@ -421,5 +421,5 @@ foreach ($deletedPath in @(
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true
-    Message                     = 'Reached tools through Driver Install Latest use the non-blocking WPF dispatch path; validators are static/mock-safe.'
+    Message                     = 'Reached tools through Nvidia Settings use the non-blocking WPF dispatch path; validators are static/mock-safe.'
 }

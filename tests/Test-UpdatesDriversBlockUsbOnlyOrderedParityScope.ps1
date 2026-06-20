@@ -140,7 +140,7 @@ foreach ($priorToolId in $priorToolIds) {
     Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $priorRecord) "Prior ordered target must already be final: $priorToolId"
 }
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Next ordered pending parity target must advance past Driver Install Latest near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Next ordered pending parity target must advance past Nvidia Settings near-parity acceptance.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(

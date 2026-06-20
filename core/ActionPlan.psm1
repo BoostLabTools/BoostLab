@@ -173,6 +173,7 @@ function New-BoostLabActionPlan {
         $null -ne $productScope -and
         -not [bool]$productScope.Supported
     )
+    $isNvidiaSettingsReadOnlyAnalyze = ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze')
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
@@ -332,13 +333,13 @@ function New-BoostLabActionPlan {
         'Restore only from a valid selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
-        'Read the Nvidia Settings source mirror and report blocked 7-Zip, Profile Inspector, .nip, NVIDIA profile, registry, process, and verification approvals without changing settings.'
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
-        'Prepare Nvidia Settings manual handoff instructions only; no 7-Zip, Profile Inspector, .nip, Control Panel, browser, external process, registry/profile mutation, or system-changing operation is opened or executed.'
+        'Read the Nvidia Settings source mirror and report the source-equivalent On (Recommended) and Default operation plans without changing settings.'
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Nvidia Settings because 7-Zip, Profile Inspector, .nip, profile capture/restore, registry/file rollback, process, and verification approvals do not exist.'
+        'Run the source-defined Nvidia Settings On (Recommended) branch after explicit confirmation: common 7-Zip prelude, NVIDIA registry/profile operations, Profile Inspector .nip import, and NVIDIA Control Panel launch.'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
+        'Run the source-defined Nvidia Settings Default branch after explicit confirmation: common 7-Zip prelude, NVIDIA registry/profile default operations, Profile Inspector default .nip import, and NVIDIA Control Panel launch. Default is not Restore.'
     }
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
         'Read the HDCP source mirror and report source-defined NVIDIA display-class registry scope, target discovery, Apply availability, Default availability, and Restore availability without changing the system.'
@@ -858,24 +859,25 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Nvidia Settings source mirror checksum and implementation status.')
-        $plannedChanges.Add('Report missing 7-Zip artifact/download/install approval, NVIDIA Profile Inspector artifact/download/execution approval, .nip import/export approval, NVIDIA profile state capture/restore approval, NVIDIA registry/file rollback capture approval, process handling approval, and verification approval.')
+        $plannedChanges.Add('Report the source-defined common 7-Zip prelude, On (Recommended) branch, Default branch, exact .nip payload source, Profile Inspector import request, and NVIDIA Control Panel launch request.')
         $plannedChanges.Add('Report Path B step 2 of 5 while keeping Nvidia Settings separate from Driver Install Latest, Hdcp, P0 State, and Msi Mode.')
-        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector download/execution, .nip import/export, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system mutation.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions only for Path B step 2.')
-        $plannedChanges.Add('Do not download or install 7-Zip.')
-        $plannedChanges.Add('Do not download or run NVIDIA Profile Inspector.')
-        $plannedChanges.Add('Do not import, export, or generate a .nip file for execution.')
-        $plannedChanges.Add('Do not open NVIDIA Control Panel, a browser, external tool, or approved external resource.')
-        $plannedChanges.Add('Do not modify NVIDIA profiles, NVIDIA registry settings, Windows Registry values, files, drivers, sessions, or reboot state.')
-        $plannedChanges.Add('Keep Path B steps separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
+        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector download/execution, .nip write/import, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system mutation.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing 7-Zip artifact/download/install approval, NVIDIA Profile Inspector artifact/download/execution approval, .nip import/export approval, NVIDIA profile state capture/restore approval, NVIDIA registry/file rollback capture approval, process handling approval, and verification approval.')
-        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector execution, .nip import/export, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system-changing operation.')
+        $plannedChanges.Add('Verify the Nvidia Settings source mirror checksum before any operation.')
+        $plannedChanges.Add('Require explicit Action Plan confirmation, Administrator elevation, and internet connectivity.')
+        $plannedChanges.Add('Run the source-defined common prelude: download 7zip.exe to %SystemRoot%\Temp, install it silently, write HKCU 7-Zip options, move the 7-Zip File Manager shortcut, and remove the 7-Zip Start Menu folder.')
+        $plannedChanges.Add('Run the source-defined On (Recommended) branch: unblock NVIDIA Drs files; set NvCplPhysxAuto, NvDevToolsVisible, RmProfilingAdminOnly, NvTray StartOnLogin, and EnableGR535 values; download Profile Inspector; write the exact source On inspector.nip payload; import it silently; then open NVIDIA Control Panel.')
+        $plannedChanges.Add('Do not run Hdcp, P0 State, Msi Mode, Driver Install Latest, or Driver Install Debloat & Settings behavior.')
+        $plannedChanges.Add('Do not reboot, use Safe Mode, use TrustedInstaller, create RunOnce, modify services, or modify drivers.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Verify the Nvidia Settings source mirror checksum before any operation.')
+        $plannedChanges.Add('Require explicit Action Plan confirmation, Administrator elevation, and internet connectivity.')
+        $plannedChanges.Add('Run the source-defined common prelude: download 7zip.exe to %SystemRoot%\Temp, install it silently, write HKCU 7-Zip options, move the 7-Zip File Manager shortcut, and remove the 7-Zip Start Menu folder.')
+        $plannedChanges.Add('Run the source-defined Default branch: unblock NVIDIA Drs files; delete NvCplPhysxAuto, NvDevToolsVisible, dynamic-display RmProfilingAdminOnly, NVTweak RmProfilingAdminOnly, and NvTray; set EnableGR535 to DWORD 1 on all three source paths; download Profile Inspector; write the exact source Default inspector.nip payload; import it silently; then open NVIDIA Control Panel.')
+        $plannedChanges.Add('Default is source-defined behavior, not captured-state Restore.')
+        $plannedChanges.Add('Do not reboot, use Safe Mode, use TrustedInstaller, create RunOnce, modify services, or modify drivers.')
     }
     elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the HDCP source mirror checksum.')
@@ -1460,17 +1462,17 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Nvidia Settings analysis is read-only.')
-        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
-        $sideEffects.Add('Path B step 2 is reported without enabling the remaining Path B steps.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No 7-Zip download/install, NVIDIA Profile Inspector download/execution, .nip import/export, browser, Control Panel launch, external process, or system-changing operation occurs.')
-        $sideEffects.Add('No NVIDIA profile, registry, driver, reboot, or session change occurs.')
+        $sideEffects.Add('Source-equivalent On and Default plans are reported without enabling the remaining Path B steps.')
     }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, 7-Zip download/install, Profile Inspector execution, .nip import/export, external process, Control Panel launch, registry/profile mutation, or system-changing operation occurs.')
+        $sideEffects.Add('Downloads and installs the source-defined 7-Zip artifact from the Ultimate source URL, then downloads and runs source-defined NVIDIA Profile Inspector.')
+        $sideEffects.Add('Writes NVIDIA registry/profile settings, writes/imports the exact source On inspector.nip payload, cleans source-defined 7-Zip Start Menu entries, and opens NVIDIA Control Panel.')
+        $sideEffects.Add('No reboot, Safe Mode, TrustedInstaller, service change, driver mutation, or unrelated Path B step runs.')
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Downloads and installs the source-defined 7-Zip artifact from the Ultimate source URL, then downloads and runs source-defined NVIDIA Profile Inspector.')
+        $sideEffects.Add('Deletes or resets only the source-defined NVIDIA Settings registry/profile targets, writes/imports the exact source Default inspector.nip payload, cleans source-defined 7-Zip Start Menu entries, and opens NVIDIA Control Panel.')
+        $sideEffects.Add('Default is not Restore; no reboot, Safe Mode, TrustedInstaller, service change, driver mutation, or unrelated Path B step runs.')
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Updates Drivers Block analysis is read-only.')
@@ -1880,11 +1882,11 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
         'Reinstall Restore requires selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Nvidia Settings manual handoff instructions only. It will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, open a browser or external process, modify registry or NVIDIA profiles, or change system state. Continue?'
-    }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        'Nvidia Settings Auto mode is blocked. BoostLab will not execute Auto behavior because 7-Zip, NVIDIA Profile Inspector, .nip, profile capture/restore, registry/file rollback, process, and verification approvals are missing. Continue only to record the blocked result?'
+        'BoostLab will run the source-defined Nvidia Settings On (Recommended) branch: download/install 7-Zip, write 7-Zip options, clean 7-Zip Start Menu entries, unblock NVIDIA Drs files, write NVIDIA registry/profile settings, download and run NVIDIA Profile Inspector with the exact source .nip, and open NVIDIA Control Panel. No reboot, services, drivers, Safe Mode, TrustedInstaller, or unrelated Path B steps will run. Continue?'
+    }
+    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
+        'BoostLab will run the source-defined Nvidia Settings Default branch: run the same 7-Zip prelude, delete/reset only the source-defined NVIDIA Settings registry/profile targets, download and run NVIDIA Profile Inspector with the exact source Default .nip, and open NVIDIA Control Panel. Default is not Restore. No reboot, services, drivers, Safe Mode, TrustedInstaller, or unrelated Path B steps will run. Continue?'
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
         'BoostLab will write only the source-equivalent Driver Updates Block setupcomplete.cmd to selected removable USB media after file state capture. It will not execute the script, write host registry values, run Windows Update, modify driver devices, download, launch external tools, change services, or reboot. Continue?'
@@ -2044,7 +2046,7 @@ function New-BoostLabActionPlan {
     if ($isProductScopeNotApplicable) {
         $privilegeRequirements.Add('No Administrator execution required because no action will run on this unsupported host.')
     }
-    elseif ($capabilities.RequiresAdmin) {
+    elseif ($capabilities.RequiresAdmin -and -not $isNvidiaSettingsReadOnlyAnalyze) {
         $privilegeRequirements.Add('Administrator required')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -2063,11 +2065,11 @@ function New-BoostLabActionPlan {
         Summary                   = $summary
         PlannedChanges            = $plannedChanges.ToArray()
         SideEffects               = $sideEffects.ToArray()
-        RequiresAdmin             = if ($isProductScopeNotApplicable) { $false } else { [bool]$capabilities.RequiresAdmin }
+        RequiresAdmin             = if ($isProductScopeNotApplicable -or $isNvidiaSettingsReadOnlyAnalyze) { $false } else { [bool]$capabilities.RequiresAdmin }
         UsesTrustedInstaller      = [bool]$capabilities.UsesTrustedInstaller
         UsesSafeMode              = [bool]$capabilities.UsesSafeMode
         PrivilegeRequirements     = $privilegeRequirements.ToArray()
-        RequiresInternet          = [bool]$capabilities.RequiresInternet
+        RequiresInternet          = if ($isNvidiaSettingsReadOnlyAnalyze) { $false } else { [bool]$capabilities.RequiresInternet }
         CanReboot                 = [bool]$capabilities.CanReboot
         NeedsExplicitConfirmation = [bool]$needsConfirmation
         SupportsDefault           = [bool]$capabilities.SupportsDefault

@@ -384,11 +384,11 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 22) 'NearParityControlled baseline should be 22 after Driver Install Latest.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 4) 'ManualHandoffOnly baseline should be 4 after Driver Install Latest.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 23) 'NearParityControlled baseline should be 23 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 3) 'ManualHandoffOnly baseline should be 3 after Nvidia Settings.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Next ordered pending parity target should advance to Nvidia Settings.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Next ordered pending parity target should advance to HDCP.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
@@ -397,14 +397,14 @@ foreach ($needle in @(
     "'Open' { return 'Manual' }",
     "'Apply' { return 'Auto' }",
     "if (`$toolId -eq 'nvidia-settings')",
-    "'Open' { return 'Manual Handoff' }",
-    "'Apply' { return 'Apply Auto' }",
+    "'Apply' { return 'On (Recommended)' }",
+    "'Default' { return 'Default' }",
     'ActionName   = $actionName',
     'ActionLabel  = $actionDisplayLabel'
 )) {
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Driver Clean UI display label mapping'
 }
-Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share the Nvidia Settings Manual Handoff label mapping.'
+Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share the Nvidia Settings display label mapping.'
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\DDU.psm1'))) 'Standalone DDU module was reintroduced.'

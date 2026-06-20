@@ -152,10 +152,10 @@ $simulatedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $simulate
 Assert-BoostLabCondition ([string]$simulatedTarget.ToolId -eq 'driver-install-latest') 'Driver Install Latest should be the ordered target before Phase 124 completion.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Next ordered pending parity target should advance to Nvidia Settings after Driver Install Latest acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Next ordered pending parity target should advance to HDCP after Nvidia Settings.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 22) 'NearParityControlled count should be 22 after Phase 124.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 4) 'ManualHandoffOnly count should be 4 after Phase 124.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 23) 'NearParityControlled count should be 23 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 3) 'ManualHandoffOnly count should be 3 after Nvidia Settings.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw

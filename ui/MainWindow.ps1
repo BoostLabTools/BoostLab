@@ -529,8 +529,8 @@ function Get-BoostLabToolActionDisplayLabel {
 
     if ($toolId -eq 'nvidia-settings') {
         switch ($ActionName) {
-            'Open' { return 'Manual Handoff' }
-            'Apply' { return 'Apply Auto' }
+            'Apply' { return 'On (Recommended)' }
+            'Default' { return 'Default' }
         }
     }
 
@@ -1610,6 +1610,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'driver-clean'
         'driver-install-debloat-settings'
         'driver-install-latest'
+        'nvidia-settings'
     )
 }
 

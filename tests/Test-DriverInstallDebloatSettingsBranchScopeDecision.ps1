@@ -76,7 +76,7 @@ Assert-BoostLabCondition ([bool]$record.YazanAcceptedNearParity) 'Phase 123 shou
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'YazanFinalException must remain false.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Ordered parity cursor should advance to Nvidia Settings after Phase 124.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Ordered parity cursor should advance to HDCP after Nvidia Settings.'
 
 $codexText = Get-Content -LiteralPath $codexPath -Raw
 $blueprintText = Get-Content -LiteralPath $blueprintPath -Raw

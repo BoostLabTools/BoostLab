@@ -247,16 +247,17 @@ $reachedToolsForward = @(
     'installers',
     'driver-clean',
     'driver-install-debloat-settings',
-    'driver-install-latest'
+    'driver-install-latest',
+    'nvidia-settings'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'driver-install-latest') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Driver Install Latest back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'nvidia-settings') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Nvidia Settings back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('nvidia-settings', 'hdcp', 'p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('hdcp', 'p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 

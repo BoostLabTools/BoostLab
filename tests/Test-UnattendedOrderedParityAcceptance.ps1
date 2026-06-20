@@ -250,12 +250,12 @@ Assert-BoostLabTextContains -Text ([string]$unattendedRecord.GapSummary) -Needle
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'First pending ordered target must advance past Driver Install Latest near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'First pending ordered target must advance past Nvidia Settings near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 22) 'NearParityControlled count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 4) 'ManualHandoffOnly count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 23) 'NearParityControlled count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 3) 'ManualHandoffOnly count should match the current parity baseline.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'

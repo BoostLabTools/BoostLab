@@ -89,7 +89,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'nvidia-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-settings.psm1'
-        Actions = @('Analyze', 'Open', 'Apply')
+        Actions = @('Analyze', 'Apply', 'Default')
     }
     'hdcp' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\hdcp.psm1'

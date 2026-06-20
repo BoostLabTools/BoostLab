@@ -112,16 +112,17 @@ $reachedToolsForward = @(
     'installers',
     'driver-clean',
     'driver-install-debloat-settings',
-    'driver-install-latest'
+    'driver-install-latest',
+    'nvidia-settings'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
 
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'driver-install-latest') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from Driver Install Latest back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'nvidia-settings') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from Nvidia Settings back to BIOS Information.'
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($toolById.ContainsKey($toolId)) "Reached tool missing from active catalog: $toolId"
 }
-foreach ($outOfScope in @('nvidia-settings', 'hdcp', 'p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('hdcp', 'p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool was included in reached label audit scope: $outOfScope"
 }
 
@@ -142,8 +143,11 @@ Assert-BoostLabCondition (-not $driverCleanBlock.Contains('Apply Auto')) 'Driver
 Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share Nvidia Settings display-label mapping.'
 
 $nvidiaSettingsBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''nvidia-settings'')' -End 'return $ActionName'
-Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Open' { return 'Manual Handoff' }" -Description 'Nvidia Settings out-of-scope label preservation'
-Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Apply' { return 'Apply Auto' }" -Description 'Nvidia Settings out-of-scope label preservation'
+Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'Nvidia Settings On visible label'
+Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Default' { return 'Default' }" -Description 'Nvidia Settings Default visible label'
+Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Manual Handoff')) 'Nvidia Settings must not show Manual Handoff after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Apply Auto')) 'Nvidia Settings must not show Apply Auto after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains("'Open'")) 'Nvidia Settings must not expose a fake Open label.'
 
 $driverCleanSourceText = Get-Content -LiteralPath $driverCleanSourcePath -Raw
 $expectedDriverCleanHash = 'CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A'

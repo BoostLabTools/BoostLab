@@ -7,37 +7,43 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 4
     Type = 'assistant'
     RiskLevel = 'high'
-    Description = 'Manual handoff only. Path B step 2 of 5. Prepare NVIDIA settings/profile guidance without 7-Zip download, Profile Inspector execution, .nip import/export, registry/profile mutation, external process launch, or Control Panel launch.'
-    Actions = @('Analyze', 'Open', 'Apply')
+    Description = 'Source-equivalent controlled runtime. Path B step 2 of 5. Run the Ultimate Nvidia Settings On (Recommended) or Default branch after explicit confirmation.'
+    Actions = @('Analyze', 'Apply', 'Default')
     Capabilities = [ordered]@{
-        RequiresAdmin = $false
-        RequiresInternet = $false
+        RequiresAdmin = $true
+        RequiresInternet = $true
         CanReboot = $false
-        CanModifyRegistry = $false
+        CanModifyRegistry = $true
         CanModifyServices = $false
-        CanInstallSoftware = $false
-        CanDownload = $false
+        CanInstallSoftware = $true
+        CanDownload = $true
         CanModifyDrivers = $false
         CanModifySecurity = $false
-        CanDeleteFiles = $false
+        CanDeleteFiles = $true
         UsesTrustedInstaller = $false
         UsesSafeMode = $false
-        SupportsDefault = $false
+        SupportsDefault = $true
         SupportsRestore = $false
         NeedsExplicitConfirmation = $true
     }
 }
-$script:BoostLabImplementedActions = @('Analyze', 'Open', 'Apply')
+$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabExpectedSourceHash = '903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5'
 $script:BoostLabSourceRelativePath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
+$script:BoostLabSevenZipUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
+$script:BoostLabInspectorUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
+$script:BoostLabControlPanelTarget = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+
+function Get-BoostLabNvidiaSettingsProjectRoot {
+    Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+}
 
 function Get-BoostLabNvidiaSettingsSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    Join-Path (Get-BoostLabNvidiaSettingsProjectRoot) ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
 function Get-BoostLabNvidiaSettingsSourceStatus {
@@ -72,6 +78,176 @@ function Get-BoostLabNvidiaSettingsSourceStatus {
     }
 }
 
+function Get-BoostLabNvidiaSettingsPaths {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    $systemRoot = if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) { 'C:\Windows' } else { [string]$env:SystemRoot }
+    $programData = if ([string]::IsNullOrWhiteSpace($env:ProgramData)) { 'C:\ProgramData' } else { [string]$env:ProgramData }
+
+    @{
+        SystemRoot = $systemRoot
+        ProgramData = $programData
+        SevenZipInstaller = Join-Path $systemRoot 'Temp\7zip.exe'
+        SevenZipShortcut = Join-Path $programData 'Microsoft\Windows\Start Menu\Programs\7-Zip\7-Zip File Manager.lnk'
+        StartMenuPrograms = Join-Path $programData 'Microsoft\Windows\Start Menu\Programs'
+        SevenZipStartMenuFolder = Join-Path $programData 'Microsoft\Windows\Start Menu\Programs\7-Zip'
+        DrsPath = 'C:\ProgramData\NVIDIA Corporation\Drs'
+        InspectorExe = Join-Path $systemRoot 'Temp\inspector.exe'
+        InspectorNip = Join-Path $systemRoot 'Temp\inspector.nip'
+        DisplayClassRoot = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        NVTweakPath = 'HKLM:\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak'
+        NvTrayPath = 'HKCU:\Software\NVIDIA Corporation\NvTray'
+        FtsPaths = @(
+            'HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS'
+            'HKLM:\SYSTEM\ControlSet001\Services\nvlddmkm\Parameters\FTS'
+            'HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS'
+        )
+        ControlPanelTarget = $script:BoostLabControlPanelTarget
+    }
+}
+
+function Get-BoostLabNvidiaSettingsSourceNipPayloads {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    $sourceStatus = Get-BoostLabNvidiaSettingsSourceStatus
+    if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
+        throw "Nvidia Settings source checksum did not pass: $($sourceStatus.ChecksumStatus)"
+    }
+
+    $sourceText = Get-Content -LiteralPath ([string]$sourceStatus.SourcePath) -Raw
+    $matches = [regex]::Matches(
+        $sourceText,
+        '\$nipfile\s*=\s*@''\r?\n(?<Payload>.*?)\r?\n''@',
+        [System.Text.RegularExpressions.RegexOptions]::Singleline
+    )
+    if ($matches.Count -lt 2) {
+        throw 'Nvidia Settings source did not contain both source-defined .nip payloads.'
+    }
+
+    @{
+        Apply = [string]$matches[0].Groups['Payload'].Value
+        Default = [string]$matches[1].Groups['Payload'].Value
+    }
+}
+
+function New-BoostLabNvidiaSettingsOperation {
+    param(
+        [Parameter(Mandatory)]
+        [int]$Order,
+
+        [Parameter(Mandatory)]
+        [string]$Branch,
+
+        [Parameter(Mandatory)]
+        [string]$Type,
+
+        [Parameter(Mandatory)]
+        [string]$Label,
+
+        [Parameter(Mandatory)]
+        [string]$SourceCommand,
+
+        [System.Collections.IDictionary]$Parameters = @{}
+    )
+
+    [pscustomobject]@{
+        Order = $Order
+        Branch = $Branch
+        Type = $Type
+        Label = $Label
+        SourceCommand = $SourceCommand
+        Parameters = $Parameters
+    }
+}
+
+function Get-BoostLabNvidiaSettingsOperationPlan {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName
+    )
+
+    $paths = Get-BoostLabNvidiaSettingsPaths
+    $payloads = Get-BoostLabNvidiaSettingsSourceNipPayloads
+    $branch = if ($ActionName -eq 'Apply') { 'On (Recommended)' } else { 'Default' }
+    $operations = New-Object System.Collections.Generic.List[object]
+    $order = 1
+
+    foreach ($operation in @(
+        @{ Type = 'RequireAdmin'; Label = 'Require Administrator rights'; SourceCommand = 'SCRIPT RUN AS ADMIN'; Parameters = @{} }
+        @{ Type = 'RequireInternet'; Label = 'Require internet connectivity'; SourceCommand = 'Test-Connection 8.8.8.8'; Parameters = @{} }
+        @{ Type = 'DownloadFile'; Label = 'Download source-defined 7-Zip installer'; SourceCommand = 'IWR 7zip.exe'; Parameters = @{ Url = $script:BoostLabSevenZipUrl; Destination = $paths.SevenZipInstaller } }
+        @{ Type = 'StartProcess'; Label = 'Install 7-Zip silently'; SourceCommand = 'Start-Process 7zip.exe /S -Wait'; Parameters = @{ FilePath = $paths.SevenZipInstaller; ArgumentList = @('/S'); Wait = $true } }
+        @{ Type = 'SetRegistryValue'; Label = 'Set 7-Zip ContextMenu option'; SourceCommand = 'reg add HKCU\Software\7-Zip\Options ContextMenu 259'; Parameters = @{ Path = 'HKCU:\Software\7-Zip\Options'; Name = 'ContextMenu'; Type = 'DWord'; Data = 259 } }
+        @{ Type = 'SetRegistryValue'; Label = 'Set 7-Zip CascadedMenu option'; SourceCommand = 'reg add HKCU\Software\7-Zip\Options CascadedMenu 0'; Parameters = @{ Path = 'HKCU:\Software\7-Zip\Options'; Name = 'CascadedMenu'; Type = 'DWord'; Data = 0 } }
+        @{ Type = 'MoveItem'; Label = 'Move 7-Zip File Manager shortcut to Programs'; SourceCommand = 'Move-Item 7-Zip File Manager.lnk'; Parameters = @{ Source = $paths.SevenZipShortcut; Destination = $paths.StartMenuPrograms; ContinueOnMissing = $true } }
+        @{ Type = 'RemoveItem'; Label = 'Remove 7-Zip Start Menu folder'; SourceCommand = 'Remove-Item 7-Zip Start Menu folder'; Parameters = @{ Path = $paths.SevenZipStartMenuFolder; Recurse = $true; ContinueOnMissing = $true } }
+    )) {
+        $operations.Add((New-BoostLabNvidiaSettingsOperation -Order $order -Branch 'Common' -Type $operation.Type -Label $operation.Label -SourceCommand $operation.SourceCommand -Parameters $operation.Parameters))
+        $order++
+    }
+
+    $branchOperations = if ($ActionName -eq 'Apply') {
+        @(
+            @{ Type = 'UnblockPath'; Label = 'Unblock NVIDIA Drs files'; SourceCommand = 'Get-ChildItem C:\ProgramData\NVIDIA Corporation\Drs -Recurse | Unblock-File'; Parameters = @{ Path = $paths.DrsPath; Recurse = $true; ContinueOnMissing = $true } }
+            @{ Type = 'SetRegistryValue'; Label = 'Set PhysX processor selection to GPU'; SourceCommand = 'reg add NVTweak NvCplPhysxAuto 0'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'NvCplPhysxAuto'; Type = 'DWord'; Data = 0 } }
+            @{ Type = 'SetRegistryValue'; Label = 'Enable NVIDIA developer settings'; SourceCommand = 'reg add NVTweak NvDevToolsVisible 1'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'NvDevToolsVisible'; Type = 'DWord'; Data = 1 } }
+            @{ Type = 'DynamicDisplayClassSet'; Label = 'Allow GPU performance counters for all users on display keys'; SourceCommand = 'reg add display class RmProfilingAdminOnly 0'; Parameters = @{ Root = $paths.DisplayClassRoot; Name = 'RmProfilingAdminOnly'; Type = 'DWord'; Data = 0; ExcludeLike = '*Configuration' } }
+            @{ Type = 'SetRegistryValue'; Label = 'Allow GPU performance counters for all users on NVTweak'; SourceCommand = 'reg add NVTweak RmProfilingAdminOnly 0'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'RmProfilingAdminOnly'; Type = 'DWord'; Data = 0 } }
+            @{ Type = 'SetRegistryValue'; Label = 'Disable NVIDIA tray login startup'; SourceCommand = 'reg add HKCU\Software\NVIDIA Corporation\NvTray StartOnLogin 0'; Parameters = @{ Path = $paths.NvTrayPath; Name = 'StartOnLogin'; Type = 'DWord'; Data = 0 } }
+            @{ Type = 'SetRegistryValueCollection'; Label = 'Enable source-defined NVIDIA legacy sharpen behavior'; SourceCommand = 'reg add EnableGR535 0 on three FTS paths'; Parameters = @{ Paths = $paths.FtsPaths; Name = 'EnableGR535'; Type = 'DWord'; Data = 0 } }
+            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe } }
+            @{ Type = 'WriteTextFile'; Label = 'Write source-defined On inspector.nip'; SourceCommand = 'Set-Content inspector.nip On payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Apply; Encoding = 'Unicode' } }
+            @{ Type = 'StartProcess'; Label = 'Import source-defined On .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
+            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
+        )
+    }
+    else {
+        @(
+            @{ Type = 'UnblockPath'; Label = 'Unblock NVIDIA Drs files'; SourceCommand = 'Get-ChildItem C:\ProgramData\NVIDIA Corporation\Drs -Recurse | Unblock-File'; Parameters = @{ Path = $paths.DrsPath; Recurse = $true; ContinueOnMissing = $true } }
+            @{ Type = 'RemoveRegistryValue'; Label = 'Delete PhysX processor selection value'; SourceCommand = 'reg delete NVTweak NvCplPhysxAuto'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'NvCplPhysxAuto' } }
+            @{ Type = 'RemoveRegistryValue'; Label = 'Delete NVIDIA developer settings value'; SourceCommand = 'reg delete NVTweak NvDevToolsVisible'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'NvDevToolsVisible' } }
+            @{ Type = 'DynamicDisplayClassDelete'; Label = 'Delete display-key GPU performance counter override'; SourceCommand = 'reg delete display class RmProfilingAdminOnly'; Parameters = @{ Root = $paths.DisplayClassRoot; Name = 'RmProfilingAdminOnly'; ExcludeLike = '*Configuration' } }
+            @{ Type = 'RemoveRegistryValue'; Label = 'Delete NVTweak GPU performance counter override'; SourceCommand = 'reg delete NVTweak RmProfilingAdminOnly'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'RmProfilingAdminOnly' } }
+            @{ Type = 'RemoveRegistryKey'; Label = 'Delete NVIDIA tray key'; SourceCommand = 'reg delete HKCU\Software\NVIDIA Corporation\NvTray'; Parameters = @{ Path = $paths.NvTrayPath; Recurse = $true } }
+            @{ Type = 'SetRegistryValueCollection'; Label = 'Restore source-defined NVIDIA legacy sharpen default'; SourceCommand = 'reg add EnableGR535 1 on three FTS paths'; Parameters = @{ Paths = $paths.FtsPaths; Name = 'EnableGR535'; Type = 'DWord'; Data = 1 } }
+            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe } }
+            @{ Type = 'WriteTextFile'; Label = 'Write source-defined Default inspector.nip'; SourceCommand = 'Set-Content inspector.nip Default payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Default; Encoding = 'Unicode' } }
+            @{ Type = 'StartProcess'; Label = 'Import source-defined Default .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
+            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
+        )
+    }
+
+    foreach ($operation in $branchOperations) {
+        $operations.Add((New-BoostLabNvidiaSettingsOperation -Order $order -Branch $branch -Type $operation.Type -Label $operation.Label -SourceCommand $operation.SourceCommand -Parameters $operation.Parameters))
+        $order++
+    }
+
+    $operationArray = @($operations.ToArray())
+    $nipPayload = if ($ActionName -eq 'Apply') { $payloads.Apply } else { $payloads.Default }
+
+    [pscustomobject]@{
+        Action = $ActionName
+        Branch = $branch
+        Source = (Get-BoostLabNvidiaSettingsSourceStatus)
+        Operations = $operationArray
+        CommonOperationCount = 8
+        BranchOperationCount = @($branchOperations).Count
+        TotalOperationCount = $operationArray.Count
+        SevenZipUrl = $script:BoostLabSevenZipUrl
+        InspectorUrl = $script:BoostLabInspectorUrl
+        InspectorNipPath = $paths.InspectorNip
+        ControlPanelTarget = $paths.ControlPanelTarget
+        NipPayload = $nipPayload
+    }
+}
+
 function New-BoostLabNvidiaSettingsResult {
     param(
         [Parameter(Mandatory)]
@@ -99,7 +275,9 @@ function New-BoostLabNvidiaSettingsResult {
 
         [string[]]$Errors = @(),
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
     )
 
     [pscustomobject]@{
@@ -113,43 +291,178 @@ function New-BoostLabNvidiaSettingsResult {
         Message = $Message
         RestartRequired = $false
         Cancelled = $Cancelled
-        ChangesExecuted = $false
+        ChangesExecuted = $ChangesExecuted
         Timestamp = Get-Date
         Data = $Data
-        Warnings = @($Warnings)
-        Errors = @($Errors)
+        Warnings = @($Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Select-Object -Unique)
+        Errors = @($Errors | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Select-Object -Unique)
     }
 }
 
-function Get-BoostLabNvidiaSettingsBlockedApprovals {
-    [CmdletBinding()]
-    [OutputType([string[]])]
-    param()
-
-    @(
-        '7-Zip artifact/download/install approval'
-        'NVIDIA Profile Inspector artifact/download/execution approval'
-        '.nip import/export approval'
-        'NVIDIA profile state capture/restore approval'
-        'NVIDIA registry/file rollback capture approval'
-        'process handling approval'
-        'verification approval'
-    )
+function Test-BoostLabNvidiaSettingsAdministrator {
+    try {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+        return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch {
+        return $false
+    }
 }
 
-function Get-BoostLabNvidiaSettingsRiskWarnings {
+function Invoke-BoostLabNvidiaSettingsDefaultOperation {
     [CmdletBinding()]
-    [OutputType([string[]])]
-    param()
-
-    @(
-        'Original Ultimate source downloads and installs 7-Zip, downloads NVIDIA Profile Inspector, creates and imports a .nip profile, writes NVIDIA registry/profile settings, and opens NVIDIA Control Panel.'
-        'This BoostLab implementation prepares manual handoff instructions only.'
-        'No 7-Zip is downloaded or installed, no NVIDIA Profile Inspector is downloaded or executed, and no .nip is imported or exported.'
-        'No NVIDIA profile, NVIDIA registry setting, Windows Registry value, file, external process, browser, Control Panel page, driver, reboot, or session state is changed.'
-        'External manual NVIDIA profile/settings work can affect display behavior, game/app profiles, registry/profile state, and recovery options.'
-        'Default and Restore are unavailable because BoostLab has no captured NVIDIA profile or registry state for this tool.'
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation
     )
+
+    $parameters = $Operation.Parameters
+    try {
+        switch ([string]$Operation.Type) {
+            'RequireAdmin' {
+                if (-not (Test-BoostLabNvidiaSettingsAdministrator)) {
+                    throw 'Administrator rights are required.'
+                }
+            }
+            'RequireInternet' {
+                if (-not (Test-Connection -ComputerName '8.8.8.8' -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
+                    throw 'Internet connectivity is required.'
+                }
+            }
+            'DownloadFile' {
+                $destinationParent = Split-Path -Parent ([string]$parameters['Destination'])
+                if (-not [string]::IsNullOrWhiteSpace($destinationParent)) {
+                    New-Item -Path $destinationParent -ItemType Directory -Force | Out-Null
+                }
+                Invoke-WebRequest -Uri ([string]$parameters['Url']) -OutFile ([string]$parameters['Destination']) -UseBasicParsing -ErrorAction Stop
+            }
+            'StartProcess' {
+                $startParameters = @{ FilePath = [string]$parameters['FilePath']; ErrorAction = 'Stop' }
+                $argumentList = @($parameters['ArgumentList'])
+                if ($argumentList.Count -gt 0) {
+                    $startParameters['ArgumentList'] = $argumentList
+                }
+                if ([bool]$parameters['Wait']) {
+                    $startParameters['Wait'] = $true
+                }
+                Start-Process @startParameters | Out-Null
+            }
+            'SetRegistryValue' {
+                New-Item -Path ([string]$parameters['Path']) -Force | Out-Null
+                New-ItemProperty -Path ([string]$parameters['Path']) -Name ([string]$parameters['Name']) -PropertyType ([string]$parameters['Type']) -Value $parameters['Data'] -Force | Out-Null
+            }
+            'SetRegistryValueCollection' {
+                foreach ($path in @($parameters['Paths'])) {
+                    New-Item -Path ([string]$path) -Force | Out-Null
+                    New-ItemProperty -Path ([string]$path) -Name ([string]$parameters['Name']) -PropertyType ([string]$parameters['Type']) -Value $parameters['Data'] -Force | Out-Null
+                }
+            }
+            'RemoveRegistryValue' {
+                Remove-ItemProperty -Path ([string]$parameters['Path']) -Name ([string]$parameters['Name']) -Force -ErrorAction SilentlyContinue
+            }
+            'RemoveRegistryKey' {
+                Remove-Item -Path ([string]$parameters['Path']) -Recurse:([bool]$parameters['Recurse']) -Force -ErrorAction SilentlyContinue
+            }
+            'DynamicDisplayClassSet' {
+                $targets = @(Get-ChildItem -Path ([string]$parameters['Root']) -Force -ErrorAction SilentlyContinue | Where-Object {
+                    [string]$_.Name -notlike [string]$parameters['ExcludeLike']
+                })
+                foreach ($target in $targets) {
+                    New-ItemProperty -Path ([string]$target.PSPath) -Name ([string]$parameters['Name']) -PropertyType ([string]$parameters['Type']) -Value $parameters['Data'] -Force | Out-Null
+                }
+            }
+            'DynamicDisplayClassDelete' {
+                $targets = @(Get-ChildItem -Path ([string]$parameters['Root']) -Force -ErrorAction SilentlyContinue | Where-Object {
+                    [string]$_.Name -notlike [string]$parameters['ExcludeLike']
+                })
+                foreach ($target in $targets) {
+                    Remove-ItemProperty -Path ([string]$target.PSPath) -Name ([string]$parameters['Name']) -Force -ErrorAction SilentlyContinue
+                }
+            }
+            'UnblockPath' {
+                if (Test-Path -LiteralPath ([string]$parameters['Path'])) {
+                    Get-ChildItem -LiteralPath ([string]$parameters['Path']) -Recurse:([bool]$parameters['Recurse']) -Force -ErrorAction Stop | Unblock-File -ErrorAction Stop
+                }
+                elseif (-not [bool]$parameters['ContinueOnMissing']) {
+                    throw "Path was not found: $($parameters['Path'])"
+                }
+            }
+            'MoveItem' {
+                if (Test-Path -LiteralPath ([string]$parameters['Source'])) {
+                    Move-Item -LiteralPath ([string]$parameters['Source']) -Destination ([string]$parameters['Destination']) -Force -ErrorAction Stop | Out-Null
+                }
+                elseif (-not [bool]$parameters['ContinueOnMissing']) {
+                    throw "Path was not found: $($parameters['Source'])"
+                }
+            }
+            'RemoveItem' {
+                if (Test-Path -LiteralPath ([string]$parameters['Path'])) {
+                    Remove-Item -LiteralPath ([string]$parameters['Path']) -Recurse:([bool]$parameters['Recurse']) -Force -ErrorAction Stop | Out-Null
+                }
+                elseif (-not [bool]$parameters['ContinueOnMissing']) {
+                    throw "Path was not found: $($parameters['Path'])"
+                }
+            }
+            'WriteTextFile' {
+                $parent = Split-Path -Parent ([string]$parameters['Path'])
+                if (-not [string]::IsNullOrWhiteSpace($parent)) {
+                    New-Item -Path $parent -ItemType Directory -Force | Out-Null
+                }
+                Set-Content -Path ([string]$parameters['Path']) -Value ([string]$parameters['Content']) -Encoding ([string]$parameters['Encoding']) -Force
+            }
+            default {
+                throw "Unsupported Nvidia Settings operation type: $($Operation.Type)"
+            }
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Operation = $Operation
+            Status = 'Completed'
+            Message = "Completed: $($Operation.Label)"
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            Success = $false
+            Operation = $Operation
+            Status = 'Failed'
+            Message = $_.Exception.Message
+        }
+    }
+}
+
+function Invoke-BoostLabNvidiaSettingsOperationPlan {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Plan,
+
+        [scriptblock]$OperationExecutor
+    )
+
+    $executor = if ($null -ne $OperationExecutor) { $OperationExecutor } else { ${function:Invoke-BoostLabNvidiaSettingsDefaultOperation} }
+    $results = New-Object System.Collections.Generic.List[object]
+    foreach ($operation in @($Plan.Operations)) {
+        $result = & $executor -Operation $operation
+        $results.Add($result)
+        if (-not [bool]$result.Success) {
+            break
+        }
+    }
+
+    $resultArray = @($results.ToArray())
+    $failed = @($resultArray | Where-Object { -not [bool]$_.Success })
+    [pscustomobject]@{
+        Success = ($failed.Count -eq 0 -and $resultArray.Count -eq @($Plan.Operations).Count)
+        OperationResults = $resultArray
+        CompletedOperationCount = @($resultArray | Where-Object { [bool]$_.Success }).Count
+        FailedOperations = @($failed)
+        WarningOperations = @()
+    }
 }
 
 function Get-BoostLabNvidiaSettingsAnalysis {
@@ -158,73 +471,41 @@ function Get-BoostLabNvidiaSettingsAnalysis {
     param()
 
     $sourceStatus = Get-BoostLabNvidiaSettingsSourceStatus
+    $applyPlan = $null
+    $defaultPlan = $null
+    $planError = ''
+    if ([string]$sourceStatus.ChecksumStatus -eq 'Passed') {
+        try {
+            $applyPlan = Get-BoostLabNvidiaSettingsOperationPlan -ActionName Apply
+            $defaultPlan = Get-BoostLabNvidiaSettingsOperationPlan -ActionName Default
+        }
+        catch {
+            $planError = $_.Exception.Message
+        }
+    }
+
     [pscustomobject]@{
-        Mode = 'ManualHandoffOnly'
-        AutoMode = 'AutoBlockedUntilArtifactApproval'
+        Mode = 'SourceEquivalentOnDefaultRuntime'
         Source = $sourceStatus
         PathBWorkflow = 'Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode'
         PathBStepNumber = 2
         PathBStepTotal = 5
         PathBStep = '2 of 5'
-        MissingApprovals = @(Get-BoostLabNvidiaSettingsBlockedApprovals)
-        Warnings = @(Get-BoostLabNvidiaSettingsRiskWarnings)
-        NoAutomatedExecution = $true
-        NoSevenZipDownloadedOrInstalled = $true
-        NoProfileInspectorDownloadedOrExecuted = $true
-        NoNipImportedExportedOrGeneratedForExecution = $true
-        NoNvidiaProfileChanged = $true
-        NoRegistrySettingChanged = $true
+        SourceBehaviorSummary = 'Ultimate common prelude downloads/installs 7-Zip and configures its options, then On/Default branches unblock NVIDIA Drs files, write/delete exact NVIDIA registry values, download Profile Inspector, write/import the source-defined inspector.nip payload, and open NVIDIA Control Panel.'
+        CommonPrelude = 'Administrator check, internet check, 7-Zip download/install, 7-Zip HKCU option writes, Start Menu shortcut move, Start Menu folder cleanup.'
+        ApplyBranch = 'NVIDIA Settings: On (Recommended)'
+        DefaultBranch = 'NVIDIA Settings: Default'
+        ApplyPlan = $applyPlan
+        DefaultPlan = $defaultPlan
+        PlanError = $planError
+        NoMutationOccurred = $true
+        NoDownloadOccurred = $true
         NoExternalProcessStarted = $true
-        NoBrowserOpened = $true
-        NoNvidiaControlPanelLaunched = $true
-        NoSystemMutation = $true
-        PathASeparation = 'Nvidia Settings is separate from Driver Install Debloat & Settings.'
+        NoRegistryMutationOccurred = $true
+        NoRebootOccurred = $true
+        SupportsRestore = $false
+        PathASeparation = 'Nvidia Settings remains separate from Driver Install Debloat & Settings.'
         PathBSeparation = 'Path B steps remain separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.'
-    }
-}
-
-function New-BoostLabNvidiaSettingsManualHandoffPlan {
-    [CmdletBinding()]
-    [OutputType([pscustomobject])]
-    param()
-
-    $analysis = Get-BoostLabNvidiaSettingsAnalysis
-    [pscustomobject]@{
-        PlanType = 'ManualHandoffOnly'
-        SourceChecksumStatus = [string]$analysis.Source.ChecksumStatus
-        PathBStep = [string]$analysis.PathBStep
-        PathBWorkflow = [string]$analysis.PathBWorkflow
-        Steps = @(
-            'Review source checksum and blocked approvals.'
-            'Prepare manual handoff instructions only for Path B step 2.'
-            'Do not download or install 7-Zip.'
-            'Do not download or run NVIDIA Profile Inspector.'
-            'Do not import, export, or generate a .nip file for execution.'
-            'Do not modify NVIDIA profiles, NVIDIA registry settings, Windows Registry values, files, drivers, sessions, or reboot state.'
-            'Do not open NVIDIA Control Panel, a browser, external tool, or any external process.'
-            'Tell the user that external NVIDIA profile/settings work remains manual outside BoostLab unless future explicit approval exists.'
-            'Record Latest Result and Activity Log with no automated profile/settings/registry/external process action.'
-        )
-        BlockedActions = @(
-            'Apply Auto'
-            '7-Zip download/install'
-            'NVIDIA Profile Inspector download/execution'
-            '.nip import/export'
-            'NVIDIA profile mutation'
-            'NVIDIA registry mutation'
-            'NVIDIA Control Panel launch'
-            'browser or external process launch'
-            'Default'
-            'Restore'
-        )
-        Warnings = @($analysis.Warnings)
-        MissingApprovals = @($analysis.MissingApprovals)
-        NoSevenZipDownloadOrInstallOccurred = $true
-        NoProfileInspectorDownloadOrExecutionOccurred = $true
-        NoNipImportExportOccurred = $true
-        NoRegistryOrProfileMutationOccurred = $true
-        NoExternalProcessStarted = $true
-        NoControlPanelOrBrowserOpened = $true
     }
 }
 
@@ -233,7 +514,7 @@ function Get-BoostLabToolInfo {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Id = [string]$script:BoostLabToolMetadata['Id']
         Title = [string]$script:BoostLabToolMetadata['Title']
         Stage = [string]$script:BoostLabToolMetadata['Stage']
@@ -244,8 +525,8 @@ function Get-BoostLabToolInfo {
         Actions = @($script:BoostLabToolMetadata['Actions'])
         Capabilities = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions = @($script:BoostLabImplementedActions)
-        ConfirmationRequiredActions = @('Open', 'Apply')
-        ConfirmationText = 'Nvidia Settings manual handoff prepares instructions only. BoostLab will not download or install 7-Zip, download or execute NVIDIA Profile Inspector, import or export .nip files, launch NVIDIA Control Panel, start external processes, modify registry or NVIDIA profiles, or change system state. Continue preparing the manual handoff result?'
+        ConfirmationRequiredActions = @('Apply', 'Default')
+        ConfirmationText = 'Nvidia Settings will run the source-defined On (Recommended) or Default branch, including 7-Zip download/install, registry/profile changes, Profile Inspector download/import, and NVIDIA Control Panel launch. Continue only if you intend to run this source-equivalent workflow now.'
     }
 }
 
@@ -258,10 +539,13 @@ function Test-BoostLabToolCompatibility {
     [pscustomobject]@{
         Supported = $true
         ToolId = [string]$script:BoostLabToolMetadata['Id']
-        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Reason = 'Nvidia Settings manual handoff is available. Auto mode remains blocked.'
-        SourceChecksumStatus = [string]$sourceStatus.ChecksumStatus
-        Timestamp = Get-Date
+        Source = $sourceStatus
+        Reason = if ([string]$sourceStatus.ChecksumStatus -eq 'Passed') {
+            'Nvidia Settings source identity verified.'
+        }
+        else {
+            "Nvidia Settings source identity is not ready: $($sourceStatus.ChecksumStatus)."
+        }
     }
 }
 
@@ -270,14 +554,19 @@ function Get-BoostLabToolState {
     [OutputType([pscustomobject])]
     param()
 
+    $analysis = Get-BoostLabNvidiaSettingsAnalysis
+    $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
+
     [pscustomobject]@{
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Status = 'ManualHandoffOnly'
-        LastAction = $null
-        LastResult = $null
-        RestartRequired = $false
-        Timestamp = Get-Date
+        Status = if ($sourceOk) { 'Ready' } else { 'SourceIdentityFailed' }
+        Source = $analysis.Source
+        ImplementedActions = @($script:BoostLabImplementedActions)
+        SupportsDefault = $true
+        SupportsRestore = $false
+        Data = $analysis
+        LastChecked = Get-Date
     }
 }
 
@@ -285,121 +574,156 @@ function Invoke-BoostLabToolAction {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [Parameter(Mandatory)]
-        [string]$ActionName,
+        [ValidateSet('Analyze', 'Open', 'Apply', 'Default', 'Restore', 'On (Recommended)', 'NVIDIA Settings: On (Recommended)')]
+        [string]$ActionName = 'Analyze',
 
-        [bool]$Confirmed = $false
+        [bool]$Confirmed = $false,
+
+        [scriptblock]$OperationExecutor
     )
 
     $canonicalActionName = switch ($ActionName) {
-        'Prepare Manual Handoff' { 'Open' }
-        'Manual Handoff' { 'Open' }
-        'Apply Auto' { 'Apply' }
+        'On (Recommended)' { 'Apply' }
+        'NVIDIA Settings: On (Recommended)' { 'Apply' }
         default { $ActionName }
     }
 
     if ($canonicalActionName -eq 'Analyze') {
         $analysis = Get-BoostLabNvidiaSettingsAnalysis
         $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        $status = if ($sourceOk) { 'Analyzed' } else { 'SourceVerificationFailed' }
-        $message = if ($sourceOk) {
-            'Nvidia Settings analyzed. Manual handoff only; Auto remains blocked. Path B step 2 of 5.'
-        }
-        else {
-            'Nvidia Settings source checksum verification failed or source mirror is missing.'
-        }
-        $errors = if ($sourceOk) {
-            @()
-        }
-        else {
-            @('Nvidia Settings source mirror checksum did not match the expected value or the source mirror is missing.')
-        }
-
         return New-BoostLabNvidiaSettingsResult `
             -Success $sourceOk `
             -Action 'Analyze' `
-            -Status $status `
+            -Status $(if ($sourceOk) { 'Analyzed' } else { 'SourceIdentityFailed' }) `
             -CommandStatus 'No execution performed' `
-            -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-            -Message $message `
+            -VerificationStatus $(if ($sourceOk) { 'Passed' } else { 'Failed' }) `
+            -Message $(if ($sourceOk) { 'Nvidia Settings source identity and source-equivalent On/Default operation plans were analyzed. No mutation, download, installer, external process, registry write, Profile Inspector import, Control Panel launch, or reboot occurred.' } else { 'Nvidia Settings source identity could not be verified. No operation was executed.' }) `
             -Data $analysis `
-            -Errors $errors
+            -Errors $(if ($sourceOk) { @() } else { @("Source checksum status: $($analysis.Source.ChecksumStatus)") })
     }
 
     if ($canonicalActionName -eq 'Open') {
-        if (-not $Confirmed) {
-            return New-BoostLabNvidiaSettingsResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'Cancelled' `
-                -CommandStatus 'Cancelled before execution' `
-                -VerificationStatus 'NotApplicable' `
-                -Message 'Nvidia Settings manual handoff cancelled by user. No 7-Zip download/install, NVIDIA Profile Inspector download/execution, .nip import/export, NVIDIA Control Panel launch, external process start, registry/profile mutation, reboot, session change, or system mutation occurred.' `
-                -Cancelled $true
-        }
-
-        $analysis = Get-BoostLabNvidiaSettingsAnalysis
-        $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        if (-not $sourceOk) {
-            return New-BoostLabNvidiaSettingsResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'SourceVerificationFailed' `
-                -CommandStatus 'Blocked before handoff' `
-                -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-                -Message 'Nvidia Settings manual handoff blocked because source checksum verification failed or the source mirror is missing.' `
-                -Data $analysis `
-                -Errors @('Nvidia Settings source mirror checksum did not match the expected value or the source mirror is missing.')
-        }
-
-        $plan = New-BoostLabNvidiaSettingsManualHandoffPlan
-        return New-BoostLabNvidiaSettingsResult `
-            -Success $true `
-            -Action 'Open' `
-            -Status 'ManualHandoffPrepared' `
-            -CommandStatus 'No execution performed' `
-            -VerificationStatus 'Passed' `
-            -Message 'Manual handoff prepared. No 7-Zip downloaded or installed, no NVIDIA Profile Inspector downloaded or executed, no .nip imported or exported, no NVIDIA Control Panel launched, no external process started, no NVIDIA profile or registry setting changed, and no system mutation occurred. Path B step 2 remains separate from the remaining Path B steps.' `
-            -Data $plan
-    }
-
-    if ($canonicalActionName -eq 'Apply') {
-        $analysis = Get-BoostLabNvidiaSettingsAnalysis
         return New-BoostLabNvidiaSettingsResult `
             -Success $false `
-            -Action 'Apply' `
-            -Status 'AutoBlockedUntilArtifactApproval' `
-            -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Blocked' `
-            -Message 'AutoBlockedUntilArtifactApproval. Auto mode is blocked until 7-Zip artifact/download/install approval, NVIDIA Profile Inspector artifact/download/execution approval, .nip import/export approval, NVIDIA profile state capture/restore approval, NVIDIA registry/file rollback capture approval, process handling approval, and verification approval exist. No 7-Zip download/install, Profile Inspector execution, .nip import/export, registry/profile mutation, external process launch, Control Panel launch, or system-changing operation occurred.' `
-            -Data $analysis
+            -Action 'Open' `
+            -Status 'OpenUnavailable' `
+            -CommandStatus 'Unavailable' `
+            -VerificationStatus 'NotApplicable' `
+            -Message 'Nvidia Settings has no source-defined standalone Open action. Use On (Recommended) or Default after reviewing the Action Plan.' `
+            -Data ([pscustomobject]@{ OpenSupported = $false; NoExternalProcessStarted = $true; NoMutationOccurred = $true })
     }
 
-    if ($canonicalActionName -in @('Default', 'Restore')) {
+    if ($canonicalActionName -eq 'Restore') {
+        return New-BoostLabNvidiaSettingsResult `
+            -Success $false `
+            -Action 'Restore' `
+            -Status 'RestoreUnavailable' `
+            -CommandStatus 'Unavailable' `
+            -VerificationStatus 'NotApplicable' `
+            -Message 'Nvidia Settings Restore is unavailable because the source defines On and Default branches, not captured-state Restore. No restore or mutation is planned.' `
+            -Data ([pscustomobject]@{ RestoreSupported = $false; NoMutationOccurred = $true })
+    }
+
+    if ($canonicalActionName -notin @('Apply', 'Default')) {
         return New-BoostLabNvidiaSettingsResult `
             -Success $false `
             -Action $canonicalActionName `
-            -Status 'Unavailable' `
-            -CommandStatus 'Refused before execution' `
+            -Status 'UnsupportedAction' `
+            -CommandStatus 'Unsupported' `
             -VerificationStatus 'NotApplicable' `
-            -Message "$canonicalActionName is unavailable for Nvidia Settings manual handoff. Default is not Restore, and Restore requires real captured NVIDIA profile or registry state that does not exist."
+            -Message "Unsupported Nvidia Settings action: $ActionName."
     }
 
+    $branch = if ($canonicalActionName -eq 'Apply') { 'On (Recommended)' } else { 'Default' }
+    if (-not $Confirmed) {
+        return New-BoostLabNvidiaSettingsResult `
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'Cancelled' `
+            -CommandStatus 'Cancelled before execution' `
+            -VerificationStatus 'NotRun' `
+            -Message "Nvidia Settings $branch requires explicit Action Plan confirmation before any 7-Zip download/install, Profile Inspector download/import, registry/profile change, external process, Control Panel launch, or cleanup operation." `
+            -Cancelled $true `
+            -Data ([pscustomobject]@{ Branch = $branch; ChangesExecuted = $false })
+    }
+
+    $sourceStatus = Get-BoostLabNvidiaSettingsSourceStatus
+    if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
+        return New-BoostLabNvidiaSettingsResult `
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'SourceIdentityFailed' `
+            -CommandStatus 'Blocked before execution' `
+            -VerificationStatus 'Failed' `
+            -Message "Nvidia Settings $branch blocked because source identity did not pass verification. No operation was executed." `
+            -Data ([pscustomobject]@{ Branch = $branch; Source = $sourceStatus; ChangesExecuted = $false }) `
+            -Errors @("Source checksum status: $($sourceStatus.ChecksumStatus)")
+    }
+
+    try {
+        $plan = Get-BoostLabNvidiaSettingsOperationPlan -ActionName $canonicalActionName
+        $execution = Invoke-BoostLabNvidiaSettingsOperationPlan -Plan $plan -OperationExecutor $OperationExecutor
+    }
+    catch {
+        return New-BoostLabNvidiaSettingsResult `
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'Failed' `
+            -CommandStatus 'Failed before completion' `
+            -VerificationStatus 'Failed' `
+            -Message "Nvidia Settings $branch failed before operation completion: $($_.Exception.Message)" `
+            -Data ([pscustomobject]@{ Branch = $branch; Source = $sourceStatus; ChangesExecuted = $false }) `
+            -Errors @($_.Exception.Message)
+    }
+
+    $data = [pscustomobject]@{
+        Branch = $branch
+        Source = $sourceStatus
+        OperationPlan = $plan
+        OperationResults = @($execution.OperationResults)
+        CompletedOperationCount = [int]$execution.CompletedOperationCount
+        FailedOperations = @($execution.FailedOperations)
+        CommonPreludeExecuted = $true
+        SevenZipOperationRepresented = $true
+        ProfileInspectorOperationRepresented = $true
+        NipPayloadWritten = $true
+        ControlPanelLaunchRepresented = $true
+    }
+
+    if ([bool]$execution.Success) {
+        return New-BoostLabNvidiaSettingsResult `
+            -Success $true `
+            -Action $canonicalActionName `
+            -Status 'Completed' `
+            -CommandStatus 'Completed source-equivalent Nvidia Settings workflow' `
+            -VerificationStatus 'Passed' `
+            -Message "Nvidia Settings $branch completed the source-defined common 7-Zip prelude, NVIDIA registry/profile operations, Profile Inspector .nip import, and NVIDIA Control Panel launch sequence." `
+            -Data $data `
+            -ChangesExecuted $true
+    }
+
+    $failedMessages = @($execution.FailedOperations | ForEach-Object { "$($_.Operation.Label): $($_.Message)" })
     return New-BoostLabNvidiaSettingsResult `
         -Success $false `
         -Action $canonicalActionName `
-        -Status 'Unsupported' `
-        -CommandStatus 'Refused before execution' `
-        -VerificationStatus 'NotApplicable' `
-        -Message 'Unsupported Nvidia Settings action. Only Analyze, Open (Manual Handoff), and Apply (Apply Auto blocked) are exposed.'
+        -Status 'Failed' `
+        -CommandStatus 'Failed during source-equivalent Nvidia Settings workflow' `
+        -VerificationStatus 'Failed' `
+        -Message "Nvidia Settings $branch failed closed during the source-defined workflow. Failed operation(s): $($failedMessages -join '; ')" `
+        -Data $data `
+        -Errors $failedMessages
 }
 
 function Restore-BoostLabToolDefault {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
-    param()
+    param(
+        [bool]$Confirmed = $false,
 
-    Invoke-BoostLabToolAction -ActionName 'Default'
+        [scriptblock]$OperationExecutor
+    )
+
+    Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed -OperationExecutor $OperationExecutor
 }
 
 Export-ModuleMember -Function @(

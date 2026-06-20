@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 22
+        NearParityControlled = 23
         ControlledSubset = 3
-        ManualHandoffOnly = 4
+        ManualHandoffOnly = 3
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -314,11 +314,13 @@
             StageOrder = 5
             ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = '7-Zip, Profile Inspector, profile import, registry/profile mutation, and Control Panel launch remain blocked.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Nvidia Settings On (Recommended) and Default behavior, including 7-Zip prelude, NVIDIA registry/profile operations, Profile Inspector .nip import, and Control Panel launch.'
             YazanFinalException = $false
-            NextParityAction = 'Approve artifacts, generated .nip ownership, NVIDIA profile/registry scopes, and process execution path.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'hdcp'

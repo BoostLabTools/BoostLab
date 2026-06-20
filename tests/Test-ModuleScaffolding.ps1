@@ -133,7 +133,7 @@ $implementedModules = @{
     }
     'nvidia-settings' = @{
         RelativePath          = 'Graphics\nvidia-settings.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
     'hdcp' = @{
         RelativePath          = 'Graphics\hdcp.psm1'
@@ -467,6 +467,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'driver-install-debloat-settings' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
         )
+        $approvedNvidiaSettingsCommand = (
+            $toolId -eq 'nvidia-settings' -and
+            $commandName -in @('Invoke-WebRequest', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -487,7 +491,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedInstallersCommand -and
             -not $approvedDriverCleanCommand -and
             -not $approvedDriverInstallLatestCommand -and
-            -not $approvedDriverInstallDebloatSettingsCommand
+            -not $approvedDriverInstallDebloatSettingsCommand -and
+            -not $approvedNvidiaSettingsCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -553,7 +558,50 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'nvidia-settings') {
-            0
+            1
+        }
+        elseif ($toolId -eq 'nvidia-settings') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+                '903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5'
+                '$script:BoostLabSevenZipUrl'
+                '$script:BoostLabInspectorUrl'
+                'Get-BoostLabNvidiaSettingsSourceNipPayloads'
+                'NvCplPhysxAuto'
+                'NvDevToolsVisible'
+                'RmProfilingAdminOnly'
+                'StartOnLogin'
+                'EnableGR535'
+                'OpenUnavailable'
+                'RestoreUnavailable'
+                'On (Recommended)'
+                'source defines On and Default branches, not captured-state Restore'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Nvidia Settings source-equivalent behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'ManualHandoffOnly'
+                'Manual Handoff'
+                'Apply Auto'
+                'AutoBlockedUntilArtifactApproval'
+                'RestoreSupported = $true'
+                'UsesTrustedInstaller = $true'
+                'UsesSafeMode = $true'
+                'Restart-Computer'
+                'Stop-Computer'
+                'bcdedit'
+                'Set-Service'
+                'Stop-Service'
+                'Restart-Service'
+                'Remove-AppxPackage'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or stale Nvidia Settings behavior: $forbiddenText")
+                }
+            }
         }
         elseif ($toolId -eq 'hdcp') {
             0
