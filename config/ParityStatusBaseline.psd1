@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'context-menu'
+    CurrentOrderedParityTarget = 'theme-black'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -462,11 +462,11 @@
             StageOrder = 6
             ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Broad shared-key deletion is replaced with Yazan-approved owned-value removal.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact Ultimate registry operation order, including Default deletion of the complete Shell Extensions\Blocked key.'
             YazanFinalException = $false
-            NextParityAction = 'Record whether the approved Default deviation is final parity or final exception.'
+            NextParityAction = 'No parity work required; advance ordered cursor to theme-black.'
         }
         @{
             ToolId = 'theme-black'
@@ -475,11 +475,11 @@
             StageOrder = 6
             ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve source-defined behavior.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Ordered parity review is pending; existing runtime implementation has not yet been accepted in the ordered parity flow.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            NextParityAction = 'Verify exact Ultimate parity or record the required acceptance/upgrade decision.'
         }
         @{
             ToolId = 'signout-lockscreen-wallpaper-black'

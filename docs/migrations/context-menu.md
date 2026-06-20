@@ -6,7 +6,7 @@
 * **Source checksum:** `33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
-* **Yazan approval status:** Approved by Yazan for Phase 21, including the narrow Default deviation
+* **Yazan approval status:** Approved by Yazan for Phase 137 exact Ultimate parity
 
 ## Original Ultimate Behavior
 
@@ -34,27 +34,19 @@ That broad deletion can remove entries unrelated to Context Menu.
 
 Apply preserves the source registry paths, names, value types, data, delete targets, and execution order. It does not add Explorer restart behavior or any unrelated shell changes.
 
-Default preserves the source order and all source restoration behavior around the approved deviation. BoostLab writes and imports the exact `contextmenudefault.reg` payload before restoring the remaining handlers.
+Default preserves the source order and all source restoration behavior. BoostLab writes and imports the exact `contextmenudefault.reg` payload before restoring the remaining handlers and deleting the complete `Shell Extensions\Blocked` key exactly as Ultimate defines.
 
 The Ultimate console menu, self-elevation, `Clear-Host`, `Write-Host`, loop, and `exit` are replaced by BoostLab GUI actions, runtime Administrator enforcement, Action Plan confirmation, structured logging, and verification.
 
-## Yazan-Approved Default Deviation
+## Exact Ultimate Default Parity
 
-BoostLab Default does not delete the complete shared `Shell Extensions\Blocked` key.
-
-At the same point in the source execution order, BoostLab will remove only these three Context Menu-owned values:
+BoostLab Default now deletes the complete shared `Shell Extensions\Blocked` key at the same point in the source execution order:
 
 ```text
-{9F156763-7844-4DC4-B2B1-901F640F5155}
-{09A47860-11B0-4DA5-AFA5-26D86198A780}
-{f81e9010-6ea4-11ce-a7ff-00aa003ca9f6}
+HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked
 ```
 
-The shared key is left in place even when those values were its final entries. Any unrelated values remain untouched.
-
-**Reason:** avoid deleting unrelated shell-extension block entries not owned by this tool.
-
-This is an intentional safety correction approved by Yazan. It does not weaken the Context Menu tool's intended result because it removes every Blocked value that Apply creates.
+This preserves the exact Ultimate Default behavior. The Action Plan explicitly discloses that the source-defined deletion can remove unrelated blocked shell-extension entries.
 
 ## Commands, Registry Paths, and File
 
@@ -93,17 +85,17 @@ The security capability is declared because Apply hides the Microsoft Defender s
 
 ## Confirmation and Restart
 
-Apply and Default require visible Action Plan confirmation. The confirmation states that Apply hides the Defender scan entry and that Default preserves unrelated Blocked values.
+Apply and Default require visible Action Plan confirmation. The confirmation states that Apply hides the Defender scan entry and that Default deletes the complete source-defined `Shell Extensions\Blocked` key.
 
 Neither action restarts Windows, signs out, restarts Explorer, stops processes, changes services, removes AppX packages, downloads content, or reboots.
 
 ## Default Behavior
 
-Default restores every source-defined handler and policy state, except that shared-key deletion is replaced with removal of the exact three owned values. Missing owned values are accepted when verification confirms the approved default state.
+Default restores every source-defined handler and policy state, including the source-defined complete `Shell Extensions\Blocked` key deletion. An already-absent `Blocked` key is accepted when verification confirms the approved default state.
 
 ## Verification Strategy
 
-Apply verifies 13 registry key/value states. Default verifies 23 states, including every value in the source `contextmenudefault.reg` payload and absence of only the three owned Blocked GUID values.
+Apply verifies 13 registry key/value states. Default verifies 21 states, including every value in the source `contextmenudefault.reg` payload and absence of the complete source-defined `Shell Extensions\Blocked` key.
 
 * `Passed`: every expected value or key state matches.
 * `Warning`: one or more registry states cannot be read.
@@ -113,4 +105,4 @@ Command completion and verification status remain separate. A delete command can
 
 ## Test Requirements
 
-Automated tests must use static inspection and mocks only. Validate source checksum, exact Apply operations, exact Default restoration values, the source `.reg` payload, execution order, the three owned GUID removals, absence of broad shared-key deletion in the module, verification Passed/Warning/Failed behavior, runtime mapping, Action Plan confirmation, Latest Result rendering, source-ultimate integrity, deleted-tool exclusion, and protected module hashes. Tests must not write the real registry, launch regedit, stop Explorer, sign out, or reboot.
+Automated tests must use static inspection and mocks only. Validate source checksum, exact Apply operations, exact Default restoration values, the source `.reg` payload, execution order, the complete source-defined Blocked key deletion, verification Passed/Warning/Failed behavior, runtime mapping, Action Plan confirmation, Latest Result rendering, source-ultimate integrity, deleted-tool exclusion, and protected module hashes. Tests must not write the real registry, launch regedit, stop Explorer, sign out, or reboot.

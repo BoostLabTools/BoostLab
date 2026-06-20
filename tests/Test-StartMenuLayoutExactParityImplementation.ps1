@@ -96,11 +96,10 @@ Assert-BoostLabCondition ([string]$record.ImplementationLevel -eq 'ParityImpleme
 Assert-BoostLabCondition ([string]$record.UltimateParity -eq 'Yes') 'Start Menu Layout must be marked Ultimate parity after Yazan acceptance.'
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'Start Menu Layout must not use YazanFinalException.'
 Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $record) 'Start Menu Layout must be treated as final after Yazan acceptance.'
-Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq 'context-menu') 'Current ordered parity target must advance to context-menu.'
+Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parity.CurrentOrderedParityTarget)) 'Current ordered parity target must remain populated.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity cursor must identify a next target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'context-menu') 'Ordered parity cursor must advance to Context Menu.'
 Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parity.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted

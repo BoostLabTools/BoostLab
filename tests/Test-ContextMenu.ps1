@@ -131,6 +131,7 @@ foreach ($requiredText in @(
     'ClassicContextMenu'
     'NoCustomizeThisFolder'
     'ScanWithDefender'
+    'BlockedShellExtensions'
     'NoPreviousVersionsPage'
     'contextmenudefault.reg'
     'ImportDefaultFile'
@@ -147,12 +148,6 @@ foreach ($requiredText in @(
     if (-not $moduleSource.Contains($requiredText)) {
         throw "Context Menu module is missing: $requiredText"
     }
-}
-if (
-    $moduleSource -match
-        'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Shell Extensions\\Blocked["'']?\s+/f'
-) {
-    throw 'Context Menu module contains the disallowed broad Blocked key deletion.'
 }
 foreach ($forbiddenModuleText in @(
     'Remove-AppxPackage'
@@ -223,9 +218,9 @@ try {
     $defaultOperations = @(& $contextModule { Get-BoostLabContextMenuOperations -ActionName 'Default' })
     if (
         $applyDefinitions.Count -ne 13 -or
-        $defaultDefinitions.Count -ne 23 -or
+        $defaultDefinitions.Count -ne 21 -or
         $applyOperations.Count -ne 13 -or
-        $defaultOperations.Count -ne 12
+        $defaultOperations.Count -ne 10
     ) {
         throw 'Context Menu registry definition or operation counts are incorrect.'
     }
@@ -250,9 +245,7 @@ try {
         'NoCustomizeThisFolder'
         'PinAndFavoritesDefaults'
         'Compatibility'
-        'OpenInTerminal'
-        'ScanWithDefender'
-        'GiveAccessTo'
+        'BlockedShellExtensions'
         'LibraryLocation'
         'ModernSharing'
         'PreviousVersions'
@@ -266,28 +259,18 @@ try {
         throw 'Context Menu Default execution order changed.'
     }
 
-    $ownedGuids = @(
-        '{9F156763-7844-4DC4-B2B1-901F640F5155}'
-        '{09A47860-11B0-4DA5-AFA5-26D86198A780}'
-        '{f81e9010-6ea4-11ce-a7ff-00aa003ca9f6}'
-    )
     $defaultBlockedOperations = @(
         $defaultOperations | Where-Object {
             $_.Key -eq 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked'
         }
     )
     if (
-        $defaultBlockedOperations.Count -ne 3 -or
-        @($defaultBlockedOperations | Where-Object { $_.Kind -ne 'DeleteValue' }).Count -ne 0 -or
-        (@($defaultBlockedOperations.Name) -join '|') -ne ($ownedGuids -join '|')
+        $defaultBlockedOperations.Count -ne 1 -or
+        [string]$defaultBlockedOperations[0].Kind -ne 'DeleteKey' -or
+        [string]$defaultBlockedOperations[0].Id -ne 'BlockedShellExtensions' -or
+        -not [string]::IsNullOrEmpty([string]$defaultBlockedOperations[0].Name)
     ) {
-        throw 'Context Menu Default does not remove exactly the three owned Blocked values.'
-    }
-    if (@($defaultOperations | Where-Object {
-        $_.Kind -eq 'DeleteKey' -and
-        $_.Key -eq 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked'
-    }).Count -ne 0) {
-        throw 'Context Menu Default deletes the shared Blocked key.'
+        throw 'Context Menu Default does not delete the complete source-defined Blocked key.'
     }
 
     $defaultContent = & $contextModule { Get-BoostLabContextMenuDefaultRegistryContent }
@@ -360,8 +343,8 @@ try {
         param($RegistryReader)
         Test-BoostLabContextMenuState -ActionName 'Default' -RegistryReader $RegistryReader
     } $defaultReader
-    if ($defaultVerification.Status -ne 'Passed' -or @($defaultVerification.Checks).Count -ne 23) {
-        throw 'Context Menu Default verification did not pass all 23 states.'
+    if ($defaultVerification.Status -ne 'Passed' -or @($defaultVerification.Checks).Count -ne 21) {
+        throw 'Context Menu Default verification did not pass all 21 states.'
     }
 
     $warningReader = {
@@ -461,7 +444,7 @@ try {
         $defaultResult.Data.RegistryFileStatus -ne 'Written' -or
         $defaultResult.Data.RegistryImportStatus -ne 'Completed' -or
         $defaultResult.VerificationResult.Status -ne 'Passed' -or
-        @($defaultResult.Data.RegistryStatesChecked).Count -ne 23
+        @($defaultResult.Data.RegistryStatesChecked).Count -ne 21
     ) {
         throw 'Mocked Context Menu Default did not return the expected structured result.'
     }
@@ -471,9 +454,7 @@ try {
         'FILE:PinAndFavoritesDefaults:Write'
         'IMPORT:PinAndFavoritesDefaults:Import'
         'REG:Compatibility:Add'
-        'REG:OpenInTerminal:DeleteValue'
-        'REG:ScanWithDefender:DeleteValue'
-        'REG:GiveAccessTo:DeleteValue'
+        'REG:BlockedShellExtensions:DeleteKey'
         'REG:LibraryLocation:Add'
         'REG:ModernSharing:Add'
         'REG:PreviousVersions:DeleteValue'
@@ -560,11 +541,11 @@ try {
         $defaultPlan.ConfirmationMessage
     ) -join ' '
     if (
-        $defaultPlanText -notmatch 'three.*owned|three tool-owned' -or
-        $defaultPlanText -notmatch 'shared.*Blocked' -or
+        $defaultPlanText -notmatch 'complete.*Blocked|entire.*Blocked' -or
+        $defaultPlanText -notmatch 'Ultimate' -or
         $defaultPlanText -notmatch 'unrelated'
     ) {
-        throw 'Context Menu Default plan does not disclose the approved scoped deletion.'
+        throw 'Context Menu Default plan does not disclose the source-defined complete Blocked key deletion.'
     }
 }
 finally {
@@ -604,9 +585,9 @@ foreach ($requiredText in @(
     'source-ultimate/6 Windows/3 Context Menu.ps1'
     '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2'
     'Approved by Yazan'
-    'Yazan-Approved Default Deviation'
-    'remove only these three Context Menu-owned values'
-    'avoid deleting unrelated shell-extension block entries'
+    'Exact Ultimate Default Parity'
+    'deletes the complete shared `Shell Extensions\Blocked` key'
+    'can remove unrelated blocked shell-extension entries'
     'NeedsExplicitConfirmation = true'
     'Automated tests must use static inspection and mocks only'
 )) {
@@ -740,17 +721,17 @@ if (
     ToolId                   = 'context-menu'
     ImplementedActions       = @('Apply', 'Default')
     ApplyRegistryCheckCount  = 13
-    DefaultRegistryCheckCount = 23
+    DefaultRegistryCheckCount = 21
     ApplyExecuted            = $false
     DefaultExecuted          = $false
     MockedApplyPassed        = $true
     MockedDefaultPassed      = $true
-    BroadBlockedKeyDeleted   = $false
+    BroadBlockedKeyDeleted   = $true
     ImplementedModuleCount   = $implementedCount
     PlaceholderModuleCount   = $placeholderCount
     SourceUltimateUnchanged  = $true
     ProtectedModulesUnchanged = $true
-    Message                  = 'Context Menu Apply and approved narrow Default were validated with mocks only.'
+    Message                  = 'Context Menu Apply and exact Ultimate Default were validated with mocks only.'
     Timestamp                = Get-Date
 }
 

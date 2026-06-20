@@ -1085,8 +1085,8 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Remove the classic context menu override and NoCustomizeThisFolder value.')
         $plannedChanges.Add('Write and import the source contextmenudefault.reg payload for Pin to Quick access and Add to favorites.')
         $plannedChanges.Add('Restore the source Compatibility, Library, Sharing, Previous Versions, and Send To handler states.')
-        $plannedChanges.Add('Remove only the three Context Menu-owned values from the shared Shell Extensions Blocked key; leave the key and unrelated values intact.')
-        $plannedChanges.Add('Verify all 23 approved default Context Menu registry states.')
+        $plannedChanges.Add('Delete the complete source-defined Shell Extensions Blocked key exactly as Ultimate does.')
+        $plannedChanges.Add('Verify all 21 approved default Context Menu registry states.')
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Check C:\Windows\Black.jpg ownership and back up a pre-existing unrelated file before overwrite.')
@@ -1623,7 +1623,7 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
         $sideEffects.Add('The source context-menu handlers are restored and contextmenudefault.reg remains in the Windows Temp directory.')
-        $sideEffects.Add('Only the three tool-owned Blocked GUID values are removed; unrelated values and the shared Blocked key are preserved.')
+        $sideEffects.Add('The complete Shell Extensions Blocked key is removed exactly as Ultimate defines; unrelated blocked shell-extension values in that key can also be removed.')
         $sideEffects.Add('No Explorer process is stopped; reopening the context menu, Explorer refresh, or sign-out may be required before every visual change appears.')
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
@@ -1953,7 +1953,7 @@ function New-BoostLabActionPlan {
         'BoostLab will apply the approved Ultimate clean Context Menu registry behavior, including hiding the Defender scan context-menu entry, and verify all source-defined states. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'context-menu' -and $ActionName -eq 'Default') {
-        'BoostLab will restore the source Context Menu handlers and remove only the three tool-owned Blocked GUID values. The shared Blocked key and unrelated values will remain. No restart is required. Do you want to continue?'
+        'BoostLab will restore the source Context Menu handlers and delete the complete Shell Extensions\Blocked key exactly as Ultimate defines, which can remove unrelated blocked shell-extension entries. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
         'BoostLab will back up any unrelated pre-existing C:\Windows\Black.jpg, generate the approved black wallpaper, set the owned PersonalizationCSP and desktop values, and verify ownership. No restart is required. Do you want to continue?'

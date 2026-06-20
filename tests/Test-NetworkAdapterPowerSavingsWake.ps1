@@ -769,7 +769,7 @@ $protectedModules = [ordered]@{
     }
     'Context Menu' = @{
         Path = Join-Path $modulesRoot 'Windows\ContextMenu.psm1'
-        Hash = '93325E76B02F80B1A105C83F6E268EA3652B4AB9F74582E759A4490CF30D1082'
+        Hash = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'Start Menu Layout' = @{

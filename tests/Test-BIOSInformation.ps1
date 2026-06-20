@@ -60,17 +60,12 @@ $biosModule = Import-Module `
 
 $expectedWindowsDisplayName = 'BoostLab Test Windows 11 (Build 26100.1)'
 $expectedWindowsBuild = '26100.1'
-$hadGlobalWindowsVersion = Test-Path -LiteralPath 'function:\global:Get-BoostLabWindowsVersion'
-$previousGlobalWindowsVersion = if ($hadGlobalWindowsVersion) {
-    (Get-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -ErrorAction Stop).ScriptBlock
-}
-else {
-    $null
-}
+$script:BoostLabBiosInformationMockWindowsDisplayName = $expectedWindowsDisplayName
+$script:BoostLabBiosInformationMockWindowsBuildText = $expectedWindowsBuild
 function global:Get-BoostLabWindowsVersion {
     [pscustomobject]@{
-        DisplayName = 'BoostLab Test Windows 11 (Build 26100.1)'
-        BuildText   = '26100.1'
+        DisplayName = $script:BoostLabBiosInformationMockWindowsDisplayName
+        BuildText   = $script:BoostLabBiosInformationMockWindowsBuildText
     }
 }
 
@@ -213,13 +208,7 @@ try {
     }
 }
 finally {
-    if ($hadGlobalWindowsVersion) {
-        Set-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -Value $previousGlobalWindowsVersion -ErrorAction SilentlyContinue
-    }
-    else {
-        Remove-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -Force -ErrorAction SilentlyContinue
-    }
-
+    Remove-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $biosModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $environmentModule -Force -ErrorAction SilentlyContinue
 }

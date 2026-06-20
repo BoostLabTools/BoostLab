@@ -233,10 +233,7 @@ function Get-BoostLabContextMenuOperations {
         (New-BoostLabContextMenuOperation -Id 'NoCustomizeThisFolder' -Kind 'DeleteValue' -Key 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer' -Name 'NoCustomizeThisFolder')
         (New-BoostLabContextMenuOperation -Id 'PinAndFavoritesDefaults' -Kind 'ImportDefaultFile')
         (New-BoostLabContextMenuOperation -Id 'Compatibility' -Kind 'Add' -Key 'HKCR\exefile\shellex\ContextMenuHandlers\Compatibility' -ValueType 'REG_SZ' -Data '{1d27f844-3a1f-4410-85ac-14651078412d}')
-        # Yazan-approved deviation: remove only the three values owned by this tool.
-        (New-BoostLabContextMenuOperation -Id 'OpenInTerminal' -Kind 'DeleteValue' -Key $script:BoostLabBlockedKey -Name $script:BoostLabOwnedBlockedGuids[0])
-        (New-BoostLabContextMenuOperation -Id 'ScanWithDefender' -Kind 'DeleteValue' -Key $script:BoostLabBlockedKey -Name $script:BoostLabOwnedBlockedGuids[1])
-        (New-BoostLabContextMenuOperation -Id 'GiveAccessTo' -Kind 'DeleteValue' -Key $script:BoostLabBlockedKey -Name $script:BoostLabOwnedBlockedGuids[2])
+        (New-BoostLabContextMenuOperation -Id 'BlockedShellExtensions' -Kind 'DeleteKey' -Key $script:BoostLabBlockedKey)
         (New-BoostLabContextMenuOperation -Id 'LibraryLocation' -Kind 'Add' -Key 'HKCR\Folder\ShellEx\ContextMenuHandlers\Library Location' -ValueType 'REG_SZ' -Data '{3dad6c5d-2167-4cae-9914-f99e41c12cfa}')
         (New-BoostLabContextMenuOperation -Id 'ModernSharing' -Kind 'Add' -Key 'HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers\ModernSharing' -ValueType 'REG_SZ' -Data '{e2bf9676-5f8f-435c-97eb-11607a5bedf7}')
         (New-BoostLabContextMenuOperation -Id 'PreviousVersions' -Kind 'DeleteValue' -Key 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' -Name 'NoPreviousVersionsPage')
@@ -312,9 +309,7 @@ function Get-BoostLabContextMenuDefinitions {
         (New-BoostLabContextMenuDefinition -Path "$hkcr\*\shell\pintohomefile" -Name 'SkipCloudDownload' -ValueType 'DWord' -Expected '0x00000000')
         (New-BoostLabContextMenuDefinition -Path "$hkcr\*\shell\pintohomefile\command" -Name 'DelegateExecute' -ValueType 'String' -Expected '{b455f46e-e4af-4035-b0a4-cf18d2f6f28e}')
         (New-BoostLabContextMenuDefinition -Path "$hkcr\exefile\shellex\ContextMenuHandlers\Compatibility" -Name '(default)' -ValueType 'String' -Expected '{1d27f844-3a1f-4410-85ac-14651078412d}')
-        (New-BoostLabContextMenuDefinition -Path $script:BoostLabBlockedRegistryPath -Name $script:BoostLabOwnedBlockedGuids[0] -ValueType 'String' -Expected 'Absent')
-        (New-BoostLabContextMenuDefinition -Path $script:BoostLabBlockedRegistryPath -Name $script:BoostLabOwnedBlockedGuids[1] -ValueType 'String' -Expected 'Absent')
-        (New-BoostLabContextMenuDefinition -Path $script:BoostLabBlockedRegistryPath -Name $script:BoostLabOwnedBlockedGuids[2] -ValueType 'String' -Expected 'Absent')
+        (New-BoostLabContextMenuDefinition -Path $script:BoostLabBlockedRegistryPath -Name '(key)' -ValueType 'KeyAbsent' -Expected 'Absent')
         (New-BoostLabContextMenuDefinition -Path "$hkcr\Folder\ShellEx\ContextMenuHandlers\Library Location" -Name '(default)' -ValueType 'String' -Expected '{3dad6c5d-2167-4cae-9914-f99e41c12cfa}')
         (New-BoostLabContextMenuDefinition -Path "$hkcr\AllFilesystemObjects\shellex\ContextMenuHandlers\ModernSharing" -Name '(default)' -ValueType 'String' -Expected '{e2bf9676-5f8f-435c-97eb-11607a5bedf7}')
         (New-BoostLabContextMenuDefinition -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' -Name 'NoPreviousVersionsPage' -ValueType 'String' -Expected 'Absent')
@@ -573,7 +568,7 @@ function Test-BoostLabContextMenuState {
         'Clean context menu'
     }
     else {
-        'Default context menu with scoped Blocked values removed'
+        'Default context menu with source Blocked key removed'
     }
     $detectedState = if ($overallStatus -eq 'Passed') {
         $expectedState
