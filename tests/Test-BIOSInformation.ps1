@@ -58,6 +58,22 @@ $biosModule = Import-Module `
     -DisableNameChecking `
     -ErrorAction Stop
 
+$expectedWindowsDisplayName = 'BoostLab Test Windows 11 (Build 26100.1)'
+$expectedWindowsBuild = '26100.1'
+$hadGlobalWindowsVersion = Test-Path -LiteralPath 'function:\global:Get-BoostLabWindowsVersion'
+$previousGlobalWindowsVersion = if ($hadGlobalWindowsVersion) {
+    (Get-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -ErrorAction Stop).ScriptBlock
+}
+else {
+    $null
+}
+function global:Get-BoostLabWindowsVersion {
+    [pscustomobject]@{
+        DisplayName = 'BoostLab Test Windows 11 (Build 26100.1)'
+        BuildText   = '26100.1'
+    }
+}
+
 try {
     $toolInfo = Get-BiosToolBoostLabToolInfo
     $compatibility = Test-BiosToolBoostLabToolCompatibility
@@ -111,11 +127,11 @@ try {
             throw "BIOS Information analysis returned a blank field: $field"
         }
     }
-    if (
-        $null -ne (Get-Command -Name 'Get-BoostLabWindowsVersion' -ErrorAction SilentlyContinue) -and
-        $analysisResult.Data.WindowsVersion -eq 'Unknown'
-    ) {
-        throw 'BIOS Information did not use the available environment Windows version.'
+    if ($analysisResult.Data.WindowsVersion -ne $expectedWindowsDisplayName) {
+        throw "BIOS Information did not use the mocked environment Windows version. Actual: $($analysisResult.Data.WindowsVersion)"
+    }
+    if ($analysisResult.Data.WindowsBuild -ne $expectedWindowsBuild) {
+        throw "BIOS Information did not use the mocked environment Windows build. Actual: $($analysisResult.Data.WindowsBuild)"
     }
 
     if ($blockedResult.Success) {
@@ -197,6 +213,13 @@ try {
     }
 }
 finally {
+    if ($hadGlobalWindowsVersion) {
+        Set-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -Value $previousGlobalWindowsVersion -ErrorAction SilentlyContinue
+    }
+    else {
+        Remove-Item -LiteralPath 'function:\global:Get-BoostLabWindowsVersion' -Force -ErrorAction SilentlyContinue
+    }
+
     Remove-Module -ModuleInfo $biosModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $environmentModule -Force -ErrorAction SilentlyContinue
 }

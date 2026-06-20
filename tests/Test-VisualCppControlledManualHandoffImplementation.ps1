@@ -341,10 +341,12 @@ foreach ($needle in @(
     Assert-BoostLabTextContains -Text $provenanceText -Needle $needle -Description 'Visual C++ provenance review'
 }
 
-$baseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+$baseline = $inventoryAssertion.Baseline
+$snapshot = $inventoryAssertion.Snapshot
 Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Active tool count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 45) 'Runtime implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$snapshot.ImplementedTools -eq [int]$baseline.ImplementedTools) 'Runtime implemented count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$snapshot.DeferredPlaceholders -eq [int]$baseline.DeferredPlaceholders) 'Deferred placeholder count changed unexpectedly.'
 
 $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot

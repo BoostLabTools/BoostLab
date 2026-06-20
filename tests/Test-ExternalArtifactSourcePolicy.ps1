@@ -91,10 +91,12 @@ $stagesConfig = Import-PowerShellDataFile -LiteralPath $stagesPath
 $artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
 $stageToolIndex = Get-BoostLabStageToolIndex -Stages $stagesConfig.Stages
 
-$baseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+$baseline = $inventoryAssertion.Baseline
+$snapshot = $inventoryAssertion.Snapshot
 Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Active tool count changed during external artifact source policy phase.'
-Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 45) 'Implemented tool count changed during external artifact source policy phase.'
-Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed during external artifact source policy phase.'
+Assert-BoostLabCondition ([int]$snapshot.ImplementedTools -eq [int]$baseline.ImplementedTools) 'Implemented tool count changed during external artifact source policy phase.'
+Assert-BoostLabCondition ([int]$snapshot.DeferredPlaceholders -eq [int]$baseline.DeferredPlaceholders) 'Deferred placeholder count changed during external artifact source policy phase.'
 
 $allowedClassifications = @($manifest.SourceClassifications | ForEach-Object { [string]$_ })
 $allowedMirrorStatuses = @($manifest.MirrorStatuses | ForEach-Object { [string]$_ })

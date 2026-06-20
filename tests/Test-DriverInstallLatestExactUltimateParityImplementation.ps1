@@ -129,8 +129,8 @@ Assert-BoostLabCondition ($null -ne $installersTool) 'Installers tool is missing
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep its checkbox multi-select model.'
 
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Runtime implemented tool baseline changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq 10) 'Deferred placeholder baseline changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq [int](Get-BoostLabInventorySnapshot -ProjectRoot $ProjectRoot).ImplementedTools) 'Runtime implemented tool baseline changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq [int](Get-BoostLabInventorySnapshot -ProjectRoot $ProjectRoot).DeferredPlaceholders) 'Deferred placeholder baseline changed unexpectedly.'
 
 $driverRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'driver-install-latest' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $driverRecord) 'Driver Install Latest parity record missing.'

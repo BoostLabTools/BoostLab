@@ -123,8 +123,8 @@ Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventor
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tools baseline must remain 55.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Runtime implemented tools baseline must be 45 after Phase 118.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq 10) 'Deferred placeholder baseline must be 10 after Phase 118.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq [int]$inventorySnapshot.ImplementedTools) 'Runtime implemented tools baseline must match live inventory after Phase 118.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq [int]$inventorySnapshot.DeferredPlaceholders) 'Deferred placeholder baseline must match live inventory after Phase 118.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

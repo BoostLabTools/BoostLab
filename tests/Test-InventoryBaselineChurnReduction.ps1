@@ -51,8 +51,8 @@ $assertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -Include
 $snapshot = $assertion.Snapshot
 
 Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Inventory baseline ActiveTools must remain 55 for Phase 103.'
-Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 45) 'Inventory baseline ImplementedTools must remain 45 after Phase 118 Edge Settings near-parity implementation.'
-Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 10) 'Inventory baseline DeferredPlaceholders must remain 10 after Phase 118 Edge Settings near-parity implementation.'
+Assert-BoostLabCondition ([int]$snapshot.ImplementedTools -eq [int]$baseline.ImplementedTools) 'Live implemented tool count must match the central inventory baseline.'
+Assert-BoostLabCondition ([int]$snapshot.DeferredPlaceholders -eq [int]$baseline.DeferredPlaceholders) 'Live deferred placeholder count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$baseline.SourcePromotedMirrorFiles -eq 7) 'Inventory baseline SourcePromotedMirrorFiles must remain 7 for Phase 103.'
 Assert-BoostLabCondition ([int]$baseline.RemainingSourcePromotedIntakeCandidates -eq 0) 'Inventory baseline RemainingSourcePromotedIntakeCandidates must remain 0 for Phase 103.'
 Assert-BoostLabCondition ([int]$snapshot.RemainingSourcePromotedIntakeCandidates -eq [int]$baseline.RemainingSourcePromotedIntakeCandidates) 'Live remaining source-promoted intake count does not match the baseline.'
@@ -95,8 +95,18 @@ $forbiddenHardcodedPatterns = @(
     'RemainingSourcePromotedIntake = 0',
     'implementedCount -ne 44',
     'implementedCount -eq 44',
+    'ImplementedTools -eq 45',
+    'ImplementedTools -ne 45',
+    'inventorySnapshot.ImplementedTools -eq 45',
+    'inventoryBaseline.ImplementedTools -eq 45',
+    'Baseline.ImplementedTools -eq 45',
     'placeholderCount -ne 11',
     'placeholderCount -eq 11',
+    'DeferredPlaceholders -eq 10',
+    'DeferredPlaceholders -ne 10',
+    'inventorySnapshot.DeferredPlaceholders -eq 10',
+    'inventoryBaseline.DeferredPlaceholders -eq 10',
+    'Baseline.DeferredPlaceholders -eq 10',
     'activeTools.Count -ne 55',
     'allTools.Count -ne 55',
     'allTools.Count -eq 55',

@@ -108,8 +108,8 @@ Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$par
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count must advance to 16.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq 3) 'ControlledSubset count must decrease to 3.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq 45) 'Runtime implemented tool count changed.'
-Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Runtime implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'start-menu-taskbar') 'Central current ordered parity target must be Start Menu Taskbar after Graphics Configuration Center acceptance.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder

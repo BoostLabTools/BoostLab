@@ -118,8 +118,8 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.RuntimeImplementedTools -e
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'Ultimate parity implemented count must reflect Graphics Configuration Center parity acceptance.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.RuntimeImplementedTools -ne [int]$parityBaseline.Counts.UltimateParityImplemented) 'Runtime implemented and Ultimate parity implemented counts must remain separate.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror file count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.RemainingSourcePromotedIntakeCandidates -eq 0) 'Remaining source-promoted intake count changed.'
 

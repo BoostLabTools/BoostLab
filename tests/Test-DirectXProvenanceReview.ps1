@@ -167,8 +167,8 @@ Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Apply
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventory.Baseline.ImplementedTools -eq 45) 'Implemented tool count changed.'
-Assert-BoostLabCondition ([int]$inventory.Baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = @(

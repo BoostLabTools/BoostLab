@@ -201,8 +201,8 @@ for ($stageIndex = 0; $stageIndex -lt $canonical.Count; $stageIndex++) {
 Assert-BoostLabCondition (($stagesFlat -join '|') -eq ($orderFlat -join '|')) 'Runtime and ordered parity tool order must agree exactly.'
 Assert-BoostLabCondition ($stagesFlat.Count -eq [int]$inventoryBaseline.ActiveTools) 'Canonical order must include every active tool.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count must remain unchanged.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented tool count must remain unchanged.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count must remain unchanged.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented tool count must remain unchanged.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder count must remain unchanged.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count must remain unchanged.'
 
 $windowsStage = @($stages.Stages | Where-Object { $_.Name -eq 'Windows' })[0]

@@ -348,11 +348,11 @@ $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaselin
 Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline must remain 55.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Implemented tool baseline must be 45 after Edge Settings.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq 10) 'Deferred placeholder baseline must be 10 after Edge Settings.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq [int]$inventorySnapshot.ImplementedTools) 'Implemented tool baseline must match live inventory after Edge Settings.'
+Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq [int]$inventorySnapshot.DeferredPlaceholders) 'Deferred placeholder baseline must match live inventory after Edge Settings.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Live active tool count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Live implemented tool count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Live deferred placeholder count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Live implemented tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Live deferred placeholder count changed unexpectedly.'
 
 Assert-BoostLabCondition (@($artifactPolicy.Artifacts).Count -eq 0) 'No artifact provenance entries may be added in Phase 118.'
 Assert-BoostLabCondition (@($productionAllowlist.ProductionAllowlistProposals).Count -eq 0) 'No production allowlist proposals may be added in Phase 118.'

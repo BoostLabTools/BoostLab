@@ -303,8 +303,8 @@ Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design 
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq 55) 'Active tool count must remain 55.'
-Assert-BoostLabCondition ([int]$inventory.Baseline.ImplementedTools -eq 45) 'Runtime implemented tool count must remain 45.'
-Assert-BoostLabCondition ([int]$inventory.Baseline.DeferredPlaceholders -eq 10) 'Deferred/placeholders count must remain 10.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Runtime implemented tool count must match the central baseline.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred/placeholders count must match the central baseline.'
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceManifestLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |

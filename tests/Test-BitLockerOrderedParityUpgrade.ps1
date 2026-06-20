@@ -226,8 +226,8 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
 }
 
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented count changed.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryAssertion.Baseline.ImplementedTools) 'Runtime implemented count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryAssertion.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',

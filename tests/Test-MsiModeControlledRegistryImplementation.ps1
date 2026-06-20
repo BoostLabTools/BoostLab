@@ -343,6 +343,8 @@ function New-MockRegistryState {
     }
 }
 
+$mockRegistryStateReader = ${function:New-MockRegistryState}
+
 $mixedDeviceEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
@@ -398,7 +400,7 @@ $registryReader = {
         [string]$ValueName
     )
 
-    New-MockRegistryState -Path $Path -ValueName $ValueName
+    & $mockRegistryStateReader -Path $Path -ValueName $ValueName
 }.GetNewClosure()
 
 $registryWriter = {

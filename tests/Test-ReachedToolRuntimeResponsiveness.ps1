@@ -220,11 +220,13 @@ foreach ($path in @(
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+$inventoryBaseline = $inventoryAssertion.Baseline
+$inventorySnapshot = $inventoryAssertion.Snapshot
 
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Implemented tool baseline changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq 10) 'Deferred placeholder baseline changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Implemented tool baseline changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder baseline changed unexpectedly.'
 
 foreach ($needle in @(
     'function Invoke-BoostLabToolCardActionAsync'

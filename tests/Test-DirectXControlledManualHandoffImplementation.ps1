@@ -350,8 +350,8 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 1) '
 
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.ActiveTools -eq 55) 'Active tool count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.ImplementedTools -eq 45) 'Implemented tool count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.ImplementedTools -eq [int]$inventoryAssertion.Baseline.ImplementedTools) 'Implemented tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.DeferredPlaceholders -eq [int]$inventoryAssertion.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed unexpectedly.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',
