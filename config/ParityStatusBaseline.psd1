@@ -9,8 +9,8 @@
         DeferredPlaceholders = 9
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 17
-        NearParityControlled = 25
+        UltimateParityImplemented = 18
+        NearParityControlled = 24
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'theme-black'
+    CurrentOrderedParityTarget = 'signout-lockscreen-wallpaper-black'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -475,11 +475,11 @@
             StageOrder = 6
             ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Ordered parity review is pending; existing runtime implementation has not yet been accepted in the ordered parity flow.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact Ultimate registry payloads, temp file names, import order, and Default HKLM Themes Personalize key deletion.'
             YazanFinalException = $false
-            NextParityAction = 'Verify exact Ultimate parity or record the required acceptance/upgrade decision.'
+            NextParityAction = 'No parity work required; advance ordered cursor to signout-lockscreen-wallpaper-black.'
         }
         @{
             ToolId = 'signout-lockscreen-wallpaper-black'

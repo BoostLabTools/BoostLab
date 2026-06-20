@@ -24,6 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -639,11 +640,51 @@ $placeholderCount = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 ).Count
-if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
-}
+    if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
+        throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
+    }
 
-$deletedToolNames = @(
+    $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+    $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+    $themeRecord = @(
+        $parityBaseline.Tools |
+            Where-Object { [string]$_.ToolId -eq 'theme-black' }
+    ) | Select-Object -First 1
+    if ($null -eq $themeRecord) {
+        throw 'Theme Black parity record is missing.'
+    }
+    if (
+        [string]$themeRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+        [string]$themeRecord.ImplementationLevel -ne 'ParityImplemented' -or
+        [string]$themeRecord.UltimateParity -ne 'Yes' -or
+        [bool]$themeRecord.YazanFinalException
+    ) {
+        throw 'Theme Black must be final exact Ultimate parity after Phase 138.'
+    }
+    if (-not (Test-BoostLabParityRecordFinal -Record $themeRecord)) {
+        throw 'Theme Black must be treated as final in the ordered parity flow.'
+    }
+
+    $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+    if ($null -eq $nextTarget) {
+        throw 'Ordered parity cursor must identify the next target after Theme Black.'
+    }
+    if ([string]$nextTarget.ToolId -ne [string]$parityBaseline.CurrentOrderedParityTarget) {
+        throw 'Next ordered parity target must match the central parity baseline cursor.'
+    }
+    if ([string]$nextTarget.ToolId -ne 'signout-lockscreen-wallpaper-black') {
+        throw 'Ordered parity cursor must advance to Signout LockScreen Wallpaper Black.'
+    }
+
+    $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+    if ([int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented) {
+        throw 'ParityImplemented count mismatch.'
+    }
+    if ([int]$categoryCounts['NearParityControlled'] -ne [int]$parityBaseline.Counts.NearParityControlled) {
+        throw 'NearParityControlled count mismatch.'
+    }
+
+    $deletedToolNames = @(
     'Windows Activation Helper'
     'Firewall'
     'DEP'
@@ -716,6 +757,8 @@ if (
     DefaultExecuted          = $false
     MockedApplyPassed        = $true
     MockedDefaultPassed      = $true
+    CurrentOrderedParityTarget = [string]$parityBaseline.CurrentOrderedParityTarget
+    FinalProgressStatus      = [string]$themeRecord.ImplementationLevel
     ImplementedModuleCount   = $implementedCount
     PlaceholderModuleCount   = $placeholderCount
     SourceUltimateUnchanged  = $true
