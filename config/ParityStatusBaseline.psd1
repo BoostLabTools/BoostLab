@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'start-menu-taskbar'
+    CurrentOrderedParityTarget = 'start-menu-layout'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -436,13 +436,11 @@
             StageOrder = 6
             ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Runtime now implements the source-defined Clean and Default behavior through BoostLab confirmation and test-safe adapters; final ordered parity acceptance remains pending Yazan review.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Yazan accepted the source-equivalent Clean and Default implementation with BoostLab confirmations, safe routing, logging, action labels, and test-safe adapters preserved.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'NeedsYazanAcceptance'
-            NextParityAction = 'Review the exact source-equivalent runtime implementation; keep the ordered cursor on start-menu-taskbar until Yazan accepts or requests a follow-up fix.'
+            NextParityAction = 'No parity work required; advance ordered cursor to start-menu-layout.'
         }
         @{
             ToolId = 'start-menu-layout'
@@ -451,11 +449,13 @@
             StageOrder = 6
             ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve source-defined behavior.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Runtime implementation predates ordered parity review; Start Menu Layout is now the current ordered target for acceptance or follow-up.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'NeedsYazanAcceptance'
+            NextParityAction = 'Perform ordered parity discovery/acceptance for Start Menu Layout.'
         }
         @{
             ToolId = 'context-menu'

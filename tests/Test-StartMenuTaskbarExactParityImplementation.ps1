@@ -290,9 +290,10 @@ finally {
 $parity = Import-PowerShellDataFile -LiteralPath $parityPath
 $record = $parity.Tools | Where-Object { $_['ToolId'] -eq 'start-menu-taskbar' } | Select-Object -First 1
 Assert-BoostLabCondition ([string]$record['RuntimeStatus'] -eq 'RuntimeImplemented') 'Start Menu Taskbar parity runtime status must be RuntimeImplemented.'
-Assert-BoostLabCondition ([string]$record['ImplementationLevel'] -eq 'NearParityControlled') 'Start Menu Taskbar must remain pending Yazan acceptance rather than final parity.'
-Assert-BoostLabCondition ([string]$record['FinalProgressStatus'] -eq 'NeedsYazanAcceptance') 'Start Menu Taskbar must remain pending Yazan acceptance.'
-Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq 'start-menu-taskbar') 'Current ordered parity target must remain start-menu-taskbar.'
+Assert-BoostLabCondition ([string]$record['ImplementationLevel'] -eq 'ParityImplemented') 'Start Menu Taskbar must be final accepted parity after Phase 134.'
+Assert-BoostLabCondition ([string]$record['UltimateParity'] -eq 'Yes') 'Start Menu Taskbar must be marked as Ultimate parity after Yazan acceptance.'
+Assert-BoostLabCondition (-not [bool]$record['YazanFinalException']) 'Start Menu Taskbar must not use a Yazan final exception.'
+Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq 'start-menu-layout') 'Current ordered parity target must advance to start-menu-layout.'
 
 $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
