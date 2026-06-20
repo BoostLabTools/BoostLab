@@ -93,7 +93,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'hdcp' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\hdcp.psm1'
-        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+        Actions = @('Analyze', 'Apply', 'Default')
     }
     'p0-state' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\p0-state.psm1'

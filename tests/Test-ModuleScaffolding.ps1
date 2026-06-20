@@ -137,7 +137,7 @@ $implementedModules = @{
     }
     'hdcp' = @{
         RelativePath          = 'Graphics\hdcp.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
     'p0-state' = @{
         RelativePath          = 'Graphics\p0-state.psm1'
@@ -1064,19 +1064,22 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'hdcp') {
             foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
                 '5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A'
                 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+                'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
                 'RMHdcpKeyglobZero'
                 'New-BoostLabRegistryStateCapture'
                 'Set-BoostLabRollbackMutationState'
-                'NeedsNvidiaTargeting'
-                'VEN_10DE'
+                'SourceSkipRule = ''*Configuration*'''
+                'SourceKeyNames'
+                'SkippedTargets'
+                'Off (Recommended)'
                 'SupportsDefault = $true'
                 'SupportsRestore = $false'
                 'CanModifyDrivers = $false'
                 'function Test-BoostLabHdcpState'
-                'Default is source-defined DWORD 0 and is not Restore'
+                'No Restore action is source-defined or exposed for HDCP'
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing HDCP controlled registry behavior: $requiredText")

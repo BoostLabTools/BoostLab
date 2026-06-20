@@ -216,7 +216,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Canonical order must produce a next ordered parity target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Current first pending ordered parity target must advance past Nvidia Settings near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Current first pending ordered parity target must advance past HDCP near-parity acceptance.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

@@ -534,6 +534,13 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'hdcp') {
+        switch ($ActionName) {
+            'Apply' { return 'Off (Recommended)' }
+            'Default' { return 'Default' }
+        }
+    }
+
     return $ActionName
 }
 
@@ -1611,6 +1618,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'driver-install-debloat-settings'
         'driver-install-latest'
         'nvidia-settings'
+        'hdcp'
     )
 }
 

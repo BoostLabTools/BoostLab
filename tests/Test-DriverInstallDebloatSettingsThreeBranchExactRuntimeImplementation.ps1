@@ -107,7 +107,7 @@ Assert-BoostLabCondition ((@($currentRecord.ApprovedSourceBranches) -join '|') -
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Next ordered parity target should advance to HDCP after Nvidia Settings.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Next ordered parity target should advance to P0 State after HDCP.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled baseline count mismatch.'

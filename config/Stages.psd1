@@ -297,8 +297,8 @@
                     Order       = 5
                     Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Path B step 3 of 5. Apply or default the source-defined NVIDIA HDCP registry value only after NVIDIA-only target discovery and registry state capture.'
-                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
+                    Description = 'Path B step 3 of 5. Set the source-defined NVIDIA HDCP registry value on every non-Configuration display-class subkey after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{

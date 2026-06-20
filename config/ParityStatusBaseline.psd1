@@ -331,9 +331,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
-            GapSummary = 'Source-defined NVIDIA registry value behavior is implemented with safer NVIDIA target filtering and capture.'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent HDCP Off (Recommended) and Default behavior: every non-Configuration display-class subkey is written and read back.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm safer NVIDIA filtering/capture is accepted as final parity; Restore remains captured-state only.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'p0-state'

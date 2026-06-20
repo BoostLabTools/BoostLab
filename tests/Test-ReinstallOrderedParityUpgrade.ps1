@@ -217,7 +217,7 @@ Assert-BoostLabCondition ([string]$reinstallRecord.FinalProgressStatus -eq 'Done
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'hdcp') 'Next ordered pending parity target must advance past Nvidia Settings near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Next ordered pending parity target must advance past HDCP near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'

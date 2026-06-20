@@ -248,16 +248,17 @@ $reachedToolsForward = @(
     'driver-clean',
     'driver-install-debloat-settings',
     'driver-install-latest',
-    'nvidia-settings'
+    'nvidia-settings',
+    'hdcp'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'nvidia-settings') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Nvidia Settings back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'hdcp') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from HDCP back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('hdcp', 'p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 
@@ -287,6 +288,9 @@ foreach ($needle in @(
     "if (`$toolId -eq 'driver-install-latest')",
     "'Open' { return 'Open Intel Driver Page' }",
     "'Apply' { return 'Apply Source Workflow' }",
+    "if (`$toolId -eq 'hdcp')",
+    "'Apply' { return 'Off (Recommended)' }",
+    "'Default' { return 'Default' }",
     "Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.",
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
 )) {
@@ -352,6 +356,7 @@ Assert-BoostLabCondition (-not ($artifactText -match '(?i)DDU|Display Driver Uni
 Assert-BoostLabCondition (-not $allowlistText.Contains('driver-install-debloat-settings')) 'Production allowlist unexpectedly approved Driver Install Debloat & Settings.'
 
 $analyzeTools = @($reachedToolsForward | Where-Object {
+    $_ -ne 'hdcp' -and
     @((Get-BoostLabToolById -Tools $allTools -ToolId $_).Actions) -contains 'Analyze'
 })
 foreach ($toolId in $analyzeTools) {

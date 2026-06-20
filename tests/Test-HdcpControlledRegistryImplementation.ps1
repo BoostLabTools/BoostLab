@@ -75,6 +75,8 @@ $modulePath = Join-Path $ProjectRoot 'modules\Graphics\hdcp.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\5 Hdcp.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
@@ -86,6 +88,8 @@ foreach ($path in @(
     $sourcePath,
     $executionPath,
     $actionPlanPath,
+    $uiPath,
+    $parityPath,
     $artifactPath,
     $productionAllowlistPath
 )) {
@@ -111,22 +115,22 @@ $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-d
 
 Assert-BoostLabCondition ($null -ne $hdcpTool) 'HDCP must exist as an active Graphics tool.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1 and outside Path B.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 3) 'Driver Install Latest must remain Path B step 1 and Graphics order 3.'
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 4) 'Nvidia Settings must remain Path B step 2 and Graphics order 4.'
 Assert-BoostLabCondition ([int]$hdcpTool.Order -eq 5) 'HDCP must be Graphics order 5 as Path B step 3.'
-Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 6) 'P0 State must be Graphics order 6 as Path B step 4.'
-Assert-BoostLabCondition ([int]$msiModeTool.Order -eq 7) 'Msi Mode must be Graphics order 7 as Path B step 5.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
+Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 6) 'P0 State must remain Graphics order 6 as Path B step 4.'
+Assert-BoostLabCondition ([int]$msiModeTool.Order -eq 7) 'Msi Mode must remain Graphics order 7 as Path B step 5.'
 Assert-BoostLabCondition ([string]$hdcpTool.Title -eq 'HDCP') 'HDCP title mismatch.'
 Assert-BoostLabCondition ([string]$hdcpTool.Type -eq 'action') 'HDCP must be an action tool.'
 Assert-BoostLabCondition ([string]$hdcpTool.RiskLevel -eq 'high') 'HDCP must remain high risk.'
-Assert-BoostLabCondition ((@($hdcpTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'HDCP must use only canonical Analyze, Apply, Default, Restore actions.'
+Assert-BoostLabCondition ((@($hdcpTool.Actions) -join ',') -eq 'Analyze,Apply,Default') 'HDCP must expose only Analyze, Apply, and source-defined Default actions.'
 
 $caps = $hdcpTool.Capabilities
 Assert-BoostLabCondition ([bool]$caps.RequiresAdmin) 'HDCP must require Administrator for mutation actions.'
 Assert-BoostLabCondition ([bool]$caps.CanModifyRegistry) 'HDCP must declare registry mutation capability.'
 Assert-BoostLabCondition ([bool]$caps.SupportsDefault) 'HDCP must declare source-defined Default support.'
-Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'HDCP must not claim Restore support without selected captured-state restore flow.'
+Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'HDCP must not claim Restore support.'
 Assert-BoostLabCondition ([bool]$caps.NeedsExplicitConfirmation) 'HDCP must require explicit confirmation.'
 foreach ($falseCapability in @(
     'RequiresInternet',
@@ -168,58 +172,89 @@ $remainingSourcePromoted = @(
             '4 Nvidia Settings.ps1',
             '5 Hdcp.ps1',
             '6 P0 State.ps1',
-            '7 Msi Mode.ps1'
+            '7 Msi Mode.ps1',
             '1 BitLocker.ps1'
         )
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq $inventoryBaseline.RemainingSourcePromotedIntakeCandidates) "Expected $($inventoryBaseline.RemainingSourcePromotedIntakeCandidates) remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
     "'hdcp'",
     "Graphics\hdcp.psm1",
-    "'Analyze', 'Apply', 'Default', 'Restore'"
+    "'Analyze', 'Apply', 'Default'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'HDCP execution registration'
 }
 
+$uiText = Get-Content -LiteralPath $uiPath -Raw
+foreach ($needle in @(
+    'if ($toolId -eq ''hdcp'')',
+    "'Apply' { return 'Off (Recommended)' }",
+    "'Default' { return 'Default' }",
+    "'hdcp'"
+)) {
+    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'HDCP UI action surface'
+}
+
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened for HDCP.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains("'Off (Recommended)'")) 'Action Plan ValidateSet must not be widened for HDCP source labels.'
 foreach ($needle in @(
-    'Apply the source-defined HDCP Off value only to eligible NVIDIA display-class registry targets',
-    'Apply the source-defined HDCP Default value only to eligible NVIDIA display-class registry targets',
-    'No registry mutation is planned without selected captured state',
-    'RMHdcpKeyglobZero as REG_DWORD 1',
-    'RMHdcpKeyglobZero to DWORD 0',
-    'excluded Microsoft/RDP/non-NVIDIA targets are skipped',
-    'No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or non-NVIDIA registry write occurs.'
+    'Read the HDCP source mirror and report source-defined display-class registry scope, non-Configuration target discovery, and readback state without changing the system.',
+    'Run the source-defined HDCP Off (Recommended) branch after confirmation: set RMHdcpKeyglobZero DWORD 1 on every non-Configuration display-class subkey and read the values back.',
+    'Run the source-defined HDCP Default branch after confirmation: set RMHdcpKeyglobZero DWORD 0 on every non-Configuration display-class subkey and read the values back. Default is not Restore.',
+    'Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.',
+    'Set RMHdcpKeyglobZero as REG_DWORD 1 on every captured source-included target.',
+    'Set RMHdcpKeyglobZero as REG_DWORD 0 on every captured source-included target, matching the Ultimate Default branch.',
+    'Default is source-defined behavior and is not captured-state Restore.'
 )) {
     Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'HDCP action plan'
+}
+foreach ($forbiddenActionPlanText in @(
+    'HDCP Restore',
+    'Apply the source-defined HDCP Off value only to eligible NVIDIA',
+    'Apply the source-defined HDCP Default value only to eligible NVIDIA'
+)) {
+    Assert-BoostLabCondition (-not $actionPlanText.Contains($forbiddenActionPlanText)) "HDCP action plan retained stale non-source wording: $forbiddenActionPlanText"
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')',
     $expectedSourceHash,
     'source-ultimate/_intake-promoted/Ultimate/5 Graphics/5 Hdcp.ps1',
+    'NVIDIA High Bandwidth Digital Content Protection',
     'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}',
+    'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}',
     'RMHdcpKeyglobZero',
     '$script:BoostLabHdcpApplyValue = 1',
     '$script:BoostLabHdcpDefaultValue = 0',
+    'SourceSkipRule = ''*Configuration*''',
+    'SourceKeyNames',
+    'SkippedTargets',
     'New-BoostLabRegistryStateCapture',
     'Set-BoostLabRollbackMutationState',
+    'Off (Recommended)',
+    'No Restore action is source-defined or exposed for HDCP',
+    'SupportsDefault = $true',
+    'SupportsRestore = $false',
+    'CanModifyDrivers = $false',
+    'function Test-BoostLabHdcpState'
+)) {
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'HDCP module'
+}
+foreach ($forbiddenModuleText in @(
     'NeedsNvidiaTargeting',
+    'VEN_10DE',
     'EligibleTargets',
     'ExcludedTargets',
     'ExcludedNonNvidia',
     'Microsoft/RDP/non-NVIDIA display adapter',
-    'VEN_10DE',
-    'Default is source-defined DWORD 0 and is not Restore',
     'Restore requires a selected captured rollback record'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'HDCP module'
+    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenModuleText)) "HDCP module retained stale NVIDIA filtering or Restore wording: $forbiddenModuleText"
 }
 
 foreach ($forbiddenPattern in @(
@@ -248,10 +283,17 @@ Assert-BoostLabCondition (-not $allowlistText.Contains('hdcp')) 'HDCP must not a
 Assert-BoostLabCondition (-not $allowlistText.Contains('RMHdcpKeyglobZero')) 'HDCP must not add production registry allowlist scopes.'
 
 $stateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('BoostLab-HdcpTest-{0}' -f ([guid]::NewGuid().ToString('N')))
-$approvedTargetPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
-$nonNvidiaTargetPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0001'
+$displayRoot = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+$sourceDisplayRoot = 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+$targetPath0 = "$displayRoot\0000"
+$targetPath1 = "$displayRoot\0001"
+$configurationPath = "$displayRoot\Configuration"
+$sourceTarget0 = "$sourceDisplayRoot\0000"
+$sourceTarget1 = "$sourceDisplayRoot\0001"
+$sourceConfiguration = "$sourceDisplayRoot\Configuration"
 $script:HdcpMockRegistryState = @{}
 $script:HdcpMockWriteCount = 0
+$script:HdcpMockWrites = [System.Collections.Generic.List[object]]::new()
 
 function New-MockRegistryState {
     param(
@@ -289,71 +331,31 @@ function New-MockRegistryState {
     }
 }
 
-$nvidiaEnumerator = {
+$sourceEquivalentEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'RMHdcpKeyglobZero'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
-            }
-        )
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @($sourceTarget0, $sourceTarget1, $sourceConfiguration)
         Warnings = @()
-        Message = '1 source-targeted display-class registry target(s) detected.'
+        Message = '3 display-class subkey name(s) detected from the source query.'
     }
 }.GetNewClosure()
 
-$nonNvidiaEnumerator = {
+$configurationOnlyEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'RMHdcpKeyglobZero'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Basic Display Adapter')
-            }
-        )
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @($sourceConfiguration)
         Warnings = @()
-        Message = '1 source-targeted display-class registry target(s) detected.'
-    }
-}.GetNewClosure()
-
-$mixedEnumerator = {
-    [pscustomobject]@{
-        Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'RMHdcpKeyglobZero'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
-            },
-            [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'RMHdcpKeyglobZero'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Remote Display Adapter', 'ProviderName=Microsoft')
-            }
-        )
-        Warnings = @()
-        Message = '2 source-targeted display-class registry target(s) detected.'
+        Message = '1 display-class subkey name detected from the source query.'
     }
 }.GetNewClosure()
 
 $outOfScopeEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = 'HKLM:\SOFTWARE\Outside\0000'
-                ValueName = 'RMHdcpKeyglobZero'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX')
-            }
-        )
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @('HKEY_LOCAL_MACHINE\SOFTWARE\Outside\0000')
         Warnings = @()
         Message = '1 invalid target supplied.'
     }
@@ -376,6 +378,11 @@ $registryWriter = {
     )
 
     $script:HdcpMockWriteCount++
+    $script:HdcpMockWrites.Add([pscustomobject]@{
+        RegistryPath = [string]$Target.RegistryPath
+        SourceKeyName = [string]$Target.SourceKeyName
+        Value = [int]$Value
+    })
     $key = '{0}|{1}' -f ([string]$Target.RegistryPath), 'RMHdcpKeyglobZero'
     $script:HdcpMockRegistryState[$key] = [int]$Value
 }.GetNewClosure()
@@ -384,32 +391,38 @@ Import-Module -Name $modulePath -Force -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
     Assert-BoostLabCondition ([string]$info.Id -eq 'hdcp') 'Imported HDCP module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'HDCP implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Default') 'HDCP implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join ',') -eq 'Apply,Default') 'HDCP confirmation action list mismatch.'
+    Assert-BoostLabCondition (-not (@($info.Actions) -contains 'Restore')) 'HDCP must not expose Restore as a tool action.'
 
-    $analyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $mixedEnumerator -RegistryReader $registryReader
+    $analyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $sourceEquivalentEnumerator -RegistryReader $registryReader
     Assert-BoostLabCondition ([bool]$analyze.Success) 'HDCP Analyze should succeed.'
     Assert-BoostLabCondition ([string]$analyze.Status -eq 'Analyzed') 'HDCP Analyze status mismatch.'
     Assert-BoostLabCondition ([string]$analyze.CommandStatus -eq 'No execution performed') 'HDCP Analyze must be read-only.'
-    Assert-BoostLabCondition ([string]$analyze.VerificationStatus -ne 'Failed') 'HDCP Analyze must not fail verification solely because excluded non-NVIDIA targets exist.'
+    Assert-BoostLabCondition ([string]$analyze.VerificationStatus -ne 'Failed') 'HDCP Analyze verification should not fail with valid source targets.'
     Assert-BoostLabCondition (-not [bool]$analyze.ChangesExecuted) 'HDCP Analyze must not execute changes.'
-    Assert-BoostLabCondition ([int]$analyze.Data.PathBStepNumber -eq 3 -and [int]$analyze.Data.PathBStepTotal -eq 5) 'HDCP Analyze must report Path B step 3 of 5.'
+    Assert-BoostLabCondition ([string]$analyze.Data.PathBStep -eq '3 of 5') 'HDCP Analyze must report Path B step 3 of 5.'
+    Assert-BoostLabCondition ([string]$analyze.Data.Header -eq 'NVIDIA High Bandwidth Digital Content Protection') 'HDCP Analyze must report source header.'
     Assert-BoostLabCondition ([string]$analyze.Data.SourceRegistryValueName -eq 'RMHdcpKeyglobZero') 'HDCP Analyze must report source value name.'
-    Assert-BoostLabCondition ([int]$analyze.Data.SourceApplyValue -eq 1 -and [int]$analyze.Data.SourceDefaultValue -eq 0) 'HDCP Analyze must report source Apply/Default values.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'HDCP Analyze should report Apply available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.DefaultAvailable) 'HDCP Analyze should report source-defined Default available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 2) 'HDCP Analyze must report all immediate display-class targets.'
-    Assert-BoostLabCondition ([int]$analyze.Data.EligibleTargetCount -eq 1) 'HDCP Analyze must report one eligible NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.ExcludedTargetCount -eq 1) 'HDCP Analyze must report one excluded target.'
-    Assert-BoostLabTextContains -Text ((@($analyze.Data.ExcludedTargets[0].Evidence) -join '; ')) -Needle 'Microsoft Remote Display Adapter' -Description 'HDCP excluded Microsoft Remote Display Adapter evidence'
-    Assert-BoostLabCondition ([string]$analyze.Data.ExcludedTargets[0].TargetingStatus -eq 'ExcludedNonNvidia') 'HDCP excluded target status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'HDCP Analyze must not report Restore available without selected captured state.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SourceOffRecommendedValue -eq 1 -and [int]$analyze.Data.SourceDefaultValue -eq 0) 'HDCP Analyze must report source Off/Default values.'
+    Assert-BoostLabCondition ([string]$analyze.Data.SourceSkipRule -eq '*Configuration*') 'HDCP Analyze must report source Configuration skip rule.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'HDCP Analyze should report Apply available for mocked source targets.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.DefaultAvailable) 'HDCP Analyze should report source-defined Default available for mocked source targets.'
+    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'HDCP Analyze must not report Restore available.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SourceKeyNameCount -eq 3) 'HDCP Analyze must report all source key names.'
+    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 2) 'HDCP Analyze must include every non-Configuration source target.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SkippedTargetCount -eq 1) 'HDCP Analyze must skip only the Configuration target.'
+    Assert-BoostLabTextContains -Text ([string]$analyze.Data.SkippedTargets[0].SourceSkipReason) -Needle '*Configuration*' -Description 'HDCP source skip reason'
+    Assert-BoostLabCondition ((@($analyze.Data.Targets | ForEach-Object { [string]$_.RegistryPath }) -join '|') -eq "$targetPath0|$targetPath1") 'HDCP Analyze target list must contain 0000 and 0001 only.'
+    Assert-BoostLabCondition (-not ($analyze.Data.PSObject.Properties.Name -contains 'EligibleTargets')) 'HDCP Analyze must not retain stale eligible-target data.'
+    Assert-BoostLabCondition (-not ($analyze.Data.PSObject.Properties.Name -contains 'ExcludedTargets')) 'HDCP Analyze must not retain stale excluded-target data.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.CaptureAttempted) 'HDCP Analyze must not capture registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RegistryWriteAttempted) 'HDCP Analyze must not write registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.ExternalProcessStarted) 'HDCP Analyze must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.DownloadStarted) 'HDCP Analyze must not download anything.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RebootRequested) 'HDCP Analyze must not request reboot.'
 
-    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'Apply' -TargetEnumerator $nvidiaEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'Apply' -TargetEnumerator $sourceEquivalentEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
     Assert-BoostLabCondition (-not [bool]$cancelledApply.Success) 'Unconfirmed HDCP Apply should not proceed.'
     Assert-BoostLabCondition ([bool]$cancelledApply.Cancelled) 'Unconfirmed HDCP Apply should be cancelled.'
     Assert-BoostLabCondition ($script:HdcpMockWriteCount -eq 0) 'Unconfirmed HDCP Apply must not write registry.'
@@ -418,25 +431,26 @@ try {
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
+        -TargetEnumerator $sourceEquivalentEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
 
-    Assert-BoostLabCondition ([bool]$apply.Success) "HDCP Apply should succeed with mocked NVIDIA target: $($apply.Message)"
+    Assert-BoostLabCondition ([bool]$apply.Success) "HDCP Apply should succeed with mocked source targets: $($apply.Message)"
     Assert-BoostLabCondition ([string]$apply.Action -eq 'Apply') 'HDCP Apply action mismatch.'
     Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Completed') 'HDCP Apply command status mismatch.'
     Assert-BoostLabCondition ([string]$apply.VerificationStatus -eq 'Passed') 'HDCP Apply verification should pass.'
     Assert-BoostLabCondition ([bool]$apply.Data.ChangesExecuted) 'HDCP Apply should report changes executed.'
     Assert-BoostLabCondition ([bool]$apply.Data.CaptureAttempted) 'HDCP Apply should capture before mutation.'
     Assert-BoostLabCondition ([bool]$apply.Data.RegistryWriteAttempted) 'HDCP Apply should attempt registry write after capture.'
-    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 1) 'HDCP Apply must record one capture record.'
-    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 2) 'HDCP Apply must report all discovered targets.'
-    Assert-BoostLabCondition ([int]$apply.Data.EligibleTargetCount -eq 1) 'HDCP Apply must report one eligible target.'
-    Assert-BoostLabCondition ([int]$apply.Data.ExcludedTargetCount -eq 1) 'HDCP Apply must report one skipped excluded target.'
-    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 1) 'HDCP Apply must write only one eligible target.'
-    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$approvedTargetPath|RMHdcpKeyglobZero"] -eq 1) 'HDCP Apply must set RMHdcpKeyglobZero to DWORD 1.'
-    Assert-BoostLabCondition (-not $script:HdcpMockRegistryState.ContainsKey("$nonNvidiaTargetPath|RMHdcpKeyglobZero")) 'HDCP Apply must not write excluded Microsoft/RDP/non-NVIDIA targets.'
+    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 2) 'HDCP Apply must record capture records for both non-Configuration targets.'
+    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 2) 'HDCP Apply must report both source-included targets.'
+    Assert-BoostLabCondition ([int]$apply.Data.SkippedTargetCount -eq 1) 'HDCP Apply must report skipped Configuration target.'
+    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 2) 'HDCP Apply must write every non-Configuration source target.'
+    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$targetPath0|RMHdcpKeyglobZero"] -eq 1) 'HDCP Apply must set 0000 RMHdcpKeyglobZero to DWORD 1.'
+    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$targetPath1|RMHdcpKeyglobZero"] -eq 1) 'HDCP Apply must set 0001 RMHdcpKeyglobZero to DWORD 1.'
+    Assert-BoostLabCondition (-not $script:HdcpMockRegistryState.ContainsKey("$configurationPath|RMHdcpKeyglobZero")) 'HDCP Apply must skip Configuration targets.'
+    Assert-BoostLabCondition (@($apply.Data.Readbacks | Where-Object { $_.Status -eq 'Passed' }).Count -eq 2) 'HDCP Apply must read back every written target.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.ExternalProcessStarted) 'HDCP Apply must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.DownloadStarted) 'HDCP Apply must not download anything.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.RebootRequested) 'HDCP Apply must not request reboot.'
@@ -447,35 +461,36 @@ try {
         -ActionName 'Default' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
+        -TargetEnumerator $sourceEquivalentEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
 
-    Assert-BoostLabCondition ([bool]$default.Success) "HDCP Default should succeed with mocked NVIDIA target: $($default.Message)"
+    Assert-BoostLabCondition ([bool]$default.Success) "HDCP Default should succeed with mocked source targets: $($default.Message)"
     Assert-BoostLabCondition ([string]$default.Action -eq 'Default') 'HDCP Default action mismatch.'
     Assert-BoostLabCondition ([string]$default.VerificationStatus -eq 'Passed') 'HDCP Default verification should pass.'
-    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$approvedTargetPath|RMHdcpKeyglobZero"] -eq 0) 'HDCP Default must set RMHdcpKeyglobZero to DWORD 0.'
-    Assert-BoostLabCondition (-not $script:HdcpMockRegistryState.ContainsKey("$nonNvidiaTargetPath|RMHdcpKeyglobZero")) 'HDCP Default must not write excluded Microsoft/RDP/non-NVIDIA targets.'
-    Assert-BoostLabCondition (@($default.Data.CaptureRecords).Count -eq 1) 'HDCP Default must capture before mutation.'
-    Assert-BoostLabCondition ([int]$default.Data.WrittenTargetCount -eq 1) 'HDCP Default must write only one eligible target.'
+    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$targetPath0|RMHdcpKeyglobZero"] -eq 0) 'HDCP Default must set 0000 RMHdcpKeyglobZero to DWORD 0.'
+    Assert-BoostLabCondition ([int]$script:HdcpMockRegistryState["$targetPath1|RMHdcpKeyglobZero"] -eq 0) 'HDCP Default must set 0001 RMHdcpKeyglobZero to DWORD 0.'
+    Assert-BoostLabCondition (-not $script:HdcpMockRegistryState.ContainsKey("$configurationPath|RMHdcpKeyglobZero")) 'HDCP Default must skip Configuration targets.'
+    Assert-BoostLabCondition (@($default.Data.CaptureRecords).Count -eq 2) 'HDCP Default must capture before mutation for both targets.'
+    Assert-BoostLabCondition ([int]$default.Data.WrittenTargetCount -eq 2) 'HDCP Default must write both source-included targets.'
     Assert-BoostLabTextContains -Text ([string]$default.Message) -Needle 'DWORD 0' -Description 'HDCP Default message'
     Assert-BoostLabTextContains -Text ([string]$default.Data.RestoreUnavailableReason) -Needle 'Default is source-defined DWORD 0 and is not Restore' -Description 'HDCP Default/Restore separation'
 
     $script:HdcpMockWriteCount = 0
-    $nonNvidiaApply = Invoke-BoostLabToolAction `
+    $configurationOnlyApply = Invoke-BoostLabToolAction `
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $nonNvidiaEnumerator `
+        -TargetEnumerator $configurationOnlyEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Success) 'HDCP Apply must fail closed for non-NVIDIA targets.'
-    Assert-BoostLabCondition ([string]$nonNvidiaApply.Status -eq 'NeedsNvidiaTargeting') 'HDCP non-NVIDIA block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.CaptureAttempted) 'HDCP non-NVIDIA block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.RegistryWriteAttempted) 'HDCP non-NVIDIA block must occur before registry write.'
-    Assert-BoostLabCondition ($script:HdcpMockWriteCount -eq 0) 'HDCP non-NVIDIA block must not call writer.'
+    Assert-BoostLabCondition (-not [bool]$configurationOnlyApply.Success) 'HDCP Apply must fail closed when only Configuration targets exist.'
+    Assert-BoostLabCondition ([string]$configurationOnlyApply.Status -eq 'NoSourceTargets') 'HDCP Configuration-only block status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$configurationOnlyApply.Data.CaptureAttempted) 'HDCP Configuration-only block must occur before capture.'
+    Assert-BoostLabCondition (-not [bool]$configurationOnlyApply.Data.RegistryWriteAttempted) 'HDCP Configuration-only block must occur before registry write.'
+    Assert-BoostLabCondition ($script:HdcpMockWriteCount -eq 0) 'HDCP Configuration-only block must not call writer.'
 
     $outOfScopeApply = Invoke-BoostLabToolAction `
         -ActionName 'Apply' `
@@ -486,15 +501,18 @@ try {
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Success) 'HDCP Apply must fail closed for out-of-scope registry paths.'
-    Assert-BoostLabCondition ([string]$outOfScopeApply.Status -eq 'NeedsNvidiaTargeting') 'HDCP out-of-scope block status mismatch.'
+    Assert-BoostLabCondition ([string]$outOfScopeApply.Status -eq 'SourceScopeBlocked') 'HDCP out-of-scope block status mismatch.'
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.CaptureAttempted) 'HDCP out-of-scope block must occur before capture.'
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.RegistryWriteAttempted) 'HDCP out-of-scope block must occur before write.'
 
-    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restore.Success) 'HDCP Restore must remain unavailable without selected captured state.'
-    Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'HDCP Restore status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.RestoreExecuted) 'HDCP Restore must not execute.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.DefaultIsRestore) 'HDCP Restore must not be treated as Default.'
+    $restoreBlocked = $false
+    try {
+        Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true | Out-Null
+    }
+    catch {
+        $restoreBlocked = $true
+    }
+    Assert-BoostLabCondition $restoreBlocked 'HDCP Restore must not be invokable because the source defines only Off and Default.'
 }
 finally {
     Remove-Module -Name hdcp -Force -ErrorAction SilentlyContinue
@@ -506,13 +524,20 @@ finally {
     }
 }
 
+$parity = Import-PowerShellDataFile -LiteralPath $parityPath
+$hdcpParity = @($parity.Tools | Where-Object { $_.ToolId -eq 'hdcp' })[0]
+$p0Parity = @($parity.Tools | Where-Object { $_.ToolId -eq 'p0-state' })[0]
+Assert-BoostLabCondition ([string]$hdcpParity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'HDCP parity status must be accepted near-parity after source-equivalent implementation with GUI confirmation.'
+Assert-BoostLabCondition ([bool]$hdcpParity.YazanAcceptedNearParity) 'HDCP Yazan accepted near-parity flag must be set.'
+Assert-BoostLabCondition ([string]$p0Parity.NextParityAction -match 'NVIDIA filtering/capture') 'P0 State must remain the next ordered parity acceptance target.'
+
 [pscustomobject]@{
     Success = $true
     ActiveToolCount = $inventoryBaseline.ActiveTools
-    ImplementedToolCount      = 40
-    PlaceholderToolCount      = 15
+    ImplementedToolCount = $inventoryBaseline.ImplementedTools
+    PlaceholderToolCount = $inventoryBaseline.DeferredPlaceholders
     SourcePromotedMirrorFileCount = $inventoryBaseline.SourcePromotedMirrorFiles
-    RemainingUnimplementedSourcePromotedIntakeCandidates = 0
-    Message = 'HDCP controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'
+    RemainingUnimplementedSourcePromotedIntakeCandidates = $inventoryBaseline.RemainingSourcePromotedIntakeCandidates
+    Message = 'HDCP exact source-equivalent registry implementation is registered, captures before mutation, writes every non-Configuration display-class target, reads back every write, and exposes no Restore or external-operation behavior.'
     Timestamp = Get-Date
 }

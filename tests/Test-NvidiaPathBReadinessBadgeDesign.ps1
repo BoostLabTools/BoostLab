@@ -410,7 +410,7 @@ if (@(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'core') -Filter '*Nvidi
 $uiFilesWithPathB = @(
     Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'ui') -Recurse -File |
         Where-Object {
-            (Get-Content -LiteralPath $_.FullName -Raw) -match 'Driver Install Latest|Nvidia Settings|Hdcp|P0 State|Msi Mode|nvidia-path-b|ReadinessBadge'
+            (Get-Content -LiteralPath $_.FullName -Raw) -match 'Driver Install Latest|Nvidia Settings|P0 State|Msi Mode|nvidia-path-b|ReadinessBadge'
         }
 )
 if ($uiFilesWithPathB.Count -ne 0) {
