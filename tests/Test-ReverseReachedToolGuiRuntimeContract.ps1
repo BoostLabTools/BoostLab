@@ -249,16 +249,17 @@ $reachedToolsForward = @(
     'driver-install-debloat-settings',
     'driver-install-latest',
     'nvidia-settings',
-    'hdcp'
+    'hdcp',
+    'p0-state'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'hdcp') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from HDCP back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'p0-state') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from P0 State back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 
@@ -290,6 +291,9 @@ foreach ($needle in @(
     "'Apply' { return 'Apply Source Workflow' }",
     "if (`$toolId -eq 'hdcp')",
     "'Apply' { return 'Off (Recommended)' }",
+    "'Default' { return 'Default' }",
+    "if (`$toolId -eq 'p0-state')",
+    "'Apply' { return 'On (Recommended)' }",
     "'Default' { return 'Default' }",
     "Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.",
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
@@ -357,6 +361,7 @@ Assert-BoostLabCondition (-not $allowlistText.Contains('driver-install-debloat-s
 
 $analyzeTools = @($reachedToolsForward | Where-Object {
     $_ -ne 'hdcp' -and
+    $_ -ne 'p0-state' -and
     @((Get-BoostLabToolById -Tools $allTools -ToolId $_).Actions) -contains 'Analyze'
 })
 foreach ($toolId in $analyzeTools) {

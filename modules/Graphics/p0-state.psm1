@@ -15,8 +15,8 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 6
     Type = 'action'
     RiskLevel = 'high'
-    Description = 'Path B step 4 of 5. Apply or default the source-defined NVIDIA P0 State registry value only after NVIDIA-only target discovery and registry state capture.'
-    Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+    Description = 'Path B step 4 of 5. Set the source-defined NVIDIA P0 State registry value on every non-Configuration display-class subkey after explicit confirmation.'
+    Actions = @('Analyze', 'Apply', 'Default')
     Capabilities = [ordered]@{
         RequiresAdmin = $true
         RequiresInternet = $false
@@ -35,10 +35,11 @@ $script:BoostLabToolMetadata = [ordered]@{
         NeedsExplicitConfirmation = $true
     }
 }
-$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default', 'Restore')
+$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabExpectedSourceHash = '382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC'
 $script:BoostLabSourceRelativePath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1'
 $script:BoostLabDisplayClassRoot = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+$script:BoostLabSourceDisplayClassRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
 $script:BoostLabP0StateValueName = 'DisableDynamicPstate'
 $script:BoostLabP0StateValueType = 'DWord'
 $script:BoostLabP0StateApplyValue = 1
@@ -50,7 +51,7 @@ function Get-BoostLabP0StateSourcePath {
     param()
 
     $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
 function Get-BoostLabP0StateSourceStatus {
@@ -67,7 +68,7 @@ function Get-BoostLabP0StateSourceStatus {
         ''
     }
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         SourcePath = $sourcePath
         SourceRelativePath = $script:BoostLabSourceRelativePath
         Exists = $exists
@@ -104,9 +105,22 @@ function ConvertTo-BoostLabP0StateRegistryPath {
 
     $normalized = $Path.Trim().TrimEnd('\')
     $normalized = $normalized -replace '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
+    $normalized = $normalized -replace '^Microsoft\.PowerShell\.Core\\Registry::HKLM\\', 'HKLM:\'
     $normalized = $normalized -replace '^Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
+    $normalized = $normalized -replace '^Registry::HKLM\\', 'HKLM:\'
     $normalized = $normalized -replace '^HKEY_LOCAL_MACHINE\\', 'HKLM:\'
-    return $normalized
+    $normalized
+}
+
+function ConvertTo-BoostLabP0StateSourceKeyName {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $normalized = ConvertTo-BoostLabP0StateRegistryPath -Path $Path
+    $normalized = $normalized -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\'
+    $normalized
 }
 
 function Test-BoostLabP0StateRegistryTarget {
@@ -122,293 +136,191 @@ function Test-BoostLabP0StateRegistryTarget {
     if (-not $normalized.StartsWith($script:BoostLabDisplayClassRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
         return $false
     }
-    if ($normalized.EndsWith('\Configuration', [StringComparison]::OrdinalIgnoreCase)) {
+
+    $relative = $normalized.Substring(($script:BoostLabDisplayClassRoot + '\').Length)
+    if ([string]::IsNullOrWhiteSpace($relative) -or $relative -match '\\') {
         return $false
     }
 
-    $relative = $normalized.Substring(($script:BoostLabDisplayClassRoot + '\').Length)
-    return -not [string]::IsNullOrWhiteSpace($relative) -and $relative -notmatch '\\'
+    return ($normalized -notlike '*Configuration*')
 }
 
-function Get-BoostLabP0StateIdentityEvidence {
+function New-BoostLabP0StateTarget {
     param(
-        [AllowNull()]
-        [object]$InputObject
+        [Parameter(Mandatory)]
+        [string]$SourceKeyName
     )
 
-    $evidence = [System.Collections.Generic.List[string]]::new()
-    foreach ($name in @(
-        'DriverDesc',
-        'ProviderName',
-        'MatchingDeviceId',
-        'InfSection',
-        'HardwareInformation.AdapterString',
-        'HardwareInformation.ChipType',
-        'ComponentId'
-    )) {
-        if ($null -ne $InputObject -and $null -ne $InputObject.PSObject.Properties[$name]) {
-            $value = [string]$InputObject.PSObject.Properties[$name].Value
-            if (-not [string]::IsNullOrWhiteSpace($value)) {
-                $evidence.Add(('{0}={1}' -f $name, $value))
-            }
-        }
+    $sourceName = ConvertTo-BoostLabP0StateSourceKeyName -Path $SourceKeyName
+    $registryPath = ConvertTo-BoostLabP0StateRegistryPath -Path $sourceName
+    [pscustomobject]@{
+        SourceKeyName = $sourceName
+        RegistryPath = $registryPath
+        RegistryProviderPath = 'Registry::{0}' -f $sourceName
+        ValueName = $script:BoostLabP0StateValueName
+        SourceIncluded = $true
+        SourceSkipReason = ''
     }
-
-    return $evidence.ToArray()
 }
 
-function Test-BoostLabP0StateNvidiaEvidence {
-    param(
-        [AllowNull()]
-        [string[]]$Evidence
-    )
-
-    $combined = (@($Evidence) -join ' ')
-    return (
-        $combined -match '(?i)\bNVIDIA\b' -or
-        $combined -match '(?i)VEN_10DE'
-    )
-}
-
-function New-BoostLabP0StateResult {
+function New-BoostLabP0StateSkippedTarget {
     param(
         [Parameter(Mandatory)]
-        [bool]$Success,
+        [string]$SourceKeyName,
 
         [Parameter(Mandatory)]
-        [string]$Action,
-
-        [Parameter(Mandatory)]
-        [string]$Status,
-
-        [Parameter(Mandatory)]
-        [string]$CommandStatus,
-
-        [Parameter(Mandatory)]
-        [string]$VerificationStatus,
-
-        [Parameter(Mandatory)]
-        [string]$Message,
-
-        [AllowNull()]
-        [object]$Data = $null,
-
-        [AllowNull()]
-        [object]$VerificationResult = $null,
-
-        [string[]]$Warnings = @(),
-
-        [string[]]$Errors = @(),
-
-        [bool]$Cancelled = $false
+        [string]$Reason
     )
 
-    return [pscustomobject]@{
-        Success = $Success
-        ToolId = [string]$script:BoostLabToolMetadata['Id']
-        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Action = $Action
-        Status = $Status
-        CommandStatus = $CommandStatus
-        VerificationStatus = $VerificationStatus
-        Message = $Message
-        RestartRequired = $false
-        Cancelled = $Cancelled
-        ChangesExecuted = $false
-        Timestamp = Get-Date
-        Data = $Data
-        VerificationResult = $VerificationResult
-        Warnings = @($Warnings)
-        Errors = @($Errors)
+    $sourceName = ConvertTo-BoostLabP0StateSourceKeyName -Path $SourceKeyName
+    [pscustomobject]@{
+        SourceKeyName = $sourceName
+        RegistryPath = ConvertTo-BoostLabP0StateRegistryPath -Path $sourceName
+        RegistryProviderPath = 'Registry::{0}' -f $sourceName
+        ValueName = $script:BoostLabP0StateValueName
+        SourceIncluded = $false
+        SourceSkipReason = $Reason
     }
 }
 
 function Get-BoostLabP0StateRealTargets {
-    $targets = [System.Collections.Generic.List[object]]::new()
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
     $warnings = [System.Collections.Generic.List[string]]::new()
+    $sourceKeyNames = [System.Collections.Generic.List[string]]::new()
 
     try {
-        if (-not (Test-Path -LiteralPath $script:BoostLabDisplayClassRoot -PathType Container)) {
+        if (-not (Test-Path -Path $script:BoostLabSourceDisplayClassRoot -PathType Container)) {
             return [pscustomobject]@{
                 Succeeded = $true
+                SourceRoot = $script:BoostLabSourceDisplayClassRoot
+                SourceKeyNames = @()
                 Targets = @()
-                Warnings = @()
-                Message = 'The display adapter class registry path was not found.'
+                SkippedTargets = @()
+                Warnings = @('The P0 State display-class registry path was not found.')
+                Message = 'The P0 State display-class registry path was not found.'
             }
         }
 
-        foreach ($key in @(Get-ChildItem -Path $script:BoostLabDisplayClassRoot -Force -ErrorAction SilentlyContinue)) {
-            $path = ConvertTo-BoostLabP0StateRegistryPath -Path ([string]$key.Name)
-            if ($path.EndsWith('\Configuration', [StringComparison]::OrdinalIgnoreCase)) {
-                continue
+        foreach ($key in @(Get-ChildItem -Path $script:BoostLabSourceDisplayClassRoot -Force -ErrorAction SilentlyContinue)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$key.Name)) {
+                $sourceKeyNames.Add([string]$key.Name)
             }
-            if (-not (Test-BoostLabP0StateRegistryTarget -RegistryPath $path)) {
-                $warnings.Add("Skipped target outside approved immediate display-class scope: $path")
-                continue
-            }
-
-            $properties = Get-ItemProperty -LiteralPath $path -ErrorAction SilentlyContinue
-            $evidence = @(Get-BoostLabP0StateIdentityEvidence -InputObject $properties)
-            $isNvidia = Test-BoostLabP0StateNvidiaEvidence -Evidence $evidence
-            $targets.Add(
-                [pscustomobject]@{
-                    RegistryPath = $path
-                    ValueName = $script:BoostLabP0StateValueName
-                    NvidiaTarget = $isNvidia
-                    TargetingStatus = if ($isNvidia) { 'NvidiaVerified' } else { 'AmbiguousOrNonNvidia' }
-                    Evidence = $evidence
-                }
-            )
         }
     }
     catch {
-        $warnings.Add("P0 State target discovery failed: $($_.Exception.Message)")
+        $warnings.Add("P0 State source target enumeration failed: $($_.Exception.Message)")
     }
 
-    return [pscustomobject]@{
-        Succeeded = $warnings.Count -eq 0
-        Targets = @($targets | Sort-Object RegistryPath -Unique)
+    [pscustomobject]@{
+        Succeeded = ($warnings.Count -eq 0)
+        SourceRoot = $script:BoostLabSourceDisplayClassRoot
+        SourceKeyNames = $sourceKeyNames.ToArray()
+        Targets = @()
+        SkippedTargets = @()
         Warnings = $warnings.ToArray()
-        Message = if ($targets.Count -eq 0) {
-            'No source-targeted display-class registry targets were found.'
-        }
-        else {
-            '{0} source-targeted display-class registry target(s) detected.' -f $targets.Count
-        }
+        Message = '{0} display-class subkey name(s) detected from the source query.' -f $sourceKeyNames.Count
     }
 }
 
 function Get-BoostLabP0StateDiscovery {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
     param(
         [AllowNull()]
         [scriptblock]$TargetEnumerator = $null
     )
 
-    $discovery = if ($null -ne $TargetEnumerator) {
+    $rawDiscovery = if ($null -ne $TargetEnumerator) {
         & $TargetEnumerator
     }
     else {
         Get-BoostLabP0StateRealTargets
     }
 
-    if ($null -eq $discovery -or $null -eq $discovery.PSObject.Properties['Targets']) {
+    if ($null -eq $rawDiscovery) {
         return [pscustomobject]@{
             Succeeded = $false
+            SourceRoot = $script:BoostLabSourceDisplayClassRoot
+            SourceKeyNames = @()
             Targets = @()
-            EligibleTargets = @()
-            ExcludedTargets = @()
-            AmbiguousTargets = @()
+            SkippedTargets = @()
             Warnings = @()
-            Blockers = @('Target discovery returned an invalid result.')
-            NvidiaOnly = $false
-            Message = 'P0 State target discovery returned an invalid result.'
+            Blockers = @('Target discovery returned null.')
+            Message = 'P0 State source target discovery returned null.'
         }
     }
 
-    $targets = [System.Collections.Generic.List[object]]::new()
-    $eligibleTargets = [System.Collections.Generic.List[object]]::new()
-    $excludedTargets = [System.Collections.Generic.List[object]]::new()
-    $ambiguousTargets = [System.Collections.Generic.List[object]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
     $blockers = [System.Collections.Generic.List[string]]::new()
-    foreach ($warning in @($discovery.Warnings)) {
+    $sourceNames = [System.Collections.Generic.List[string]]::new()
+    $targets = [System.Collections.Generic.List[object]]::new()
+    $skippedTargets = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($warning in @($rawDiscovery.Warnings)) {
         if (-not [string]::IsNullOrWhiteSpace([string]$warning)) {
             $warnings.Add([string]$warning)
         }
     }
 
-    foreach ($target in @($discovery.Targets)) {
-        $path = ConvertTo-BoostLabP0StateRegistryPath -Path ([string]$target.RegistryPath)
-        if (-not (Test-BoostLabP0StateRegistryTarget -RegistryPath $path)) {
-            $blockers.Add("Target is outside the approved immediate display-class scope: $path")
-            continue
-        }
-
-        $evidence = if ($null -ne $target.PSObject.Properties['Evidence']) {
-            @($target.Evidence)
-        }
-        else {
-            @()
-        }
-        $nvidiaTarget = if ($null -ne $target.PSObject.Properties['NvidiaTarget']) {
-            [bool]$target.NvidiaTarget
-        }
-        else {
-            Test-BoostLabP0StateNvidiaEvidence -Evidence $evidence
-        }
-        if (-not $nvidiaTarget) {
-            $combinedEvidence = @($evidence) -join ' '
-            $isKnownExcludedTarget = $combinedEvidence -match '(?i)(Microsoft|Remote Display|RDP|Basic Display)'
-            if ($isKnownExcludedTarget) {
-                $exclusionReason = 'Microsoft/RDP/non-NVIDIA display adapter'
-                $excludedTarget = [pscustomobject]@{
-                    RegistryPath = $path
-                    ValueName = $script:BoostLabP0StateValueName
-                    NvidiaTarget = $false
-                    Eligible = $false
-                    Excluded = $true
-                    Ambiguous = $false
-                    TargetingStatus = 'ExcludedNonNvidia'
-                    ExclusionReason = $exclusionReason
-                    AmbiguityReason = ''
-                    Evidence = $evidence
-                }
-                $targets.Add($excludedTarget)
-                $excludedTargets.Add($excludedTarget)
-                $warnings.Add("Skipped P0 State target because it is not provably NVIDIA-owned: $path ($exclusionReason)")
-                continue
+    if ($null -ne $rawDiscovery.PSObject.Properties['SourceKeyNames']) {
+        foreach ($sourceName in @($rawDiscovery.SourceKeyNames)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$sourceName)) {
+                $sourceNames.Add([string]$sourceName)
             }
-
-            $ambiguousReason = if ([string]::IsNullOrWhiteSpace($combinedEvidence)) {
-                'missing adapter identity evidence'
-            }
-            else {
-                'identity evidence is neither NVIDIA nor a known excluded Microsoft/RDP adapter'
-            }
-            $ambiguousTarget = [pscustomobject]@{
-                RegistryPath = $path
-                ValueName = $script:BoostLabP0StateValueName
-                NvidiaTarget = $false
-                Eligible = $false
-                Excluded = $false
-                Ambiguous = $true
-                TargetingStatus = 'AmbiguousIdentity'
-                ExclusionReason = ''
-                AmbiguityReason = $ambiguousReason
-                Evidence = $evidence
-            }
-            $targets.Add($ambiguousTarget)
-            $ambiguousTargets.Add($ambiguousTarget)
-            $blockers.Add("Target identity is ambiguous and cannot be written safely: $path ($ambiguousReason)")
-            continue
         }
-
-        $eligibleTarget = [pscustomobject]@{
-            RegistryPath = $path
-            ValueName = $script:BoostLabP0StateValueName
-            NvidiaTarget = $true
-            Eligible = $true
-            Excluded = $false
-            Ambiguous = $false
-            TargetingStatus = 'NvidiaVerified'
-            ExclusionReason = ''
-            AmbiguityReason = ''
-            Evidence = $evidence
-        }
-        $targets.Add($eligibleTarget)
-        $eligibleTargets.Add($eligibleTarget)
     }
 
-    return [pscustomobject]@{
-        Succeeded = [bool]$discovery.Succeeded -and $blockers.Count -eq 0
-        Targets = @($targets | Sort-Object RegistryPath -Unique)
-        EligibleTargets = @($eligibleTargets | Sort-Object RegistryPath -Unique)
-        ExcludedTargets = @($excludedTargets | Sort-Object RegistryPath -Unique)
-        AmbiguousTargets = @($ambiguousTargets | Sort-Object RegistryPath -Unique)
+    if ($sourceNames.Count -eq 0 -and $null -ne $rawDiscovery.PSObject.Properties['Targets']) {
+        foreach ($target in @($rawDiscovery.Targets)) {
+            $sourceName = if ($null -ne $target.PSObject.Properties['SourceKeyName']) {
+                [string]$target.SourceKeyName
+            }
+            elseif ($null -ne $target.PSObject.Properties['RegistryPath']) {
+                ConvertTo-BoostLabP0StateSourceKeyName -Path ([string]$target.RegistryPath)
+            }
+            else {
+                ''
+            }
+            if (-not [string]::IsNullOrWhiteSpace($sourceName)) {
+                $sourceNames.Add($sourceName)
+            }
+        }
+    }
+
+    foreach ($sourceName in @($sourceNames.ToArray() | Sort-Object -Unique)) {
+        $normalized = ConvertTo-BoostLabP0StateRegistryPath -Path $sourceName
+        if ($normalized -like '*Configuration*') {
+            $skippedTargets.Add((New-BoostLabP0StateSkippedTarget -SourceKeyName $sourceName -Reason 'Skipped by source *Configuration* rule.'))
+            continue
+        }
+        if (-not (Test-BoostLabP0StateRegistryTarget -RegistryPath $normalized)) {
+            $blockers.Add("Target is outside the immediate source display-class subkey scope: $sourceName")
+            continue
+        }
+
+        $targets.Add((New-BoostLabP0StateTarget -SourceKeyName $sourceName))
+    }
+
+    [pscustomobject]@{
+        Succeeded = [bool]$rawDiscovery.Succeeded -and $blockers.Count -eq 0
+        SourceRoot = if ($null -ne $rawDiscovery.PSObject.Properties['SourceRoot']) { [string]$rawDiscovery.SourceRoot } else { $script:BoostLabSourceDisplayClassRoot }
+        SourceKeyNames = $sourceNames.ToArray()
+        Targets = @($targets.ToArray())
+        SkippedTargets = @($skippedTargets.ToArray())
         Warnings = $warnings.ToArray()
         Blockers = $blockers.ToArray()
-        NvidiaOnly = $eligibleTargets.Count -gt 0 -and $blockers.Count -eq 0 -and $ambiguousTargets.Count -eq 0
-        Message = [string]$discovery.Message
+        Message = if ($targets.Count -gt 0) {
+            '{0} source-included non-Configuration display-class target(s) detected.' -f $targets.Count
+        }
+        elseif ($skippedTargets.Count -gt 0) {
+            'Only Configuration display-class targets were detected; source-defined P0 State writes have no target.'
+        }
+        else {
+            [string]$rawDiscovery.Message
+        }
     }
 }
 
@@ -487,7 +399,7 @@ function Set-BoostLabP0StateRegistryValue {
 
     $path = ConvertTo-BoostLabP0StateRegistryPath -Path $RegistryPath
     if (-not (Test-BoostLabP0StateRegistryTarget -RegistryPath $path)) {
-        throw "Registry target is outside the approved P0 State display-class scope: $path"
+        throw "Registry target is outside the source P0 State display-class scope: $path"
     }
     if (-not (Test-Path -LiteralPath $path -PathType Container)) {
         throw "Registry target does not exist: $path"
@@ -511,7 +423,7 @@ function New-BoostLabP0StateCapturePolicy {
         [string]$ScopeId
     )
 
-    return @{
+    @{
         SchemaVersion = '1.0'
         FileScopes = @()
         RegistryScopes = @(
@@ -531,6 +443,123 @@ function New-BoostLabP0StateCapturePolicy {
     }
 }
 
+function New-BoostLabP0StateResult {
+    param(
+        [Parameter(Mandatory)]
+        [bool]$Success,
+
+        [Parameter(Mandatory)]
+        [string]$Action,
+
+        [Parameter(Mandatory)]
+        [string]$Status,
+
+        [Parameter(Mandatory)]
+        [string]$CommandStatus,
+
+        [Parameter(Mandatory)]
+        [string]$VerificationStatus,
+
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [AllowNull()]
+        [object]$Data = $null,
+
+        [AllowNull()]
+        [object]$VerificationResult = $null,
+
+        [string[]]$Warnings = @(),
+
+        [string[]]$Errors = @(),
+
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
+    )
+
+    [pscustomobject]@{
+        Success = $Success
+        ToolId = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
+        Action = $Action
+        Status = $Status
+        CommandStatus = $CommandStatus
+        VerificationStatus = $VerificationStatus
+        Message = $Message
+        RestartRequired = $false
+        Cancelled = $Cancelled
+        ChangesExecuted = $ChangesExecuted
+        Timestamp = Get-Date
+        Data = $Data
+        VerificationResult = $VerificationResult
+        Warnings = @($Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Select-Object -Unique)
+        Errors = @($Errors | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Select-Object -Unique)
+    }
+}
+
+function Get-BoostLabP0StateReadbackResults {
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$Targets,
+
+        [AllowNull()]
+        [Nullable[int]]$ExpectedValue = $null,
+
+        [AllowNull()]
+        [scriptblock]$RegistryReader = $null
+    )
+
+    $reader = if ($null -ne $RegistryReader) {
+        $RegistryReader
+    }
+    else {
+        { param($Path, $ItemType, $ValueName) Get-BoostLabP0StateRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
+    }
+
+    foreach ($target in @($Targets)) {
+        $state = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabP0StateValueName
+        $actualValue = if ($null -ne $state -and $null -ne $state.Metadata) {
+            $state.Metadata.ValueData
+        }
+        else {
+            $null
+        }
+        $actualType = if ($null -ne $state -and $null -ne $state.Metadata) {
+            [string]$state.Metadata.ValueType
+        }
+        else {
+            ''
+        }
+        $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
+            'Failed'
+        }
+        elseif ($null -eq $ExpectedValue) {
+            'Read'
+        }
+        elseif ([bool]$state.Exists -and $actualType -eq 'DWord' -and [int]$actualValue -eq [int]$ExpectedValue) {
+            'Passed'
+        }
+        else {
+            'Failed'
+        }
+
+        [pscustomobject]@{
+            RegistryPath = [string]$target.RegistryPath
+            SourceKeyName = [string]$target.SourceKeyName
+            ValueName = $script:BoostLabP0StateValueName
+            ExpectedValue = if ($null -eq $ExpectedValue) { $null } else { [int]$ExpectedValue }
+            ActualValue = $actualValue
+            ActualType = $actualType
+            Exists = if ($null -ne $state) { [bool]$state.Exists } else { $false }
+            ReadSucceeded = if ($null -ne $state) { [bool]$state.ReadSucceeded } else { $false }
+            DisplayValue = if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }
+            Status = $status
+            Message = if ($null -ne $state) { [string]$state.Message } else { 'No readback state returned.' }
+        }
+    }
+}
+
 function Test-BoostLabP0StateState {
     param(
         [Parameter(Mandatory)]
@@ -544,7 +573,7 @@ function Test-BoostLabP0StateState {
         [object[]]$CaptureRecords = @(),
 
         [AllowNull()]
-        [scriptblock]$RegistryReader = $null
+        [object[]]$Readbacks = @()
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
@@ -556,20 +585,14 @@ function Test-BoostLabP0StateState {
     else {
         $script:BoostLabP0StateApplyValue
     }
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        { param($Path, $ItemType, $ValueName) Get-BoostLabP0StateRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
-    }
 
     $checks.Add(
         (New-BoostLabVerificationCheck `
-            -Name 'NVIDIA target discovery' `
-            -Expected 'At least one provably NVIDIA immediate display-class target for Apply or Default' `
+            -Name 'Source display-class target discovery' `
+            -Expected 'At least one immediate non-Configuration display-class subkey for Apply or Default' `
             -Actual ("$targetCount target(s)") `
-            -Status $(if ($targetCount -gt 0) { 'Passed' } elseif ($ActionName -eq 'Analyze') { 'Warning' } else { 'NotApplicable' }) `
-            -Message $(if ($targetCount -gt 0) { 'NVIDIA display-class registry targets were discovered.' } else { 'No NVIDIA display-class registry targets were discovered.' }))
+            -Status $(if ($targetCount -gt 0) { 'Passed' } elseif ($ActionName -eq 'Analyze') { 'Warning' } else { 'Failed' }) `
+            -Message $(if ($targetCount -gt 0) { 'Source-targeted display-class registry subkeys were discovered.' } else { 'No source-targeted non-Configuration display-class registry subkeys were discovered.' }))
     )
 
     if ($ActionName -ne 'Analyze') {
@@ -578,132 +601,63 @@ function Test-BoostLabP0StateState {
                 -Name 'Pre-mutation capture records' `
                 -Expected "$targetCount capture record(s)" `
                 -Actual "$captureCount capture record(s)" `
-                -Status $(if ($targetCount -gt 0 -and $captureCount -eq $targetCount) { 'Passed' } elseif ($targetCount -eq 0) { 'NotApplicable' } else { 'Failed' }) `
-                -Message 'Each P0 State target must have a successful registry value capture before mutation.'))
+                -Status $(if ($targetCount -gt 0 -and $captureCount -eq $targetCount) { 'Passed' } elseif ($targetCount -eq 0) { 'Failed' } else { 'Failed' }) `
+                -Message 'Each source-targeted P0 State registry value must have a successful capture before mutation.'))
     }
 
     foreach ($target in @($Targets)) {
-        $identityStatus = if ([bool]$target.NvidiaTarget) { 'Passed' } else { 'Failed' }
         $checks.Add(
             (New-BoostLabVerificationCheck `
-                -Name ('NVIDIA identity | {0}' -f [string]$target.RegistryPath) `
-                -Expected 'NVIDIA evidence such as NVIDIA provider text or VEN_10DE' `
-                -Actual ((@($target.Evidence) -join '; ')) `
-                -Status $identityStatus `
-                -Message $(if ([bool]$target.NvidiaTarget) { 'Target identity is NVIDIA-owned.' } else { 'Target identity is ambiguous or non-NVIDIA.' }))
-        )
+                -Name ('Source target scope | {0}' -f [string]$target.RegistryPath) `
+                -Expected 'Immediate display-class subkey whose path/name does not match *Configuration*' `
+                -Actual ([string]$target.SourceKeyName) `
+                -Status $(if (Test-BoostLabP0StateRegistryTarget -RegistryPath ([string]$target.RegistryPath)) { 'Passed' } else { 'Failed' }) `
+                -Message 'P0 State target follows the exact source enumeration scope.'))
+    }
 
-        $state = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabP0StateValueName
+    foreach ($readback in @($Readbacks)) {
         if ($ActionName -eq 'Analyze') {
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            else {
-                'Passed'
-            }
-            $expected = 'Readable P0 State value state'
-        }
-        else {
-            $valueData = if ($null -ne $state -and $null -ne $state.Metadata) {
-                $state.Metadata.ValueData
-            }
-            else {
-                $null
-            }
-            $valueType = if ($null -ne $state -and $null -ne $state.Metadata) {
-                [string]$state.Metadata.ValueType
-            }
-            else {
-                ''
-            }
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            elseif (-not [bool]$state.Exists) {
-                'Failed'
-            }
-            elseif (
-                $valueType -notin @('DWord', 'REG_DWORD') -or
-                [string]$valueData -ne [string]$expectedValue
-            ) {
-                'Failed'
-            }
-            else {
-                'Passed'
-            }
-            $expected = 'DisableDynamicPstate DWORD {0}' -f $expectedValue
+            $checks.Add(
+                (New-BoostLabVerificationCheck `
+                    -Name ('Readback | {0}' -f [string]$readback.RegistryPath) `
+                    -Expected 'Readable current P0 State value state' `
+                    -Actual ([string]$readback.DisplayValue) `
+                    -Status $(if ([bool]$readback.ReadSucceeded) { 'Passed' } else { 'Warning' }) `
+                    -Message 'Analyze read the current P0 State value state without mutation.'))
+            continue
         }
 
         $checks.Add(
             (New-BoostLabVerificationCheck `
-                -Name ('{0} | {1}' -f $script:BoostLabP0StateValueName, [string]$target.RegistryPath) `
-                -Expected $expected `
-                -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) `
-                -Status $status `
-                -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Registry reader returned no state.' }))
+                -Name ('Readback | {0}' -f [string]$readback.RegistryPath) `
+                -Expected ('REG_DWORD {0}' -f $expectedValue) `
+                -Actual ([string]$readback.DisplayValue) `
+                -Status ([string]$readback.Status) `
+                -Message ('P0 State source readback for {0} after {1}.' -f $script:BoostLabP0StateValueName, $ActionName))
         )
     }
 
-    $overallStatus = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) {
+    $failedChecks = @($checks | Where-Object { [string]$_.Status -eq 'Failed' })
+    $warningChecks = @($checks | Where-Object { [string]$_.Status -eq 'Warning' })
+    $status = if ($failedChecks.Count -gt 0) {
         'Failed'
     }
-    elseif (@($checks | Where-Object { $_.Status -eq 'Warning' }).Count -gt 0) {
+    elseif ($warningChecks.Count -gt 0) {
         'Warning'
-    }
-    elseif (@($checks | Where-Object { $_.Status -eq 'NotApplicable' }).Count -gt 0) {
-        'NotApplicable'
     }
     else {
         'Passed'
     }
-    $expectedState = if ($ActionName -eq 'Analyze') {
-        [pscustomobject]@{
-            TargetDiscoveryOnly = $true
-            TargetValue = $script:BoostLabP0StateValueName
-            SourceApplyValue = $script:BoostLabP0StateApplyValue
-            SourceDefaultValue = $script:BoostLabP0StateDefaultValue
-        }
-    }
-    else {
-        [pscustomobject]@{
-            TargetValue = $script:BoostLabP0StateValueName
-            ExpectedValueType = 'DWORD'
-            ExpectedValueData = $expectedValue
-            CaptureRequired = $true
-        }
-    }
-    $detectedState = [pscustomobject]@{
-        TargetCount = $targetCount
-        CaptureRecordCount = $captureCount
-        FailedChecks = @($checks | Where-Object { $_.Status -eq 'Failed' }).Count
-        WarningChecks = @($checks | Where-Object { $_.Status -eq 'Warning' }).Count
-    }
-    $message = switch ($overallStatus) {
-        'Passed' {
-            if ($ActionName -eq 'Apply') {
-                'All discovered NVIDIA P0 State targets have DisableDynamicPstate set to DWORD 1.'
-            }
-            elseif ($ActionName -eq 'Default') {
-                'All discovered NVIDIA P0 State targets have DisableDynamicPstate set to DWORD 0.'
-            }
-            else {
-                'P0 State NVIDIA display-class registry targets were analyzed.'
-            }
-        }
-        'Warning' { 'P0 State target state was analyzed with warnings.' }
-        'NotApplicable' { 'No NVIDIA P0 State registry targets were found.' }
-        default { 'One or more P0 State registry targets did not match the expected state.' }
-    }
 
-    return New-BoostLabVerificationResult `
+    New-BoostLabVerificationResult `
         -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
         -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
         -Action $ActionName `
-        -Status $overallStatus `
-        -ExpectedState $expectedState `
-        -DetectedState $detectedState `
+        -Status $status `
+        -ExpectedState $(if ($ActionName -eq 'Default') { 'DisableDynamicPstate is REG_DWORD 0 on every source-included non-Configuration display-class subkey.' } elseif ($ActionName -eq 'Apply') { 'DisableDynamicPstate is REG_DWORD 1 on every source-included non-Configuration display-class subkey.' } else { 'P0 State source scope is readable without mutation.' }) `
+        -DetectedState ('{0} target(s), {1} readback(s)' -f $targetCount, @($Readbacks).Count) `
         -Checks $checks.ToArray() `
-        -Message $message
+        -Message $(if ($status -eq 'Passed') { 'P0 State source-equivalent verification passed.' } elseif ($status -eq 'Warning') { 'P0 State source-equivalent verification completed with warnings.' } else { 'P0 State source-equivalent verification failed.' })
 }
 
 function Invoke-BoostLabP0StateAnalyze {
@@ -717,48 +671,38 @@ function Invoke-BoostLabP0StateAnalyze {
 
     $source = Get-BoostLabP0StateSourceStatus
     $discovery = Get-BoostLabP0StateDiscovery -TargetEnumerator $TargetEnumerator
-    $eligibleTargets = @($discovery.EligibleTargets)
-    $excludedTargets = @($discovery.ExcludedTargets)
-    $ambiguousTargets = @($discovery.AmbiguousTargets)
-    $verification = Test-BoostLabP0StateState `
-        -ActionName 'Analyze' `
-        -Targets $eligibleTargets `
-        -RegistryReader $RegistryReader
+    $readbacks = @(Get-BoostLabP0StateReadbackResults -Targets @($discovery.Targets) -RegistryReader $RegistryReader)
+    $verification = Test-BoostLabP0StateState -ActionName Analyze -Targets @($discovery.Targets) -Readbacks $readbacks
 
-    $applyAvailable = (
-        [string]$source.ChecksumStatus -eq 'Passed' -and
-        $eligibleTargets.Count -gt 0 -and
-        @($discovery.Blockers).Count -eq 0
-    )
     $data = [pscustomobject]@{
         Source = $source
-        PathBWorkflow = 'Driver Install Latest -> Nvidia Settings -> HDCP -> P0 State -> Msi Mode'
+        Header = 'NVIDIA Highest Performance Power State'
+        PathBWorkflow = 'Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode'
         PathBStepNumber = 4
         PathBStepTotal = 5
         PathBStep = '4 of 5'
+        SourceBehaviorSummary = 'Ultimate enumerates display-class subkey .Name values, skips paths/names matching *Configuration*, writes DisableDynamicPstate as REG_DWORD 1 for On (Recommended) or REG_DWORD 0 for Default, then reads each written value back.'
         SourceRegistryRoot = $script:BoostLabDisplayClassRoot
+        SourceRegistryQuery = $script:BoostLabSourceDisplayClassRoot
         SourceRegistryValueName = $script:BoostLabP0StateValueName
         SourceRegistryValueType = 'REG_DWORD'
-        SourceApplyValue = $script:BoostLabP0StateApplyValue
+        SourceOnRecommendedValue = $script:BoostLabP0StateApplyValue
         SourceDefaultValue = $script:BoostLabP0StateDefaultValue
+        SourceSkipRule = '*Configuration*'
+        SourceKeyNameCount = @($discovery.SourceKeyNames).Count
+        SourceKeyNames = @($discovery.SourceKeyNames)
         TargetCount = @($discovery.Targets).Count
         Targets = @($discovery.Targets)
-        EligibleTargetCount = $eligibleTargets.Count
-        EligibleTargets = $eligibleTargets
-        ExcludedTargetCount = $excludedTargets.Count
-        ExcludedTargets = $excludedTargets
-        AmbiguousTargetCount = $ambiguousTargets.Count
-        AmbiguousTargets = $ambiguousTargets
-        NvidiaOnlyTargetingStatus = if ($applyAvailable) { 'Passed' } else { 'NeedsNvidiaTargeting' }
-        ApplyAvailable = $applyAvailable
-        ApplyBlockedStatus = if ($applyAvailable) { '' } else { 'NeedsNvidiaTargeting' }
-        DefaultAvailable = $applyAvailable
+        SkippedTargetCount = @($discovery.SkippedTargets).Count
+        SkippedTargets = @($discovery.SkippedTargets)
+        ApplyAvailable = @($discovery.Targets).Count -gt 0 -and @($discovery.Blockers).Count -eq 0
+        DefaultAvailable = @($discovery.Targets).Count -gt 0 -and @($discovery.Blockers).Count -eq 0
         RestoreAvailable = $false
-        RestoreAvailability = 'Restore requires selected captured state from this P0 State tool and is not exposed as Default.'
-        DefaultAvailability = if ($applyAvailable) { 'Default is source-defined as DisableDynamicPstate DWORD 0 and applies only to eligible NVIDIA targets.' } else { 'Default is blocked until at least one eligible NVIDIA target is proven.' }
+        RestoreAvailability = 'No Restore action is source-defined or exposed for P0 State; Default is the source-defined DWORD 0 branch.'
         ChangesExecuted = $false
         CaptureAttempted = $false
         RegistryWriteAttempted = $false
+        Readbacks = $readbacks
         ExternalProcessStarted = $false
         DownloadStarted = $false
         RebootRequested = $false
@@ -766,16 +710,17 @@ function Invoke-BoostLabP0StateAnalyze {
         Blockers = @($discovery.Blockers)
     }
 
-    return New-BoostLabP0StateResult `
-        -Success $true `
+    New-BoostLabP0StateResult `
+        -Success ([string]$source.ChecksumStatus -eq 'Passed' -and @($discovery.Blockers).Count -eq 0) `
         -Action 'Analyze' `
-        -Status 'Analyzed' `
+        -Status $(if ([string]$source.ChecksumStatus -eq 'Passed' -and @($discovery.Blockers).Count -eq 0) { 'Analyzed' } else { 'SourceScopeBlocked' }) `
         -CommandStatus 'No execution performed' `
         -VerificationStatus ([string]$verification.Status) `
-        -Message 'P0 State source scope and NVIDIA display-class registry targeting were analyzed. No system mutation occurred.' `
+        -Message 'P0 State source scope, non-Configuration display-class targets, and current readback state were analyzed. No registry capture, registry write, download, external process, or reboot occurred.' `
         -Data $data `
         -VerificationResult $verification `
-        -Warnings @($discovery.Warnings)
+        -Warnings @($discovery.Warnings) `
+        -Errors $(if ([string]$source.ChecksumStatus -eq 'Passed') { @($discovery.Blockers) } else { @("Source checksum status: $($source.ChecksumStatus)") + @($discovery.Blockers) })
 }
 
 function Invoke-BoostLabP0StateRegistrySet {
@@ -805,9 +750,9 @@ function Invoke-BoostLabP0StateRegistrySet {
             -Success $false `
             -Action $ActionName `
             -Status 'SourceChecksumMismatch' `
-            -CommandStatus 'Blocked' `
+            -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'P0 State source checksum did not match the approved mirror. No registry discovery, capture, or write was performed.' `
+            -Message 'P0 State source checksum did not match the approved mirror. No registry discovery, capture, write, or readback was performed.' `
             -Data ([pscustomobject]@{
                 Source = $source
                 ChangesExecuted = $false
@@ -827,37 +772,37 @@ function Invoke-BoostLabP0StateRegistrySet {
         return New-BoostLabP0StateResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'Error' `
-            -CommandStatus 'Blocked' `
+            -Status 'AdministratorRequired' `
+            -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Administrator rights are required before P0 State registry values can be changed.'
+            -Message 'Administrator rights are required before P0 State registry values can be changed.' `
+            -Data ([pscustomobject]@{
+                Source = $source
+                ChangesExecuted = $false
+                CaptureAttempted = $false
+                RegistryWriteAttempted = $false
+            })
     }
 
     $discovery = Get-BoostLabP0StateDiscovery -TargetEnumerator $TargetEnumerator
-    $targets = @($discovery.EligibleTargets)
-    $excludedTargets = @($discovery.ExcludedTargets)
-    $ambiguousTargets = @($discovery.AmbiguousTargets)
+    $targets = @($discovery.Targets)
     if (@($discovery.Blockers).Count -gt 0) {
         return New-BoostLabP0StateResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'NeedsNvidiaTargeting' `
-            -CommandStatus 'Blocked' `
+            -Status 'SourceScopeBlocked' `
+            -CommandStatus 'Blocked before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'P0 State registry mutation was blocked because target discovery included out-of-scope display-class registry paths. No capture or write was performed.' `
-            -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = $targets.Count
-                EligibleTargets = $targets
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+            -Message 'P0 State registry mutation was blocked because target discovery included out-of-scope registry paths. No capture or write was performed.' `
+            -Data ([pscustomObject]@{
+                Source = $source
+                TargetCount = $targets.Count
+                Targets = $targets
+                SkippedTargetCount = @($discovery.SkippedTargets).Count
+                SkippedTargets = @($discovery.SkippedTargets)
                 ChangesExecuted = $false
                 CaptureAttempted = $false
                 RegistryWriteAttempted = $false
-                DiscoveryWarnings = @($discovery.Warnings)
                 Blockers = @($discovery.Blockers)
             }) `
             -Warnings @($discovery.Warnings) `
@@ -868,28 +813,26 @@ function Invoke-BoostLabP0StateRegistrySet {
         return New-BoostLabP0StateResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'NeedsNvidiaTargeting' `
-            -CommandStatus 'Blocked' `
+            -Status 'NoSourceTargets' `
+            -CommandStatus 'Blocked before execution' `
             -VerificationStatus ([string]$verification.Status) `
-            -Message 'No eligible NVIDIA P0 State display-class registry targets were found. Excluded non-NVIDIA targets were skipped and no changes were executed.' `
+            -Message 'No source-included non-Configuration P0 State display-class registry targets were found. No capture or registry write was performed.' `
             -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = 0
-                EligibleTargets = @()
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+                Source = $source
+                SourceKeyNameCount = @($discovery.SourceKeyNames).Count
+                SourceKeyNames = @($discovery.SourceKeyNames)
+                TargetCount = 0
+                Targets = @()
+                SkippedTargetCount = @($discovery.SkippedTargets).Count
+                SkippedTargets = @($discovery.SkippedTargets)
                 ChangesExecuted = $false
                 CaptureAttempted = $false
                 RegistryWriteAttempted = $false
                 DiscoveryWarnings = @($discovery.Warnings)
-                Blockers = @($discovery.Blockers)
             }) `
             -VerificationResult $verification `
             -Warnings @($discovery.Warnings) `
-            -Errors @('No eligible NVIDIA display-class registry targets were found.')
+            -Errors @('No source-included non-Configuration P0 State display-class registry targets were found.')
     }
 
     $reader = if ($null -ne $RegistryReader) {
@@ -934,17 +877,14 @@ function Invoke-BoostLabP0StateRegistrySet {
             -RegistryReader $reader `
             -StateRoot $StateRoot
         if (-not [bool]$capture.Success) {
-            $errors.Add(
-                ('State capture failed for {0}: {1}' -f `
-                    ([string]$target.RegistryPath),
-                    (@($capture.Errors) -join '; '))
-            )
+            $errors.Add(('State capture failed for {0}: {1}' -f ([string]$target.RegistryPath), (@($capture.Errors) -join '; ')))
             continue
         }
 
         $captureRecords.Add(
             [pscustomobject]@{
                 TargetPath = [string]$target.RegistryPath
+                SourceKeyName = [string]$target.SourceKeyName
                 ScopeId = $scopeId
                 OperationId = [string]$capture.OperationId
                 RecordPath = [string]$capture.RecordPath
@@ -961,19 +901,16 @@ function Invoke-BoostLabP0StateRegistrySet {
         return New-BoostLabP0StateResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'Error' `
-            -CommandStatus 'Blocked' `
+            -Status 'CaptureFailed' `
+            -CommandStatus 'Blocked before mutation' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'P0 State registry state capture failed before mutation. No changes were executed.' `
+            -Message 'P0 State registry state capture failed before mutation. No registry write was executed.' `
             -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = $targets.Count
-                EligibleTargets = $targets
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+                Source = $source
+                TargetCount = $targets.Count
+                Targets = $targets
+                SkippedTargetCount = @($discovery.SkippedTargets).Count
+                SkippedTargets = @($discovery.SkippedTargets)
                 ChangesExecuted = $false
                 CaptureAttempted = $true
                 RegistryWriteAttempted = $false
@@ -990,20 +927,14 @@ function Invoke-BoostLabP0StateRegistrySet {
             $changesCompleted.Add([string]$target.RegistryPath)
         }
         catch {
-            $errors.Add(
-                ('Writing {0} failed for {1}: {2}' -f `
-                    $script:BoostLabP0StateValueName,
-                    ([string]$target.RegistryPath),
-                    $_.Exception.Message)
-            )
+            $errors.Add(('Writing {0} failed for {1}: {2}' -f $script:BoostLabP0StateValueName, ([string]$target.RegistryPath), $_.Exception.Message))
         }
     }
 
+    $readbacks = @(Get-BoostLabP0StateReadbackResults -Targets $targets -ExpectedValue $expectedValue -RegistryReader $reader)
+
     foreach ($captureRecord in $captureRecords) {
-        $target = $targets | Where-Object {
-            [string]$_.RegistryPath -eq [string]$captureRecord.TargetPath
-        } | Select-Object -First 1
-        $postState = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabP0StateValueName
+        $postState = & $reader ([string]$captureRecord.TargetPath) 'RegistryValue' $script:BoostLabP0StateValueName
         if ($null -eq $postState -or -not [bool]$postState.ReadSucceeded) {
             $errors.Add("Post-mutation state could not be read for $($captureRecord.TargetPath).")
             continue
@@ -1015,11 +946,7 @@ function Invoke-BoostLabP0StateRegistrySet {
             -PostMutationExists ([bool]$postState.Exists) `
             -PostMutationMetadata $postState.Metadata
         if (-not [bool]$recordResult.Success) {
-            $errors.Add(
-                ('Recording post-mutation state failed for {0}: {1}' -f `
-                    ([string]$captureRecord.TargetPath),
-                    (@($recordResult.Errors) -join '; '))
-            )
+            $errors.Add(('Recording post-mutation state failed for {0}: {1}' -f ([string]$captureRecord.TargetPath), (@($recordResult.Errors) -join '; ')))
         }
     }
 
@@ -1027,21 +954,24 @@ function Invoke-BoostLabP0StateRegistrySet {
         -ActionName $ActionName `
         -Targets $targets `
         -CaptureRecords $captureRecords.ToArray() `
-        -RegistryReader $reader
+        -Readbacks $readbacks
 
     $data = [pscustomobject]@{
         Source = $source
+        Header = 'NVIDIA Highest Performance Power State'
         PathBStep = '4 of 5'
-        TargetCount = @($discovery.Targets).Count
-        Targets = @($discovery.Targets)
-        EligibleTargetCount = $targets.Count
-        EligibleTargets = $targets
-        ExcludedTargetCount = $excludedTargets.Count
-        ExcludedTargets = $excludedTargets
-        AmbiguousTargetCount = $ambiguousTargets.Count
-        AmbiguousTargets = $ambiguousTargets
+        SourceRegistryRoot = $script:BoostLabDisplayClassRoot
+        SourceRegistryQuery = $script:BoostLabSourceDisplayClassRoot
+        SourceSkipRule = '*Configuration*'
+        SourceKeyNameCount = @($discovery.SourceKeyNames).Count
+        SourceKeyNames = @($discovery.SourceKeyNames)
+        TargetCount = $targets.Count
+        Targets = $targets
+        SkippedTargetCount = @($discovery.SkippedTargets).Count
+        SkippedTargets = @($discovery.SkippedTargets)
         WrittenTargetCount = $changesCompleted.Count
         WrittenTargets = $changesCompleted.ToArray()
+        Readbacks = $readbacks
         ChangesExecuted = $changesCompleted.Count -gt 0
         RegistryChangesAttempted = $changesAttempted.ToArray()
         RegistryChangesCompleted = $changesCompleted.ToArray()
@@ -1053,7 +983,7 @@ function Invoke-BoostLabP0StateRegistrySet {
         ExpectedValueData = $expectedValue
         DefaultImplemented = $true
         RestoreImplemented = $false
-        RestoreUnavailableReason = 'Restore requires a selected captured rollback record from this P0 State tool; Default is source-defined DisableDynamicPstate DWORD 0 and is not Restore.'
+        RestoreUnavailableReason = 'No Restore action is source-defined or exposed for P0 State; Default is source-defined DWORD 0 and is not Restore.'
         ExternalProcessStarted = $false
         DownloadStarted = $false
         RebootRequested = $false
@@ -1071,7 +1001,8 @@ function Invoke-BoostLabP0StateRegistrySet {
             -Message ('P0 State {0} completed with errors: {1}' -f $ActionName, ($errors -join '; ')) `
             -Data $data `
             -VerificationResult $verification `
-            -Errors $errors.ToArray()
+            -Errors $errors.ToArray() `
+            -ChangesExecuted ($changesCompleted.Count -gt 0)
     }
     if ($verification.Status -eq 'Failed') {
         return New-BoostLabP0StateResult `
@@ -1080,41 +1011,22 @@ function Invoke-BoostLabP0StateRegistrySet {
             -Status 'Error' `
             -CommandStatus 'Completed' `
             -VerificationStatus ([string]$verification.Status) `
-            -Message ('P0 State {0} completed, but verification failed.' -f $ActionName) `
+            -Message ('P0 State {0} completed, but source-equivalent readback verification failed.' -f $ActionName) `
             -Data $data `
-            -VerificationResult $verification
+            -VerificationResult $verification `
+            -ChangesExecuted ($changesCompleted.Count -gt 0)
     }
 
-    return New-BoostLabP0StateResult `
+    New-BoostLabP0StateResult `
         -Success $true `
         -Action $ActionName `
         -Status $(if ($verification.Status -eq 'Warning') { 'Warning' } else { 'Completed' }) `
         -CommandStatus $(if ($verification.Status -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }) `
         -VerificationStatus ([string]$verification.Status) `
-            -Message $(if ($ActionName -eq 'Default') { 'P0 State Default set source-defined DisableDynamicPstate DWORD 0 on eligible NVIDIA targets with captured pre-change registry state. Excluded non-NVIDIA targets were skipped.' } else { 'P0 State Apply set source-defined DisableDynamicPstate DWORD 1 on eligible NVIDIA targets with captured pre-change registry state. Excluded non-NVIDIA targets were skipped.' }) `
-            -Data $data `
-            -VerificationResult $verification
-}
-
-function Invoke-BoostLabP0StateRestore {
-    param(
-        [bool]$Confirmed = $false
-    )
-
-    return New-BoostLabP0StateResult `
-        -Success $false `
-        -Action 'Restore' `
-        -Status 'RestoreUnavailable' `
-        -CommandStatus 'Blocked' `
-        -VerificationStatus 'NotApplicable' `
-        -Message 'P0 State Restore requires a valid selected captured rollback record from this P0 State tool. Restore is not Default and no captured-state selector path was provided.' `
-        -Data ([pscustomobject]@{
-            RestoreRequiresCapturedState = $true
-            RestoreExecuted = $false
-            ChangesExecuted = $false
-            DefaultIsRestore = $false
-            Reason = 'Missing selected captured rollback record.'
-        })
+        -Message $(if ($ActionName -eq 'Default') { 'P0 State Default set source-defined DisableDynamicPstate DWORD 0 on every source-included non-Configuration display-class target and read the values back.' } else { 'P0 State On (Recommended) set source-defined DisableDynamicPstate DWORD 1 on every source-included non-Configuration display-class target and read the values back.' }) `
+        -Data $data `
+        -VerificationResult $verification `
+        -ChangesExecuted ($changesCompleted.Count -gt 0)
 }
 
 function Get-BoostLabToolInfo {
@@ -1122,7 +1034,7 @@ function Get-BoostLabToolInfo {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Id = [string]$script:BoostLabToolMetadata['Id']
         Title = [string]$script:BoostLabToolMetadata['Title']
         Stage = [string]$script:BoostLabToolMetadata['Stage']
@@ -1133,8 +1045,8 @@ function Get-BoostLabToolInfo {
         Actions = @($script:BoostLabToolMetadata['Actions'])
         Capabilities = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions = @($script:BoostLabImplementedActions)
-        ConfirmationRequiredActions = @('Apply', 'Default', 'Restore')
-        ConfirmationText = 'P0 State changes the source-defined NVIDIA display-class registry value only after NVIDIA-only target discovery and pre-change state capture. Continue?'
+        ConfirmationRequiredActions = @('Apply', 'Default')
+        ConfirmationText = 'P0 State will set DisableDynamicPstate on every source-included non-Configuration display-class registry subkey and read it back. Continue?'
     }
 }
 
@@ -1144,7 +1056,7 @@ function Test-BoostLabToolCompatibility {
     param()
 
     $source = Get-BoostLabP0StateSourceStatus
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Supported = [bool]($source.ChecksumStatus -eq 'Passed')
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
@@ -1164,7 +1076,7 @@ function Get-BoostLabToolState {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
         Status = 'Ready'
@@ -1180,6 +1092,7 @@ function Invoke-BoostLabToolAction {
     [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)]
+        [ValidateSet('Analyze', 'Apply', 'Default', 'On (Recommended)')]
         [string]$ActionName,
 
         [bool]$Confirmed = $false,
@@ -1199,34 +1112,25 @@ function Invoke-BoostLabToolAction {
         [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
     )
 
-    if ($ActionName -notin @($script:BoostLabImplementedActions)) {
-        return New-BoostLabP0StateResult `
-            -Success $false `
-            -Action $ActionName `
-            -Status 'Error' `
-            -CommandStatus 'Blocked' `
-            -VerificationStatus 'NotApplicable' `
-            -Message 'Unsupported action. P0 State supports only Analyze, Apply, Default, and Restore.'
-    }
-    if ($ActionName -eq 'Analyze') {
+    $canonicalAction = if ($ActionName -eq 'On (Recommended)') { 'Apply' } else { $ActionName }
+
+    if ($canonicalAction -eq 'Analyze') {
         return Invoke-BoostLabP0StateAnalyze -TargetEnumerator $TargetEnumerator -RegistryReader $RegistryReader
     }
+
     if (-not $Confirmed) {
         return New-BoostLabP0StateResult `
             -Success $false `
-            -Action $ActionName `
+            -Action $canonicalAction `
             -Status 'Cancelled' `
             -CommandStatus 'Cancelled' `
             -VerificationStatus 'NotApplicable' `
             -Message 'Cancelled by user' `
             -Cancelled $true
     }
-    if ($ActionName -eq 'Restore') {
-        return Invoke-BoostLabP0StateRestore -Confirmed:$Confirmed
-    }
 
-    return Invoke-BoostLabP0StateRegistrySet `
-        -ActionName $ActionName `
+    Invoke-BoostLabP0StateRegistrySet `
+        -ActionName $canonicalAction `
         -AdministratorChecker $AdministratorChecker `
         -TargetEnumerator $TargetEnumerator `
         -RegistryReader $RegistryReader `
@@ -1241,7 +1145,7 @@ function Restore-BoostLabToolDefault {
         [bool]$Confirmed = $false
     )
 
-    return Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed
+    Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed
 }
 
 Export-ModuleMember -Function @(
@@ -1251,4 +1155,3 @@ Export-ModuleMember -Function @(
     'Invoke-BoostLabToolAction'
     'Restore-BoostLabToolDefault'
 )
-

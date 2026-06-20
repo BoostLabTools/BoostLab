@@ -97,7 +97,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'p0-state' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\p0-state.psm1'
-        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+        Actions = @('Analyze', 'Apply', 'Default')
     }
     'msi-mode' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\msi-mode.psm1'

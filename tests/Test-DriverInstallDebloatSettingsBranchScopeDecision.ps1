@@ -76,7 +76,7 @@ Assert-BoostLabCondition ([bool]$record.YazanAcceptedNearParity) 'Phase 123 shou
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'YazanFinalException must remain false.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Ordered parity cursor should advance to P0 State after HDCP.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Ordered parity cursor should advance to Msi Mode after P0 State.'
 
 $codexText = Get-Content -LiteralPath $codexPath -Raw
 $blueprintText = Get-Content -LiteralPath $blueprintPath -Raw

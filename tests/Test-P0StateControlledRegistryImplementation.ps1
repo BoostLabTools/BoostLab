@@ -24,6 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
@@ -75,6 +76,8 @@ $modulePath = Join-Path $ProjectRoot 'modules\Graphics\p0-state.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\6 P0 State.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
@@ -86,6 +89,8 @@ foreach ($path in @(
     $sourcePath,
     $executionPath,
     $actionPlanPath,
+    $uiPath,
+    $parityPath,
     $artifactPath,
     $productionAllowlistPath
 )) {
@@ -111,22 +116,22 @@ $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-d
 
 Assert-BoostLabCondition ($null -ne $p0StateTool) 'P0 State must exist as an active Graphics tool.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1 and outside Path B.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 3) 'Driver Install Latest must remain Path B step 1 and Graphics order 3.'
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 4) 'Nvidia Settings must remain Path B step 2 and Graphics order 4.'
 Assert-BoostLabCondition ([int]$hdcpTool.Order -eq 5) 'HDCP must remain Path B step 3 and Graphics order 5.'
 Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 6) 'P0 State must be Graphics order 6 as Path B step 4.'
 Assert-BoostLabCondition ([int]$msiModeTool.Order -eq 7) 'Msi Mode must be Graphics order 7 as Path B step 5.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([string]$p0StateTool.Title -eq 'P0 State') 'P0 State title mismatch.'
 Assert-BoostLabCondition ([string]$p0StateTool.Type -eq 'action') 'P0 State must be an action tool.'
 Assert-BoostLabCondition ([string]$p0StateTool.RiskLevel -eq 'high') 'P0 State must remain high risk.'
-Assert-BoostLabCondition ((@($p0StateTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'P0 State must use only canonical Analyze, Apply, Default, Restore actions.'
+Assert-BoostLabCondition ((@($p0StateTool.Actions) -join ',') -eq 'Analyze,Apply,Default') 'P0 State must expose only Analyze, Apply, and source-defined Default actions.'
 
 $caps = $p0StateTool.Capabilities
 Assert-BoostLabCondition ([bool]$caps.RequiresAdmin) 'P0 State must require Administrator for mutation actions.'
 Assert-BoostLabCondition ([bool]$caps.CanModifyRegistry) 'P0 State must declare registry mutation capability.'
 Assert-BoostLabCondition ([bool]$caps.SupportsDefault) 'P0 State must declare source-defined Default support.'
-Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'P0 State must not claim Restore support without selected captured-state restore flow.'
+Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'P0 State must not claim Restore support.'
 Assert-BoostLabCondition ([bool]$caps.NeedsExplicitConfirmation) 'P0 State must require explicit confirmation.'
 foreach ($falseCapability in @(
     'RequiresInternet',
@@ -145,8 +150,7 @@ foreach ($falseCapability in @(
 
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'hdcp' })) -eq 1) 'HDCP must remain separate from P0 State.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'p0-state' })) -eq 1) 'P0 State must be implemented as its own active tool.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 1) 'Msi Mode must be implemented as its own active tool.'
-Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'bitlocker' })) -eq 1) 'BitLocker must remain active as a separate Setup security assistant outside NVIDIA Path B.'
+Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'msi-mode' })) -eq 1) 'Msi Mode must remain active as its own separate controlled registry Path B step.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Id -eq 'ddu' -or $_.Title -eq 'DDU' })) -eq 0) 'Standalone DDU must not be introduced.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' })) -eq 0) 'Loudness EQ must remain deleted.'
 Assert-BoostLabCondition ((Get-BoostLabItemCount -Value ($allTools | Where-Object { $_.Title -eq 'NVME Faster Driver' -or $_.Id -eq 'nvme-faster-driver' })) -eq 0) 'NVME Faster Driver must remain deleted.'
@@ -169,60 +173,89 @@ $remainingSourcePromoted = @(
             '4 Nvidia Settings.ps1',
             '5 Hdcp.ps1',
             '6 P0 State.ps1',
-            '7 Msi Mode.ps1'
+            '7 Msi Mode.ps1',
             '1 BitLocker.ps1'
         )
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq $inventoryBaseline.RemainingSourcePromotedIntakeCandidates) "Expected $($inventoryBaseline.RemainingSourcePromotedIntakeCandidates) remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
     "'p0-state'",
     "Graphics\p0-state.psm1",
-    "'Analyze', 'Apply', 'Default', 'Restore'"
+    "'Analyze', 'Apply', 'Default'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'P0 State execution registration'
 }
 
+$uiText = Get-Content -LiteralPath $uiPath -Raw
+foreach ($needle in @(
+    'if ($toolId -eq ''p0-state'')',
+    "'Apply' { return 'On (Recommended)' }",
+    "'Default' { return 'Default' }",
+    "'p0-state'"
+)) {
+    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'P0 State UI action surface'
+}
+
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened for P0 State.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains("'On (Recommended)'")) 'Action Plan ValidateSet must not be widened for P0 State source labels.'
 foreach ($needle in @(
-    'Apply the source-defined P0 State On value only to eligible NVIDIA display-class registry targets',
-    'Apply the source-defined P0 State Default value only to eligible NVIDIA display-class registry targets',
-    'No registry mutation is planned without selected captured state',
-    'DisableDynamicPstate as REG_DWORD 1',
-    'DisableDynamicPstate to DWORD 0',
-    'excluded Microsoft/RDP/non-NVIDIA targets are skipped',
-    'No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or non-NVIDIA registry write occurs.'
+    'Read the P0 State source mirror and report source-defined display-class registry scope, non-Configuration target discovery, Apply availability, and Default availability without changing the system.',
+    'Run the source-defined P0 State On (Recommended) branch after confirmation: set DisableDynamicPstate DWORD 1 on every non-Configuration display-class subkey and read the values back.',
+    'Run the source-defined P0 State Default branch after confirmation: set DisableDynamicPstate DWORD 0 on every non-Configuration display-class subkey and read the values back. Default is not Restore.',
+    'Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.',
+    'Do not apply GPU vendor filtering; the Ultimate source writes every non-Configuration display-class subkey returned by the source query.',
+    'Set DisableDynamicPstate as REG_DWORD 1 on every captured source-included target.',
+    'Set DisableDynamicPstate as REG_DWORD 0 on every captured source-included target, matching the Ultimate Default branch.',
+    'Default is source-defined behavior, not captured-state Restore.'
 )) {
     Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'P0 State action plan'
+}
+foreach ($forbiddenActionPlanText in @(
+    'P0 State Restore',
+    'eligible NVIDIA display-class targets',
+    'P0 State registry value DisableDynamicPstate to DWORD 1 on eligible',
+    'P0 State Default registry value DisableDynamicPstate to DWORD 0 on eligible'
+)) {
+    Assert-BoostLabCondition (-not $actionPlanText.Contains($forbiddenActionPlanText)) "P0 State action plan retained stale target-filtering wording: $forbiddenActionPlanText"
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')',
     $expectedSourceHash,
     'source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1',
-    'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}',
+    'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}',
     'DisableDynamicPstate',
     '$script:BoostLabP0StateApplyValue = 1',
     '$script:BoostLabP0StateDefaultValue = 0',
+    'SourceOnRecommendedValue',
+    'SourceSkipRule = ''*Configuration*''',
+    'SourceKeyNames',
+    'SkippedTargets',
     'New-BoostLabRegistryStateCapture',
     'Set-BoostLabRollbackMutationState',
+    'No Restore action is source-defined or exposed for P0 State',
+    'Default is source-defined DWORD 0 and is not Restore',
+    '[ValidateSet(''Analyze'', ''Apply'', ''Default'', ''On (Recommended)'')]'
+)) {
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'P0 State module'
+}
+foreach ($forbiddenText in @(
     'NeedsNvidiaTargeting',
     'EligibleTargets',
     'ExcludedTargets',
     'AmbiguousTargets',
     'AmbiguousIdentity',
     'ExcludedNonNvidia',
-    'Microsoft/RDP/non-NVIDIA display adapter',
+    'Microsoft/RDP/non-NVIDIA',
     'VEN_10DE',
-    'Default is source-defined DisableDynamicPstate DWORD 0 and is not Restore',
-    'Restore requires a selected captured rollback record'
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'P0 State module'
+    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenText)) "P0 State module retained stale filtering or Restore action text: $forbiddenText"
 }
 
 foreach ($forbiddenPattern in @(
@@ -251,9 +284,10 @@ Assert-BoostLabCondition (-not $allowlistText.Contains('p0-state')) 'P0 State mu
 Assert-BoostLabCondition (-not $allowlistText.Contains('DisableDynamicPstate')) 'P0 State must not add production registry allowlist scopes.'
 
 $stateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('BoostLab-P0StateTest-{0}' -f ([guid]::NewGuid().ToString('N')))
-$approvedTargetPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
-$nonNvidiaTargetPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0001'
-$ambiguousTargetPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0002'
+$root = 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+$target0 = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000'
+$target1 = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0001'
+$configurationTarget = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\Configuration'
 $script:P0StateMockRegistryState = @{}
 $script:P0StateMockWriteCount = 0
 
@@ -293,89 +327,37 @@ function New-MockRegistryState {
     }
 }
 
-$nvidiaEnumerator = {
+$sourceEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
-            }
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @(
+            "$root\0000",
+            "$root\0001",
+            "$root\Configuration"
         )
         Warnings = @()
-        Message = '1 source-targeted display-class registry target(s) detected.'
+        Message = 'Mock source key names returned.'
     }
 }.GetNewClosure()
 
-$nonNvidiaEnumerator = {
+$configurationOnlyEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Basic Display Adapter')
-            }
-        )
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @("$root\Configuration")
         Warnings = @()
-        Message = '1 source-targeted display-class registry target(s) detected.'
-    }
-}.GetNewClosure()
-
-$mixedEnumerator = {
-    [pscustomobject]@{
-        Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
-            },
-            [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Remote Display Adapter', 'ProviderName=Microsoft')
-            }
-        )
-        Warnings = @()
-        Message = '2 source-targeted display-class registry target(s) detected.'
-    }
-}.GetNewClosure()
-
-$ambiguousEnumerator = {
-    [pscustomobject]@{
-        Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $ambiguousTargetPath
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Unknown Display Adapter', 'ProviderName=Unknown')
-            }
-        )
-        Warnings = @()
-        Message = '1 ambiguous source-targeted display-class registry target detected.'
+        Message = 'Only Configuration source key returned.'
     }
 }.GetNewClosure()
 
 $outOfScopeEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = 'HKLM:\SOFTWARE\Outside\0000'
-                ValueName = 'DisableDynamicPstate'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX')
-            }
-        )
+        SourceRoot = 'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+        SourceKeyNames = @('HKEY_LOCAL_MACHINE\SOFTWARE\Outside\0000')
         Warnings = @()
-        Message = '1 invalid target supplied.'
+        Message = 'Out-of-scope source key returned.'
     }
 }.GetNewClosure()
 
@@ -400,163 +382,120 @@ $registryWriter = {
     $script:P0StateMockRegistryState[$key] = [int]$Value
 }.GetNewClosure()
 
-Import-Module -Name $modulePath -Force -ErrorAction Stop
 try {
+    Import-Module -Name $modulePath -Force -ErrorAction Stop
     $info = Get-BoostLabToolInfo
     Assert-BoostLabCondition ([string]$info.Id -eq 'p0-state') 'Imported P0 State module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'P0 State implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Default') 'P0 State implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.Actions) -join ',') -eq 'Analyze,Apply,Default') 'P0 State exposed action list mismatch.'
+    Assert-BoostLabCondition (-not (@($info.Actions) -contains 'Restore')) 'P0 State must not expose Restore.'
 
-    $analyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $mixedEnumerator -RegistryReader $registryReader
+    $analyze = Invoke-BoostLabToolAction -ActionName Analyze -TargetEnumerator $sourceEnumerator -RegistryReader $registryReader -StateRoot $stateRoot
     Assert-BoostLabCondition ([bool]$analyze.Success) 'P0 State Analyze should succeed.'
     Assert-BoostLabCondition ([string]$analyze.Status -eq 'Analyzed') 'P0 State Analyze status mismatch.'
     Assert-BoostLabCondition ([string]$analyze.CommandStatus -eq 'No execution performed') 'P0 State Analyze must be read-only.'
-    Assert-BoostLabCondition ([string]$analyze.VerificationStatus -ne 'Failed') 'P0 State Analyze must not fail verification solely because excluded non-NVIDIA targets exist.'
     Assert-BoostLabCondition (-not [bool]$analyze.ChangesExecuted) 'P0 State Analyze must not execute changes.'
     Assert-BoostLabCondition ([int]$analyze.Data.PathBStepNumber -eq 4 -and [int]$analyze.Data.PathBStepTotal -eq 5) 'P0 State Analyze must report Path B step 4 of 5.'
+    Assert-BoostLabCondition ([string]$analyze.Data.Header -eq 'NVIDIA Highest Performance Power State') 'P0 State Analyze must report source header.'
     Assert-BoostLabCondition ([string]$analyze.Data.SourceRegistryValueName -eq 'DisableDynamicPstate') 'P0 State Analyze must report source value name.'
-    Assert-BoostLabCondition ([int]$analyze.Data.SourceApplyValue -eq 1 -and [int]$analyze.Data.SourceDefaultValue -eq 0) 'P0 State Analyze must report source Apply/Default values.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'P0 State Analyze should report Apply available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.DefaultAvailable) 'P0 State Analyze should report source-defined Default available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 2) 'P0 State Analyze must report all immediate display-class targets.'
-    Assert-BoostLabCondition ([int]$analyze.Data.EligibleTargetCount -eq 1) 'P0 State Analyze must report one eligible NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.ExcludedTargetCount -eq 1) 'P0 State Analyze must report one excluded target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.AmbiguousTargetCount -eq 0) 'P0 State Analyze must report zero ambiguous targets for the mixed NVIDIA/Microsoft case.'
-    $excludedTarget = @($analyze.Data.ExcludedTargets)[0]
-    Assert-BoostLabTextContains -Text ((@($excludedTarget.Evidence) -join '; ')) -Needle 'Microsoft Remote Display Adapter' -Description 'P0 State excluded Microsoft Remote Display Adapter evidence'
-    Assert-BoostLabCondition ([string]$excludedTarget.TargetingStatus -eq 'ExcludedNonNvidia') 'P0 State excluded target status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'P0 State Analyze must not report Restore available without selected captured state.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SourceOnRecommendedValue -eq 1 -and [int]$analyze.Data.SourceDefaultValue -eq 0) 'P0 State Analyze must report source On/Default values.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'P0 State Analyze should report Apply available for source-included targets.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.DefaultAvailable) 'P0 State Analyze should report Default available for source-included targets.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SourceKeyNameCount -eq 3) 'P0 State Analyze must report all mocked source key names.'
+    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 2) 'P0 State Analyze must include every non-Configuration immediate display-class target.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SkippedTargetCount -eq 1) 'P0 State Analyze must skip Configuration by source rule.'
+    Assert-BoostLabCondition ([string]$analyze.Data.SkippedTargets[0].RegistryPath -eq $configurationTarget) 'P0 State Analyze skipped target path mismatch.'
+    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'P0 State Analyze must not report Restore available.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.CaptureAttempted) 'P0 State Analyze must not capture registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RegistryWriteAttempted) 'P0 State Analyze must not write registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.ExternalProcessStarted) 'P0 State Analyze must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.DownloadStarted) 'P0 State Analyze must not download anything.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RebootRequested) 'P0 State Analyze must not request reboot.'
 
-    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'Apply' -TargetEnumerator $nvidiaEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$cancelledApply.Success) 'Unconfirmed P0 State Apply should not proceed.'
-    Assert-BoostLabCondition ([bool]$cancelledApply.Cancelled) 'Unconfirmed P0 State Apply should be cancelled.'
-    Assert-BoostLabCondition ($script:P0StateMockWriteCount -eq 0) 'Unconfirmed P0 State Apply must not write registry.'
+    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'On (Recommended)' -TargetEnumerator $sourceEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    Assert-BoostLabCondition (-not [bool]$cancelledApply.Success) 'Unconfirmed P0 State On (Recommended) should not proceed.'
+    Assert-BoostLabCondition ([bool]$cancelledApply.Cancelled) 'Unconfirmed P0 State On (Recommended) should be cancelled.'
+    Assert-BoostLabCondition ($script:P0StateMockWriteCount -eq 0) 'Unconfirmed P0 State On (Recommended) must not write registry.'
 
-    $apply = Invoke-BoostLabToolAction `
-        -ActionName 'Apply' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-
-    Assert-BoostLabCondition ([bool]$apply.Success) "P0 State Apply should succeed with mocked NVIDIA target: $($apply.Message)"
-    Assert-BoostLabCondition ([string]$apply.Action -eq 'Apply') 'P0 State Apply action mismatch.'
+    $apply = Invoke-BoostLabToolAction -ActionName 'On (Recommended)' -Confirmed:$true -AdministratorChecker { $true } -TargetEnumerator $sourceEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    Assert-BoostLabCondition ([bool]$apply.Success) "P0 State On (Recommended) should succeed with mocked source targets: $($apply.Message)"
+    Assert-BoostLabCondition ([string]$apply.Action -eq 'Apply') 'P0 State On (Recommended) must map to canonical Apply.'
     Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Completed') 'P0 State Apply command status mismatch.'
     Assert-BoostLabCondition ([string]$apply.VerificationStatus -eq 'Passed') 'P0 State Apply verification should pass.'
     Assert-BoostLabCondition ([bool]$apply.Data.ChangesExecuted) 'P0 State Apply should report changes executed.'
     Assert-BoostLabCondition ([bool]$apply.Data.CaptureAttempted) 'P0 State Apply should capture before mutation.'
     Assert-BoostLabCondition ([bool]$apply.Data.RegistryWriteAttempted) 'P0 State Apply should attempt registry write after capture.'
-    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 1) 'P0 State Apply must record one capture record.'
-    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 2) 'P0 State Apply must report all discovered targets.'
-    Assert-BoostLabCondition ([int]$apply.Data.EligibleTargetCount -eq 1) 'P0 State Apply must report one eligible target.'
-    Assert-BoostLabCondition ([int]$apply.Data.ExcludedTargetCount -eq 1) 'P0 State Apply must report one skipped excluded target.'
-    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 1) 'P0 State Apply must write only one eligible target.'
-    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$approvedTargetPath|DisableDynamicPstate"] -eq 1) 'P0 State Apply must set DisableDynamicPstate to DWORD 1.'
-    Assert-BoostLabCondition (-not $script:P0StateMockRegistryState.ContainsKey("$nonNvidiaTargetPath|DisableDynamicPstate")) 'P0 State Apply must not write excluded Microsoft/RDP/non-NVIDIA targets.'
+    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 2) 'P0 State Apply must capture every source-included target.'
+    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 2) 'P0 State Apply target count mismatch.'
+    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 2) 'P0 State Apply must write every source-included target.'
+    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$target0|DisableDynamicPstate"] -eq 1) 'P0 State Apply must set first target to DWORD 1.'
+    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$target1|DisableDynamicPstate"] -eq 1) 'P0 State Apply must set second target to DWORD 1.'
+    Assert-BoostLabCondition (-not $script:P0StateMockRegistryState.ContainsKey("$configurationTarget|DisableDynamicPstate")) 'P0 State Apply must not write Configuration targets.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.ExternalProcessStarted) 'P0 State Apply must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.DownloadStarted) 'P0 State Apply must not download anything.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.RebootRequested) 'P0 State Apply must not request reboot.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.RestoreImplemented) 'P0 State Apply must not claim Restore implementation.'
     Assert-BoostLabCondition ([bool]$apply.Data.DefaultImplemented) 'P0 State Apply should acknowledge separate source-defined Default implementation.'
 
-    $default = Invoke-BoostLabToolAction `
-        -ActionName 'Default' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-
-    Assert-BoostLabCondition ([bool]$default.Success) "P0 State Default should succeed with mocked NVIDIA target: $($default.Message)"
+    $default = Invoke-BoostLabToolAction -ActionName Default -Confirmed:$true -AdministratorChecker { $true } -TargetEnumerator $sourceEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    Assert-BoostLabCondition ([bool]$default.Success) "P0 State Default should succeed with mocked source targets: $($default.Message)"
     Assert-BoostLabCondition ([string]$default.Action -eq 'Default') 'P0 State Default action mismatch.'
     Assert-BoostLabCondition ([string]$default.VerificationStatus -eq 'Passed') 'P0 State Default verification should pass.'
-    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$approvedTargetPath|DisableDynamicPstate"] -eq 0) 'P0 State Default must set DisableDynamicPstate to DWORD 0.'
-    Assert-BoostLabCondition (-not $script:P0StateMockRegistryState.ContainsKey("$nonNvidiaTargetPath|DisableDynamicPstate")) 'P0 State Default must not write excluded Microsoft/RDP/non-NVIDIA targets.'
-    Assert-BoostLabCondition (@($default.Data.CaptureRecords).Count -eq 1) 'P0 State Default must capture before mutation.'
-    Assert-BoostLabCondition ([int]$default.Data.WrittenTargetCount -eq 1) 'P0 State Default must write only one eligible target.'
+    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$target0|DisableDynamicPstate"] -eq 0) 'P0 State Default must set first target to DWORD 0.'
+    Assert-BoostLabCondition ([int]$script:P0StateMockRegistryState["$target1|DisableDynamicPstate"] -eq 0) 'P0 State Default must set second target to DWORD 0.'
+    Assert-BoostLabCondition (-not $script:P0StateMockRegistryState.ContainsKey("$configurationTarget|DisableDynamicPstate")) 'P0 State Default must not write Configuration targets.'
+    Assert-BoostLabCondition (@($default.Data.CaptureRecords).Count -eq 2) 'P0 State Default must capture every source-included target.'
+    Assert-BoostLabCondition ([int]$default.Data.WrittenTargetCount -eq 2) 'P0 State Default must write every source-included target.'
     Assert-BoostLabTextContains -Text ([string]$default.Message) -Needle 'DWORD 0' -Description 'P0 State Default message'
-    Assert-BoostLabTextContains -Text ([string]$default.Data.RestoreUnavailableReason) -Needle 'Default is source-defined DisableDynamicPstate DWORD 0 and is not Restore' -Description 'P0 State Default/Restore separation'
+    Assert-BoostLabTextContains -Text ([string]$default.Data.RestoreUnavailableReason) -Needle 'Default is source-defined DWORD 0 and is not Restore' -Description 'P0 State Default/Restore separation'
 
     $script:P0StateMockWriteCount = 0
-    $nonNvidiaApply = Invoke-BoostLabToolAction `
-        -ActionName 'Apply' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $nonNvidiaEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Success) 'P0 State Apply must fail closed for non-NVIDIA targets.'
-    Assert-BoostLabCondition ([string]$nonNvidiaApply.Status -eq 'NeedsNvidiaTargeting') 'P0 State non-NVIDIA block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.CaptureAttempted) 'P0 State non-NVIDIA block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.RegistryWriteAttempted) 'P0 State non-NVIDIA block must occur before registry write.'
-    Assert-BoostLabCondition ($script:P0StateMockWriteCount -eq 0) 'P0 State non-NVIDIA block must not call writer.'
+    $configurationOnly = Invoke-BoostLabToolAction -ActionName Apply -Confirmed:$true -AdministratorChecker { $true } -TargetEnumerator $configurationOnlyEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    Assert-BoostLabCondition (-not [bool]$configurationOnly.Success) 'P0 State Apply must fail closed when only Configuration targets exist.'
+    Assert-BoostLabCondition ([string]$configurationOnly.Status -eq 'NoSourceTargets') 'P0 State Configuration-only status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$configurationOnly.Data.CaptureAttempted) 'P0 State Configuration-only block must occur before capture.'
+    Assert-BoostLabCondition (-not [bool]$configurationOnly.Data.RegistryWriteAttempted) 'P0 State Configuration-only block must occur before write.'
+    Assert-BoostLabCondition ($script:P0StateMockWriteCount -eq 0) 'P0 State Configuration-only block must not call writer.'
 
-    $ambiguousAnalyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $ambiguousEnumerator -RegistryReader $registryReader
-    Assert-BoostLabCondition ([bool]$ambiguousAnalyze.Success) 'P0 State Analyze should return structured output for ambiguous targets.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousAnalyze.Data.ApplyAvailable) 'P0 State Analyze must not report Apply available for ambiguous targets.'
-    Assert-BoostLabCondition ([int]$ambiguousAnalyze.Data.AmbiguousTargetCount -eq 1) 'P0 State Analyze must report one ambiguous target.'
-    $ambiguousTarget = @($ambiguousAnalyze.Data.AmbiguousTargets)[0]
-    Assert-BoostLabCondition ([string]$ambiguousTarget.TargetingStatus -eq 'AmbiguousIdentity') 'P0 State ambiguous target status mismatch.'
+    $outOfScope = Invoke-BoostLabToolAction -ActionName Apply -Confirmed:$true -AdministratorChecker { $true } -TargetEnumerator $outOfScopeEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    Assert-BoostLabCondition (-not [bool]$outOfScope.Success) 'P0 State Apply must fail closed for out-of-scope registry paths.'
+    Assert-BoostLabCondition ([string]$outOfScope.Status -eq 'SourceScopeBlocked') 'P0 State out-of-scope block status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$outOfScope.Data.CaptureAttempted) 'P0 State out-of-scope block must occur before capture.'
+    Assert-BoostLabCondition (-not [bool]$outOfScope.Data.RegistryWriteAttempted) 'P0 State out-of-scope block must occur before write.'
 
-    $ambiguousApply = Invoke-BoostLabToolAction `
-        -ActionName 'Apply' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $ambiguousEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Success) 'P0 State Apply must fail closed for ambiguous targets.'
-    Assert-BoostLabCondition ([string]$ambiguousApply.Status -eq 'NeedsNvidiaTargeting') 'P0 State ambiguous block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Data.CaptureAttempted) 'P0 State ambiguous block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Data.RegistryWriteAttempted) 'P0 State ambiguous block must occur before write.'
-    Assert-BoostLabCondition (-not $script:P0StateMockRegistryState.ContainsKey("$ambiguousTargetPath|DisableDynamicPstate")) 'P0 State ambiguous targets must never be written.'
-
-    $outOfScopeApply = Invoke-BoostLabToolAction `
-        -ActionName 'Apply' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $outOfScopeEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Success) 'P0 State Apply must fail closed for out-of-scope registry paths.'
-    Assert-BoostLabCondition ([string]$outOfScopeApply.Status -eq 'NeedsNvidiaTargeting') 'P0 State out-of-scope block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.CaptureAttempted) 'P0 State out-of-scope block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.RegistryWriteAttempted) 'P0 State out-of-scope block must occur before write.'
-
-    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restore.Success) 'P0 State Restore must remain unavailable without selected captured state.'
-    Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'P0 State Restore status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.RestoreExecuted) 'P0 State Restore must not execute.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.DefaultIsRestore) 'P0 State Restore must not be treated as Default.'
+    $restoreRejected = $false
+    try {
+        Invoke-BoostLabToolAction -ActionName Restore -Confirmed:$true -TargetEnumerator $sourceEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot | Out-Null
+    }
+    catch {
+        $restoreRejected = $true
+    }
+    Assert-BoostLabCondition $restoreRejected 'P0 State Restore must not be an accepted runtime action.'
 }
 finally {
     Remove-Module -Name p0-state -Force -ErrorAction SilentlyContinue
-    if (
-        (Test-Path -LiteralPath $stateRoot) -and
-        $stateRoot.StartsWith([System.IO.Path]::GetTempPath(), [StringComparison]::OrdinalIgnoreCase)
-    ) {
+    if (Test-Path -LiteralPath $stateRoot) {
         Remove-Item -LiteralPath $stateRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
+$parity = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$order = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$p0Parity = @($parity.Tools | Where-Object { $_.ToolId -eq 'p0-state' })[0]
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity -ExecutionOrder $order
+Assert-BoostLabCondition ([string]$p0Parity.ImplementationLevel -eq 'NearParityControlled') 'P0 State must remain NearParityControlled.'
+Assert-BoostLabCondition ([string]$p0Parity.UltimateParity -eq 'Partial') 'P0 State must remain partial parity with Yazan accepted GUI confirmation/test-safe mechanics.'
+Assert-BoostLabCondition ([string]$p0Parity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'P0 State final progress status must be accepted near-parity after source-equivalent implementation.'
+Assert-BoostLabCondition ([bool]$p0Parity.YazanAcceptedNearParity) 'P0 State Yazan accepted near-parity flag must be set.'
+Assert-BoostLabTextContains -Text ([string]$p0Parity.GapSummary) -Needle 'exact source-equivalent P0 State On (Recommended) and Default behavior' -Description 'P0 State parity gap summary'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target must advance to Msi Mode after P0 State acceptance.'
+
 [pscustomobject]@{
     Success = $true
-    ActiveToolCount = $inventoryBaseline.ActiveTools
-    ImplementedToolCount      = 40
-    PlaceholderToolCount      = 15
-    SourcePromotedMirrorFileCount = $inventoryBaseline.SourcePromotedMirrorFiles
-    RemainingUnimplementedSourcePromotedIntakeCandidates = 0
-    Message = 'P0 State controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'
-    Timestamp = Get-Date
+    Validator = 'Test-P0StateControlledRegistryImplementation'
+    Message = 'P0 State source-equivalent registry implementation exposes On (Recommended)/Default only, captures before mutation, writes/readbacks all non-Configuration source targets, and advances ordered parity to Msi Mode.'
+    ActiveTools = $inventoryBaseline.ActiveTools
+    ImplementedTools = $inventoryBaseline.ImplementedTools
+    DeferredPlaceholders = $inventoryBaseline.DeferredPlaceholders
+    NextOrderedPendingParityTarget = [string]$nextTarget.ToolId
 }
-

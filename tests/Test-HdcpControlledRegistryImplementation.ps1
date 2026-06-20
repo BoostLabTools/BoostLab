@@ -529,7 +529,8 @@ $hdcpParity = @($parity.Tools | Where-Object { $_.ToolId -eq 'hdcp' })[0]
 $p0Parity = @($parity.Tools | Where-Object { $_.ToolId -eq 'p0-state' })[0]
 Assert-BoostLabCondition ([string]$hdcpParity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'HDCP parity status must be accepted near-parity after source-equivalent implementation with GUI confirmation.'
 Assert-BoostLabCondition ([bool]$hdcpParity.YazanAcceptedNearParity) 'HDCP Yazan accepted near-parity flag must be set.'
-Assert-BoostLabCondition ([string]$p0Parity.NextParityAction -match 'NVIDIA filtering/capture') 'P0 State must remain the next ordered parity acceptance target.'
+Assert-BoostLabCondition ([string]$p0Parity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'P0 State parity status must now be accepted near-parity after source-equivalent implementation with GUI confirmation.'
+Assert-BoostLabCondition ([bool]$p0Parity.YazanAcceptedNearParity) 'P0 State Yazan accepted near-parity flag must be set.'
 
 [pscustomobject]@{
     Success = $true

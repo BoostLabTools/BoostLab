@@ -141,7 +141,7 @@ $implementedModules = @{
     }
     'p0-state' = @{
         RelativePath          = 'Graphics\p0-state.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
     'msi-mode' = @{
         RelativePath          = 'Graphics\msi-mode.psm1'
@@ -1108,19 +1108,23 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'p0-state') {
             foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
                 '382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC'
+                'source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1'
                 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+                'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
                 'DisableDynamicPstate'
                 'New-BoostLabRegistryStateCapture'
                 'Set-BoostLabRollbackMutationState'
-                'NeedsNvidiaTargeting'
-                'VEN_10DE'
+                'SourceKeyNames'
+                'SkippedTargets'
+                'SourceSkipRule = ''*Configuration*'''
+                'No Restore action is source-defined or exposed for P0 State'
                 'SupportsDefault = $true'
                 'SupportsRestore = $false'
                 'CanModifyDrivers = $false'
                 'function Test-BoostLabP0StateState'
-                'Default is source-defined DisableDynamicPstate DWORD 0 and is not Restore'
+                'Default is source-defined DWORD 0 and is not Restore'
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing P0 State controlled registry behavior: $requiredText")
@@ -1128,6 +1132,13 @@ foreach ($entry in $expectedModules.Values) {
             }
 
             foreach ($forbiddenText in @(
+                'NeedsNvidiaTargeting'
+                'EligibleTargets'
+                'ExcludedTargets'
+                'AmbiguousTargets'
+                'VEN_10DE'
+                'Microsoft/RDP/non-NVIDIA'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
                 'reg delete'
                 'Remove-ItemProperty'
                 'Remove-Item -LiteralPath'

@@ -140,7 +140,7 @@ foreach ($priorToolId in $priorToolIds) {
     Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $priorRecord) "Prior ordered target must already be final: $priorToolId"
 }
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Next ordered pending parity target must advance past HDCP near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target must advance past P0 State near-parity acceptance.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(

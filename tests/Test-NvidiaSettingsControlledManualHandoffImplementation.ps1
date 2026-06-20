@@ -347,7 +347,7 @@ Assert-BoostLabCondition ([string]$nvidiaParityRecord.ImplementationLevel -eq 'N
 Assert-BoostLabCondition ([string]$nvidiaParityRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Nvidia Settings final progress status mismatch.'
 Assert-BoostLabCondition ([bool]$nvidiaParityRecord.YazanAcceptedNearParity) 'Nvidia Settings near-parity acceptance flag must be set.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'p0-state') 'Next ordered pending parity target should advance to P0 State after HDCP.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target should advance to Msi Mode after P0 State.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'

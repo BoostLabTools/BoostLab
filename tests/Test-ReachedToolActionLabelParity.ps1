@@ -114,16 +114,17 @@ $reachedToolsForward = @(
     'driver-install-debloat-settings',
     'driver-install-latest',
     'nvidia-settings',
-    'hdcp'
+    'hdcp',
+    'p0-state'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
 
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'hdcp') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from HDCP back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'p0-state') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from P0 State back to BIOS Information.'
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($toolById.ContainsKey($toolId)) "Reached tool missing from active catalog: $toolId"
 }
-foreach ($outOfScope in @('p0-state', 'msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool was included in reached label audit scope: $outOfScope"
 }
 
@@ -150,12 +151,19 @@ Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Manual Handoff')) 
 Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Apply Auto')) 'Nvidia Settings must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains("'Open'")) 'Nvidia Settings must not expose a fake Open label.'
 
-$hdcpBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''hdcp'')' -End 'return $ActionName'
+$hdcpBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''hdcp'')' -End 'if ($toolId -eq ''p0-state'')'
 Assert-BoostLabTextContains -Text $hdcpBlock -Needle "'Apply' { return 'Off (Recommended)' }" -Description 'HDCP Off visible label'
 Assert-BoostLabTextContains -Text $hdcpBlock -Needle "'Default' { return 'Default' }" -Description 'HDCP Default visible label'
 Assert-BoostLabCondition (-not $hdcpBlock.Contains('Manual Handoff')) 'HDCP must not show Manual Handoff after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $hdcpBlock.Contains('Apply Auto')) 'HDCP must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $hdcpBlock.Contains("'Open'")) 'HDCP must not expose a fake Open label.'
+
+$p0StateBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''p0-state'')' -End 'return $ActionName'
+Assert-BoostLabTextContains -Text $p0StateBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'P0 State On visible label'
+Assert-BoostLabTextContains -Text $p0StateBlock -Needle "'Default' { return 'Default' }" -Description 'P0 State Default visible label'
+Assert-BoostLabCondition (-not $p0StateBlock.Contains('Manual Handoff')) 'P0 State must not show Manual Handoff after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $p0StateBlock.Contains('Apply Auto')) 'P0 State must not show Apply Auto after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $p0StateBlock.Contains("'Open'")) 'P0 State must not expose a fake Open label.'
 
 $driverCleanSourceText = Get-Content -LiteralPath $driverCleanSourcePath -Raw
 $expectedDriverCleanHash = 'CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A'

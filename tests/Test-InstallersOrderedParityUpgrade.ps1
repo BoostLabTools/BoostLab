@@ -292,7 +292,7 @@ Assert-BoostLabCondition ([string]$installersRecord['FinalProgressStatus'] -eq '
 Assert-BoostLabContains -Text ([string]$installersRecord['GapSummary']) -Needle '11 Frame View' -Description 'Installers parity gap summary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'p0-state') 'First pending ordered parity target should advance past HDCP near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'msi-mode') 'First pending ordered parity target should advance past P0 State near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset count mismatch.'

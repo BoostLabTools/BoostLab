@@ -541,6 +541,13 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'p0-state') {
+        switch ($ActionName) {
+            'Apply' { return 'On (Recommended)' }
+            'Default' { return 'Default' }
+        }
+    }
+
     return $ActionName
 }
 
@@ -1619,6 +1626,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'driver-install-latest'
         'nvidia-settings'
         'hdcp'
+        'p0-state'
     )
 }
 
