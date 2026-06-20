@@ -9,10 +9,10 @@
         DeferredPlaceholders = 10
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 16
-        NearParityControlled = 24
-        ControlledSubset = 3
-        ManualHandoffOnly = 2
+        UltimateParityImplemented = 15
+        NearParityControlled = 25
+        ControlledSubset = 4
+        ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -406,11 +406,13 @@
             StageOrder = 5
             ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Twelve redistributable downloads and installer executions remain blocked.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved GUI confirmation and test-safe executor mechanics around source-equivalent Visual C++ behavior: twelve source-defined downloads and twelve waited installer launches in exact source order.'
             YazanFinalException = $false
-            NextParityAction = 'Approve all redistributable artifacts, signer/hash/size evidence, installer descriptors, exit codes, and temp scopes.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'graphics-configuration-center'
@@ -419,11 +421,11 @@
             StageOrder = 5
             ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Open-only launcher behavior is preserved.'
+            ImplementationLevel = 'ControlledSubset'
+            UltimateParity = 'Partial'
+            GapSummary = 'Pending ordered parity review; current Open-only launcher behavior still needs comparison against the Ultimate source before final parity status.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            NextParityAction = 'Review or upgrade in the next ordered parity phase.'
         }
         @{
             ToolId = 'start-menu-taskbar'

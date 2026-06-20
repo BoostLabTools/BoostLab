@@ -107,13 +107,13 @@ Assert-BoostLabCondition ((@($currentRecord.ApprovedSourceBranches) -join '|') -
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered parity target should advance to Visual C++ after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target should advance to Graphics Configuration Center after Visual C++.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled baseline count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly baseline count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled count should be 24 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly count should be 2 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 25) 'NearParityControlled count should be 25 after Visual C++.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 1) 'ManualHandoffOnly count should be 1 after Visual C++.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath

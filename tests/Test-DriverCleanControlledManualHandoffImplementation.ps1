@@ -384,11 +384,11 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled baseline should be 24 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly baseline should be 2 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 25) 'NearParityControlled baseline should be 25 after Visual C++.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 1) 'ManualHandoffOnly baseline should be 1 after Visual C++.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target should advance to Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target should advance to Graphics Configuration Center.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(

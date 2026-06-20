@@ -1,8 +1,8 @@
 @{
     SchemaVersion = '1.0'
 
-    # This manifest classifies external source URLs for reached tools and the
-    # next ordered target. It is not an artifact approval list, does not replace
+    # This manifest classifies external source URLs for reached tools. It is
+    # not an artifact approval list, does not replace
     # config/ArtifactProvenance.psd1, and does not change runtime URLs.
     #
     # Policy:
@@ -53,12 +53,10 @@
             'p0-state'
             'msi-mode'
             'directx'
-        )
-        PrepOnlyToolIds = @(
             'visual-cpp'
         )
+        PrepOnlyToolIds = @()
         ExplicitlyOutOfScopeToolIds = @(
-            'visual-cpp'
             'graphics-configuration-center'
         )
     }
@@ -626,6 +624,210 @@
             MirrorStatus = 'NeedsBoostLabMirror'
             OperationKind = 'DownloadArtifact'
             Notes = 'DirectX source-equivalent workflow downloads the DirectX package from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2005-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2005-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2008-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2008-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2010-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2010-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2012-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2012-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2013-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2013-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2015-2017-2019-2022-x64'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x64.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'visual-cpp-vcredist2015-2017-2019-2022-x86'
+            ToolId = 'visual-cpp'
+            ToolTitle = 'Visual C++'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 9
+            CanonicalOrder = 'Graphics 9'
+            SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x86.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
         }
     )
 }

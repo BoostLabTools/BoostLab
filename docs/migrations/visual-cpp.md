@@ -11,100 +11,88 @@
 
 ## Original Ultimate Behavior
 
-The Ultimate script requires Administrator rights and internet access, downloads
-twelve Visual C++ redistributable executables from mutable
-`refs/heads/main` mirror URLs into `%SystemRoot%\Temp`, then launches each
-installer in source-defined order with `/q`, `/qb`, or `/passive /norestart`
-switches. The source does not remove the downloaded executables afterward.
+The Ultimate script requires Administrator rights and internet access, sets
+`$progresspreference = 'silentlycontinue'`, prints `Downloading: C++...`,
+downloads twelve Visual C++ redistributable executables from
+`https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/` into
+`%SystemRoot%\Temp`, prints `Installing: C++...`, then launches each installer
+with `Start-Process -Wait`.
+
+Download order:
+
+1. `vcredist2005_x64.exe`
+2. `vcredist2005_x86.exe`
+3. `vcredist2008_x64.exe`
+4. `vcredist2008_x86.exe`
+5. `vcredist2010_x64.exe`
+6. `vcredist2010_x86.exe`
+7. `vcredist2012_x64.exe`
+8. `vcredist2012_x86.exe`
+9. `vcredist2013_x64.exe`
+10. `vcredist2013_x86.exe`
+11. `vcredist2015_2017_2019_2022_x64.exe`
+12. `vcredist2015_2017_2019_2022_x86.exe`
+
+Installer order and arguments:
+
+1. `vcredist2005_x86.exe` `/q`
+2. `vcredist2005_x64.exe` `/q`
+3. `vcredist2008_x86.exe` `/qb`
+4. `vcredist2008_x64.exe` `/qb`
+5. `vcredist2010_x86.exe` `/passive /norestart`
+6. `vcredist2010_x64.exe` `/passive /norestart`
+7. `vcredist2012_x86.exe` `/passive /norestart`
+8. `vcredist2012_x64.exe` `/passive /norestart`
+9. `vcredist2013_x86.exe` `/passive /norestart`
+10. `vcredist2013_x64.exe` `/passive /norestart`
+11. `vcredist2015_2017_2019_2022_x86.exe` `/passive /norestart`
+12. `vcredist2015_2017_2019_2022_x64.exe` `/passive /norestart`
+
+The source defines no standalone Open branch, no Default branch, no Restore
+branch, no cleanup, and no reboot command.
 
 ## Approved BoostLab Behavior
 
-Phase 101 implements controlled manual handoff only:
+Phase 130 replaces the earlier manual-handoff implementation with a
+source-equivalent controlled runtime:
 
-- `Analyze`: verifies source identity and reports the source behavior plus
-  missing approvals.
-- `Open`: prepares manual handoff instructions inside BoostLab only.
-- `Apply`: fails closed with `AutoBlockedUntilArtifactApproval`.
-- `Default`: returns `DefaultUnavailable`; the source defines no safe Default
-  branch.
-- `Restore`: returns `RestoreUnavailable`; unavailable without captured
-  artifact/package/registry/temp-file
-  state and an approved Restore contract.
+- `Analyze`: read-only source identity, artifact-source classification, and
+  operation-plan analysis.
+- `Apply`: after explicit Action Plan confirmation, verifies the source
+  checksum, verifies Administrator and internet requirements, downloads all
+  twelve source-defined installers to `%SystemRoot%\Temp`, and runs all twelve
+  installers sequentially with the exact source switches.
+- `Open`: not exposed; unsupported if called internally.
+- `Default`: unavailable because the source defines no Default branch.
+- `Restore`: unavailable until a future selected captured-state restore
+  contract exists.
 
-## Preserved Commands
+## Artifact Source Policy
 
-No source command is executed in Phase 101. The source-defined downloads,
-installer filenames, installer switches, and operation order are documented and
-reported as blocked Auto intent.
+All twelve source URLs remain unchanged at runtime. They are recorded in
+`config/ExternalArtifactSources.psd1` as `UltimateAuthorHostedArtifact` with
+`NeedsBoostLabMirror`.
 
-## Intentional Deviations
+No binary was added to the repository. No `config/ArtifactProvenance.psd1`
+approval, production allowlist entry, BoostLab mirror, hash approval, or URL
+substitution was added.
 
-BoostLab does not download Visual C++ redistributables, launch installers,
-change package state, mutate registry, write temp files, perform cleanup, or
-change system state. This is an approved safety boundary for the manual-handoff
-implementation, not approval to weaken or replace the blocked Auto workflow.
+## Safety And Execution
 
-## Side Effects
-
-None. All implemented actions are read-only, manual-handoff text, or
-fail-closed blocked results.
-
-## Capabilities
-
-- RequiresAdmin: false for implemented manual handoff; blocked source Auto
-  requires Administrator.
-- RequiresInternet: false for implemented manual handoff; blocked source Auto
-  requires internet.
-- CanReboot: false
-- CanModifyRegistry: false
-- CanModifyServices: false
-- CanInstallSoftware: false for implemented manual handoff; blocked source Auto
-  launches installers.
-- CanDownload: false for implemented manual handoff; blocked source Auto
-  downloads twelve redistributables.
-- CanModifyDrivers: false
-- CanModifySecurity: false
-- CanDeleteFiles: false
-- UsesTrustedInstaller: false
-- UsesSafeMode: false
-- SupportsDefault: false
-- SupportsRestore: false
-- NeedsExplicitConfirmation: true
-
-## Risk Level
-
-High. The implemented behavior is inert, but the source Auto workflow is a
-multi-installer runtime workflow with unapproved mutable artifacts.
-
-## Confirmation Requirements
-
-`Open` requires confirmation before preparing manual handoff text. `Apply`,
-`Default`, and `Restore` return blocked/unavailable results and perform no
-operation.
+The GUI Action Plan requires confirmation before Apply. Long-running execution
+uses the shared async dispatcher. Tests use injected operation executors and do
+not download, install, launch external processes, mutate registry/package state,
+or reboot.
 
 ## Default And Restore
 
-Default is unavailable because the source defines no safe Default branch.
-Restore is unavailable until BoostLab has captured eligible state and an
-approved Restore contract. Default is not Restore.
-
-## Restart Behavior
-
-No restart or reboot is implemented.
-
-## Test Requirements
-
-- Verify source path and SHA-256.
-- Verify Analyze is read-only.
-- Verify Open prepares manual handoff only and opens no external tool.
-- Verify Apply fails closed with `AutoBlockedUntilArtifactApproval`.
-- Verify Default and Restore are unavailable.
-- Verify no artifact provenance or production allowlist entry is added.
-- Verify source paths remain untouched and deleted tools remain deleted.
+Default is unavailable because the source does not define a Default branch.
+Restore is unavailable until BoostLab has selected captured prior state and an
+approved restore contract. Default is not Restore.
 
 ## Yazan Approval Status
 
-Approved for controlled manual handoff only in Phase 101. Automated Visual C++
-download/installer behavior remains blocked until the complete artifact,
-installer, temp-file, cleanup, exit-code, and rollback/support approval package
-exists.
+Phase 130 marks Visual C++ as `NearParityControlled` /
+`DoneYazanAcceptedNearParity`: BoostLab preserves the practical Ultimate
+workflow behind GUI confirmation and test-safe seams, while leaving reusable
+artifact provenance, BoostLab mirror substitution, and Restore unapproved.

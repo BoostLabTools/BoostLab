@@ -86,7 +86,7 @@ Assert-BoostLabCondition (-not [bool]$bitLockerRecord.YazanFinalException) 'BitL
 Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecord) 'BitLocker accepted near-parity must be final for ordered target calculation.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target must advance past Visual C++ near-parity acceptance.'
 
 $sourceText = Get-Content -Raw -LiteralPath $sourcePath
 foreach ($sourceNeedle in @(

@@ -254,16 +254,17 @@ $reachedToolsForward = @(
     'hdcp',
     'p0-state',
     'msi-mode',
-    'directx'
+    'directx',
+    'visual-cpp'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'directx') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from DirectX back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'visual-cpp') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Visual C++ back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 
@@ -303,6 +304,8 @@ foreach ($needle in @(
     "'Off' { return 'Off' }",
     "if (`$toolId -eq 'directx')",
     "'Apply' { return 'Install DirectX' }",
+    "if (`$toolId -eq 'visual-cpp')",
+    "'Apply' { return 'Install Visual C++' }",
     "Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.",
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
 )) {
@@ -497,5 +500,5 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     AsyncBusyCleanup = 'Static contract present'
     RealHostMutationDuringTest = $false
     SourceUltimateUnchanged = $true
-    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid through DirectX with mock-safe action option propagation.'
+    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid through Visual C++ with mock-safe action option propagation.'
 }

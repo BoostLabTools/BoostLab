@@ -117,16 +117,17 @@ $reachedToolsForward = @(
     'hdcp',
     'p0-state',
     'msi-mode',
-    'directx'
+    'directx',
+    'visual-cpp'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
 
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'directx') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from DirectX back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'visual-cpp') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from Visual C++ back to BIOS Information.'
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($toolById.ContainsKey($toolId)) "Reached tool missing from active catalog: $toolId"
 }
-foreach ($outOfScope in @('visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool was included in reached label audit scope: $outOfScope"
 }
 
@@ -174,11 +175,17 @@ Assert-BoostLabCondition (-not $msiModeBlock.Contains('Manual Handoff')) 'Msi Mo
 Assert-BoostLabCondition (-not $msiModeBlock.Contains('Apply Auto')) 'Msi Mode must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $msiModeBlock.Contains("'Open'")) 'Msi Mode must not expose a fake Open label.'
 
-$directXBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''directx'')' -End 'return $ActionName'
+$directXBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''directx'')' -End 'if ($toolId -eq ''visual-cpp'')'
 Assert-BoostLabTextContains -Text $directXBlock -Needle "'Apply' { return 'Install DirectX' }" -Description 'DirectX Install visible label'
 Assert-BoostLabCondition (-not $directXBlock.Contains('Manual Handoff')) 'DirectX must not show Manual Handoff after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $directXBlock.Contains('Apply Auto')) 'DirectX must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $directXBlock.Contains("'Open'")) 'DirectX must not expose a fake Open label.'
+
+$visualCppBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''visual-cpp'')' -End 'return $ActionName'
+Assert-BoostLabTextContains -Text $visualCppBlock -Needle "'Apply' { return 'Install Visual C++' }" -Description 'Visual C++ Install visible label'
+Assert-BoostLabCondition (-not $visualCppBlock.Contains('Manual Handoff')) 'Visual C++ must not show Manual Handoff after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $visualCppBlock.Contains('Apply Auto')) 'Visual C++ must not show Apply Auto after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $visualCppBlock.Contains("'Open'")) 'Visual C++ must not expose a fake Open label.'
 
 $driverCleanSourceText = Get-Content -LiteralPath $driverCleanSourcePath -Raw
 $expectedDriverCleanHash = 'CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A'
@@ -254,5 +261,6 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     DriverCleanRouting = 'Open maps to Ultimate Manual; Apply maps to Ultimate Auto'
     DriverInstallLatestLabels = @('Open Intel Driver Page', 'Apply Source Workflow')
     InstallersSelectionMode = [string]$installersTool.SelectionMode
+    VisualCppVisibleLabels = @('Install Visual C++')
     Message = 'Reached-tool action labels preserve source-truthful UI wording without changing runtime behavior.'
 }

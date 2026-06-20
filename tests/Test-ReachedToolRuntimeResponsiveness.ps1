@@ -201,6 +201,7 @@ $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.p
 $edgeSettingsModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.psm1'
 $bitLockerModulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
 $directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
+$visualCppModulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
 
 foreach ($path in @(
     $uiPath
@@ -211,6 +212,7 @@ foreach ($path in @(
     $edgeSettingsModulePath
     $bitLockerModulePath
     $directXModulePath
+    $visualCppModulePath
 )) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file missing: $path"
 }
@@ -321,6 +323,7 @@ $reachedToolIds = @(
     'p0-state'
     'msi-mode'
     'directx'
+    'visual-cpp'
 )
 foreach ($toolId in $reachedToolIds) {
     Assert-BoostLabTextContains -Text $asyncScopeText -Needle "'$toolId'" -Description 'Async reached-tool scope'
@@ -328,7 +331,6 @@ foreach ($toolId in $reachedToolIds) {
 }
 
 foreach ($outOfScopeToolId in @(
-    'visual-cpp'
     'graphics-configuration-center'
     'theme-black'
     'power-plan'
@@ -345,7 +347,8 @@ Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'Si
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep multi-select queue UI.'
 
 $directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
-foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool, $directXTool)) {
+$visualCppTool = @($allTools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
+foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool, $directXTool, $visualCppTool)) {
     $asyncAnalyze = Invoke-BoostLabAsyncAnalyzeSimulation -ProjectRoot $ProjectRoot -ToolMetadata $asyncAnalyzeTool
     $toolId = [string]$asyncAnalyzeTool.Id
 
@@ -398,6 +401,11 @@ $directXText = Get-Content -LiteralPath $directXModulePath -Raw
 Assert-BoostLabTextContains -Text $directXText -Needle 'SourceEquivalentControlledRuntime' -Description 'DirectX source-equivalent runtime behavior'
 Assert-BoostLabTextContains -Text $directXText -Needle 'SourceEquivalentDirectXInstall' -Description 'DirectX controlled install action'
 
+$visualCppText = Get-Content -LiteralPath $visualCppModulePath -Raw
+Assert-BoostLabTextContains -Text $visualCppText -Needle 'SourceEquivalentControlledRuntime' -Description 'Visual C++ source-equivalent runtime behavior'
+Assert-BoostLabTextContains -Text $visualCppText -Needle 'SourceEquivalentVisualCppInstall' -Description 'Visual C++ controlled install action'
+Assert-BoostLabTextContains -Text $visualCppText -Needle 'OperationExecutor' -Description 'Visual C++ test-safe executor seam'
+
 foreach ($protectedPath in @(
     'source-ultimate'
     'source-ultimate\_intake-promoted'
@@ -428,5 +436,5 @@ foreach ($deletedPath in @(
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true
-    Message                     = 'Reached tools through DirectX use the non-blocking WPF dispatch path; validators are static/mock-safe.'
+    Message                     = 'Reached tools through Visual C++ use the non-blocking WPF dispatch path; validators are static/mock-safe.'
 }

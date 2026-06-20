@@ -187,9 +187,10 @@ $expectedReachedToolIds = @(
     'p0-state'
     'msi-mode'
     'directx'
+    'visual-cpp'
 )
 Assert-BoostLabCondition ((@($reachedToolIds) -join '|') -eq (@($expectedReachedToolIds) -join '|')) 'Reached-tool artifact source audit scope changed.'
-Assert-BoostLabCondition ('visual-cpp' -in @($manifest.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must be prep-classified before its parity phase.'
+Assert-BoostLabCondition ('visual-cpp' -notin @($manifest.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must no longer be prep-classified after Phase 130.'
 
 $toolsWithRuntimeExternalDownloads = @(
     'reinstall'
@@ -200,6 +201,7 @@ $toolsWithRuntimeExternalDownloads = @(
     'driver-install-latest'
     'nvidia-settings'
     'directx'
+    'visual-cpp'
 )
 foreach ($toolId in $toolsWithRuntimeExternalDownloads) {
     Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.ToolId -eq $toolId }).Count -gt 0) "Reached tool with runtime external download has no manifest entries: $toolId"
@@ -219,6 +221,29 @@ $directXEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'directx' })
 Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'DirectX must classify exactly 7-Zip and DirectX runtime source artifacts.'
 Assert-BoostLabCondition (@($directXEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*7zip.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'DirectX 7-Zip artifact classification mismatch.'
 Assert-BoostLabCondition (@($directXEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*directx.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'DirectX runtime artifact classification mismatch.'
+
+$visualCppEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'visual-cpp' })
+Assert-BoostLabCondition ($visualCppEntries.Count -eq 12) 'Visual C++ must classify exactly twelve redistributable source artifacts.'
+foreach ($packageFile in @(
+    'vcredist2005_x64.exe'
+    'vcredist2005_x86.exe'
+    'vcredist2008_x64.exe'
+    'vcredist2008_x86.exe'
+    'vcredist2010_x64.exe'
+    'vcredist2010_x86.exe'
+    'vcredist2012_x64.exe'
+    'vcredist2012_x86.exe'
+    'vcredist2013_x64.exe'
+    'vcredist2013_x86.exe'
+    'vcredist2015_2017_2019_2022_x64.exe'
+    'vcredist2015_2017_2019_2022_x86.exe'
+)) {
+    $url = "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/$packageFile"
+    $entry = @($visualCppEntries | Where-Object { [string]$_.OriginalDownloadUrl -eq $url })[0]
+    Assert-BoostLabCondition ($null -ne $entry) "Visual C++ external source missing for $packageFile."
+    Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ source classification mismatch for $packageFile."
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ mirror status mismatch for $packageFile."
+}
 
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
@@ -240,6 +265,7 @@ $sourceTextByTool = @{
     'driver-install-latest' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-latest.psm1') -Raw
     'nvidia-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\4 Nvidia Settings.ps1') -Raw
     'directx' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\directx.psm1') -Raw
+    'visual-cpp' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1') -Raw
 }
 
 foreach ($entry in $entries) {
@@ -252,7 +278,13 @@ foreach ($entry in $entries) {
         Assert-BoostLabContains -Text $text -Needle 'https://international.download.nvidia.com/Windows/{0}/{0}-desktop-{1}-{2}-international-dch-whql.exe' -Description 'Driver Install Latest NVIDIA dynamic download template'
     }
     else {
-        Assert-BoostLabContains -Text $text -Needle $url -Description "Original URL retained for $($entry.Id)"
+        if ($toolId -eq 'visual-cpp') {
+            Assert-BoostLabContains -Text $text -Needle 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main' -Description "Original URL base retained for $($entry.Id)"
+            Assert-BoostLabContains -Text $text -Needle ([IO.Path]::GetFileName($url)) -Description "Original URL package retained for $($entry.Id)"
+        }
+        else {
+            Assert-BoostLabContains -Text $text -Needle $url -Description "Original URL retained for $($entry.Id)"
+        }
     }
 
     if ([string]$entry.MirrorStatus -ne 'BoostLabMirrorAvailable') {

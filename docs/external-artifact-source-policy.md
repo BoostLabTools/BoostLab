@@ -49,8 +49,7 @@ switch set, or source.
 
 `config/ExternalArtifactSources.psd1` records the current audit scope:
 
-* reached tools from BIOS Information through DirectX,
-* Visual C++ as the next ordered target prep item,
+* reached tools from BIOS Information through Visual C++,
 * original source URL,
 * source classification,
 * future BoostLab mirror status, and
@@ -62,8 +61,8 @@ not changed by this policy.
 
 ## Current Phase Boundaries
 
-This audit does not scan or classify unreached tools after DirectX.
-It does not implement Visual C++, Graphics Configuration Center,
-Windows-stage tools, or Advanced-stage tools.
+This audit does not scan or classify unreached tools after Visual C++.
+It does not implement Graphics Configuration Center, Windows-stage tools, or
+Advanced-stage tools.
 
 It does not download, upload, vendor, or commit binary files.

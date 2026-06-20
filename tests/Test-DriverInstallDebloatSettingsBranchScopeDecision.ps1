@@ -76,7 +76,7 @@ Assert-BoostLabCondition ([bool]$record.YazanAcceptedNearParity) 'Phase 123 shou
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'YazanFinalException must remain false.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Ordered parity cursor should advance to Visual C++ after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Ordered parity cursor should advance to Graphics Configuration Center after Visual C++.'
 
 $codexText = Get-Content -LiteralPath $codexPath -Raw
 $blueprintText = Get-Content -LiteralPath $blueprintPath -Raw

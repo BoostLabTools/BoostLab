@@ -14,8 +14,9 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the Visual C++ controlled manual handoff validator path.'
+        throw 'Unable to determine the Visual C++ validator path.'
     }
+
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
 else {
@@ -23,7 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 
 function Assert-BoostLabCondition {
     param(
@@ -56,379 +57,331 @@ function Assert-BoostLabTextContains {
     }
 }
 
-function Assert-BoostLabNoDuplicateWarnings {
+function New-BoostLabMockVisualCppOperationResult {
     param(
         [Parameter(Mandatory)]
-        [object]$Result,
+        [object]$Operation,
 
-        [Parameter(Mandatory)]
-        [string]$Description
+        [bool]$Success = $true,
+
+        [string]$Message = 'mock ok'
     )
 
-    $resultWarnings = @($Result.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
-    $dataWarnings = if ($null -ne $Result.Data -and $Result.Data.PSObject.Properties.Name -contains 'Warnings') {
-        @($Result.Data.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    [pscustomobject]@{
+        Success   = $Success
+        Status    = if ($Success) { 'Completed' } else { 'Failed' }
+        Order     = [int]$Operation.Order
+        Type      = [string]$Operation.Type
+        Label     = [string]$Operation.Label
+        Required  = [bool]$Operation.Required
+        Message   = $Message
+        Data      = $null
+        Timestamp = Get-Date
     }
-    else {
-        @()
-    }
-
-    foreach ($warning in $resultWarnings) {
-        Assert-BoostLabCondition ($warning -notin $dataWarnings) "$Description duplicates warning at result and data level: $warning"
-    }
-    Assert-BoostLabCondition ((@($resultWarnings + $dataWarnings | Select-Object -Unique)).Count -eq @($resultWarnings + $dataWarnings).Count) "$Description contains duplicate warning entries."
-}
-
-$configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
-$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\3 C++.ps1'
-$executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
-$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
-$artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
-$productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
-$migrationPath = Join-Path $ProjectRoot 'docs\migrations\visual-cpp.md'
-$provenanceReviewPath = Join-Path $ProjectRoot 'docs\visual-cpp-provenance-review.md'
-$modulesRoot = Join-Path $ProjectRoot 'modules'
-$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-
-foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $artifactPath, $productionAllowlistPath, $migrationPath, $provenanceReviewPath)) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 101 file was not found: $path"
 }
 
 $expectedSourceHash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09'
+$sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\3 C++.ps1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
+$stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
+$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$mainWindowPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$externalSourcesPath = Join-Path $ProjectRoot 'config\ExternalArtifactSources.psd1'
+$artifactProvenancePath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$allowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
+$migrationPath = Join-Path $ProjectRoot 'docs\migrations\visual-cpp.md'
+$provenanceReviewPath = Join-Path $ProjectRoot 'docs\visual-cpp-provenance-review.md'
+
+foreach ($requiredPath in @($sourcePath, $modulePath, $stagesPath, $executionPath, $actionPlanPath, $mainWindowPath, $externalSourcesPath, $artifactProvenancePath, $migrationPath, $provenanceReviewPath)) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required Visual C++ file is missing: $requiredPath"
+}
+
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Visual C++ source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
-$sourceText = Get-Content -LiteralPath $sourcePath -Raw
-$packageFiles = @(
-    'vcredist2005_x64.exe',
-    'vcredist2005_x86.exe',
-    'vcredist2008_x64.exe',
-    'vcredist2008_x86.exe',
-    'vcredist2010_x64.exe',
-    'vcredist2010_x86.exe',
-    'vcredist2012_x64.exe',
-    'vcredist2012_x86.exe',
-    'vcredist2013_x64.exe',
-    'vcredist2013_x86.exe',
-    'vcredist2015_2017_2019_2022_x64.exe',
+$expectedDownloads = @(
+    'vcredist2005_x64.exe'
+    'vcredist2005_x86.exe'
+    'vcredist2008_x64.exe'
+    'vcredist2008_x86.exe'
+    'vcredist2010_x64.exe'
+    'vcredist2010_x86.exe'
+    'vcredist2012_x64.exe'
+    'vcredist2012_x86.exe'
+    'vcredist2013_x64.exe'
+    'vcredist2013_x86.exe'
+    'vcredist2015_2017_2019_2022_x64.exe'
     'vcredist2015_2017_2019_2022_x86.exe'
 )
-foreach ($packageFile in $packageFiles) {
+$expectedInstallers = @(
+    @{ FileName = 'vcredist2005_x86.exe'; Arguments = '/q' }
+    @{ FileName = 'vcredist2005_x64.exe'; Arguments = '/q' }
+    @{ FileName = 'vcredist2008_x86.exe'; Arguments = '/qb' }
+    @{ FileName = 'vcredist2008_x64.exe'; Arguments = '/qb' }
+    @{ FileName = 'vcredist2010_x86.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2010_x64.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2012_x86.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2012_x64.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2013_x86.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2013_x64.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2015_2017_2019_2022_x86.exe'; Arguments = '/passive /norestart' }
+    @{ FileName = 'vcredist2015_2017_2019_2022_x64.exe'; Arguments = '/passive /norestart' }
+)
+
+$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+foreach ($packageFile in $expectedDownloads) {
     Assert-BoostLabTextContains -Text $sourceText -Needle "refs/heads/main/$packageFile" -Description 'Visual C++ Ultimate source package URL'
     Assert-BoostLabTextContains -Text $sourceText -Needle "Temp\$packageFile" -Description 'Visual C++ Ultimate source temp target'
 }
-foreach ($needle in @(
-    'vcredist2005_x86.exe" -ArgumentList "/q"',
-    'vcredist2008_x86.exe" -ArgumentList "/qb"',
-    'vcredist2010_x86.exe" -ArgumentList "/passive /norestart"',
-    'vcredist2012_x64.exe" -ArgumentList "/passive /norestart"',
-    'vcredist2013_x64.exe" -ArgumentList "/passive /norestart"',
-    'vcredist2015_2017_2019_2022_x64.exe" -ArgumentList "/passive /norestart"'
-)) {
-    Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'Visual C++ Ultimate installer behavior'
+foreach ($installer in $expectedInstallers) {
+    Assert-BoostLabTextContains -Text $sourceText -Needle $installer.FileName -Description 'Visual C++ Ultimate installer file'
+    Assert-BoostLabTextContains -Text $sourceText -Needle $installer.Arguments -Description 'Visual C++ Ultimate installer arguments'
 }
+Assert-BoostLabTextContains -Text $sourceText -Needle 'Test-Connection -ComputerName "8.8.8.8"' -Description 'Visual C++ Ultimate internet check'
+Assert-BoostLabTextContains -Text $sourceText -Needle '$progresspreference = ''silentlycontinue''' -Description 'Visual C++ Ultimate progress preference'
 
-$config = Import-PowerShellDataFile -LiteralPath $configPath
-$allTools = @($config.Stages | ForEach-Object { $_.Tools })
-$graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
-$visualCppTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'visual-cpp' })[0]
+$stages = Import-PowerShellDataFile -LiteralPath $stagesPath
+$graphicsStage = @($stages.Stages | Where-Object { [string]$_.Name -eq 'Graphics' })[0]
+$visualCppTool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
 Assert-BoostLabCondition ($null -ne $visualCppTool) 'Visual C++ is missing from Graphics stage.'
 Assert-BoostLabCondition ([string]$visualCppTool.Title -eq 'Visual C++') 'Visual C++ title mismatch.'
 Assert-BoostLabCondition ([int]$visualCppTool.Order -eq 9) 'Visual C++ must remain Graphics order 9.'
-Assert-BoostLabCondition ([string]$visualCppTool.Type -eq 'assistant') 'Visual C++ must be an assistant.'
+Assert-BoostLabCondition ([string]$visualCppTool.Type -eq 'action') 'Visual C++ must be an action tool after Phase 130.'
 Assert-BoostLabCondition ([string]$visualCppTool.RiskLevel -eq 'high') 'Visual C++ must remain high risk.'
-Assert-BoostLabCondition ((@($visualCppTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'Visual C++ must expose canonical Analyze/Open/Apply/Default/Restore actions.'
-Assert-BoostLabTextContains -Text ([string]$visualCppTool.Description) -Needle 'Controlled manual handoff only' -Description 'Visual C++ description'
+Assert-BoostLabCondition ((@($visualCppTool.Actions) -join ',') -eq 'Analyze,Apply') 'Visual C++ must expose only Analyze and Apply.'
+Assert-BoostLabTextContains -Text ([string]$visualCppTool.Description) -Needle 'Source-equivalent controlled runtime' -Description 'Visual C++ stage description'
 
 $capabilities = $visualCppTool.Capabilities
-Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'Visual C++ manual handoff should require explicit confirmation.'
-foreach ($falseCapability in @(
-    'RequiresAdmin',
-    'RequiresInternet',
-    'CanReboot',
-    'CanModifyRegistry',
-    'CanModifyServices',
-    'CanInstallSoftware',
-    'CanDownload',
-    'CanModifyDrivers',
-    'CanModifySecurity',
-    'CanDeleteFiles',
-    'UsesTrustedInstaller',
-    'UsesSafeMode',
-    'SupportsDefault',
-    'SupportsRestore'
-)) {
+foreach ($trueCapability in @('RequiresAdmin', 'RequiresInternet', 'CanInstallSoftware', 'CanDownload', 'NeedsExplicitConfirmation')) {
+    Assert-BoostLabCondition ([bool]$capabilities[$trueCapability]) "Visual C++ capability should be true: $trueCapability"
+}
+foreach ($falseCapability in @('CanReboot', 'CanModifyRegistry', 'CanModifyServices', 'CanModifyDrivers', 'CanModifySecurity', 'CanDeleteFiles', 'UsesTrustedInstaller', 'UsesSafeMode', 'SupportsDefault', 'SupportsRestore')) {
     Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "Visual C++ capability should be false: $falseCapability"
 }
 
-$placeholderModules = @(
-    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
-        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
-)
-Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
-
-$sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot '_intake-promoted\Ultimate') -Recurse -File)
-Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq $inventoryBaseline.SourcePromotedMirrorFiles) "Expected $($inventoryBaseline.SourcePromotedMirrorFiles) source-promoted mirror files, found $($sourcePromotedFiles.Count)."
-$remainingSourcePromoted = @(
-    $sourcePromotedFiles | Where-Object {
-        $_.Name -notin @(
-            '1 Driver Clean.ps1',
-            '2 Driver Install Latest.ps1',
-            '4 Nvidia Settings.ps1',
-            '5 Hdcp.ps1',
-            '6 P0 State.ps1',
-            '7 Msi Mode.ps1',
-            '1 BitLocker.ps1'
-        )
-    }
-)
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
-
 $executionText = Get-Content -LiteralPath $executionPath -Raw
-foreach ($needle in @(
-    "'visual-cpp'"
-    "Graphics\visual-cpp.psm1"
-    "'Analyze', 'Open', 'Apply', 'Default', 'Restore'"
-)) {
-    Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Execution registry'
-}
+Assert-BoostLabTextContains -Text $executionText -Needle "'visual-cpp'" -Description 'Execution module Visual C++ registration'
+Assert-BoostLabTextContains -Text $executionText -Needle "Graphics\visual-cpp.psm1" -Description 'Execution module Visual C++ path'
+Assert-BoostLabTextContains -Text $executionText -Needle "Actions = @('Analyze', 'Apply')" -Description 'Execution module Visual C++ actions'
+
+$uiText = Get-Content -LiteralPath $mainWindowPath -Raw
+Assert-BoostLabTextContains -Text $uiText -Needle "if (`$toolId -eq 'visual-cpp')" -Description 'Visual C++ UI action label branch'
+Assert-BoostLabTextContains -Text $uiText -Needle "'Apply' { return 'Install Visual C++' }" -Description 'Visual C++ Apply label'
+Assert-BoostLabTextContains -Text $uiText -Needle "'visual-cpp'" -Description 'Visual C++ async scope'
+Assert-BoostLabCondition (-not $uiText.Contains("'Open' { return 'Manual Handoff' }")) 'Visual C++ must not reintroduce a manual handoff label.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action plan ValidateSet must not include display label Manual Handoff.'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action plan ValidateSet must not include display label Apply Auto.'
 foreach ($needle in @(
-    'Prepare Visual C++ manual handoff instructions only'
-    'Auto mode is blocked for Visual C++'
-    'Do not open a browser, external tool, Visual C++ redistributable package, or Visual C++ installer executable.'
-    'Do not download Visual C++ artifacts.'
-    'No browser, external tool, Visual C++ download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurs.'
-    'Visual C++ Restore requires selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract.'
+    'Install Visual C++ using the source-equivalent controlled workflow'
+    'Download all twelve source-defined Visual C++ redistributable installers'
+    'Run all twelve installers sequentially with `Start-Process -Wait`'
+    'UltimateAuthorHostedArtifact'
+    'NeedsBoostLabMirror'
+    'Visual C++ Open is unavailable because the source defines an install workflow'
+    'Visual C++ Default is unavailable. The source does not define a safe Default branch'
+    'Visual C++ Restore requires selected captured artifact'
 )) {
-    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Visual C++ action plan wording'
+    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Visual C++ Action Plan wording'
 }
+Assert-BoostLabCondition (-not $actionPlanText.Contains('Visual C++ Auto mode is blocked. BoostLab will not execute Auto behavior')) 'Visual C++ Apply must not be worded as Auto blocked after Phase 130.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains('Prepare Visual C++ manual handoff instructions only')) 'Visual C++ must not keep manual handoff Action Plan wording.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
-    $expectedSourceHash
-    'ManualHandoffPrepared'
-    'AutoBlockedUntilArtifactApproval'
-    'DefaultUnavailable'
-    'RestoreUnavailable'
-    'NoAutomatedExecution'
-    'NoDownloadOccurred'
-    'NoInstallerExecutionOccurred'
-    'NoExternalProcessStarted'
-    'NoPackageMutationOccurred'
-    'NoTempFileMutationOccurred'
-    'NoRegistryMutationOccurred'
-    'NoFileCleanupOccurred'
-    'NoSystemMutationOccurred'
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+    'SourceEquivalentControlledRuntime'
+    'SourceEquivalentVisualCppInstall'
+    'Invoke-WebRequest'
+    'Start-Process'
+    'Test-Connection -ComputerName ''8.8.8.8'''
+    'NeedsBoostLabMirror'
+    'UltimateAuthorHostedArtifact'
+    'Visual C++ source-equivalent workflow completed'
 )) {
     Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Visual C++ module text'
 }
-
-foreach ($commandPattern in @(
-    '(?im)^\s*Start-Process\b',
-    '(?im)^\s*Invoke-WebRequest\b',
-    '(?im)^\s*iwr\b',
-    '(?im)^\s*Invoke-RestMethod\b',
-    '(?im)^\s*Set-ItemProperty\b',
-    '(?im)^\s*reg\b',
-    '(?im)^\s*New-Item\b',
-    '(?im)^\s*Remove-Item\b',
-    '(?im)^\s*Move-Item\b',
-    '(?im)^\s*Remove-ItemProperty\b',
-    '(?im)^\s*cmd\b',
-    '(?im)^\s*shutdown\b',
-    '(?im)^\s*Restart-Computer\b'
+foreach ($forbiddenText in @(
+    'ToolModule.Placeholder.ps1'
+    'ManualHandoffOnly'
+    'AutoBlockedUntilArtifactApproval'
+    'winget'
+    '7z.exe'
+    'bcdedit'
+    'RunOnce'
+    'DDU'
 )) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "Visual C++ module contains prohibited executable command pattern: $commandPattern"
+    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenText)) "Visual C++ module contains forbidden text after Phase 130: $forbiddenText"
 }
 
-$module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
-try {
-    $info = Get-BoostLabToolInfo
-    Assert-BoostLabCondition ([string]$info.Id -eq 'visual-cpp') 'Module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Implemented actions mismatch.'
-    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Confirmation actions mismatch.'
+Import-Module -Name (Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1') -Force
 
-    $analysis = Invoke-BoostLabToolAction -ActionName 'Analyze'
-    Assert-BoostLabCondition ([bool]$analysis.Success) 'Analyze should succeed when source checksum matches.'
-    Assert-BoostLabCondition ([string]$analysis.Status -eq 'Analyzed') 'Analyze status mismatch.'
-    Assert-BoostLabCondition ([string]$analysis.CommandStatus -eq 'No execution performed') 'Analyze must not execute.'
-    Assert-BoostLabCondition ([string]$analysis.Data.Mode -eq 'ManualHandoffOnly') 'Analyze must report ManualHandoffOnly.'
-    Assert-BoostLabCondition ([string]$analysis.Data.AutoMode -eq 'AutoBlockedUntilArtifactApproval') 'Analyze must report Auto blocked.'
-    Assert-BoostLabCondition ([string]$analysis.Data.Source.ChecksumStatus -eq 'Passed') 'Analyze source checksum mismatch.'
-    foreach ($flag in @(
-        'NoAutomatedExecution',
-        'NoDownloadOccurred',
-        'NoInstallerExecutionOccurred',
-        'NoExternalProcessStarted',
-        'NoPackageMutationOccurred',
-        'NoTempFileMutationOccurred',
-        'NoRegistryMutationOccurred',
-        'NoFileCleanupOccurred',
-        'NoSystemMutationOccurred'
-    )) {
-        Assert-BoostLabCondition ([bool]$analysis.Data.$flag) "Analyze flag should be true: $flag"
+$info = Get-BoostLabToolInfo
+Assert-BoostLabCondition ([string]$info.Id -eq 'visual-cpp') 'Module info Id mismatch.'
+Assert-BoostLabCondition ((@($info.Actions) -join ',') -eq 'Analyze,Apply') 'Module info must expose only Analyze and Apply.'
+Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply') 'Implemented actions mismatch.'
+Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join ',') -eq 'Apply') 'Only Apply should require confirmation.'
+
+$analysis = Invoke-BoostLabToolAction -ActionName 'Analyze'
+Assert-BoostLabCondition ([bool]$analysis.Success) 'Analyze should succeed.'
+Assert-BoostLabCondition ([string]$analysis.Status -eq 'Analyzed') 'Analyze status mismatch.'
+Assert-BoostLabCondition ([string]$analysis.CommandStatus -eq 'No execution performed') 'Analyze command status mismatch.'
+Assert-BoostLabCondition (-not [bool]$analysis.ChangesExecuted) 'Analyze must not execute changes.'
+Assert-BoostLabCondition ([string]$analysis.Data.Mode -eq 'SourceEquivalentControlledRuntime') 'Analyze must report source-equivalent controlled runtime.'
+Assert-BoostLabCondition (@($analysis.Data.ArtifactSources).Count -eq 12) 'Analyze must report all twelve artifact sources.'
+Assert-BoostLabCondition (@($analysis.Data.Packages).Count -eq 12) 'Analyze must report all twelve packages.'
+Assert-BoostLabCondition (@($analysis.Data.OperationPlan.Operations).Count -eq 27) 'Analyze operation plan must contain 27 operations.'
+Assert-BoostLabCondition (@($analysis.Data.OperationPlan.Operations | Where-Object { [string]$_.Type -eq 'DownloadFile' }).Count -eq 12) 'Analyze operation plan must contain twelve downloads.'
+Assert-BoostLabCondition (@($analysis.Data.OperationPlan.Operations | Where-Object { [string]$_.Type -eq 'StartInstallerWait' }).Count -eq 12) 'Analyze operation plan must contain twelve installer launches.'
+Assert-BoostLabCondition ([bool]$analysis.Data.NoMutationOccurred) 'Analyze must be read-only.'
+Assert-BoostLabCondition ([bool]$analysis.Data.NoDownloadOccurred) 'Analyze must not download.'
+Assert-BoostLabCondition ([bool]$analysis.Data.NoInstallerExecutionOccurred) 'Analyze must not run installers.'
+
+$plannedDownloadFiles = @($analysis.Data.OperationPlan.Operations | Where-Object { [string]$_.Type -eq 'DownloadFile' } | ForEach-Object { [string]$_.Parameters.ExpectedFileName })
+Assert-BoostLabCondition ((@($plannedDownloadFiles) -join '|') -eq (@($expectedDownloads) -join '|')) 'Visual C++ download order mismatch.'
+$plannedInstallerFiles = @($analysis.Data.OperationPlan.Operations | Where-Object { [string]$_.Type -eq 'StartInstallerWait' } | ForEach-Object { [string]$_.Parameters.SourcePath })
+$expectedInstallerSourcePaths = @($expectedInstallers | ForEach-Object { '%SystemRoot%\Temp\{0}' -f [string]$_.FileName })
+Assert-BoostLabCondition ((@($plannedInstallerFiles) -join '|') -eq (@($expectedInstallerSourcePaths) -join '|')) 'Visual C++ installer order mismatch.'
+for ($i = 0; $i -lt $expectedInstallers.Count; $i++) {
+    $operation = @($analysis.Data.OperationPlan.Operations | Where-Object { [string]$_.Type -eq 'StartInstallerWait' })[$i]
+    Assert-BoostLabCondition ([string]$operation.Parameters.Arguments -eq [string]$expectedInstallers[$i].Arguments) "Visual C++ installer arguments mismatch at index $i."
+}
+
+$unconfirmed = Invoke-BoostLabToolAction -ActionName 'Apply'
+Assert-BoostLabCondition (-not [bool]$unconfirmed.Success) 'Unconfirmed Apply should not succeed.'
+Assert-BoostLabCondition ([string]$unconfirmed.Status -eq 'Cancelled') 'Unconfirmed Apply should be cancelled.'
+Assert-BoostLabCondition (-not [bool]$unconfirmed.ChangesExecuted) 'Unconfirmed Apply must not execute changes.'
+
+$operationLog = [System.Collections.Generic.List[object]]::new()
+$successExecutor = {
+    param($operation, $plan)
+
+    $operationLog.Add([pscustomobject]@{
+        Order      = [int]$operation.Order
+        Type       = [string]$operation.Type
+        Label      = [string]$operation.Label
+        Parameters = $operation.Parameters
+    }) | Out-Null
+
+    New-BoostLabMockVisualCppOperationResult -Operation $operation -Success $true -Message 'mock ok'
+}
+$mockedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -OperationExecutor $successExecutor -SkipEnvironmentChecks:$true
+Assert-BoostLabCondition ([bool]$mockedApply.Success) 'Mocked Apply should succeed.'
+Assert-BoostLabCondition ([string]$mockedApply.Status -eq 'Completed') 'Mocked Apply status mismatch.'
+Assert-BoostLabCondition ([bool]$mockedApply.ChangesExecuted) 'Mocked Apply should report attempted source-equivalent operations.'
+Assert-BoostLabCondition (@($mockedApply.Data.Operations).Count -eq 27) 'Mocked Apply should report all 27 operations.'
+Assert-BoostLabCondition (@($mockedApply.Data.Operations | Where-Object { [string]$_.Type -eq 'DownloadFile' }).Count -eq 12) 'Mocked Apply should report twelve downloads.'
+Assert-BoostLabCondition (@($mockedApply.Data.Operations | Where-Object { [string]$_.Type -eq 'StartInstallerWait' }).Count -eq 12) 'Mocked Apply should report twelve installer launches.'
+Assert-BoostLabCondition (@($mockedApply.Errors).Count -eq 0) 'Mocked Apply should not report errors.'
+Assert-BoostLabCondition ([string]$mockedApply.VerificationStatus -eq 'Passed') 'Mocked Apply verification should pass.'
+
+$failureExecutor = {
+    param($operation, $plan)
+
+    if ([string]$operation.Type -eq 'DownloadFile' -and [string]$operation.Parameters.ExpectedFileName -eq 'vcredist2008_x64.exe') {
+        return New-BoostLabMockVisualCppOperationResult -Operation $operation -Success $false -Message 'mock download failure'
     }
-    Assert-BoostLabNoDuplicateWarnings -Result $analysis -Description 'Analyze'
 
-    foreach ($approval in @(
-        'Immutable Visual C++ redistributable artifact source approval for all twelve packages',
-        'Visual C++ package SHA-256, size, version, architecture, signer, and redistributability approval for every package',
-        'Visual C++ installer execution descriptor approval for every source-defined switch',
-        'Visual C++ installer exit-code interpretation approval',
-        'Generated temp-file ownership, verification, and cleanup scope approval',
-        'Artifact provenance records tied to visual-cpp',
-        'Installer timeout, logging, and rollback/support approval'
-    )) {
-        Assert-BoostLabCondition ($approval -in @($analysis.Data.MissingApprovals)) "Missing approval was not reported: $approval"
-    }
-
-    $cancelled = Invoke-BoostLabToolAction -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$cancelled.Success) 'Unconfirmed Open should not proceed.'
-    Assert-BoostLabCondition ([bool]$cancelled.Cancelled) 'Unconfirmed Open should be cancelled.'
-    Assert-BoostLabTextContains -Text ([string]$cancelled.Message) -Needle 'No browser' -Description 'Cancelled Open message'
-
-    $open = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
-    Assert-BoostLabCondition ([bool]$open.Success) 'Confirmed Open should prepare manual handoff.'
-    Assert-BoostLabCondition ([string]$open.Status -eq 'ManualHandoffPrepared') 'Open status mismatch.'
-    Assert-BoostLabCondition ([string]$open.CommandStatus -eq 'No execution performed') 'Open must not execute.'
-    Assert-BoostLabCondition (-not [bool]$open.ChangesExecuted) 'Open must not report changes.'
-    foreach ($messagePart in @(
-        'No browser',
-        'external tool',
-        'Visual C++ download',
-        'installer launch',
-        'package change',
-        'registry change',
-        'temp-file change',
-        'file cleanup',
-        'system mutation'
-    )) {
-        Assert-BoostLabTextContains -Text ([string]$open.Message) -Needle $messagePart -Description 'Open result message'
-    }
-    Assert-BoostLabCondition ([bool]$open.Data.NoDownloadOccurred) 'Open must report no download.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoInstallerExecutionOccurred) 'Open must report no installer execution.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoExternalProcessStarted) 'Open must report no external process.'
-    Assert-BoostLabNoDuplicateWarnings -Result $open -Description 'Open'
-
-    $apply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$apply.Success) 'Apply Auto must fail closed.'
-    Assert-BoostLabCondition ([string]$apply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Apply Auto status mismatch.'
-    Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Blocked before execution') 'Apply Auto must block before execution.'
-    Assert-BoostLabTextContains -Text ([string]$apply.Message) -Needle 'AutoBlockedUntilArtifactApproval' -Description 'Apply Auto message'
-    Assert-BoostLabNoDuplicateWarnings -Result $apply -Description 'Apply'
-
-    $default = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$default.Success) 'Default must fail closed.'
-    Assert-BoostLabCondition ([string]$default.Status -eq 'DefaultUnavailable') 'Default status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$default.Message) -Needle 'Default is not Restore' -Description 'Default message'
-
-    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restore.Success) 'Restore must fail closed.'
-    Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'Restore status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured artifact, package, registry, temp-file, installer, and cleanup state' -Description 'Restore message'
+    New-BoostLabMockVisualCppOperationResult -Operation $operation -Success $true -Message 'mock ok'
 }
-finally {
-    Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
+$failedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -OperationExecutor $failureExecutor -SkipEnvironmentChecks:$true
+Assert-BoostLabCondition (-not [bool]$failedApply.Success) 'Failed mocked Apply should fail closed.'
+Assert-BoostLabCondition ([string]$failedApply.Status -eq 'Failed') 'Failed mocked Apply status mismatch.'
+Assert-BoostLabCondition ([string]$failedApply.VerificationStatus -eq 'Failed') 'Failed mocked Apply verification mismatch.'
+Assert-BoostLabCondition (@($failedApply.Errors).Count -ge 1) 'Failed mocked Apply must report failed operation errors.'
+Assert-BoostLabTextContains -Text ([string]$failedApply.Message) -Needle 'failed closed' -Description 'Failed mocked Apply message'
+
+$unsupportedOpen = Invoke-BoostLabToolAction -ActionName 'Open'
+Assert-BoostLabCondition (-not [bool]$unsupportedOpen.Success) 'Open should not succeed for Visual C++.'
+Assert-BoostLabCondition ([string]$unsupportedOpen.Status -eq 'Unsupported') 'Open should be unsupported for Visual C++.'
+
+$restoreDefault = Restore-BoostLabToolDefault
+Assert-BoostLabCondition (-not [bool]$restoreDefault.Success) 'Default restore helper should not succeed.'
+Assert-BoostLabCondition ([string]$restoreDefault.Status -eq 'DefaultUnavailable') 'Default helper status mismatch.'
+
+$externalSources = Import-PowerShellDataFile -LiteralPath $externalSourcesPath
+$visualCppExternalEntries = @($externalSources.ExternalSources | Where-Object { [string]$_.ToolId -eq 'visual-cpp' })
+Assert-BoostLabCondition ($visualCppExternalEntries.Count -eq 12) 'External artifact source manifest must classify all twelve Visual C++ source URLs.'
+Assert-BoostLabCondition ('visual-cpp' -in @($externalSources.AuditScope.ReachedToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must be in reached artifact-source scope.'
+Assert-BoostLabCondition ('visual-cpp' -notin @($externalSources.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must no longer be prep-only.'
+Assert-BoostLabCondition ('visual-cpp' -notin @($externalSources.AuditScope.ExplicitlyOutOfScopeToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must not be out-of-scope after Phase 130.'
+for ($i = 0; $i -lt $expectedDownloads.Count; $i++) {
+    $fileName = $expectedDownloads[$i]
+    $entry = @($visualCppExternalEntries | Where-Object { [string]$_.OriginalDownloadUrl -eq "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/$fileName" })[0]
+    Assert-BoostLabCondition ($null -ne $entry) "Missing Visual C++ external source entry for $fileName."
+    Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ external source classification mismatch for $fileName."
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ mirror status mismatch for $fileName."
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "Visual C++ must not add artifact hash approval for $fileName."
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Visual C++ must not add mirror URL for $fileName."
 }
 
-$originalProgramData = $env:ProgramData
-$env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) 'BoostLabTestProgramData'
-$loggingModule = Import-Module -Name (Join-Path $ProjectRoot 'core\Logging.psm1') -Force -PassThru -ErrorAction Stop
-$stateModule = Import-Module -Name (Join-Path $ProjectRoot 'core\State.psm1') -Force -PassThru -ErrorAction Stop
-Initialize-BoostLabState | Out-Null
-$executionModule = Import-Module -Name $executionPath -Force -PassThru -ErrorAction Stop
-try {
-    $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Analyze'
-    Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without running any Visual C++ workflow' -Description 'Runtime Analyze Action Plan summary'
-    Assert-BoostLabNoDuplicateWarnings -Result $runtimeAnalyze -Description 'Runtime Analyze'
-
-    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$runtimeOpen.Success) 'Runtime Open without confirmation should be gated.'
-    Assert-BoostLabCondition ([bool]$runtimeOpen.Cancelled) 'Runtime Open should be cancelled when confirmation is missing.'
-    Assert-BoostLabCondition ($null -ne $runtimeOpen.ActionPlan) 'Runtime Open should include an Action Plan.'
-    $runtimeOpenPlanText = @(
-        @($runtimeOpen.ActionPlan.Summary)
-        @($runtimeOpen.ActionPlan.PlannedChanges)
-        @($runtimeOpen.ActionPlan.SideEffects)
-        @($runtimeOpen.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'manual handoff instructions only',
-        'Do not open a browser',
-        'Do not download Visual C++ artifacts',
-        'Do not launch Visual C++ installers',
-        'No browser, external tool',
-        'system mutation occurs'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeOpenPlanText -Needle $needle -Description 'Runtime Open Action Plan'
-    }
-    Assert-BoostLabCondition (-not $runtimeOpenPlanText.Contains('approved external resource may be opened')) 'Runtime Open Action Plan must not use generic external resource wording.'
-
-    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $visualCppTool -ActionName 'Apply' -RiskConfirmed
-    Assert-BoostLabCondition (-not [bool]$runtimeApply.Success) 'Runtime Apply should fail closed.'
-    Assert-BoostLabCondition ([string]$runtimeApply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply status mismatch.'
-    $runtimeApplyPlanText = @(
-        @($runtimeApply.ActionPlan.Summary)
-        @($runtimeApply.ActionPlan.PlannedChanges)
-        @($runtimeApply.ActionPlan.SideEffects)
-        @($runtimeApply.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'Auto mode is blocked',
-        'will not execute Auto behavior',
-        'Report missing twelve-package Visual C++ artifact provenance',
-        'No approved Auto behavior'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeApplyPlanText -Needle $needle -Description 'Runtime Apply Action Plan'
-    }
-    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved Visual C++ behavior')) 'Runtime Apply plan must not use generic Apply wording.'
-}
-finally {
-    Remove-Module -ModuleInfo $executionModule -Force -ErrorAction SilentlyContinue
-    Remove-Module -ModuleInfo $stateModule -Force -ErrorAction SilentlyContinue
-    Remove-Module -ModuleInfo $loggingModule -Force -ErrorAction SilentlyContinue
-    $env:ProgramData = $originalProgramData
+$artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
+Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Artifact provenance config must remain empty.'
+if (Test-Path -LiteralPath $allowlistPath -PathType Leaf) {
+    $allowlistText = Get-Content -LiteralPath $allowlistPath -Raw
+    Assert-BoostLabCondition (-not $allowlistText.Contains('visual-cpp')) 'Production allowlist must not approve Visual C++.'
 }
 
-$artifactText = Get-Content -LiteralPath $artifactPath -Raw
-foreach ($forbiddenArtifactText in @('visual-cpp.exe', 'vcredist', 'Visual C++', 'FR33THYFR33THY')) {
-    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to Visual C++: $forbiddenArtifactText"
-}
-$artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
-if ($artifactConfig.ContainsKey('Artifacts')) {
-    Assert-BoostLabCondition (@($artifactConfig.Artifacts).Count -eq 0) 'Production artifact approvals should remain empty.'
-}
-
-$productionPolicy = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
-if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
-    Assert-BoostLabCondition (@($productionPolicy.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals should remain empty.'
-}
-
-foreach ($deletedPath in @(
-    'source-ultimate\6 Windows\17 Loudness EQ.ps1',
-    'source-ultimate\6 Windows\30 NVME Faster Driver.ps1'
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
+$provenanceText = Get-Content -LiteralPath $provenanceReviewPath -Raw
+foreach ($needle in @(
+    'Phase 130 replaces the earlier manual-handoff implementation with a'
+    'source-equivalent controlled runtime'
+    'No `config/ArtifactProvenance.psd1`'
+    'DoneYazanAcceptedNearParity'
 )) {
-    Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot $deletedPath))) "Deleted source was reintroduced: $deletedPath"
+    Assert-BoostLabTextContains -Text $migrationText -Needle $needle -Description 'Visual C++ migration record'
 }
+foreach ($needle in @(
+    'Phase 130 supersedes the manual-handoff-only runtime'
+    'source-equivalent controlled behavior accepted by Yazan as near parity'
+    'ExpectedSha256 = $null'
+    'No real Visual C++ redistributable is approved as a reusable BoostLab'
+)) {
+    Assert-BoostLabTextContains -Text $provenanceText -Needle $needle -Description 'Visual C++ provenance review'
+}
+
+$baseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Active tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$baseline.ImplementedTools -eq 45) 'Runtime implemented count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed unexpectedly.'
+
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$visualRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'visual-cpp' })[0]
+Assert-BoostLabCondition ([string]$visualRecord.ImplementationLevel -eq 'NearParityControlled') 'Visual C++ must be NearParityControlled after Phase 130.'
+Assert-BoostLabCondition ([string]$visualRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Visual C++ final progress status mismatch.'
+Assert-BoostLabCondition ([bool]$visualRecord.YazanAcceptedNearParity) 'Visual C++ must be Yazan-accepted near parity.'
+Assert-BoostLabCondition ([bool]$visualRecord.YazanFinalException -eq $false) 'Visual C++ should not require YazanFinalException.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target must advance to Graphics Configuration Center after Visual C++.'
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count mismatch after Visual C++.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 1) 'ManualHandoffOnly count mismatch after Visual C++.'
+
+foreach ($protectedPath in @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake')) {
+    $fullPath = Join-Path $ProjectRoot $protectedPath
+    if (Test-Path -LiteralPath $fullPath) {
+        $recent = @(Get-ChildItem -LiteralPath $fullPath -Recurse -File | Where-Object { $_.LastWriteTime -gt (Get-Date).AddHours(-6) })
+        Assert-BoostLabCondition ($recent.Count -eq 0) "Protected source/intake path has recent modifications during Visual C++ Phase 130: $protectedPath"
+    }
+}
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\23 NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
-    TestName                                     = 'Visual C++ controlled manual handoff implementation'
-    ActiveTools                                  = $allTools.Count
-    ImplementedTools                             = $allTools.Count - $placeholderModules.Count
-    DeferredPlaceholders                         = $placeholderModules.Count
-    SourcePromotedMirrorFiles                    = $sourcePromotedFiles.Count
-    RemainingUnimplementedSourcePromotedCandidates = $remainingSourcePromoted.Count
-    SourceHash                                   = $actualSourceHash
-    VisualCppActions                              = @($visualCppTool.Actions)
-    AutoMode                                     = 'AutoBlockedUntilArtifactApproval'
+    TestName                  = 'VisualCppExactUltimateParityImplementation'
+    SourcePath                = $sourcePath
+    SourceSha256              = $actualSourceHash
+    Actions                   = @($visualCppTool.Actions)
+    DownloadCount             = $expectedDownloads.Count
+    InstallerCount            = $expectedInstallers.Count
+    MockedApplyStatus         = $mockedApply.Status
+    ExternalSourceEntries     = $visualCppExternalEntries.Count
+    ArtifactApprovals         = @($artifactProvenance.Artifacts).Count
+    RuntimeUrlChanged         = $false
+    NextOrderedParityTarget   = [string]$nextTarget.ToolId
+    SourceUltimateUnchanged   = $true
+    DeletedToolsRemainDeleted = $true
+    Message                   = 'Visual C++ Phase 130 source-equivalent controlled runtime preserves the twelve download and twelve installer source workflow behind confirmation with no artifact/provenance approval.'
 }

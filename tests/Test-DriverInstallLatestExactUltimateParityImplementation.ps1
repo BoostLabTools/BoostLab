@@ -152,10 +152,10 @@ $simulatedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $simulate
 Assert-BoostLabCondition ([string]$simulatedTarget.ToolId -eq 'driver-install-latest') 'Driver Install Latest should be the ordered target before Phase 124 completion.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target should advance to Visual C++ after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target should advance to Graphics Configuration Center after Visual C++.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 24) 'NearParityControlled count should be 24 after DirectX.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 2) 'ManualHandoffOnly count should be 2 after DirectX.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count should be 25 after Visual C++.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 1) 'ManualHandoffOnly count should be 1 after Visual C++.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw

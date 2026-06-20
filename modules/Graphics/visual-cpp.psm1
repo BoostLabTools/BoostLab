@@ -1,22 +1,26 @@
 Set-StrictMode -Version Latest
 
+if (-not (Get-Command -Name 'New-BoostLabVerificationCheck' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1') -Scope Local -Force -ErrorAction Stop
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'visual-cpp'
     Title = 'Visual C++'
     Stage = 'Graphics'
     Order = 9
-    Type = 'assistant'
+    Type = 'action'
     RiskLevel = 'high'
-    Description = 'Controlled manual handoff only. Analyze the source-defined Visual C++ redistributable workflow without automated downloads, installer execution, temp-file changes, package changes, registry changes, or system mutation.'
-    Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    Description = 'Source-equivalent controlled runtime. Download all twelve source-defined Visual C++ redistributable installers and run them sequentially with exact source arguments after explicit confirmation.'
+    Actions = @('Analyze', 'Apply')
     Capabilities = [ordered]@{
-        RequiresAdmin              = $false
-        RequiresInternet           = $false
+        RequiresAdmin              = $true
+        RequiresInternet           = $true
         CanReboot                  = $false
         CanModifyRegistry          = $false
         CanModifyServices          = $false
-        CanInstallSoftware         = $false
-        CanDownload                = $false
+        CanInstallSoftware         = $true
+        CanDownload                = $true
         CanModifyDrivers           = $false
         CanModifySecurity          = $false
         CanDeleteFiles             = $false
@@ -28,17 +32,57 @@ $script:BoostLabToolMetadata = [ordered]@{
     }
 }
 
-$script:BoostLabImplementedActions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+$script:BoostLabImplementedActions = @('Analyze', 'Apply')
 $script:BoostLabExpectedSourceHash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09'
 $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/3 C++.ps1'
+$script:BoostLabArtifactMirrorStatus = 'NeedsBoostLabMirror'
+$script:BoostLabArtifactSourceClassification = 'UltimateAuthorHostedArtifact'
+$script:BoostLabUltimateFilesBaseUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main'
+
+$script:BoostLabVisualCppDownloadFiles = @(
+    'vcredist2005_x64.exe',
+    'vcredist2005_x86.exe',
+    'vcredist2008_x64.exe',
+    'vcredist2008_x86.exe',
+    'vcredist2010_x64.exe',
+    'vcredist2010_x86.exe',
+    'vcredist2012_x64.exe',
+    'vcredist2012_x86.exe',
+    'vcredist2013_x64.exe',
+    'vcredist2013_x86.exe',
+    'vcredist2015_2017_2019_2022_x64.exe',
+    'vcredist2015_2017_2019_2022_x86.exe'
+)
+
+$script:BoostLabVisualCppInstallerPlan = @(
+    @{ FileName = 'vcredist2005_x86.exe'; Arguments = '/q' },
+    @{ FileName = 'vcredist2005_x64.exe'; Arguments = '/q' },
+    @{ FileName = 'vcredist2008_x86.exe'; Arguments = '/qb' },
+    @{ FileName = 'vcredist2008_x64.exe'; Arguments = '/qb' },
+    @{ FileName = 'vcredist2010_x86.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2010_x64.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2012_x86.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2012_x64.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2013_x86.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2013_x64.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2015_2017_2019_2022_x86.exe'; Arguments = '/passive /norestart' },
+    @{ FileName = 'vcredist2015_2017_2019_2022_x64.exe'; Arguments = '/passive /norestart' }
+)
+
+function Get-BoostLabVisualCppProjectRoot {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+}
 
 function Get-BoostLabVisualCppSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    Join-Path (Get-BoostLabVisualCppProjectRoot) ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
 function Get-BoostLabVisualCppSourceStatus {
@@ -73,6 +117,422 @@ function Get-BoostLabVisualCppSourceStatus {
     }
 }
 
+function Get-BoostLabVisualCppRuntimePaths {
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    @{
+        WindowsTemp = Join-Path $env:SystemRoot 'Temp'
+    }
+}
+
+function Get-BoostLabVisualCppPackageDefinitions {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param()
+
+    foreach ($fileName in $script:BoostLabVisualCppDownloadFiles) {
+        $installer = @($script:BoostLabVisualCppInstallerPlan | Where-Object { [string]$_['FileName'] -eq $fileName }) | Select-Object -First 1
+        [pscustomobject]@{
+            FileName = $fileName
+            Url = ('{0}/{1}' -f $script:BoostLabUltimateFilesBaseUrl, $fileName)
+            TempPath = ('%SystemRoot%\Temp\{0}' -f $fileName)
+            InstallArguments = if ($null -ne $installer) { [string]$installer['Arguments'] } else { '' }
+            SourceClassification = $script:BoostLabArtifactSourceClassification
+            MirrorStatus = $script:BoostLabArtifactMirrorStatus
+        }
+    }
+}
+
+function Get-BoostLabVisualCppArtifactSources {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param()
+
+    foreach ($package in Get-BoostLabVisualCppPackageDefinitions) {
+        $artifactIdSuffix = ((([string]$package.FileName) -replace '\.exe$', '') -replace '_', '-').ToLowerInvariant()
+        [pscustomobject]@{
+            Id = "visual-cpp-$artifactIdSuffix"
+            FileName = [string]$package.FileName
+            Url = [string]$package.Url
+            SourceClassification = [string]$package.SourceClassification
+            MirrorStatus = [string]$package.MirrorStatus
+            ExpectedSha256 = $null
+            IntendedBoostLabMirrorUrl = $null
+            RuntimeUrlUnchanged = $true
+        }
+    }
+}
+
+function Get-BoostLabVisualCppSourceBehaviorSummary {
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param()
+
+    @(
+        'Requires Administrator rights.'
+        'Requires internet connectivity using Test-Connection 8.8.8.8.'
+        'Sets progress preference to silentlycontinue.'
+        'Prints Downloading: C++... before downloads.'
+        'Downloads twelve source-defined Visual C++ redistributable installers from the Ultimate author mirror to %SystemRoot%\Temp.'
+        'Prints Installing: C++... before installer execution.'
+        'Runs all twelve installers sequentially with Start-Process -Wait in source-defined order.'
+        'Uses /q for Visual C++ 2005, /qb for Visual C++ 2008, and /passive /norestart for Visual C++ 2010 through 2015/2017/2019/2022.'
+        'Defines no standalone Open, Default, Restore, cleanup, or reboot behavior.'
+    )
+}
+
+function New-BoostLabVisualCppOperation {
+    param(
+        [Parameter(Mandatory)]
+        [int]$Order,
+
+        [Parameter(Mandatory)]
+        [string]$Type,
+
+        [Parameter(Mandatory)]
+        [string]$Label,
+
+        [hashtable]$Parameters = @{},
+
+        [bool]$Required = $true
+    )
+
+    [pscustomobject]@{
+        Order      = $Order
+        Type       = $Type
+        Label      = $Label
+        Parameters = $Parameters
+        Required   = $Required
+    }
+}
+
+function Get-BoostLabVisualCppOperationPlan {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    $paths = Get-BoostLabVisualCppRuntimePaths
+    $operations = New-Object System.Collections.Generic.List[object]
+    $order = 1
+
+    $operations.Add((New-BoostLabVisualCppOperation -Order ($order++) -Type 'RequireAdministrator' -Label 'Verify Administrator rights')) | Out-Null
+    $operations.Add((New-BoostLabVisualCppOperation -Order ($order++) -Type 'RequireInternet' -Label 'Verify internet connectivity to 8.8.8.8')) | Out-Null
+    $operations.Add((New-BoostLabVisualCppOperation -Order ($order++) -Type 'SetProgressPreference' -Label 'Set progress preference to silentlycontinue' -Parameters @{ Value = 'silentlycontinue' })) | Out-Null
+
+    foreach ($fileName in $script:BoostLabVisualCppDownloadFiles) {
+        $operations.Add(
+            (New-BoostLabVisualCppOperation `
+                -Order ($order++) `
+                -Type 'DownloadFile' `
+                -Label ('Download {0}' -f $fileName) `
+                -Parameters @{
+                    Url = ('{0}/{1}' -f $script:BoostLabUltimateFilesBaseUrl, $fileName)
+                    OutFile = Join-Path ([string]$paths.WindowsTemp) $fileName
+                    ExpectedFileName = $fileName
+                    SourceTempPath = ('%SystemRoot%\Temp\{0}' -f $fileName)
+                    MirrorStatus = $script:BoostLabArtifactMirrorStatus
+                    SourceClassification = $script:BoostLabArtifactSourceClassification
+                })
+        ) | Out-Null
+    }
+
+    foreach ($installer in $script:BoostLabVisualCppInstallerPlan) {
+        $fileName = [string]$installer['FileName']
+        $arguments = [string]$installer['Arguments']
+        $operations.Add(
+            (New-BoostLabVisualCppOperation `
+                -Order ($order++) `
+                -Type 'StartInstallerWait' `
+                -Label ('Run {0} {1}' -f $fileName, $arguments) `
+                -Parameters @{
+                    FilePath = Join-Path ([string]$paths.WindowsTemp) $fileName
+                    SourcePath = ('%SystemRoot%\Temp\{0}' -f $fileName)
+                    Arguments = $arguments
+                    Wait = $true
+                })
+        ) | Out-Null
+    }
+
+    [pscustomobject]@{
+        ToolId = [string]$script:BoostLabToolMetadata['Id']
+        ToolTitle = [string]$script:BoostLabToolMetadata['Title']
+        Mode = 'SourceEquivalentVisualCppInstall'
+        DownloadCount = @($script:BoostLabVisualCppDownloadFiles).Count
+        InstallerCount = @($script:BoostLabVisualCppInstallerPlan).Count
+        Operations = $operations.ToArray()
+        NoRebootRequested = $true
+        RuntimeUrlUnchanged = $true
+        BoostLabMirrorRequired = $true
+    }
+}
+
+function New-BoostLabVisualCppOperationResult {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [Parameter(Mandatory)]
+        [bool]$Success,
+
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [string]$Status = '',
+
+        [AllowNull()]
+        [object]$Data = $null
+    )
+
+    [pscustomobject]@{
+        Success = $Success
+        Status = if ([string]::IsNullOrWhiteSpace($Status)) { if ($Success) { 'Completed' } else { 'Failed' } } else { $Status }
+        Order = [int]$Operation.Order
+        Type = [string]$Operation.Type
+        Label = [string]$Operation.Label
+        Required = [bool]$Operation.Required
+        Message = $Message
+        Data = $Data
+        Timestamp = Get-Date
+    }
+}
+
+function Test-BoostLabVisualCppAdministrator {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Test-BoostLabVisualCppInternet {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    Test-Connection -ComputerName '8.8.8.8' -Count 1 -Quiet -ErrorAction SilentlyContinue
+}
+
+function Invoke-BoostLabVisualCppRealOperation {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation
+    )
+
+    $parameters = if ($Operation.Parameters -is [System.Collections.IDictionary]) {
+        $Operation.Parameters
+    }
+    else {
+        @{}
+    }
+
+    try {
+        switch ([string]$Operation.Type) {
+            'RequireAdministrator' {
+                if (Test-BoostLabVisualCppAdministrator) {
+                    return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message 'Administrator rights verified.'
+                }
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message 'Administrator rights are required before Visual C++ installation can run.'
+            }
+            'RequireInternet' {
+                if (Test-BoostLabVisualCppInternet) {
+                    return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message 'Internet connectivity to 8.8.8.8 verified.'
+                }
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message 'Internet connectivity to 8.8.8.8 is required before Visual C++ downloads can run.'
+            }
+            'SetProgressPreference' {
+                $global:ProgressPreference = [string]$parameters['Value']
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('ProgressPreference set to {0}.' -f [string]$parameters['Value'])
+            }
+            'DownloadFile' {
+                Invoke-WebRequest -Uri ([string]$parameters['Url']) -OutFile ([string]$parameters['OutFile']) -UseBasicParsing -ErrorAction Stop
+                if (-not (Test-Path -LiteralPath ([string]$parameters['OutFile']) -PathType Leaf)) {
+                    return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message ('Download did not create expected file: {0}' -f [string]$parameters['OutFile'])
+                }
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('Downloaded {0} to {1}.' -f [string]$parameters['ExpectedFileName'], [string]$parameters['SourceTempPath']) -Data ([pscustomobject]@{ Url = [string]$parameters['Url']; OutFile = [string]$parameters['OutFile'] })
+            }
+            'StartInstallerWait' {
+                $filePath = [string]$parameters['FilePath']
+                if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
+                    return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message ('Installer file is missing before launch: {0}' -f [string]$parameters['SourcePath'])
+                }
+                $process = Start-Process -FilePath $filePath -ArgumentList @([string]$parameters['Arguments']) -Wait -PassThru -ErrorAction Stop
+                $exitCode = if ($null -ne $process) { $process.ExitCode } else { $null }
+                if ($null -eq $exitCode -or [int]$exitCode -eq 0) {
+                    return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('Installer completed with exit code {0}: {1} {2}' -f $(if ($null -eq $exitCode) { '<not reported>' } else { [string]$exitCode }), [string]$parameters['SourcePath'], [string]$parameters['Arguments']) -Data ([pscustomobject]@{ ExitCode = $exitCode; FilePath = $filePath; Arguments = [string]$parameters['Arguments'] })
+                }
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message ('Installer reported non-zero exit code {0}: {1} {2}' -f [string]$exitCode, [string]$parameters['SourcePath'], [string]$parameters['Arguments']) -Data ([pscustomobject]@{ ExitCode = $exitCode; FilePath = $filePath; Arguments = [string]$parameters['Arguments'] })
+            }
+            default {
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message ('Unsupported Visual C++ operation type: {0}' -f [string]$Operation.Type)
+            }
+        }
+    }
+    catch {
+        return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message $_.Exception.Message -Data $_
+    }
+}
+
+function Invoke-BoostLabVisualCppOperationPlan {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Plan,
+
+        [scriptblock]$OperationExecutor = $null,
+
+        [bool]$SkipEnvironmentChecks = $false
+    )
+
+    $operationResults = New-Object System.Collections.Generic.List[object]
+    $warnings = New-Object System.Collections.Generic.List[string]
+    $errors = New-Object System.Collections.Generic.List[string]
+    $changesStarted = $false
+
+    foreach ($operation in @($Plan.Operations)) {
+        if ($SkipEnvironmentChecks -and [string]$operation.Type -in @('RequireAdministrator', 'RequireInternet')) {
+            $result = New-BoostLabVisualCppOperationResult -Operation $operation -Success $true -Message 'Skipped by test-safe executor option.'
+        }
+        elseif ($null -ne $OperationExecutor) {
+            $result = & $OperationExecutor $operation $Plan
+        }
+        else {
+            $result = Invoke-BoostLabVisualCppRealOperation -Operation $operation
+        }
+
+        if ($null -eq $result) {
+            $result = New-BoostLabVisualCppOperationResult -Operation $operation -Success $false -Message 'Operation executor returned no result.'
+        }
+
+        $operationResults.Add($result) | Out-Null
+        if ([string]$operation.Type -notin @('RequireAdministrator', 'RequireInternet', 'SetProgressPreference')) {
+            $changesStarted = $true
+        }
+
+        if ([string]$result.Status -eq 'Warning') {
+            $warnings.Add("$($operation.Label): $($result.Message)") | Out-Null
+        }
+        if (-not [bool]$result.Success -and [bool]$operation.Required) {
+            $errors.Add("$($operation.Label): $($result.Message)") | Out-Null
+            break
+        }
+    }
+
+    $failedRequired = @($operationResults.ToArray() | Where-Object { -not [bool]$_.Success -and [bool]$_.Required })
+    $completedRequired = @($operationResults.ToArray() | Where-Object { [bool]$_.Required })
+    $requiredOperationCount = @($Plan.Operations | Where-Object { [bool]$_.Required }).Count
+
+    [pscustomobject]@{
+        Success = (@($failedRequired).Count -eq 0 -and @($completedRequired).Count -eq $requiredOperationCount)
+        Operations = $operationResults.ToArray()
+        FailedRequiredOperations = @($failedRequired)
+        Warnings = $warnings.ToArray()
+        Errors = $errors.ToArray()
+        ChangesStarted = $changesStarted
+    }
+}
+
+function New-BoostLabVisualCppVerificationResult {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Action,
+
+        [Parameter(Mandatory)]
+        [object]$SourceStatus,
+
+        [AllowNull()]
+        [object]$Execution = $null
+    )
+
+    $checks = New-Object System.Collections.Generic.List[object]
+    $checks.Add(
+        (New-BoostLabVerificationCheck `
+            -Name 'Visual C++ source checksum' `
+            -Expected $script:BoostLabExpectedSourceHash `
+            -Actual ([string]$SourceStatus.DetectedSha256) `
+            -Status ([string]$SourceStatus.ChecksumStatus) `
+            -Message 'Visual C++ must verify the exact Ultimate source script before any install workflow can run.')
+    ) | Out-Null
+
+    if ($null -ne $Execution) {
+        foreach ($operation in @($Execution.Operations)) {
+            $status = if ([bool]$operation.Success) {
+                if ([string]$operation.Status -eq 'Warning') { 'Warning' } else { 'Passed' }
+            }
+            elseif ([bool]$operation.Required) {
+                'Failed'
+            }
+            else {
+                'Warning'
+            }
+            $checks.Add(
+                (New-BoostLabVerificationCheck `
+                    -Name ([string]$operation.Label) `
+                    -Expected 'Source-equivalent operation completed successfully in source order' `
+                    -Actual ([string]$operation.Message) `
+                    -Status $status `
+                    -Message ('Visual C++ source-equivalent operation {0} reported {1}.' -f [int]$operation.Order, $status))
+            ) | Out-Null
+        }
+    }
+
+    $failedChecks = @($checks.ToArray() | Where-Object { [string]$_.Status -eq 'Failed' })
+    $warningChecks = @($checks.ToArray() | Where-Object { [string]$_.Status -eq 'Warning' })
+    $status = if ($failedChecks.Count -gt 0) {
+        'Failed'
+    }
+    elseif ($warningChecks.Count -gt 0) {
+        'Warning'
+    }
+    else {
+        'Passed'
+    }
+    $message = if ($status -eq 'Failed') {
+        'Visual C++ source-equivalent workflow verification failed.'
+    }
+    elseif ($status -eq 'Warning') {
+        'Visual C++ source-equivalent workflow completed with warnings.'
+    }
+    else {
+        'Visual C++ source-equivalent workflow verification passed.'
+    }
+
+    $expectedState = if ($Action -eq 'Apply') {
+        'Visual C++ source-equivalent workflow downloads twelve packages and runs twelve waited installers in source order after confirmation.'
+    }
+    else {
+        'Visual C++ source identity, artifact source classifications, and operation plan are readable without mutation.'
+    }
+    $detectedState = if ($null -ne $Execution) {
+        'Operations={0}; FailedRequired={1}; Warnings={2}' -f @(
+            @($Execution.Operations).Count,
+            @($Execution.FailedRequiredOperations).Count,
+            @($Execution.Warnings).Count
+        )
+    }
+    else {
+        'SourceChecksum={0}; ArtifactSources={1}; PlannedOperations={2}' -f @(
+            [string]$SourceStatus.ChecksumStatus,
+            @(Get-BoostLabVisualCppArtifactSources).Count,
+            @((Get-BoostLabVisualCppOperationPlan).Operations).Count
+        )
+    }
+
+    New-BoostLabVerificationResult `
+        -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+        -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
+        -Action $Action `
+        -Status $status `
+        -ExpectedState $expectedState `
+        -DetectedState $detectedState `
+        -Checks $checks.ToArray() `
+        -Message $message
+}
+
 function New-BoostLabVisualCppResult {
     param(
         [Parameter(Mandatory)]
@@ -96,11 +556,16 @@ function New-BoostLabVisualCppResult {
         [AllowNull()]
         [object]$Data = $null,
 
+        [AllowNull()]
+        [object]$VerificationResult = $null,
+
         [string[]]$Warnings = @(),
 
         [string[]]$Errors = @(),
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
     )
 
     [pscustomobject]@{
@@ -114,43 +579,13 @@ function New-BoostLabVisualCppResult {
         Message            = $Message
         RestartRequired    = $false
         Cancelled          = $Cancelled
-        ChangesExecuted    = $false
+        ChangesExecuted    = $ChangesExecuted
         Timestamp          = Get-Date
         Data               = $Data
+        VerificationResult = $VerificationResult
         Warnings           = @($Warnings)
         Errors             = @($Errors)
     }
-}
-
-function Get-BoostLabVisualCppBlockedApprovals {
-    [CmdletBinding()]
-    [OutputType([string[]])]
-    param()
-
-    @(
-        'Immutable Visual C++ redistributable artifact source approval for all twelve packages'
-        'Visual C++ package SHA-256, size, version, architecture, signer, and redistributability approval for every package'
-        'Visual C++ installer execution descriptor approval for every source-defined switch'
-        'Visual C++ installer exit-code interpretation approval'
-        'Generated temp-file ownership, verification, and cleanup scope approval'
-        'Artifact provenance records tied to visual-cpp'
-        'Installer timeout, logging, and rollback/support approval'
-    )
-}
-
-function Get-BoostLabVisualCppRiskWarnings {
-    [CmdletBinding()]
-    [OutputType([string[]])]
-    param()
-
-    @(
-        'Original Ultimate source requires Administrator and internet access.'
-        'Original Ultimate source downloads twelve Visual C++ redistributable executables from mutable branch URLs.'
-        'Original Ultimate source launches every downloaded redistributable with source-defined quiet or passive switches.'
-        'Original Ultimate source leaves downloaded executables in the Windows Temp directory.'
-        'No SHA-256, size, version, signer, authoritative source, installer exit-code, temp ownership, cleanup, or rollback approval exists for these artifacts.'
-        'This BoostLab implementation prepares manual handoff instructions only and performs no automated download, installer launch, package change, temp-file change, registry change, or system mutation.'
-    )
 }
 
 function Get-BoostLabVisualCppAnalysis {
@@ -159,68 +594,29 @@ function Get-BoostLabVisualCppAnalysis {
     param()
 
     $sourceStatus = Get-BoostLabVisualCppSourceStatus
+    $plan = Get-BoostLabVisualCppOperationPlan
     [pscustomobject]@{
-        Mode                              = 'ManualHandoffOnly'
-        AutoMode                          = 'AutoBlockedUntilArtifactApproval'
+        Mode                              = 'SourceEquivalentControlledRuntime'
         Source                            = $sourceStatus
-        SourceBehaviorSummary             = @(
-            'Checks for Administrator rights and internet connectivity.'
-            'Downloads twelve Visual C++ redistributable executables from the Ultimate-Files mirror into the Windows Temp directory.'
-            'Downloads x86 and x64 packages for Visual C++ 2005, 2008, 2010, 2012, 2013, and 2015/2017/2019/2022.'
-            'Launches Visual C++ 2005 packages with /q.'
-            'Launches Visual C++ 2008 packages with /qb.'
-            'Launches Visual C++ 2010, 2012, 2013, and 2015/2017/2019/2022 packages with /passive /norestart.'
-            'Does not remove the downloaded redistributable executables afterward.'
-        )
-        MissingApprovals                  = @(Get-BoostLabVisualCppBlockedApprovals)
-        Warnings                          = @(Get-BoostLabVisualCppRiskWarnings)
-        NoAutomatedExecution              = $true
+        SourceBehaviorSummary             = @(Get-BoostLabVisualCppSourceBehaviorSummary)
+        ArtifactSources                   = @(Get-BoostLabVisualCppArtifactSources)
+        Packages                          = @(Get-BoostLabVisualCppPackageDefinitions)
+        DownloadPlan                      = @($script:BoostLabVisualCppDownloadFiles)
+        InstallerPlan                     = @($script:BoostLabVisualCppInstallerPlan | ForEach-Object {
+            [pscustomobject]@{
+                FileName = [string]$_['FileName']
+                Arguments = [string]$_['Arguments']
+                Wait = $true
+            }
+        })
+        OperationPlan                     = $plan
+        NoMutationOccurred                = $true
         NoDownloadOccurred                = $true
         NoInstallerExecutionOccurred      = $true
         NoExternalProcessStarted          = $true
-        NoPackageMutationOccurred         = $true
-        NoTempFileMutationOccurred        = $true
         NoRegistryMutationOccurred        = $true
         NoFileCleanupOccurred             = $true
-        NoSystemMutationOccurred          = $true
-    }
-}
-
-function New-BoostLabVisualCppManualHandoffPlan {
-    [CmdletBinding()]
-    [OutputType([pscustomobject])]
-    param()
-
-    $analysis = Get-BoostLabVisualCppAnalysis
-    [pscustomobject]@{
-        PlanType                     = 'ManualHandoffOnly'
-        SourceChecksumStatus         = [string]$analysis.Source.ChecksumStatus
-        Steps                        = @(
-            'Review source checksum and blocked artifact approvals.'
-            'Prepare manual handoff instructions inside BoostLab only.'
-            'Do not open a browser, external tool, Visual C++ redistributable package, or Visual C++ installer executable.'
-            'Do not download Visual C++ artifacts.'
-            'Do not launch Visual C++ installers, change package state, write registry, change temp files, or perform cleanup.'
-            'Explain that Auto remains blocked until immutable artifact provenance, installer descriptors, exit-code rules, temp-file ownership, cleanup, and rollback/support approvals exist.'
-            'Record Latest Result and Activity Log with no automated execution.'
-        )
-        BlockedActions               = @(
-            'Apply Auto'
-            'Visual C++ redistributable download'
-            'Visual C++ installer execution'
-            'Visual C++ package state mutation'
-            'generated temp file write'
-            'generated temp file cleanup'
-            'Default'
-            'Restore'
-        )
-        Warnings                     = @($analysis.Warnings)
-        MissingApprovals             = @($analysis.MissingApprovals)
-        NoDownloadOccurred           = $true
-        NoInstallerExecutionOccurred = $true
-        NoExternalProcessStarted     = $true
-        NoRegistryMutationOccurred   = $true
-        NoFileCleanupOccurred        = $true
+        NoRebootOccurred                  = $true
     }
 }
 
@@ -240,8 +636,8 @@ function Get-BoostLabToolInfo {
         Actions                     = @($script:BoostLabToolMetadata['Actions'])
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
-        ConfirmationRequiredActions = @('Open', 'Apply')
-        ConfirmationText            = 'Visual C++ manual handoff prepares instructions only. BoostLab will not open external tools, download Visual C++ redistributables, run installers, mutate registry/packages/temp files, or change system state. Continue preparing the manual handoff result?'
+        ConfirmationRequiredActions = @('Apply')
+        ConfirmationText            = 'Visual C++ will run the source-equivalent workflow: verify Administrator and internet access, download twelve Ultimate-author-hosted redistributable installers to Windows Temp, and run all twelve installers sequentially with source-defined switches and Start-Process -Wait. Artifact sources remain classified as NeedsBoostLabMirror; no reboot is requested by the source. Continue?'
     }
 }
 
@@ -252,10 +648,15 @@ function Test-BoostLabToolCompatibility {
 
     $sourceStatus = Get-BoostLabVisualCppSourceStatus
     [pscustomobject]@{
-        Supported            = $true
+        Supported            = [string]$sourceStatus.ChecksumStatus -eq 'Passed'
         ToolId               = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle            = [string]$script:BoostLabToolMetadata['Title']
-        Reason               = 'Visual C++ manual handoff is available. Auto mode remains blocked.'
+        Reason               = if ([string]$sourceStatus.ChecksumStatus -eq 'Passed') {
+            'Visual C++ source-equivalent install workflow is available after explicit confirmation.'
+        }
+        else {
+            'Visual C++ source identity is missing or checksum verification failed.'
+        }
         SourceChecksumStatus = [string]$sourceStatus.ChecksumStatus
         Timestamp            = Get-Date
     }
@@ -269,7 +670,7 @@ function Get-BoostLabToolState {
     [pscustomobject]@{
         ToolId          = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
-        Status          = 'ManualHandoffOnly'
+        Status          = 'SourceEquivalentControlledRuntime'
         LastAction      = $null
         LastResult      = $null
         RestartRequired = $false
@@ -284,12 +685,16 @@ function Invoke-BoostLabToolAction {
         [Parameter(Mandatory)]
         [string]$ActionName,
 
-        [bool]$Confirmed = $false
+        [bool]$Confirmed = $false,
+
+        [scriptblock]$OperationExecutor = $null,
+
+        [bool]$SkipEnvironmentChecks = $false
     )
 
     $canonicalActionName = switch ($ActionName) {
-        'Prepare Manual Handoff' { 'Open' }
-        'Manual Handoff' { 'Open' }
+        'Install Visual C++' { 'Apply' }
+        'Apply Source Workflow' { 'Apply' }
         'Apply Auto' { 'Apply' }
         default { $ActionName }
     }
@@ -301,105 +706,95 @@ function Invoke-BoostLabToolAction {
             -Status 'Unsupported' `
             -CommandStatus 'Refused before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Unsupported Visual C++ action. Only Analyze, Open, Apply, Default, and Restore are exposed.'
+            -Message 'Unsupported Visual C++ action. Only Analyze and Apply are exposed.'
     }
 
     if ($canonicalActionName -eq 'Analyze') {
         $analysis = Get-BoostLabVisualCppAnalysis
         $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        $status = if ($sourceOk) { 'Analyzed' } else { 'SourceVerificationFailed' }
-        $message = if ($sourceOk) {
-            'Visual C++ analyzed. Manual handoff only; Auto remains blocked until exact twelve-package artifact, installer, exit-code, temp-file, cleanup, and rollback/support approvals exist.'
-        }
-        else {
-            'Visual C++ source checksum verification failed or source file is missing.'
-        }
-        $errors = if ($sourceOk) {
-            @()
-        }
-        else {
-            @('Visual C++ source checksum did not match the expected value or the source file is missing.')
-        }
-
+        $verification = New-BoostLabVisualCppVerificationResult -Action 'Analyze' -SourceStatus $analysis.Source
         return New-BoostLabVisualCppResult `
             -Success $sourceOk `
             -Action 'Analyze' `
-            -Status $status `
+            -Status $(if ($sourceOk) { 'Analyzed' } else { 'SourceIdentityFailed' }) `
             -CommandStatus 'No execution performed' `
-            -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-            -Message $message `
+            -VerificationStatus $(if ($sourceOk) { 'Passed' } else { 'Failed' }) `
+            -Message $(if ($sourceOk) { 'Visual C++ source identity, twelve-package artifact source classifications, and source-equivalent install workflow were analyzed. No download, installer launch, external process, registry, file, cleanup, or reboot operation occurred.' } else { 'Visual C++ source identity could not be verified. No operation was executed.' }) `
             -Data $analysis `
-            -Errors $errors
+            -VerificationResult $verification `
+            -Errors $(if ($sourceOk) { @() } else { @('Visual C++ source checksum did not match the expected value or the source file is missing.') })
     }
 
-    if ($canonicalActionName -eq 'Open') {
-        if (-not $Confirmed) {
-            return New-BoostLabVisualCppResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'Cancelled' `
-                -CommandStatus 'Cancelled before execution' `
-                -VerificationStatus 'NotApplicable' `
-                -Message 'Visual C++ manual handoff cancelled by user. No browser, external tool, download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurred.' `
-                -Cancelled $true
-        }
-
-        $analysis = Get-BoostLabVisualCppAnalysis
-        $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        if (-not $sourceOk) {
-            return New-BoostLabVisualCppResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'SourceVerificationFailed' `
-                -CommandStatus 'Blocked before handoff' `
-                -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-                -Message 'Visual C++ manual handoff blocked because source checksum verification failed or the source file is missing.' `
-                -Data $analysis `
-                -Errors @('Visual C++ source checksum did not match the expected value or the source file is missing.')
-        }
-
-        $plan = New-BoostLabVisualCppManualHandoffPlan
-        return New-BoostLabVisualCppResult `
-            -Success $true `
-            -Action 'Open' `
-            -Status 'ManualHandoffPrepared' `
-            -CommandStatus 'No execution performed' `
-            -VerificationStatus 'Passed' `
-            -Message 'Manual handoff prepared. No browser, external tool, Visual C++ download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurred.' `
-            -Data $plan
-    }
-
-    if ($canonicalActionName -eq 'Apply') {
-        $analysis = Get-BoostLabVisualCppAnalysis
+    if (-not $Confirmed) {
         return New-BoostLabVisualCppResult `
             -Success $false `
             -Action 'Apply' `
-            -Status 'AutoBlockedUntilArtifactApproval' `
+            -Status 'Cancelled' `
+            -CommandStatus 'Cancelled before execution' `
+            -VerificationStatus 'NotRun' `
+            -Message 'Visual C++ install requires explicit Action Plan confirmation before any Administrator check, internet check, download, installer launch, external process, package mutation, or system mutation.' `
+            -Cancelled $true
+    }
+
+    $sourceStatus = Get-BoostLabVisualCppSourceStatus
+    if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
+        $verification = New-BoostLabVisualCppVerificationResult -Action 'Apply' -SourceStatus $sourceStatus
+        return New-BoostLabVisualCppResult `
+            -Success $false `
+            -Action 'Apply' `
+            -Status 'SourceIdentityFailed' `
             -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Blocked' `
-            -Message 'AutoBlockedUntilArtifactApproval. Auto mode is blocked until exact twelve-package Visual C++ artifact provenance, installer execution, exit-code, temp-file ownership, cleanup, and rollback/support approvals exist. No download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurred.' `
-            -Data $analysis
+            -VerificationStatus 'Failed' `
+            -Message 'Visual C++ install blocked because source checksum verification failed or the source file is missing. No operation was executed.' `
+            -Data ([pscustomobject]@{ Source = $sourceStatus; ArtifactSources = @(Get-BoostLabVisualCppArtifactSources) }) `
+            -VerificationResult $verification `
+            -Errors @('Visual C++ source checksum did not match the expected value or the source file is missing.')
     }
 
-    if ($canonicalActionName -eq 'Default') {
-        return New-BoostLabVisualCppResult `
-            -Success $false `
-            -Action 'Default' `
-            -Status 'DefaultUnavailable' `
-            -CommandStatus 'Refused before execution' `
-            -VerificationStatus 'NotApplicable' `
-            -Message 'Default is unavailable for Visual C++ manual handoff. The source does not define a safe Default branch; Default is not Restore, and no artifact, package, registry, temp file, installer, or system state is changed.'
+    $plan = Get-BoostLabVisualCppOperationPlan
+    $execution = Invoke-BoostLabVisualCppOperationPlan -Plan $plan -OperationExecutor $OperationExecutor -SkipEnvironmentChecks:$SkipEnvironmentChecks
+    $verificationResult = New-BoostLabVisualCppVerificationResult -Action 'Apply' -SourceStatus $sourceStatus -Execution $execution
+    $warnings = @($execution.Warnings)
+    $errors = @($execution.Errors)
+    $data = [pscustomobject]@{
+        Source                   = $sourceStatus
+        Plan                     = $plan
+        ArtifactSources          = @(Get-BoostLabVisualCppArtifactSources)
+        Packages                 = @(Get-BoostLabVisualCppPackageDefinitions)
+        Operations               = @($execution.Operations)
+        FailedRequiredOperations = @($execution.FailedRequiredOperations)
+        NoRebootRequested        = $true
+        RuntimeUrlUnchanged      = $true
+        BoostLabMirrorRequired   = $true
     }
 
-    if ($canonicalActionName -eq 'Restore') {
+    if ([bool]$execution.Success) {
+        $hasWarnings = @($warnings).Count -gt 0
         return New-BoostLabVisualCppResult `
-            -Success $false `
-            -Action 'Restore' `
-            -Status 'RestoreUnavailable' `
-            -CommandStatus 'Refused before execution' `
-            -VerificationStatus 'NotApplicable' `
-            -Message 'Restore is unavailable without approved captured artifact, package, registry, temp-file, installer, and cleanup state plus a Restore contract. Default is not Restore, and no system-changing operation is planned.'
+            -Success $true `
+            -Action 'Apply' `
+            -Status $(if ($hasWarnings) { 'CompletedWithWarnings' } else { 'Completed' }) `
+            -CommandStatus $(if ($hasWarnings) { 'Completed with warnings' } else { 'Completed' }) `
+            -VerificationStatus $(if ($hasWarnings) { 'Warning' } else { 'Passed' }) `
+            -Message 'Visual C++ source-equivalent workflow completed: twelve redistributable downloads and twelve waited installer launches were requested in source order with source-defined switches. No reboot was requested by the source.' `
+            -Data $data `
+            -VerificationResult $verificationResult `
+            -Warnings $warnings `
+            -ChangesExecuted:$execution.ChangesStarted
     }
+
+    return New-BoostLabVisualCppResult `
+        -Success $false `
+        -Action 'Apply' `
+        -Status 'Failed' `
+        -CommandStatus 'Completed with errors' `
+        -VerificationStatus 'Failed' `
+        -Message "Visual C++ source-equivalent workflow failed closed. Failed operation(s): $($errors -join '; ')" `
+        -Data $data `
+        -VerificationResult $verificationResult `
+        -Warnings $warnings `
+        -Errors $errors `
+        -ChangesExecuted:$execution.ChangesStarted
 }
 
 function Restore-BoostLabToolDefault {
@@ -407,7 +802,13 @@ function Restore-BoostLabToolDefault {
     [OutputType([pscustomobject])]
     param()
 
-    Invoke-BoostLabToolAction -ActionName 'Default'
+    New-BoostLabVisualCppResult `
+        -Success $false `
+        -Action 'Default' `
+        -Status 'DefaultUnavailable' `
+        -CommandStatus 'Unavailable' `
+        -VerificationStatus 'NotApplicable' `
+        -Message 'Default is unavailable for Visual C++ because the source defines only an install workflow. Default is not Restore.'
 }
 
 Export-ModuleMember -Function @(
@@ -416,4 +817,8 @@ Export-ModuleMember -Function @(
     'Get-BoostLabToolState'
     'Invoke-BoostLabToolAction'
     'Restore-BoostLabToolDefault'
+    'Get-BoostLabVisualCppSourceStatus'
+    'Get-BoostLabVisualCppAnalysis'
+    'Get-BoostLabVisualCppOperationPlan'
+    'Invoke-BoostLabVisualCppOperationPlan'
 )

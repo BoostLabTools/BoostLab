@@ -339,11 +339,11 @@
                     Title       = 'Visual C++'
                     Stage       = 'Graphics'
                     Order       = 9
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Controlled manual handoff only. Analyze the source-defined Visual C++ redistributable workflow without automated downloads, installer execution, temp-file changes, package changes, registry changes, or system mutation.'
-                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Source-equivalent controlled runtime. Download all twelve source-defined Visual C++ redistributable installers and run them sequentially with exact source arguments after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'graphics-configuration-center'

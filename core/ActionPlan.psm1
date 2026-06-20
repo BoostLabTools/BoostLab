@@ -175,7 +175,8 @@ function New-BoostLabActionPlan {
     )
     $isNvidiaSettingsReadOnlyAnalyze = ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze')
     $isDirectXReadOnlyAnalyze = ($toolId -eq 'directx' -and $ActionName -eq 'Analyze')
-    $isReadOnlyAnalyzePrivilegeOverride = ($isNvidiaSettingsReadOnlyAnalyze -or $isDirectXReadOnlyAnalyze)
+    $isVisualCppReadOnlyAnalyze = ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Analyze')
+    $isReadOnlyAnalyzePrivilegeOverride = ($isNvidiaSettingsReadOnlyAnalyze -or $isDirectXReadOnlyAnalyze -or $isVisualCppReadOnlyAnalyze)
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
@@ -293,13 +294,13 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no captured artifact, registry, shortcut, file, installer, or cleanup state restore contract exists.'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Analyze') {
-        'Analyze the Visual C++ source and report blocked twelve-package artifact, installer, exit-code, temp-file, cleanup, and rollback/support approvals without running any Visual C++ workflow.'
+        'Analyze the Visual C++ source, artifact source classifications, and source-equivalent twelve-installer plan without running any Visual C++ workflow.'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Open') {
-        'Prepare Visual C++ manual handoff instructions only; no browser, external tool, download, installer, package change, registry change, temp-file change, file cleanup, or system mutation is opened or executed.'
+        'Open is not exposed for Visual C++; the source defines an install workflow, not a standalone browser or manual handoff action.'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Visual C++ because immutable artifacts, installer descriptors, exit-code rules, temp-file ownership, cleanup, and rollback/support approvals do not exist.'
+        'Install Visual C++ using the source-equivalent controlled workflow: download all twelve redistributable installers and run them sequentially with source-defined switches after confirmation.'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe Visual C++ default branch.'
@@ -762,21 +763,24 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Visual C++ source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary and missing twelve-package artifact, installer execution, exit-code, temp-file ownership, cleanup, and rollback/support approvals.')
-        $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, package change, registry change, temp-file change, file cleanup, or system mutation.')
+        $plannedChanges.Add('Report the source behavior summary, all twelve author-hosted artifact classifications, and the exact source-equivalent install plan.')
+        $plannedChanges.Add('Perform no download, external process launch, installer execution, package change, registry change, temp-file change, file cleanup, or system mutation.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
-        $plannedChanges.Add('Do not open a browser, external tool, Visual C++ redistributable package, or Visual C++ installer executable.')
-        $plannedChanges.Add('Do not download Visual C++ artifacts.')
-        $plannedChanges.Add('Do not launch Visual C++ installers, change package state, write registry, change temp files, or perform cleanup.')
+        $plannedChanges.Add('Block Open before any operational step.')
+        $plannedChanges.Add('Do not expose a fake browser, external tool, source page, or manual handoff action for Visual C++.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing twelve-package Visual C++ artifact provenance, installer execution, exit-code, temp-file ownership, cleanup, and rollback/support approvals.')
-        $plannedChanges.Add('Perform no download, installer execution, package change, registry change, temp-file change, file cleanup, or system mutation.')
+        $plannedChanges.Add('Verify the exact Visual C++ Ultimate source checksum before execution.')
+        $plannedChanges.Add('Require BoostLab to be running elevated as Administrator.')
+        $plannedChanges.Add('Verify internet connectivity using the source-equivalent 8.8.8.8 check.')
+        $plannedChanges.Add('Download all twelve source-defined Visual C++ redistributable installers to `%SystemRoot%\Temp` from their unchanged Ultimate author-hosted URLs.')
+        $plannedChanges.Add('Run all twelve installers sequentially with `Start-Process -Wait` in the exact source order.')
+        $plannedChanges.Add('Use the exact source arguments: `/q` for 2005, `/qb` for 2008, and `/passive /norestart` for 2010, 2012, 2013, and 2015/2017/2019/2022 packages.')
+        $plannedChanges.Add('Capture installer exit codes and fail closed if a required download, file check, process launch, or installer execution fails.')
+        $plannedChanges.Add('Report that every Visual C++ artifact source remains `UltimateAuthorHostedArtifact` with `NeedsBoostLabMirror`; no artifact approval or mirror substitution is created.')
+        $plannedChanges.Add('Do not add reboot, Default, Restore, 7-Zip, extraction, Safe Mode, RunOnce, DDU, driver, service, or package-selection behavior.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1234,7 +1238,7 @@ function New-BoostLabActionPlan {
     $isBlockedDriverInstallLatestNoMutationAction = $toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Default', 'Restore')
-    $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
     $isBlockedEdgeSettingsRestoreNoMutationAction = $toolId -eq 'edge-settings' -and $ActionName -eq 'Restore'
@@ -1259,7 +1263,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers', 'edge-webview', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
+    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers', 'edge-webview') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1406,12 +1410,14 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('Open is blocked before execution because the source defines no standalone Open branch.')
         $sideEffects.Add('No browser, external tool, Visual C++ download, installer launch, package change, registry change, temp-file change, file cleanup, or system mutation occurs.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, installer execution, package change, registry change, temp-file change, file cleanup, or system mutation occurs.')
+        $sideEffects.Add('Downloads twelve source-defined Visual C++ redistributable installers from unchanged Ultimate author-hosted URLs to %SystemRoot%\Temp.')
+        $sideEffects.Add('Runs all twelve installers sequentially with Start-Process -Wait and source-defined switches; installer side effects may change Visual C++ redistributable package, file, registry, and application state.')
+        $sideEffects.Add('Artifacts remain classified as UltimateAuthorHostedArtifact / NeedsBoostLabMirror; no BoostLab mirror substitution or artifact approval is created.')
+        $sideEffects.Add('No source-defined reboot, Default, Restore, 7-Zip, extraction, Safe Mode, RunOnce, DDU, driver, service, or package-selection behavior is added.')
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution.')
@@ -1720,7 +1726,7 @@ function New-BoostLabActionPlan {
     elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'visual-cpp')) {
+    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
@@ -1830,10 +1836,10 @@ function New-BoostLabActionPlan {
         'DirectX Restore requires selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Visual C++ manual handoff instructions only. It will not open a browser, external tool, Visual C++ redistributable package, or installer executable; download artifacts; run installers; mutate package, registry, temp-file, cleanup, or system state. Continue?'
+        'Visual C++ Open is unavailable because the source defines an install workflow, not a standalone Open action. Continue only to record the blocked Open result?'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Apply') {
-        'Visual C++ Auto mode is blocked. BoostLab will not execute Auto behavior because twelve-package artifact, installer, exit-code, temp-file, cleanup, and rollback/support approvals are missing. Continue only to record the blocked result?'
+        'BoostLab will run the source-equivalent Visual C++ workflow: verify Administrator and internet access, download all twelve source-defined redistributable installers to %SystemRoot%\Temp from unchanged Ultimate author-hosted URLs, and run them sequentially with Start-Process -Wait and exact source switches. Artifacts remain NeedsBoostLabMirror; no artifact approval or mirror substitution is created, and no reboot is requested by BoostLab. Continue?'
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Default') {
         'Visual C++ Default is unavailable. The source does not define a safe Default branch, and Default is not Restore. Continue only to record the blocked Default result?'

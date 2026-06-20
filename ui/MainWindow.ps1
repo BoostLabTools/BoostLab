@@ -561,6 +561,12 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'visual-cpp') {
+        switch ($ActionName) {
+            'Apply' { return 'Install Visual C++' }
+        }
+    }
+
     return $ActionName
 }
 
@@ -1642,6 +1648,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'p0-state'
         'msi-mode'
         'directx'
+        'visual-cpp'
     )
 }
 

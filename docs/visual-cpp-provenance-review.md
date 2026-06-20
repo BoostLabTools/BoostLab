@@ -1,23 +1,5 @@
 # Visual C++ Artifact Provenance Review
 
-## Phase 46 Decision
-
-Phase 46 refused automated Visual C++ implementation because the source
-workflow could not pass artifact provenance and installer execution policy.
-
-The complete Ultimate workflow cannot pass the Phase 35 provenance and
-installer execution policy with the evidence available in the repository.
-
-## Phase 101 Manual Handoff Decision
-
-Visual C++ is implemented as a controlled manual-handoff tool only. Phase 101
-adds `Analyze`, `Open`, `Apply`, `Default`, and `Restore` result handling, but
-it does not approve automated downloads or installer execution.
-
-`Analyze` is read-only. `Open` prepares manual handoff instructions inside
-BoostLab only and opens no browser or external tool. `Apply` fails closed with
-`AutoBlockedUntilArtifactApproval`. `Default` and `Restore` are unavailable.
-
 ## Source Reference
 
 * Tool id: `visual-cpp`
@@ -25,7 +7,22 @@ BoostLab only and opens no browser or external tool. `Apply` fails closed with
 * Source SHA-256:
   `7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09`
 
-## Ultimate Package Set and Order
+## Current Decision
+
+Phase 46 refused reusable artifact-provenance approval because the source
+downloads twelve redistributables from mutable Ultimate-author mirror URLs and
+the repository had no exact hashes, sizes, signers, package versions, license
+evidence, or installer execution descriptors.
+
+Phase 101 implemented controlled manual handoff only.
+
+Phase 130 supersedes the manual-handoff-only runtime with
+source-equivalent controlled behavior accepted by Yazan as near parity. Visual
+C++ Apply now preserves the source workflow behind explicit BoostLab
+confirmation and test-safe executor injection. This does not approve reusable
+artifact provenance, a BoostLab mirror, or URL substitution.
+
+## Ultimate Package Set And Order
 
 The source requires Administrator rights and internet connectivity. It
 downloads all twelve executables to `%SystemRoot%\Temp` before launching any
@@ -44,7 +41,7 @@ installer:
 11. `vcredist2015_2017_2019_2022_x64.exe`
 12. `vcredist2015_2017_2019_2022_x86.exe`
 
-Every source URL uses this mutable mirror pattern:
+Every source URL uses:
 
 `https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/<file>`
 
@@ -65,66 +62,35 @@ The source then waits for each installer in this exact order:
 
 The source does not remove the downloaded executables afterward.
 
-## Why Implementation Was Refused
+## External Source Classification
 
-All twelve source URLs use `refs/heads/main`. They are mutable branch
-references, not immutable Microsoft release URLs, immutable GitHub release
-assets, or commit-pinned content URLs. A hash measured from one response would
-not establish that the same URL remains bound to those bytes.
+`config/ExternalArtifactSources.psd1` records all twelve Visual C++ installer
+URLs as:
 
-The repository does not provide the required evidence for any package:
+* `SourceClassification = UltimateAuthorHostedArtifact`
+* `MirrorStatus = NeedsBoostLabMirror`
+* `ExpectedSha256 = $null`
+* `IntendedBoostLabMirrorUrl = $null`
 
-* Exact SHA-256.
-* Exact file size or reviewed size bounds.
-* Verified Authenticode status and expected Microsoft publisher/signer.
-* Authoritative source and package-version evidence.
-* License and redistributability evidence for the mirrored executable.
-* An approved artifact record tied to `visual-cpp`.
-* An approved installer request containing the exact source switch.
-* Approved exit-code interpretation for success, already installed,
-  reboot-required, and failure outcomes.
-* Approved ownership and cleanup rules for each generated temp file.
-
-The Phase 35 installer helper is intentionally inert. A valid request returns
-`NotImplemented` and `ProcessStarted = false`. The Visual C++ module must not
-bypass that boundary with direct `Start-Process` calls.
-
-Approving only newer redistributables, replacing the workflow with `winget`,
-using different Microsoft download pages, changing package names or switches,
-or omitting architectures would not preserve the approved Ultimate package
-list and operation order.
+These entries classify source URLs only. They are not artifact approvals.
 
 ## Production State
 
 * `config/ArtifactProvenance.psd1` remains empty.
-* No real Visual C++ redistributable is approved.
-* `modules/Graphics/visual-cpp.psm1` is a controlled manual-handoff
-  implementation.
-* `docs/migrations/visual-cpp.md` records the manual-handoff migration.
-* No download, installer launch, registry change, temp-file cleanup, or Visual
-  C++ installation-state change is enabled by Phase 46 or Phase 101.
+* No real Visual C++ redistributable is approved as a reusable BoostLab
+  artifact.
+* No binary file is committed.
+* No production allowlist entry is added.
+* Runtime URLs remain the exact source URLs.
+* BoostLab does not invent package substitutions, `winget`, alternate Microsoft
+  pages, alternate switches, cleanup, Default, Restore, or reboot behavior.
 
-## Required Approval Package for a Future Retry
+## Future Mirror Or Restore Work
 
-A future phase must provide all of the following for every one of the twelve
-source-defined packages:
+A future mirror/provenance phase would still need exact SHA-256, size, package
+version, Authenticode signer, redistributability evidence, BoostLab mirror
+approval, installer exit-code rules, timeout behavior, and generated-temp-path
+ownership for every package.
 
-1. An immutable authoritative or commit-pinned source URL.
-2. Exact file name, SHA-256, size, package version, architecture, Authenticode
-   signer, publisher, license, and redistributability evidence.
-3. A reviewed artifact record with `SourceToolIds = @('visual-cpp')` and an
-   explicit approval status.
-4. An exact installer request preserving the source-defined switch and
-   operation order.
-5. Explicit Action Plan confirmation and bounded timeout behavior.
-6. Exit-code capture and approved interpretation for each package.
-7. Exact generated-temp-path ownership, state, verification, and cleanup
-   rules.
-8. Mocked tests for missing or mismatched artifacts, invalid signatures,
-   installer failures, reboot-required exit codes, and partial completion.
-9. A separately approved installer execution implementation that does not
-   weaken the Phase 35 verified-path and confirmation requirements.
-
-Until the complete twelve-artifact approval package exists, Visual C++ Auto
-remains blocked. The only approved BoostLab behavior is read-only analysis and
-manual handoff text prepared inside the UI.
+A future Restore phase would require selected captured package/file/registry
+state and an approved restore contract. Phase 130 does not enable Restore.
