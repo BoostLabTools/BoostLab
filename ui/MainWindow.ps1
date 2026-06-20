@@ -490,6 +490,9 @@ function Get-BoostLabResultStatus {
     if ($explicitStatus -eq 'Warning') {
         return 'Warning'
     }
+    if ($explicitStatus -in @('NeedsBranchSelection', 'SelectionRequired')) {
+        return 'Warning'
+    }
     if ($success -or $explicitStatus -in @('Passed', 'Success', 'Succeeded')) {
         return 'Success'
     }

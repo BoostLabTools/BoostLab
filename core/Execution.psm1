@@ -864,6 +864,7 @@ function Invoke-BoostLabToolAction {
         else {
             ''
         }
+        $isSelectionPreconditionMissing = $moduleStatus -in @('NeedsBranchSelection', 'SelectionRequired')
         if ($moduleStatus -eq 'NotApplicable') {
             Write-BoostLabInfo `
                 -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
@@ -873,6 +874,22 @@ function Invoke-BoostLabToolAction {
                     ToolId = $toolId
                     Stage = [string]$ToolMetadata['Stage']
                     VerificationStatus = 'NotApplicable'
+                } | Out-Null
+        }
+        elseif ($isSelectionPreconditionMissing) {
+            Write-BoostLabWarning `
+                -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
+                -Source 'Execution' `
+                -EventId 'ToolAction.SelectionRequired' `
+                -Data @{
+                    ToolId             = $toolId
+                    Stage              = [string]$ToolMetadata['Stage']
+                    VerificationStatus = if ($null -ne $verificationResult) {
+                        [string]$verificationResult.Status
+                    }
+                    else {
+                        'NotApplicable'
+                    }
                 } | Out-Null
         }
         elseif ([bool]$moduleResult.Success) {
@@ -969,6 +986,9 @@ function Invoke-BoostLabToolAction {
 
         $status = if ($moduleStatus -eq 'NotApplicable') {
             'Not applicable'
+        }
+        elseif ($isSelectionPreconditionMissing) {
+            'Selection required'
         }
         elseif ([bool]$moduleResult.Success -and $ActionName -eq 'Analyze') {
             'Analyzed'
