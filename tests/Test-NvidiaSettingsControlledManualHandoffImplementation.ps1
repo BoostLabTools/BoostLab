@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -347,12 +347,12 @@ Assert-BoostLabCondition ([string]$nvidiaParityRecord.ImplementationLevel -eq 'N
 Assert-BoostLabCondition ([string]$nvidiaParityRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Nvidia Settings final progress status mismatch.'
 Assert-BoostLabCondition ([bool]$nvidiaParityRecord.YazanAcceptedNearParity) 'Nvidia Settings near-parity acceptance flag must be set.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target should advance to DirectX after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target should advance to Visual C++ after Msi Mode.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 23) 'NearParityControlled count should be 23 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 3) 'ManualHandoffOnly count should be 3 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled count should be 24 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly count should be 2 after Nvidia Settings.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',
@@ -372,3 +372,5 @@ foreach ($deletedPath in @(
     NvidiaSettingsActions = @($nvidiaSettingsTool.Actions)
     NextOrderedParityTarget = [string]$nextTarget.ToolId
 }
+
+

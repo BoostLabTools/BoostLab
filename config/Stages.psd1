@@ -328,11 +328,11 @@
                     Title       = 'DirectX'
                     Stage       = 'Graphics'
                     Order       = 8
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Controlled manual handoff only. Analyze the source-defined DirectX runtime workflow without automated downloads, extraction, installer execution, shortcut cleanup, registry changes, or system mutation.'
-                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Source-equivalent controlled runtime. Install 7-Zip, configure its source-defined options, download/extract DirectX, and launch DXSETUP after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'visual-cpp'

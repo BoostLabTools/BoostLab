@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -216,7 +216,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Canonical order must produce a next ordered parity target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Current first pending ordered parity target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Current first pending ordered parity target must advance past Msi Mode near-parity acceptance.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
@@ -278,3 +278,4 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
     DeletedToolsRemainDeleted = $true
     Message = 'Yazan canonical stage/tool order is applied across runtime order, ordered parity order, and parity baseline order fields.'
 }
+

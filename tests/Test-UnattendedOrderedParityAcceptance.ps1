@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -250,12 +250,12 @@ Assert-BoostLabTextContains -Text ([string]$unattendedRecord.GapSummary) -Needle
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'First pending ordered target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'First pending ordered target must advance past Msi Mode near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 23) 'NearParityControlled count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 3) 'ManualHandoffOnly count should match the current parity baseline.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 24) 'NearParityControlled count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 2) 'ManualHandoffOnly count should match the current parity baseline.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq 45) 'Runtime implemented count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
@@ -320,3 +320,4 @@ foreach ($deletedPath in @(
     SourceUltimateUnchanged = $true
     Message = 'Unattended source-equivalent Windows 11 payload generation is accepted as near parity.'
 }
+

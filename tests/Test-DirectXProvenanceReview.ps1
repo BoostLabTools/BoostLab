@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the DirectX provenance validator path.'
+        throw 'Unable to determine the DirectX artifact source review validator path.'
     }
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
@@ -23,7 +23,6 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
     param(
@@ -57,24 +56,24 @@ function Assert-BoostLabTextContains {
 }
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\2 DirectX.ps1'
-$modulePath = Join-Path $ProjectRoot 'modules\Graphics\DirectX.psm1'
-$manifestPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$modulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
+$artifactProvenancePath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$externalSourcesPath = Join-Path $ProjectRoot 'config\ExternalArtifactSources.psd1'
 $reviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
-$readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $migrationRecordPath = Join-Path $ProjectRoot 'docs\migrations\directx.md'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 foreach ($requiredPath in @(
     $sourcePath
     $modulePath
-    $manifestPath
+    $artifactProvenancePath
+    $externalSourcesPath
     $reviewPath
-    $readinessPath
     $migrationRecordPath
+    $configPath
 )) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required DirectX provenance file is missing: $requiredPath"
+    Assert-BoostLabCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required DirectX review file is missing: $requiredPath"
 }
 
 $expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
@@ -94,77 +93,68 @@ foreach ($sourceBehavior in @(
 }
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
-Assert-BoostLabCondition (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) 'DirectX module must no longer be a placeholder.'
-Assert-BoostLabTextContains -Text $moduleText -Needle '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')' -Description 'DirectX implemented actions'
+Assert-BoostLabCondition (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) 'DirectX module must not be a placeholder.'
 foreach ($requiredPhrase in @(
-    'ManualHandoffPrepared'
-    'AutoBlockedUntilArtifactApproval'
-    'DefaultUnavailable'
-    'RestoreUnavailable'
-    'No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurred.'
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')',
+    'SourceEquivalentControlledRuntime',
+    'SourceEquivalentDirectXInstall',
+    'Invoke-WebRequest',
+    'Start-Process',
+    'New-ItemProperty',
+    'Move-Item',
+    'Remove-Item',
+    'NeedsBoostLabMirror',
     $expectedSourceHash
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $requiredPhrase -Description 'DirectX module controlled manual handoff text'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $requiredPhrase -Description 'DirectX source-equivalent module text'
 }
-foreach ($forbiddenCommand in @(
-    'Invoke-WebRequest'
-    'Start-Process'
-    'Invoke-BoostLabInstallerExecution'
-    'New-BoostLabArtifactDownloadRequest'
-)) {
-    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenCommand)) "DirectX module contains prohibited execution helper text: $forbiddenCommand"
-}
+Assert-BoostLabCondition (-not $moduleText.Contains('AutoBlockedUntilArtifactApproval')) 'DirectX Apply must not remain blocked as AutoBlockedUntilArtifactApproval.'
+Assert-BoostLabCondition (-not $moduleText.Contains('ManualHandoffPrepared')) 'DirectX must not remain manual handoff.'
 
-$manifest = Import-PowerShellDataFile -LiteralPath $manifestPath
-$artifacts = @($manifest.Artifacts)
+$artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
+$artifacts = @($artifactProvenance.Artifacts)
 Assert-BoostLabCondition ($artifacts.Count -eq 0) "Expected no approved production artifacts, found $($artifacts.Count)."
-foreach ($artifact in $artifacts) {
-    if (
-        [string]$artifact.Id -match 'directx|7zip' -or
-        @($artifact.SourceToolIds) -contains 'directx'
-    ) {
-        throw "DirectX artifact was added without complete approval: $($artifact.Id)"
-    }
+
+$externalSources = Import-PowerShellDataFile -LiteralPath $externalSourcesPath
+$directXEntries = @($externalSources.ExternalSources | Where-Object { [string]$_.ToolId -eq 'directx' })
+Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'External artifact source manifest must track DirectX 7zip.exe and directx.exe.'
+foreach ($entry in $directXEntries) {
+    Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "DirectX entry must remain author-hosted: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "DirectX entry must still need BoostLab mirror: $($entry.Id)"
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "DirectX entry must not invent SHA-256: $($entry.Id)"
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "DirectX entry must not approve mirror URL: $($entry.Id)"
 }
 
 $reviewText = Get-Content -LiteralPath $reviewPath -Raw
 foreach ($requiredPhrase in @(
-    '# DirectX Artifact Provenance Review'
-    'DirectX is implemented as a controlled manual-handoff tool only.'
-    '`Apply` fails closed with'
-    '`AutoBlockedUntilArtifactApproval`'
-    'No real DirectX or 7-Zip artifact is approved.'
-    'Until that package exists, DirectX Auto remains blocked.'
-    'manual handoff instructions inside'
+    '# DirectX Artifact Source Review',
+    'Phase 129 implements DirectX as a source-equivalent controlled runtime',
+    'no entry is added to `config/ArtifactProvenance.psd1`',
+    '`UltimateAuthorHostedArtifact` with',
+    '`NeedsBoostLabMirror`',
+    'Exact SHA-256 for `7zip.exe`',
+    'Exact SHA-256 for `directx.exe`',
+    'Future Mirror Approval Package',
     $expectedSourceHash
 )) {
-    Assert-BoostLabTextContains -Text $reviewText -Needle $requiredPhrase -Description 'DirectX provenance review'
-}
-
-$readinessText = Get-Content -LiteralPath $readinessPath -Raw
-foreach ($requiredPhrase in @(
-    'Foundation-ready but needs artifact provenance approvals: **2**'
-    'Candidate for next implementation attempt: **0**'
-    'Implemented in Phase 100 as controlled manual handoff'
-    'Phase 100 manual handoff complete; Auto remains blocked'
-    'docs/directx-provenance-review.md'
-)) {
-    Assert-BoostLabTextContains -Text $readinessText -Needle $requiredPhrase -Description 'Deferred readiness review Phase 100 result'
+    Assert-BoostLabTextContains -Text $reviewText -Needle $requiredPhrase -Description 'DirectX artifact source review'
 }
 
 $migrationText = Get-Content -LiteralPath $migrationRecordPath -Raw
 foreach ($requiredPhrase in @(
-    '# DirectX Migration Record'
+    '# DirectX Migration Record',
+    'Phase 129 upgrades DirectX',
+    'source-equivalent controlled runtime',
+    'Analyze',
+    'Apply',
+    'Open',
+    'Default',
+    'Restore',
+    'Install 7-Zip',
+    'Launch `%SystemRoot%\Temp\directx\DXSETUP.exe`',
+    'NeedsBoostLabMirror',
+    'no artifact provenance record',
     $expectedSourceHash
-    'Analyze'
-    'Open'
-    'Apply'
-    'Default'
-    'Restore'
-    'AutoBlockedUntilArtifactApproval'
-    'DefaultUnavailable'
-    'RestoreUnavailable'
-    'does not download 7-Zip or DirectX'
 )) {
     Assert-BoostLabTextContains -Text $migrationText -Needle $requiredPhrase -Description 'DirectX migration record'
 }
@@ -173,37 +163,12 @@ $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration.Stages | ForEach-Object { $_.Tools })
 $directXTool = @($tools | Where-Object { $_.Id -eq 'directx' })[0]
 Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX tool is missing from config.'
-Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'DirectX actions mismatch.'
+Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Apply') 'DirectX actions mismatch.'
 
-$allModules = @(
-    Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1' |
-        Where-Object { $_.Directory.Parent.FullName -eq $modulesRoot }
-)
-$implementedModules = @(
-    $allModules | Where-Object {
-        (Get-Content -LiteralPath $_.FullName -Raw).Contains('$script:BoostLabImplementedActions')
-    }
-)
-$placeholderModules = @(
-    $allModules | Where-Object {
-        (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1')
-    }
-)
-Assert-BoostLabCondition ($tools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($tools.Count)."
-Assert-BoostLabCondition ($allModules.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) modules, found $($allModules.Count)."
-Assert-BoostLabCondition ($implementedModules.Count -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented modules, found $($implementedModules.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
-
-$activeNames = @(
-    $tools | ForEach-Object {
-        ([string]$_.Id -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
-        ([string]$_.Title -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
-    }
-)
-foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
-    $normalized = ($deletedTool -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
-    Assert-BoostLabCondition ($normalized -notin $activeNames) "Deleted tool was reintroduced: $deletedTool"
-}
+$inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq 55) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Baseline.ImplementedTools -eq 45) 'Implemented tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed.'
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = @(
@@ -232,13 +197,12 @@ Assert-BoostLabCondition (@($sourceLines).Count -eq 49) "source-ultimate file co
 Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
 
 [pscustomobject]@{
-    Success                   = $true
-    DirectXImplemented        = $true
-    ProductionArtifactCount   = $artifacts.Count
-    DirectXArtifactApproved   = $false
-    ImplementedModuleCount    = $implementedModules.Count
-    PlaceholderModuleCount    = $placeholderModules.Count
-    SourceUltimateUnchanged   = $true
-    Message                   = 'DirectX controlled manual handoff is implemented; Auto remains denied until immutable artifact provenance and installer approvals exist.'
-    Timestamp                 = Get-Date
+    Success = $true
+    DirectXImplemented = $true
+    ProductionArtifactCount = $artifacts.Count
+    DirectXExternalSourceEntries = $directXEntries.Count
+    DirectXArtifactApproved = $false
+    SourceUltimateUnchanged = $true
+    Message = 'DirectX source-equivalent runtime is implemented; artifacts remain source-classified only, with no provenance approval or mirror substitution.'
+    Timestamp = Get-Date
 }

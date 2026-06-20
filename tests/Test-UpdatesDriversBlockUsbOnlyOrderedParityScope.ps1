@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -140,7 +140,7 @@ foreach ($priorToolId in $priorToolIds) {
     Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $priorRecord) "Prior ordered target must already be final: $priorToolId"
 }
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target must advance past Msi Mode near-parity acceptance.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(
@@ -430,3 +430,4 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     Message = 'Updates Drivers Block USB-only ordered parity scope is implemented, bounded, captured, verified, and mocked without host registry mutation.'
     Timestamp = Get-Date
 }
+

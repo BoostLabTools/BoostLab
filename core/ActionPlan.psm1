@@ -174,6 +174,8 @@ function New-BoostLabActionPlan {
         -not [bool]$productScope.Supported
     )
     $isNvidiaSettingsReadOnlyAnalyze = ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze')
+    $isDirectXReadOnlyAnalyze = ($toolId -eq 'directx' -and $ActionName -eq 'Analyze')
+    $isReadOnlyAnalyzePrivilegeOverride = ($isNvidiaSettingsReadOnlyAnalyze -or $isDirectXReadOnlyAnalyze)
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
@@ -276,13 +278,13 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no captured driver/profile/package/registry/file/reboot state restore contract exists.'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
-        'Analyze the DirectX source and report blocked artifact, extraction, installer, registry, shortcut, cleanup, and rollback approvals without running any DirectX or 7-Zip workflow.'
+        'Analyze the DirectX source, artifact source classifications, and source-equivalent install plan without running any DirectX or 7-Zip workflow.'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
-        'Prepare DirectX manual handoff instructions only; no browser, external tool, download, extraction, installer, registry change, shortcut cleanup, file cleanup, or system mutation is opened or executed.'
+        'Open is not exposed for DirectX; the source defines an install workflow, not a standalone browser or manual handoff action.'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for DirectX because immutable artifact, extraction, installer, side-effect scope, cleanup, and rollback approvals do not exist.'
+        'Install DirectX using the source-equivalent controlled workflow: install/configure 7-Zip, download/extract the DirectX package, and launch DXSETUP after confirmation.'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe DirectX default branch.'
@@ -727,21 +729,24 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the DirectX source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary and missing 7-Zip artifact, DirectX artifact, extraction inventory, installer execution, registry/shortcut/file side-effect, cleanup, and rollback approvals.')
+        $plannedChanges.Add('Report the exact source-equivalent operation plan and author-hosted artifact source policy for 7zip.exe and directx.exe.')
         $plannedChanges.Add('Perform no download, browser/external process launch, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
-        $plannedChanges.Add('Do not open a browser, external tool, 7-Zip installer, DirectX runtime package, extraction tool, or DirectX setup executable.')
-        $plannedChanges.Add('Do not download 7-Zip or DirectX artifacts.')
-        $plannedChanges.Add('Do not install 7-Zip, write 7-Zip registry options, move or remove 7-Zip Start Menu shortcuts, extract DirectX files, or launch DirectX setup.')
+        $plannedChanges.Add('Block Open because DirectX does not expose a source-defined standalone Open action.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing 7-Zip artifact, DirectX artifact, extraction inventory, installer execution, registry/shortcut/file side-effect, cleanup, and rollback approvals.')
-        $plannedChanges.Add('Perform no download, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation.')
+        $plannedChanges.Add('Verify the DirectX source checksum before any mutation.')
+        $plannedChanges.Add('Require Administrator execution and internet connectivity before downloads or installer launches.')
+        $plannedChanges.Add('Download source-defined 7zip.exe from the Ultimate author-hosted URL to %SystemRoot%\Temp\7zip.exe.')
+        $plannedChanges.Add('Run the 7-Zip installer with /S and wait for completion.')
+        $plannedChanges.Add('Write the source-defined 7-Zip HKCU options: ContextMenu=259 and CascadedMenu=0.')
+        $plannedChanges.Add('Move the 7-Zip File Manager Start Menu shortcut and silently remove the 7-Zip Start Menu folder, matching source tolerance.')
+        $plannedChanges.Add('Download source-defined directx.exe from the Ultimate author-hosted URL to %SystemRoot%\Temp\directx.exe.')
+        $plannedChanges.Add('Extract directx.exe with %SystemDrive%\Program Files\7-Zip\7z.exe into %SystemRoot%\Temp\directx.')
+        $plannedChanges.Add('Launch %SystemRoot%\Temp\directx\DXSETUP.exe without waiting, matching the source.')
+        $plannedChanges.Add('Record that both author-hosted artifacts are classified as NeedsBoostLabMirror; runtime URLs are not substituted and no provenance approval is created.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Block Default before any operational step.')
@@ -1228,7 +1233,7 @@ function New-BoostLabActionPlan {
     $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedDriverInstallLatestNoMutationAction = $toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
-    $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
@@ -1254,7 +1259,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
+    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers', 'edge-webview', 'visual-cpp') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1376,15 +1381,17 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; DirectX analysis is read-only.')
-        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
+        $sideEffects.Add('No downloads, installers, extraction, registry writes, shortcut cleanup, DXSETUP launch, or reboot occur during Analyze.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurs.')
+        $sideEffects.Add('Open is not exposed for DirectX.')
+        $sideEffects.Add('No system-changing operation occurs.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, extraction, installer execution, registry change, shortcut cleanup, file cleanup, or system mutation occurs.')
+        $sideEffects.Add('Downloads and executes source-defined installer/setup files from author-hosted URLs after confirmation.')
+        $sideEffects.Add('Installs/configures 7-Zip, writes HKCU 7-Zip option values, adjusts source-defined Start Menu shortcut state, extracts DirectX, and launches DXSETUP.')
+        $sideEffects.Add('The source does not request a reboot; any reboot prompt would come from the launched DirectX setup UI, not BoostLab.')
+        $sideEffects.Add('No services, drivers, Safe Mode, TrustedInstaller, RunOnce, DDU, source file, mirror file, artifact provenance, or production allowlist behavior is changed.')
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution.')
@@ -1713,7 +1720,7 @@ function New-BoostLabActionPlan {
     elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'directx', 'visual-cpp')) {
+    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview', 'visual-cpp')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
@@ -1811,10 +1818,10 @@ function New-BoostLabActionPlan {
         'Edge & WebView Restore requires selected captured package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare DirectX manual handoff instructions only. It will not open a browser, external tool, 7-Zip installer, DirectX package, extraction tool, or setup executable; download artifacts; run installers; extract files; mutate registry, shortcuts, files, or system state. Continue?'
+        'DirectX Open is unavailable because the source defines an install workflow, not a standalone Open action. Continue only to record the blocked Open result?'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Apply') {
-        'DirectX Auto mode is blocked. BoostLab will not execute Auto behavior because 7-Zip artifact, DirectX artifact, extraction, installer, side-effect scope, cleanup, and rollback approvals are missing. Continue only to record the blocked result?'
+        'BoostLab will install/configure 7-Zip, download/extract the DirectX package, and launch DXSETUP using the source-defined order and URLs. Both downloads are Ultimate-author-hosted artifacts marked NeedsBoostLabMirror; no artifact approval or mirror substitution is created. No reboot is requested by BoostLab. Continue?'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Default') {
         'DirectX Default is unavailable. The source does not define a safe Default branch, and Default is not Restore. Continue only to record the blocked Default result?'
@@ -2001,7 +2008,7 @@ function New-BoostLabActionPlan {
     if ($isProductScopeNotApplicable) {
         $privilegeRequirements.Add('No Administrator execution required because no action will run on this unsupported host.')
     }
-    elseif ($capabilities.RequiresAdmin -and -not $isNvidiaSettingsReadOnlyAnalyze) {
+    elseif ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride) {
         $privilegeRequirements.Add('Administrator required')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -2020,11 +2027,11 @@ function New-BoostLabActionPlan {
         Summary                   = $summary
         PlannedChanges            = $plannedChanges.ToArray()
         SideEffects               = $sideEffects.ToArray()
-        RequiresAdmin             = if ($isProductScopeNotApplicable -or $isNvidiaSettingsReadOnlyAnalyze) { $false } else { [bool]$capabilities.RequiresAdmin }
+        RequiresAdmin             = if ($isProductScopeNotApplicable -or $isReadOnlyAnalyzePrivilegeOverride) { $false } else { [bool]$capabilities.RequiresAdmin }
         UsesTrustedInstaller      = [bool]$capabilities.UsesTrustedInstaller
         UsesSafeMode              = [bool]$capabilities.UsesSafeMode
         PrivilegeRequirements     = $privilegeRequirements.ToArray()
-        RequiresInternet          = if ($isNvidiaSettingsReadOnlyAnalyze) { $false } else { [bool]$capabilities.RequiresInternet }
+        RequiresInternet          = if ($isReadOnlyAnalyzePrivilegeOverride) { $false } else { [bool]$capabilities.RequiresInternet }
         CanReboot                 = [bool]$capabilities.CanReboot
         NeedsExplicitConfirmation = [bool]$needsConfirmation
         SupportsDefault           = [bool]$capabilities.SupportsDefault

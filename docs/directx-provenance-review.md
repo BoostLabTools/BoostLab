@@ -1,23 +1,28 @@
-# DirectX Artifact Provenance Review
+# DirectX Artifact Source Review
 
 ## Phase 45 Decision
 
 Phase 45 refused automated DirectX implementation because the source workflow
-could not pass artifact provenance and installer execution policy.
+could not pass the artifact provenance and installer execution policy as a
+production-approved artifact chain.
 
-## Phase 100 Manual Handoff Decision
+## Phase 129 Runtime Decision
 
-DirectX is implemented as a controlled manual-handoff tool only. Phase 100
-adds `Analyze`, `Open`, `Apply`, `Default`, and `Restore` result handling, but
-does not add artifact records, enable downloads, extract files, launch an
-installer, approve side-effect scopes, or execute the source workflow.
+Phase 129 implements DirectX as a source-equivalent controlled runtime while
+keeping the artifact-source distinction explicit:
 
-`Analyze` is read-only. `Open` prepares manual handoff instructions inside
-BoostLab only and opens no browser or external tool. `Apply` fails closed with
-`AutoBlockedUntilArtifactApproval`. `Default` and `Restore` are unavailable.
+- the source URLs remain unchanged,
+- no binaries are committed,
+- no entry is added to `config/ArtifactProvenance.psd1`,
+- no production allowlist entry is added,
+- both author-hosted downloads are classified in
+  `config/ExternalArtifactSources.psd1` as `UltimateAuthorHostedArtifact` with
+  `NeedsBoostLabMirror`.
 
-The Ultimate workflow cannot pass the Phase 35 provenance and installer
-execution policy with the evidence currently available in the repository.
+This means DirectX can preserve the Ultimate workflow behind explicit BoostLab
+confirmation, but the downloads are still tracked as author-hosted sources that
+need a future BoostLab mirror and hash/signature approval before any mirror
+substitution or artifact-provenance approval exists.
 
 ## Source Reference
 
@@ -31,29 +36,25 @@ execution policy with the evidence currently available in the repository.
 The source performs these operations in order:
 
 1. Requires Administrator rights and an internet connection.
-2. Downloads `7zip.exe` from:
+2. Sets `$ProgressPreference` to `silentlycontinue`.
+3. Downloads `7zip.exe` from:
    `https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe`
-3. Runs the downloaded executable with `/S` and waits for it.
-4. Writes the 7-Zip `ContextMenu` and `CascadedMenu` HKCU values.
-5. Moves the 7-Zip File Manager Start Menu shortcut and removes the original
+4. Runs the downloaded executable with `/S` and waits for it.
+5. Writes the 7-Zip `ContextMenu` and `CascadedMenu` HKCU values.
+6. Moves the 7-Zip File Manager Start Menu shortcut and removes the original
    7-Zip Start Menu folder.
-6. Downloads `directx.exe` from:
+7. Downloads `directx.exe` from:
    `https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe`
-7. Uses the installed `7z.exe` to extract `directx.exe` into
+8. Uses the installed `7z.exe` to extract `directx.exe` into
    `%SystemRoot%\Temp\directx`.
-8. Launches the extracted `DXSETUP.exe`.
+9. Launches the extracted `DXSETUP.exe` without waiting.
 
-The source does not provide hashes, expected sizes, Authenticode signer
-requirements, an extraction inventory, installer completion handling, or
-cleanup after launching `DXSETUP.exe`.
+## Remaining Artifact Evidence Gap
 
-## Why Implementation Was Refused
+The source URLs use `refs/heads/main`. They are mutable branch references, not
+immutable release or commit-pinned artifact URLs.
 
-The two source URLs use `refs/heads/main`. They are mutable branch references,
-not immutable release or commit-pinned artifact URLs. Approving their current
-contents would not approve what those URLs may serve later.
-
-The following required evidence is missing:
+The following evidence is still not approved:
 
 * Exact SHA-256 for `7zip.exe`.
 * Exact SHA-256 for `directx.exe`.
@@ -64,34 +65,24 @@ The following required evidence is missing:
 * Verified Authenticode publisher and signer requirements for `DXSETUP.exe`.
 * Authoritative source, license, and redistributability evidence for the
   mirrored binaries.
-* An approved installer request for `7zip.exe /S`.
-* An approved installer request for the extracted `DXSETUP.exe`.
-* Exact file, shortcut, registry, and generated-temp-path scopes for the
-  source-defined side effects.
-
-The Phase 35 installer helper is also intentionally inert. Even a fully valid
-mock request returns `NotImplemented` with `ProcessStarted = false`. DirectX
-must not bypass that boundary by calling `Start-Process` from its tool module.
-
-Adding guessed hashes, trusting the mutable mirror, substituting another
-DirectX workflow, omitting 7-Zip side effects, or launching the extracted setup
-without independent verification would either violate provenance policy or
-weaken the approved Ultimate behavior.
+* Reusable production installer descriptors for `7zip.exe /S` and `DXSETUP.exe`.
+* A reusable production cleanup/restore scope for downloaded, extracted, and
+  installer-created state.
 
 ## Production State
 
 * `config/ArtifactProvenance.psd1` remains empty.
 * No real DirectX or 7-Zip artifact is approved.
-* `modules/Graphics/directx.psm1` is a controlled manual-handoff
-  implementation.
-* `docs/migrations/directx.md` records the manual-handoff migration.
-* No download, extraction, installer launch, registry write, shortcut change,
-  cleanup, or DirectX system change is enabled by Phase 45 or Phase 100.
+* `config/ExternalArtifactSources.psd1` records DirectX `7zip.exe` and
+  `directx.exe` as author-hosted sources requiring a future BoostLab mirror.
+* `modules/Graphics/directx.psm1` implements the source-equivalent runtime with
+  explicit confirmation and mockable operation execution.
+* `docs/migrations/directx.md` records the Phase 129 migration.
 
-## Required Approval Package for a Future Retry
+## Future Mirror Approval Package
 
-A future DirectX phase must provide and approve all of the following before
-implementation:
+A future source-substitution phase would need all of the following before
+changing the DirectX runtime URLs to a BoostLab-controlled mirror:
 
 1. Immutable authoritative or commit-pinned source URLs for every downloaded
    artifact.
@@ -103,11 +94,5 @@ implementation:
    extraction, and DirectX setup.
 5. Exact tool-specific file, registry, shortcut, and temp-path scopes with
    state capture, ownership, verification, and cleanup rules.
-6. A separately approved installer execution implementation that preserves the
-   Phase 35 confirmation, logging, timeout, exit-code, and verified-path rules.
-7. Mocked tests covering mismatched hashes, invalid signers, unexpected
+6. Mocked tests covering mismatched hashes, invalid signers, unexpected
    extraction output, installer failure, and bounded cleanup.
-
-Until that package exists, DirectX Auto remains blocked. The only approved
-BoostLab behavior is read-only analysis and manual handoff text prepared inside
-the UI.

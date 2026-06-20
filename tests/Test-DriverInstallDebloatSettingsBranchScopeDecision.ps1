@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -76,7 +76,7 @@ Assert-BoostLabCondition ([bool]$record.YazanAcceptedNearParity) 'Phase 123 shou
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'YazanFinalException must remain false.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Ordered parity cursor should advance to DirectX after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Ordered parity cursor should advance to Visual C++ after Msi Mode.'
 
 $codexText = Get-Content -LiteralPath $codexPath -Raw
 $blueprintText = Get-Content -LiteralPath $blueprintPath -Raw
@@ -115,3 +115,4 @@ finally {
     SourceHash = $expectedSourceHash
     Message = 'Phase 122 branch-scope decision remains tool-specific, and Phase 123 implements all approved branches.'
 }
+

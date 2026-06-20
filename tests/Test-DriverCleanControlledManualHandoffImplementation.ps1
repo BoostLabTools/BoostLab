@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -384,11 +384,11 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 23) 'NearParityControlled baseline should be 23 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 3) 'ManualHandoffOnly baseline should be 3 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled baseline should be 24 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly baseline should be 2 after Nvidia Settings.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target should advance to DirectX.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target should advance to Visual C++.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
@@ -423,3 +423,5 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     NextOrderedParityTarget = [string]$nextTarget.ToolId
     Message = 'Driver Clean exact Ultimate Auto and Manual workflow parity is implemented with mock-safe validation.'
 }
+
+

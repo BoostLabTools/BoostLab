@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -76,7 +76,7 @@ Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'sour
 Assert-BoostLabTextContains -Text ([string]$edgeRecord.NextParityAction) -Needle 'Skip; accepted near-parity.' -Description 'Edge Settings NextParityAction'
 
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity must identify a next pending target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Ordered parity cursor must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Ordered parity cursor must advance past Msi Mode near-parity acceptance.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\3 Setup\6 Edge Settings.ps1'
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\edge-settings-scope-design.md'
@@ -169,3 +169,4 @@ Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design 
     DeletedToolsRemainDeleted        = $true
     Message                          = 'Edge Settings ordered parity decision gate is resolved by Phase 118 near-parity implementation.'
 }
+

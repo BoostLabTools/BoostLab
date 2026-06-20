@@ -200,6 +200,7 @@ $installersModulePath = Join-Path $ProjectRoot 'modules\Installers\installers.ps
 $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
 $edgeSettingsModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.psm1'
 $bitLockerModulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
+$directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
 
 foreach ($path in @(
     $uiPath
@@ -209,6 +210,7 @@ foreach ($path in @(
     $driverCleanModulePath
     $edgeSettingsModulePath
     $bitLockerModulePath
+    $directXModulePath
 )) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file missing: $path"
 }
@@ -318,6 +320,7 @@ $reachedToolIds = @(
     'hdcp'
     'p0-state'
     'msi-mode'
+    'directx'
 )
 foreach ($toolId in $reachedToolIds) {
     Assert-BoostLabTextContains -Text $asyncScopeText -Needle "'$toolId'" -Description 'Async reached-tool scope'
@@ -325,7 +328,6 @@ foreach ($toolId in $reachedToolIds) {
 }
 
 foreach ($outOfScopeToolId in @(
-    'directx'
     'visual-cpp'
     'graphics-configuration-center'
     'theme-black'
@@ -342,7 +344,8 @@ $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest must keep single-select branch UI.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep multi-select queue UI.'
 
-foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool)) {
+$directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
+foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool, $directXTool)) {
     $asyncAnalyze = Invoke-BoostLabAsyncAnalyzeSimulation -ProjectRoot $ProjectRoot -ToolMetadata $asyncAnalyzeTool
     $toolId = [string]$asyncAnalyzeTool.Id
 
@@ -391,6 +394,10 @@ $bitLockerText = Get-Content -LiteralPath $bitLockerModulePath -Raw
 Assert-BoostLabTextContains -Text $bitLockerText -Needle 'Disable-BitLocker' -Description 'BitLocker source-equivalent Apply behavior'
 Assert-BoostLabTextContains -Text $bitLockerText -Needle 'manage-bde' -Description 'BitLocker source-equivalent status behavior'
 
+$directXText = Get-Content -LiteralPath $directXModulePath -Raw
+Assert-BoostLabTextContains -Text $directXText -Needle 'SourceEquivalentControlledRuntime' -Description 'DirectX source-equivalent runtime behavior'
+Assert-BoostLabTextContains -Text $directXText -Needle 'SourceEquivalentDirectXInstall' -Description 'DirectX controlled install action'
+
 foreach ($protectedPath in @(
     'source-ultimate'
     'source-ultimate\_intake-promoted'
@@ -421,5 +428,5 @@ foreach ($deletedPath in @(
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true
-    Message                     = 'Reached tools through Msi Mode use the non-blocking WPF dispatch path; validators are static/mock-safe.'
+    Message                     = 'Reached tools through DirectX use the non-blocking WPF dispatch path; validators are static/mock-safe.'
 }

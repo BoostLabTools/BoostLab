@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -74,7 +74,7 @@ Assert-BoostLabCondition ([string]$resetTarget.ToolId -eq 'bios-settings') 'BIOS
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'DoneYazanAcceptedNearParity tools and Yazan final exceptions must be skipped by next ordered target calculation.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\1 Check\2 BIOS Settings.ps1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bios-settings.md'
@@ -150,3 +150,4 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     RuntimeBehaviorChanged = $false
     Message = 'BIOS Settings is accepted as final near parity; the firmware restart command remains confirmation-gated and available.'
 }
+

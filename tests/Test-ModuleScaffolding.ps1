@@ -125,7 +125,7 @@ $implementedModules = @{
     }
     'directx' = @{
         RelativePath          = 'Graphics\directx.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
     }
     'visual-cpp' = @{
         RelativePath          = 'Graphics\visual-cpp.psm1'
@@ -471,6 +471,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'nvidia-settings' -and
             $commandName -in @('Invoke-WebRequest', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
         )
+        $approvedDirectXCommand = (
+            $toolId -eq 'directx' -and
+            $commandName -in @('Invoke-WebRequest', 'New-ItemProperty', 'Remove-Item')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -492,7 +496,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedDriverCleanCommand -and
             -not $approvedDriverInstallLatestCommand -and
             -not $approvedDriverInstallDebloatSettingsCommand -and
-            -not $approvedNvidiaSettingsCommand
+            -not $approvedNvidiaSettingsCommand -and
+            -not $approvedDirectXCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -551,7 +556,10 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-debloat-settings') {
             4
         }
-        elseif ($toolId -in @('edge-webview', 'directx', 'visual-cpp')) {
+        elseif ($toolId -eq 'directx') {
+            3
+        }
+        elseif ($toolId -in @('edge-webview', 'visual-cpp')) {
             0
         }
         elseif ($toolId -eq 'reinstall') {

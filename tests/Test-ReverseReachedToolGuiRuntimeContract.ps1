@@ -202,6 +202,7 @@ $driverInstallLatestModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver
 $driverInstallDebloatSettingsModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
 $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
 $installersModulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
+$directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
 
 foreach ($path in @(
     $configPath
@@ -213,6 +214,7 @@ foreach ($path in @(
     $driverInstallDebloatSettingsModulePath
     $driverCleanModulePath
     $installersModulePath
+    $directXModulePath
 )) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required reverse smoke file missing: $path"
 }
@@ -251,16 +253,17 @@ $reachedToolsForward = @(
     'nvidia-settings',
     'hdcp',
     'p0-state',
-    'msi-mode'
+    'msi-mode',
+    'directx'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'msi-mode') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Msi Mode back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'directx') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from DirectX back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 
@@ -298,6 +301,8 @@ foreach ($needle in @(
     "'Default' { return 'Default' }",
     "if (`$toolId -eq 'msi-mode')",
     "'Off' { return 'Off' }",
+    "if (`$toolId -eq 'directx')",
+    "'Apply' { return 'Install DirectX' }",
     "Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.",
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
 )) {
@@ -492,5 +497,5 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     AsyncBusyCleanup = 'Static contract present'
     RealHostMutationDuringTest = $false
     SourceUltimateUnchanged = $true
-    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid through Msi Mode with mock-safe action option propagation.'
+    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid through DirectX with mock-safe action option propagation.'
 }

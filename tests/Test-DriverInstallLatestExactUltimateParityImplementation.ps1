@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -152,10 +152,10 @@ $simulatedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $simulate
 Assert-BoostLabCondition ([string]$simulatedTarget.ToolId -eq 'driver-install-latest') 'Driver Install Latest should be the ordered target before Phase 124 completion.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target should advance to DirectX after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target should advance to Visual C++ after Msi Mode.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 23) 'NearParityControlled count should be 23 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 3) 'ManualHandoffOnly count should be 3 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 24) 'NearParityControlled count should be 24 after DirectX.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 2) 'ManualHandoffOnly count should be 2 after DirectX.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
@@ -343,3 +343,5 @@ foreach ($deletedPath in @(
     HostMutationDuringValidation   = $false
     Message                        = 'Driver Install Latest maps NVIDIA, AMD, and INTEL source branches and validates with mocked execution only.'
 }
+
+

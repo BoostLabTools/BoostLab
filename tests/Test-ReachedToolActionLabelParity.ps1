@@ -116,16 +116,17 @@ $reachedToolsForward = @(
     'nvidia-settings',
     'hdcp',
     'p0-state',
-    'msi-mode'
+    'msi-mode',
+    'directx'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
 
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'msi-mode') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from Msi Mode back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'directx') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reached label audit reverse scope must run from DirectX back to BIOS Information.'
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($toolById.ContainsKey($toolId)) "Reached tool missing from active catalog: $toolId"
 }
-foreach ($outOfScope in @('directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool was included in reached label audit scope: $outOfScope"
 }
 
@@ -166,12 +167,18 @@ Assert-BoostLabCondition (-not $p0StateBlock.Contains('Manual Handoff')) 'P0 Sta
 Assert-BoostLabCondition (-not $p0StateBlock.Contains('Apply Auto')) 'P0 State must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $p0StateBlock.Contains("'Open'")) 'P0 State must not expose a fake Open label.'
 
-$msiModeBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''msi-mode'')' -End 'return $ActionName'
+$msiModeBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''msi-mode'')' -End 'if ($toolId -eq ''directx'')'
 Assert-BoostLabTextContains -Text $msiModeBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'Msi Mode On visible label'
 Assert-BoostLabTextContains -Text $msiModeBlock -Needle "'Off' { return 'Off' }" -Description 'Msi Mode Off visible label'
 Assert-BoostLabCondition (-not $msiModeBlock.Contains('Manual Handoff')) 'Msi Mode must not show Manual Handoff after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $msiModeBlock.Contains('Apply Auto')) 'Msi Mode must not show Apply Auto after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $msiModeBlock.Contains("'Open'")) 'Msi Mode must not expose a fake Open label.'
+
+$directXBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''directx'')' -End 'return $ActionName'
+Assert-BoostLabTextContains -Text $directXBlock -Needle "'Apply' { return 'Install DirectX' }" -Description 'DirectX Install visible label'
+Assert-BoostLabCondition (-not $directXBlock.Contains('Manual Handoff')) 'DirectX must not show Manual Handoff after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $directXBlock.Contains('Apply Auto')) 'DirectX must not show Apply Auto after source-equivalent implementation.'
+Assert-BoostLabCondition (-not $directXBlock.Contains("'Open'")) 'DirectX must not expose a fake Open label.'
 
 $driverCleanSourceText = Get-Content -LiteralPath $driverCleanSourcePath -Raw
 $expectedDriverCleanHash = 'CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A'

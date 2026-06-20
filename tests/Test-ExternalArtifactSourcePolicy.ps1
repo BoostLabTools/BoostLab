@@ -182,9 +182,14 @@ $expectedReachedToolIds = @(
     'driver-clean'
     'driver-install-debloat-settings'
     'driver-install-latest'
+    'nvidia-settings'
+    'hdcp'
+    'p0-state'
+    'msi-mode'
+    'directx'
 )
 Assert-BoostLabCondition ((@($reachedToolIds) -join '|') -eq (@($expectedReachedToolIds) -join '|')) 'Reached-tool artifact source audit scope changed.'
-Assert-BoostLabCondition ('nvidia-settings' -in @($manifest.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Nvidia Settings must be prep-classified before Phase 125.'
+Assert-BoostLabCondition ('visual-cpp' -in @($manifest.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must be prep-classified before its parity phase.'
 
 $toolsWithRuntimeExternalDownloads = @(
     'reinstall'
@@ -193,6 +198,8 @@ $toolsWithRuntimeExternalDownloads = @(
     'driver-clean'
     'driver-install-debloat-settings'
     'driver-install-latest'
+    'nvidia-settings'
+    'directx'
 )
 foreach ($toolId in $toolsWithRuntimeExternalDownloads) {
     Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.ToolId -eq $toolId }).Count -gt 0) "Reached tool with runtime external download has no manifest entries: $toolId"
@@ -204,9 +211,14 @@ foreach ($toolId in $noRuntimeArtifactTools) {
 }
 
 $nvidiaSettingsEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'nvidia-settings' })
-Assert-BoostLabCondition ($nvidiaSettingsEntries.Count -eq 2) 'Nvidia Settings must classify exactly 7-Zip and Profile Inspector source artifacts before Phase 125.'
+Assert-BoostLabCondition ($nvidiaSettingsEntries.Count -eq 2) 'Nvidia Settings must classify exactly 7-Zip and Profile Inspector source artifacts.'
 Assert-BoostLabCondition (@($nvidiaSettingsEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*7zip.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'Nvidia Settings 7-Zip artifact classification mismatch.'
 Assert-BoostLabCondition (@($nvidiaSettingsEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*inspector.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'Nvidia Settings inspector artifact classification mismatch.'
+
+$directXEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'directx' })
+Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'DirectX must classify exactly 7-Zip and DirectX runtime source artifacts.'
+Assert-BoostLabCondition (@($directXEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*7zip.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'DirectX 7-Zip artifact classification mismatch.'
+Assert-BoostLabCondition (@($directXEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*directx.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 1) 'DirectX runtime artifact classification mismatch.'
 
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
@@ -227,6 +239,7 @@ $sourceTextByTool = @{
     'driver-install-debloat-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1') -Raw
     'driver-install-latest' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-latest.psm1') -Raw
     'nvidia-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\4 Nvidia Settings.ps1') -Raw
+    'directx' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\directx.psm1') -Raw
 }
 
 foreach ($entry in $entries) {

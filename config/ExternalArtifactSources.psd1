@@ -48,15 +48,16 @@
             'driver-clean'
             'driver-install-debloat-settings'
             'driver-install-latest'
-        )
-        PrepOnlyToolIds = @(
             'nvidia-settings'
-        )
-        ExplicitlyOutOfScopeToolIds = @(
             'hdcp'
             'p0-state'
             'msi-mode'
             'directx'
+        )
+        PrepOnlyToolIds = @(
+            'visual-cpp'
+        )
+        ExplicitlyOutOfScopeToolIds = @(
             'visual-cpp'
             'graphics-configuration-center'
         )
@@ -73,10 +74,13 @@
         'date-language-region-time'
         'startup-apps-settings'
         'startup-apps-task-manager'
-        'background-apps'
-        'store-settings'
-        'updates-pause'
-    )
+            'background-apps'
+            'store-settings'
+            'updates-pause'
+            'hdcp'
+            'p0-state'
+            'msi-mode'
+        )
 
     ExternalSources = @(
         @{
@@ -588,6 +592,40 @@
             MirrorStatus = 'NeedsBoostLabMirror'
             OperationKind = 'DownloadArtifact'
             Notes = 'Phase 125 prep classification only. Source downloads NVIDIA Profile Inspector from the Ultimate author mirror for both Apply and Default branches.'
+        }
+        @{
+            Id = 'directx-seven-zip'
+            ToolId = 'directx'
+            ToolTitle = 'DirectX'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 8
+            CanonicalOrder = 'Graphics 8'
+            SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadArtifact'
+            Notes = 'DirectX source-equivalent workflow downloads 7-Zip from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'directx-runtime-package'
+            ToolId = 'directx'
+            ToolTitle = 'DirectX'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 8
+            CanonicalOrder = 'Graphics 8'
+            SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadArtifact'
+            Notes = 'DirectX source-equivalent workflow downloads the DirectX package from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
         }
     )
 }

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -107,13 +107,13 @@ Assert-BoostLabCondition ((@($currentRecord.ApprovedSourceBranches) -join '|') -
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered parity target should advance to DirectX after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered parity target should advance to Visual C++ after Msi Mode.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled baseline count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly baseline count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 23) 'NearParityControlled count should be 23 after Nvidia Settings.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 3) 'ManualHandoffOnly count should be 3 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled count should be 24 after Nvidia Settings.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly count should be 2 after Nvidia Settings.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
@@ -361,3 +361,5 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     HostMutationDuringValidation = $false
     Message = 'Driver Install Debloat & Settings maps NVIDIA, AMD, and INTEL source branches and validates with mocked execution only.'
 }
+
+

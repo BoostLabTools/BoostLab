@@ -555,6 +555,12 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'directx') {
+        switch ($ActionName) {
+            'Apply' { return 'Install DirectX' }
+        }
+    }
+
     return $ActionName
 }
 
@@ -1635,6 +1641,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'hdcp'
         'p0-state'
         'msi-mode'
+        'directx'
     )
 }
 

@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -552,7 +552,7 @@ Assert-BoostLabCondition ([bool]$msiRecord.YazanAcceptedNearParity) 'Msi Mode mu
 Assert-BoostLabCondition ([string]$msiRecord.NextParityAction -eq 'Skip; accepted near-parity.') 'Msi Mode next parity action mismatch.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Msi Mode.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance to DirectX after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target must advance to Visual C++ after Msi Mode.'
 
 [pscustomobject]@{
     Success = $true
@@ -562,6 +562,7 @@ Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordere
     SourcePromotedMirrorFileCount = $inventoryBaseline.SourcePromotedMirrorFiles
     RemainingUnimplementedSourcePromotedIntakeCandidates = $inventoryBaseline.RemainingSourcePromotedIntakeCandidates
     NextOrderedPendingParityTarget = [string]$nextTarget.ToolId
-    Message = 'Msi Mode exact source-equivalent On/Off registry implementation is registered, captures before mutation, writes every source display-device target, and advances ordered parity to DirectX.'
+    Message = 'Msi Mode exact source-equivalent On/Off registry implementation is registered, captures before mutation, writes every source display-device target, and advances ordered parity to Visual C++.'
     Timestamp = Get-Date
 }
+

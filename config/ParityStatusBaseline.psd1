@@ -10,9 +10,9 @@
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 23
+        NearParityControlled = 24
         ControlledSubset = 3
-        ManualHandoffOnly = 3
+        ManualHandoffOnly = 2
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
@@ -391,11 +391,13 @@
             StageOrder = 5
             ToolOrder = 8
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Download, extraction, 7-Zip install/config, and DXSETUP execution remain blocked.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around source-equivalent DirectX behavior: 7-Zip download/install/configuration, Start Menu shortcut adjustment, DirectX package download/extraction, and DXSETUP launch.'
             YazanFinalException = $false
-            NextParityAction = 'Approve immutable artifacts, extracted DXSETUP provenance, installer descriptors, and temp/file cleanup scopes.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'visual-cpp'

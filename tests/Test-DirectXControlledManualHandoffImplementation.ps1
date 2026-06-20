@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the DirectX controlled manual handoff validator path.'
+        throw 'Unable to determine the DirectX source-equivalent validator path.'
     }
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
@@ -23,7 +23,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 
 function Assert-BoostLabCondition {
     param(
@@ -56,43 +56,34 @@ function Assert-BoostLabTextContains {
     }
 }
 
-function Assert-BoostLabNoDuplicateWarnings {
-    param(
-        [Parameter(Mandatory)]
-        [object]$Result,
-
-        [Parameter(Mandatory)]
-        [string]$Description
-    )
-
-    $resultWarnings = @($Result.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
-    $dataWarnings = if ($null -ne $Result.Data -and $Result.Data.PSObject.Properties.Name -contains 'Warnings') {
-        @($Result.Data.Warnings | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
-    }
-    else {
-        @()
-    }
-
-    foreach ($warning in $resultWarnings) {
-        Assert-BoostLabCondition ($warning -notin $dataWarnings) "$Description duplicates warning at result and data level: $warning"
-    }
-    Assert-BoostLabCondition ((@($resultWarnings + $dataWarnings | Select-Object -Unique)).Count -eq @($resultWarnings + $dataWarnings).Count) "$Description contains duplicate warning entries."
-}
-
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\2 DirectX.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
-$artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$artifactProvenancePath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$externalSourcesPath = Join-Path $ProjectRoot 'config\ExternalArtifactSources.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\directx.md'
-$provenanceReviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
-$modulesRoot = Join-Path $ProjectRoot 'modules'
-$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
+$reviewPath = Join-Path $ProjectRoot 'docs\directx-provenance-review.md'
+$parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
+$orderPath = Join-Path $ProjectRoot 'config\UltimateParityExecutionOrder.psd1'
 
-foreach ($path in @($configPath, $modulePath, $sourcePath, $executionPath, $actionPlanPath, $artifactPath, $productionAllowlistPath, $migrationPath, $provenanceReviewPath)) {
-    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Phase 100 file was not found: $path"
+foreach ($path in @(
+    $configPath
+    $modulePath
+    $sourcePath
+    $executionPath
+    $actionPlanPath
+    $artifactProvenancePath
+    $externalSourcesPath
+    $productionAllowlistPath
+    $migrationPath
+    $reviewPath
+    $parityPath
+    $orderPath
+)) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required DirectX Phase 129 file missing: $path"
 }
 
 $expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
@@ -101,10 +92,12 @@ Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "DirectX so
 
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw
 foreach ($needle in @(
-    'refs/heads/main/7zip.exe'
-    'refs/heads/main/directx.exe'
+    'refs/heads/main/7zip.exe',
+    'Start-Process -Wait "$env:SystemRoot\Temp\7zip.exe" -ArgumentList "/S"',
+    'HKEY_CURRENT_USER\Software\7-Zip\Options',
+    'refs/heads/main/directx.exe',
+    'Program Files\7-Zip\7z.exe',
     'DXSETUP.exe'
-    'HKEY_CURRENT_USER\Software\7-Zip\Options'
 )) {
     Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'DirectX Ultimate source behavior'
 }
@@ -116,205 +109,181 @@ $directXTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'directx' })[0]
 Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX is missing from Graphics stage.'
 Assert-BoostLabCondition ([string]$directXTool.Title -eq 'DirectX') 'DirectX title mismatch.'
 Assert-BoostLabCondition ([int]$directXTool.Order -eq 8) 'DirectX must remain Graphics order 8.'
-Assert-BoostLabCondition ([string]$directXTool.Type -eq 'assistant') 'DirectX must be an assistant.'
-Assert-BoostLabCondition ([string]$directXTool.RiskLevel -eq 'high') 'DirectX must remain high risk.'
-Assert-BoostLabCondition ((@($directXTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'DirectX must expose canonical Analyze/Open/Apply/Default/Restore actions.'
-Assert-BoostLabTextContains -Text ([string]$directXTool.Description) -Needle 'Controlled manual handoff only' -Description 'DirectX description'
+Assert-BoostLabCondition ([string]$directXTool.Type -eq 'action') 'DirectX must be an action tool after Phase 129.'
+Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Apply') 'DirectX must expose only Analyze and Apply.'
+Assert-BoostLabTextContains -Text ([string]$directXTool.Description) -Needle 'Source-equivalent controlled runtime' -Description 'DirectX description'
 
 $capabilities = $directXTool.Capabilities
-Assert-BoostLabCondition ([bool]$capabilities['NeedsExplicitConfirmation']) 'DirectX manual handoff should require explicit confirmation.'
+foreach ($trueCapability in @(
+    'RequiresAdmin'
+    'RequiresInternet'
+    'CanModifyRegistry'
+    'CanInstallSoftware'
+    'CanDownload'
+    'CanDeleteFiles'
+    'NeedsExplicitConfirmation'
+)) {
+    Assert-BoostLabCondition ([bool]$capabilities[$trueCapability]) "DirectX capability should be true: $trueCapability"
+}
 foreach ($falseCapability in @(
-    'RequiresAdmin',
-    'RequiresInternet',
-    'CanReboot',
-    'CanModifyRegistry',
-    'CanModifyServices',
-    'CanInstallSoftware',
-    'CanDownload',
-    'CanModifyDrivers',
-    'CanModifySecurity',
-    'CanDeleteFiles',
-    'UsesTrustedInstaller',
-    'UsesSafeMode',
-    'SupportsDefault',
+    'CanReboot'
+    'CanModifyServices'
+    'CanModifyDrivers'
+    'CanModifySecurity'
+    'UsesTrustedInstaller'
+    'UsesSafeMode'
+    'SupportsDefault'
     'SupportsRestore'
 )) {
     Assert-BoostLabCondition (-not [bool]$capabilities[$falseCapability]) "DirectX capability should be false: $falseCapability"
 }
 
-$placeholderModules = @(
-    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
-        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
-)
-Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
-Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) deferred/placeholders, found $($placeholderModules.Count)."
-Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
-
-$sourcePromotedFiles = @(Get-ChildItem -LiteralPath (Join-Path $sourceRoot '_intake-promoted\Ultimate') -Recurse -File)
-Assert-BoostLabCondition ($sourcePromotedFiles.Count -eq $inventoryBaseline.SourcePromotedMirrorFiles) "Expected $($inventoryBaseline.SourcePromotedMirrorFiles) source-promoted mirror files, found $($sourcePromotedFiles.Count)."
-$remainingSourcePromoted = @(
-    $sourcePromotedFiles | Where-Object {
-        $_.Name -notin @(
-            '1 Driver Clean.ps1',
-            '2 Driver Install Latest.ps1',
-            '4 Nvidia Settings.ps1',
-            '5 Hdcp.ps1',
-            '6 P0 State.ps1',
-            '7 Msi Mode.ps1',
-            '1 BitLocker.ps1'
-        )
-    }
-)
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
-
 $executionText = Get-Content -LiteralPath $executionPath -Raw
-foreach ($needle in @(
-    "'directx'"
-    "Graphics\directx.psm1"
-    "'Analyze', 'Open', 'Apply', 'Default', 'Restore'"
-)) {
-    Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Execution registry'
-}
+Assert-BoostLabTextContains -Text $executionText -Needle "'directx'" -Description 'Execution registry'
+Assert-BoostLabTextContains -Text $executionText -Needle "Graphics\directx.psm1" -Description 'Execution registry'
+Assert-BoostLabTextContains -Text $executionText -Needle "Actions = @('Analyze', 'Apply')" -Description 'DirectX execution actions'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action plan ValidateSet must not include display label Manual Handoff.'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action plan ValidateSet must not include display label Apply Auto.'
 foreach ($needle in @(
-    'Prepare DirectX manual handoff instructions only'
-    'Auto mode is blocked for DirectX'
-    'Do not open a browser, external tool, 7-Zip installer, DirectX runtime package, extraction tool, or DirectX setup executable.'
-    'Do not download 7-Zip or DirectX artifacts.'
-    'No browser, external tool, 7-Zip download/install, DirectX download, extraction, setup launch, registry change, shortcut cleanup, file cleanup, or system mutation occurs.'
-    'DirectX Restore requires selected captured artifact, registry, shortcut, file, installer, and cleanup state plus an approved restore contract.'
+    'Install DirectX using the source-equivalent controlled workflow',
+    'Download source-defined 7zip.exe',
+    'Run the 7-Zip installer with /S',
+    'Write the source-defined 7-Zip HKCU options',
+    'Download source-defined directx.exe',
+    'Launch %SystemRoot%\Temp\directx\DXSETUP.exe without waiting',
+    'Both downloads are Ultimate-author-hosted artifacts marked NeedsBoostLabMirror'
 )) {
-    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'DirectX action plan wording'
+    Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'DirectX Action Plan wording'
 }
+Assert-BoostLabCondition (-not $actionPlanText.Contains('Auto mode is blocked for DirectX')) 'DirectX Apply Action Plan must not remain blocked Auto wording.'
+Assert-BoostLabCondition (-not $actionPlanText.Contains('Prepare DirectX manual handoff instructions only')) 'DirectX Action Plan must not remain manual-handoff wording.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')',
+    'SourceEquivalentControlledRuntime',
+    'SourceEquivalentDirectXInstall',
+    'Invoke-BoostLabDirectXOperationPlan',
+    'OperationExecutor',
+    'RequireAdministrator',
+    'RequireInternet',
+    'DownloadFile',
+    'StartProcessWait',
+    'SetRegistryDword',
+    'MoveItemSilently',
+    'RemoveDirectorySilently',
+    'ExtractDirectX',
+    'StartProcessNoWait',
+    'NeedsBoostLabMirror',
     $expectedSourceHash
-    'ManualHandoffPrepared'
-    'AutoBlockedUntilArtifactApproval'
-    'DefaultUnavailable'
-    'RestoreUnavailable'
-    'NoAutomatedExecution'
-    'NoDownloadOccurred'
-    'NoInstallerExecutionOccurred'
-    'NoExternalProcessStarted'
-    'NoRegistryMutationOccurred'
-    'NoShortcutMutationOccurred'
-    'NoFileCleanupOccurred'
-    'NoSystemMutationOccurred'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'DirectX module text'
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'DirectX module source-equivalent text'
 }
+Assert-BoostLabCondition (-not $moduleText.Contains('ManualHandoffPrepared')) 'DirectX module must no longer expose ManualHandoffPrepared.'
+Assert-BoostLabCondition (-not $moduleText.Contains('AutoBlockedUntilArtifactApproval')) 'DirectX module must no longer block Apply as AutoBlockedUntilArtifactApproval.'
 
-foreach ($commandPattern in @(
-    '(?im)^\s*Start-Process\b',
-    '(?im)^\s*Invoke-WebRequest\b',
-    '(?im)^\s*iwr\b',
-    '(?im)^\s*Invoke-RestMethod\b',
-    '(?im)^\s*Set-ItemProperty\b',
-    '(?im)^\s*reg\b',
-    '(?im)^\s*New-Item\b',
-    '(?im)^\s*Remove-Item\b',
-    '(?im)^\s*Move-Item\b',
-    '(?im)^\s*Remove-ItemProperty\b',
-    '(?im)^\s*cmd\b',
-    '(?im)^\s*shutdown\b',
-    '(?im)^\s*Restart-Computer\b'
-)) {
-    Assert-BoostLabCondition (-not [regex]::IsMatch($moduleText, $commandPattern)) "DirectX module contains prohibited executable command pattern: $commandPattern"
+$externalSources = Import-PowerShellDataFile -LiteralPath $externalSourcesPath
+$directXExternalSources = @($externalSources.ExternalSources | Where-Object { [string]$_.ToolId -eq 'directx' })
+Assert-BoostLabCondition ($directXExternalSources.Count -eq 2) 'DirectX must classify exactly 7zip.exe and directx.exe external sources.'
+foreach ($entry in $directXExternalSources) {
+    Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "DirectX source classification mismatch for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "DirectX mirror status mismatch for $($entry.Id)."
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "DirectX must not invent artifact hashes for $($entry.Id)."
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "DirectX must not approve a BoostLab mirror for $($entry.Id)."
 }
+Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe' }).Count -eq 1) 'DirectX 7-Zip source URL classification missing.'
+Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe' }).Count -eq 1) 'DirectX runtime source URL classification missing.'
+
+$artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
+Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Artifact provenance config must remain empty.'
+$allowlistText = Get-Content -LiteralPath $productionAllowlistPath -Raw
+Assert-BoostLabCondition (-not $allowlistText.Contains('directx')) 'Production allowlist must not approve DirectX.'
 
 $module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
     Assert-BoostLabCondition ([string]$info.Id -eq 'directx') 'Module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Implemented actions mismatch.'
-    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Open|Apply') 'Confirmation actions mismatch.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join '|') -eq 'Analyze|Apply') 'Implemented actions mismatch.'
+    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join '|') -eq 'Apply') 'Confirmation actions mismatch.'
 
     $analysis = Invoke-BoostLabToolAction -ActionName 'Analyze'
     Assert-BoostLabCondition ([bool]$analysis.Success) 'Analyze should succeed when source checksum matches.'
     Assert-BoostLabCondition ([string]$analysis.Status -eq 'Analyzed') 'Analyze status mismatch.'
     Assert-BoostLabCondition ([string]$analysis.CommandStatus -eq 'No execution performed') 'Analyze must not execute.'
-    Assert-BoostLabCondition ([string]$analysis.Data.Mode -eq 'ManualHandoffOnly') 'Analyze must report ManualHandoffOnly.'
-    Assert-BoostLabCondition ([string]$analysis.Data.AutoMode -eq 'AutoBlockedUntilArtifactApproval') 'Analyze must report Auto blocked.'
+    Assert-BoostLabCondition ([string]$analysis.Data.Mode -eq 'SourceEquivalentControlledRuntime') 'Analyze mode mismatch.'
     Assert-BoostLabCondition ([string]$analysis.Data.Source.ChecksumStatus -eq 'Passed') 'Analyze source checksum mismatch.'
+    Assert-BoostLabCondition (@($analysis.Data.OperationPlan.Operations).Count -eq 12) 'Analyze must expose all 12 source-equivalent operations.'
     foreach ($flag in @(
-        'NoAutomatedExecution',
+        'NoMutationOccurred',
         'NoDownloadOccurred',
         'NoInstallerExecutionOccurred',
         'NoExternalProcessStarted',
         'NoRegistryMutationOccurred',
         'NoShortcutMutationOccurred',
         'NoFileCleanupOccurred',
-        'NoSystemMutationOccurred'
+        'NoRebootOccurred'
     )) {
         Assert-BoostLabCondition ([bool]$analysis.Data.$flag) "Analyze flag should be true: $flag"
     }
-    Assert-BoostLabNoDuplicateWarnings -Result $analysis -Description 'Analyze'
 
-    foreach ($approval in @(
-        '7-Zip artifact SHA-256, size, signer, and redistributability approval',
-        '7-Zip installer execution descriptor approval',
-        'Immutable DirectX runtime artifact source approval',
-        'DirectX artifact SHA-256, size, signer, and redistributability approval',
-        'DirectX extraction inventory and generated-temp-path approval',
-        'Extracted DXSETUP executable provenance approval',
-        'DirectX setup execution descriptor approval',
-        'File, shortcut, registry, and cleanup scope approval'
-    )) {
-        Assert-BoostLabCondition ($approval -in @($analysis.Data.MissingApprovals)) "Missing approval was not reported: $approval"
+    $cancelled = Invoke-BoostLabToolAction -ActionName 'Apply'
+    Assert-BoostLabCondition (-not [bool]$cancelled.Success) 'Unconfirmed Apply should not proceed.'
+    Assert-BoostLabCondition ([bool]$cancelled.Cancelled) 'Unconfirmed Apply should be cancelled.'
+    Assert-BoostLabCondition (-not [bool]$cancelled.ChangesExecuted) 'Unconfirmed Apply must not execute changes.'
+
+    $seenOperations = New-Object System.Collections.Generic.List[object]
+    $mockExecutor = {
+        param($Operation, $Plan)
+        $seenOperations.Add($Operation) | Out-Null
+        $status = if ([string]$Operation.Type -in @('MoveItemSilently', 'RemoveDirectorySilently')) { 'Warning' } else { 'Completed' }
+        [pscustomobject]@{
+            Success = $true
+            Status = $status
+            Order = [int]$Operation.Order
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Required = [bool]$Operation.Required
+            Message = 'Mocked DirectX operation; no host mutation.'
+            Data = $null
+            Timestamp = Get-Date
+        }
+    }.GetNewClosure()
+
+    $apply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -OperationExecutor $mockExecutor
+    Assert-BoostLabCondition ([bool]$apply.Success) 'Mocked Apply should succeed.'
+    Assert-BoostLabCondition ([string]$apply.Status -eq 'CompletedWithWarnings') 'Mocked Apply should surface tolerated source cleanup warnings.'
+    Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Completed with warnings') 'Mocked Apply command status mismatch.'
+    Assert-BoostLabCondition ([string]$apply.VerificationStatus -eq 'Warning') 'Mocked Apply verification status mismatch.'
+    Assert-BoostLabCondition ([bool]$apply.ChangesExecuted) 'Mocked Apply should report changes requested.'
+    $seenOperationArray = @($seenOperations.ToArray())
+    Assert-BoostLabCondition ($seenOperationArray.Count -eq 12) 'Mocked Apply must execute all 12 operation descriptors.'
+    Assert-BoostLabCondition (((@($seenOperationArray | ForEach-Object { [int]$_.Order }) -join '|') -eq '1|2|3|4|5|6|7|8|9|10|11|12')) 'DirectX operation order mismatch.'
+    Assert-BoostLabCondition (@($seenOperationArray | Where-Object { [string]$_.Type -eq 'DownloadFile' }).Count -eq 2) 'DirectX must have exactly two download operations.'
+    Assert-BoostLabCondition (@($seenOperationArray | Where-Object { [string]$_.Type -eq 'SetRegistryDword' }).Count -eq 2) 'DirectX must have exactly two registry DWORD operations.'
+    Assert-BoostLabCondition (@($apply.Data.ArtifactSources | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 2) 'Apply data must report both artifact sources as NeedsBoostLabMirror.'
+
+    $failingExecutor = {
+        param($Operation, $Plan)
+        [pscustomobject]@{
+            Success = [int]$Operation.Order -ne 10
+            Status = if ([int]$Operation.Order -eq 10) { 'Failed' } else { 'Completed' }
+            Order = [int]$Operation.Order
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Required = [bool]$Operation.Required
+            Message = if ([int]$Operation.Order -eq 10) { 'Mock DirectX download failure.' } else { 'Mocked operation.' }
+            Data = $null
+            Timestamp = Get-Date
+        }
     }
-
-    $cancelled = Invoke-BoostLabToolAction -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$cancelled.Success) 'Unconfirmed Open should not proceed.'
-    Assert-BoostLabCondition ([bool]$cancelled.Cancelled) 'Unconfirmed Open should be cancelled.'
-    Assert-BoostLabTextContains -Text ([string]$cancelled.Message) -Needle 'No browser' -Description 'Cancelled Open message'
+    $failedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -OperationExecutor $failingExecutor
+    Assert-BoostLabCondition (-not [bool]$failedApply.Success) 'Apply must fail closed when a required operation fails.'
+    Assert-BoostLabCondition ([string]$failedApply.Status -eq 'Failed') 'Failed Apply status mismatch.'
+    Assert-BoostLabTextContains -Text ([string]$failedApply.Message) -Needle 'Mock DirectX download failure' -Description 'Failed Apply message'
 
     $open = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
-    Assert-BoostLabCondition ([bool]$open.Success) 'Confirmed Open should prepare manual handoff.'
-    Assert-BoostLabCondition ([string]$open.Status -eq 'ManualHandoffPrepared') 'Open status mismatch.'
-    Assert-BoostLabCondition ([string]$open.CommandStatus -eq 'No execution performed') 'Open must not execute.'
-    Assert-BoostLabCondition (-not [bool]$open.ChangesExecuted) 'Open must not report changes.'
-    foreach ($messagePart in @(
-        'No browser',
-        'external tool',
-        '7-Zip download/install',
-        'DirectX download',
-        'extraction',
-        'setup launch',
-        'registry change',
-        'shortcut cleanup',
-        'file cleanup',
-        'system mutation'
-    )) {
-        Assert-BoostLabTextContains -Text ([string]$open.Message) -Needle $messagePart -Description 'Open result message'
-    }
-    Assert-BoostLabCondition ([bool]$open.Data.NoDownloadOccurred) 'Open must report no download.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoInstallerExecutionOccurred) 'Open must report no installer execution.'
-    Assert-BoostLabCondition ([bool]$open.Data.NoExternalProcessStarted) 'Open must report no external process.'
-    Assert-BoostLabNoDuplicateWarnings -Result $open -Description 'Open'
-
-    $apply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$apply.Success) 'Apply Auto must fail closed.'
-    Assert-BoostLabCondition ([string]$apply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Apply Auto status mismatch.'
-    Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Blocked before execution') 'Apply Auto must block before execution.'
-    Assert-BoostLabTextContains -Text ([string]$apply.Message) -Needle 'AutoBlockedUntilArtifactApproval' -Description 'Apply Auto message'
-    Assert-BoostLabNoDuplicateWarnings -Result $apply -Description 'Apply'
-
-    $default = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$default.Success) 'Default must fail closed.'
-    Assert-BoostLabCondition ([string]$default.Status -eq 'DefaultUnavailable') 'Default status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$default.Message) -Needle 'Default is not Restore' -Description 'Default message'
-
-    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restore.Success) 'Restore must fail closed.'
-    Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'Restore status mismatch.'
-    Assert-BoostLabTextContains -Text ([string]$restore.Message) -Needle 'approved captured artifact, registry, shortcut, file, installer, and cleanup state' -Description 'Restore message'
+    Assert-BoostLabCondition (-not [bool]$open.Success) 'Open must remain unsupported.'
+    Assert-BoostLabCondition ([string]$open.Status -eq 'Unsupported') 'Open unsupported status mismatch.'
 }
 finally {
     Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
@@ -325,74 +294,64 @@ $env:ProgramData = Join-Path ([System.IO.Path]::GetTempPath()) 'BoostLabTestProg
 $loggingModule = Import-Module -Name (Join-Path $ProjectRoot 'core\Logging.psm1') -Force -PassThru -ErrorAction Stop
 $stateModule = Import-Module -Name (Join-Path $ProjectRoot 'core\State.psm1') -Force -PassThru -ErrorAction Stop
 Initialize-BoostLabState | Out-Null
+function global:Test-BoostLabAdministrator {
+    return $true
+}
 $executionModule = Import-Module -Name $executionPath -Force -PassThru -ErrorAction Stop
 try {
     $runtimeAnalyze = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Analyze'
     Assert-BoostLabCondition ([bool]$runtimeAnalyze.Success) 'Runtime Analyze should succeed.'
-    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'without running any DirectX or 7-Zip workflow' -Description 'Runtime Analyze Action Plan summary'
-    Assert-BoostLabNoDuplicateWarnings -Result $runtimeAnalyze -Description 'Runtime Analyze'
+    Assert-BoostLabTextContains -Text ([string]$runtimeAnalyze.ActionPlan.Summary) -Needle 'source-equivalent install plan' -Description 'Runtime Analyze Action Plan summary'
+    Assert-BoostLabCondition (-not [bool]$runtimeAnalyze.ChangesExecuted) 'Runtime Analyze must not execute changes.'
 
-    $runtimeOpen = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Open'
-    Assert-BoostLabCondition (-not [bool]$runtimeOpen.Success) 'Runtime Open without confirmation should be gated.'
-    Assert-BoostLabCondition ([bool]$runtimeOpen.Cancelled) 'Runtime Open should be cancelled when confirmation is missing.'
-    Assert-BoostLabCondition ($null -ne $runtimeOpen.ActionPlan) 'Runtime Open should include an Action Plan.'
-    $runtimeOpenPlanText = @(
-        @($runtimeOpen.ActionPlan.Summary)
-        @($runtimeOpen.ActionPlan.PlannedChanges)
-        @($runtimeOpen.ActionPlan.SideEffects)
-        @($runtimeOpen.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'manual handoff instructions only',
-        'Do not open a browser',
-        'Do not download 7-Zip or DirectX artifacts',
-        'Do not install 7-Zip',
-        'No browser, external tool',
-        'system mutation occurs'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeOpenPlanText -Needle $needle -Description 'Runtime Open Action Plan'
+    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Apply' -RiskConfirmed -ActionOptions @{
+        OperationExecutor = {
+            param($Operation, $Plan)
+            [pscustomobject]@{
+                Success = $true
+                Status = 'Completed'
+                Order = [int]$Operation.Order
+                Type = [string]$Operation.Type
+                Label = [string]$Operation.Label
+                Required = [bool]$Operation.Required
+                Message = 'Runtime mock operation; no host mutation.'
+                Data = $null
+                Timestamp = Get-Date
+            }
+        }
+        SkipEnvironmentChecks = $true
     }
-    Assert-BoostLabCondition (-not $runtimeOpenPlanText.Contains('approved external resource may be opened')) 'Runtime Open Action Plan must not use generic external resource wording.'
-
-    $runtimeApply = Invoke-BoostLabToolAction -ToolMetadata $directXTool -ActionName 'Apply' -RiskConfirmed
-    Assert-BoostLabCondition (-not [bool]$runtimeApply.Success) 'Runtime Apply should fail closed.'
-    Assert-BoostLabCondition ([string]$runtimeApply.Status -eq 'AutoBlockedUntilArtifactApproval') 'Runtime Apply status mismatch.'
-    $runtimeApplyPlanText = @(
-        @($runtimeApply.ActionPlan.Summary)
-        @($runtimeApply.ActionPlan.PlannedChanges)
-        @($runtimeApply.ActionPlan.SideEffects)
-        @($runtimeApply.ActionPlan.ConfirmationMessage)
-    ) -join "`n"
-    foreach ($needle in @(
-        'Auto mode is blocked',
-        'will not execute Auto behavior',
-        'Report missing 7-Zip artifact',
-        'No approved Auto behavior'
-    )) {
-        Assert-BoostLabTextContains -Text $runtimeApplyPlanText -Needle $needle -Description 'Runtime Apply Action Plan'
-    }
-    Assert-BoostLabCondition (-not $runtimeApplyPlanText.Contains('Apply the approved DirectX behavior')) 'Runtime Apply plan must not use generic Apply wording.'
+    Assert-BoostLabCondition ([bool]$runtimeApply.Success) 'Runtime Apply should succeed with mocked executor.'
+    Assert-BoostLabCondition ($null -ne $runtimeApply.ActionPlan) 'Runtime Apply should include an Action Plan.'
+    Assert-BoostLabTextContains -Text ([string]$runtimeApply.ActionPlan.ConfirmationMessage) -Needle 'install/configure 7-Zip' -Description 'Runtime Apply confirmation'
+    Assert-BoostLabCondition (@($runtimeApply.Data.Operations).Count -eq 12) 'Runtime Apply must carry operation results.'
 }
 finally {
+    Remove-Item -Path 'Function:\global:Test-BoostLabAdministrator' -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $executionModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $stateModule -Force -ErrorAction SilentlyContinue
     Remove-Module -ModuleInfo $loggingModule -Force -ErrorAction SilentlyContinue
     $env:ProgramData = $originalProgramData
 }
 
-$artifactConfig = Import-PowerShellDataFile -LiteralPath $artifactPath
-$artifactText = Get-Content -LiteralPath $artifactPath -Raw
-foreach ($forbiddenArtifactText in @('directx.exe', 'DXSETUP.exe', '7zip.exe', '7-Zip', 'FR33THYFR33THY')) {
-    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to DirectX: $forbiddenArtifactText"
-}
-if ($artifactConfig.ContainsKey('Artifacts')) {
-    Assert-BoostLabCondition (@($artifactConfig.Artifacts).Count -eq 0) 'Production artifact approvals should remain empty.'
-}
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$directXRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'directx' })[0]
+Assert-BoostLabCondition ([string]$directXRecord.ImplementationLevel -eq 'NearParityControlled') 'DirectX parity level must be NearParityControlled after Phase 129.'
+Assert-BoostLabCondition ([string]$directXRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'DirectX final progress status mismatch.'
+Assert-BoostLabCondition ([bool]$directXRecord.YazanAcceptedNearParity) 'DirectX must be marked YazanAcceptedNearParity.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered parity target must advance to Visual C++ after DirectX.'
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 24) 'NearParityControlled count should be 24 after DirectX.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 2) 'ManualHandoffOnly count should be 2 after DirectX.'
 
-$productionPolicy = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
-if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
-    Assert-BoostLabCondition (@($productionPolicy.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals should remain empty.'
-}
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.ActiveTools -eq 55) 'Active tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.ImplementedTools -eq 45) 'Implemented tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.DeferredPlaceholders -eq 10) 'Deferred placeholder count changed unexpectedly.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',
@@ -402,13 +361,13 @@ foreach ($deletedPath in @(
 }
 
 [pscustomobject]@{
-    TestName                                     = 'DirectX controlled manual handoff implementation'
-    ActiveTools                                  = $allTools.Count
-    ImplementedTools                             = $allTools.Count - $placeholderModules.Count
-    DeferredPlaceholders                         = $placeholderModules.Count
-    SourcePromotedMirrorFiles                    = $sourcePromotedFiles.Count
-    RemainingUnimplementedSourcePromotedCandidates = $remainingSourcePromoted.Count
-    SourceHash                                   = $actualSourceHash
-    DirectXActions                               = @($directXTool.Actions)
-    AutoMode                                     = 'AutoBlockedUntilArtifactApproval'
+    TestName = 'DirectX source-equivalent controlled runtime implementation'
+    ActiveTools = $inventoryAssertion.Baseline.ActiveTools
+    RuntimeImplementedTools = $inventoryAssertion.Baseline.ImplementedTools
+    DeferredPlaceholders = $inventoryAssertion.Baseline.DeferredPlaceholders
+    SourceHash = $actualSourceHash
+    DirectXActions = @($directXTool.Actions)
+    OperationCount = 12
+    NextOrderedParityTarget = [string]$nextTarget.ToolId
+    RealHostMutationDuringTest = $false
 }

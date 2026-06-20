@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -345,7 +345,7 @@ Assert-BoostLabCondition (-not [bool]$edgeRecord.YazanFinalException) 'Edge Sett
 Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'source-equivalent Edge Settings behavior' -Description 'Edge Settings parity GapSummary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target must advance past Msi Mode near-parity acceptance.'
 
 Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline must remain 55.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq 45) 'Implemented tool baseline must be 45 after Edge Settings.'
@@ -401,3 +401,4 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     DeletedToolsRemainDeleted       = $true
     Message                         = 'Edge Settings full source-equivalent controlled near-parity implementation passed mocked validation.'
 }
+

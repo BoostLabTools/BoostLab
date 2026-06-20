@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -212,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'directx') 'The first ordered pending parity target should advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'visual-cpp') 'The first ordered pending parity target should advance past Msi Mode near-parity acceptance.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'
@@ -230,3 +230,4 @@ Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'directx') 'The firs
     DeletedToolsRemainDeleted = $true
     Message = 'Ordered Ultimate parity execution reset baseline is complete and non-runtime.'
 }
+

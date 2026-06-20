@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -114,11 +114,11 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecor
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered parity target must advance past Msi Mode near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered parity target must advance past Msi Mode near-parity acceptance.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 23) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 24) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 16) 'Ultimate parity implemented count changed.'
 
@@ -332,3 +332,4 @@ foreach ($deletedPath in @(
     SourceUltimateUnchanged = $true
     Message = 'BitLocker is accepted near-parity after Phase 115 Yazan approval; validators use mocks for source-equivalent command routing.'
 }
+

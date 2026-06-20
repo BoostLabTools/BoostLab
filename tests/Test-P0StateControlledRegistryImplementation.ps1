@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -488,14 +488,15 @@ Assert-BoostLabCondition ([string]$p0Parity.UltimateParity -eq 'Partial') 'P0 St
 Assert-BoostLabCondition ([string]$p0Parity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'P0 State final progress status must be accepted near-parity after source-equivalent implementation.'
 Assert-BoostLabCondition ([bool]$p0Parity.YazanAcceptedNearParity) 'P0 State Yazan accepted near-parity flag must be set.'
 Assert-BoostLabTextContains -Text ([string]$p0Parity.GapSummary) -Needle 'exact source-equivalent P0 State On (Recommended) and Default behavior' -Description 'P0 State parity gap summary'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance to DirectX after Msi Mode acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'visual-cpp') 'Next ordered pending parity target must advance to Visual C++ after Msi Mode acceptance.'
 
 [pscustomobject]@{
     Success = $true
     Validator = 'Test-P0StateControlledRegistryImplementation'
-    Message = 'P0 State source-equivalent registry implementation exposes On (Recommended)/Default only, captures before mutation, writes/readbacks all non-Configuration source targets, and the current ordered parity cursor now advances to DirectX after Msi Mode.'
+    Message = 'P0 State source-equivalent registry implementation exposes On (Recommended)/Default only, captures before mutation, writes/readbacks all non-Configuration source targets, and the current ordered parity cursor now advances to Visual C++ after Msi Mode.'
     ActiveTools = $inventoryBaseline.ActiveTools
     ImplementedTools = $inventoryBaseline.ImplementedTools
     DeferredPlaceholders = $inventoryBaseline.DeferredPlaceholders
     NextOrderedPendingParityTarget = [string]$nextTarget.ToolId
 }
+
