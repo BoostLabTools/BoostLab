@@ -534,6 +534,13 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'start-menu-taskbar') {
+        switch ($ActionName) {
+            'Apply' { return 'Clean (Recommended)' }
+            'Default' { return 'Default' }
+        }
+    }
+
     if ($toolId -eq 'hdcp') {
         switch ($ActionName) {
             'Apply' { return 'Off (Recommended)' }

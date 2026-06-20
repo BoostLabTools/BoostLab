@@ -118,7 +118,7 @@ Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq  16) 'Ultimate parity implemented count changed unexpectedly.'
-Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'Ultimate parity implemented count changed.'
 

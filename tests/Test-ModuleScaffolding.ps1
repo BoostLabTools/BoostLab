@@ -221,6 +221,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\notepad-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'start-menu-taskbar' = @{
+        RelativePath          = 'Windows\start-menu-taskbar.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
 }
 $requiredFunctions = @(
     'Get-BoostLabToolInfo'
@@ -479,6 +483,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'visual-cpp' -and
             $commandName -eq 'Invoke-WebRequest'
         )
+        $approvedStartMenuTaskbarCommand = (
+            $toolId -eq 'start-menu-taskbar' -and
+            $commandName -in @('New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -502,7 +510,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedDriverInstallDebloatSettingsCommand -and
             -not $approvedNvidiaSettingsCommand -and
             -not $approvedDirectXCommand -and
-            -not $approvedVisualCppCommand
+            -not $approvedVisualCppCommand -and
+            -not $approvedStartMenuTaskbarCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -659,6 +668,9 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'notepad-settings') {
+            0
+        }
+        elseif ($toolId -eq 'start-menu-taskbar') {
             0
         }
         else {

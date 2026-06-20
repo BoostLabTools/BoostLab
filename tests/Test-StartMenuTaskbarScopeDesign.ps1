@@ -83,7 +83,6 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91`',
-    'Start Menu Taskbar remains refused',
     'No production allowlists or scopes are approved by this document.',
     'Windows 10-only branches/options must remain unsupported',
     'Phase 36',
@@ -92,7 +91,6 @@ foreach ($requiredPhrase in @(
     'file and registry state capture',
     'destructive cleanup policy',
     'reboot/recovery workflow',
-    'Current Default/Restore must remain unavailable',
     'No `Stop-Process -Force -Name explorer` without explicit confirmation.'
 )) {
     if (-not $designText.Contains($requiredPhrase)) {
@@ -142,11 +140,14 @@ if (-not $planText.Contains('docs/tool-designs/start-menu-taskbar-scope-design.m
     throw 'Deferred tools execution plan does not link to the Start Menu Taskbar scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Start Menu Taskbar module is no longer a placeholder.'
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Start Menu Taskbar module still uses the placeholder module after exact parity implementation.'
 }
-if ($moduleText -match 'Stop-Process|regedit|Remove-Item|Set-ItemProperty|Copy-Item|certutil|attrib') {
-    throw 'Start Menu Taskbar placeholder module appears to contain real mutation behavior.'
+if (-not $moduleText.Contains('Get-BoostLabStartMenuTaskbarOperationCatalog')) {
+    throw 'Start Menu Taskbar module does not expose its source-equivalent operation catalog.'
+}
+if ($moduleText.Contains('$script:BoostLabImplementedActions = @(''Open'')')) {
+    throw 'Start Menu Taskbar must not expose placeholder Open-only behavior.'
 }
 
 $startMenuTool = $allTools |
@@ -252,7 +253,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionScopesApproved   = $false
     SourceUltimateUnchanged    = $true
     DeletedToolsRemainDeleted  = $true
-    Message                    = 'Start Menu Taskbar scope design is present, linked, and non-executing.'
+    Message                    = 'Start Menu Taskbar scope design remains linked while exact source-equivalent implementation is present.'
     Timestamp                  = Get-Date
 }
 

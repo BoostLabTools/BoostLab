@@ -5,16 +5,16 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 45
-        DeferredPlaceholders = 10
+        RuntimeImplementedTools = 46
+        DeferredPlaceholders = 9
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 16
-        NearParityControlled = 25
+        NearParityControlled = 26
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 10
+        DeferredForParityWork = 9
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
@@ -435,12 +435,14 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 1
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source replaces layout files, deletes user state, writes policies, and handles Explorer without approved capture/restore scope.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Runtime now implements the source-defined Clean and Default behavior through BoostLab confirmation and test-safe adapters; final ordered parity acceptance remains pending Yazan review.'
             YazanFinalException = $false
-            NextParityAction = 'Approve exact file/registry/cleanup scopes and Explorer process handling, then implement in source order.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'NeedsYazanAcceptance'
+            NextParityAction = 'Review the exact source-equivalent runtime implementation; keep the ordered cursor on start-menu-taskbar until Yazan accepts or requests a follow-up fix.'
         }
         @{
             ToolId = 'start-menu-layout'

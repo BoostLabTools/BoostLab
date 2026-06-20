@@ -431,7 +431,6 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
 }
 
 $refusedPlaceholders = @(
-    'Windows\start-menu-taskbar.psm1'
     'Windows\bloatware.psm1'
     'Windows\game-bar.psm1'
     'Windows\control-panel-settings.psm1'
