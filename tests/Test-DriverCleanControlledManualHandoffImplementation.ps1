@@ -99,6 +99,9 @@ foreach ($path in @($stagesPath, $executionPath, $actionPlanPath, $modulePath, $
 $expectedSourceHash = 'CF9E1C55ACAFD8A52D2200AC3E6C3AFDF9823837C7B68101C2D4B83E074D325A'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Driver Clean source mirror hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
+$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+Assert-BoostLabTextContains -Text $sourceText -Needle 'DDU: Auto' -Description 'Driver Clean Ultimate source labels'
+Assert-BoostLabTextContains -Text $sourceText -Needle 'DDU: Manual' -Description 'Driver Clean Ultimate source labels'
 
 $config = Import-PowerShellDataFile -LiteralPath $stagesPath
 $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
@@ -390,7 +393,10 @@ Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'nvidia-settings') 'Nex
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
     'Get-BoostLabToolActionDisplayLabel',
-    "'driver-clean', 'nvidia-settings'",
+    "if (`$toolId -eq 'driver-clean')",
+    "'Open' { return 'Manual' }",
+    "'Apply' { return 'Auto' }",
+    "if (`$toolId -eq 'nvidia-settings')",
     "'Open' { return 'Manual Handoff' }",
     "'Apply' { return 'Apply Auto' }",
     'ActionName   = $actionName',
@@ -398,6 +404,7 @@ foreach ($needle in @(
 )) {
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Driver Clean UI display label mapping'
 }
+Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share the Nvidia Settings Manual Handoff label mapping.'
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\DDU.psm1'))) 'Standalone DDU module was reintroduced.'

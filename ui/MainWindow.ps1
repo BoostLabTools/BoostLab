@@ -517,7 +517,14 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
-    if ($toolId -in @('driver-clean', 'nvidia-settings')) {
+    if ($toolId -eq 'driver-clean') {
+        switch ($ActionName) {
+            'Open' { return 'Manual' }
+            'Apply' { return 'Auto' }
+        }
+    }
+
+    if ($toolId -eq 'nvidia-settings') {
         switch ($ActionName) {
             'Open' { return 'Manual Handoff' }
             'Apply' { return 'Apply Auto' }

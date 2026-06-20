@@ -176,12 +176,16 @@ foreach ($needle in @(
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
-    "'driver-clean', 'nvidia-settings'",
+    "if (`$toolId -eq 'driver-clean')",
+    "'Open' { return 'Manual' }",
+    "'Apply' { return 'Auto' }",
+    "if (`$toolId -eq 'nvidia-settings')",
     "'Open' { return 'Manual Handoff' }",
     "'Apply' { return 'Apply Auto' }"
 )) {
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'UI display label mapping'
 }
+Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share the Nvidia Settings Manual Handoff label mapping.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action plan canonical ValidateSet'
