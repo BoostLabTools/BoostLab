@@ -200,7 +200,7 @@ foreach ($needle in @(
 }
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
+Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action Plan canonical ValidateSet'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'On (Recommended)'")) 'Action Plan ValidateSet must not be widened for P0 State source labels.'
 foreach ($needle in @(
     'Read the P0 State source mirror and report source-defined display-class registry scope, non-Configuration target discovery, Apply availability, and Default availability without changing the system.',
@@ -488,12 +488,12 @@ Assert-BoostLabCondition ([string]$p0Parity.UltimateParity -eq 'Partial') 'P0 St
 Assert-BoostLabCondition ([string]$p0Parity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'P0 State final progress status must be accepted near-parity after source-equivalent implementation.'
 Assert-BoostLabCondition ([bool]$p0Parity.YazanAcceptedNearParity) 'P0 State Yazan accepted near-parity flag must be set.'
 Assert-BoostLabTextContains -Text ([string]$p0Parity.GapSummary) -Needle 'exact source-equivalent P0 State On (Recommended) and Default behavior' -Description 'P0 State parity gap summary'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target must advance to Msi Mode after P0 State acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance to DirectX after Msi Mode acceptance.'
 
 [pscustomobject]@{
     Success = $true
     Validator = 'Test-P0StateControlledRegistryImplementation'
-    Message = 'P0 State source-equivalent registry implementation exposes On (Recommended)/Default only, captures before mutation, writes/readbacks all non-Configuration source targets, and advances ordered parity to Msi Mode.'
+    Message = 'P0 State source-equivalent registry implementation exposes On (Recommended)/Default only, captures before mutation, writes/readbacks all non-Configuration source targets, and the current ordered parity cursor now advances to DirectX after Msi Mode.'
     ActiveTools = $inventoryBaseline.ActiveTools
     ImplementedTools = $inventoryBaseline.ImplementedTools
     DeferredPlaceholders = $inventoryBaseline.DeferredPlaceholders

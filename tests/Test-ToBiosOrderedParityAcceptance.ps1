@@ -126,7 +126,7 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $toBiosRecord) 
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'First ordered pending parity target must advance past P0 State near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'First ordered pending parity target must advance past Msi Mode near-parity acceptance.'
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })

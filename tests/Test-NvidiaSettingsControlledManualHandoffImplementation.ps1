@@ -194,7 +194,7 @@ Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Apply Auto')) 'Nvi
 Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains("'Open'")) 'Nvidia Settings must not expose a fake Open label.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action plan canonical ValidateSet'
+Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action plan canonical ValidateSet'
 foreach ($needle in @(
     'Run the source-defined Nvidia Settings On (Recommended) branch',
     'Run the source-defined Nvidia Settings Default branch',
@@ -347,7 +347,7 @@ Assert-BoostLabCondition ([string]$nvidiaParityRecord.ImplementationLevel -eq 'N
 Assert-BoostLabCondition ([string]$nvidiaParityRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Nvidia Settings final progress status mismatch.'
 Assert-BoostLabCondition ([bool]$nvidiaParityRecord.YazanAcceptedNearParity) 'Nvidia Settings near-parity acceptance flag must be set.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target should advance to Msi Mode after P0 State.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target should advance to DirectX after Msi Mode.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'

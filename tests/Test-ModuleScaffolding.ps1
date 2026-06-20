@@ -145,7 +145,7 @@ $implementedModules = @{
     }
     'msi-mode' = @{
         RelativePath          = 'Graphics\msi-mode.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Off'')'
     }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
@@ -437,7 +437,7 @@ foreach ($entry in $expectedModules.Values) {
         )
         $approvedMsiModeCommand = (
             $toolId -eq 'msi-mode' -and
-            $commandName -eq 'New-ItemProperty'
+            $commandName -in @('New-Item', 'New-ItemProperty')
         )
         $approvedUpdatesDriversBlockCommand = (
             $toolId -eq 'updates-drivers-block' -and
@@ -1160,23 +1160,39 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'msi-mode') {
             foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Off'')'
                 '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
+                'Get-PnpDevice -Class Display'
                 'HKLM:\SYSTEM\ControlSet001\Enum'
                 'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties'
                 'MSISupported'
+                '$script:BoostLabMsiModeSourceOnRecommendedValue = 1'
+                '$script:BoostLabMsiModeSourceOffValue = 0'
                 'New-BoostLabRegistryStateCapture'
                 'Set-BoostLabRollbackMutationState'
-                'NeedsNvidiaTargeting'
-                'VEN_10DE'
-                'SupportsDefault = $true'
+                'SupportsDefault = $false'
                 'SupportsRestore = $false'
                 'CanModifyDrivers = $false'
                 'function Test-BoostLabMsiModeState'
-                'Default is source-defined MSISupported DWORD 0 and is not Restore'
+                'Off as a separate visible option'
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing Msi Mode controlled registry behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'NeedsNvidiaTargeting'
+                'EligibleTargets'
+                'ExcludedTargets'
+                'AmbiguousTargets'
+                'VEN_10DE'
+                'NvidiaTarget'
+                '$script:BoostLabMsiModeDefaultValue'
+                'Invoke-BoostLabMsiModeRestore'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath retained source-undefined Msi Mode filtering/default/restore behavior: $forbiddenText")
                 }
             }
 

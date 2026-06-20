@@ -250,16 +250,17 @@ $reachedToolsForward = @(
     'driver-install-latest',
     'nvidia-settings',
     'hdcp',
-    'p0-state'
+    'p0-state',
+    'msi-mode'
 )
 $reachedToolsReverse = @($reachedToolsForward)
 [array]::Reverse($reachedToolsReverse)
-Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'p0-state') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from P0 State back to BIOS Information.'
+Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'msi-mode') -and ($reachedToolsReverse[-1] -eq 'bios-information')) 'Reverse audit scope must run from Msi Mode back to BIOS Information.'
 
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($null -ne (Get-BoostLabToolById -Tools $allTools -ToolId $toolId)) "Reached tool missing from active registry: $toolId"
 }
-foreach ($outOfScope in @('msi-mode', 'directx', 'visual-cpp', 'graphics-configuration-center')) {
+foreach ($outOfScope in @('directx', 'visual-cpp', 'graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool entered reverse audit scope: $outOfScope"
 }
 
@@ -295,6 +296,8 @@ foreach ($needle in @(
     "if (`$toolId -eq 'p0-state')",
     "'Apply' { return 'On (Recommended)' }",
     "'Default' { return 'Default' }",
+    "if (`$toolId -eq 'msi-mode')",
+    "'Off' { return 'Off' }",
     "Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.",
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
 )) {
@@ -362,6 +365,7 @@ Assert-BoostLabCondition (-not $allowlistText.Contains('driver-install-debloat-s
 $analyzeTools = @($reachedToolsForward | Where-Object {
     $_ -ne 'hdcp' -and
     $_ -ne 'p0-state' -and
+    $_ -ne 'msi-mode' -and
     @((Get-BoostLabToolById -Tools $allTools -ToolId $_).Actions) -contains 'Analyze'
 })
 foreach ($toolId in $analyzeTools) {
@@ -488,5 +492,5 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     AsyncBusyCleanup = 'Static contract present'
     RealHostMutationDuringTest = $false
     SourceUltimateUnchanged = $true
-    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid with mock-safe action option propagation.'
+    Message = 'Reverse reached-tools GUI/runtime smoke contract is valid through Msi Mode with mock-safe action option propagation.'
 }

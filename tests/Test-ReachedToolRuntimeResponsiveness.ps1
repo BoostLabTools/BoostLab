@@ -317,6 +317,7 @@ $reachedToolIds = @(
     'nvidia-settings'
     'hdcp'
     'p0-state'
+    'msi-mode'
 )
 foreach ($toolId in $reachedToolIds) {
     Assert-BoostLabTextContains -Text $asyncScopeText -Needle "'$toolId'" -Description 'Async reached-tool scope'
@@ -324,7 +325,6 @@ foreach ($toolId in $reachedToolIds) {
 }
 
 foreach ($outOfScopeToolId in @(
-    'msi-mode'
     'directx'
     'visual-cpp'
     'graphics-configuration-center'
@@ -421,5 +421,5 @@ foreach ($deletedPath in @(
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true
-    Message                     = 'Reached tools through P0 State use the non-blocking WPF dispatch path; validators are static/mock-safe.'
+    Message                     = 'Reached tools through Msi Mode use the non-blocking WPF dispatch path; validators are static/mock-safe.'
 }

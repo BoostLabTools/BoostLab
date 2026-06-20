@@ -388,7 +388,7 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 2
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 3) 'ManualHandoffOnly baseline should be 3 after Nvidia Settings.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'msi-mode') 'Next ordered pending parity target should advance to Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target should advance to DirectX.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(

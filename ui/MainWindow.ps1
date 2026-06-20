@@ -548,6 +548,13 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
+    if ($toolId -eq 'msi-mode') {
+        switch ($ActionName) {
+            'Apply' { return 'On (Recommended)' }
+            'Off' { return 'Off' }
+        }
+    }
+
     return $ActionName
 }
 
@@ -1627,6 +1634,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'nvidia-settings'
         'hdcp'
         'p0-state'
+        'msi-mode'
     )
 }
 

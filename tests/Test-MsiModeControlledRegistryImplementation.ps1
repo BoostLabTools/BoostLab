@@ -24,6 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
@@ -75,6 +76,9 @@ $modulePath = Join-Path $ProjectRoot 'modules\Graphics\msi-mode.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\7 Msi Mode.ps1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
+$orderPath = Join-Path $ProjectRoot 'config\UltimateParityExecutionOrder.psd1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
@@ -86,6 +90,9 @@ foreach ($path in @(
     $sourcePath,
     $executionPath,
     $actionPlanPath,
+    $uiPath,
+    $parityPath,
+    $orderPath,
     $artifactPath,
     $productionAllowlistPath
 )) {
@@ -95,6 +102,19 @@ foreach ($path in @(
 $expectedSourceHash = '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Msi Mode source mirror hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
+
+$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+foreach ($needle in @(
+    'Get-PnpDevice -Class Display',
+    '$gpu.InstanceId',
+    'MessageSignaledInterruptProperties',
+    'MSISupported',
+    '/d "1"',
+    '/d "0"',
+    'MSISupported: Not found or error accessing the registry.'
+)) {
+    Assert-BoostLabTextContains -Text $sourceText -Needle $needle -Description 'Msi Mode Ultimate source behavior'
+}
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
@@ -111,22 +131,22 @@ $pathATool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'driver-install-d
 
 Assert-BoostLabCondition ($null -ne $msiModeTool) 'Msi Mode must exist as an active Graphics tool.'
 Assert-BoostLabCondition ([int]$driverCleanTool.Order -eq 1) 'Driver Clean must remain Graphics order 1 and outside Path B.'
+Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([int]$driverInstallLatestTool.Order -eq 3) 'Driver Install Latest must remain Path B step 1 and Graphics order 3.'
 Assert-BoostLabCondition ([int]$nvidiaSettingsTool.Order -eq 4) 'Nvidia Settings must remain Path B step 2 and Graphics order 4.'
 Assert-BoostLabCondition ([int]$hdcpTool.Order -eq 5) 'HDCP must remain Path B step 3 and Graphics order 5.'
-Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 6) 'P0 State must remain Graphics order 5 as Path B step 4.'
+Assert-BoostLabCondition ([int]$p0StateTool.Order -eq 6) 'P0 State must remain Graphics order 6 as Path B step 4.'
 Assert-BoostLabCondition ([int]$msiModeTool.Order -eq 7) 'Msi Mode must be Graphics order 7 as Path B step 5.'
-Assert-BoostLabCondition ([int]$pathATool.Order -eq 2) 'Driver Install Debloat & Settings must remain separate at canonical Graphics order 2.'
 Assert-BoostLabCondition ([string]$msiModeTool.Title -eq 'Msi Mode') 'Msi Mode title mismatch.'
 Assert-BoostLabCondition ([string]$msiModeTool.Type -eq 'action') 'Msi Mode must be an action tool.'
 Assert-BoostLabCondition ([string]$msiModeTool.RiskLevel -eq 'high') 'Msi Mode must remain high risk.'
-Assert-BoostLabCondition ((@($msiModeTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'Msi Mode must use only canonical Analyze, Apply, Default, Restore actions.'
+Assert-BoostLabCondition ((@($msiModeTool.Actions) -join ',') -eq 'Analyze,Apply,Off') 'Msi Mode must expose only Analyze, Apply, and Off.'
 
 $caps = $msiModeTool.Capabilities
 Assert-BoostLabCondition ([bool]$caps.RequiresAdmin) 'Msi Mode must require Administrator for mutation actions.'
 Assert-BoostLabCondition ([bool]$caps.CanModifyRegistry) 'Msi Mode must declare registry mutation capability.'
-Assert-BoostLabCondition ([bool]$caps.SupportsDefault) 'Msi Mode must declare source-defined Default support.'
-Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'Msi Mode must not claim Restore support without selected captured-state restore flow.'
+Assert-BoostLabCondition (-not [bool]$caps.SupportsDefault) 'Msi Mode must not declare Default support because the source option is Off.'
+Assert-BoostLabCondition (-not [bool]$caps.SupportsRestore) 'Msi Mode must not claim Restore support without source-defined captured-state restore flow.'
 Assert-BoostLabCondition ([bool]$caps.NeedsExplicitConfirmation) 'Msi Mode must require explicit confirmation.'
 foreach ($falseCapability in @(
     'RequiresInternet',
@@ -169,61 +189,87 @@ $remainingSourcePromoted = @(
             '4 Nvidia Settings.ps1',
             '5 Hdcp.ps1',
             '6 P0 State.ps1',
-            '7 Msi Mode.ps1'
+            '7 Msi Mode.ps1',
             '1 BitLocker.ps1'
         )
     }
 )
-Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq 0) "Expected 0 remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
+Assert-BoostLabCondition ($remainingSourcePromoted.Count -eq $inventoryBaseline.RemainingSourcePromotedIntakeCandidates) "Expected $($inventoryBaseline.RemainingSourcePromotedIntakeCandidates) remaining unimplemented source-promoted intake candidates, found $($remainingSourcePromoted.Count)."
 
 $executionText = Get-Content -LiteralPath $executionPath -Raw
 foreach ($needle in @(
     "'msi-mode'",
     "Graphics\msi-mode.psm1",
-    "'Analyze', 'Apply', 'Default', 'Restore'"
+    "'Analyze', 'Apply', 'Off'"
 )) {
     Assert-BoostLabTextContains -Text $executionText -Needle $needle -Description 'Msi Mode execution registration'
 }
 
-$actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
-Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened for Msi Mode.'
+$uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
-    'Apply the source-defined Msi Mode On value only to eligible NVIDIA display-device Enum registry targets',
-    'Apply the source-defined Msi Mode Default value only to eligible NVIDIA display-device Enum registry targets',
-    'No registry mutation is planned without selected captured state',
+    "if (`$toolId -eq 'msi-mode')",
+    "'Apply' { return 'On (Recommended)' }",
+    "'Off' { return 'Off' }",
+    "'msi-mode'"
+)) {
+    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Msi Mode UI/action label behavior'
+}
+Assert-BoostLabCondition (-not [regex]::IsMatch($uiText, "(?s)if \(\`$toolId -eq 'msi-mode'\).*Manual Handoff")) 'Msi Mode UI must not expose Manual Handoff wording.'
+Assert-BoostLabCondition ('Open' -notin @($msiModeTool.Actions)) 'Msi Mode must not expose a fake Open action.'
+
+$actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
+Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action Plan canonical ValidateSet with Msi Mode Off'
+Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff', 'Apply Auto'")) 'Action Plan ValidateSet must not be widened with display labels.'
+foreach ($needle in @(
+    'Run the source-defined Msi Mode On (Recommended) branch',
+    'Run the source-defined Msi Mode Off branch',
+    'Get-PnpDevice -Class Display',
+    'Do not apply source-undefined NVIDIA/RDP/status/vendor filtering',
     'MSISupported as REG_DWORD 1',
-    'MSISupported to DWORD 0',
-    'excluded Microsoft/RDP/non-NVIDIA targets are skipped',
-    'No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or non-NVIDIA registry write occurs.'
+    'MSISupported as REG_DWORD 0',
+    'Off is not Default or Restore',
+    'No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or source-undefined registry write occurs.'
 )) {
     Assert-BoostLabTextContains -Text $actionPlanText -Needle $needle -Description 'Msi Mode action plan'
 }
+Assert-BoostLabCondition (-not [regex]::IsMatch($actionPlanText, "(?s)msi-mode.*eligible NVIDIA")) 'Msi Mode Action Plan must not retain NVIDIA-only target filtering.'
+Assert-BoostLabCondition (-not [regex]::IsMatch($actionPlanText, "(?s)msi-mode.*Microsoft/RDP/non-NVIDIA targets are skipped")) 'Msi Mode Action Plan must not skip non-NVIDIA source display devices.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 foreach ($needle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Off'')',
     $expectedSourceHash,
     'source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1',
+    'Get-PnpDevice -Class Display',
     'HKLM:\SYSTEM\ControlSet001\Enum',
     'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties',
     'MSISupported',
-    '$script:BoostLabMsiModeApplyValue = 1',
-    '$script:BoostLabMsiModeDefaultValue = 0',
+    '$script:BoostLabMsiModeSourceOnRecommendedValue = 1',
+    '$script:BoostLabMsiModeSourceOffValue = 0',
+    'MSISupported: Not found or error accessing the registry.',
     'New-BoostLabRegistryStateCapture',
     'Set-BoostLabRollbackMutationState',
+    'DefaultAvailable = $false',
+    'RestoreAvailable = $false',
+    'The Ultimate source exposes Off as a separate visible option'
+)) {
+    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Msi Mode module'
+}
+
+foreach ($forbiddenText in @(
     'NeedsNvidiaTargeting',
     'EligibleTargets',
     'ExcludedTargets',
     'AmbiguousTargets',
     'AmbiguousIdentity',
     'ExcludedNonNvidia',
-    'Microsoft/RDP/non-NVIDIA display adapter',
     'VEN_10DE',
-    'Default is source-defined MSISupported DWORD 0 and is not Restore',
-    'Restore requires a selected captured rollback record'
+    'NvidiaTarget',
+    'Microsoft/RDP/non-NVIDIA display adapter',
+    '$script:BoostLabMsiModeDefaultValue',
+    'Invoke-BoostLabMsiModeRestore'
 )) {
-    Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'Msi Mode module'
+    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenText)) "Msi Mode module must not retain source-undefined target filtering/default/restore text: $forbiddenText"
 }
 
 foreach ($forbiddenPattern in @(
@@ -252,12 +298,12 @@ Assert-BoostLabCondition (-not $allowlistText.Contains('msi-mode')) 'Msi Mode mu
 Assert-BoostLabCondition (-not $allowlistText.Contains('MSISupported')) 'Msi Mode must not add production registry allowlist scopes.'
 
 $stateRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('BoostLab-MsiModeTest-{0}' -f ([guid]::NewGuid().ToString('N')))
-$approvedInstanceId = 'PCI\VEN_10DE&DEV_2684&SUBSYS_00000000&REV_A1\4&11111111&0&0008'
-$nonNvidiaInstanceId = 'DISPLAY\MS_RDP_DISPLAY\5&22222222&0&UID4352'
-$ambiguousInstanceId = 'PCI\VEN_1234&DEV_5678&SUBSYS_00000000&REV_01\4&33333333&0&0008'
-$approvedTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$approvedInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-$nonNvidiaTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$nonNvidiaInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-$ambiguousTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$ambiguousInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+$nvidiaInstanceId = 'PCI\VEN_10DE&DEV_2684&SUBSYS_00000000&REV_A1\4&11111111&0&0008'
+$remoteInstanceId = 'DISPLAY\MS_RDP_DISPLAY\5&22222222&0&UID4352'
+$amdInstanceId = 'PCI\VEN_1002&DEV_744C&SUBSYS_00000000&REV_C8\4&33333333&0&0008'
+$nvidiaTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$nvidiaInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+$remoteTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$remoteInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
+$amdTargetPath = "HKLM:\SYSTEM\ControlSet001\Enum\$amdInstanceId\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
 $script:MsiModeMockRegistryState = @{}
 $script:MsiModeMockWriteCount = 0
 
@@ -282,104 +328,66 @@ function New-MockRegistryState {
                 ValueType = 'DWord'
                 ValueData = [int]$record
             }
-            DisplayValue = 'DWord {0}' -f [int]$record
+            DisplayValue = '{0}: {1}' -f $ValueName, [int]$record
             Message = 'Mock registry value detected.'
         }
     }
 
     return [pscustomobject]@{
         ReadSucceeded = $true
-        KeyExists = $true
+        KeyExists = $false
         Exists = $false
         Metadata = $null
-        DisplayValue = 'Absent'
+        DisplayValue = 'MSISupported: Not found or error accessing the registry.'
         Message = 'Mock registry value is absent.'
     }
 }
 
-$nvidiaEnumerator = {
+$mixedDeviceEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
+        Devices = @(
             [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'MSISupported'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
-            }
-        )
-        Warnings = @()
-        Message = '1 source-targeted display-device Msi Mode registry target(s) detected.'
-    }
-}.GetNewClosure()
-
-$nonNvidiaEnumerator = {
-    [pscustomobject]@{
-        Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'MSISupported'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Basic Display Adapter')
-            }
-        )
-        Warnings = @()
-        Message = '1 source-targeted display-device Msi Mode registry target(s) detected.'
-    }
-}.GetNewClosure()
-
-$mixedEnumerator = {
-    [pscustomobject]@{
-        Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $approvedTargetPath
-                ValueName = 'MSISupported'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX', 'MatchingDeviceId=PCI\VEN_10DE&DEV_2684')
+                InstanceId = $nvidiaInstanceId
+                FriendlyName = 'NVIDIA GeForce RTX'
             },
             [pscustomobject]@{
-                RegistryPath = $nonNvidiaTargetPath
-                ValueName = 'MSISupported'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Microsoft Remote Display Adapter', 'ProviderName=Microsoft')
+                InstanceId = $remoteInstanceId
+                FriendlyName = 'Microsoft Remote Display Adapter'
+            },
+            [pscustomobject]@{
+                InstanceId = $amdInstanceId
+                FriendlyName = 'AMD Radeon RX'
+            },
+            [pscustomobject]@{
+                FriendlyName = 'Display device without InstanceId'
             }
         )
         Warnings = @()
-        Message = '2 source-targeted display-device Msi Mode registry target(s) detected.'
+        Message = '4 display devices returned by Get-PnpDevice -Class Display.'
     }
 }.GetNewClosure()
 
-$ambiguousEnumerator = {
+$noDeviceEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
-            [pscustomobject]@{
-                RegistryPath = $ambiguousTargetPath
-                ValueName = 'MSISupported'
-                NvidiaTarget = $false
-                Evidence = @('DriverDesc=Unknown Display Adapter', 'ProviderName=Unknown')
-            }
-        )
+        Devices = @()
         Warnings = @()
-        Message = '1 ambiguous source-targeted display-device Msi Mode registry target detected.'
+        Message = 'No display devices returned.'
     }
 }.GetNewClosure()
 
 $outOfScopeEnumerator = {
     [pscustomobject]@{
         Succeeded = $true
-        Targets = @(
+        Devices = @(
             [pscustomobject]@{
-                RegistryPath = 'HKLM:\SOFTWARE\Outside\0000'
-                ValueName = 'MSISupported'
-                NvidiaTarget = $true
-                Evidence = @('DriverDesc=NVIDIA GeForce RTX')
+                InstanceId = '..\SOFTWARE\Outside'
+                FriendlyName = 'Invalid display path'
             }
         )
         Warnings = @()
-        Message = '1 invalid target supplied.'
+        Message = 'Invalid display device returned.'
     }
 }.GetNewClosure()
 
@@ -408,36 +416,34 @@ Import-Module -Name $modulePath -Force -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
     Assert-BoostLabCondition ([string]$info.Id -eq 'msi-mode') 'Imported Msi Mode module info Id mismatch.'
-    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'Msi Mode implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Analyze,Apply,Off') 'Msi Mode implemented action list mismatch.'
+    Assert-BoostLabCondition ((@($info.ConfirmationRequiredActions) -join ',') -eq 'Apply,Off') 'Msi Mode confirmation action list mismatch.'
 
-    $analyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $mixedEnumerator -RegistryReader $registryReader
-    Assert-BoostLabCondition ([bool]$analyze.Success) 'Msi Mode Analyze should succeed.'
+    $analyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $mixedDeviceEnumerator -RegistryReader $registryReader
+    Assert-BoostLabCondition ([bool]$analyze.Success) "Msi Mode Analyze should succeed: $($analyze.Message)"
     Assert-BoostLabCondition ([string]$analyze.Status -eq 'Analyzed') 'Msi Mode Analyze status mismatch.'
     Assert-BoostLabCondition ([string]$analyze.CommandStatus -eq 'No execution performed') 'Msi Mode Analyze must be read-only.'
-    Assert-BoostLabCondition ([string]$analyze.VerificationStatus -ne 'Failed') 'Msi Mode Analyze must not fail verification solely because excluded non-NVIDIA targets exist.'
     Assert-BoostLabCondition (-not [bool]$analyze.ChangesExecuted) 'Msi Mode Analyze must not execute changes.'
     Assert-BoostLabCondition ([int]$analyze.Data.PathBStepNumber -eq 5 -and [int]$analyze.Data.PathBStepTotal -eq 5) 'Msi Mode Analyze must report Path B step 5 of 5.'
+    Assert-BoostLabCondition ([string]$analyze.Data.SourceDeviceQuery -eq 'Get-PnpDevice -Class Display') 'Msi Mode Analyze must report the exact source query.'
     Assert-BoostLabCondition ([string]$analyze.Data.SourceRegistryRoot -eq 'HKLM:\SYSTEM\ControlSet001\Enum') 'Msi Mode Analyze must report the source Enum root.'
     Assert-BoostLabCondition ([string]$analyze.Data.SourceRegistrySuffix -eq 'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties') 'Msi Mode Analyze must report the source registry suffix.'
     Assert-BoostLabCondition ([string]$analyze.Data.SourceRegistryValueName -eq 'MSISupported') 'Msi Mode Analyze must report source value name.'
-    Assert-BoostLabCondition ([int]$analyze.Data.SourceApplyValue -eq 1 -and [int]$analyze.Data.SourceDefaultValue -eq 0) 'Msi Mode Analyze must report source Apply/Default values.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.ApplyAvailable) 'Msi Mode Analyze should report Apply available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([bool]$analyze.Data.DefaultAvailable) 'Msi Mode Analyze should report source-defined Default available for mocked NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 2) 'Msi Mode Analyze must report all source-targeted display-device Enum targets.'
-    Assert-BoostLabCondition ([int]$analyze.Data.EligibleTargetCount -eq 1) 'Msi Mode Analyze must report one eligible NVIDIA target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.ExcludedTargetCount -eq 1) 'Msi Mode Analyze must report one excluded target.'
-    Assert-BoostLabCondition ([int]$analyze.Data.AmbiguousTargetCount -eq 0) 'Msi Mode Analyze must report zero ambiguous targets for the mixed NVIDIA/Microsoft case.'
-    $excludedTarget = @($analyze.Data.ExcludedTargets)[0]
-    Assert-BoostLabTextContains -Text ((@($excludedTarget.Evidence) -join '; ')) -Needle 'Microsoft Remote Display Adapter' -Description 'Msi Mode excluded Microsoft Remote Display Adapter evidence'
-    Assert-BoostLabCondition ([string]$excludedTarget.TargetingStatus -eq 'ExcludedNonNvidia') 'Msi Mode excluded target status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'Msi Mode Analyze must not report Restore available without selected captured state.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SourceOnRecommendedValue -eq 1 -and [int]$analyze.Data.SourceOffValue -eq 0) 'Msi Mode Analyze must report source On/Off values.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.OnRecommendedAvailable) 'Msi Mode Analyze should report On available for mocked source targets.'
+    Assert-BoostLabCondition ([bool]$analyze.Data.OffAvailable) 'Msi Mode Analyze should report Off available for mocked source targets.'
+    Assert-BoostLabCondition (-not [bool]$analyze.Data.DefaultAvailable) 'Msi Mode Analyze must not report Default available.'
+    Assert-BoostLabCondition (-not [bool]$analyze.Data.RestoreAvailable) 'Msi Mode Analyze must not report Restore available.'
+    Assert-BoostLabCondition ([int]$analyze.Data.TargetCount -eq 3) 'Msi Mode Analyze must include all source display devices with usable InstanceId values.'
+    Assert-BoostLabCondition ([int]$analyze.Data.SkippedDeviceCount -eq 1) 'Msi Mode Analyze must report devices skipped only because InstanceId is missing.'
+    Assert-BoostLabCondition (@($analyze.Data.Readbacks).Count -eq 3) 'Msi Mode Analyze must read back every source-derived target.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.CaptureAttempted) 'Msi Mode Analyze must not capture registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RegistryWriteAttempted) 'Msi Mode Analyze must not write registry state.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.ExternalProcessStarted) 'Msi Mode Analyze must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.DownloadStarted) 'Msi Mode Analyze must not download anything.'
     Assert-BoostLabCondition (-not [bool]$analyze.Data.RebootRequested) 'Msi Mode Analyze must not request reboot.'
 
-    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'Apply' -TargetEnumerator $nvidiaEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
+    $cancelledApply = Invoke-BoostLabToolAction -ActionName 'Apply' -TargetEnumerator $mixedDeviceEnumerator -RegistryReader $registryReader -RegistryWriter $registryWriter -StateRoot $stateRoot
     Assert-BoostLabCondition (-not [bool]$cancelledApply.Success) 'Unconfirmed Msi Mode Apply should not proceed.'
     Assert-BoostLabCondition ([bool]$cancelledApply.Cancelled) 'Unconfirmed Msi Mode Apply should be cancelled.'
     Assert-BoostLabCondition ($script:MsiModeMockWriteCount -eq 0) 'Unconfirmed Msi Mode Apply must not write registry.'
@@ -446,85 +452,72 @@ try {
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
+        -TargetEnumerator $mixedDeviceEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
 
-    Assert-BoostLabCondition ([bool]$apply.Success) "Msi Mode Apply should succeed with mocked NVIDIA target: $($apply.Message)"
+    Assert-BoostLabCondition ([bool]$apply.Success) "Msi Mode Apply should succeed with mocked source targets: $($apply.Message)"
     Assert-BoostLabCondition ([string]$apply.Action -eq 'Apply') 'Msi Mode Apply action mismatch.'
     Assert-BoostLabCondition ([string]$apply.CommandStatus -eq 'Completed') 'Msi Mode Apply command status mismatch.'
     Assert-BoostLabCondition ([string]$apply.VerificationStatus -eq 'Passed') 'Msi Mode Apply verification should pass.'
     Assert-BoostLabCondition ([bool]$apply.Data.ChangesExecuted) 'Msi Mode Apply should report changes executed.'
     Assert-BoostLabCondition ([bool]$apply.Data.CaptureAttempted) 'Msi Mode Apply should capture before mutation.'
     Assert-BoostLabCondition ([bool]$apply.Data.RegistryWriteAttempted) 'Msi Mode Apply should attempt registry write after capture.'
-    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 1) 'Msi Mode Apply must record one capture record.'
-    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 2) 'Msi Mode Apply must report all discovered targets.'
-    Assert-BoostLabCondition ([int]$apply.Data.EligibleTargetCount -eq 1) 'Msi Mode Apply must report one eligible target.'
-    Assert-BoostLabCondition ([int]$apply.Data.ExcludedTargetCount -eq 1) 'Msi Mode Apply must report one skipped excluded target.'
-    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 1) 'Msi Mode Apply must write only one eligible target.'
-    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$approvedTargetPath|MSISupported"] -eq 1) 'Msi Mode Apply must set MSISupported to DWORD 1.'
-    Assert-BoostLabCondition (-not $script:MsiModeMockRegistryState.ContainsKey("$nonNvidiaTargetPath|MSISupported")) 'Msi Mode Apply must not write excluded Microsoft/RDP/non-NVIDIA targets.'
+    Assert-BoostLabCondition (@($apply.Data.CaptureRecords).Count -eq 3) 'Msi Mode Apply must record one capture record per source-derived target.'
+    Assert-BoostLabCondition ([int]$apply.Data.TargetCount -eq 3) 'Msi Mode Apply must report all source-derived targets.'
+    Assert-BoostLabCondition ([int]$apply.Data.WrittenTargetCount -eq 3) 'Msi Mode Apply must write every source-derived target.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$nvidiaTargetPath|MSISupported"] -eq 1) 'Msi Mode Apply must set NVIDIA source target MSISupported to DWORD 1.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$remoteTargetPath|MSISupported"] -eq 1) 'Msi Mode Apply must set Remote Display Adapter source target MSISupported to DWORD 1 because the source does not filter it.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$amdTargetPath|MSISupported"] -eq 1) 'Msi Mode Apply must set AMD source target MSISupported to DWORD 1 because the source does not filter it.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.ExternalProcessStarted) 'Msi Mode Apply must not start external processes.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.DownloadStarted) 'Msi Mode Apply must not download anything.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.RebootRequested) 'Msi Mode Apply must not request reboot.'
+    Assert-BoostLabCondition (-not [bool]$apply.Data.DefaultImplemented) 'Msi Mode Apply must not claim Default implementation.'
     Assert-BoostLabCondition (-not [bool]$apply.Data.RestoreImplemented) 'Msi Mode Apply must not claim Restore implementation.'
-    Assert-BoostLabCondition ([bool]$apply.Data.DefaultImplemented) 'Msi Mode Apply should acknowledge separate source-defined Default implementation.'
 
-    $default = Invoke-BoostLabToolAction `
-        -ActionName 'Default' `
+    $off = Invoke-BoostLabToolAction `
+        -ActionName 'Off' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $mixedEnumerator `
+        -TargetEnumerator $mixedDeviceEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
 
-    Assert-BoostLabCondition ([bool]$default.Success) "Msi Mode Default should succeed with mocked NVIDIA target: $($default.Message)"
-    Assert-BoostLabCondition ([string]$default.Action -eq 'Default') 'Msi Mode Default action mismatch.'
-    Assert-BoostLabCondition ([string]$default.VerificationStatus -eq 'Passed') 'Msi Mode Default verification should pass.'
-    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$approvedTargetPath|MSISupported"] -eq 0) 'Msi Mode Default must set MSISupported to DWORD 0.'
-    Assert-BoostLabCondition (-not $script:MsiModeMockRegistryState.ContainsKey("$nonNvidiaTargetPath|MSISupported")) 'Msi Mode Default must not write excluded Microsoft/RDP/non-NVIDIA targets.'
-    Assert-BoostLabCondition (@($default.Data.CaptureRecords).Count -eq 1) 'Msi Mode Default must capture before mutation.'
-    Assert-BoostLabCondition ([int]$default.Data.WrittenTargetCount -eq 1) 'Msi Mode Default must write only one eligible target.'
-    Assert-BoostLabTextContains -Text ([string]$default.Message) -Needle 'DWORD 0' -Description 'Msi Mode Default message'
-    Assert-BoostLabTextContains -Text ([string]$default.Data.RestoreUnavailableReason) -Needle 'Default is source-defined MSISupported DWORD 0 and is not Restore' -Description 'Msi Mode Default/Restore separation'
+    Assert-BoostLabCondition ([bool]$off.Success) "Msi Mode Off should succeed with mocked source targets: $($off.Message)"
+    Assert-BoostLabCondition ([string]$off.Action -eq 'Off') 'Msi Mode Off action mismatch.'
+    Assert-BoostLabCondition ([string]$off.VerificationStatus -eq 'Passed') 'Msi Mode Off verification should pass.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$nvidiaTargetPath|MSISupported"] -eq 0) 'Msi Mode Off must set NVIDIA source target MSISupported to DWORD 0.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$remoteTargetPath|MSISupported"] -eq 0) 'Msi Mode Off must set Remote Display Adapter source target MSISupported to DWORD 0 because the source does not filter it.'
+    Assert-BoostLabCondition ([int]$script:MsiModeMockRegistryState["$amdTargetPath|MSISupported"] -eq 0) 'Msi Mode Off must set AMD source target MSISupported to DWORD 0 because the source does not filter it.'
+    Assert-BoostLabCondition (@($off.Data.CaptureRecords).Count -eq 3) 'Msi Mode Off must capture before mutation.'
+    Assert-BoostLabCondition ([int]$off.Data.WrittenTargetCount -eq 3) 'Msi Mode Off must write every source-derived target.'
+    Assert-BoostLabTextContains -Text ([string]$off.Message) -Needle 'DWORD 0' -Description 'Msi Mode Off message'
+    Assert-BoostLabTextContains -Text ([string]$off.Data.DefaultUnavailableReason) -Needle 'Off as a separate visible option' -Description 'Msi Mode Off/Default separation'
 
-    $script:MsiModeMockWriteCount = 0
-    $nonNvidiaApply = Invoke-BoostLabToolAction `
+    $default = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
+    Assert-BoostLabCondition (-not [bool]$default.Success) 'Msi Mode Default must not be exposed as a mutating source branch.'
+    Assert-BoostLabCondition ([string]$default.Status -eq 'UnsupportedAction') 'Msi Mode Default unsupported status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$default.ChangesExecuted) 'Msi Mode Default must execute no changes.'
+
+    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
+    Assert-BoostLabCondition (-not [bool]$restore.Success) 'Msi Mode Restore must not be exposed.'
+    Assert-BoostLabCondition ([string]$restore.Status -eq 'UnsupportedAction') 'Msi Mode Restore unsupported status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$restore.ChangesExecuted) 'Msi Mode Restore must execute no changes.'
+
+    $noDeviceApply = Invoke-BoostLabToolAction `
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -TargetEnumerator $nonNvidiaEnumerator `
+        -TargetEnumerator $noDeviceEnumerator `
         -RegistryReader $registryReader `
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Success) 'Msi Mode Apply must fail closed for non-NVIDIA targets.'
-    Assert-BoostLabCondition ([string]$nonNvidiaApply.Status -eq 'NeedsNvidiaTargeting') 'Msi Mode non-NVIDIA block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.CaptureAttempted) 'Msi Mode non-NVIDIA block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$nonNvidiaApply.Data.RegistryWriteAttempted) 'Msi Mode non-NVIDIA block must occur before registry write.'
-    Assert-BoostLabCondition ($script:MsiModeMockWriteCount -eq 0) 'Msi Mode non-NVIDIA block must not call writer.'
-
-    $ambiguousAnalyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -TargetEnumerator $ambiguousEnumerator -RegistryReader $registryReader
-    Assert-BoostLabCondition ([bool]$ambiguousAnalyze.Success) 'Msi Mode Analyze should return structured output for ambiguous targets.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousAnalyze.Data.ApplyAvailable) 'Msi Mode Analyze must not report Apply available for ambiguous targets.'
-    Assert-BoostLabCondition ([int]$ambiguousAnalyze.Data.AmbiguousTargetCount -eq 1) 'Msi Mode Analyze must report one ambiguous target.'
-    $ambiguousTarget = @($ambiguousAnalyze.Data.AmbiguousTargets)[0]
-    Assert-BoostLabCondition ([string]$ambiguousTarget.TargetingStatus -eq 'AmbiguousIdentity') 'Msi Mode ambiguous target status mismatch.'
-
-    $ambiguousApply = Invoke-BoostLabToolAction `
-        -ActionName 'Apply' `
-        -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -TargetEnumerator $ambiguousEnumerator `
-        -RegistryReader $registryReader `
-        -RegistryWriter $registryWriter `
-        -StateRoot $stateRoot
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Success) 'Msi Mode Apply must fail closed for ambiguous targets.'
-    Assert-BoostLabCondition ([string]$ambiguousApply.Status -eq 'NeedsNvidiaTargeting') 'Msi Mode ambiguous block status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Data.CaptureAttempted) 'Msi Mode ambiguous block must occur before capture.'
-    Assert-BoostLabCondition (-not [bool]$ambiguousApply.Data.RegistryWriteAttempted) 'Msi Mode ambiguous block must occur before write.'
-    Assert-BoostLabCondition (-not $script:MsiModeMockRegistryState.ContainsKey("$ambiguousTargetPath|MSISupported")) 'Msi Mode ambiguous targets must never be written.'
+    Assert-BoostLabCondition (-not [bool]$noDeviceApply.Success) 'Msi Mode Apply must fail closed when the source query returns no usable display devices.'
+    Assert-BoostLabCondition ([string]$noDeviceApply.Status -eq 'NoDisplayDevices') 'Msi Mode no-display block status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$noDeviceApply.Data.CaptureAttempted) 'Msi Mode no-display block must occur before capture.'
+    Assert-BoostLabCondition (-not [bool]$noDeviceApply.Data.RegistryWriteAttempted) 'Msi Mode no-display block must occur before write.'
 
     $outOfScopeApply = Invoke-BoostLabToolAction `
         -ActionName 'Apply' `
@@ -535,15 +528,9 @@ try {
         -RegistryWriter $registryWriter `
         -StateRoot $stateRoot
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Success) 'Msi Mode Apply must fail closed for out-of-scope registry paths.'
-    Assert-BoostLabCondition ([string]$outOfScopeApply.Status -eq 'NeedsNvidiaTargeting') 'Msi Mode out-of-scope block status mismatch.'
+    Assert-BoostLabCondition ([string]$outOfScopeApply.Status -eq 'SourceScopeBlocked') 'Msi Mode out-of-scope block status mismatch.'
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.CaptureAttempted) 'Msi Mode out-of-scope block must occur before capture.'
     Assert-BoostLabCondition (-not [bool]$outOfScopeApply.Data.RegistryWriteAttempted) 'Msi Mode out-of-scope block must occur before write.'
-
-    $restore = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restore.Success) 'Msi Mode Restore must remain unavailable without selected captured state.'
-    Assert-BoostLabCondition ([string]$restore.Status -eq 'RestoreUnavailable') 'Msi Mode Restore status mismatch.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.RestoreExecuted) 'Msi Mode Restore must not execute.'
-    Assert-BoostLabCondition (-not [bool]$restore.Data.DefaultIsRestore) 'Msi Mode Restore must not be treated as Default.'
 }
 finally {
     Remove-Module -Name msi-mode -Force -ErrorAction SilentlyContinue
@@ -555,15 +542,26 @@ finally {
     }
 }
 
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$msiRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'msi-mode' })[0]
+Assert-BoostLabCondition ($null -ne $msiRecord) 'Msi Mode parity record is missing.'
+Assert-BoostLabCondition ([string]$msiRecord.ImplementationLevel -eq 'NearParityControlled') 'Msi Mode implementation level mismatch.'
+Assert-BoostLabCondition ([string]$msiRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Msi Mode final progress status mismatch.'
+Assert-BoostLabCondition ([bool]$msiRecord.YazanAcceptedNearParity) 'Msi Mode must be marked Yazan-accepted near parity.'
+Assert-BoostLabCondition ([string]$msiRecord.NextParityAction -eq 'Skip; accepted near-parity.') 'Msi Mode next parity action mismatch.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Msi Mode.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'directx') 'Next ordered pending parity target must advance to DirectX after Msi Mode.'
+
 [pscustomobject]@{
     Success = $true
     ActiveToolCount = $inventoryBaseline.ActiveTools
-    ImplementedToolCount      = 40
-    PlaceholderToolCount      = 15
+    ImplementedToolCount = $inventoryBaseline.ImplementedTools
+    PlaceholderToolCount = $inventoryBaseline.DeferredPlaceholders
     SourcePromotedMirrorFileCount = $inventoryBaseline.SourcePromotedMirrorFiles
-    RemainingUnimplementedSourcePromotedIntakeCandidates = 0
-    Message = 'Msi Mode controlled registry implementation is registered, scoped, captured before mutation, verified, and fail-closed for non-NVIDIA or out-of-scope targets.'
+    RemainingUnimplementedSourcePromotedIntakeCandidates = $inventoryBaseline.RemainingSourcePromotedIntakeCandidates
+    NextOrderedPendingParityTarget = [string]$nextTarget.ToolId
+    Message = 'Msi Mode exact source-equivalent On/Off registry implementation is registered, captures before mutation, writes every source display-device target, and advances ordered parity to DirectX.'
     Timestamp = Get-Date
 }
-
-

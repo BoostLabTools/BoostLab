@@ -319,9 +319,9 @@
                     Order       = 7
                     Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Path B step 5 of 5. Apply or default the source-defined NVIDIA MSI mode registry value only after NVIDIA-only target discovery and registry state capture.'
-                    Actions     = @('Analyze', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Path B step 5 of 5. Run the source-defined Msi Mode On or Off branch for every display device returned by Get-PnpDevice -Class Display after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply', 'Off')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'directx'

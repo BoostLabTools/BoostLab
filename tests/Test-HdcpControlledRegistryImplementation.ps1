@@ -199,7 +199,7 @@ foreach ($needle in @(
 }
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
-Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]" -Description 'Action Plan canonical ValidateSet'
+Assert-BoostLabTextContains -Text $actionPlanText -Needle "[ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]" -Description 'Action Plan canonical ValidateSet'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Off (Recommended)'")) 'Action Plan ValidateSet must not be widened for HDCP source labels.'
 foreach ($needle in @(
     'Read the HDCP source mirror and report source-defined display-class registry scope, non-Configuration target discovery, and readback state without changing the system.',

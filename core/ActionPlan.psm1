@@ -51,7 +51,7 @@ function Test-BoostLabPlanNeedsConfirmation {
         [pscustomobject]$Capabilities,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]
+        [ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]
         [string]$ActionName
     )
 
@@ -136,7 +136,7 @@ function New-BoostLabActionPlan {
         [System.Collections.IDictionary]$ToolMetadata,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore')]
+        [ValidateSet('Apply', 'Default', 'Open', 'Analyze', 'Restore', 'Off')]
         [string]$ActionName,
 
         [bool]$IsDryRun = $true
@@ -360,16 +360,13 @@ function New-BoostLabActionPlan {
         'Run the source-defined P0 State Default branch after confirmation: set DisableDynamicPstate DWORD 0 on every non-Configuration display-class subkey and read the values back. Default is not Restore.'
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Analyze') {
-        'Read the Msi Mode source mirror and report source-defined NVIDIA display-device Enum registry scope, target classification, Apply availability, Default availability, and Restore availability without changing the system.'
+        'Read the Msi Mode source mirror and report the source-defined Get-PnpDevice -Class Display target scope, On availability, Off availability, and current MSISupported readbacks without changing the system.'
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        'Apply the source-defined Msi Mode On value only to eligible NVIDIA display-device Enum registry targets after source checksum validation and pre-change registry state capture; excluded Microsoft/RDP/non-NVIDIA targets are skipped.'
+        'Run the source-defined Msi Mode On (Recommended) branch after confirmation: set MSISupported DWORD 1 for every display device returned by Get-PnpDevice -Class Display after source checksum validation and pre-change registry state capture.'
     }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Default') {
-        'Apply the source-defined Msi Mode Default value only to eligible NVIDIA display-device Enum registry targets after source checksum validation and pre-change registry state capture; excluded Microsoft/RDP/non-NVIDIA targets are skipped.'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
-        'Report Restore as unavailable unless a valid selected captured rollback record from this Msi Mode tool is provided. No registry mutation is planned without selected captured state.'
+    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
+        'Run the source-defined Msi Mode Off branch after confirmation: set MSISupported DWORD 0 for every display device returned by Get-PnpDevice -Class Display after source checksum validation and pre-change registry state capture. Off is not Default or Restore.'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'Enable System Restore if needed and create the approved backup restore point.'
@@ -930,34 +927,29 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the Msi Mode source mirror checksum.')
         $plannedChanges.Add('Report Path B step 5 of 5 while keeping Driver Install Latest, Nvidia Settings, HDCP, P0 State, and Msi Mode separate.')
-        $plannedChanges.Add('Discover the source PnP display-device Enum registry target shape read-only and report eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA and ambiguous targets.')
-        $plannedChanges.Add('Report the exact source value MSISupported as REG_DWORD 1 for Apply and REG_DWORD 0 for Default.')
-        $plannedChanges.Add('Report Restore as unavailable unless selected captured rollback state exists.')
+        $plannedChanges.Add('Discover the exact source PnP query shape read-only: Get-PnpDevice -Class Display, then build the HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path for every display device with a usable InstanceId.')
+        $plannedChanges.Add('Report the exact source value MSISupported as REG_DWORD 1 for On (Recommended) and REG_DWORD 0 for Off.')
+        $plannedChanges.Add('Report that the source defines Off as a visible branch and does not define Default or Restore.')
         $plannedChanges.Add('Perform no registry capture, registry write, external process, download, reboot, driver change, device restart, or profile mutation.')
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Verify the approved Msi Mode source mirror checksum before any target discovery or mutation.')
         $plannedChanges.Add('Discover source display devices using Get-PnpDevice -Class Display and derive the exact HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path.')
-        $plannedChanges.Add('Classify eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA targets and ambiguous targets; skipped targets are reported and never written.')
-        $plannedChanges.Add('Block before capture or write if no eligible NVIDIA target exists, if target identity is ambiguous, or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for MSISupported on every eligible target before writing.')
-        $plannedChanges.Add('Set only MSISupported as REG_DWORD 1 on captured NVIDIA targets.')
-        $plannedChanges.Add('Verify MSISupported is DWORD 1 after Apply and record post-mutation state for rollback evidence.')
+        $plannedChanges.Add('Do not apply source-undefined NVIDIA/RDP/status/vendor filtering; every source display-device target with a usable InstanceId remains in scope.')
+        $plannedChanges.Add('Block before capture or write if no usable display-device target exists or if target discovery includes an out-of-scope registry path.')
+        $plannedChanges.Add('Capture prior state for MSISupported on every source-derived display-device target before writing.')
+        $plannedChanges.Add('Set only MSISupported as REG_DWORD 1 on every captured source-derived display-device target.')
+        $plannedChanges.Add('Read back MSISupported after On (Recommended) and record post-mutation state for rollback evidence.')
     }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Default') {
+    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
         $plannedChanges.Add('Verify the approved Msi Mode source mirror checksum before any target discovery or mutation.')
         $plannedChanges.Add('Discover source display devices using Get-PnpDevice -Class Display and derive the exact HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path.')
-        $plannedChanges.Add('Classify eligible NVIDIA targets separately from excluded Microsoft/RDP/non-NVIDIA targets and ambiguous targets; skipped targets are reported and never written.')
-        $plannedChanges.Add('Block before capture or write if no eligible NVIDIA target exists, if target identity is ambiguous, or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for MSISupported on every eligible target before writing.')
-        $plannedChanges.Add('Set only MSISupported as REG_DWORD 0 on captured NVIDIA targets, matching the Ultimate Off/Default branch.')
-        $plannedChanges.Add('Verify MSISupported is DWORD 0 after Default and record post-mutation state for rollback evidence.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
-        $plannedChanges.Add('Do not treat Default as Restore.')
-        $plannedChanges.Add('Require a valid selected captured rollback record from this Msi Mode tool before any Restore operation can be planned.')
-        $plannedChanges.Add('Fail closed when no selected captured state is available.')
-        $plannedChanges.Add('Perform no registry mutation in the current runtime path.')
+        $plannedChanges.Add('Do not apply source-undefined NVIDIA/RDP/status/vendor filtering; every source display-device target with a usable InstanceId remains in scope.')
+        $plannedChanges.Add('Block before capture or write if no usable display-device target exists or if target discovery includes an out-of-scope registry path.')
+        $plannedChanges.Add('Capture prior state for MSISupported on every source-derived display-device target before writing.')
+        $plannedChanges.Add('Set only MSISupported as REG_DWORD 0 on every captured source-derived display-device target, matching the Ultimate Off branch.')
+        $plannedChanges.Add('Read back MSISupported after Off and record post-mutation state for rollback evidence.')
+        $plannedChanges.Add('Off is a source-defined branch, not Default or Restore.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum.')
@@ -1508,17 +1500,13 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Path B step 5 is reported without merging Driver Install Latest, Nvidia Settings, HDCP, or P0 State.')
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Writes only MSISupported as REG_DWORD 1 after eligible NVIDIA target discovery and capture succeed; excluded Microsoft/RDP/non-NVIDIA targets are skipped.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or non-NVIDIA registry write occurs.')
+        $sideEffects.Add('Writes only MSISupported as REG_DWORD 1 after source Get-PnpDevice display-device target discovery and capture succeed.')
+        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or source-undefined registry write occurs.')
     }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Writes only MSISupported as REG_DWORD 0 after eligible NVIDIA target discovery and capture succeed; excluded Microsoft/RDP/non-NVIDIA targets are skipped.')
-        $sideEffects.Add('Default is source-defined behavior and is not a captured-state Restore.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or non-NVIDIA registry write occurs.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
-        $sideEffects.Add('Restore is blocked without a selected captured rollback record from this Msi Mode tool.')
-        $sideEffects.Add('No registry mutation occurs in the current Restore path.')
+    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
+        $sideEffects.Add('Writes only MSISupported as REG_DWORD 0 after source Get-PnpDevice display-device target discovery and capture succeed.')
+        $sideEffects.Add('Off is source-defined behavior and is not Default or captured-state Restore.')
+        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or source-undefined registry write occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; BitLocker analysis is read-only.')
@@ -1886,13 +1874,10 @@ function New-BoostLabActionPlan {
         'BoostLab will run the source-defined P0 State Default branch: set DisableDynamicPstate to DWORD 0 on every non-Configuration display-class subkey returned by the source query, after source checksum validation and pre-change registry capture, then read the values back. Default is not Restore. No external process, download, driver change, or reboot will occur. Continue?'
     }
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        'BoostLab will set only the source-defined Msi Mode registry value MSISupported to DWORD 1 on eligible NVIDIA display-device Enum targets, after source checksum validation and pre-change registry capture. Microsoft/RDP/non-NVIDIA targets are skipped. No external process, download, profile import, driver change, device restart, or reboot will occur. Continue?'
+        'BoostLab will run the source-defined Msi Mode On (Recommended) branch: set only MSISupported to DWORD 1 for every display device returned by Get-PnpDevice -Class Display with a usable InstanceId, after source checksum validation and pre-change registry capture. No external process, download, profile import, driver change, device restart, or reboot will occur. Continue?'
     }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Default') {
-        'BoostLab will set only the source-defined Msi Mode Default registry value MSISupported to DWORD 0 on eligible NVIDIA display-device Enum targets, after source checksum validation and pre-change registry capture. Microsoft/RDP/non-NVIDIA targets are skipped. Default is not Restore. Continue?'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Restore') {
-        'Msi Mode Restore requires a selected captured rollback record from this Msi Mode tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
+    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
+        'BoostLab will run the source-defined Msi Mode Off branch: set only MSISupported to DWORD 0 for every display device returned by Get-PnpDevice -Class Display with a usable InstanceId, after source checksum validation and pre-change registry capture. Off is not Default or Restore. No external process, download, profile import, driver change, device restart, or reboot will occur. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
         'BoostLab will run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status. It will not enable BitLocker automatically, collect recovery keys, change protectors, or reboot. Continue?'

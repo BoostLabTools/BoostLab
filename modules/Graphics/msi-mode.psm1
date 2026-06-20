@@ -15,8 +15,8 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 7
     Type = 'action'
     RiskLevel = 'high'
-    Description = 'Path B step 5 of 5. Apply or default the source-defined NVIDIA MSI mode registry value only after NVIDIA-only target discovery and registry state capture.'
-    Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+    Description = 'Path B step 5 of 5. Run the source-defined Msi Mode On or Off branch for every display device returned by Get-PnpDevice -Class Display after explicit confirmation.'
+    Actions = @('Analyze', 'Apply', 'Off')
     Capabilities = [ordered]@{
         RequiresAdmin = $true
         RequiresInternet = $false
@@ -30,20 +30,22 @@ $script:BoostLabToolMetadata = [ordered]@{
         CanDeleteFiles = $false
         UsesTrustedInstaller = $false
         UsesSafeMode = $false
-        SupportsDefault = $true
+        SupportsDefault = $false
         SupportsRestore = $false
         NeedsExplicitConfirmation = $true
     }
 }
-$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default', 'Restore')
+$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Off')
 $script:BoostLabExpectedSourceHash = '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
 $script:BoostLabSourceRelativePath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/7 Msi Mode.ps1'
 $script:BoostLabMsiModeEnumRoot = 'HKLM:\SYSTEM\ControlSet001\Enum'
+$script:BoostLabMsiModeProviderRoot = 'Registry::HKLM\SYSTEM\ControlSet001\Enum'
 $script:BoostLabMsiModeRegistrySuffix = 'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties'
 $script:BoostLabMsiModeValueName = 'MSISupported'
 $script:BoostLabMsiModeValueType = 'DWord'
-$script:BoostLabMsiModeApplyValue = 1
-$script:BoostLabMsiModeDefaultValue = 0
+$script:BoostLabMsiModeSourceOnRecommendedValue = 1
+$script:BoostLabMsiModeSourceOffValue = 0
+$script:BoostLabMsiModeMissingReadbackText = 'MSISupported: Not found or error accessing the registry.'
 
 function Get-BoostLabMsiModeSourcePath {
     [CmdletBinding()]
@@ -68,7 +70,7 @@ function Get-BoostLabMsiModeSourceStatus {
         ''
     }
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         SourcePath = $sourcePath
         SourceRelativePath = $script:BoostLabSourceRelativePath
         Exists = $exists
@@ -87,6 +89,10 @@ function Get-BoostLabMsiModeSourceStatus {
 }
 
 function Test-BoostLabAdministrator {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
     try {
         $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [Security.Principal.WindowsPrincipal]::new($identity)
@@ -106,8 +112,24 @@ function ConvertTo-BoostLabMsiModeRegistryPath {
     $normalized = $Path.Trim().TrimEnd('\')
     $normalized = $normalized -replace '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
     $normalized = $normalized -replace '^Registry::HKEY_LOCAL_MACHINE\\', 'HKLM:\'
+    $normalized = $normalized -replace '^Registry::HKLM\\', 'HKLM:\'
     $normalized = $normalized -replace '^HKEY_LOCAL_MACHINE\\', 'HKLM:\'
     return $normalized
+}
+
+function ConvertTo-BoostLabMsiModeProviderPath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath
+    )
+
+    $normalized = ConvertTo-BoostLabMsiModeRegistryPath -Path $RegistryPath
+    if (-not $normalized.StartsWith($script:BoostLabMsiModeEnumRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        return $normalized
+    }
+
+    $relative = $normalized.Substring(($script:BoostLabMsiModeEnumRoot + '\').Length)
+    return '{0}\{1}' -f $script:BoostLabMsiModeProviderRoot, $relative
 }
 
 function Test-BoostLabMsiModeRegistryTarget {
@@ -129,7 +151,14 @@ function Test-BoostLabMsiModeRegistryTarget {
 
     $relative = $normalized.Substring(($script:BoostLabMsiModeEnumRoot + '\').Length)
     $suffixLength = ('\' + $script:BoostLabMsiModeRegistrySuffix).Length
+    if ($relative.Length -le $suffixLength) {
+        return $false
+    }
+
     $instanceId = $relative.Substring(0, $relative.Length - $suffixLength)
+    if ($instanceId -match '(^|\\)\.\.(\\|$)') {
+        return $false
+    }
     return -not [string]::IsNullOrWhiteSpace($instanceId)
 }
 
@@ -146,70 +175,353 @@ function ConvertTo-BoostLabMsiModeDeviceRegistryPath {
     if ($cleanInstanceId.IndexOfAny([char[]]'*?[]') -ge 0) {
         throw "Wildcard display device InstanceId is not allowed: $cleanInstanceId"
     }
+    if ($cleanInstanceId -match '(^|\\)\.\.(\\|$)') {
+        throw "Relative display device InstanceId traversal is not allowed: $cleanInstanceId"
+    }
 
     return '{0}\{1}\{2}' -f $script:BoostLabMsiModeEnumRoot, $cleanInstanceId, $script:BoostLabMsiModeRegistrySuffix
 }
 
-function Get-BoostLabMsiModeIdentityEvidence {
+function New-BoostLabMsiModeTarget {
     param(
+        [Parameter(Mandatory)]
+        [string]$InstanceId,
+
         [AllowNull()]
-        [object]$InputObject
+        [object]$Device = $null
     )
 
-    $evidence = [System.Collections.Generic.List[string]]::new()
-    foreach ($name in @(
-        'InstanceId',
-        'DeviceID',
-        'FriendlyName',
-        'Name',
-        'Description',
-        'Manufacturer',
-        'Service',
-        'Class',
-        'PNPClass',
-        'Status',
-        'HardwareID',
-        'CompatibleID',
-        'DriverDesc',
-        'ProviderName',
-        'MatchingDeviceId',
-        'InfSection',
-        'HardwareInformation.AdapterString',
-        'HardwareInformation.ChipType',
-        'ComponentId'
-    )) {
-        if ($null -ne $InputObject -and $null -ne $InputObject.PSObject.Properties[$name]) {
-            $value = [string]$InputObject.PSObject.Properties[$name].Value
-            if (-not [string]::IsNullOrWhiteSpace($value)) {
-                $evidence.Add(('{0}={1}' -f $name, $value))
-            }
+    $registryPath = ConvertTo-BoostLabMsiModeRegistryPath -Path (ConvertTo-BoostLabMsiModeDeviceRegistryPath -InstanceId $InstanceId)
+    if (-not (Test-BoostLabMsiModeRegistryTarget -RegistryPath $registryPath)) {
+        throw "Target is outside the source Msi Mode Enum registry scope: $registryPath"
+    }
+
+    [pscustomobject]@{
+        RegistryPath = $registryPath
+        ProviderReadbackPath = ConvertTo-BoostLabMsiModeProviderPath -RegistryPath $registryPath
+        InstanceId = $InstanceId.Trim().Trim('\')
+        ValueName = $script:BoostLabMsiModeValueName
+        SourceQuery = 'Get-PnpDevice -Class Display'
+        Device = $Device
+    }
+}
+
+function Get-BoostLabMsiModeRealDevices {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param()
+
+    if (-not (Get-Command -Name 'Get-PnpDevice' -ErrorAction SilentlyContinue)) {
+        return [pscustomobject]@{
+            Succeeded = $false
+            Devices = @()
+            Warnings = @('Get-PnpDevice is not available, so source display-device discovery cannot run.')
+            Message = 'Msi Mode display-device discovery is unavailable.'
         }
     }
 
-    return $evidence.ToArray()
+    try {
+        $devices = @(Get-PnpDevice -Class Display -ErrorAction Stop)
+        return [pscustomobject]@{
+            Succeeded = $true
+            Devices = $devices
+            Warnings = @()
+            Message = ('{0} display device(s) returned by Get-PnpDevice -Class Display.' -f $devices.Count)
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Succeeded = $false
+            Devices = @()
+            Warnings = @("Msi Mode source display-device discovery failed: $($_.Exception.Message)")
+            Message = 'Msi Mode source display-device discovery failed.'
+        }
+    }
 }
 
-function Test-BoostLabMsiModeNvidiaEvidence {
+function Get-BoostLabMsiModeDiscovery {
     param(
         [AllowNull()]
-        [string[]]$Evidence
+        [scriptblock]$TargetEnumerator = $null
     )
 
-    $combined = (@($Evidence) -join ' ')
-    return (
-        $combined -match '(?i)\bNVIDIA\b' -or
-        $combined -match '(?i)VEN_10DE'
-    )
+    $raw = if ($null -ne $TargetEnumerator) {
+        & $TargetEnumerator
+    }
+    else {
+        Get-BoostLabMsiModeRealDevices
+    }
+
+    $targets = [System.Collections.Generic.List[object]]::new()
+    $skippedDevices = [System.Collections.Generic.List[object]]::new()
+    $warnings = [System.Collections.Generic.List[string]]::new()
+    $blockers = [System.Collections.Generic.List[string]]::new()
+
+    if ($null -eq $raw) {
+        return [pscustomobject]@{
+            Succeeded = $false
+            Devices = @()
+            Targets = @()
+            SkippedDevices = @()
+            Warnings = @()
+            Blockers = @('Display-device discovery returned no result.')
+            Message = 'Msi Mode source display-device discovery returned no result.'
+        }
+    }
+
+    foreach ($warning in @($raw.Warnings)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$warning)) {
+            $warnings.Add([string]$warning)
+        }
+    }
+
+    $devices = @()
+    if ($null -ne $raw.PSObject.Properties['Devices']) {
+        $devices = @($raw.Devices)
+    }
+    elseif ($null -ne $raw.PSObject.Properties['Targets']) {
+        $devices = @($raw.Targets)
+    }
+    else {
+        $blockers.Add('Display-device discovery returned no Devices or Targets collection.')
+    }
+
+    foreach ($device in $devices) {
+        $instanceId = ''
+        if ($null -ne $device -and $null -ne $device.PSObject.Properties['InstanceId']) {
+            $instanceId = [string]$device.InstanceId
+        }
+        elseif ($null -ne $device -and $null -ne $device.PSObject.Properties['InstanceID']) {
+            $instanceId = [string]$device.InstanceID
+        }
+
+        if ([string]::IsNullOrWhiteSpace($instanceId)) {
+            $warnings.Add('Skipped a display device because its InstanceId was unavailable.')
+            $skippedDevices.Add([pscustomobject]@{
+                Reason = 'Missing InstanceId'
+                Device = $device
+            })
+            continue
+        }
+
+        try {
+            $targets.Add((New-BoostLabMsiModeTarget -InstanceId $instanceId -Device $device))
+        }
+        catch {
+            $blockers.Add($_.Exception.Message)
+        }
+    }
+
+    $sourceSucceeded = if ($null -ne $raw.PSObject.Properties['Succeeded']) {
+        [bool]$raw.Succeeded
+    }
+    else {
+        $blockers.Count -eq 0
+    }
+
+    [pscustomobject]@{
+        Succeeded = $sourceSucceeded -and $blockers.Count -eq 0
+        Devices = $devices
+        Targets = @($targets | Sort-Object RegistryPath -Unique)
+        SkippedDevices = $skippedDevices.ToArray()
+        Warnings = $warnings.ToArray()
+        Blockers = $blockers.ToArray()
+        Message = if ($targets.Count -eq 0) {
+            'No source-targeted Msi Mode display-device registry target was derived.'
+        }
+        else {
+            '{0} source-targeted Msi Mode display-device registry target(s) derived from Get-PnpDevice -Class Display.' -f $targets.Count
+        }
+    }
 }
 
-function Test-BoostLabMsiModeKnownExcludedEvidence {
+function Get-BoostLabMsiModeRegistryValueState {
     param(
-        [AllowNull()]
-        [string[]]$Evidence
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [string]$ItemType = 'RegistryValue',
+
+        [string]$ValueName = $script:BoostLabMsiModeValueName
     )
 
-    $combined = (@($Evidence) -join ' ')
-    return $combined -match '(?i)(Microsoft|Remote Display|RDP|Basic Display|Intel|Advanced Micro Devices|AMD|Radeon|VMware|VirtualBox|Parallels)'
+    $path = ConvertTo-BoostLabMsiModeRegistryPath -Path $RegistryPath
+    try {
+        if (-not (Test-Path -LiteralPath $path -PathType Container)) {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists = $false
+                Exists = $false
+                Metadata = $null
+                DisplayValue = $script:BoostLabMsiModeMissingReadbackText
+                Message = 'Registry key is absent.'
+            }
+        }
+
+        $key = Get-Item -LiteralPath $path -ErrorAction Stop
+        $valueExists = $ValueName -in @($key.GetValueNames())
+        if (-not $valueExists) {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists = $true
+                Exists = $false
+                Metadata = $null
+                DisplayValue = $script:BoostLabMsiModeMissingReadbackText
+                Message = 'Registry value is absent.'
+            }
+        }
+
+        $valueType = [string]$key.GetValueKind($ValueName)
+        $valueData = $key.GetValue($ValueName, $null, 'DoNotExpandEnvironmentNames')
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            KeyExists = $true
+            Exists = $true
+            Metadata = [ordered]@{
+                ValueName = $ValueName
+                ValueType = $valueType
+                ValueData = $valueData
+            }
+            DisplayValue = '{0}: {1}' -f $ValueName, $valueData
+            Message = 'Registry value detected.'
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            KeyExists = $null
+            Exists = $false
+            Metadata = $null
+            DisplayValue = $script:BoostLabMsiModeMissingReadbackText
+            Message = $_.Exception.Message
+        }
+    }
+}
+
+function Set-BoostLabMsiModeRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [Parameter(Mandatory)]
+        [ValidateSet(0, 1)]
+        [int]$Value
+    )
+
+    $path = ConvertTo-BoostLabMsiModeRegistryPath -Path $RegistryPath
+    if (-not (Test-BoostLabMsiModeRegistryTarget -RegistryPath $path)) {
+        throw "Registry target is outside the source Msi Mode display-device Enum scope: $path"
+    }
+
+    if (-not (Test-Path -LiteralPath $path -PathType Container)) {
+        New-Item -Path $path -Force -ErrorAction Stop | Out-Null
+    }
+    New-ItemProperty `
+        -LiteralPath $path `
+        -Name $script:BoostLabMsiModeValueName `
+        -PropertyType $script:BoostLabMsiModeValueType `
+        -Value $Value `
+        -Force `
+        -ErrorAction Stop | Out-Null
+}
+
+function Get-BoostLabMsiModeReadbackResults {
+    param(
+        [AllowNull()]
+        [object[]]$Targets = @(),
+
+        [AllowNull()]
+        [scriptblock]$RegistryReader = $null,
+
+        [AllowNull()]
+        [int]$ExpectedValue = -1
+    )
+
+    $reader = if ($null -ne $RegistryReader) {
+        $RegistryReader
+    }
+    else {
+        { param($Path, $ItemType, $ValueName) Get-BoostLabMsiModeRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
+    }
+
+    $results = [System.Collections.Generic.List[object]]::new()
+    foreach ($target in @($Targets)) {
+        $state = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabMsiModeValueName
+        $valueData = if ($null -ne $state -and $null -ne $state.Metadata) {
+            $state.Metadata.ValueData
+        }
+        else {
+            $null
+        }
+        $valueType = if ($null -ne $state -and $null -ne $state.Metadata) {
+            [string]$state.Metadata.ValueType
+        }
+        else {
+            ''
+        }
+        $status = if ($ExpectedValue -lt 0) {
+            if ($null -eq $state -or -not [bool]$state.ReadSucceeded) { 'Warning' } else { 'Passed' }
+        }
+        elseif ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
+            'Failed'
+        }
+        elseif (-not [bool]$state.Exists) {
+            'Failed'
+        }
+        elseif ($valueType -ne 'DWord') {
+            'Failed'
+        }
+        elseif ([int]$valueData -ne [int]$ExpectedValue) {
+            'Failed'
+        }
+        else {
+            'Passed'
+        }
+
+        $results.Add([pscustomobject]@{
+            InstanceId = [string]$target.InstanceId
+            RegistryPath = [string]$target.RegistryPath
+            ProviderReadbackPath = [string]$target.ProviderReadbackPath
+            ValueName = $script:BoostLabMsiModeValueName
+            ReadSucceeded = if ($null -eq $state) { $false } else { [bool]$state.ReadSucceeded }
+            Exists = if ($null -eq $state) { $false } else { [bool]$state.Exists }
+            Metadata = if ($null -eq $state) { $null } else { $state.Metadata }
+            DisplayValue = if ($null -eq $state) { $script:BoostLabMsiModeMissingReadbackText } else { [string]$state.DisplayValue }
+            Message = if ($null -eq $state) { 'Registry state reader returned no result.' } else { [string]$state.Message }
+            Status = $status
+        })
+    }
+
+    $results.ToArray()
+}
+
+function New-BoostLabMsiModeCapturePolicy {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Target,
+
+        [Parameter(Mandatory)]
+        [string]$ScopeId
+    )
+
+    return @{
+        SchemaVersion = '1.0'
+        FileScopes = @()
+        RegistryScopes = @(
+            @{
+                ScopeId = $ScopeId
+                ToolIds = @([string]$script:BoostLabToolMetadata['Id'])
+                AllowedPath = [string]$Target.RegistryPath
+                AllowedValueNames = @($script:BoostLabMsiModeValueName)
+                AllowKeyCapture = $false
+                AllowProtectedSystem = $true
+            }
+        )
+        DeniedRegistryPrefixes = @(
+            'HKLM:\SYSTEM'
+            'Registry::HKEY_LOCAL_MACHINE\SYSTEM'
+        )
+    }
 }
 
 function New-BoostLabMsiModeResult {
@@ -242,10 +554,12 @@ function New-BoostLabMsiModeResult {
 
         [string[]]$Errors = @(),
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
     )
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Success = $Success
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
@@ -256,7 +570,7 @@ function New-BoostLabMsiModeResult {
         Message = $Message
         RestartRequired = $false
         Cancelled = $Cancelled
-        ChangesExecuted = $false
+        ChangesExecuted = $ChangesExecuted
         Timestamp = Get-Date
         Data = $Data
         VerificationResult = $VerificationResult
@@ -265,343 +579,10 @@ function New-BoostLabMsiModeResult {
     }
 }
 
-function Get-BoostLabMsiModeRealTargets {
-    $targets = [System.Collections.Generic.List[object]]::new()
-    $warnings = [System.Collections.Generic.List[string]]::new()
-
-    try {
-        if (-not (Get-Command -Name 'Get-PnpDevice' -ErrorAction SilentlyContinue)) {
-            return [pscustomobject]@{
-                Succeeded = $false
-                Targets = @()
-                Warnings = @('Get-PnpDevice is not available, so display-device discovery cannot run.')
-                Message = 'Msi Mode display-device discovery is unavailable.'
-            }
-        }
-
-        foreach ($device in @(Get-PnpDevice -Class Display -ErrorAction Stop)) {
-            $instanceId = if ($null -ne $device.PSObject.Properties['InstanceId']) {
-                [string]$device.InstanceId
-            }
-            else {
-                ''
-            }
-            if ([string]::IsNullOrWhiteSpace($instanceId)) {
-                $warnings.Add('Skipped a display device because its InstanceId was unavailable.')
-                continue
-            }
-
-            $path = ConvertTo-BoostLabMsiModeRegistryPath -Path (ConvertTo-BoostLabMsiModeDeviceRegistryPath -InstanceId $instanceId)
-            if (-not (Test-BoostLabMsiModeRegistryTarget -RegistryPath $path)) {
-                $warnings.Add("Skipped target outside approved Msi Mode Enum scope: $path")
-                continue
-            }
-
-            $evidence = @(Get-BoostLabMsiModeIdentityEvidence -InputObject $device)
-            $isNvidia = Test-BoostLabMsiModeNvidiaEvidence -Evidence $evidence
-            $targets.Add(
-                [pscustomobject]@{
-                    RegistryPath = $path
-                    InstanceId = $instanceId
-                    ValueName = $script:BoostLabMsiModeValueName
-                    NvidiaTarget = $isNvidia
-                    TargetingStatus = if ($isNvidia) { 'NvidiaVerified' } else { 'AmbiguousOrNonNvidia' }
-                    Evidence = $evidence
-                }
-            )
-        }
-    }
-    catch {
-        $warnings.Add("Msi Mode target discovery failed: $($_.Exception.Message)")
-    }
-
-    return [pscustomobject]@{
-        Succeeded = $warnings.Count -eq 0
-        Targets = @($targets | Sort-Object RegistryPath -Unique)
-        Warnings = $warnings.ToArray()
-        Message = if ($targets.Count -eq 0) {
-            'No source-targeted display-device Msi Mode registry targets were found.'
-        }
-        else {
-            '{0} source-targeted display-device Msi Mode registry target(s) detected.' -f $targets.Count
-        }
-    }
-}
-
-function Get-BoostLabMsiModeDiscovery {
-    param(
-        [AllowNull()]
-        [scriptblock]$TargetEnumerator = $null
-    )
-
-    $discovery = if ($null -ne $TargetEnumerator) {
-        & $TargetEnumerator
-    }
-    else {
-        Get-BoostLabMsiModeRealTargets
-    }
-
-    if ($null -eq $discovery -or $null -eq $discovery.PSObject.Properties['Targets']) {
-        return [pscustomobject]@{
-            Succeeded = $false
-            Targets = @()
-            EligibleTargets = @()
-            ExcludedTargets = @()
-            AmbiguousTargets = @()
-            Warnings = @()
-            Blockers = @('Target discovery returned an invalid result.')
-            NvidiaOnly = $false
-            Message = 'Msi Mode target discovery returned an invalid result.'
-        }
-    }
-
-    $targets = [System.Collections.Generic.List[object]]::new()
-    $eligibleTargets = [System.Collections.Generic.List[object]]::new()
-    $excludedTargets = [System.Collections.Generic.List[object]]::new()
-    $ambiguousTargets = [System.Collections.Generic.List[object]]::new()
-    $warnings = [System.Collections.Generic.List[string]]::new()
-    $blockers = [System.Collections.Generic.List[string]]::new()
-    foreach ($warning in @($discovery.Warnings)) {
-        if (-not [string]::IsNullOrWhiteSpace([string]$warning)) {
-            $warnings.Add([string]$warning)
-        }
-    }
-
-    foreach ($target in @($discovery.Targets)) {
-        $path = if (
-            $null -ne $target.PSObject.Properties['RegistryPath'] -and
-            -not [string]::IsNullOrWhiteSpace([string]$target.RegistryPath)
-        ) {
-            ConvertTo-BoostLabMsiModeRegistryPath -Path ([string]$target.RegistryPath)
-        }
-        elseif (
-            $null -ne $target.PSObject.Properties['InstanceId'] -and
-            -not [string]::IsNullOrWhiteSpace([string]$target.InstanceId)
-        ) {
-            ConvertTo-BoostLabMsiModeRegistryPath -Path (ConvertTo-BoostLabMsiModeDeviceRegistryPath -InstanceId ([string]$target.InstanceId))
-        }
-        else {
-            ''
-        }
-        if (-not (Test-BoostLabMsiModeRegistryTarget -RegistryPath $path)) {
-            $blockers.Add("Target is outside the approved Msi Mode Enum registry scope: $path")
-            continue
-        }
-
-        $evidence = if ($null -ne $target.PSObject.Properties['Evidence']) {
-            @($target.Evidence)
-        }
-        else {
-            @()
-        }
-        $nvidiaTarget = if ($null -ne $target.PSObject.Properties['NvidiaTarget']) {
-            [bool]$target.NvidiaTarget
-        }
-        else {
-            Test-BoostLabMsiModeNvidiaEvidence -Evidence $evidence
-        }
-        if (-not $nvidiaTarget) {
-            $combinedEvidence = @($evidence) -join ' '
-            $isKnownExcludedTarget = Test-BoostLabMsiModeKnownExcludedEvidence -Evidence $evidence
-            if ($isKnownExcludedTarget) {
-                $exclusionReason = 'Microsoft/RDP/non-NVIDIA display adapter'
-                $excludedTarget = [pscustomobject]@{
-                    RegistryPath = $path
-                    InstanceId = if ($null -ne $target.PSObject.Properties['InstanceId']) { [string]$target.InstanceId } else { '' }
-                    ValueName = $script:BoostLabMsiModeValueName
-                    NvidiaTarget = $false
-                    Eligible = $false
-                    Excluded = $true
-                    Ambiguous = $false
-                    TargetingStatus = 'ExcludedNonNvidia'
-                    ExclusionReason = $exclusionReason
-                    AmbiguityReason = ''
-                    Evidence = $evidence
-                }
-                $targets.Add($excludedTarget)
-                $excludedTargets.Add($excludedTarget)
-                $warnings.Add("Skipped Msi Mode target because it is not provably NVIDIA-owned: $path ($exclusionReason)")
-                continue
-            }
-
-            $ambiguousReason = if ([string]::IsNullOrWhiteSpace($combinedEvidence)) {
-                'missing adapter identity evidence'
-            }
-            else {
-                'identity evidence is neither NVIDIA nor a known excluded Microsoft/RDP adapter'
-            }
-            $ambiguousTarget = [pscustomobject]@{
-                RegistryPath = $path
-                InstanceId = if ($null -ne $target.PSObject.Properties['InstanceId']) { [string]$target.InstanceId } else { '' }
-                ValueName = $script:BoostLabMsiModeValueName
-                NvidiaTarget = $false
-                Eligible = $false
-                Excluded = $false
-                Ambiguous = $true
-                TargetingStatus = 'AmbiguousIdentity'
-                ExclusionReason = ''
-                AmbiguityReason = $ambiguousReason
-                Evidence = $evidence
-            }
-            $targets.Add($ambiguousTarget)
-            $ambiguousTargets.Add($ambiguousTarget)
-            $blockers.Add("Target identity is ambiguous and cannot be written safely: $path ($ambiguousReason)")
-            continue
-        }
-
-        $eligibleTarget = [pscustomobject]@{
-            RegistryPath = $path
-            InstanceId = if ($null -ne $target.PSObject.Properties['InstanceId']) { [string]$target.InstanceId } else { '' }
-            ValueName = $script:BoostLabMsiModeValueName
-            NvidiaTarget = $true
-            Eligible = $true
-            Excluded = $false
-            Ambiguous = $false
-            TargetingStatus = 'NvidiaVerified'
-            ExclusionReason = ''
-            AmbiguityReason = ''
-            Evidence = $evidence
-        }
-        $targets.Add($eligibleTarget)
-        $eligibleTargets.Add($eligibleTarget)
-    }
-
-    return [pscustomobject]@{
-        Succeeded = [bool]$discovery.Succeeded -and $blockers.Count -eq 0
-        Targets = @($targets | Sort-Object RegistryPath -Unique)
-        EligibleTargets = @($eligibleTargets | Sort-Object RegistryPath -Unique)
-        ExcludedTargets = @($excludedTargets | Sort-Object RegistryPath -Unique)
-        AmbiguousTargets = @($ambiguousTargets | Sort-Object RegistryPath -Unique)
-        Warnings = $warnings.ToArray()
-        Blockers = $blockers.ToArray()
-        NvidiaOnly = $eligibleTargets.Count -gt 0 -and $blockers.Count -eq 0 -and $ambiguousTargets.Count -eq 0
-        Message = [string]$discovery.Message
-    }
-}
-
-function Get-BoostLabMsiModeRegistryValueState {
-    param(
-        [Parameter(Mandatory)]
-        [string]$RegistryPath,
-
-        [string]$ItemType = 'RegistryValue',
-
-        [string]$ValueName = $script:BoostLabMsiModeValueName
-    )
-
-    $path = ConvertTo-BoostLabMsiModeRegistryPath -Path $RegistryPath
-    try {
-        if (-not (Test-Path -LiteralPath $path -PathType Container)) {
-            return [pscustomobject]@{
-                ReadSucceeded = $true
-                KeyExists = $false
-                Exists = $false
-                Metadata = $null
-                DisplayValue = 'Absent'
-                Message = 'Registry key is absent.'
-            }
-        }
-
-        $key = Get-Item -LiteralPath $path -ErrorAction Stop
-        $valueExists = $ValueName -in @($key.GetValueNames())
-        if (-not $valueExists) {
-            return [pscustomobject]@{
-                ReadSucceeded = $true
-                KeyExists = $true
-                Exists = $false
-                Metadata = $null
-                DisplayValue = 'Absent'
-                Message = 'Registry value is absent.'
-            }
-        }
-
-        $valueType = [string]$key.GetValueKind($ValueName)
-        $valueData = $key.GetValue($ValueName, $null, 'DoNotExpandEnvironmentNames')
-        return [pscustomobject]@{
-            ReadSucceeded = $true
-            KeyExists = $true
-            Exists = $true
-            Metadata = [ordered]@{
-                ValueName = $ValueName
-                ValueType = $valueType
-                ValueData = $valueData
-            }
-            DisplayValue = '{0} {1}' -f $valueType, $valueData
-            Message = 'Registry value detected.'
-        }
-    }
-    catch {
-        return [pscustomobject]@{
-            ReadSucceeded = $false
-            KeyExists = $null
-            Exists = $false
-            Metadata = $null
-            DisplayValue = 'Unknown'
-            Message = $_.Exception.Message
-        }
-    }
-}
-
-function Set-BoostLabMsiModeRegistryValue {
-    param(
-        [Parameter(Mandatory)]
-        [string]$RegistryPath,
-
-        [Parameter(Mandatory)]
-        [ValidateSet(0, 1)]
-        [int]$Value
-    )
-
-    $path = ConvertTo-BoostLabMsiModeRegistryPath -Path $RegistryPath
-    if (-not (Test-BoostLabMsiModeRegistryTarget -RegistryPath $path)) {
-        throw "Registry target is outside the approved Msi Mode display-device Enum scope: $path"
-    }
-    if (-not (Test-Path -LiteralPath $path -PathType Container)) {
-        throw "Registry target does not exist: $path"
-    }
-
-    New-ItemProperty `
-        -LiteralPath $path `
-        -Name $script:BoostLabMsiModeValueName `
-        -PropertyType $script:BoostLabMsiModeValueType `
-        -Value $Value `
-        -Force `
-        -ErrorAction Stop | Out-Null
-}
-
-function New-BoostLabMsiModeCapturePolicy {
-    param(
-        [Parameter(Mandatory)]
-        [object]$Target,
-
-        [Parameter(Mandatory)]
-        [string]$ScopeId
-    )
-
-    return @{
-        SchemaVersion = '1.0'
-        FileScopes = @()
-        RegistryScopes = @(
-            @{
-                ScopeId = $ScopeId
-                ToolIds = @([string]$script:BoostLabToolMetadata['Id'])
-                AllowedPath = [string]$Target.RegistryPath
-                AllowedValueNames = @($script:BoostLabMsiModeValueName)
-                AllowKeyCapture = $false
-                AllowProtectedSystem = $true
-            }
-        )
-        DeniedRegistryPrefixes = @(
-            'HKLM:\SYSTEM'
-            'Registry::HKEY_LOCAL_MACHINE\SYSTEM'
-        )
-    }
-}
-
 function Test-BoostLabMsiModeState {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Analyze', 'Apply', 'Default')]
+        [ValidateSet('Analyze', 'Apply', 'Off')]
         [string]$ActionName,
 
         [AllowNull()]
@@ -611,33 +592,37 @@ function Test-BoostLabMsiModeState {
         [object[]]$CaptureRecords = @(),
 
         [AllowNull()]
-        [scriptblock]$RegistryReader = $null
+        [object[]]$Readbacks = @()
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
     $targetCount = @($Targets).Count
     $captureCount = @($CaptureRecords).Count
-    $expectedValue = if ($ActionName -eq 'Default') {
-        $script:BoostLabMsiModeDefaultValue
+    $expectedValue = if ($ActionName -eq 'Off') {
+        $script:BoostLabMsiModeSourceOffValue
     }
     else {
-        $script:BoostLabMsiModeApplyValue
-    }
-    $reader = if ($null -ne $RegistryReader) {
-        $RegistryReader
-    }
-    else {
-        { param($Path, $ItemType, $ValueName) Get-BoostLabMsiModeRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
+        $script:BoostLabMsiModeSourceOnRecommendedValue
     }
 
     $checks.Add(
         (New-BoostLabVerificationCheck `
-            -Name 'NVIDIA target discovery' `
-            -Expected 'At least one provably NVIDIA source-targeted display-device Enum registry target for Apply or Default' `
+            -Name 'Source display-device target discovery' `
+            -Expected 'Every display device returned by Get-PnpDevice -Class Display with a usable InstanceId' `
             -Actual ("$targetCount target(s)") `
-            -Status $(if ($targetCount -gt 0) { 'Passed' } elseif ($ActionName -eq 'Analyze') { 'Warning' } else { 'NotApplicable' }) `
-            -Message $(if ($targetCount -gt 0) { 'NVIDIA display-device Enum registry targets were discovered.' } else { 'No NVIDIA display-device Enum registry targets were discovered.' }))
+            -Status $(if ($targetCount -gt 0) { 'Passed' } elseif ($ActionName -eq 'Analyze') { 'Warning' } else { 'Failed' }) `
+            -Message $(if ($targetCount -gt 0) { 'Source display-device registry targets were derived.' } else { 'No source display-device registry targets were derived.' }))
     )
+
+    foreach ($target in @($Targets)) {
+        $checks.Add(
+            (New-BoostLabVerificationCheck `
+                -Name ('Source target scope | {0}' -f [string]$target.RegistryPath) `
+                -Expected 'HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties' `
+                -Actual ([string]$target.RegistryPath) `
+                -Status $(if (Test-BoostLabMsiModeRegistryTarget -RegistryPath ([string]$target.RegistryPath)) { 'Passed' } else { 'Failed' }) `
+                -Message 'Msi Mode target follows the exact source-derived display-device Enum path.'))
+    }
 
     if ($ActionName -ne 'Analyze') {
         $checks.Add(
@@ -645,132 +630,53 @@ function Test-BoostLabMsiModeState {
                 -Name 'Pre-mutation capture records' `
                 -Expected "$targetCount capture record(s)" `
                 -Actual "$captureCount capture record(s)" `
-                -Status $(if ($targetCount -gt 0 -and $captureCount -eq $targetCount) { 'Passed' } elseif ($targetCount -eq 0) { 'NotApplicable' } else { 'Failed' }) `
-                -Message 'Each Msi Mode target must have a successful registry value capture before mutation.'))
+                -Status $(if ($targetCount -gt 0 -and $captureCount -eq $targetCount) { 'Passed' } else { 'Failed' }) `
+                -Message 'Each source-derived Msi Mode target must have a successful registry value capture before mutation.'))
     }
 
-    foreach ($target in @($Targets)) {
-        $identityStatus = if ([bool]$target.NvidiaTarget) { 'Passed' } else { 'Failed' }
-        $checks.Add(
-            (New-BoostLabVerificationCheck `
-                -Name ('NVIDIA identity | {0}' -f [string]$target.RegistryPath) `
-                -Expected 'NVIDIA evidence such as NVIDIA provider text or VEN_10DE' `
-                -Actual ((@($target.Evidence) -join '; ')) `
-                -Status $identityStatus `
-                -Message $(if ([bool]$target.NvidiaTarget) { 'Target identity is NVIDIA-owned.' } else { 'Target identity is ambiguous or non-NVIDIA.' }))
-        )
-
-        $state = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabMsiModeValueName
+    foreach ($readback in @($Readbacks)) {
         if ($ActionName -eq 'Analyze') {
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            else {
-                'Passed'
-            }
-            $expected = 'Readable Msi Mode value state'
-        }
-        else {
-            $valueData = if ($null -ne $state -and $null -ne $state.Metadata) {
-                $state.Metadata.ValueData
-            }
-            else {
-                $null
-            }
-            $valueType = if ($null -ne $state -and $null -ne $state.Metadata) {
-                [string]$state.Metadata.ValueType
-            }
-            else {
-                ''
-            }
-            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-                'Warning'
-            }
-            elseif (-not [bool]$state.Exists) {
-                'Failed'
-            }
-            elseif (
-                $valueType -notin @('DWord', 'REG_DWORD') -or
-                [string]$valueData -ne [string]$expectedValue
-            ) {
-                'Failed'
-            }
-            else {
-                'Passed'
-            }
-            $expected = 'MSISupported DWORD {0}' -f $expectedValue
+            $checks.Add(
+                (New-BoostLabVerificationCheck `
+                    -Name ('Readback | {0}' -f [string]$readback.InstanceId) `
+                    -Expected 'Readable current MSISupported state or source-equivalent missing/error text' `
+                    -Actual ([string]$readback.DisplayValue) `
+                    -Status ([string]$readback.Status) `
+                    -Message 'Analyze read the current Msi Mode value state without mutation.'))
+            continue
         }
 
         $checks.Add(
             (New-BoostLabVerificationCheck `
-                -Name ('{0} | {1}' -f $script:BoostLabMsiModeValueName, [string]$target.RegistryPath) `
-                -Expected $expected `
-                -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) `
-                -Status $status `
-                -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Registry reader returned no state.' }))
+                -Name ('Readback | {0}' -f [string]$readback.InstanceId) `
+                -Expected ('REG_DWORD {0}' -f $expectedValue) `
+                -Actual ([string]$readback.DisplayValue) `
+                -Status ([string]$readback.Status) `
+                -Message ('Msi Mode source readback for MSISupported after {0}.' -f $ActionName))
         )
     }
 
-    $overallStatus = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) {
+    $failedChecks = @($checks | Where-Object { [string]$_.Status -eq 'Failed' })
+    $warningChecks = @($checks | Where-Object { [string]$_.Status -eq 'Warning' })
+    $status = if ($failedChecks.Count -gt 0) {
         'Failed'
     }
-    elseif (@($checks | Where-Object { $_.Status -eq 'Warning' }).Count -gt 0) {
+    elseif ($warningChecks.Count -gt 0) {
         'Warning'
-    }
-    elseif (@($checks | Where-Object { $_.Status -eq 'NotApplicable' }).Count -gt 0) {
-        'NotApplicable'
     }
     else {
         'Passed'
     }
-    $expectedState = if ($ActionName -eq 'Analyze') {
-        [pscustomobject]@{
-            TargetDiscoveryOnly = $true
-            TargetValue = $script:BoostLabMsiModeValueName
-            SourceApplyValue = $script:BoostLabMsiModeApplyValue
-            SourceDefaultValue = $script:BoostLabMsiModeDefaultValue
-        }
-    }
-    else {
-        [pscustomobject]@{
-            TargetValue = $script:BoostLabMsiModeValueName
-            ExpectedValueType = 'DWORD'
-            ExpectedValueData = $expectedValue
-            CaptureRequired = $true
-        }
-    }
-    $detectedState = [pscustomobject]@{
-        TargetCount = $targetCount
-        CaptureRecordCount = $captureCount
-        FailedChecks = @($checks | Where-Object { $_.Status -eq 'Failed' }).Count
-        WarningChecks = @($checks | Where-Object { $_.Status -eq 'Warning' }).Count
-    }
-    $message = switch ($overallStatus) {
-        'Passed' {
-            if ($ActionName -eq 'Apply') {
-                'All discovered NVIDIA Msi Mode targets have MSISupported set to DWORD 1.'
-            }
-            elseif ($ActionName -eq 'Default') {
-                'All discovered NVIDIA Msi Mode targets have MSISupported set to DWORD 0.'
-            }
-            else {
-                'Msi Mode NVIDIA display-device Enum registry targets were analyzed.'
-            }
-        }
-        'Warning' { 'Msi Mode target state was analyzed with warnings.' }
-        'NotApplicable' { 'No NVIDIA Msi Mode registry targets were found.' }
-        default { 'One or more Msi Mode registry targets did not match the expected state.' }
-    }
 
-    return New-BoostLabVerificationResult `
+    New-BoostLabVerificationResult `
         -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
         -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
         -Action $ActionName `
-        -Status $overallStatus `
-        -ExpectedState $expectedState `
-        -DetectedState $detectedState `
+        -Status $status `
+        -ExpectedState $(if ($ActionName -eq 'Off') { 'MSISupported is REG_DWORD 0 on every source-derived display-device Enum target.' } elseif ($ActionName -eq 'Apply') { 'MSISupported is REG_DWORD 1 on every source-derived display-device Enum target.' } else { 'Msi Mode source scope is readable without mutation.' }) `
+        -DetectedState ('{0} target(s), {1} readback(s)' -f $targetCount, @($Readbacks).Count) `
         -Checks $checks.ToArray() `
-        -Message $message
+        -Message $(if ($status -eq 'Passed') { 'Msi Mode source-equivalent verification passed.' } elseif ($status -eq 'Warning') { 'Msi Mode source-equivalent verification completed with warnings.' } else { 'Msi Mode source-equivalent verification failed.' })
 }
 
 function Invoke-BoostLabMsiModeAnalyze {
@@ -784,72 +690,69 @@ function Invoke-BoostLabMsiModeAnalyze {
 
     $source = Get-BoostLabMsiModeSourceStatus
     $discovery = Get-BoostLabMsiModeDiscovery -TargetEnumerator $TargetEnumerator
-    $eligibleTargets = @($discovery.EligibleTargets)
-    $excludedTargets = @($discovery.ExcludedTargets)
-    $ambiguousTargets = @($discovery.AmbiguousTargets)
-    $verification = Test-BoostLabMsiModeState `
-        -ActionName 'Analyze' `
-        -Targets $eligibleTargets `
-        -RegistryReader $RegistryReader
+    $targets = @($discovery.Targets)
+    $readbacks = @(Get-BoostLabMsiModeReadbackResults -Targets $targets -RegistryReader $RegistryReader)
+    $verification = Test-BoostLabMsiModeState -ActionName Analyze -Targets $targets -Readbacks $readbacks
 
-    $applyAvailable = (
-        [string]$source.ChecksumStatus -eq 'Passed' -and
-        $eligibleTargets.Count -gt 0 -and
-        @($discovery.Blockers).Count -eq 0
-    )
+    $errors = @()
+    if ([string]$source.ChecksumStatus -ne 'Passed') {
+        $errors += 'Approved source checksum validation failed.'
+    }
+    if (@($discovery.Blockers).Count -gt 0) {
+        $errors += @($discovery.Blockers)
+    }
+
     $data = [pscustomobject]@{
         Source = $source
         PathBWorkflow = 'Driver Install Latest -> Nvidia Settings -> HDCP -> P0 State -> Msi Mode'
         PathBStepNumber = 5
         PathBStepTotal = 5
         PathBStep = '5 of 5'
+        SourceBehaviorSummary = 'Ultimate queries Get-PnpDevice -Class Display, derives the Device Parameters\Interrupt Management\MessageSignaledInterruptProperties path from each display device InstanceId, sets MSISupported to DWORD 1 for On or DWORD 0 for Off, then reads back MSISupported for every display device.'
+        SourceDeviceQuery = 'Get-PnpDevice -Class Display'
         SourceRegistryRoot = $script:BoostLabMsiModeEnumRoot
         SourceRegistrySuffix = $script:BoostLabMsiModeRegistrySuffix
         SourceRegistryValueName = $script:BoostLabMsiModeValueName
-        SourceRegistryValueType = 'REG_DWORD'
-        SourceApplyValue = $script:BoostLabMsiModeApplyValue
-        SourceDefaultValue = $script:BoostLabMsiModeDefaultValue
-        TargetCount = @($discovery.Targets).Count
-        Targets = @($discovery.Targets)
-        EligibleTargetCount = $eligibleTargets.Count
-        EligibleTargets = $eligibleTargets
-        ExcludedTargetCount = $excludedTargets.Count
-        ExcludedTargets = $excludedTargets
-        AmbiguousTargetCount = $ambiguousTargets.Count
-        AmbiguousTargets = $ambiguousTargets
-        NvidiaOnlyTargetingStatus = if ($applyAvailable) { 'Passed' } else { 'NeedsNvidiaTargeting' }
-        ApplyAvailable = $applyAvailable
-        ApplyBlockedStatus = if ($applyAvailable) { '' } else { 'NeedsNvidiaTargeting' }
-        DefaultAvailable = $applyAvailable
+        SourceOnRecommendedValue = $script:BoostLabMsiModeSourceOnRecommendedValue
+        SourceOffValue = $script:BoostLabMsiModeSourceOffValue
+        TargetCount = $targets.Count
+        Targets = $targets
+        SkippedDeviceCount = @($discovery.SkippedDevices).Count
+        SkippedDevices = @($discovery.SkippedDevices)
+        Readbacks = $readbacks
+        OnRecommendedAvailable = $targets.Count -gt 0 -and [string]$source.ChecksumStatus -eq 'Passed' -and @($discovery.Blockers).Count -eq 0
+        OffAvailable = $targets.Count -gt 0 -and [string]$source.ChecksumStatus -eq 'Passed' -and @($discovery.Blockers).Count -eq 0
+        DefaultAvailable = $false
         RestoreAvailable = $false
-        RestoreAvailability = 'Restore requires selected captured state from this Msi Mode tool and is not exposed as Default.'
-        DefaultAvailability = if ($applyAvailable) { 'Default is source-defined as MSISupported DWORD 0 and applies only to eligible NVIDIA targets.' } else { 'Default is blocked until at least one eligible NVIDIA target is proven.' }
-        ChangesExecuted = $false
         CaptureAttempted = $false
         RegistryWriteAttempted = $false
+        ChangesExecuted = $false
         ExternalProcessStarted = $false
         DownloadStarted = $false
         RebootRequested = $false
-        DiscoveryWarnings = @($discovery.Warnings)
-        Blockers = @($discovery.Blockers)
+        VerificationStatus = [string]$verification.Status
+        Warnings = @($discovery.Warnings)
+        Errors = $errors
     }
 
+    $success = ([string]$source.ChecksumStatus -eq 'Passed' -and @($discovery.Blockers).Count -eq 0)
     return New-BoostLabMsiModeResult `
-        -Success $true `
+        -Success $success `
         -Action 'Analyze' `
-        -Status 'Analyzed' `
+        -Status $(if ($success) { 'Analyzed' } else { 'Error' }) `
         -CommandStatus 'No execution performed' `
         -VerificationStatus ([string]$verification.Status) `
-        -Message 'Msi Mode source scope and NVIDIA display-device Enum registry targeting were analyzed. No system mutation occurred.' `
+        -Message $(if ($success) { 'Msi Mode source On/Off display-device registry scope was analyzed. No system mutation occurred.' } else { 'Msi Mode Analyze could not verify the approved source scope.' }) `
         -Data $data `
         -VerificationResult $verification `
-        -Warnings @($discovery.Warnings)
+        -Warnings @($discovery.Warnings) `
+        -Errors $errors
 }
 
 function Invoke-BoostLabMsiModeRegistrySet {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Apply', 'Default')]
+        [ValidateSet('Apply', 'Off')]
         [string]$ActionName,
 
         [AllowNull()]
@@ -868,6 +771,13 @@ function Invoke-BoostLabMsiModeRegistrySet {
     )
 
     $source = Get-BoostLabMsiModeSourceStatus
+    $expectedValue = if ($ActionName -eq 'Off') {
+        $script:BoostLabMsiModeSourceOffValue
+    }
+    else {
+        $script:BoostLabMsiModeSourceOnRecommendedValue
+    }
+
     if ([string]$source.ChecksumStatus -ne 'Passed') {
         return New-BoostLabMsiModeResult `
             -Success $false `
@@ -878,6 +788,7 @@ function Invoke-BoostLabMsiModeRegistrySet {
             -Message 'Msi Mode source checksum did not match the approved mirror. No registry discovery, capture, or write was performed.' `
             -Data ([pscustomobject]@{
                 Source = $source
+                ExpectedValueData = $expectedValue
                 ChangesExecuted = $false
                 CaptureAttempted = $false
                 RegistryWriteAttempted = $false
@@ -898,30 +809,25 @@ function Invoke-BoostLabMsiModeRegistrySet {
             -Status 'Error' `
             -CommandStatus 'Blocked' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Administrator rights are required before Msi Mode registry values can be changed.'
+            -Message 'Administrator rights are required before source-defined Msi Mode registry values can be changed.' `
+            -Errors @('Administrator rights are required.')
     }
 
     $discovery = Get-BoostLabMsiModeDiscovery -TargetEnumerator $TargetEnumerator
-    $targets = @($discovery.EligibleTargets)
-    $excludedTargets = @($discovery.ExcludedTargets)
-    $ambiguousTargets = @($discovery.AmbiguousTargets)
+    $targets = @($discovery.Targets)
     if (@($discovery.Blockers).Count -gt 0) {
         return New-BoostLabMsiModeResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'NeedsNvidiaTargeting' `
+            -Status 'SourceScopeBlocked' `
             -CommandStatus 'Blocked' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Msi Mode registry mutation was blocked because target discovery included out-of-scope display-device Enum registry paths. No capture or write was performed.' `
+            -Message 'Msi Mode registry mutation was blocked because source target discovery produced an invalid registry target. No capture or write was performed.' `
             -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = $targets.Count
-                EligibleTargets = $targets
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+                TargetCount = $targets.Count
+                Targets = $targets
+                SkippedDeviceCount = @($discovery.SkippedDevices).Count
+                SkippedDevices = @($discovery.SkippedDevices)
                 ChangesExecuted = $false
                 CaptureAttempted = $false
                 RegistryWriteAttempted = $false
@@ -936,19 +842,15 @@ function Invoke-BoostLabMsiModeRegistrySet {
         return New-BoostLabMsiModeResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'NeedsNvidiaTargeting' `
+            -Status 'NoDisplayDevices' `
             -CommandStatus 'Blocked' `
             -VerificationStatus ([string]$verification.Status) `
-            -Message 'No eligible NVIDIA Msi Mode display-device Enum registry targets were found. Excluded non-NVIDIA targets were skipped and no changes were executed.' `
+            -Message 'No display devices with usable InstanceId values were returned by the source Get-PnpDevice -Class Display query. No changes were executed.' `
             -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = 0
-                EligibleTargets = @()
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+                TargetCount = 0
+                Targets = @()
+                SkippedDeviceCount = @($discovery.SkippedDevices).Count
+                SkippedDevices = @($discovery.SkippedDevices)
                 ChangesExecuted = $false
                 CaptureAttempted = $false
                 RegistryWriteAttempted = $false
@@ -957,7 +859,7 @@ function Invoke-BoostLabMsiModeRegistrySet {
             }) `
             -VerificationResult $verification `
             -Warnings @($discovery.Warnings) `
-            -Errors @('No eligible NVIDIA display-device Enum registry targets were found.')
+            -Errors @('No source display-device registry targets were derived.')
     }
 
     $reader = if ($null -ne $RegistryReader) {
@@ -971,12 +873,6 @@ function Invoke-BoostLabMsiModeRegistrySet {
     }
     else {
         { param($Target, $Value) Set-BoostLabMsiModeRegistryValue -RegistryPath ([string]$Target.RegistryPath) -Value $Value }
-    }
-    $expectedValue = if ($ActionName -eq 'Default') {
-        $script:BoostLabMsiModeDefaultValue
-    }
-    else {
-        $script:BoostLabMsiModeApplyValue
     }
 
     $captureRecords = [System.Collections.Generic.List[object]]::new()
@@ -1034,14 +930,8 @@ function Invoke-BoostLabMsiModeRegistrySet {
             -VerificationStatus 'NotApplicable' `
             -Message 'Msi Mode registry state capture failed before mutation. No changes were executed.' `
             -Data ([pscustomobject]@{
-                TargetCount = @($discovery.Targets).Count
-                Targets = @($discovery.Targets)
-                EligibleTargetCount = $targets.Count
-                EligibleTargets = $targets
-                ExcludedTargetCount = $excludedTargets.Count
-                ExcludedTargets = $excludedTargets
-                AmbiguousTargetCount = $ambiguousTargets.Count
-                AmbiguousTargets = $ambiguousTargets
+                TargetCount = $targets.Count
+                Targets = $targets
                 ChangesExecuted = $false
                 CaptureAttempted = $true
                 RegistryWriteAttempted = $false
@@ -1067,10 +957,12 @@ function Invoke-BoostLabMsiModeRegistrySet {
         }
     }
 
+    $readbacks = @(Get-BoostLabMsiModeReadbackResults -Targets $targets -RegistryReader $reader -ExpectedValue $expectedValue)
+
     foreach ($captureRecord in $captureRecords) {
-        $target = $targets | Where-Object {
+        $target = @($targets | Where-Object {
             [string]$_.RegistryPath -eq [string]$captureRecord.TargetPath
-        } | Select-Object -First 1
+        })[0]
         $postState = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabMsiModeValueName
         if ($null -eq $postState -or -not [bool]$postState.ReadSucceeded) {
             $errors.Add("Post-mutation state could not be read for $($captureRecord.TargetPath).")
@@ -1095,7 +987,7 @@ function Invoke-BoostLabMsiModeRegistrySet {
         -ActionName $ActionName `
         -Targets $targets `
         -CaptureRecords $captureRecords.ToArray() `
-        -RegistryReader $reader
+        -Readbacks $readbacks
 
     $data = [pscustomobject]@{
         Source = $source
@@ -1103,16 +995,14 @@ function Invoke-BoostLabMsiModeRegistrySet {
         PathBStepNumber = 5
         PathBStepTotal = 5
         PathBStep = '5 of 5'
+        SourceDeviceQuery = 'Get-PnpDevice -Class Display'
         SourceRegistryRoot = $script:BoostLabMsiModeEnumRoot
         SourceRegistrySuffix = $script:BoostLabMsiModeRegistrySuffix
-        TargetCount = @($discovery.Targets).Count
-        Targets = @($discovery.Targets)
-        EligibleTargetCount = $targets.Count
-        EligibleTargets = $targets
-        ExcludedTargetCount = $excludedTargets.Count
-        ExcludedTargets = $excludedTargets
-        AmbiguousTargetCount = $ambiguousTargets.Count
-        AmbiguousTargets = $ambiguousTargets
+        SourceRegistryValueName = $script:BoostLabMsiModeValueName
+        TargetCount = $targets.Count
+        Targets = $targets
+        SkippedDeviceCount = @($discovery.SkippedDevices).Count
+        SkippedDevices = @($discovery.SkippedDevices)
         WrittenTargetCount = $changesCompleted.Count
         WrittenTargets = $changesCompleted.ToArray()
         ChangesExecuted = $changesCompleted.Count -gt 0
@@ -1124,9 +1014,13 @@ function Invoke-BoostLabMsiModeRegistrySet {
         ExpectedValueName = $script:BoostLabMsiModeValueName
         ExpectedValueType = 'REG_DWORD'
         ExpectedValueData = $expectedValue
-        DefaultImplemented = $true
+        Readbacks = $readbacks
+        OnRecommendedImplemented = $true
+        OffImplemented = $true
+        DefaultImplemented = $false
         RestoreImplemented = $false
-        RestoreUnavailableReason = 'Restore requires a selected captured rollback record from this Msi Mode tool; Default is source-defined MSISupported DWORD 0 and is not Restore.'
+        DefaultUnavailableReason = 'The Ultimate source exposes Msi Mode Off as a separate visible option, not a Default action.'
+        RestoreUnavailableReason = 'The Ultimate source defines no captured-state Restore for Msi Mode.'
         ExternalProcessStarted = $false
         DownloadStarted = $false
         RebootRequested = $false
@@ -1144,7 +1038,8 @@ function Invoke-BoostLabMsiModeRegistrySet {
             -Message ('Msi Mode {0} completed with errors: {1}' -f $ActionName, ($errors -join '; ')) `
             -Data $data `
             -VerificationResult $verification `
-            -Errors $errors.ToArray()
+            -Errors $errors.ToArray() `
+            -ChangesExecuted ($changesCompleted.Count -gt 0)
     }
     if ($verification.Status -eq 'Failed') {
         return New-BoostLabMsiModeResult `
@@ -1155,39 +1050,22 @@ function Invoke-BoostLabMsiModeRegistrySet {
             -VerificationStatus ([string]$verification.Status) `
             -Message ('Msi Mode {0} completed, but verification failed.' -f $ActionName) `
             -Data $data `
-            -VerificationResult $verification
+            -VerificationResult $verification `
+            -ChangesExecuted ($changesCompleted.Count -gt 0)
     }
 
+    $friendlyAction = if ($ActionName -eq 'Off') { 'Off' } else { 'On (Recommended)' }
     return New-BoostLabMsiModeResult `
         -Success $true `
         -Action $ActionName `
         -Status $(if ($verification.Status -eq 'Warning') { 'Warning' } else { 'Completed' }) `
         -CommandStatus $(if ($verification.Status -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }) `
         -VerificationStatus ([string]$verification.Status) `
-            -Message $(if ($ActionName -eq 'Default') { 'Msi Mode Default set source-defined MSISupported DWORD 0 on eligible NVIDIA targets with captured pre-change registry state. Excluded non-NVIDIA targets were skipped.' } else { 'Msi Mode Apply set source-defined MSISupported DWORD 1 on eligible NVIDIA targets with captured pre-change registry state. Excluded non-NVIDIA targets were skipped.' }) `
-            -Data $data `
-            -VerificationResult $verification
-}
-
-function Invoke-BoostLabMsiModeRestore {
-    param(
-        [bool]$Confirmed = $false
-    )
-
-    return New-BoostLabMsiModeResult `
-        -Success $false `
-        -Action 'Restore' `
-        -Status 'RestoreUnavailable' `
-        -CommandStatus 'Blocked' `
-        -VerificationStatus 'NotApplicable' `
-        -Message 'Msi Mode Restore requires a valid selected captured rollback record from this Msi Mode tool. Restore is not Default and no captured-state selector path was provided.' `
-        -Data ([pscustomobject]@{
-            RestoreRequiresCapturedState = $true
-            RestoreExecuted = $false
-            ChangesExecuted = $false
-            DefaultIsRestore = $false
-            Reason = 'Missing selected captured rollback record.'
-        })
+        -Message ('Msi Mode {0} set source-defined MSISupported DWORD {1} on every source-derived display-device target with captured pre-change registry state.' -f $friendlyAction, $expectedValue) `
+        -Data $data `
+        -VerificationResult $verification `
+        -Warnings @($discovery.Warnings) `
+        -ChangesExecuted ($changesCompleted.Count -gt 0)
 }
 
 function Get-BoostLabToolInfo {
@@ -1195,7 +1073,7 @@ function Get-BoostLabToolInfo {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Id = [string]$script:BoostLabToolMetadata['Id']
         Title = [string]$script:BoostLabToolMetadata['Title']
         Stage = [string]$script:BoostLabToolMetadata['Stage']
@@ -1206,8 +1084,8 @@ function Get-BoostLabToolInfo {
         Actions = @($script:BoostLabToolMetadata['Actions'])
         Capabilities = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions = @($script:BoostLabImplementedActions)
-        ConfirmationRequiredActions = @('Apply', 'Default', 'Restore')
-        ConfirmationText = 'Msi Mode changes the source-defined NVIDIA display-device Enum registry value only after NVIDIA-only target discovery and pre-change state capture. Continue?'
+        ConfirmationRequiredActions = @('Apply', 'Off')
+        ConfirmationText = 'Msi Mode changes the source-defined display-device Enum registry value for every display device returned by Get-PnpDevice -Class Display, after source checksum validation and pre-change registry state capture. Continue?'
     }
 }
 
@@ -1217,7 +1095,7 @@ function Test-BoostLabToolCompatibility {
     param()
 
     $source = Get-BoostLabMsiModeSourceStatus
-    return [pscustomobject]@{
+    [pscustomobject]@{
         Supported = [bool]($source.ChecksumStatus -eq 'Passed')
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
@@ -1237,7 +1115,7 @@ function Get-BoostLabToolState {
     [OutputType([pscustomobject])]
     param()
 
-    return [pscustomobject]@{
+    [pscustomobject]@{
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
         Status = 'Ready'
@@ -1272,34 +1150,38 @@ function Invoke-BoostLabToolAction {
         [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
     )
 
-    if ($ActionName -notin @($script:BoostLabImplementedActions)) {
+    $canonicalAction = switch ($ActionName) {
+        'On (Recommended)' { 'Apply' }
+        'On' { 'Apply' }
+        default { $ActionName }
+    }
+
+    if ($canonicalAction -notin @($script:BoostLabImplementedActions)) {
         return New-BoostLabMsiModeResult `
             -Success $false `
             -Action $ActionName `
-            -Status 'Error' `
+            -Status 'UnsupportedAction' `
             -CommandStatus 'Blocked' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Unsupported action. Msi Mode supports only Analyze, Apply, Default, and Restore.'
+            -Message 'Unsupported action. Msi Mode supports only Analyze, On (Recommended), and Off. The Ultimate source defines no Default, Restore, or Open action.' `
+            -Errors @('Unsupported Msi Mode action.')
     }
-    if ($ActionName -eq 'Analyze') {
+    if ($canonicalAction -eq 'Analyze') {
         return Invoke-BoostLabMsiModeAnalyze -TargetEnumerator $TargetEnumerator -RegistryReader $RegistryReader
     }
     if (-not $Confirmed) {
         return New-BoostLabMsiModeResult `
             -Success $false `
-            -Action $ActionName `
+            -Action $canonicalAction `
             -Status 'Cancelled' `
             -CommandStatus 'Cancelled' `
             -VerificationStatus 'NotApplicable' `
             -Message 'Cancelled by user' `
             -Cancelled $true
     }
-    if ($ActionName -eq 'Restore') {
-        return Invoke-BoostLabMsiModeRestore -Confirmed:$Confirmed
-    }
 
-    return Invoke-BoostLabMsiModeRegistrySet `
-        -ActionName $ActionName `
+    Invoke-BoostLabMsiModeRegistrySet `
+        -ActionName $canonicalAction `
         -AdministratorChecker $AdministratorChecker `
         -TargetEnumerator $TargetEnumerator `
         -RegistryReader $RegistryReader `
@@ -1314,7 +1196,19 @@ function Restore-BoostLabToolDefault {
         [bool]$Confirmed = $false
     )
 
-    return Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed
+    New-BoostLabMsiModeResult `
+        -Success $false `
+        -Action 'Default' `
+        -Status 'DefaultUnavailable' `
+        -CommandStatus 'Blocked' `
+        -VerificationStatus 'NotApplicable' `
+        -Message 'Msi Mode has no Default action. The Ultimate source exposes Off as a separate visible option, and Restore is not available without a source-defined captured-state restore contract.' `
+        -Data ([pscustomobject]@{
+            DefaultAvailable = $false
+            OffActionAvailable = $true
+            RestoreAvailable = $false
+            ChangesExecuted = $false
+        })
 }
 
 Export-ModuleMember -Function @(
@@ -1324,5 +1218,3 @@ Export-ModuleMember -Function @(
     'Invoke-BoostLabToolAction'
     'Restore-BoostLabToolDefault'
 )
-
-

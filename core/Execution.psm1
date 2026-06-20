@@ -101,7 +101,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'msi-mode' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\msi-mode.psm1'
-        Actions = @('Analyze', 'Apply', 'Default', 'Restore')
+        Actions = @('Analyze', 'Apply', 'Off')
     }
     'driver-install-debloat-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-debloat-settings.psm1'

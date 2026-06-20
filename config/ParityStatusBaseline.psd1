@@ -361,9 +361,11 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
-            GapSummary = 'Source-defined NVIDIA device registry behavior is implemented with safer target filtering and capture.'
+            GapSummary = 'Yazan-accepted BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Msi Mode On and Off behavior for every display device returned by Get-PnpDevice -Class Display.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm safer NVIDIA filtering/capture is accepted as final parity; Restore remains captured-state only.'
+            YazanAcceptedNearParity = $true
+            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
+            NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
             ToolId = 'driver-install-debloat-settings'
