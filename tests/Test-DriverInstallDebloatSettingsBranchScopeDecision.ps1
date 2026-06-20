@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -76,7 +76,7 @@ Assert-BoostLabCondition ([bool]$record.YazanAcceptedNearParity) 'Phase 123 shou
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'YazanFinalException must remain false.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Ordered parity cursor should advance to Graphics Configuration Center after Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $codexText = Get-Content -LiteralPath $codexPath -Raw
 $blueprintText = Get-Content -LiteralPath $blueprintPath -Raw

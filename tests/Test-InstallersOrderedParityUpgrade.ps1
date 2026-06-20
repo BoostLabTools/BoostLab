@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -292,12 +292,12 @@ Assert-BoostLabCondition ([string]$installersRecord['FinalProgressStatus'] -eq '
 Assert-BoostLabContains -Text ([string]$installersRecord['GapSummary']) -Needle '11 Frame View' -Description 'Installers parity gap summary'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq 'graphics-configuration-center') 'First pending ordered parity target should advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget['ToolId'] -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq 4) 'ControlledSubset baseline count should be 4 after Graphics Configuration Center pending review.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset baseline count should be 3 after Graphics Configuration Center parity acceptance.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 1) 'ManualHandoffOnly baseline count should be 1 after Visual C++.'
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 

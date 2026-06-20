@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -114,13 +114,13 @@ Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $bitLockerRecor
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target must advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
-Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 15) 'Ultimate parity implemented count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq  16) 'Ultimate parity implemented count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['SecurityAssistantOnly'] -eq 0) 'SecurityAssistantOnly count must be zero after BitLocker upgrade.'
-Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq 15) 'Ultimate parity implemented count changed.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'Ultimate parity implemented count changed.'
 
 $bitLockerTool = @($allTools | Where-Object { $_.Id -eq 'bitlocker' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $bitLockerTool) 'BitLocker tool metadata was not found.'

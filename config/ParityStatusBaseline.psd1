@@ -9,14 +9,16 @@
         DeferredPlaceholders = 10
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 15
+        UltimateParityImplemented = 16
         NearParityControlled = 25
-        ControlledSubset = 4
+        ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
         DeferredForParityWork = 10
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
+
+    CurrentOrderedParityTarget = 'start-menu-taskbar'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -421,11 +423,11 @@
             StageOrder = 5
             ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ControlledSubset'
-            UltimateParity = 'Partial'
-            GapSummary = 'Pending ordered parity review; current Open-only launcher behavior still needs comparison against the Ultimate source before final parity status.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Open-only Windows advanced graphics Settings launcher behavior is source-equivalent.'
             YazanFinalException = $false
-            NextParityAction = 'Review or upgrade in the next ordered parity phase.'
+            NextParityAction = 'No parity work required.'
         }
         @{
             ToolId = 'start-menu-taskbar'

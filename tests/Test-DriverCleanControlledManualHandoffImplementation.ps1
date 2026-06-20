@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -388,7 +388,7 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq 2
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ManualHandoffOnly -eq 1) 'ManualHandoffOnly baseline should be 1 after Visual C++.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target should advance to Graphics Configuration Center.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(

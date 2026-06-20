@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -107,7 +107,7 @@ Assert-BoostLabCondition ((@($currentRecord.ApprovedSourceBranches) -join '|') -
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target should advance to Graphics Configuration Center after Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled baseline count mismatch.'

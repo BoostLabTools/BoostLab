@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -76,7 +76,7 @@ Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'sour
 Assert-BoostLabTextContains -Text ([string]$edgeRecord.NextParityAction) -Needle 'Skip; accepted near-parity.' -Description 'Edge Settings NextParityAction'
 
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity must identify a next pending target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Ordered parity cursor must advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\3 Setup\6 Edge Settings.ps1'
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\edge-settings-scope-design.md'

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -216,7 +216,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Canonical order must produce a next ordered parity target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Current first pending ordered parity target must advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path

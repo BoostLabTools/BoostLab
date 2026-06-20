@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -250,10 +250,10 @@ Assert-BoostLabTextContains -Text ([string]$unattendedRecord.GapSummary) -Needle
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target was not found.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'First pending ordered target must advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
-Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq 15) 'Ultimate parity implemented count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq  16) 'Ultimate parity implemented count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 1) 'ManualHandoffOnly count should match the current parity baseline.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'

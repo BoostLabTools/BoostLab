@@ -354,7 +354,7 @@ Assert-BoostLabCondition ([string]$visualRecord.FinalProgressStatus -eq 'DoneYaz
 Assert-BoostLabCondition ([bool]$visualRecord.YazanAcceptedNearParity) 'Visual C++ must be Yazan-accepted near parity.'
 Assert-BoostLabCondition ([bool]$visualRecord.YazanFinalException -eq $false) 'Visual C++ should not require YazanFinalException.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target must advance to Graphics Configuration Center after Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq 25) 'NearParityControlled count mismatch after Visual C++.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq 1) 'ManualHandoffOnly count mismatch after Visual C++.'

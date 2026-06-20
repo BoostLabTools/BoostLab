@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -552,7 +552,7 @@ Assert-BoostLabCondition ([bool]$msiRecord.YazanAcceptedNearParity) 'Msi Mode mu
 Assert-BoostLabCondition ([string]$msiRecord.NextParityAction -eq 'Skip; accepted near-parity.') 'Msi Mode next parity action mismatch.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Next ordered parity target should exist after Msi Mode.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target must advance to Graphics Configuration Center after Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 [pscustomobject]@{
     Success = $true

@@ -341,7 +341,7 @@ Assert-BoostLabCondition ([string]$directXRecord.ImplementationLevel -eq 'NearPa
 Assert-BoostLabCondition ([string]$directXRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'DirectX final progress status mismatch.'
 Assert-BoostLabCondition ([bool]$directXRecord.YazanAcceptedNearParity) 'DirectX must be marked YazanAcceptedNearParity.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered parity target must advance to Graphics Configuration Center after Visual C++.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch.'

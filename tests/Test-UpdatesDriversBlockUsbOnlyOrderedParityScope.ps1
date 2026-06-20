@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -140,7 +140,7 @@ foreach ($priorToolId in $priorToolIds) {
     Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $priorRecord) "Prior ordered target must already be final: $priorToolId"
 }
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target must advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(

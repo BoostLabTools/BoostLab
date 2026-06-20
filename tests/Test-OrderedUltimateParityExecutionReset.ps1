@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -212,7 +212,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 $firstNonFinal = $null
 $firstNonFinal = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinal) 'Ordered parity baseline must identify a next non-final parity target.'
-Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq 'graphics-configuration-center') 'The first ordered pending parity target should advance past Visual C++ near-parity acceptance.'
+Assert-BoostLabCondition ([string]$firstNonFinal.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'First ordered pending parity target must match the central parity baseline cursor.'
 
 [pscustomobject]@{
     Test = 'OrderedUltimateParityExecutionReset'

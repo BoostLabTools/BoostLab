@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -488,7 +488,7 @@ Assert-BoostLabCondition ([string]$p0Parity.UltimateParity -eq 'Partial') 'P0 St
 Assert-BoostLabCondition ([string]$p0Parity.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'P0 State final progress status must be accepted near-parity after source-equivalent implementation.'
 Assert-BoostLabCondition ([bool]$p0Parity.YazanAcceptedNearParity) 'P0 State Yazan accepted near-parity flag must be set.'
 Assert-BoostLabTextContains -Text ([string]$p0Parity.GapSummary) -Needle 'exact source-equivalent P0 State On (Recommended) and Default behavior' -Description 'P0 State parity gap summary'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'graphics-configuration-center') 'Next ordered pending parity target must advance to Graphics Configuration Center after Visual C++ acceptance.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parity.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
 [pscustomobject]@{
     Success = $true
