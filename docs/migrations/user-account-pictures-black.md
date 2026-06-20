@@ -6,7 +6,7 @@
 * **Source checksum:** `8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
-* **Yazan approval status:** Approved by Yazan for Phase 27
+* **Parity status:** Exact Ultimate parity implemented and accepted in Phase 140
 
 ## Original Ultimate Behavior
 
@@ -15,130 +15,110 @@ Ultimate exposes two console choices:
 * `Black`
 * `Default`
 
-The Black branch:
+The Black branch performs these source-defined operations:
 
-1. Uses `C:\ProgramData\Microsoft\User Account Pictures` as the account-picture root.
-2. Copies that folder to `C:\ProgramData\User Account Pictures` only when the destination does not already exist.
-3. Recursively enumerates only `.png` and `.bmp` files beneath the account-picture root.
-4. Reads each image's width and height.
-5. creates a new black bitmap with the same dimensions.
-6. Saves the black bitmap over the original file.
+1. If `C:\ProgramData\User Account Pictures` does not exist, copy `C:\ProgramData\Microsoft\User Account Pictures` to `C:\ProgramData`.
+2. Set the account-picture root to `C:\ProgramData\Microsoft\User Account Pictures`.
+3. Recursively enumerate `*.png` and `*.bmp` files under that root with `Get-ChildItem -Include *.png,*.bmp -Recurse`.
+4. Load `System.Drawing`.
+5. For each discovered image, read the original width and height, create a new black bitmap with the same dimensions, and save it over the same file.
+6. Silently continue per-image failures.
 
-The Default branch recursively copies `C:\ProgramData\User Account Pictures` back to `C:\ProgramData\Microsoft\User Account Pictures`.
+The Default branch copies:
 
-The source performs no registry, service, process, driver, AppX, download, installer, TrustedInstaller, Safe Mode, security-policy, or reboot behavior.
+```text
+C:\ProgramData\User Account Pictures
+```
 
-## Approved BoostLab Behavior
+to:
 
-* `Apply` preserves Ultimate's Black branch.
-* `Default` preserves Ultimate's Default intent by restoring the originals captured before Apply.
-* The target root remains exactly `%ProgramData%\Microsoft\User Account Pictures`.
-* Only recursive `.png` and `.bmp` files are eligible.
-* Each black replacement preserves the original image dimensions.
-* No additional Windows account-picture target is introduced.
+```text
+C:\ProgramData\Microsoft
+```
 
-Before changing any target, BoostLab creates and verifies a versioned tool-owned backup under the existing BoostLab ProgramData state boundary. It records target paths, backup paths, original hashes, generated hashes, dimensions, and ownership dispositions in `user-account-pictures-black.json`.
+The source performs no registry, service, process, driver, AppX, download, installer, TrustedInstaller, Safe Mode, ACL, ownership, security-policy, Explorer, sign-out, or reboot behavior.
 
-## Source-to-BoostLab Mapping
+## Preserved BoostLab Behavior
 
-| Ultimate operation | BoostLab operation | Mapping |
-|---|---|---|
-| `%ProgramData%\Microsoft\User Account Pictures` | The same target root | Exact |
-| Recursive `Get-ChildItem` for `*.png,*.bmp` | Recursive enumeration restricted to `.png` and `.bmp` | Exact scope |
-| Read original bitmap width and height | Read original bitmap width and height | Exact |
-| Create a new black bitmap | Create a new black bitmap | Exact |
-| Save over each source image | Save over the same tracked image after verified backup | Exact operational effect |
-| Backup before first Apply | Versioned, hash-verified BoostLab backup before any overwrite | Strengthened safety |
-| Copy backup to the Microsoft account-picture directory for Default | Restore each verified backup to its exact captured relative path | Same intended result with ownership enforcement |
+BoostLab preserves the source target paths, legacy backup path, recursive PNG/BMP enumeration, image read/write method, black fill, same-dimension bitmap generation, and Default copy-back behavior.
 
-Every production target maps to the single Ultimate account-picture root. BoostLab does not add user profile pictures, documents, avatars, registry paths, or other image directories.
+The Ultimate console menu, self-elevation, output, pause, and exit flow are replaced by BoostLab GUI actions, application-level Administrator enforcement, Action Plan confirmation, structured logging, and mocked validator seams. These GUI mechanics do not remove any source capability.
 
-## Backup and Ownership Policy
+There is no BoostLab manifest or captured-state restore wrapper in the exact parity implementation.
 
-BoostLab must finish backup preparation and save the ownership manifest before overwriting an image.
+## Exact Apply Behavior
 
-For each tracked file, the manifest records:
+Apply maps to the Ultimate `Black` branch:
 
-* Relative and full target path
-* Tool-owned backup path
-* Original SHA-256
-* Backup SHA-256
-* Generated black-image SHA-256
-* Original dimensions
-* Last ownership disposition
+```text
+Source backup path: C:\ProgramData\User Account Pictures
+Target root:        C:\ProgramData\Microsoft\User Account Pictures
+Included files:     *.png, *.bmp recursively
+Image fill:         Black
+```
 
-Apply is idempotent for files whose generated hash is still present. A tracked file changed outside BoostLab is left intact with a warning.
+If the legacy backup directory is absent, Apply requests the source-defined folder copy before enumerating images. It then loads `System.Drawing` and writes black images back to the same files.
 
-Default restores a file only when:
+Apply does not create a BoostLab-owned backup directory, manifest, restore record, hash inventory, ACL change, ownership change, or quarantine record.
 
-* Its backup exists and matches the captured original hash; and
-* The target is absent, already original, or still matches the BoostLab-generated hash.
+## Exact Default Behavior
 
-Unknown or externally modified files are never overwritten or deleted by Default. Untracked files beneath the approved directory are left intact and reported as warnings.
+Default maps to the Ultimate `Default` branch:
 
-The manifest records this protected disposition as `LeftIntactUnknownOwnership`.
+```text
+Copy from: C:\ProgramData\User Account Pictures
+Copy to:   C:\ProgramData\Microsoft
+```
 
-Tool-owned backup files are removed only after every tracked target verifies as restored. The ownership manifest remains as the audit record. The legacy Ultimate backup directory `%ProgramData%\User Account Pictures` is not deleted or treated as BoostLab-owned.
+Default is not Restore. It does not restore selected captured state, verify BoostLab ownership, or remove tool-owned backup files. It performs the source-defined copy-back operation only.
 
-## Intentional Deviations
+## Commands, Paths, and Files
 
-Ultimate trusts a shared folder-level backup without verifying its completeness or ownership and silently suppresses image failures. BoostLab instead:
+The implementation preserves these source paths and operations:
 
-* Uses a versioned backup set under `%ProgramData%\BoostLab\State\Backups\UserAccountPicturesBlack`.
-* Verifies every backup hash before changing any target.
-* Tracks ownership and generated hashes.
-* Leaves unknown file content intact.
-* Reports every backup, write, restore, cleanup, and verification warning or error.
+```text
+C:\ProgramData\Microsoft\User Account Pictures
+C:\ProgramData\User Account Pictures
+Copy-Item ... -Recurse -Force -ErrorAction SilentlyContinue
+Get-ChildItem ... -Include *.png,*.bmp -Recurse
+System.Drawing.Bitmap::FromFile(...)
+System.Drawing.Graphics::FromImage(...)
+System.Drawing.Color::Black
+Bitmap.Save(...)
+```
 
-These deviations are required by the approved Phase 27 backup and ownership requirements. They preserve the intended black/default effect without allowing an unverified backup to overwrite unknown files.
+The tool has no registry paths, no registry value names, no registry value types, no scheduled tasks, no services, no process handling, no Open action, and no Restore action.
 
 ## Capabilities
 
-* `RequiresAdmin = true`
-* `RequiresInternet = false`
-* `CanReboot = false`
-* `CanModifyRegistry = false`
-* `CanModifyServices = false`
-* `CanInstallSoftware = false`
-* `CanDownload = false`
-* `CanModifyDrivers = false`
-* `CanModifySecurity = false`
-* `CanDeleteFiles = true`
-* `UsesTrustedInstaller = false`
-* `UsesSafeMode = false`
-* `SupportsDefault = true`
-* `SupportsRestore = false`
-* `NeedsExplicitConfirmation = true`
+`RequiresAdmin = true`; `CanDeleteFiles = true`; `SupportsDefault = true`; `NeedsExplicitConfirmation = true`.
 
-`CanDeleteFiles` covers cleanup of verified BoostLab-owned backup files only. The tool does not delete account-picture targets or unrelated files.
+Internet, reboot, registry, service, installer, download, driver, security, TrustedInstaller, Safe Mode, and Restore capabilities are false.
+
+`CanDeleteFiles` remains true as the conservative existing file-risk flag for overwriting account-picture files. The source does not delete account-picture targets or unrelated files.
 
 ## Confirmation and Restart
 
-Apply and Default require the Action Plan confirmation flow. The plan must show Administrator and file-change requirements.
+Apply and Default require visible Action Plan confirmation.
 
-The tool does not restart Windows, restart Explorer, sign out the user, or reboot. Windows may cache an account picture until a later sign-in or normal UI refresh.
+Neither action restarts Windows, restarts Explorer, signs out the user, downloads content, launches installers, or opens external tools. Windows may cache account-picture imagery until a later sign-in or normal shell refresh.
 
-## Verification
+## Verification Strategy
 
-Verification is read-only and hash-based:
+BoostLab reports:
 
-* Apply passes when each safely targeted image matches its recorded generated black-image hash.
-* Default passes when each safely restored image matches its captured original hash.
-* Unknown ownership, inaccessible files, and untracked images are warnings.
-* Missing expected files, failed writes, failed restores, or readable contradictory hashes are failures.
+* target root
+* legacy backup root
+* copy request result
+* targeted PNG/BMP files
+* black-image write results
+* operation order
+* warnings and errors
 
-Structured results include command status, verification status, expected and detected state, target and backup paths, targeted files, backups, changed files, restored files, skipped files, unknown files, warnings, errors, and timestamp.
+`Passed` means the mocked or production adapter reported the source-defined operation path without warnings. `Warning` means the source-defined operation completed with adapter warnings, such as a suppressed backup or per-image write warning. `Failed` means an unexpected runtime error prevented completion.
 
 ## Test Requirements
 
-Tests must be static or mocked and must not modify real account-picture files. They must validate:
+Automated tests must use static inspection and injected mocks only. They must not copy, overwrite, or delete real account-picture files; mutate registry; change ACLs or ownership; stop Explorer; sign out; download; install; or reboot.
 
-* Source checksum and safety gate.
-* Exact target root and `.png`/`.bmp` scope.
-* Apply backs up every image before any overwrite.
-* Black images preserve the original dimensions.
-* Default restores verified backups.
-* Unknown target content and untracked files remain intact with warnings.
-* Only tool-owned backup files can be cleaned.
-* Confirmation, capability metadata, runtime mapping, structured results, and verification contract.
-* `source-ultimate` integrity and permanent Loudness EQ deletion.
+Tests must validate the source checksum, exact source paths, PNG/BMP scope, backup-before-enumeration order, same-file black-image write behavior, Default copy-back behavior, absence of Open/Restore, absence of BoostLab manifest/ownership wrapper behavior, capability metadata, runtime mapping, parity acceptance, cursor advancement, source-ultimate integrity, and deleted-tool exclusion.

@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'user-account-pictures-black'
+    CurrentOrderedParityTarget = 'widgets'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -501,11 +501,11 @@
             StageOrder = 6
             ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source-defined file behavior is preserved with backup and ownership tracking.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact Ultimate account-picture backup, recursive PNG/BMP black image generation, and legacy backup copy-back behavior.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm safety mechanics are accepted as final parity.'
+            NextParityAction = 'No parity work required; advance ordered cursor to widgets.'
         }
         @{
             ToolId = 'widgets'
@@ -514,11 +514,11 @@
             StageOrder = 6
             ToolOrder = 7
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve source-defined registry/process behavior.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Runtime implementation exists, but Widgets still needs its ordered parity review before final acceptance.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            NextParityAction = 'Current ordered target: verify Widgets exact Ultimate parity.'
         }
         @{
             ToolId = 'copilot'

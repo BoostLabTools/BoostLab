@@ -425,7 +425,7 @@
                     Order       = 6
                     Type        = 'action'
                     RiskLevel   = 'medium'
-                    Description = 'Back up and replace the approved Windows account pictures with black images, or safely restore the captured originals.'
+                    Description = 'Replace Windows account pictures with black images, or copy the source-defined legacy account-picture backup back to the Microsoft account-picture directory.'
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

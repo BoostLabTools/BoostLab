@@ -885,11 +885,9 @@ foreach ($toolName in $implementedTools.Keys) {
                 'System.Drawing.Bitmap'
                 'System.Drawing.Graphics'
                 'System.Drawing.Color]::Black'
-                'Copy-BoostLabAccountPictureBackup'
-                'Restore-BoostLabAccountPictureBackup'
-                'OriginalSha256'
-                'AppliedSha256'
-                'LeftIntactUnknownOwnership'
+                'Copy-BoostLabUltimateAccountPictureBackup'
+                'Copy-BoostLabUltimateAccountPictureDefault'
+                'Get-ChildItem -Path $TargetRoot -Include *.png,*.bmp -Recurse'
                 'New-BoostLabVerificationResult'
             )) {
                 if (-not $moduleSource.Contains($requiredText)) {
@@ -909,6 +907,9 @@ foreach ($toolName in $implementedTools.Keys) {
                 'UsesTrustedInstaller = $true'
                 'safeboot'
                 'source-ultimate'
+                'user-account-pictures-black.json'
+                'LeftIntactUnknownOwnership'
+                'Restore-BoostLabAccountPictureBackup'
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "User Account Pictures Black contains unrelated behavior: $forbiddenText"

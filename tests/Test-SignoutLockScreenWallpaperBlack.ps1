@@ -486,9 +486,12 @@ Assert-BoostLabCondition ($null -ne $signoutRecord) 'Signout parity baseline rec
 Assert-BoostLabCondition ([string]$signoutRecord.ImplementationLevel -eq 'ParityImplemented') 'Signout must be ParityImplemented after Phase 139.'
 Assert-BoostLabCondition ([string]$signoutRecord.UltimateParity -eq 'Yes') 'Signout UltimateParity must be Yes after Phase 139.'
 Assert-BoostLabCondition (-not [bool]$signoutRecord.YazanFinalException) 'Signout must not use YazanFinalException for exact parity.'
-Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'user-account-pictures-black') 'Current ordered parity target must advance to User Account Pictures Black.'
-$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'user-account-pictures-black') 'Ordered parity helper must resolve User Account Pictures Black as the next target.'
+$cursorRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $cursorRecord) 'Current ordered parity target must resolve to a parity baseline record.'
+$cursorOrderRecord = @($parityOrder.Stages | ForEach-Object { @($_.Tools) } | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $cursorOrderRecord) 'Current ordered parity target must resolve to the canonical ordered parity list.'
+$firstNonFinalTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
+Assert-BoostLabCondition ($null -ne $firstNonFinalTarget) 'Ordered parity helper must still resolve a first non-final target.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
@@ -575,7 +578,8 @@ Assert-BoostLabCondition (
     ExactDefaultDeletesCspKey     = $true
     ExactDefaultDeletesBlackJpg   = $true
     BackupOwnershipRemoved        = $true
-    NextOrderedParityTarget       = [string]$nextTarget.ToolId
+    CurrentOrderedParityTarget    = [string]$parityBaseline.CurrentOrderedParityTarget
+    FirstNonFinalParityTarget     = [string]$firstNonFinalTarget.ToolId
     ImplementedModuleCount        = $implementedModules.Count
     PlaceholderModuleCount        = $placeholderModules.Count
     SystemChangesExecuted         = $false
