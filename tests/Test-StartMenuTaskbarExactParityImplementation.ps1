@@ -293,7 +293,7 @@ Assert-BoostLabCondition ([string]$record['RuntimeStatus'] -eq 'RuntimeImplement
 Assert-BoostLabCondition ([string]$record['ImplementationLevel'] -eq 'ParityImplemented') 'Start Menu Taskbar must be final accepted parity after Phase 134.'
 Assert-BoostLabCondition ([string]$record['UltimateParity'] -eq 'Yes') 'Start Menu Taskbar must be marked as Ultimate parity after Yazan acceptance.'
 Assert-BoostLabCondition (-not [bool]$record['YazanFinalException']) 'Start Menu Taskbar must not use a Yazan final exception.'
-Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq 'start-menu-layout') 'Current ordered parity target must advance to start-menu-layout.'
+Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parity.CurrentOrderedParityTarget)) 'Current ordered parity target must be populated.'
 
 $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |

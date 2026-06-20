@@ -9,8 +9,8 @@
         DeferredPlaceholders = 9
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 16
-        NearParityControlled = 26
+        UltimateParityImplemented = 17
+        NearParityControlled = 25
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'start-menu-layout'
+    CurrentOrderedParityTarget = 'context-menu'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -449,13 +449,11 @@
             StageOrder = 6
             ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Runtime implementation predates ordered parity review; Start Menu Layout is now the current ordered target for acceptance or follow-up.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Yazan accepted the verified source-equivalent Apply and Default implementation as complete for ordered parity.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'NeedsYazanAcceptance'
-            NextParityAction = 'Perform ordered parity discovery/acceptance for Start Menu Layout.'
+            NextParityAction = 'No parity work required; advance ordered cursor to context-menu.'
         }
         @{
             ToolId = 'context-menu'
