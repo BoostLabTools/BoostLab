@@ -487,6 +487,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'start-menu-taskbar' -and
             $commandName -in @('New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
         )
+        $approvedSignoutWallpaperCommand = (
+            $toolId -eq 'signout-lockscreen-wallpaper-black' -and
+            $commandName -eq 'Remove-Item'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -511,7 +515,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedNvidiaSettingsCommand -and
             -not $approvedDirectXCommand -and
             -not $approvedVisualCppCommand -and
-            -not $approvedStartMenuTaskbarCommand
+            -not $approvedStartMenuTaskbarCommand -and
+            -not $approvedSignoutWallpaperCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -918,10 +923,10 @@ foreach ($entry in $expectedModules.Values) {
                 'LockScreenImagePath'
                 'LockScreenImageStatus'
                 'UpdatePerUserSystemParameters'
-                'Backup-BoostLabWallpaperFile'
-                'Restore-BoostLabWallpaperBackup'
-                'Remove-BoostLabOwnedWallpaperFile'
-                'signout-lockscreen-wallpaper-black.json'
+                'reg add'
+                'reg delete'
+                'DeleteKey'
+                'Remove-Item -Recurse -Force $Path'
                 'function Test-BoostLabSignoutWallpaperState'
                 'New-BoostLabVerificationResult'
                 'VerificationResult'
@@ -933,10 +938,10 @@ foreach ($entry in $expectedModules.Values) {
             }
 
             if (
-                $source -match
-                    'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PersonalizationCSP["'']?\s+/f'
+                $source -notmatch
+                    'reg delete\s+["'']\{0\}["'']\s+/f'
             ) {
-                $errors.Add("$modulePath contains the disallowed complete PersonalizationCSP key deletion.")
+                $errors.Add("$modulePath is missing the source-defined complete PersonalizationCSP key deletion.")
             }
 
             foreach ($forbiddenText in @(
@@ -952,6 +957,10 @@ foreach ($entry in $expectedModules.Values) {
                 'Remove-AppxPackage'
                 'UsesTrustedInstaller = $true'
                 'safeboot'
+                'Backup-BoostLabWallpaperFile'
+                'Restore-BoostLabWallpaperBackup'
+                'Remove-BoostLabOwnedWallpaperFile'
+                'signout-lockscreen-wallpaper-black.json'
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Signout LockScreen Wallpaper Black behavior: $forbiddenText")

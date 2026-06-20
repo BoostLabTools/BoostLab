@@ -741,11 +741,10 @@ foreach ($toolName in $implementedTools.Keys) {
                 'LockScreenImageStatus'
                 'HKCU\Control Panel\Desktop'
                 'UpdatePerUserSystemParameters'
-                'Backup-BoostLabWallpaperFile'
-                'Restore-BoostLabWallpaperBackup'
-                'Remove-BoostLabOwnedWallpaperFile'
-                'GeneratedFileSha256'
-                'OriginalFileSha256'
+                'reg add'
+                'reg delete'
+                'DeleteKey'
+                'Remove-Item -Recurse -Force $Path'
                 'New-BoostLabVerificationResult'
             )) {
                 if (-not $moduleSource.Contains($requiredText)) {
@@ -753,10 +752,10 @@ foreach ($toolName in $implementedTools.Keys) {
                 }
             }
             if (
-                $moduleSource -match
-                    'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PersonalizationCSP["'']?\s+/f'
+                $moduleSource -notmatch
+                    'reg delete\s+["'']\{0\}["'']\s+/f'
             ) {
-                throw 'Signout LockScreen Wallpaper Black contains the disallowed complete PersonalizationCSP key deletion.'
+                throw 'Signout LockScreen Wallpaper Black is missing the source-defined complete PersonalizationCSP key deletion.'
             }
             foreach ($forbiddenText in @(
                 'Restart-Computer'
@@ -771,6 +770,10 @@ foreach ($toolName in $implementedTools.Keys) {
                 'Remove-AppxPackage'
                 'UsesTrustedInstaller = $true'
                 'safeboot'
+                'Backup-BoostLabWallpaperFile'
+                'Restore-BoostLabWallpaperBackup'
+                'Remove-BoostLabOwnedWallpaperFile'
+                'signout-lockscreen-wallpaper-black.json'
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Signout LockScreen Wallpaper Black contains unrelated behavior: $forbiddenText"

@@ -24,7 +24,25 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
+
+function Assert-BoostLabCondition {
+    param(
+        [Parameter(Mandatory)]
+        [bool]$Condition,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
@@ -33,6 +51,7 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $recordPath = Join-Path $ProjectRoot 'docs\migrations\signout-lockscreen-wallpaper-black.md'
+$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
@@ -41,18 +60,14 @@ $tools = @($stages | ForEach-Object { $_['Tools'] })
 $tool = $tools |
     Where-Object { $_['Id'] -eq 'signout-lockscreen-wallpaper-black' } |
     Select-Object -First 1
-if ($null -eq $tool) {
-    throw 'Signout LockScreen Wallpaper Black metadata is missing.'
-}
-if (
-    [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 5 -or
-    [string]$tool['Type'] -ne 'action' -or
-    [string]$tool['RiskLevel'] -ne 'medium' -or
-    (@($tool['Actions']) -join ',') -ne 'Apply,Default'
-) {
-    throw 'Signout LockScreen Wallpaper Black stage, order, type, risk, or actions are incorrect.'
-}
+Assert-BoostLabCondition ($null -ne $tool) 'Signout LockScreen Wallpaper Black metadata is missing.'
+Assert-BoostLabCondition (
+    [string]$tool['Stage'] -eq 'Windows' -and
+    [int]$tool['Order'] -eq 5 -and
+    [string]$tool['Type'] -eq 'action' -and
+    [string]$tool['RiskLevel'] -eq 'medium' -and
+    (@($tool['Actions']) -join ',') -eq 'Apply,Default'
+) 'Signout LockScreen Wallpaper Black stage, order, type, risk, or actions are incorrect.'
 
 $capabilities = $tool['Capabilities']
 $expectedTrueCapabilities = @(
@@ -64,14 +79,13 @@ $expectedTrueCapabilities = @(
 )
 foreach ($field in $capabilities.Keys) {
     $expected = $field -in $expectedTrueCapabilities
-    if ([bool]$capabilities[$field] -ne $expected) {
-        throw "Signout LockScreen Wallpaper Black capability '$field' is incorrect."
-    }
+    Assert-BoostLabCondition ([bool]$capabilities[$field] -eq $expected) "Signout LockScreen Wallpaper Black capability '$field' is incorrect."
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C') {
-    throw 'Signout LockScreen Wallpaper Black Ultimate source hash changed.'
-}
+Assert-BoostLabCondition (
+    (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq
+        'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+) 'Signout LockScreen Wallpaper Black Ultimate source hash changed.'
 $source = Get-Content -Raw -LiteralPath $sourcePath
 foreach ($requiredText in @(
     'System.Windows.Forms.SystemInformation'
@@ -83,28 +97,39 @@ foreach ($requiredText in @(
     'HKCU\Control Panel\Desktop'
     'UpdatePerUserSystemParameters'
     'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
+    'reg delete'
+    'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP'
     'Remove-Item -Recurse -Force "C:\Windows\Black.jpg"'
 )) {
-    if (-not $source.Contains($requiredText)) {
-        throw "Ultimate source no longer contains: $requiredText"
-    }
+    Assert-BoostLabCondition ($source.Contains($requiredText)) "Ultimate source no longer contains: $requiredText"
 }
 
-if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
-    throw 'The canonical Signout LockScreen Wallpaper Black module is missing.'
-}
+Assert-BoostLabCondition (Test-Path -LiteralPath $modulePath -PathType Leaf) 'The canonical Signout LockScreen Wallpaper Black module is missing.'
 $moduleSource = Get-Content -Raw -LiteralPath $modulePath
 foreach ($requiredText in @(
     '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    'System.Windows.Forms.SystemInformation'
+    'System.Drawing.Bitmap'
+    'FillRectangle'
     'C:\Windows\Black.jpg'
     'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
     'LockScreenImagePath'
     'LockScreenImageStatus'
     'REG_DWORD'
+    'HKCU\Control Panel\Desktop'
+    'reg add'
+    'reg delete'
+    'DeleteKey'
     'UpdatePerUserSystemParameters'
-    'System.Windows.Forms.SystemInformation'
-    'System.Drawing.Bitmap'
-    'FillRectangle'
+    'Remove-Item -Recurse -Force $Path'
+    'function Test-BoostLabSignoutWallpaperState'
+    'New-BoostLabVerificationResult'
+    'VerificationResult'
+    '[bool] $Confirmed = $false'
+)) {
+    Assert-BoostLabCondition ($moduleSource.Contains($requiredText)) "Signout LockScreen Wallpaper Black module is missing: $requiredText"
+}
+foreach ($removedDeviationText in @(
     'Backup-BoostLabWallpaperFile'
     'Restore-BoostLabWallpaperBackup'
     'Remove-BoostLabOwnedWallpaperFile'
@@ -113,33 +138,13 @@ foreach ($requiredText in @(
     'OriginalFileSha256'
     'OwnershipUncertain'
     'LeftIntactUnknownOwnership'
-    'New-BoostLabVerificationResult'
-    'VerificationResult'
-    '[bool] $Confirmed = $false'
 )) {
-    if (-not $moduleSource.Contains($requiredText)) {
-        throw "Signout LockScreen Wallpaper Black module is missing: $requiredText"
-    }
+    Assert-BoostLabCondition (-not $moduleSource.Contains($removedDeviationText)) "Exact parity module still contains old safety-deviation text: $removedDeviationText"
 }
-$verificationImportIndex = $moduleSource.IndexOf('-Name $verificationModulePath')
-$verificationImportBlock = if ($verificationImportIndex -ge 0) {
-    $moduleSource.Substring(
-        $verificationImportIndex,
-        [Math]::Min(180, $moduleSource.Length - $verificationImportIndex)
-    )
-}
-else {
-    ''
-}
-if ($verificationImportBlock.Contains('-Force')) {
-    throw 'The Phase 22 module force-reloads Verification.psm1 and can remove runtime exports.'
-}
-if (
+Assert-BoostLabCondition (
     $moduleSource -match
-        'reg delete\s+["'']?HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PersonalizationCSP["'']?\s+/f'
-) {
-    throw 'The module contains the disallowed complete PersonalizationCSP key deletion.'
-}
+        'reg delete\s+["'']\{0\}["'']\s+/f'
+) 'The module no longer represents the source-defined complete PersonalizationCSP key deletion.'
 foreach ($forbiddenText in @(
     'Restart-Computer'
     'Stop-Computer'
@@ -154,9 +159,7 @@ foreach ($forbiddenText in @(
     'UsesTrustedInstaller = $true'
     'safeboot'
 )) {
-    if ($moduleSource.Contains($forbiddenText)) {
-        throw "The module contains unrelated behavior: $forbiddenText"
-    }
+    Assert-BoostLabCondition (-not $moduleSource.Contains($forbiddenText)) "The module contains unrelated behavior: $forbiddenText"
 }
 
 $tokens = $null
@@ -187,9 +190,7 @@ foreach ($forbiddenCommand in @(
     'Stop-Process'
     'Remove-AppxPackage'
 )) {
-    if (@($commands | Where-Object { $_ -eq $forbiddenCommand }).Count -gt 0) {
-        throw "The module contains forbidden command: $forbiddenCommand"
-    }
+    Assert-BoostLabCondition ((@($commands | Where-Object { $_ -eq $forbiddenCommand }).Count -eq 0)) "The module contains forbidden command: $forbiddenCommand"
 }
 
 $wallpaperModule = Import-Module `
@@ -202,116 +203,58 @@ $wallpaperModule = Import-Module `
     -ErrorAction Stop
 try {
     $toolInfo = Get-WallpaperTestBoostLabToolInfo
-    if (
-        [string]$toolInfo.Id -ne 'signout-lockscreen-wallpaper-black' -or
-        (@($toolInfo.Actions) -join ',') -ne 'Apply,Default' -or
-        (@($toolInfo.ImplementedActions) -join ',') -ne 'Apply,Default'
-    ) {
-        throw 'The module metadata or implemented actions are incorrect.'
-    }
+    Assert-BoostLabCondition (
+        [string]$toolInfo.Id -eq 'signout-lockscreen-wallpaper-black' -and
+        (@($toolInfo.Actions) -join ',') -eq 'Apply,Default' -and
+        (@($toolInfo.ImplementedActions) -join ',') -eq 'Apply,Default'
+    ) 'The module metadata or implemented actions are incorrect.'
 
     $targetPath = 'C:\Windows\Black.jpg'
     $defaultPath = 'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
     $cspKey = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\PersonalizationCSP'
     $desktopKey = 'HKCU\Control Panel\Desktop'
     $mock = @{
-        State = $null
         Files = @{}
         Registry = @{}
+        KeyExists = @{}
         Events = [System.Collections.Generic.List[string]]::new()
         RemoveCalled = $false
     }
+    $mock.KeyExists[$cspKey] = $false
+    $mock.KeyExists[$desktopKey] = $true
 
-    $newAbsentState = {
-        [pscustomobject]@{
-            ReadSucceeded = $true; Exists = $false; Active = $false
-            CreatedByBoostLab = $false; PendingApply = $false
-            BackupCreated = $false; BackupPath = $null
-            OriginalFileSha256 = $null; GeneratedFileSha256 = $null
-            OwnershipUncertain = $false; FileDisposition = 'NoState'
-            ErrorMessage = $null
-        }
-    }
-    $stateReader = {
-        if ($null -eq $mock.State) {
-            return & $newAbsentState
-        }
-
-        $copy = $mock.State | Select-Object *
-        $copy | Add-Member -NotePropertyName ReadSucceeded -NotePropertyValue $true -Force
-        $copy | Add-Member -NotePropertyName Exists -NotePropertyValue $true -Force
-        return $copy
-    }
-    $stateWriter = {
-        param($State)
-        $mock.Events.Add('StateWrite')
-        $mock.State = $State | Select-Object *
-        [pscustomobject]@{ Success = $true; Message = 'Mock state saved.' }
-    }
     $fileReader = {
         param($Path)
         if ($mock.Files.ContainsKey($Path)) {
             return $mock.Files[$Path]
         }
 
-        [pscustomobject]@{
-            Exists = $false; Path = $Path; Length = $null
-            Sha256 = $null; HashDetected = $false; ErrorMessage = $null
-        }
-    }
-    $backupWriter = {
-        param($Path)
-        $mock.Events.Add('Backup')
-        $backupPath = 'X:\BoostLabState\Black.jpg.backup'
-        $sourceState = $mock.Files[$Path]
-        $mock.Files[$backupPath] = [pscustomobject]@{
-            Exists = $true; Path = $backupPath; Length = 100
-            Sha256 = $sourceState.Sha256; HashDetected = $true; ErrorMessage = $null
-        }
-        [pscustomobject]@{
-            Success = $true; BackupPath = $backupPath
-            Sha256 = $sourceState.Sha256; Message = 'Mock backup created.'
-        }
-    }
-    $backupRestorer = {
-        param($BackupPath, $TargetPath)
-        $mock.Events.Add('RestoreBackup')
-        $backupState = $mock.Files[$BackupPath]
-        $mock.Files[$TargetPath] = [pscustomobject]@{
-            Exists = $true; Path = $TargetPath; Length = $backupState.Length
-            Sha256 = $backupState.Sha256; HashDetected = $true; ErrorMessage = $null
-        }
-        [pscustomobject]@{ Success = $true; Message = 'Mock backup restored.' }
-    }
-    $ownedFileRemover = {
-        param($Path)
-        $mock.Events.Add('RemoveOwnedFile')
-        $mock.RemoveCalled = $true
-        [void]$mock.Files.Remove($Path)
-        [pscustomobject]@{ Success = $true; Message = 'Mock owned file removed.' }
+        [pscustomobject]@{ Exists = $false; Path = $Path; Length = $null; ErrorMessage = $null }
     }
     $imageGenerator = {
         param($Path)
         $mock.Events.Add('GenerateImage')
         $mock.Files[$Path] = [pscustomobject]@{
-            Exists = $true; Path = $Path; Length = 200
-            Sha256 = 'BOOSTLAB-GENERATED'; HashDetected = $true; ErrorMessage = $null
+            Exists = $true; Path = $Path; Length = 200; ErrorMessage = $null
         }
-        [pscustomobject]@{
-            Success = $true; Width = 1920; Height = 1080
-            Message = 'Mock image generated.'
-        }
+        [pscustomobject]@{ Success = $true; Width = 1920; Height = 1080; Message = 'Mock image generated.' }
     }
     $registryRunner = {
         param($Operation)
         $mock.Events.Add("Registry:$($Operation.Operation):$($Operation.Name)")
-        $lookupKey = "$($Operation.Key)|$($Operation.Name)"
-        if ($Operation.Operation -eq 'DeleteValue') {
-            [void]$mock.Registry.Remove($lookupKey)
+        if ($Operation.Operation -eq 'DeleteKey') {
+            $mock.KeyExists[$Operation.Key] = $false
+            foreach ($key in @($mock.Registry.Keys)) {
+                if ($key.StartsWith("$($Operation.Key)|")) {
+                    [void]$mock.Registry.Remove($key)
+                }
+            }
         }
         else {
-            $mock.Registry[$lookupKey] = $Operation.Value
+            $mock.KeyExists[$Operation.Key] = $true
+            $mock.Registry["$($Operation.Key)|$($Operation.Name)"] = $Operation.Value
         }
+
         [pscustomobject]@{
             Success = $true; ExitCode = 0; Operation = $Operation.Operation
             Key = $Operation.Key; Name = $Operation.Name; Message = 'Mock registry operation completed.'
@@ -327,203 +270,126 @@ try {
             }
         }
 
+        [pscustomobject]@{ Detected = $true; Exists = $false; Value = $null; ErrorMessage = $null }
+    }
+    $registryKeyReader = {
+        param($Key)
         [pscustomobject]@{
-            Detected = $true; Exists = $false; Value = $null; ErrorMessage = $null
+            Detected = $true
+            Exists = ($mock.KeyExists.ContainsKey($Key) -and [bool]$mock.KeyExists[$Key])
+            ErrorMessage = $null
         }
     }
     $refresher = {
         $mock.Events.Add('Refresh')
         [pscustomobject]@{ Success = $true; ExitCode = 0; Message = 'Mock refresh requested.' }
     }
-
-    $mock.Files[$targetPath] = [pscustomobject]@{
-        Exists = $true; Path = $targetPath; Length = 100
-        Sha256 = 'ORIGINAL-FILE'; HashDetected = $true; ErrorMessage = $null
+    $fileRemover = {
+        param($Path)
+        $mock.Events.Add('RemoveFile')
+        $mock.RemoveCalled = $true
+        [void]$mock.Files.Remove($Path)
+        [pscustomobject]@{ Success = $true; Path = $Path; Message = 'Mock Black.jpg removed.' }
     }
+
+    $mock.Files[$targetPath] = [pscustomobject]@{ Exists = $true; Path = $targetPath; Length = 100; ErrorMessage = $null }
     $applyResult = Invoke-WallpaperTestBoostLabToolAction `
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
         -RegistryCommandRunner $registryRunner `
         -RegistryReader $registryReader `
+        -RegistryKeyReader $registryKeyReader `
         -FileReader $fileReader `
-        -StateReader $stateReader `
-        -StateWriter $stateWriter `
-        -BackupWriter $backupWriter `
-        -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover `
         -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $refresher
-    if (
-        -not [bool]$applyResult.Success -or
-        $null -eq $applyResult.VerificationResult -or
-        [string]$applyResult.VerificationResult.Status -ne 'Passed' -or
-        [string]$mock.Files[$targetPath].Sha256 -ne 'BOOSTLAB-GENERATED' -or
-        [string]$mock.State.OriginalFileSha256 -ne 'ORIGINAL-FILE' -or
-        [string]$mock.State.GeneratedFileSha256 -ne 'BOOSTLAB-GENERATED'
-    ) {
-        throw "Mocked Apply failed: $($applyResult.Message)"
+        -WallpaperRefresher $refresher `
+        -FileRemover $fileRemover
+    Assert-BoostLabCondition (
+        [bool]$applyResult.Success -and
+        $null -ne $applyResult.VerificationResult -and
+        [string]$applyResult.VerificationResult.Status -eq 'Passed' -and
+        [string]$mock.Registry["$cspKey|LockScreenImagePath"] -eq $targetPath -and
+        [int]$mock.Registry["$cspKey|LockScreenImageStatus"] -eq 1 -and
+        [string]$mock.Registry["$desktopKey|Wallpaper"] -eq $targetPath -and
+        $mock.Files.ContainsKey($targetPath)
+    ) "Mocked Apply failed: $($applyResult.Message)"
+    foreach ($orderedEvent in @('GenerateImage', 'Registry:Add:LockScreenImagePath', 'Registry:Add:LockScreenImageStatus', 'Registry:Add:Wallpaper', 'Refresh')) {
+        Assert-BoostLabCondition ($mock.Events.Contains($orderedEvent)) "Apply did not record expected event: $orderedEvent"
     }
-    if ($mock.Events.IndexOf('Backup') -gt $mock.Events.IndexOf('GenerateImage')) {
-        throw 'Apply did not back up the pre-existing Black.jpg before overwrite.'
-    }
-    if (
-        [string]$mock.Registry["$cspKey|LockScreenImagePath"] -ne $targetPath -or
-        [int]$mock.Registry["$cspKey|LockScreenImageStatus"] -ne 1 -or
-        [string]$mock.Registry["$desktopKey|Wallpaper"] -ne $targetPath
-    ) {
-        throw 'Apply did not preserve the approved registry values.'
-    }
+    Assert-BoostLabCondition (
+        $mock.Events.IndexOf('GenerateImage') -lt $mock.Events.IndexOf('Registry:Add:LockScreenImagePath') -and
+        $mock.Events.IndexOf('Registry:Add:LockScreenImagePath') -lt $mock.Events.IndexOf('Registry:Add:LockScreenImageStatus') -and
+        $mock.Events.IndexOf('Registry:Add:LockScreenImageStatus') -lt $mock.Events.IndexOf('Registry:Add:Wallpaper') -and
+        $mock.Events.IndexOf('Registry:Add:Wallpaper') -lt $mock.Events.IndexOf('Refresh')
+    ) 'Apply did not preserve the source operation order.'
+    Assert-BoostLabCondition (
+        [string]$applyResult.Data.BackupOwnershipStatus -eq 'Not used; exact Ultimate parity performs no backup or ownership tracking.'
+    ) 'Apply Latest Result still implies backup or ownership tracking.'
 
     $mock.Events.Clear()
+    $mock.RemoveCalled = $false
     $defaultResult = Invoke-WallpaperTestBoostLabToolAction `
         -ActionName 'Default' `
         -Confirmed:$true `
         -AdministratorChecker { $true } `
         -RegistryCommandRunner $registryRunner `
         -RegistryReader $registryReader `
+        -RegistryKeyReader $registryKeyReader `
         -FileReader $fileReader `
-        -StateReader $stateReader `
-        -StateWriter $stateWriter `
-        -BackupWriter $backupWriter `
-        -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover `
         -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $refresher
-    if (
-        -not [bool]$defaultResult.Success -or
-        $null -eq $defaultResult.VerificationResult -or
-        [string]$defaultResult.VerificationResult.Status -ne 'Passed' -or
-        [string]$defaultResult.Data.FileDisposition -ne 'Restored' -or
-        [string]$mock.Files[$targetPath].Sha256 -ne 'ORIGINAL-FILE' -or
-        $mock.Registry.ContainsKey("$cspKey|LockScreenImagePath") -or
-        $mock.Registry.ContainsKey("$cspKey|LockScreenImageStatus") -or
-        [string]$mock.Registry["$desktopKey|Wallpaper"] -ne $defaultPath
-    ) {
-        throw "Mocked Default backup restore failed: $($defaultResult.Message)"
+        -WallpaperRefresher $refresher `
+        -FileRemover $fileRemover
+    Assert-BoostLabCondition (
+        [bool]$defaultResult.Success -and
+        $null -ne $defaultResult.VerificationResult -and
+        [string]$defaultResult.VerificationResult.Status -eq 'Passed' -and
+        -not [bool]$mock.KeyExists[$cspKey] -and
+        [string]$mock.Registry["$desktopKey|Wallpaper"] -eq $defaultPath -and
+        -not $mock.Files.ContainsKey($targetPath) -and
+        [bool]$mock.RemoveCalled
+    ) "Mocked Default failed: $($defaultResult.Message)"
+    foreach ($orderedEvent in @('Registry:DeleteKey:', 'Registry:Add:Wallpaper', 'Refresh', 'RemoveFile')) {
+        Assert-BoostLabCondition ($mock.Events.Contains($orderedEvent)) "Default did not record expected event: $orderedEvent"
     }
-    if ($mock.Events.IndexOf('Refresh') -gt $mock.Events.IndexOf('RestoreBackup')) {
-        throw 'Default did not preserve the source order of refresh before file restore.'
-    }
+    Assert-BoostLabCondition (
+        $mock.Events.IndexOf('Registry:DeleteKey:') -lt $mock.Events.IndexOf('Registry:Add:Wallpaper') -and
+        $mock.Events.IndexOf('Registry:Add:Wallpaper') -lt $mock.Events.IndexOf('Refresh') -and
+        $mock.Events.IndexOf('Refresh') -lt $mock.Events.IndexOf('RemoveFile')
+    ) 'Default did not preserve the source operation order.'
 
-    $mock.State = [pscustomobject]@{
-        Version = 1; Active = $true; CreatedByBoostLab = $true
-        BackupCreated = $false; BackupPath = $null
-        OriginalFileSha256 = $null; GeneratedFileSha256 = 'BOOSTLAB-GENERATED'
-        OwnershipUncertain = $false; FileDisposition = 'Generated'
-    }
-    $mock.Files[$targetPath] = [pscustomobject]@{
-        Exists = $true; Path = $targetPath; Length = 200
-        Sha256 = 'BOOSTLAB-GENERATED'; HashDetected = $true; ErrorMessage = $null
-    }
+    $mock.Files[$targetPath] = [pscustomobject]@{ Exists = $true; Path = $targetPath; Length = 200; ErrorMessage = $null }
+    $mock.KeyExists[$cspKey] = $true
     $mock.Registry["$cspKey|LockScreenImagePath"] = $targetPath
     $mock.Registry["$cspKey|LockScreenImageStatus"] = 1
     $mock.Registry["$desktopKey|Wallpaper"] = $targetPath
-    $mock.RemoveCalled = $false
-    $ownedDefaultResult = Invoke-WallpaperTestBoostLabToolAction `
-        -ActionName 'Default' -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -RegistryCommandRunner $registryRunner -RegistryReader $registryReader `
-        -FileReader $fileReader -StateReader $stateReader -StateWriter $stateWriter `
-        -BackupWriter $backupWriter -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $refresher
-    if (
-        -not [bool]$ownedDefaultResult.Success -or
-        -not [bool]$mock.RemoveCalled -or
-        $mock.Files.ContainsKey($targetPath) -or
-        [string]$ownedDefaultResult.Data.FileDisposition -ne 'Removed'
-    ) {
-        throw 'Default did not remove a hash-proven BoostLab-owned Black.jpg.'
-    }
-
-    $mock.State = $null
-    $mock.Files[$targetPath] = [pscustomobject]@{
-        Exists = $true; Path = $targetPath; Length = 300
-        Sha256 = 'UNRELATED-FILE'; HashDetected = $true; ErrorMessage = $null
-    }
-    $mock.Registry["$cspKey|LockScreenImagePath"] = $targetPath
-    $mock.Registry["$cspKey|LockScreenImageStatus"] = 1
-    $mock.Registry["$desktopKey|Wallpaper"] = $targetPath
-    $mock.RemoveCalled = $false
-    $unknownDefaultResult = Invoke-WallpaperTestBoostLabToolAction `
-        -ActionName 'Default' -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -RegistryCommandRunner $registryRunner -RegistryReader $registryReader `
-        -FileReader $fileReader -StateReader $stateReader -StateWriter $stateWriter `
-        -BackupWriter $backupWriter -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $refresher
-    if (
-        -not [bool]$unknownDefaultResult.Success -or
-        [string]$unknownDefaultResult.VerificationResult.Status -ne 'Warning' -or
-        [string]$unknownDefaultResult.Data.FileDisposition -ne 'LeftIntactUnknownOwnership' -or
-        [bool]$mock.RemoveCalled -or
-        -not $mock.Files.ContainsKey($targetPath) -or
-        [string]$mock.Files[$targetPath].Sha256 -ne 'UNRELATED-FILE'
-    ) {
-        throw 'Default did not preserve an unrelated Black.jpg with a Warning.'
-    }
-
-    $mock.State = [pscustomobject]@{
-        Version = 1; Active = $false; PendingApply = $true; CreatedByBoostLab = $true
-        BackupCreated = $true; BackupPath = 'X:\BoostLabState\Black.jpg.interrupted.backup'
-        OriginalFileSha256 = 'INTERRUPTED-ORIGINAL'; GeneratedFileSha256 = $null
-        OwnershipUncertain = $false; FileDisposition = 'PendingApply'
-    }
-    $mock.Files['X:\BoostLabState\Black.jpg.interrupted.backup'] = [pscustomobject]@{
-        Exists = $true; Path = 'X:\BoostLabState\Black.jpg.interrupted.backup'; Length = 400
-        Sha256 = 'INTERRUPTED-ORIGINAL'; HashDetected = $true; ErrorMessage = $null
-    }
-    $mock.Files[$targetPath] = [pscustomobject]@{
-        Exists = $true; Path = $targetPath; Length = 200
-        Sha256 = 'INTERRUPTED-GENERATED'; HashDetected = $true; ErrorMessage = $null
-    }
-    $mock.Registry["$cspKey|LockScreenImagePath"] = $targetPath
-    $mock.Registry["$cspKey|LockScreenImageStatus"] = 1
-    $mock.Registry["$desktopKey|Wallpaper"] = $targetPath
-    $interruptedDefaultResult = Invoke-WallpaperTestBoostLabToolAction `
-        -ActionName 'Default' -Confirmed:$true `
-        -AdministratorChecker { $true } `
-        -RegistryCommandRunner $registryRunner -RegistryReader $registryReader `
-        -FileReader $fileReader -StateReader $stateReader -StateWriter $stateWriter `
-        -BackupWriter $backupWriter -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $refresher
-    if (
-        -not [bool]$interruptedDefaultResult.Success -or
-        [string]$interruptedDefaultResult.Data.FileDisposition -ne 'Restored' -or
-        [string]$mock.Files[$targetPath].Sha256 -ne 'INTERRUPTED-ORIGINAL'
-    ) {
-        throw 'Default did not restore the backup recorded by an interrupted Apply.'
-    }
-
-    $mock.State = $null
-    [void]$mock.Files.Remove($targetPath)
-    $failingRefresher = {
+    $failingRegistryRunner = {
+        param($Operation)
+        $mock.Events.Add("RegistryFail:$($Operation.Operation):$($Operation.Name)")
         [pscustomobject]@{
-            Success = $false; ExitCode = 1; Message = 'Mock wallpaper refresh failure.'
+            Success = $false; ExitCode = 1; Operation = $Operation.Operation
+            Key = $Operation.Key; Name = $Operation.Name; Message = 'Mock registry failure.'
         }
     }
-    $refreshWarningResult = Invoke-WallpaperTestBoostLabToolAction `
-        -ActionName 'Default' -Confirmed:$true `
+    $failedDefaultResult = Invoke-WallpaperTestBoostLabToolAction `
+        -ActionName 'Default' `
+        -Confirmed:$true `
         -AdministratorChecker { $true } `
-        -RegistryCommandRunner $registryRunner -RegistryReader $registryReader `
-        -FileReader $fileReader -StateReader $stateReader -StateWriter $stateWriter `
-        -BackupWriter $backupWriter -BackupRestorer $backupRestorer `
-        -OwnedFileRemover $ownedFileRemover -ImageGenerator $imageGenerator `
-        -WallpaperRefresher $failingRefresher
-    if (
-        -not [bool]$refreshWarningResult.Success -or
-        [string]$refreshWarningResult.VerificationResult.Status -ne 'Warning'
-    ) {
-        throw "A failed wallpaper refresh did not produce a Verification Warning. Success=$($refreshWarningResult.Success); Verification=$($refreshWarningResult.VerificationResult.Status); Message=$($refreshWarningResult.Message)"
-    }
+        -RegistryCommandRunner $failingRegistryRunner `
+        -RegistryReader $registryReader `
+        -RegistryKeyReader $registryKeyReader `
+        -FileReader $fileReader `
+        -ImageGenerator $imageGenerator `
+        -WallpaperRefresher $refresher `
+        -FileRemover $fileRemover
+    Assert-BoostLabCondition (
+        -not [bool]$failedDefaultResult.Success -and
+        [string]$failedDefaultResult.Data.CommandStatus -eq 'Failed verification'
+    ) 'Default reported success when mocked registry verification failed.'
 
     $cancelled = Invoke-WallpaperTestBoostLabToolAction -ActionName 'Apply' -Confirmed:$false
-    if (-not [bool]$cancelled.Cancelled -or [string]$cancelled.Message -ne 'Cancelled by user') {
-        throw 'The module did not enforce explicit confirmation.'
-    }
+    Assert-BoostLabCondition (
+        [bool]$cancelled.Cancelled -and [string]$cancelled.Message -eq 'Cancelled by user'
+    ) 'The module did not enforce explicit confirmation.'
 }
 finally {
     Remove-Module -ModuleInfo $wallpaperModule -Force -ErrorAction SilentlyContinue
@@ -540,34 +406,31 @@ $actionPlanModule = Import-Module `
 try {
     $applyPlan = New-WallpaperPlanTestBoostLabActionPlan -ToolMetadata $tool -ActionName 'Apply' -IsDryRun:$false
     $defaultPlan = New-WallpaperPlanTestBoostLabActionPlan -ToolMetadata $tool -ActionName 'Default' -IsDryRun:$false
-    if (
-        -not [bool]$applyPlan.RequiresAdmin -or
-        -not [bool]$applyPlan.NeedsExplicitConfirmation -or
-        -not [bool]$defaultPlan.NeedsExplicitConfirmation
-    ) {
-        throw 'Action Plan privilege or confirmation behavior is incorrect.'
-    }
-    $applyPlanText = @($applyPlan.PlannedChanges) -join [Environment]::NewLine
-    $defaultPlanText = @($defaultPlan.PlannedChanges) -join [Environment]::NewLine
+    Assert-BoostLabCondition (
+        [bool]$applyPlan.RequiresAdmin -and
+        [bool]$applyPlan.NeedsExplicitConfirmation -and
+        [bool]$defaultPlan.NeedsExplicitConfirmation
+    ) 'Action Plan privilege or confirmation behavior is incorrect.'
+    $applyPlanText = @(@($applyPlan.PlannedChanges) + @($applyPlan.SideEffects) + @($applyPlan.ConfirmationMessage)) -join [Environment]::NewLine
+    $defaultPlanText = @(@($defaultPlan.PlannedChanges) + @($defaultPlan.SideEffects) + @($defaultPlan.ConfirmationMessage)) -join [Environment]::NewLine
     foreach ($requiredText in @(
-        'C:\Windows\Black.jpg'
-        'PersonalizationCSP'
-        'back up'
-        'ownership metadata'
+        'Generate C:\Windows\Black.jpg'
+        'LockScreenImagePath'
+        'LockScreenImageStatus'
+        'Wallpaper value to C:\Windows\Black.jpg'
     )) {
-        if (-not $applyPlanText.Contains($requiredText)) {
-            throw "Apply Action Plan is missing: $requiredText"
-        }
+        Assert-BoostLabCondition ($applyPlanText.Contains($requiredText)) "Apply Action Plan is missing: $requiredText"
     }
     foreach ($requiredText in @(
-        'Remove only the tool-owned PersonalizationCSP values'
-        'Leave the shared PersonalizationCSP key'
-        'Restore a recorded backup'
-        'leave uncertain or unrelated files intact'
+        'Delete the complete HKLM PersonalizationCSP key'
+        'C:\Windows\Web\Wallpaper\Windows\img0.jpg'
+        'Delete C:\Windows\Black.jpg'
     )) {
-        if (-not $defaultPlanText.Contains($requiredText)) {
-            throw "Default Action Plan is missing: $requiredText"
-        }
+        Assert-BoostLabCondition ($defaultPlanText.Contains($requiredText)) "Default Action Plan is missing: $requiredText"
+    }
+    foreach ($forbiddenPlanText in @('back up', 'ownership', 'Remove only', 'Leave the shared PersonalizationCSP key')) {
+        Assert-BoostLabCondition (-not $applyPlanText.Contains($forbiddenPlanText)) "Apply Action Plan still contains old deviation wording: $forbiddenPlanText"
+        Assert-BoostLabCondition (-not $defaultPlanText.Contains($forbiddenPlanText)) "Default Action Plan still contains old deviation wording: $forbiddenPlanText"
     }
 }
 finally {
@@ -582,9 +445,7 @@ foreach ($requiredText in @(
     'ToolAction.VerificationRuntimeFailed'
     'Verification contract validation failed'
 )) {
-    if (-not $executionSource.Contains($requiredText)) {
-        throw "Execution runtime mapping is missing: $requiredText"
-    }
+    Assert-BoostLabCondition ($executionSource.Contains($requiredText)) "Execution runtime mapping is missing: $requiredText"
 }
 
 $uiSource = Get-Content -Raw -LiteralPath $uiPath
@@ -596,27 +457,41 @@ foreach ($requiredText in @(
     'File paths checked'
     'Backup / ownership status'
 )) {
-    if (-not $uiSource.Contains($requiredText)) {
-        throw "Latest Result rendering is missing: $requiredText"
-    }
+    Assert-BoostLabCondition ($uiSource.Contains($requiredText)) "Latest Result rendering is missing: $requiredText"
 }
 
-if (-not (Test-Path -LiteralPath $recordPath -PathType Leaf)) {
-    throw 'The Signout LockScreen Wallpaper Black migration record is missing.'
-}
+Assert-BoostLabCondition (Test-Path -LiteralPath $recordPath -PathType Leaf) 'The Signout LockScreen Wallpaper Black migration record is missing.'
 $recordSource = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+    'Exact Ultimate parity implemented and accepted in Phase 139'
+    'Default deletes the complete `PersonalizationCSP` key'
+    'There is no BoostLab backup or ownership-state wrapper'
+    'Default is not Restore'
+)) {
+    Assert-BoostLabCondition ($recordSource.Contains($requiredText)) "Migration record is missing: $requiredText"
+}
+foreach ($forbiddenRecordText in @(
     'Yazan-Approved Registry Deviation'
     'Yazan-Approved File Ownership Deviation'
     'does not delete this shared key'
     'removes only the exact values managed by this tool'
     'left intact and the result is `Warning`'
 )) {
-    if (-not $recordSource.Contains($requiredText)) {
-        throw "Migration record is missing: $requiredText"
-    }
+    Assert-BoostLabCondition (-not $recordSource.Contains($forbiddenRecordText)) "Migration record still contains old deviation text: $forbiddenRecordText"
 }
+
+$signoutRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'signout-lockscreen-wallpaper-black' }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $signoutRecord) 'Signout parity baseline record is missing.'
+Assert-BoostLabCondition ([string]$signoutRecord.ImplementationLevel -eq 'ParityImplemented') 'Signout must be ParityImplemented after Phase 139.'
+Assert-BoostLabCondition ([string]$signoutRecord.UltimateParity -eq 'Yes') 'Signout UltimateParity must be Yes after Phase 139.'
+Assert-BoostLabCondition (-not [bool]$signoutRecord.YazanFinalException) 'Signout must not use YazanFinalException for exact parity.'
+Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'user-account-pictures-black') 'Current ordered parity target must advance to User Account Pictures Black.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq 'user-account-pictures-black') 'Ordered parity helper must resolve User Account Pictures Black as the next target.'
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 
 $protectedModuleHashes = [ordered]@{
     'Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
@@ -628,19 +503,23 @@ $protectedModuleHashes = [ordered]@{
 }
 foreach ($relativePath in $protectedModuleHashes.Keys) {
     $protectedPath = Join-Path $modulesRoot $relativePath
-    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $protectedPath).Hash -ne $protectedModuleHashes[$relativePath]) {
-        throw "Protected module changed during Phase 22: $relativePath"
-    }
+    Assert-BoostLabCondition (
+        (Get-FileHash -Algorithm SHA256 -LiteralPath $protectedPath).Hash -eq $protectedModuleHashes[$relativePath]
+    ) "Protected module changed during Phase 139: $relativePath"
 }
+
+$sourceUltimateFiles = @(
+    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -ErrorAction Stop |
+        Where-Object { $_.FullName -notlike '*\17 Loudness EQ.ps1' }
+)
+Assert-BoostLabCondition ($sourceUltimateFiles.Count -gt 0) 'source-ultimate inventory is unexpectedly empty.'
 
 $gameBarSource = Get-Content -Raw -LiteralPath (Join-Path $modulesRoot 'Windows\game-bar.psm1')
 $copilotSource = Get-Content -Raw -LiteralPath (Join-Path $modulesRoot 'Windows\copilot.psm1')
-if (
-    -not $gameBarSource.Contains('ToolModule.Placeholder.ps1') -or
-    -not $copilotSource.Contains('ToolModule.Placeholder.ps1')
-) {
-    throw 'GameBar or Copilot is no longer a placeholder.'
-}
+Assert-BoostLabCondition (
+    $gameBarSource.Contains('ToolModule.Placeholder.ps1') -and
+    $copilotSource.Contains('ToolModule.Placeholder.ps1')
+) 'GameBar or Copilot is no longer a placeholder.'
 
 $deletedToolNames = @(
     'Windows Activation Helper'
@@ -665,9 +544,7 @@ $deletedToolNames = @(
 )
 $toolTitles = @($tools | ForEach-Object { [string]$_['Title'] })
 foreach ($deletedToolName in $deletedToolNames) {
-    if ($deletedToolName -in $toolTitles) {
-        throw "Deleted tool was reintroduced: $deletedToolName"
-    }
+    Assert-BoostLabCondition ($deletedToolName -notin $toolTitles) "Deleted tool was reintroduced: $deletedToolName"
 }
 
 $allModules = @(
@@ -684,27 +561,23 @@ $placeholderModules = @(
         (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
     }
 )
-if (
-    $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
-    $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
-) {
-    throw "Unexpected module counts: $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
-}
+Assert-BoostLabCondition (
+    $implementedModules.Count -eq $inventoryBaseline.ImplementedTools -and
+    $placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders
+) "Unexpected module counts: $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 
 [pscustomobject]@{
-    Success                    = $true
-    Tool                       = 'Signout LockScreen Wallpaper Black'
-    ImplementedActions         = @('Apply', 'Default')
-    MockedApplyPassed          = $true
-    MockedBackupRestorePassed  = $true
-    MockedOwnedDeletePassed    = $true
-    MockedUnknownFilePreserved = $true
-    MockedInterruptedApplyRestored = $true
-    MockedRefreshWarningPassed = $true
-    ImplementedModuleCount     = $implementedModules.Count
-    PlaceholderModuleCount     = $placeholderModules.Count
-    SystemChangesExecuted      = $false
-    Timestamp                  = Get-Date
+    Success                       = $true
+    Tool                          = 'Signout LockScreen Wallpaper Black'
+    ImplementedActions            = @('Apply', 'Default')
+    MockedApplyPassed             = $true
+    MockedDefaultPassed           = $true
+    ExactDefaultDeletesCspKey     = $true
+    ExactDefaultDeletesBlackJpg   = $true
+    BackupOwnershipRemoved        = $true
+    NextOrderedParityTarget       = [string]$nextTarget.ToolId
+    ImplementedModuleCount        = $implementedModules.Count
+    PlaceholderModuleCount        = $placeholderModules.Count
+    SystemChangesExecuted         = $false
+    Timestamp                     = Get-Date
 }
-
-

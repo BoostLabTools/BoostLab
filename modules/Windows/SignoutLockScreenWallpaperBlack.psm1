@@ -67,7 +67,6 @@ function Test-BoostLabToolCompatibility {
     if ($env:OS -ne 'Windows_NT') {
         $reasons.Add('This tool requires Windows.')
     }
-
     if (-not (Test-Path -LiteralPath 'C:\Windows')) {
         $reasons.Add('The original Ultimate target path C:\Windows is unavailable.')
     }
@@ -84,243 +83,71 @@ function Test-BoostLabToolCompatibility {
             }
         }
     }
-    if ([string]::IsNullOrWhiteSpace($env:ProgramData)) {
-        $reasons.Add('ProgramData is unavailable for ownership and backup metadata.')
-    }
 
     $supported = $reasons.Count -eq 0
     [pscustomobject]@{
         Supported = $supported
-        Reason    = if ($supported) { 'Windows image, registry, and wallpaper refresh support are available.' } else { $reasons -join ' ' }
+        Reason    = if ($supported) { 'Windows image, registry, file-delete, and wallpaper refresh support are available.' } else { $reasons -join ' ' }
         Reasons   = @($reasons)
     }
 }
 
-function Get-BoostLabWallpaperStatePaths {
+function Get-BoostLabStateProperty {
     [CmdletBinding()]
-    param()
+    param(
+        [AllowNull()]
+        [object] $InputObject,
 
-    $programData = if ([string]::IsNullOrWhiteSpace($env:ProgramData)) {
-        [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        [AllowNull()]
+        [object] $DefaultValue = $null
+    )
+
+    if ($null -eq $InputObject) {
+        return $DefaultValue
     }
-    else {
-        $env:ProgramData
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        if ($InputObject.Contains($Name)) {
+            return $InputObject[$Name]
+        }
+
+        return $DefaultValue
     }
 
-    $stateDirectory = Join-Path $programData 'BoostLab\State'
-    $backupDirectory = Join-Path $stateDirectory 'Backups\SignoutLockScreenWallpaperBlack'
-
-    [pscustomobject]@{
-        StateDirectory  = $stateDirectory
-        BackupDirectory = $backupDirectory
-        MetadataPath    = Join-Path $stateDirectory 'signout-lockscreen-wallpaper-black.json'
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $DefaultValue
     }
+
+    return $property.Value
 }
 
-function Get-BoostLabWallpaperOwnershipState {
-    [CmdletBinding()]
-    param()
-
-    $paths = Get-BoostLabWallpaperStatePaths
-    if (-not [IO.File]::Exists($paths.MetadataPath)) {
-        return [pscustomobject]@{
-            ReadSucceeded      = $true
-            Exists             = $false
-            Active             = $false
-            CreatedByBoostLab  = $false
-            PendingApply       = $false
-            BackupCreated      = $false
-            BackupPath         = $null
-            OriginalFileSha256 = $null
-            GeneratedFileSha256 = $null
-            OwnershipUncertain = $false
-            FileDisposition    = 'NoState'
-            MetadataPath       = $paths.MetadataPath
-            ErrorMessage       = $null
-        }
-    }
-
-    try {
-        $state = [IO.File]::ReadAllText($paths.MetadataPath) | ConvertFrom-Json -ErrorAction Stop
-        $state | Add-Member -NotePropertyName ReadSucceeded -NotePropertyValue $true -Force
-        $state | Add-Member -NotePropertyName Exists -NotePropertyValue $true -Force
-        $state | Add-Member -NotePropertyName MetadataPath -NotePropertyValue $paths.MetadataPath -Force
-        $state | Add-Member -NotePropertyName ErrorMessage -NotePropertyValue $null -Force
-        return $state
-    }
-    catch {
-        return [pscustomobject]@{
-            ReadSucceeded      = $false
-            Exists             = $true
-            Active             = $false
-            CreatedByBoostLab  = $false
-            PendingApply       = $false
-            BackupCreated      = $false
-            BackupPath         = $null
-            OriginalFileSha256 = $null
-            GeneratedFileSha256 = $null
-            OwnershipUncertain = $true
-            FileDisposition    = 'StateReadFailed'
-            MetadataPath       = $paths.MetadataPath
-            ErrorMessage       = $_.Exception.Message
-        }
-    }
-}
-
-function Save-BoostLabWallpaperOwnershipState {
+function Get-BoostLabSignoutWallpaperOperations {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [object] $State
+        [ValidateSet('Apply', 'Default')]
+        [string] $ActionName
     )
 
-    try {
-        $paths = Get-BoostLabWallpaperStatePaths
-        [void][IO.Directory]::CreateDirectory($paths.StateDirectory)
-        $json = $State | ConvertTo-Json -Depth 8
-        [IO.File]::WriteAllText($paths.MetadataPath, $json, [Text.UTF8Encoding]::new($false))
-
-        [pscustomobject]@{
-            Success      = $true
-            MetadataPath = $paths.MetadataPath
-            Message      = 'Ownership metadata saved.'
-        }
+    if ($ActionName -eq 'Apply') {
+        return @(
+            [pscustomobject]@{ Operation = 'GenerateImage'; Path = $script:TargetPath }
+            [pscustomobject]@{ Operation = 'Add'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImagePath'; Type = 'REG_SZ'; Value = $script:TargetPath }
+            [pscustomobject]@{ Operation = 'Add'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImageStatus'; Type = 'REG_DWORD'; Value = 1 }
+            [pscustomobject]@{ Operation = 'Add'; Key = $script:DesktopKey; Name = 'Wallpaper'; Type = 'REG_SZ'; Value = $script:TargetPath }
+            [pscustomobject]@{ Operation = 'RefreshWallpaper' }
+        )
     }
-    catch {
-        [pscustomobject]@{
-            Success      = $false
-            MetadataPath = (Get-BoostLabWallpaperStatePaths).MetadataPath
-            Message      = $_.Exception.Message
-        }
-    }
-}
 
-function Get-BoostLabWallpaperFileState {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string] $Path
+    return @(
+        [pscustomobject]@{ Operation = 'DeleteKey'; Key = $script:PersonalizationCspKey }
+        [pscustomobject]@{ Operation = 'Add'; Key = $script:DesktopKey; Name = 'Wallpaper'; Type = 'REG_SZ'; Value = $script:DefaultWallpaperPath }
+        [pscustomobject]@{ Operation = 'RefreshWallpaper' }
+        [pscustomobject]@{ Operation = 'RemoveFile'; Path = $script:TargetPath }
     )
-
-    if (-not [IO.File]::Exists($Path)) {
-        return [pscustomobject]@{
-            Exists       = $false
-            Path         = $Path
-            Length       = $null
-            Sha256       = $null
-            HashDetected = $false
-            ErrorMessage = $null
-        }
-    }
-
-    try {
-        $file = [IO.FileInfo]::new($Path)
-        $hash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256 -ErrorAction Stop).Hash
-        [pscustomobject]@{
-            Exists       = $true
-            Path         = $Path
-            Length       = $file.Length
-            Sha256       = $hash
-            HashDetected = $true
-            ErrorMessage = $null
-        }
-    }
-    catch {
-        [pscustomobject]@{
-            Exists       = $true
-            Path         = $Path
-            Length       = $null
-            Sha256       = $null
-            HashDetected = $false
-            ErrorMessage = $_.Exception.Message
-        }
-    }
-}
-
-function Backup-BoostLabWallpaperFile {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string] $SourcePath
-    )
-
-    try {
-        $paths = Get-BoostLabWallpaperStatePaths
-        [void][IO.Directory]::CreateDirectory($paths.BackupDirectory)
-        $stamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
-        $backupPath = Join-Path $paths.BackupDirectory "Black.jpg.$stamp.backup"
-        [IO.File]::Copy($SourcePath, $backupPath, $false)
-        $backupState = Get-BoostLabWallpaperFileState -Path $backupPath
-
-        [pscustomobject]@{
-            Success    = $true
-            BackupPath = $backupPath
-            Sha256     = $backupState.Sha256
-            Message    = 'Pre-existing Black.jpg backed up.'
-        }
-    }
-    catch {
-        [pscustomobject]@{
-            Success    = $false
-            BackupPath = $null
-            Sha256     = $null
-            Message    = $_.Exception.Message
-        }
-    }
-}
-
-function Restore-BoostLabWallpaperBackup {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string] $BackupPath,
-
-        [Parameter(Mandatory)]
-        [string] $TargetPath
-    )
-
-    try {
-        if (-not [IO.File]::Exists($BackupPath)) {
-            throw "The recorded backup does not exist: $BackupPath"
-        }
-
-        [IO.File]::Copy($BackupPath, $TargetPath, $true)
-        [pscustomobject]@{
-            Success = $true
-            Message = 'Pre-existing Black.jpg restored from the BoostLab backup.'
-        }
-    }
-    catch {
-        [pscustomobject]@{
-            Success = $false
-            Message = $_.Exception.Message
-        }
-    }
-}
-
-function Remove-BoostLabOwnedWallpaperFile {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        [string] $Path
-    )
-
-    try {
-        if ([IO.File]::Exists($Path)) {
-            [IO.File]::Delete($Path)
-        }
-
-        [pscustomobject]@{
-            Success = $true
-            Message = 'BoostLab-owned Black.jpg removed.'
-        }
-    }
-    catch {
-        [pscustomobject]@{
-            Success = $false
-            Message = $_.Exception.Message
-        }
-    }
 }
 
 function New-BoostLabBlackWallpaperImage {
@@ -336,13 +163,12 @@ function New-BoostLabBlackWallpaperImage {
     $primaryMonitorSize = [System.Windows.Forms.SystemInformation]::PrimaryMonitorSize
     $bitmap = $null
     $graphics = $null
-    $brush = $null
 
     try {
         $bitmap = New-Object System.Drawing.Bitmap $primaryMonitorSize.Width, $primaryMonitorSize.Height
         $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-        $brush = [System.Drawing.Brushes]::Black
-        $graphics.FillRectangle($brush, 0, 0, $bitmap.Width, $bitmap.Height)
+        $color = [System.Drawing.Brushes]::Black
+        $graphics.FillRectangle($color, 0, 0, $bitmap.Width, $bitmap.Height)
         $graphics.Dispose()
         $graphics = $null
         $bitmap.Save($Path)
@@ -375,7 +201,7 @@ function Invoke-BoostLabSignoutWallpaperRegistryCommand {
         [object] $Operation
     )
 
-    $commandText = switch ($Operation.Operation) {
+    $commandText = switch ([string]$Operation.Operation) {
         'Add' {
             'reg add "{0}" /v "{1}" /t {2} /d "{3}" /f' -f `
                 $Operation.Key, `
@@ -383,8 +209,8 @@ function Invoke-BoostLabSignoutWallpaperRegistryCommand {
                 $Operation.Type, `
                 [string]$Operation.Value
         }
-        'DeleteValue' {
-            'reg delete "{0}" /v "{1}" /f' -f $Operation.Key, $Operation.Name
+        'DeleteKey' {
+            'reg delete "{0}" /f' -f $Operation.Key
         }
         default {
             throw "Unsupported registry operation '$($Operation.Operation)'."
@@ -399,9 +225,9 @@ function Invoke-BoostLabSignoutWallpaperRegistryCommand {
     [pscustomobject]@{
         Success   = ($exitCode -eq 0)
         ExitCode  = $exitCode
-        Operation = $Operation.Operation
-        Key       = $Operation.Key
-        Name      = $Operation.Name
+        Operation = [string]$Operation.Operation
+        Key       = Get-BoostLabStateProperty $Operation 'Key'
+        Name      = Get-BoostLabStateProperty $Operation 'Name'
         Message   = $message
     }
 }
@@ -431,6 +257,57 @@ function Invoke-BoostLabWallpaperRefresh {
             Success  = $false
             ExitCode = $null
             Message  = $_.Exception.Message
+        }
+    }
+}
+
+function Remove-BoostLabBlackWallpaperFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path
+    )
+
+    Remove-Item -Recurse -Force $Path -ErrorAction SilentlyContinue | Out-Null
+
+    [pscustomobject]@{
+        Success = $true
+        Path    = $Path
+        Message = 'Source-defined Black.jpg delete requested.'
+    }
+}
+
+function Get-BoostLabWallpaperFileState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path
+    )
+
+    if (-not [IO.File]::Exists($Path)) {
+        return [pscustomobject]@{
+            Exists       = $false
+            Path         = $Path
+            Length       = $null
+            ErrorMessage = $null
+        }
+    }
+
+    try {
+        $file = [IO.FileInfo]::new($Path)
+        [pscustomobject]@{
+            Exists       = $true
+            Path         = $Path
+            Length       = $file.Length
+            ErrorMessage = $null
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            Exists       = $true
+            Path         = $Path
+            Length       = $null
+            ErrorMessage = $_.Exception.Message
         }
     }
 }
@@ -481,29 +358,36 @@ function Get-BoostLabRegistryValueState {
     }
 }
 
-function Get-BoostLabStateProperty {
+function Get-BoostLabRegistryKeyState {
     [CmdletBinding()]
     param(
-        [AllowNull()]
-        [object] $InputObject,
-
         [Parameter(Mandatory)]
-        [string] $Name,
-
-        [AllowNull()]
-        [object] $DefaultValue = $null
+        [string] $Key
     )
 
-    if ($null -eq $InputObject) {
-        return $DefaultValue
+    $normalizedKey = $Key -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU:\'
+    try {
+        $null = Get-Item -LiteralPath $normalizedKey -ErrorAction Stop
+        [pscustomobject]@{
+            Detected     = $true
+            Exists       = $true
+            ErrorMessage = $null
+        }
     }
-
-    $property = $InputObject.PSObject.Properties[$Name]
-    if ($null -eq $property) {
-        return $DefaultValue
+    catch [System.Management.Automation.ItemNotFoundException] {
+        [pscustomobject]@{
+            Detected     = $true
+            Exists       = $false
+            ErrorMessage = $null
+        }
     }
-
-    return $property.Value
+    catch {
+        [pscustomobject]@{
+            Detected     = $false
+            Exists       = $false
+            ErrorMessage = $_.Exception.Message
+        }
+    }
 }
 
 function Test-BoostLabSignoutWallpaperState {
@@ -513,12 +397,14 @@ function Test-BoostLabSignoutWallpaperState {
         [ValidateSet('Apply', 'Default')]
         [string] $ActionName,
 
-        [AllowNull()]
-        [object] $OwnershipState,
-
         [scriptblock] $RegistryReader = {
             param($Key, $Name)
             Get-BoostLabRegistryValueState -Key $Key -Name $Name
+        },
+
+        [scriptblock] $RegistryKeyReader = {
+            param($Key)
+            Get-BoostLabRegistryKeyState -Key $Key
         },
 
         [scriptblock] $FileReader = {
@@ -527,52 +413,39 @@ function Test-BoostLabSignoutWallpaperState {
         }
     )
 
-    $definitions = if ($ActionName -eq 'Apply') {
-        @(
-            [pscustomobject]@{
-                Name     = 'LockScreenImagePath'
-                Key      = $script:PersonalizationCspKey
-                Value    = $script:TargetPath
-                MustExist = $true
-            }
-            [pscustomobject]@{
-                Name     = 'LockScreenImageStatus'
-                Key      = $script:PersonalizationCspKey
-                Value    = 1
-                MustExist = $true
-            }
-            [pscustomobject]@{
-                Name     = 'Wallpaper'
-                Key      = $script:DesktopKey
-                Value    = $script:TargetPath
-                MustExist = $true
-            }
+    $checks = [System.Collections.Generic.List[object]]::new()
+    if ($ActionName -eq 'Apply') {
+        $definitions = @(
+            [pscustomobject]@{ Name = 'LockScreenImagePath'; Key = $script:PersonalizationCspKey; Value = $script:TargetPath }
+            [pscustomobject]@{ Name = 'LockScreenImageStatus'; Key = $script:PersonalizationCspKey; Value = 1 }
+            [pscustomobject]@{ Name = 'Wallpaper'; Key = $script:DesktopKey; Value = $script:TargetPath }
         )
     }
     else {
-        @(
-            [pscustomobject]@{
-                Name     = 'LockScreenImagePath'
-                Key      = $script:PersonalizationCspKey
-                Value    = $null
-                MustExist = $false
-            }
-            [pscustomobject]@{
-                Name     = 'LockScreenImageStatus'
-                Key      = $script:PersonalizationCspKey
-                Value    = $null
-                MustExist = $false
-            }
-            [pscustomobject]@{
-                Name     = 'Wallpaper'
-                Key      = $script:DesktopKey
-                Value    = $script:DefaultWallpaperPath
-                MustExist = $true
-            }
+        $keyState = & $RegistryKeyReader $script:PersonalizationCspKey
+        $keyDetected = [bool](Get-BoostLabStateProperty $keyState 'Detected' $false)
+        $keyExists = [bool](Get-BoostLabStateProperty $keyState 'Exists' $false)
+        $keyStatus = if (-not $keyDetected) {
+            'Warning'
+        }
+        elseif ($keyExists) {
+            'Failed'
+        }
+        else {
+            'Passed'
+        }
+        $checks.Add((New-BoostLabVerificationCheck `
+            -Name "Registry key: $script:PersonalizationCspKey" `
+            -Expected 'Absent' `
+            -Actual $(if (-not $keyDetected) { 'Unknown' } elseif ($keyExists) { 'Present' } else { 'Absent' }) `
+            -Status $keyStatus `
+            -Message $(if ($keyStatus -eq 'Passed') { 'The complete PersonalizationCSP key is absent as Ultimate Default defines.' } elseif ($keyStatus -eq 'Failed') { 'The PersonalizationCSP key still exists.' } else { 'The PersonalizationCSP key state could not be detected.' })))
+
+        $definitions = @(
+            [pscustomobject]@{ Name = 'Wallpaper'; Key = $script:DesktopKey; Value = $script:DefaultWallpaperPath }
         )
     }
 
-    $checks = [System.Collections.Generic.List[object]]::new()
     foreach ($definition in $definitions) {
         $detected = & $RegistryReader $definition.Key $definition.Name
         $status = 'Warning'
@@ -580,16 +453,7 @@ function Test-BoostLabSignoutWallpaperState {
 
         if ([bool](Get-BoostLabStateProperty $detected 'Detected' $false)) {
             $exists = [bool](Get-BoostLabStateProperty $detected 'Exists' $false)
-            if (-not $definition.MustExist) {
-                $status = if ($exists) { 'Failed' } else { 'Passed' }
-                $message = if ($exists) {
-                    "$($definition.Name) still exists."
-                }
-                else {
-                    "$($definition.Name) is absent as expected."
-                }
-            }
-            elseif (-not $exists) {
+            if (-not $exists) {
                 $status = 'Failed'
                 $message = "$($definition.Name) is missing."
             }
@@ -609,101 +473,26 @@ function Test-BoostLabSignoutWallpaperState {
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Registry: $($definition.Key)\$($definition.Name)" `
             -Status $status `
-            -Expected $(if ($definition.MustExist) { [string]$definition.Value } else { 'Absent' }) `
+            -Expected ([string]$definition.Value) `
             -Actual $(if ($null -eq $detected) { 'Unknown' } elseif ([bool](Get-BoostLabStateProperty $detected 'Exists' $false)) { [string](Get-BoostLabStateProperty $detected 'Value') } else { 'Absent' }) `
             -Message $message))
     }
 
     $fileState = & $FileReader $script:TargetPath
-    $fileStatus = 'Warning'
-    $fileExpected = if ($ActionName -eq 'Apply') { 'BoostLab-owned generated file' } else { 'Restored backup, absent owned file, or preserved unknown file' }
-    $fileDetected = if ([bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) { 'Present' } else { 'Absent' }
-    $fileMessage = 'File ownership state could not be verified.'
-
-    if ($ActionName -eq 'Apply') {
-        $generatedHash = [string](Get-BoostLabStateProperty $OwnershipState 'GeneratedFileSha256' '')
-        if (-not [bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) {
-            $fileStatus = 'Failed'
-            $fileMessage = 'Black.jpg is missing after Apply.'
-        }
-        elseif ([string]::IsNullOrWhiteSpace($generatedHash) -or -not [bool](Get-BoostLabStateProperty $fileState 'HashDetected' $false)) {
-            $fileStatus = 'Warning'
-            $fileMessage = 'Black.jpg exists, but its ownership hash could not be verified.'
-        }
-        elseif ([string](Get-BoostLabStateProperty $fileState 'Sha256' '') -eq $generatedHash) {
-            $fileStatus = 'Passed'
-            $fileMessage = 'Black.jpg matches the generated BoostLab-owned file.'
-        }
-        else {
-            $fileStatus = 'Failed'
-            $fileMessage = 'Black.jpg does not match the generated ownership hash.'
-        }
+    $fileExists = [bool](Get-BoostLabStateProperty $fileState 'Exists' $false)
+    $fileExpected = if ($ActionName -eq 'Apply') { 'Present' } else { 'Absent' }
+    $fileStatus = if ($ActionName -eq 'Apply') {
+        if ($fileExists) { 'Passed' } else { 'Failed' }
     }
     else {
-        $disposition = [string](Get-BoostLabStateProperty $OwnershipState 'FileDisposition' 'Unknown')
-        switch ($disposition) {
-            'Restored' {
-                $originalHash = [string](Get-BoostLabStateProperty $OwnershipState 'OriginalFileSha256' '')
-                if (-not [bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) {
-                    $fileStatus = 'Failed'
-                    $fileMessage = 'The recorded pre-existing Black.jpg was not restored.'
-                }
-                elseif ([string]::IsNullOrWhiteSpace($originalHash) -or -not [bool](Get-BoostLabStateProperty $fileState 'HashDetected' $false)) {
-                    $fileStatus = 'Warning'
-                    $fileMessage = 'The backup was restored, but its hash could not be verified.'
-                }
-                elseif ([string](Get-BoostLabStateProperty $fileState 'Sha256' '') -eq $originalHash) {
-                    $fileStatus = 'Passed'
-                    $fileMessage = 'The pre-existing Black.jpg backup was restored.'
-                }
-                else {
-                    $fileStatus = 'Failed'
-                    $fileMessage = 'The restored Black.jpg does not match the recorded backup hash.'
-                }
-            }
-            'Removed' {
-                $fileStatus = if ([bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) { 'Failed' } else { 'Passed' }
-                $fileMessage = if ($fileStatus -eq 'Passed') { 'The BoostLab-owned Black.jpg was removed.' } else { 'The BoostLab-owned Black.jpg is still present.' }
-            }
-            'AlreadyAbsent' {
-                $fileStatus = if ([bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) { 'Failed' } else { 'Passed' }
-                $fileMessage = if ($fileStatus -eq 'Passed') { 'Black.jpg was already absent.' } else { 'Black.jpg unexpectedly exists.' }
-            }
-            'AlreadyDefault' {
-                $fileStatus = 'Passed'
-                $fileMessage = 'No active BoostLab file ownership remained to undo.'
-            }
-            'LeftIntactUnknownOwnership' {
-                $fileStatus = 'Warning'
-                $fileMessage = 'Black.jpg was left intact because BoostLab could not prove ownership.'
-            }
-            'BackupMissing' {
-                $fileStatus = 'Warning'
-                $fileMessage = 'The recorded backup was missing, so Black.jpg was left intact.'
-            }
-            default {
-                $fileStatus = 'Warning'
-                $fileMessage = 'The file disposition is unknown.'
-            }
-        }
+        if ($fileExists) { 'Failed' } else { 'Passed' }
     }
-
     $checks.Add((New-BoostLabVerificationCheck `
-        -Name 'File ownership and disposition' `
+        -Name "File: $script:TargetPath" `
         -Status $fileStatus `
         -Expected $fileExpected `
-        -Actual $fileDetected `
-        -Message $fileMessage))
-
-    $ownershipActive = [bool](Get-BoostLabStateProperty $OwnershipState 'Active' $false)
-    $expectedOwnership = ($ActionName -eq 'Apply')
-    $ownershipStatus = if ($ownershipActive -eq $expectedOwnership) { 'Passed' } else { 'Failed' }
-    $checks.Add((New-BoostLabVerificationCheck `
-        -Name 'Ownership metadata' `
-        -Status $ownershipStatus `
-        -Expected $(if ($expectedOwnership) { 'Active' } else { 'Inactive' }) `
-        -Actual $(if ($ownershipActive) { 'Active' } else { 'Inactive' }) `
-        -Message $(if ($ownershipStatus -eq 'Passed') { 'Ownership metadata matches the requested action.' } else { 'Ownership metadata does not match the requested action.' })))
+        -Actual $(if ($fileExists) { 'Present' } else { 'Absent' }) `
+        -Message $(if ($fileStatus -eq 'Passed') { 'Black.jpg matches the requested source state.' } else { 'Black.jpg does not match the requested source state.' })))
 
     $failedChecks = @($checks | Where-Object Status -eq 'Failed')
     $warningChecks = @($checks | Where-Object Status -eq 'Warning')
@@ -720,7 +509,7 @@ function Test-BoostLabSignoutWallpaperState {
         'Black wallpaper active'
     }
     else {
-        'Approved default restored'
+        'Source default wallpaper restored'
     }
     $detectedDescription = if ($status -eq 'Failed') {
         'Mismatch detected'
@@ -740,34 +529,22 @@ function Test-BoostLabSignoutWallpaperState {
         -ExpectedState ([pscustomobject]@{ Wallpaper = $expectedDescription }) `
         -DetectedState ([pscustomobject]@{
             Wallpaper = $detectedDescription
-            FileDisposition = [string](Get-BoostLabStateProperty $OwnershipState 'FileDisposition' 'Unknown')
+            FileDisposition = if ($ActionName -eq 'Apply') { 'Generated' } else { 'Deleted' }
         }) `
         -Checks @($checks) `
-        -Message $(if ($status -eq 'Passed') { 'All wallpaper, registry, and ownership checks passed.' } elseif ($status -eq 'Warning') { 'Registry state matched, but file ownership or detection requires attention.' } else { 'One or more detected states contradict the requested action.' })
+        -Message $(if ($status -eq 'Passed') { 'All source-defined wallpaper, registry, and file checks passed.' } elseif ($status -eq 'Warning') { 'Source-defined state matched with one or more detection warnings.' } else { 'One or more detected states contradict the requested source action.' })
 }
 
 function Get-BoostLabToolState {
     [CmdletBinding()]
     param()
 
-    $ownership = Get-BoostLabWallpaperOwnershipState
-    $detected = if ([bool](Get-BoostLabStateProperty $ownership 'Active' $false)) {
-        'Black wallpaper active'
-    }
-    elseif ([bool](Get-BoostLabStateProperty $ownership 'OwnershipUncertain' $false)) {
-        'Default state with ownership warning'
-    }
-    else {
-        'Default or not managed by BoostLab'
-    }
-
     [pscustomobject]@{
-        Status         = $detected
-        Implemented    = $true
-        Active         = [bool](Get-BoostLabStateProperty $ownership 'Active' $false)
-        BackupPath     = Get-BoostLabStateProperty $ownership 'BackupPath'
-        MetadataPath   = Get-BoostLabStateProperty $ownership 'MetadataPath'
-        LastDisposition = Get-BoostLabStateProperty $ownership 'FileDisposition' 'Unknown'
+        Status      = 'Runtime ready; Apply/Default require confirmation.'
+        Implemented = $true
+        Active      = $false
+        TargetPath  = $script:TargetPath
+        DefaultPath = $script:DefaultWallpaperPath
     }
 }
 
@@ -781,39 +558,37 @@ function New-BoostLabSignoutWallpaperActionPlan {
 
     if ($ActionName -eq 'Apply') {
         return [pscustomobject]@{
-            Summary        = 'Generate and apply a black wallpaper for the desktop, sign-out, and lock screen.'
+            Summary        = 'Generate and apply the source-defined black sign-out, lock screen, and desktop wallpaper.'
             PlannedChanges = @(
-                'Back up any pre-existing C:\Windows\Black.jpg not already proven to be BoostLab-owned.'
-                'Generate a black bitmap at the primary monitor resolution and save it as C:\Windows\Black.jpg.'
-                'Set LockScreenImagePath and LockScreenImageStatus under PersonalizationCSP.'
+                'Generate C:\Windows\Black.jpg as a black bitmap at the primary monitor resolution.'
+                'Set HKLM PersonalizationCSP LockScreenImagePath to C:\Windows\Black.jpg.'
+                'Set HKLM PersonalizationCSP LockScreenImageStatus to REG_DWORD 1.'
                 'Set the current user desktop Wallpaper value to C:\Windows\Black.jpg.'
                 'Request Windows to refresh per-user wallpaper parameters.'
-                'Record backup and generated-file ownership metadata under ProgramData\BoostLab\State.'
             )
             SideEffects     = @(
                 'The desktop, sign-out, and lock screen wallpaper may become black.'
-                'An existing C:\Windows\Black.jpg may be copied into BoostLab state storage before replacement.'
-                'The wallpaper refresh request may not be immediately visible in every Windows session.'
+                'Any existing C:\Windows\Black.jpg is overwritten by the source-defined generated image.'
+                'No download, installer, service, driver, Explorer restart, sign-out, or reboot occurs.'
             )
-            ConfirmationMessage = 'Apply the approved black sign-out, lock screen, and desktop wallpaper configuration?'
+            ConfirmationMessage = 'Apply the exact source-defined black sign-out, lock screen, and desktop wallpaper configuration?'
         }
     }
 
     [pscustomobject]@{
-        Summary        = 'Restore the approved default wallpaper registry state and safely undo BoostLab-owned Black.jpg changes.'
+        Summary        = 'Restore the exact source-defined default wallpaper state.'
         PlannedChanges = @(
-            'Remove only LockScreenImagePath and LockScreenImageStatus from PersonalizationCSP.'
-            'Leave the PersonalizationCSP key and all unrelated values intact.'
+            'Delete the complete HKLM PersonalizationCSP key exactly as the Ultimate source defines.'
             'Set the current user desktop Wallpaper value to C:\Windows\Web\Wallpaper\Windows\img0.jpg.'
             'Request Windows to refresh per-user wallpaper parameters.'
-            'Restore a BoostLab backup of a pre-existing Black.jpg when recorded.'
-            'Otherwise remove Black.jpg only when BoostLab ownership is proven by state and hash.'
+            'Delete C:\Windows\Black.jpg exactly as the Ultimate source defines.'
         )
         SideEffects     = @(
             'The desktop and lock screen wallpaper may return to the approved Windows default.'
-            'If Black.jpg ownership cannot be proven, the file is left intact and a warning is returned.'
+            'Any values under the PersonalizationCSP key are removed by the source-defined key deletion.'
+            'No download, installer, service, driver, Explorer restart, sign-out, or reboot occurs.'
         )
-        ConfirmationMessage = 'Restore the approved default wallpaper state and safely undo the BoostLab-owned file?'
+        ConfirmationMessage = 'Run the exact source-defined Default action, including complete PersonalizationCSP key deletion and C:\Windows\Black.jpg deletion?'
     }
 }
 
@@ -839,33 +614,14 @@ function Invoke-BoostLabToolAction {
             Get-BoostLabRegistryValueState -Key $Key -Name $Name
         },
 
+        [scriptblock] $RegistryKeyReader = {
+            param($Key)
+            Get-BoostLabRegistryKeyState -Key $Key
+        },
+
         [scriptblock] $FileReader = {
             param($Path)
             Get-BoostLabWallpaperFileState -Path $Path
-        },
-
-        [scriptblock] $StateReader = {
-            Get-BoostLabWallpaperOwnershipState
-        },
-
-        [scriptblock] $StateWriter = {
-            param($State)
-            Save-BoostLabWallpaperOwnershipState -State $State
-        },
-
-        [scriptblock] $BackupWriter = {
-            param($Path)
-            Backup-BoostLabWallpaperFile -SourcePath $Path
-        },
-
-        [scriptblock] $BackupRestorer = {
-            param($BackupPath, $TargetPath)
-            Restore-BoostLabWallpaperBackup -BackupPath $BackupPath -TargetPath $TargetPath
-        },
-
-        [scriptblock] $OwnedFileRemover = {
-            param($Path)
-            Remove-BoostLabOwnedWallpaperFile -Path $Path
         },
 
         [scriptblock] $ImageGenerator = {
@@ -875,6 +631,11 @@ function Invoke-BoostLabToolAction {
 
         [scriptblock] $WallpaperRefresher = {
             Invoke-BoostLabWallpaperRefresh
+        },
+
+        [scriptblock] $FileRemover = {
+            param($Path)
+            Remove-BoostLabBlackWallpaperFile -Path $Path
         }
     )
 
@@ -905,122 +666,31 @@ function Invoke-BoostLabToolAction {
 
     $registryResults = [System.Collections.Generic.List[object]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
-    $backupPath = $null
-    $backupStatus = 'Not required'
-    $fileDisposition = if ($ActionName -eq 'Apply') { 'Generated' } else { 'Unknown' }
-    $ownershipState = $null
     $refreshResult = $null
+    $fileRemoveResult = $null
+    $fileDisposition = if ($ActionName -eq 'Apply') { 'Generated' } else { 'Deleted' }
 
     try {
-        $ownershipState = & $StateReader
-        if (-not [bool](Get-BoostLabStateProperty $ownershipState 'ReadSucceeded' $true)) {
-            throw "Ownership metadata could not be read: $(Get-BoostLabStateProperty $ownershipState 'ErrorMessage' 'Unknown state error.')"
-        }
-
         if ($ActionName -eq 'Apply') {
-            $currentFile = & $FileReader $script:TargetPath
-            $currentHash = [string](Get-BoostLabStateProperty $currentFile 'Sha256' '')
-            $recordedGeneratedHash = [string](Get-BoostLabStateProperty $ownershipState 'GeneratedFileSha256' '')
-            $knownOwned = (
-                [bool](Get-BoostLabStateProperty $ownershipState 'Exists' $false) -and
-                [bool](Get-BoostLabStateProperty $ownershipState 'Active' $false) -and
-                [bool](Get-BoostLabStateProperty $ownershipState 'CreatedByBoostLab' $false) -and
-                -not [string]::IsNullOrWhiteSpace($currentHash) -and
-                $currentHash -eq $recordedGeneratedHash
-            )
-
-            $backupCreated = $false
-            $originalHash = $null
-            if ([bool](Get-BoostLabStateProperty $currentFile 'Exists' $false) -and -not $knownOwned) {
-                $backupResult = & $BackupWriter $script:TargetPath
-                if (-not [bool](Get-BoostLabStateProperty $backupResult 'Success' $false)) {
-                    throw "The pre-existing Black.jpg could not be backed up: $(Get-BoostLabStateProperty $backupResult 'Message' 'Unknown backup error.')"
-                }
-
-                $backupCreated = $true
-                $backupPath = [string](Get-BoostLabStateProperty $backupResult 'BackupPath' '')
-                $originalHash = [string](Get-BoostLabStateProperty $backupResult 'Sha256' $currentHash)
-                $backupStatus = 'Created'
-            }
-            elseif ($knownOwned) {
-                $backupCreated = [bool](Get-BoostLabStateProperty $ownershipState 'BackupCreated' $false)
-                $backupPath = Get-BoostLabStateProperty $ownershipState 'BackupPath'
-                $originalHash = Get-BoostLabStateProperty $ownershipState 'OriginalFileSha256'
-                $backupStatus = if ($backupCreated) { 'Existing backup retained' } else { 'Not required; file already BoostLab-owned' }
-            }
-
-            $pendingState = [pscustomobject]@{
-                Version              = 1
-                ToolId               = $script:ToolInfo.Id
-                TargetPath           = $script:TargetPath
-                Active               = $false
-                PendingApply         = $true
-                CreatedByBoostLab    = $true
-                TargetPreviouslyExisted = [bool](Get-BoostLabStateProperty $currentFile 'Exists' $false)
-                BackupCreated        = $backupCreated
-                BackupPath           = $backupPath
-                OriginalFileSha256   = $originalHash
-                GeneratedFileSha256  = $null
-                GeneratedWidth       = $null
-                GeneratedHeight      = $null
-                OwnershipUncertain   = $false
-                FileDisposition      = 'PendingApply'
-                UpdatedAt            = [DateTime]::UtcNow
-            }
-            $pendingWrite = & $StateWriter $pendingState
-            if (-not [bool](Get-BoostLabStateProperty $pendingWrite 'Success' $false)) {
-                throw "Ownership metadata could not be recorded before overwrite: $(Get-BoostLabStateProperty $pendingWrite 'Message' 'Unknown state error.')"
-            }
-
             $imageResult = & $ImageGenerator $script:TargetPath
             if (-not [bool](Get-BoostLabStateProperty $imageResult 'Success' $false)) {
                 throw "Black wallpaper generation failed: $(Get-BoostLabStateProperty $imageResult 'Message' 'Unknown image error.')"
             }
 
-            $generatedFile = & $FileReader $script:TargetPath
-            if (-not [bool](Get-BoostLabStateProperty $generatedFile 'Exists' $false)) {
-                throw 'Black wallpaper generation reported success, but C:\Windows\Black.jpg was not found.'
-            }
-
-            $ownershipState = [pscustomobject]@{
-                Version              = 1
-                ToolId               = $script:ToolInfo.Id
-                TargetPath           = $script:TargetPath
-                Active               = $true
-                PendingApply         = $false
-                CreatedByBoostLab    = $true
-                TargetPreviouslyExisted = [bool](Get-BoostLabStateProperty $currentFile 'Exists' $false)
-                BackupCreated        = $backupCreated
-                BackupPath           = $backupPath
-                OriginalFileSha256   = $originalHash
-                GeneratedFileSha256  = Get-BoostLabStateProperty $generatedFile 'Sha256'
-                GeneratedWidth       = Get-BoostLabStateProperty $imageResult 'Width'
-                GeneratedHeight      = Get-BoostLabStateProperty $imageResult 'Height'
-                OwnershipUncertain   = $false
-                FileDisposition      = 'Generated'
-                AppliedAt            = [DateTime]::UtcNow
-                UpdatedAt            = [DateTime]::UtcNow
-            }
-            $ownershipWrite = & $StateWriter $ownershipState
-            if (-not [bool](Get-BoostLabStateProperty $ownershipWrite 'Success' $false)) {
-                throw "Generated file ownership metadata could not be recorded: $(Get-BoostLabStateProperty $ownershipWrite 'Message' 'Unknown state error.')"
-            }
-
-            $operations = @(
+            $registryOperations = @(
                 [pscustomobject]@{ Operation = 'Add'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImagePath'; Type = 'REG_SZ'; Value = $script:TargetPath }
                 [pscustomobject]@{ Operation = 'Add'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImageStatus'; Type = 'REG_DWORD'; Value = 1 }
                 [pscustomobject]@{ Operation = 'Add'; Key = $script:DesktopKey; Name = 'Wallpaper'; Type = 'REG_SZ'; Value = $script:TargetPath }
             )
         }
         else {
-            $operations = @(
-                [pscustomobject]@{ Operation = 'DeleteValue'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImagePath'; Type = $null; Value = $null }
-                [pscustomobject]@{ Operation = 'DeleteValue'; Key = $script:PersonalizationCspKey; Name = 'LockScreenImageStatus'; Type = $null; Value = $null }
+            $registryOperations = @(
+                [pscustomobject]@{ Operation = 'DeleteKey'; Key = $script:PersonalizationCspKey; Name = $null; Type = $null; Value = $null }
                 [pscustomobject]@{ Operation = 'Add'; Key = $script:DesktopKey; Name = 'Wallpaper'; Type = 'REG_SZ'; Value = $script:DefaultWallpaperPath }
             )
         }
 
-        foreach ($operation in $operations) {
+        foreach ($operation in $registryOperations) {
             $registryResult = & $RegistryCommandRunner $operation
             $registryResults.Add($registryResult)
         }
@@ -1031,133 +701,16 @@ function Invoke-BoostLabToolAction {
         }
 
         if ($ActionName -eq 'Default') {
-            $fileState = & $FileReader $script:TargetPath
-            $stateExists = [bool](Get-BoostLabStateProperty $ownershipState 'Exists' $false)
-            $active = [bool](Get-BoostLabStateProperty $ownershipState 'Active' $false)
-            $ownershipUncertain = [bool](Get-BoostLabStateProperty $ownershipState 'OwnershipUncertain' $false)
-            $recordedBackupPath = [string](Get-BoostLabStateProperty $ownershipState 'BackupPath' '')
-            $backupCreated = [bool](Get-BoostLabStateProperty $ownershipState 'BackupCreated' $false)
-            $pendingApply = [bool](Get-BoostLabStateProperty $ownershipState 'PendingApply' $false)
-            $generatedHash = [string](Get-BoostLabStateProperty $ownershipState 'GeneratedFileSha256' '')
-            $currentHash = [string](Get-BoostLabStateProperty $fileState 'Sha256' '')
-
-            if ($pendingApply -and $backupCreated) {
-                $recordedBackupState = if ([string]::IsNullOrWhiteSpace($recordedBackupPath)) {
-                    $null
-                }
-                else {
-                    & $FileReader $recordedBackupPath
-                }
-                if (
-                    [string]::IsNullOrWhiteSpace($recordedBackupPath) -or
-                    -not [bool](Get-BoostLabStateProperty $recordedBackupState 'Exists' $false)
-                ) {
-                    $fileDisposition = 'BackupMissing'
-                    $backupStatus = 'Recorded interrupted-Apply backup missing'
-                    $warnings.Add('Apply was interrupted and its recorded Black.jpg backup is missing. The current file was left intact.')
-                }
-                else {
-                    $restoreResult = & $BackupRestorer $recordedBackupPath $script:TargetPath
-                    if (-not [bool](Get-BoostLabStateProperty $restoreResult 'Success' $false)) {
-                        throw "The interrupted Apply backup could not be restored: $(Get-BoostLabStateProperty $restoreResult 'Message' 'Unknown restore error.')"
-                    }
-                    $fileDisposition = 'Restored'
-                    $backupPath = $recordedBackupPath
-                    $backupStatus = 'Interrupted Apply backup restored'
-                }
-            }
-            elseif ($pendingApply) {
-                $fileDisposition = 'LeftIntactUnknownOwnership'
-                $backupStatus = 'Interrupted Apply ownership incomplete'
-                $warnings.Add('Apply was interrupted before ownership hashing completed. Black.jpg was left intact.')
-            }
-            elseif ($stateExists -and -not $active -and -not $ownershipUncertain) {
-                $fileDisposition = 'AlreadyDefault'
-                $backupStatus = 'No active ownership'
-            }
-            elseif ($active -and $backupCreated) {
-                $recordedBackupState = if ([string]::IsNullOrWhiteSpace($recordedBackupPath)) {
-                    $null
-                }
-                else {
-                    & $FileReader $recordedBackupPath
-                }
-                if (
-                    [string]::IsNullOrWhiteSpace($recordedBackupPath) -or
-                    -not [bool](Get-BoostLabStateProperty $recordedBackupState 'Exists' $false)
-                ) {
-                    $fileDisposition = 'BackupMissing'
-                    $backupStatus = 'Recorded backup missing'
-                    $warnings.Add('The recorded pre-existing Black.jpg backup is missing. The current file was left intact.')
-                }
-                else {
-                    $restoreResult = & $BackupRestorer $recordedBackupPath $script:TargetPath
-                    if (-not [bool](Get-BoostLabStateProperty $restoreResult 'Success' $false)) {
-                        throw "The pre-existing Black.jpg backup could not be restored: $(Get-BoostLabStateProperty $restoreResult 'Message' 'Unknown restore error.')"
-                    }
-                    $fileDisposition = 'Restored'
-                    $backupPath = $recordedBackupPath
-                    $backupStatus = 'Restored'
-                }
-            }
-            elseif ($active -and [bool](Get-BoostLabStateProperty $ownershipState 'CreatedByBoostLab' $false)) {
-                if (-not [bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) {
-                    $fileDisposition = 'AlreadyAbsent'
-                    $backupStatus = 'No backup required'
-                }
-                elseif (-not [string]::IsNullOrWhiteSpace($generatedHash) -and $currentHash -eq $generatedHash) {
-                    $removeResult = & $OwnedFileRemover $script:TargetPath
-                    if (-not [bool](Get-BoostLabStateProperty $removeResult 'Success' $false)) {
-                        throw "The BoostLab-owned Black.jpg could not be removed: $(Get-BoostLabStateProperty $removeResult 'Message' 'Unknown delete error.')"
-                    }
-                    $fileDisposition = 'Removed'
-                    $backupStatus = 'No backup required'
-                }
-                else {
-                    $fileDisposition = 'LeftIntactUnknownOwnership'
-                    $backupStatus = 'Ownership hash mismatch'
-                    $warnings.Add('Black.jpg was left intact because its current hash does not prove BoostLab ownership.')
-                }
-            }
-            elseif (-not [bool](Get-BoostLabStateProperty $fileState 'Exists' $false)) {
-                $fileDisposition = 'AlreadyAbsent'
-                $backupStatus = 'No backup required'
-            }
-            else {
-                $fileDisposition = 'LeftIntactUnknownOwnership'
-                $backupStatus = 'Ownership unknown'
-                $warnings.Add('Black.jpg was left intact because BoostLab ownership could not be proven.')
-            }
-
-            $ownershipState = [pscustomobject]@{
-                Version              = 1
-                ToolId               = $script:ToolInfo.Id
-                TargetPath           = $script:TargetPath
-                Active               = $false
-                PendingApply         = $false
-                CreatedByBoostLab    = $false
-                TargetPreviouslyExisted = Get-BoostLabStateProperty $ownershipState 'TargetPreviouslyExisted' $false
-                BackupCreated        = Get-BoostLabStateProperty $ownershipState 'BackupCreated' $false
-                BackupPath           = Get-BoostLabStateProperty $ownershipState 'BackupPath'
-                OriginalFileSha256   = Get-BoostLabStateProperty $ownershipState 'OriginalFileSha256'
-                GeneratedFileSha256  = Get-BoostLabStateProperty $ownershipState 'GeneratedFileSha256'
-                GeneratedWidth       = Get-BoostLabStateProperty $ownershipState 'GeneratedWidth'
-                GeneratedHeight      = Get-BoostLabStateProperty $ownershipState 'GeneratedHeight'
-                OwnershipUncertain   = ($fileDisposition -in @('LeftIntactUnknownOwnership', 'BackupMissing'))
-                FileDisposition      = $fileDisposition
-                DefaultCompletedAt   = [DateTime]::UtcNow
-                UpdatedAt            = [DateTime]::UtcNow
-            }
-            $ownershipWrite = & $StateWriter $ownershipState
-            if (-not [bool](Get-BoostLabStateProperty $ownershipWrite 'Success' $false)) {
-                throw "Default ownership metadata could not be recorded: $(Get-BoostLabStateProperty $ownershipWrite 'Message' 'Unknown state error.')"
+            $fileRemoveResult = & $FileRemover $script:TargetPath
+            if (-not [bool](Get-BoostLabStateProperty $fileRemoveResult 'Success' $false)) {
+                $warnings.Add("Source-defined Black.jpg delete request reported a warning: $(Get-BoostLabStateProperty $fileRemoveResult 'Message' 'Unknown delete warning.')")
             }
         }
 
         $verification = Test-BoostLabSignoutWallpaperState `
             -ActionName $ActionName `
-            -OwnershipState $ownershipState `
             -RegistryReader $RegistryReader `
+            -RegistryKeyReader $RegistryKeyReader `
             -FileReader $FileReader
         if (-not [bool](Get-BoostLabStateProperty $refreshResult 'Success' $false)) {
             $refreshCheck = New-BoostLabVerificationCheck `
@@ -1174,36 +727,29 @@ function Invoke-BoostLabToolAction {
                 -ExpectedState $verification.ExpectedState `
                 -DetectedState $verification.DetectedState `
                 -Checks (@($verification.Checks) + @($refreshCheck)) `
-                -Message $(if ($verification.Status -eq 'Failed') { $verification.Message } else { 'Registry and file checks completed, but the wallpaper refresh request failed.' })
+                -Message $(if ($verification.Status -eq 'Failed') { $verification.Message } else { 'Source-defined state checks completed, but the wallpaper refresh request returned a warning.' })
         }
 
         $failedRegistryCommands = @($registryResults | Where-Object { -not [bool](Get-BoostLabStateProperty $_ 'Success' $false) })
-        $commandStatus = if ($failedRegistryCommands.Count -eq 0) { 'Completed' } else { 'Completed with registry command warnings' }
         if ($failedRegistryCommands.Count -gt 0) {
             $warnings.Add("$($failedRegistryCommands.Count) registry command(s) returned a non-zero exit code; verification determined the final state.")
         }
 
         $success = $verification.Status -ne 'Failed'
+        $commandStatus = if (-not $success) {
+            'Failed verification'
+        }
+        elseif ($warnings.Count -gt 0) {
+            'Completed with warnings'
+        }
+        else {
+            'Completed'
+        }
         $message = if ($ActionName -eq 'Apply') {
             if ($success) { 'Black sign-out, lock screen, and desktop wallpaper applied.' } else { 'Wallpaper commands completed, but verification failed.' }
         }
-        elseif ($fileDisposition -eq 'Restored') {
-            'Wallpaper settings restored to default and the pre-existing Black.jpg backup was restored.'
-        }
-        elseif ($fileDisposition -eq 'Removed') {
-            'Wallpaper settings restored to default and the BoostLab-owned Black.jpg was removed.'
-        }
-        elseif ($fileDisposition -eq 'AlreadyDefault' -or $fileDisposition -eq 'AlreadyAbsent') {
-            'Wallpaper settings are already in the approved default state.'
-        }
-        elseif ($fileDisposition -eq 'LeftIntactUnknownOwnership') {
-            'Wallpaper registry settings restored to default; Black.jpg was left intact because ownership could not be proven.'
-        }
-        elseif ($fileDisposition -eq 'BackupMissing') {
-            'Wallpaper registry settings restored to default; Black.jpg was left intact because the recorded backup was unavailable.'
-        }
         else {
-            'Wallpaper default operation completed.'
+            if ($success) { 'Source-defined wallpaper Default completed.' } else { 'Wallpaper Default commands completed, but verification failed.' }
         }
 
         $data = [pscustomobject]@{
@@ -1215,37 +761,33 @@ function Invoke-BoostLabToolAction {
                 "$($script:PersonalizationCspKey)\LockScreenImageStatus"
                 "$($script:DesktopKey)\Wallpaper"
             )
-            FilePathsChecked       = @(
-                $script:TargetPath
-                (Get-BoostLabWallpaperStatePaths).MetadataPath
-                $backupPath
-            ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
-            BackupOwnershipStatus  = $backupStatus
-            BackupPath             = $backupPath
+            FilePathsChecked       = @($script:TargetPath)
+            BackupOwnershipStatus  = 'Not used; exact Ultimate parity performs no backup or ownership tracking.'
+            BackupPath             = $null
             FileDisposition        = $fileDisposition
             RegistryOperations     = @($registryResults)
             WallpaperRefreshStatus = if ([bool](Get-BoostLabStateProperty $refreshResult 'Success' $false)) { 'Requested' } else { 'Warning' }
-            Warnings                = @($warnings)
-            CompletedAt             = Get-Date
+            Warnings               = @($warnings)
+            CompletedAt            = Get-Date
         }
 
         [pscustomobject]@{
-            Success              = $success
-            ToolId               = $script:ToolInfo.Id
-            ToolTitle            = $script:ToolInfo.Title
-            Action               = $ActionName
-            Message              = $message
-            RestartRequired      = $false
-            Cancelled            = $false
-            Timestamp            = Get-Date
-            Data                 = $data
-            VerificationResult   = $verification
+            Success            = $success
+            ToolId             = $script:ToolInfo['Id']
+            ToolTitle          = $script:ToolInfo['Title']
+            Action             = $ActionName
+            Message            = $message
+            RestartRequired    = $false
+            Cancelled          = $false
+            Timestamp          = Get-Date
+            Data               = $data
+            VerificationResult = $verification
         }
     }
     catch {
         $failedData = [pscustomobject]@{
             CommandStatus          = 'Failed'
-            ExpectedWallpaperState = if ($ActionName -eq 'Apply') { 'Black wallpaper active' } else { 'Approved default restored' }
+            ExpectedWallpaperState = if ($ActionName -eq 'Apply') { 'Black wallpaper active' } else { 'Source default wallpaper restored' }
             DetectedWallpaperState = 'Unknown'
             RegistryValuesChecked  = @(
                 "$($script:PersonalizationCspKey)\LockScreenImagePath"
@@ -1253,26 +795,26 @@ function Invoke-BoostLabToolAction {
                 "$($script:DesktopKey)\Wallpaper"
             )
             FilePathsChecked       = @($script:TargetPath)
-            BackupOwnershipStatus  = $backupStatus
-            BackupPath             = $backupPath
+            BackupOwnershipStatus  = 'Not used; exact Ultimate parity performs no backup or ownership tracking.'
+            BackupPath             = $null
             FileDisposition        = $fileDisposition
             RegistryOperations     = @($registryResults)
             WallpaperRefreshStatus = if ($null -eq $refreshResult) { 'Not attempted' } else { 'Failed' }
-            Warnings                = @($warnings)
-            CompletedAt             = Get-Date
+            Warnings               = @($warnings)
+            CompletedAt            = Get-Date
         }
 
         [pscustomobject]@{
-            Success              = $false
-            ToolId               = $script:ToolInfo.Id
-            ToolTitle            = $script:ToolInfo.Title
-            Action               = $ActionName
-            Message              = $_.Exception.Message
-            RestartRequired      = $false
-            Cancelled            = $false
-            Timestamp            = Get-Date
-            Data                 = $failedData
-            VerificationResult   = $null
+            Success            = $false
+            ToolId             = $script:ToolInfo['Id']
+            ToolTitle          = $script:ToolInfo['Title']
+            Action             = $ActionName
+            Message            = $_.Exception.Message
+            RestartRequired    = $false
+            Cancelled          = $false
+            Timestamp          = Get-Date
+            Data               = $failedData
+            VerificationResult = $null
         }
     }
 }

@@ -672,10 +672,6 @@ $placeholderCount = @(
     if ([string]$nextTarget.ToolId -ne [string]$parityBaseline.CurrentOrderedParityTarget) {
         throw 'Next ordered parity target must match the central parity baseline cursor.'
     }
-    if ([string]$nextTarget.ToolId -ne 'signout-lockscreen-wallpaper-black') {
-        throw 'Ordered parity cursor must advance to Signout LockScreen Wallpaper Black.'
-    }
-
     $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
     if ([int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented) {
         throw 'ParityImplemented count mismatch.'

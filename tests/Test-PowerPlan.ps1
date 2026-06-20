@@ -932,7 +932,7 @@ foreach ($requiredText in @(
 
 $protectedModules = [ordered]@{
     'Network Adapter Power Savings & Wake' = @{ Path = 'Windows\NetworkAdapterPowerSavingsWake.psm1'; Hash = '4A0A213032E31B3D4F5A676F0706B8FB354CC0EA3EA6498D6FB51A81B24B3C77'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
-    'Signout LockScreen Wallpaper Black' = @{ Path = 'Windows\SignoutLockScreenWallpaperBlack.psm1'; Hash = 'FAE90C7491B3B72936D1D293D6435BF6893C8082DCEF4C6F6FDE5E1817F55D74'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
+    'Signout LockScreen Wallpaper Black' = @{ Path = 'Windows\SignoutLockScreenWallpaperBlack.psm1'; Hash = '216CE7CA8E3EDCD29B126BD6EB167CE8B43EEB2B5E15C984D9E066CA254B24B2'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Context Menu' = @{ Path = 'Windows\ContextMenu.psm1'; Hash = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Start Menu Layout' = @{ Path = 'Windows\StartMenuLayout.psm1'; Hash = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Theme Black' = @{ Path = 'Windows\ThemeBlack.psm1'; Hash = '29F3474D93061B01E3CF9F23EADA88E932E90E4984EBB39F7DB2BEB24732230F'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }

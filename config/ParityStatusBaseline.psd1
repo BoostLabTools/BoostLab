@@ -9,8 +9,8 @@
         DeferredPlaceholders = 9
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 18
-        NearParityControlled = 24
+        UltimateParityImplemented = 19
+        NearParityControlled = 23
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'signout-lockscreen-wallpaper-black'
+    CurrentOrderedParityTarget = 'user-account-pictures-black'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -488,11 +488,11 @@
             StageOrder = 6
             ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source-defined behavior is preserved with additional backup and ownership safeguards.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact Ultimate image generation, PersonalizationCSP/Desktop registry writes, wallpaper refresh, complete PersonalizationCSP key deletion, and C:\Windows\Black.jpg deletion.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm safety mechanics are accepted as final parity.'
+            NextParityAction = 'No parity work required; advance ordered cursor to user-account-pictures-black.'
         }
         @{
             ToolId = 'user-account-pictures-black'

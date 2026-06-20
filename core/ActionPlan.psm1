@@ -426,10 +426,10 @@ function New-BoostLabActionPlan {
         'Restore the Ultimate Context Menu handlers with the Yazan-approved scoped Blocked-value cleanup.'
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
-        'Generate and apply the approved black sign-out, lock screen, and desktop wallpaper with ownership tracking.'
+        'Generate and apply the exact source-defined black sign-out, lock screen, and desktop wallpaper.'
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
-        'Restore the approved default wallpaper state without deleting unrelated PersonalizationCSP values or files.'
+        'Run the exact source-defined Default wallpaper action.'
     }
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
         'Back up Notepad settings.dat, stop Notepad, and import the approved Ultimate settings into the mounted Notepad settings hive.'
@@ -1089,18 +1089,15 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Verify all 21 approved default Context Menu registry states.')
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Check C:\Windows\Black.jpg ownership and back up a pre-existing unrelated file before overwrite.')
         $plannedChanges.Add('Generate C:\Windows\Black.jpg as a black bitmap at the primary monitor resolution.')
-        $plannedChanges.Add('Set HKLM PersonalizationCSP LockScreenImagePath and LockScreenImageStatus.')
+        $plannedChanges.Add('Set HKLM PersonalizationCSP LockScreenImagePath to C:\Windows\Black.jpg.')
+        $plannedChanges.Add('Set HKLM PersonalizationCSP LockScreenImageStatus to REG_DWORD 1.')
         $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Black.jpg and request the source wallpaper refresh.')
-        $plannedChanges.Add('Record backup and generated-file ownership metadata under ProgramData\BoostLab\State.')
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Remove only the tool-owned PersonalizationCSP values LockScreenImagePath and LockScreenImageStatus.')
-        $plannedChanges.Add('Leave the shared PersonalizationCSP key and every unrelated value intact.')
+        $plannedChanges.Add('Delete the complete HKLM PersonalizationCSP key exactly as the Ultimate source defines.')
         $plannedChanges.Add('Set the current user desktop Wallpaper value to C:\Windows\Web\Wallpaper\Windows\img0.jpg and request the source wallpaper refresh.')
-        $plannedChanges.Add('Restore a recorded backup of a pre-existing C:\Windows\Black.jpg when available.')
-        $plannedChanges.Add('Otherwise remove Black.jpg only when BoostLab state and hash prove ownership; leave uncertain or unrelated files intact.')
+        $plannedChanges.Add('Delete C:\Windows\Black.jpg exactly as the Ultimate source defines.')
     }
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Stop only the Notepad process and wait for the source-defined two-second delay.')
@@ -1628,13 +1625,13 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('The desktop, sign-out, and lock screen wallpaper may become black.')
-        $sideEffects.Add('A pre-existing unrelated C:\Windows\Black.jpg is copied to BoostLab state storage before replacement.')
+        $sideEffects.Add('Any existing C:\Windows\Black.jpg is overwritten by the source-defined generated image.')
         $sideEffects.Add('No process is stopped and no restart occurs; Windows may require lock, sign-out, Settings, or Explorer refresh before every visual change appears.')
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Wallpaper registry values return to the approved source default.')
-        $sideEffects.Add('A recorded pre-existing Black.jpg is restored; an owned generated file is removed only when ownership is proven.')
-        $sideEffects.Add('Unrelated PersonalizationCSP values and files are preserved, and uncertain file ownership is reported as a warning.')
+        $sideEffects.Add('The complete PersonalizationCSP key is deleted exactly as the Ultimate source defines.')
+        $sideEffects.Add('C:\Windows\Black.jpg is deleted exactly as the Ultimate source defines.')
     }
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Running Notepad is closed and unsaved Notepad work can be lost.')
@@ -1956,10 +1953,10 @@ function New-BoostLabActionPlan {
         'BoostLab will restore the source Context Menu handlers and delete the complete Shell Extensions\Blocked key exactly as Ultimate defines, which can remove unrelated blocked shell-extension entries. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Apply') {
-        'BoostLab will back up any unrelated pre-existing C:\Windows\Black.jpg, generate the approved black wallpaper, set the owned PersonalizationCSP and desktop values, and verify ownership. No restart is required. Do you want to continue?'
+        'BoostLab will generate C:\Windows\Black.jpg, set the source-defined PersonalizationCSP and desktop wallpaper values, and request the source wallpaper refresh. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'signout-lockscreen-wallpaper-black' -and $ActionName -eq 'Default') {
-        'BoostLab will remove only its two PersonalizationCSP values, restore the approved desktop wallpaper, and restore or remove Black.jpg only when backup or ownership state permits. Unrelated values and files will remain. No restart is required. Do you want to continue?'
+        'BoostLab will delete the complete PersonalizationCSP key, set the approved default desktop wallpaper, request the source wallpaper refresh, and delete C:\Windows\Black.jpg exactly as Ultimate defines. No restart is required. Do you want to continue?'
     }
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Apply') {
         'BoostLab will close Notepad, create and verify a backup of the exact Notepad settings.dat, import the three approved Ultimate settings through a mounted hive, unload it, and verify the result. Unsaved Notepad work can be lost. No restart is required. Do you want to continue?'

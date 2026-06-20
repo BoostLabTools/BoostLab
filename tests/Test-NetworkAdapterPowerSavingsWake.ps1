@@ -764,7 +764,7 @@ foreach ($requiredText in @(
 $protectedModules = [ordered]@{
     'Signout LockScreen Wallpaper Black' = @{
         Path = Join-Path $modulesRoot 'Windows\SignoutLockScreenWallpaperBlack.psm1'
-        Hash = 'FAE90C7491B3B72936D1D293D6435BF6893C8082DCEF4C6F6FDE5E1817F55D74'
+        Hash = '216CE7CA8E3EDCD29B126BD6EB167CE8B43EEB2B5E15C984D9E066CA254B24B2'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'Context Menu' = @{
