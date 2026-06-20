@@ -251,6 +251,14 @@
                     Description = 'Run the source-equivalent NVIDIA, AMD, or INTEL driver install/debloat workflow for one selected branch after explicit confirmation.'
                     Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    SelectionMode = 'SingleSelect'
+                    SelectionRequiredActions = @('Open', 'Apply')
+                    SelectionLabel = 'Select exactly one GPU branch for Open or Apply'
+                    SelectionItems = @(
+                        @{ Id = 'NVIDIA'; Title = 'NVIDIA'; SourceMenuNumber = 1 }
+                        @{ Id = 'AMD'; Title = 'AMD'; SourceMenuNumber = 2 }
+                        @{ Id = 'INTEL'; Title = 'INTEL'; SourceMenuNumber = 3 }
+                    )
                 }
                 @{
                     Id          = 'driver-install-latest'

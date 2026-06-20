@@ -9,6 +9,14 @@ $script:BoostLabToolMetadata = [ordered]@{
     RiskLevel = 'high'
     Description = 'Run the source-equivalent NVIDIA, AMD, or INTEL driver install/debloat workflow for one selected branch after explicit confirmation.'
     Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    SelectionMode = 'SingleSelect'
+    SelectionRequiredActions = @('Open', 'Apply')
+    SelectionLabel = 'Select exactly one GPU branch for Open or Apply'
+    SelectionItems = @(
+        @{ Id = 'NVIDIA'; Title = 'NVIDIA'; SourceMenuNumber = 1 }
+        @{ Id = 'AMD'; Title = 'AMD'; SourceMenuNumber = 2 }
+        @{ Id = 'INTEL'; Title = 'INTEL'; SourceMenuNumber = 3 }
+    )
     Capabilities = [ordered]@{
         RequiresAdmin              = $true
         RequiresInternet           = $true
@@ -97,8 +105,15 @@ function ConvertTo-BoostLabDriverInstallDebloatSettingsBranch {
     [OutputType([string])]
     param(
         [AllowNull()]
-        [string]$Branch
+        [string]$Branch,
+
+        [AllowNull()]
+        [string[]]$SelectedAppIds = @()
     )
+
+    if ([string]::IsNullOrWhiteSpace($Branch) -and @($SelectedAppIds).Count -eq 1) {
+        $Branch = [string]@($SelectedAppIds)[0]
+    }
 
     if ([string]::IsNullOrWhiteSpace($Branch)) {
         return ''
@@ -1122,6 +1137,10 @@ function Get-BoostLabToolInfo {
         RiskLevel                   = [string]$script:BoostLabToolMetadata['RiskLevel']
         Description                 = [string]$script:BoostLabToolMetadata['Description']
         Actions                     = @($script:BoostLabToolMetadata['Actions'])
+        SelectionMode               = [string]$script:BoostLabToolMetadata['SelectionMode']
+        SelectionRequiredActions    = @($script:BoostLabToolMetadata['SelectionRequiredActions'])
+        SelectionLabel              = [string]$script:BoostLabToolMetadata['SelectionLabel']
+        SelectionItems              = @($script:BoostLabToolMetadata['SelectionItems'])
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
         ConfirmationRequiredActions = @('Open', 'Apply')
@@ -1171,6 +1190,8 @@ function Invoke-BoostLabToolAction {
         [bool]$Confirmed = $false,
 
         [string]$Branch = '',
+
+        [string[]]$SelectedAppIds = @(),
 
         [string]$InstallFile = '',
 
@@ -1235,7 +1256,7 @@ function Invoke-BoostLabToolAction {
                 -Cancelled $true
         }
 
-        $normalizedBranch = ConvertTo-BoostLabDriverInstallDebloatSettingsBranch -Branch $Branch
+        $normalizedBranch = ConvertTo-BoostLabDriverInstallDebloatSettingsBranch -Branch $Branch -SelectedAppIds $SelectedAppIds
         if ($normalizedBranch -notin $script:BoostLabApprovedBranches) {
             return New-BoostLabDriverInstallDebloatSettingsResult `
                 -Success $false `
@@ -1296,7 +1317,7 @@ function Invoke-BoostLabToolAction {
                 -Cancelled $true
         }
 
-        $normalizedBranch = ConvertTo-BoostLabDriverInstallDebloatSettingsBranch -Branch $Branch
+        $normalizedBranch = ConvertTo-BoostLabDriverInstallDebloatSettingsBranch -Branch $Branch -SelectedAppIds $SelectedAppIds
         if ($normalizedBranch -notin $script:BoostLabApprovedBranches) {
             return New-BoostLabDriverInstallDebloatSettingsResult `
                 -Success $false `

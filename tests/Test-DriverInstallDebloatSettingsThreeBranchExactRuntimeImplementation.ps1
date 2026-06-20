@@ -122,6 +122,17 @@ $tool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'driver-instal
 Assert-BoostLabCondition ($null -ne $tool) 'Driver Install Debloat & Settings catalog entry is missing.'
 Assert-BoostLabCondition ([int]$tool.Order -eq 2) 'Driver Install Debloat & Settings must remain Graphics order 2.'
 Assert-BoostLabCondition ((@($tool.Actions) -join '|') -eq 'Analyze|Open|Apply|Default|Restore') 'Canonical actions changed.'
+Assert-BoostLabCondition ([string]$tool.SelectionMode -eq 'SingleSelect') 'Driver Install Debloat & Settings must expose a single-select branch model.'
+Assert-BoostLabCondition ((@($tool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Debloat & Settings Open and Apply must require exactly one selected branch.'
+Assert-BoostLabCondition ([string]$tool.SelectionLabel -eq 'Select exactly one GPU branch for Open or Apply') 'Driver Install Debloat & Settings selection label must make branch selection obvious.'
+Assert-BoostLabCondition ((@($tool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings branch selection items must be exactly NVIDIA, AMD, INTEL.'
+Assert-BoostLabCondition ((@($tool.SelectionItems | ForEach-Object { [string]$_.Title }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings visible branch labels must be exactly NVIDIA, AMD, INTEL.'
+$driverInstallLatestTool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'driver-install-latest' }) | Select-Object -First 1
+Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest single-select model must remain unchanged.'
+Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Latest branch items must remain unchanged.'
+$installersStage = @($stages.Stages | Where-Object { [string]$_.Name -eq 'Installers' }) | Select-Object -First 1
+$installersTool = @($installersStage.Tools | Where-Object { [string]$_.Id -eq 'installers' }) | Select-Object -First 1
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep checkbox multi-select behavior.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.RequiresAdmin) 'Apply requires Administrator.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.RequiresInternet) 'Apply requires internet.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.CanDownload) 'CanDownload must be true.'
@@ -148,6 +159,11 @@ try {
     Assert-BoostLabCondition ([bool]$analysis.Data.NoInstallerExecutionOccurred) 'Analyze must report no installer execution.'
     Assert-BoostLabCondition ([bool]$analysis.Data.NoRegistryMutationOccurred) 'Analyze must report no registry mutation.'
     Assert-BoostLabCondition ([bool]$analysis.Data.NoRebootOrSessionChangeOccurred) 'Analyze must report no reboot/session change.'
+
+    $info = Get-BoostLabToolInfo
+    Assert-BoostLabCondition ([string]$info.SelectionMode -eq 'SingleSelect') 'Module info must expose SingleSelect branch mode.'
+    Assert-BoostLabCondition ((@($info.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Module info selection-required actions mismatch.'
+    Assert-BoostLabCondition ((@($info.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Module info branch selection items mismatch.'
 
     foreach ($branch in @('NVIDIA', 'AMD', 'INTEL')) {
         $plan = Get-BoostLabDriverInstallDebloatSettingsOperationPlan -Branch $branch
@@ -210,6 +226,11 @@ try {
     Assert-BoostLabCondition ([string]$needsBranch.Status -eq 'NeedsBranchSelection') 'Apply without branch status mismatch.'
     Assert-BoostLabCondition (-not [bool]$needsBranch.ChangesExecuted) 'Apply without branch must execute nothing.'
 
+    $multiBranch = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -SelectedAppIds @('NVIDIA', 'AMD') -OperationExecutor { throw 'Multi-select input must not execute.' } -SkipEnvironmentChecks:$true
+    Assert-BoostLabCondition (-not [bool]$multiBranch.Success) 'Apply with multiple selected branches must fail closed.'
+    Assert-BoostLabCondition ([string]$multiBranch.Status -eq 'NeedsBranchSelection') 'Apply with multiple selected branches status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$multiBranch.ChangesExecuted) 'Apply with multiple selected branches must execute nothing.'
+
     foreach ($branch in @('NVIDIA', 'AMD', 'INTEL')) {
         $script:DriverInstallDebloatSettingsMockedOperations = [System.Collections.Generic.List[object]]::new()
         $mockExecutor = {
@@ -243,14 +264,10 @@ try {
         Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsMockedOperations | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 1) "$branch Apply must represent exactly one restart operation."
     }
 
-    $openWithoutBranch = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$openWithoutBranch.Success) 'Open without branch must fail closed.'
-    Assert-BoostLabCondition ([string]$openWithoutBranch.Status -eq 'NeedsBranchSelection') 'Open without branch status mismatch.'
-
-    $script:DriverInstallDebloatSettingsOpenOps = [System.Collections.Generic.List[object]]::new()
-    $openMock = {
+    $script:DriverInstallDebloatSettingsSelectedBranchOps = [System.Collections.Generic.List[object]]::new()
+    $selectedBranchExecutor = {
         param($Operation, $SelectedBranch, $Context)
-        $script:DriverInstallDebloatSettingsOpenOps.Add($Operation)
+        $script:DriverInstallDebloatSettingsSelectedBranchOps.Add($Operation)
         [pscustomobject]@{
             Success = $true
             Order = [int]$Operation.Order
@@ -259,16 +276,50 @@ try {
             Type = [string]$Operation.Type
             Label = [string]$Operation.Label
             SourceCommand = [string]$Operation.SourceCommand
-            Message = 'Mocked Open operation.'
-            Data = $null
+            Message = 'Mocked selected branch operation.'
+            Data = if ([string]$Operation.Type -eq 'SelectInstaller') {
+                [pscustomobject]@{ SelectedInstaller = "C:\BoostLabMock\$SelectedBranch-driver.exe" }
+            }
+            else {
+                $null
+            }
             Timestamp = Get-Date
         }
     }
-    $open = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true -Branch 'AMD' -OperationExecutor $openMock
-    Assert-BoostLabCondition ([bool]$open.Success) 'Open with branch should succeed under mock.'
-    Assert-BoostLabCondition ([string]$open.Status -eq 'SourceDriverPageOpened') 'Open status mismatch.'
-    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsOpenOps | Where-Object { [string]$_.Category -ne 'DriverPage' }).Count -eq 0) 'Open must only execute DriverPage operations.'
-    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsOpenOps | Where-Object { [string]$_.Branch -ne 'AMD' }).Count -eq 0) 'Open must only execute selected branch operations.'
+    $selectedBranchApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -SelectedAppIds @('INTEL') -InstallFile 'C:\BoostLabMock\INTEL-driver.exe' -SkipEnvironmentChecks:$true -OperationExecutor $selectedBranchExecutor
+    Assert-BoostLabCondition ([bool]$selectedBranchApply.Success) 'Apply must accept exactly one selected branch from UI action options.'
+    Assert-BoostLabCondition ([string]$selectedBranchApply.Status -eq 'INTELWorkflowCompleted') 'Selected branch Apply did not run the INTEL branch.'
+    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsSelectedBranchOps | Where-Object { [string]$_.Branch -ne 'INTEL' }).Count -eq 0) 'Selected branch Apply must not run other branch operations.'
+
+    $openWithoutBranch = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true
+    Assert-BoostLabCondition (-not [bool]$openWithoutBranch.Success) 'Open without branch must fail closed.'
+    Assert-BoostLabCondition ([string]$openWithoutBranch.Status -eq 'NeedsBranchSelection') 'Open without branch status mismatch.'
+    Assert-BoostLabCondition (-not [bool]$openWithoutBranch.ChangesExecuted) 'Open without branch must execute nothing.'
+
+    foreach ($branch in @('NVIDIA', 'AMD', 'INTEL')) {
+        $script:DriverInstallDebloatSettingsOpenOps = [System.Collections.Generic.List[object]]::new()
+        $openMock = {
+            param($Operation, $SelectedBranch, $Context)
+            $script:DriverInstallDebloatSettingsOpenOps.Add($Operation)
+            [pscustomobject]@{
+                Success = $true
+                Order = [int]$Operation.Order
+                Branch = [string]$Operation.Branch
+                Category = [string]$Operation.Category
+                Type = [string]$Operation.Type
+                Label = [string]$Operation.Label
+                SourceCommand = [string]$Operation.SourceCommand
+                Message = 'Mocked Open operation.'
+                Data = $null
+                Timestamp = Get-Date
+            }
+        }
+        $open = Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed:$true -SelectedAppIds @($branch) -OperationExecutor $openMock
+        Assert-BoostLabCondition ([bool]$open.Success) "$branch Open with selected branch should succeed under mock."
+        Assert-BoostLabCondition ([string]$open.Status -eq 'SourceDriverPageOpened') "$branch Open status mismatch."
+        Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsOpenOps | Where-Object { [string]$_.Category -ne 'DriverPage' }).Count -eq 0) "$branch Open must only execute DriverPage operations."
+        Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsOpenOps | Where-Object { [string]$_.Branch -ne $branch }).Count -eq 0) "$branch Open must only execute selected branch operations."
+    }
 
     $default = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
     Assert-BoostLabCondition (-not [bool]$default.Success) 'Default must remain unavailable.'

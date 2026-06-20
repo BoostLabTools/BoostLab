@@ -2547,6 +2547,9 @@ function New-BoostLabToolCard {
         if ($toolId -eq 'driver-install-latest' -and $actionName -eq 'Open') {
             $actionButton.ToolTip = 'Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.'
         }
+        elseif ($toolId -eq 'driver-install-debloat-settings' -and $actionName -in @('Open', 'Apply')) {
+            $actionButton.ToolTip = 'Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically.'
+        }
         $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $actionButton.Margin = [System.Windows.Thickness]::new(0, 0, 7, 0)
         $actionButton.Tag = [pscustomobject]@{

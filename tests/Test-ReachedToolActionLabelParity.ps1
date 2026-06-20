@@ -166,6 +166,11 @@ foreach ($needle in @(
 $driverCleanTool = $toolById['driver-clean']
 Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean must keep canonical internal actions.'
 
+$driverInstallDebloatSettingsTool = $toolById['driver-install-debloat-settings']
+Assert-BoostLabCondition ([string]$driverInstallDebloatSettingsTool.SelectionMode -eq 'SingleSelect') 'Driver Install Debloat & Settings must expose a single-select branch UI.'
+Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings branch labels must remain NVIDIA, AMD, INTEL.'
+Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Debloat & Settings must require one branch for Open and Apply.'
+
 $driverInstallLatestTool = $toolById['driver-install-latest']
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest must keep single-select branch UI.'
 Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Latest branch labels must remain NVIDIA, AMD, INTEL.'
