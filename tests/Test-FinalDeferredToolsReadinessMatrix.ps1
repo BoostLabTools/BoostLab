@@ -88,7 +88,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 }
 
 $expectedDeferred = @(
-    @{ Id = 'cleanup'; Title = 'Cleanup'; Link = 'docs/tool-designs/cleanup-scope-design.md'; Source = 'source-ultimate/6 Windows/22 Cleanup.ps1'; Hash = '3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA' }
     @{ Id = 'resizable-bar-assistant'; Title = 'Resizable BAR Assistant'; Link = 'docs/tool-designs/resizable-bar-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1'; Hash = 'E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443' }
     @{ Id = 'services-optimizer'; Title = 'Services Optimizer'; Link = 'docs/tool-designs/services-optimizer-scope-design.md'; Source = 'source-ultimate/8 Advanced/5 Services Optimizer.ps1'; Hash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F' }
     @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Link = 'docs/tool-designs/timer-resolution-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1'; Hash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621' }
@@ -144,8 +143,6 @@ foreach ($requiredPhrase in @(
 
 foreach ($requiredBlocker in @(
     '| Missing artifact provenance | 2 |',
-    '| Missing production allowlist | 1 |',
-    '| Missing TrustedInstaller approved target flow | 1 |',
     '| Missing Safe Mode/reboot workflow approval | 2 |'
 )) {
     if (-not $matrixText.Contains($requiredBlocker)) {
@@ -154,7 +151,6 @@ foreach ($requiredBlocker in @(
 }
 
 foreach ($candidate in @(
-    'Cleanup',
     'Timer Resolution Assistant'
 )) {
     if (-not $matrixText.Contains("**$candidate**")) {

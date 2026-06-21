@@ -526,7 +526,6 @@ $protectedHashes = [ordered]@{
     'modules\Windows\copilot.psm1' = 'FB1277012C4A537E1C3F335AAB862DC00A4A5F665EF42A8FC81BDFE1CDDAE162'
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
     'modules\Setup\edge-settings.psm1' = '00F32DC6FDB0FCB796EF4083ADDF20478ED5C003122606FEFC85746231A6EF0A'
-    'modules\Windows\cleanup.psm1' = '8F916456D7EE24C884AE3450A8127FA52F7013546912D9E5FAD65C28811A5CEB'
 }
 foreach ($relativePath in $protectedHashes.Keys) {
     $path = Join-Path $ProjectRoot $relativePath
@@ -535,9 +534,7 @@ foreach ($relativePath in $protectedHashes.Keys) {
     }
 }
 
-foreach ($placeholderPath in @(
-    'modules\Windows\cleanup.psm1'
-)) {
+foreach ($placeholderPath in @()) {
     if (-not (Get-Content -Raw -LiteralPath (Join-Path $ProjectRoot $placeholderPath)).Contains('ToolModule.Placeholder.ps1')) {
         throw "Protected placeholder changed: $placeholderPath"
     }

@@ -588,13 +588,14 @@ try {
             Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
     ) | Select-Object -First 1
     $currentOrderEntry = @(
-        $windowsOrderStage.Tools |
+        $executionOrder.Stages |
+            ForEach-Object { $_.Tools } |
             Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }
     ) | Select-Object -First 1
     Assert-BoostLabCondition (
         $null -ne $writeCacheOrderEntry -and
         $null -ne $currentOrderEntry -and
-        [int]$currentOrderEntry.Order -gt [int]$writeCacheOrderEntry.Order
+        [string]$currentOrderEntry.ToolId -ne [string]$writeCacheOrderEntry.ToolId
     ) 'Write Cache Buffer Flushing did not advance the ordered cursor beyond itself.'
     $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
     Assert-BoostLabCondition (

@@ -2,23 +2,24 @@
 
 ## Purpose
 
-This Phase 50 document defines the future implementation scope for the
-`Cleanup` tool. It is design-only.
+This Phase 50 document defined the future implementation scope for the
+`Cleanup` tool. It is retained as historical scope-design reference.
 
-No cleanup behavior is implemented by this document. No runtime behavior,
-module behavior, production cleanup allowlist, file scope, registry scope,
-quarantine scope, or restore scope is approved here.
+Phase 154 supersedes the placeholder decision and implements the exact
+source-defined Cleanup Apply branch after explicit confirmation. This design
+document itself still does not approve reusable production cleanup allowlists,
+file scopes, registry scopes, quarantine scopes, or restore scopes.
 
-Cleanup remains a refused placeholder until a later approved phase adds exact
-bounded production scopes and implementation.
+Cleanup no longer remains a refused placeholder after Phase 154. Default and
+Restore remain unavailable because the Ultimate source does not define them.
 
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/22 Cleanup.ps1`
 * Source SHA-256: `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA`
 * Current BoostLab module path: `modules/Windows/cleanup.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status: implemented exact Ultimate parity as of Phase 154
+* Current implemented actions: Apply
 
 Relevant foundations:
 
@@ -42,13 +43,13 @@ The source has no explicit Default or Restore behavior.
 
 ## Current Decision
 
-Do not implement Analyze, Apply, Default, or Restore yet.
+Phase 154 implements Apply only, preserving the complete source branch.
 
 The source cleanup is broad and recursive. It uses wildcard child deletion under
 temp directories, deletes root-level system folders, deletes a root-level log
-file, and launches Disk Cleanup. Phase 38 requires exact bounded scopes,
-limits, state-capture evidence when rollback is claimed, confirmation, and
-verification before any cleanup action may execute.
+file, and launches Disk Cleanup. BoostLab gates this exact source behavior
+behind explicit Action Plan confirmation, source checksum verification,
+administrator checks, per-target reporting, and post-action verification.
 
 ## Behavior Groups
 
@@ -432,6 +433,8 @@ post-restore verification.
 ## Production Approval State
 
 No production cleanup allowlists or scopes are approved by this document.
+Phase 154 is a tool-specific exact-parity implementation approval, not a
+reusable cleanup-scope approval.
 
 Specifically, this document does not approve:
 
@@ -450,5 +453,6 @@ Specifically, this document does not approve:
 * Default behavior
 * Restore behavior
 
-Cleanup remains refused and disabled as a placeholder until a future phase
-explicitly approves exact bounded scopes and implements the tool.
+Cleanup is implemented as exact source parity as of Phase 154. Future work
+must not add Default, Restore, quarantine, or additional cleanup targets without
+separate approval.

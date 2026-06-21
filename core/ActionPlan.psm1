@@ -488,6 +488,9 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'Restore Windows default power schemes and the explicit default registry behavior from Ultimate.'
     }
+    elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
+        'Run the exact Ultimate cleanup branch: remove the source-defined temp, Windows.old, inetpub, PerfLogs, and DumpStack targets, then open Disk Cleanup.'
+    }
     elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
         'Analyze the two source-defined Spectre / Meltdown mitigation override values and explain the security and performance tradeoff.'
     }
@@ -1203,6 +1206,13 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Restore the four hidden power-setting Attributes values to 1.')
         $plannedChanges.Add('Open Power Options and verify Balanced is active and the approved registry defaults are present.')
     }
+    elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Delete the contents of %USERPROFILE%\AppData\Local\Temp\* recursively exactly as the source does.')
+        $plannedChanges.Add('Delete the contents of %SystemDrive%\Windows\Temp\* recursively exactly as the source does.')
+        $plannedChanges.Add('Delete %SystemDrive%\inetpub, %SystemDrive%\PerfLogs, %SystemDrive%\Windows.old, and %SystemDrive%\DumpStack.log exactly as the source does.')
+        $plannedChanges.Add('Launch cleanmgr.exe after the source-defined Remove-Item operations.')
+        $plannedChanges.Add('Expose no Default, Restore, download, registry, service, task, process-stop, or reboot behavior.')
+    }
     elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read FeatureSettingsOverrideMask and FeatureSettingsOverride under the exact Ultimate ControlSet001 Memory Management path.')
         $plannedChanges.Add('Classify the detected policy as source-disabled, default, custom/partial, or unknown.')
@@ -1752,6 +1762,11 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The complete FlyoutMenuSettings and PowerThrottling keys are deleted exactly as defined by Ultimate, which may remove unrelated values in those keys.')
         $sideEffects.Add('Hibernation and Fast Startup are enabled, hidden setting attributes return to 1, and Power Options opens. No reboot is performed.')
     }
+    elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Files and directories under the six exact Ultimate cleanup targets are permanently removed with Remove-Item -Force and no quarantine or Restore path.')
+        $sideEffects.Add('Disk Cleanup opens through cleanmgr.exe after the removal attempts.')
+        $sideEffects.Add('No registry, service, task, package, driver, download, installer, TrustedInstaller, Safe Mode, or reboot operation is performed.')
+    }
     elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; only the two source-defined mitigation override values are read.')
         $sideEffects.Add('Registry inspection cannot prove the currently active kernel mitigation state.')
@@ -2079,6 +2094,9 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Default') {
         'BoostLab will run restoredefaultschemes, enable hibernation, restore the explicit Ultimate defaults, and delete the complete FlyoutMenuSettings and PowerThrottling keys. Previously deleted custom schemes will not be recovered. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
+        'BoostLab will permanently remove the exact Ultimate cleanup targets: user Temp contents, Windows Temp contents, inetpub, PerfLogs, Windows.old, and DumpStack.log, then launch cleanmgr.exe. There is no Default or Restore path and no quarantine. No registry, service, task, download, installer, or reboot operation is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
         'Security warning: BoostLab will set FeatureSettingsOverrideMask and FeatureSettingsOverride to 3 exactly as defined by Ultimate. This disables the source-targeted Spectre / Meltdown mitigations and reduces CPU vulnerability protection. No reboot is performed. Do you want to continue?'

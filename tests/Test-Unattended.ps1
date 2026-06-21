@@ -431,7 +431,6 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
 }
 
 $refusedPlaceholders = @(
-    'Windows\cleanup.psm1'
     'Advanced\resizable-bar-assistant.psm1'
     'Advanced\services-optimizer.psm1'
     'Advanced\timer-resolution-assistant.psm1'

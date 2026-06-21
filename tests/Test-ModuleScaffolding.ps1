@@ -229,6 +229,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\PowerPlan.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'cleanup' = @{
+        RelativePath          = 'Windows\cleanup.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
+    }
     'notepad-settings' = @{
         RelativePath          = 'Windows\notepad-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -519,6 +523,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'signout-lockscreen-wallpaper-black' -and
             $commandName -eq 'Remove-Item'
         )
+        $approvedCleanupCommand = (
+            $toolId -eq 'cleanup' -and
+            $commandName -eq 'Remove-Item'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -547,7 +555,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedBloatwareCommand -and
             -not $approvedGameBarCommand -and
             -not $approvedStartMenuTaskbarCommand -and
-            -not $approvedSignoutWallpaperCommand
+            -not $approvedSignoutWallpaperCommand -and
+            -not $approvedCleanupCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -1420,6 +1429,45 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Power Plan behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'cleanup') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Apply'')'
+                '$script:BoostLabExpectedSourceHash'
+                'Get-BoostLabCleanupTargets'
+                'Invoke-BoostLabCleanupRemoveTarget'
+                'Test-BoostLabCleanupState'
+                'Invoke-BoostLabCleanupApply'
+                'Remove-Item -Path ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue'
+                'Start-Process ''cleanmgr.exe'''
+                'SupportsDefault           = $false'
+                'SupportsRestore           = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Cleanup behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Restart-Computer'
+                'Stop-Computer'
+                'Set-Service'
+                'Stop-Service'
+                'reg add'
+                'reg delete'
+                'Clear-RecycleBin'
+                'SupportsDefault           = $true'
+                'SupportsRestore           = $true'
+                'UsesTrustedInstaller      = $true'
+                'UsesSafeMode              = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or unsafe Cleanup behavior: $forbiddenText")
                 }
             }
         }

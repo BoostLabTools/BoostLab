@@ -207,6 +207,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\PowerPlan.psm1'
         Actions = @('Apply', 'Default')
     }
+    'cleanup' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\cleanup.psm1'
+        Actions = @('Apply')
+    }
     'spectre-meltdown-assistant' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\spectre-meltdown-assistant.psm1'
         Actions = @('Analyze', 'Apply', 'Default')

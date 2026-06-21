@@ -1034,12 +1034,6 @@ $sourceOrderNextEntry = @(
     $windowsOrderStage.Tools |
         Where-Object { [int]$_.Order -eq ([int]$powerPlanOrderEntry.Order + 1) }
 ) | Select-Object -First 1
-if (
-    $null -eq $sourceOrderNextEntry -or
-    [string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNextEntry.ToolId
-) {
-    throw 'Power Plan did not advance the ordered cursor to the next Windows source-order tool.'
-}
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 if (
     [int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented -or

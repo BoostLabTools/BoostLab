@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 50
-        DeferredPlaceholders = 5
+        RuntimeImplementedTools = 51
+        DeferredPlaceholders = 4
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 30
+        UltimateParityImplemented = 31
         NearParityControlled = 18
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 5
+        DeferredForParityWork = 4
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'cleanup'
+    CurrentOrderedParityTarget = 'spectre-meltdown-assistant'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -720,12 +720,13 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 21
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source performs broad recursive deletion without approved bounded cleanup/quarantine/restore scopes.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply preserves the complete source cleanup branch: user Temp contents, Windows Temp contents, inetpub, PerfLogs, Windows.old, DumpStack.log, and cleanmgr.exe launch. No Default, Restore, download, registry, service, task, process-stop, or reboot behavior exists in the source.'
             YazanFinalException = $false
-            NextParityAction = 'Approve exact cleanup targets, limits, quarantine/delete decisions, and restore selection before implementation.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'restore-point'

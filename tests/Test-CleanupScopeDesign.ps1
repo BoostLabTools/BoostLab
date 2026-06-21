@@ -83,7 +83,8 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA`',
-    'Cleanup remains a refused placeholder',
+    'Cleanup no longer remains a refused placeholder after Phase 154.',
+    'Phase 154 is a tool-specific exact-parity implementation approval',
     'No production cleanup allowlists or scopes are approved by this document.',
     'Broad roots remain refused.',
     'Wildcard-only targets remain refused.',
@@ -141,11 +142,35 @@ if (-not $planText.Contains('docs/tool-designs/cleanup-scope-design.md')) {
     throw 'Deferred tools execution plan does not link to the Cleanup scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Cleanup module is no longer a placeholder.'
+foreach ($requiredModuleText in @(
+    '$script:BoostLabImplementedActions = @(''Apply'')',
+    '$script:BoostLabExpectedSourceHash = ''3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA''',
+    'function Invoke-BoostLabCleanupApply',
+    'function Invoke-BoostLabCleanupRemoveTarget',
+    'Start-Process',
+    'cleanmgr.exe',
+    'Remove-Item -Path',
+    'Remove-Item -LiteralPath',
+    'SupportsDefault           = $false',
+    'SupportsRestore           = $false'
+)) {
+    if (-not $moduleText.Contains($requiredModuleText)) {
+        throw "Cleanup module is missing exact parity implementation text: $requiredModuleText"
+    }
 }
-if ($moduleText -match 'Remove-Item|Start-Process|cleanmgr|Clear-RecycleBin|Compress-Archive|Move-Item') {
-    throw 'Cleanup placeholder module appears to contain real cleanup behavior.'
+foreach ($forbiddenModuleText in @(
+    'ToolModule.Placeholder.ps1',
+    'Clear-RecycleBin',
+    'Compress-Archive',
+    'Move-Item',
+    'Invoke-WebRequest',
+    'Start-BitsTransfer',
+    'SupportsDefault           = $true',
+    'SupportsRestore           = $true'
+)) {
+    if ($moduleText.Contains($forbiddenModuleText)) {
+        throw "Cleanup module contains forbidden or stale implementation text: $forbiddenModuleText"
+    }
 }
 
 if ($cleanupPolicy.CleanupScopes.Count -ne 0) {
@@ -225,7 +250,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionCleanupScopes    = $cleanupPolicy.CleanupScopes.Count
     SourceUltimateUnchanged    = $true
     DeletedToolsRemainDeleted  = $true
-    Message                    = 'Cleanup scope design is present, linked, and non-executing.'
+    Message                    = 'Cleanup scope design is retained as historical reference and Phase 154 exact parity remains bounded.'
     Timestamp                  = Get-Date
 }
 

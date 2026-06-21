@@ -11,11 +11,11 @@ This document does not approve production scopes, allowlists, artifacts, install
 ## Current Inventory
 
 * Active tools: **55**
-* Implemented tools: **49**
-* Deferred/placeholders: **6**
+* Implemented tools: **51**
+* Deferred/placeholders: **4**
 * Source-promoted mirror files: **7** (`docs/missing-ultimate-scripts-intake-review.md`)
 * Remaining unimplemented source-promoted intake candidates: **0**
-* Design/review coverage: **6/6 deferred tools covered**
+* Design/review coverage: **4/4 deferred tools covered**
 * Production allowlists/scopes approved by this phase: **0**
 * Tool behavior changed by this phase: **No**
 * `source-ultimate/` modified by this phase: **No**
@@ -88,15 +88,13 @@ Default, or Restore approval was added.
 
 The current deferred queue has complete documentation coverage:
 
-* Scope or scope/provenance design covered tools: **6**
+* Scope or scope/provenance design covered tools: **4**
 * Standalone provenance review covered tools: **0**
 * Manual-handoff implemented with Auto provenance review still blocking automation: **5**
-* Total deferred tools covered by design or review: **6/6 deferred tools covered**
+* Total deferred tools covered by design or review: **4/4 deferred tools covered**
 
 Scope or scope/provenance design coverage:
 
-* `control-panel-settings`
-* `cleanup`
 * `resizable-bar-assistant`
 * `services-optimizer`
 * `timer-resolution-assistant`
@@ -114,8 +112,8 @@ Standalone provenance review coverage:
 | DirectX | `directx` | Graphics | `source-ultimate/5 Graphics/2 DirectX.ps1` | `17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05` | Implemented source-equivalent controlled runtime in Phase 129 | `docs/directx-provenance-review.md`; `docs/migrations/directx.md` | Restore unavailable without captured installer/artifact/registry/shortcut/temp state | Source-equivalent runtime implemented with confirmation, operation descriptors, test-safe executor injection, download provenance foundation, installer policy, file/registry rollback foundation, and cleanup policy | Future mirror/provenance work still needs immutable source URLs, exact hash/size/signer evidence, extracted `DXSETUP.exe` provenance, installer descriptor, and temp ownership scopes before reusable artifact approval or mirror substitution | No artifact provenance approval; no production allowlist; future mirror/provenance or Restore contract only | Unavailable | Restore unavailable until captured-state restore contract exists | No Windows 10 branch issue documented | Not GPU-specific | High | Complete as Yazan-accepted near parity | Maintain source-equivalent runtime; future work is mirror/provenance/Restore only | P10 |
 | Visual C++ | `visual-cpp` | Graphics | `source-ultimate/5 Graphics/3 C++.ps1` | `7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09` | Implemented source-equivalent controlled runtime in Phase 130 | `docs/visual-cpp-provenance-review.md`; `docs/migrations/visual-cpp.md` | Future mirror/provenance and Restore only | Source-equivalent runtime implemented with confirmation, operation descriptors, test-safe executor injection, download provenance foundation, and installer policy | Future mirror/provenance work still needs immutable source URLs, exact hash/size/version/signer evidence, installer exit-code rules, and temp ownership scopes before reusable artifact approval or mirror substitution | No artifact provenance approval; no production allowlist; future mirror/provenance or Restore contract only | Unavailable | Restore unavailable until captured-state restore contract exists | No Windows 10 branch issue documented | Not GPU-specific | High | Complete as Yazan-accepted near parity | Maintain source-equivalent runtime; future work is mirror/provenance/Restore only | P11 |
 | Reinstall | `reinstall` | Refresh | `source-ultimate/2 Refresh/1 Reinstall.ps1` | `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB` | Implemented manual handoff; Auto blocked | `docs/tool-designs/reinstall-scope-provenance-design.md`; `docs/migrations/reinstall.md` | Missing artifact provenance for Auto | Manual handoff implemented; download provenance foundation; installer policy; reboot recovery foundation; file/registry rollback foundation | Auto still needs approved Windows 11 media artifact, exact hash/size/signer evidence, exact execution descriptor, generated-file ownership, approved handoff/reboot workflow, and support contract | Future Auto artifact approvals; installer execution descriptor; generated-file scope; reboot/handoff workflow scope | Unavailable | Restore unavailable until captured-state restore contract exists | Windows 10 branch unsupported; Windows 10 host may be valid only for Windows 11 preparation output | Not GPU-specific | High | Complete for manual handoff only | Auto remains blocked until exact Windows 11 Media Creation Tool approval package exists | P4 |
-| Control Panel Settings | `control-panel-settings` | Windows | `source-ultimate/6 Windows/15 Control Panel Settings.ps1` | `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | Placeholder/refused; scope design complete; not ready | `docs/tool-designs/control-panel-settings-scope-design.md` | Missing TrustedInstaller approved target flow | File/registry rollback foundation; service rollback foundation; cleanup policy; TrustedInstaller foundation | Tool decomposition, exact registry/privacy/security scopes, exact service scopes, exact TI target flow, scheduled task and process governance | Many sub-tool registry scopes; service scopes; TI scopes; cleanup scopes; scheduled task scopes; process scopes | Source Default exists but direct Default remains refused | Restore refused until source is decomposed and captured-state restore UI/runtime exists | No Windows 10-only branch found; blocked by governance, not product scope | Not GPU-specific | High | No | Keep refused; decompose into smaller approved candidates before scopes | P18 |
-| Cleanup | `cleanup` | Windows | `source-ultimate/6 Windows/22 Cleanup.ps1` | `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Placeholder/refused; scope design complete | `docs/tool-designs/cleanup-scope-design.md` | Missing cleanup/quarantine scopes | Destructive cleanup policy; file/registry rollback foundation | Exact cleanup target scopes, ownership map, quarantine versus delete decisions, limits, restore selection UI/runtime | Cleanup scopes; quarantine scopes; file capture scopes if rollback is claimed | Not applicable | Restore refused until quarantine/capture restore selection exists | Shared Windows behavior may be considered if exact scopes are approved | Not GPU-specific | High | Yes | Add bounded cleanup allowlists and quarantine policy per target | P2 |
+| Control Panel Settings | `control-panel-settings` | Windows | `source-ultimate/6 Windows/15 Control Panel Settings.ps1` | `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | Implemented exact Ultimate parity in Phase 149 | `docs/tool-designs/control-panel-settings-scope-design.md` | Default/Restore unavailable without captured-state restore contract | File/registry rollback foundation; service rollback foundation; cleanup policy; TrustedInstaller foundation | Future Restore still needs selected captured-state records for every exact setting/service/process/file mutation | No reusable/global production allowlist; source-equivalent operations are module-scoped and source-derived | Source Default implemented separately where source-defined | Restore unavailable until selected captured-state restore contract exists | No Windows 10-only branch found | Not GPU-specific | High | Complete | Maintain exact source-derived operations; future work would need explicit Restore contract only | P18 |
+| Cleanup | `cleanup` | Windows | `source-ultimate/6 Windows/22 Cleanup.ps1` | `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Implemented exact Ultimate parity in Phase 154 | `docs/tool-designs/cleanup-scope-design.md`; `docs/migrations/cleanup.md` | Default/Restore unavailable because source defines neither | Destructive cleanup policy; file/registry rollback foundation; explicit Action Plan confirmation; source checksum verification; per-target reporting; test-safe executor injection | Future Restore would need quarantine/capture restore selection if ever separately approved | No reusable/global production cleanup allowlist; source-equivalent operations are module-scoped and source-derived | Unavailable | Restore unavailable until selected captured-state or quarantine restore contract exists | Shared Windows cleanup behavior; no Windows 10-only branch documented | Not GPU-specific | High | Complete | Maintain exact source-defined Apply branch; no Default, Restore, or extra cleanup targets without separate approval | P2 |
 | Resizable BAR Assistant | `resizable-bar-assistant` | Advanced | `source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1` | `E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443` | Placeholder/refused; scope design complete | `docs/tool-designs/resizable-bar-assistant-scope-design.md` | Missing artifact provenance | Download provenance foundation; file/registry rollback foundation; driver rollback foundation; reboot recovery foundation | NVIDIA Profile Inspector artifact approval, generated `.nip` scope, NVIDIA profile rollback, firmware restart workflow | Artifact approvals; driver/profile scopes; generated file scopes; firmware reboot workflow | Not applicable | Restore refused until NVIDIA profile state capture exists | Shared Windows behavior only if otherwise approved | NVIDIA path only may be considered; AMD/Intel branches unsupported | High | No | NVIDIA artifact and driver-profile approval design | P15 |
 | Services Optimizer | `services-optimizer` | Advanced | `source-ultimate/8 Advanced/5 Services Optimizer.ps1` | `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Placeholder/refused; scope design complete | `docs/tool-designs/services-optimizer-scope-design.md` | Missing Safe Mode/reboot workflow approval | Service rollback foundation; reboot recovery foundation; TrustedInstaller foundation; Safe Mode foundation; file/registry rollback foundation | Exact service scopes, Safe Mode workflow scope, TI scopes, RunOnce/BCD/reboot scopes, generated artifact ownership, restore point integration decision | Service scopes; TI scopes; Safe Mode scopes; reboot scopes; file/registry scopes; RunOnce/BCD scopes | Source Default/Restore not approved | Restore refused until service/registry/workflow rollback is fully designed | Shared Windows behavior only if otherwise approved | Not GPU-specific | High | No | Keep late-stage; approve exact service/Safe Mode/TI workflow only after recovery drills exist | P17 |
 | Timer Resolution Assistant | `timer-resolution-assistant` | Advanced | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1` | `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Placeholder/refused; scope design complete | `docs/tool-designs/timer-resolution-assistant-scope-design.md` | Missing artifact provenance | Service rollback foundation; file/registry rollback foundation; destructive cleanup policy; download/installer provenance model | Generated C# and binary artifact policy, compiler permission, exact service scope, protected path scope, timer registry scope | Generated artifact scope; compiler/execution descriptor; service scope; registry scope; cleanup scope | Source Default exists but not approved | Restore refused until service/file/registry records exist | Shared Windows behavior only if otherwise approved | Not GPU-specific | High | Maybe after one foundation | Generated Script / Temp Artifact Ownership Policy, then service scope review | P6 |
@@ -123,13 +121,11 @@ Standalone provenance review coverage:
 
 ## Blocker Frequency Summary
 
-Primary blocker counts across the 6 deferred/placeholders:
+Primary blocker counts across the 4 deferred/placeholders:
 
 | Primary blocker category | Count | Tools |
 |---|---:|---|
 | Missing artifact provenance | 2 | Resizable BAR Assistant; Timer Resolution Assistant |
-| Missing production allowlist | 1 | Cleanup |
-| Missing TrustedInstaller approved target flow | 1 | Control Panel Settings |
 | Missing Safe Mode/reboot workflow approval | 2 | Services Optimizer; Defender Optimize Assistant |
 
 Secondary blockers appear more often than the primary count shows. The most common secondary blockers are process handling, RunOnce/Active Setup behavior, scheduled task governance, generated script/temp artifact ownership, restore selection UI/runtime, and exact production scope approval.
@@ -138,9 +134,7 @@ Secondary blockers appear more often than the primary count shows. The most comm
 
 These are not ready today. They are the comparatively safest next implementation attempts after limited additional foundation or allowlist work:
 
-1. **Cleanup**
-   Needs bounded cleanup scopes, quarantine/delete decisions, file-count and byte limits, and restore selection UI/runtime if any Restore claim is made.
-2. **Timer Resolution Assistant**
+1. **Timer Resolution Assistant**
    Could be reattempted after a generated script/temp artifact ownership policy and exact service scope approval. It remains high risk.
 
 Updates Drivers Block is implemented in Phase 102 for the live Driver Updates
@@ -177,8 +171,8 @@ These tools should remain late-stage because their sources combine driver, insta
 
 * Resizable BAR Assistant
 * Services Optimizer
+* Timer Resolution Assistant
 * Defender Optimize Assistant
-* Control Panel Settings
 
 ## Product Scope Notes
 
@@ -195,7 +189,7 @@ Current product-scope impact:
 
 * `driver-install-debloat-settings` and `resizable-bar-assistant` are constrained to NVIDIA-only future behavior.
 * `reinstall` is implemented as controlled manual handoff only; Auto may eventually support a Windows 10 host only for Windows 11 preparation/refresh output after exact approvals.
-* `cleanup` and most remaining Windows tools are blocked by governance, not by host OS alone, unless a future source branch is explicitly Windows 10-only.
+* Remaining Windows/Advanced placeholders are blocked by governance, not by host OS alone, unless a future source branch is explicitly Windows 10-only.
 
 ## Recommended Next Phases
 
@@ -205,9 +199,6 @@ Current product-scope impact:
    Required by the broader Updates Drivers Block bootable-media branches, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and several registry-import workflows.
 3. **RunOnce / Active Setup Governance**
    Required before persistent startup or post-reboot repair behavior can be approved.
-4. **Cleanup Allowlist Review**
-   A narrow tool-specific approval phase after cleanup scopes, quarantine rules, and restore selection are ready.
-
 ## Final Phase 65 Decision
 
 No deferred tool is marked ready for implementation by this matrix.

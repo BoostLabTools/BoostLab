@@ -602,9 +602,9 @@
                     Stage       = 'Windows'
                     Order       = 21
                     Type        = 'action'
-                    RiskLevel   = 'medium'
-                    Description = 'Analyze removable temporary data before preparing a cleanup operation.'
-                    Actions     = @('Analyze', 'Apply')
+                    RiskLevel   = 'high'
+                    Description = 'Run the exact Ultimate cleanup branch after explicit confirmation.'
+                    Actions     = @('Apply')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
