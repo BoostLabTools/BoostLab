@@ -236,20 +236,11 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Restore') {
         'Restore is unavailable because no captured package, installer, file, registry, service, task, shortcut, app configuration, cleanup, or support state restore contract exists.'
     }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Analyze') {
-        'Analyze the Edge & WebView source and report blocked artifact, repair, installer, package, process, service, task, file, registry, cleanup, rollback, and support approvals without running any Edge/WebView workflow.'
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Open') {
-        'Prepare Edge & WebView manual handoff instructions only; no browser, Explorer, Settings, Store, Edge, WebView, external tool, download, repair, installer, package action, process handling, file mutation, registry change, service change, task change, cleanup, reboot, or system mutation is opened or executed.'
-    }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Apply') {
-        'Auto mode is blocked for Edge & WebView because artifact provenance, repair/installer execution, package scopes, process handling, service/task/file/registry cleanup, rollback, and support approvals do not exist.'
+        'Run the source-equivalent Edge & WebView Uninstall (Recommended) branch after explicit confirmation.'
     }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Default') {
-        'Default is unavailable because the source Default branch downloads and runs repair installers and performs unapproved policy, service, task, Active Setup, RunOnce, and BHO mutations.'
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Restore') {
-        'Restore is unavailable because no captured Edge/WebView package, installer, file, registry, service, task, process, cleanup, or support state restore contract exists.'
+        'Run the source-defined Edge & WebView Default repair branch after explicit confirmation.'
     }
     elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Analyze') {
         'Analyze the Edge Settings source identity and source-equivalent Apply/Default operation families without changing Edge.'
@@ -650,38 +641,23 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Do not treat source install behavior, Apply, or Default as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the Edge & WebView source checksum and implementation status.')
-        $plannedChanges.Add('Report source behavior summary and missing artifact provenance, repair/installer execution, package/AppX, process handling, service rollback, scheduled-task governance, file/registry cleanup, rollback, and support approvals.')
-        $plannedChanges.Add('Perform no download, browser/Explorer/Settings/Store/Edge/WebView/external process launch, repair, installer execution, package action, process stop/start, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation.')
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Prepare manual handoff instructions inside BoostLab only.')
-        $plannedChanges.Add('Do not open a browser, Explorer, Settings, Store, Edge, WebView, repair installer, package manager, script, or external tool.')
-        $plannedChanges.Add('Do not download Edge, WebView, installer, repair, script, package, archive, or artifact content.')
-        $plannedChanges.Add('Do not run setup, repair, installer, winget, Store, AppX, MSI, EXE, script, package, or helper behavior.')
-        $plannedChanges.Add('Do not install, uninstall, repair, update, reset, remove, or configure Edge, WebView, packages, services, tasks, policies, BHO, Active Setup, or RunOnce state.')
-        $plannedChanges.Add('Do not stop or start Edge/WebView processes or services.')
-        $plannedChanges.Add('Do not create, delete, or mutate files, temp folders, shortcuts, registry, services, scheduled tasks, firewall, devices, drivers, reboot/session state, or app configuration.')
-        $plannedChanges.Add('Perform no system-changing operation.')
-    }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Block Auto mode before any operational step.')
-        $plannedChanges.Add('Do not execute any approved Auto behavior because none is approved.')
-        $plannedChanges.Add('Report missing Edge/WebView artifact provenance, repair and installer descriptors, package scopes, process handling, service/task/file/registry cleanup scopes, rollback, and support approvals.')
-        $plannedChanges.Add('Perform no download, repair, installer execution, package action, process stop/start, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation.')
+        $plannedChanges.Add('Verify the Edge & WebView source checksum before execution.')
+        $plannedChanges.Add('Temporarily set DeviceRegion to REG_DWORD 244 through the source reg1.exe copy, then restore the captured DeviceRegion when available.')
+        $plannedChanges.Add('Stop the exact source-defined named process list and every running process whose ProcessName matches *edge*.')
+        $plannedChanges.Add('Remove the exact source EdgeUpdate registry keys, run discovered MicrosoftEdgeUpdate.exe paths with /unregsvc and /uninstall, and wait for source Edge setup/update processes.')
+        $plannedChanges.Add('Create and later remove the source Microsoft.MicrosoftEdge_8wekyb3d8bbwe SystemApps marker directory and MicrosoftEdge.exe marker file.')
+        $plannedChanges.Add('Run the 32-bit Microsoft Edge uninstall string through cmd.exe with --force-uninstall when present.')
+        $plannedChanges.Add('Delete the source Microsoft EdgeWebView uninstall key, Edge Quick Launch shortcut, Program Files (x86)\Microsoft folder, and every service whose Name matches Edge.')
+        $plannedChanges.Add('If the Windows 10 legacy Edge CBS package exists, run the source Visibility/Owners registry edits and DISM /Remove-Package /quiet /norestart branch.')
     }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Block Default before any operational step.')
-        $plannedChanges.Add('Do not treat Default as Restore.')
-        $plannedChanges.Add('Do not run the source Default repair installers or invent a safe Edge/WebView default.')
-        $plannedChanges.Add('Perform no download, repair, installer execution, package action, policy, service, task, Active Setup, RunOnce, BHO, cleanup, reboot, or system mutation.')
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Restore') {
-        $plannedChanges.Add('Block Restore before any operational step.')
-        $plannedChanges.Add('Require valid selected captured Edge/WebView package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus an approved Restore contract before any Restore can be planned.')
-        $plannedChanges.Add('Do not treat source uninstall, Default repair, or Apply behavior as captured-state Restore.')
-        $plannedChanges.Add('Perform no system-changing operation.')
+        $plannedChanges.Add('Verify the Edge & WebView source checksum before execution.')
+        $plannedChanges.Add('Stop the exact source-defined named process list and every running process whose ProcessName matches *edge*.')
+        $plannedChanges.Add('Download the source edge.exe and edgewebview.exe Ultimate-author-hosted artifacts to %SystemRoot%\Temp and launch each one with wait in the source order.')
+        $plannedChanges.Add('Write the source Edge policies: ExtensionInstallForcelist, HardwareAccelerationModeEnabled DWORD 0, BackgroundModeEnabled DWORD 0, and StartupBoostEnabled DWORD 0.')
+        $plannedChanges.Add('Remove source-matched Edge Active Setup components, RunOnce entries, Edge services, Edge scheduled tasks, and the native/WOW6432Node IE-to-Edge Browser Helper Object registry keys.')
+        $plannedChanges.Add('Default is the source repair branch, not captured-state Restore.')
     }
     elseif ($toolId -eq 'edge-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the Edge Settings source checksum and report the source-equivalent Optimize and Default operation families.')
@@ -1291,7 +1267,7 @@ function New-BoostLabActionPlan {
     $isPotentialChangeAction = $ActionName -in @('Apply', 'Default', 'Restore')
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
     $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Default', 'Restore')
-    $isBlockedEdgeWebViewNoMutationAction = $toolId -eq 'edge-webview' -and $ActionName -in @('Apply', 'Default', 'Restore')
+    $isBlockedEdgeWebViewNoMutationAction = $false
     $isBlockedDriverInstallLatestNoMutationAction = $toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Default', 'Restore')
@@ -1320,7 +1296,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers', 'edge-webview') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
+    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1398,25 +1374,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without selected captured package, installer, file, registry, service, scheduled-task, shortcut, app configuration, cleanup, and support state plus an approved restore contract.')
         $sideEffects.Add('No system-changing operation occurs.')
     }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; Edge & WebView analysis is read-only.')
-        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
-        $sideEffects.Add('No browser, Explorer, Settings, Store, Edge, WebView, external tool, download, repair, installer execution, package action, process handling, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurs.')
-    }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, repair, installer execution, package action, process handling, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurs.')
+        $sideEffects.Add('Apply can stop source-targeted processes, remove EdgeUpdate registry keys, run Edge update/uninstall executables, run Edge uninstall through cmd.exe, delete source-targeted files/folders/shortcut, delete Edge services, and optionally run the source legacy Edge DISM removal branch.')
+        $sideEffects.Add('Apply temporarily sets DeviceRegion to the source US value and restores the captured value when one was present.')
+        $sideEffects.Add('No reboot, Safe Mode, TrustedInstaller operation, source file change, source mirror change, artifact provenance approval, or production allowlist entry is added.')
     }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Default is blocked before execution.')
-        $sideEffects.Add('No Edge/WebView repair, package, policy, service, task, Active Setup, RunOnce, BHO, cleanup, reboot, or system state changes occur.')
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Restore') {
-        $sideEffects.Add('Restore is blocked without selected captured Edge/WebView package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus an approved restore contract.')
-        $sideEffects.Add('No system-changing operation occurs.')
+        $sideEffects.Add('Default can stop source-targeted processes, download and launch source Edge/WebView repair executables, write Edge policy values, remove Active Setup and RunOnce Edge entries, delete Edge services/tasks, and delete source BHO registry keys.')
+        $sideEffects.Add('The source repair EXEs remain classified as UltimateAuthorHostedArtifact / NeedsBoostLabMirror; no artifact provenance approval, production allowlist entry, binary vendoring, or mirror substitution is created.')
+        $sideEffects.Add('Default is not Restore. No reboot, Safe Mode, TrustedInstaller operation, source file change, source mirror change, artifact provenance approval, or production allowlist behavior is changed.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Driver Install Debloat & Settings analysis is read-only.')
@@ -1811,7 +1777,7 @@ function New-BoostLabActionPlan {
     elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
-    if ($capabilities.RequiresInternet -and $toolId -notin @('installers', 'edge-webview')) {
+    if ($capabilities.RequiresInternet -and $toolId -notin @('installers')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
@@ -1896,17 +1862,11 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Restore') {
         'Installers Restore requires selected captured package, installer, file, registry, service, scheduled-task, shortcut, app configuration, cleanup, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Open') {
-        'BoostLab will prepare Edge & WebView manual handoff instructions only. It will not open a browser, Explorer, Settings, Store, Edge, WebView, repair installer, package manager, script, or external tool; download artifacts; run repair or installers; stop processes; install, uninstall, reset, remove, or configure packages; mutate files, registry, services, tasks, shortcuts, devices, drivers, sessions, or cleanup state; or reboot. Continue?'
-    }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Apply') {
-        'Edge & WebView Auto mode is blocked. BoostLab will not execute Auto behavior because artifact provenance, repair/installer descriptors, package scopes, process handling, service/task/file/registry cleanup scopes, rollback, and support approvals are missing. Continue only to record the blocked result?'
+        'Edge & WebView will run the source-equivalent Uninstall (Recommended) branch: stop source-targeted processes, mutate DeviceRegion, remove EdgeUpdate registry keys, run Edge update/uninstall executables, run Edge uninstall, delete source-targeted files/folders/shortcut/services, and optionally run the source legacy Edge DISM branch if present. Continue?'
     }
     elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Default') {
-        'Edge & WebView Default is unavailable. The source Default branch downloads and runs repair installers and mutates Edge policy, services, tasks, Active Setup, RunOnce, and BHO state; Default is not Restore. Continue only to record the blocked Default result?'
-    }
-    elseif ($toolId -eq 'edge-webview' -and $ActionName -eq 'Restore') {
-        'Edge & WebView Restore requires selected captured package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
+        'Edge & WebView will run the source-defined Default branch: stop source-targeted processes, download and launch source Edge/WebView repair executables, write Edge policy values, remove Active Setup and RunOnce Edge entries, delete Edge services/tasks, and delete source BHO keys. Default is not captured-state Restore. Continue?'
     }
     elseif ($toolId -eq 'directx' -and $ActionName -eq 'Open') {
         'DirectX Open is unavailable because the source defines an install workflow, not a standalone Open action. Continue only to record the blocked Open result?'

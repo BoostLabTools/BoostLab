@@ -5,40 +5,77 @@ $script:BoostLabToolMetadata = [ordered]@{
     Title = 'Edge & WebView'
     Stage = 'Windows'
     Order = 13
-    Type = 'assistant'
+    Type = 'action'
     RiskLevel = 'high'
-    Description = 'Controlled manual handoff only. Analyze the source-defined Edge and WebView removal/repair workflow without automated downloads, repair, installer execution, package actions, process handling, registry/service/file mutation, cleanup, or system mutation.'
-    Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    Description = 'Run the source-equivalent Edge and WebView uninstall branch or the source-defined Default repair branch.'
+    Actions = @('Apply', 'Default')
     Capabilities = [ordered]@{
-        RequiresAdmin             = $false
-        RequiresInternet          = $false
+        RequiresAdmin             = $true
+        RequiresInternet          = $true
         CanReboot                 = $false
-        CanModifyRegistry         = $false
-        CanModifyServices         = $false
-        CanInstallSoftware        = $false
-        CanDownload               = $false
+        CanModifyRegistry         = $true
+        CanModifyServices         = $true
+        CanInstallSoftware        = $true
+        CanDownload               = $true
         CanModifyDrivers          = $false
-        CanModifySecurity         = $false
-        CanDeleteFiles            = $false
+        CanModifySecurity         = $true
+        CanDeleteFiles            = $true
         UsesTrustedInstaller      = $false
         UsesSafeMode              = $false
-        SupportsDefault           = $false
+        SupportsDefault           = $true
         SupportsRestore           = $false
         NeedsExplicitConfirmation = $true
     }
 }
 
-$script:BoostLabImplementedActions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+$script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabExpectedSourceHash = '161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691'
 $script:BoostLabSourceRelativePath = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'
+$script:BoostLabEdgeProcesses = @(
+    'backgroundTaskHost',
+    'Copilot',
+    'CrossDeviceResume',
+    'GameBar',
+    'MicrosoftEdgeUpdate',
+    'msedge',
+    'msedgewebview2',
+    'OneDrive',
+    'OneDrive.Sync.Service',
+    'OneDriveStandaloneUpdater',
+    'Resume',
+    'RuntimeBroker',
+    'Search',
+    'SearchHost',
+    'Setup',
+    'StoreDesktopExtension',
+    'WidgetService',
+    'Widgets'
+)
+$script:BoostLabEdgeUpdateRegistryKeys = @(
+    'HKCU:\SOFTWARE\Microsoft\EdgeUpdate',
+    'HKLM:\SOFTWARE\Microsoft\EdgeUpdate',
+    'HKCU:\SOFTWARE\Policies\Microsoft\EdgeUpdate',
+    'HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate',
+    'HKCU:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate',
+    'HKCU:\SOFTWARE\WOW6432Node\Policies\Microsoft\EdgeUpdate',
+    'HKLM:\SOFTWARE\WOW6432Node\Policies\Microsoft\EdgeUpdate'
+)
+
+function Get-BoostLabEdgeWebViewProjectRoot {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    return Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+}
 
 function Get-BoostLabEdgeWebViewSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    return Join-Path (Get-BoostLabEdgeWebViewProjectRoot) ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
 function Get-BoostLabEdgeWebViewSourceStatus {
@@ -73,6 +110,144 @@ function Get-BoostLabEdgeWebViewSourceStatus {
     }
 }
 
+function New-BoostLabEdgeWebViewOperation {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Id,
+
+        [Parameter(Mandatory)]
+        [string]$Kind,
+
+        [Parameter(Mandatory)]
+        [string]$Description,
+
+        [hashtable]$Parameters = @{}
+    )
+
+    [pscustomobject]@{
+        Id          = $Id
+        Kind        = $Kind
+        Description = $Description
+        Parameters  = $Parameters
+    }
+}
+
+function Get-BoostLabEdgeWebViewUninstallOperations {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param()
+
+    $systemRoot = $env:SystemRoot
+    if ([string]::IsNullOrWhiteSpace($systemRoot)) {
+        $systemRoot = 'C:\Windows'
+    }
+    $systemDrive = $env:SystemDrive
+    if ([string]::IsNullOrWhiteSpace($systemDrive)) {
+        $systemDrive = 'C:'
+    }
+
+    @(
+        New-BoostLabEdgeWebViewOperation -Id 'RequireAdministrator' -Kind 'RequireAdministrator' -Description 'Require Administrator rights exactly as the source self-elevation gate requires.'
+        New-BoostLabEdgeWebViewOperation -Id 'RequireInternet' -Kind 'RequireInternet' -Description 'Verify internet availability with Test-Connection 8.8.8.8 exactly as the source requires.' -Parameters @{ ComputerName = '8.8.8.8' }
+        New-BoostLabEdgeWebViewOperation -Id 'CaptureDeviceRegion' -Kind 'ReadRegistryValue' -Description 'Capture HKLM Control Panel DeviceRegion before the source temporarily sets it to US.' -Parameters @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\DeviceRegion'; Name = 'DeviceRegion'; ContextKey = 'DeviceRegion' }
+        New-BoostLabEdgeWebViewOperation -Id 'CopyRegExe' -Kind 'CopyRegExe' -Description 'Copy reg.exe to .\reg1.exe exactly as the source does.' -Parameters @{ Destination = '.\reg1.exe' }
+        New-BoostLabEdgeWebViewOperation -Id 'SetDeviceRegionUS' -Kind 'RegExeAdd' -Description 'Set DeviceRegion to REG_DWORD 244 before Edge/WebView removal.' -Parameters @{ Executable = '.\reg1.exe'; Key = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\DeviceRegion'; Name = 'DeviceRegion'; Type = 'REG_DWORD'; Data = 244 }
+        New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcesses' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
+        New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcesses' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* exactly as the source does.'
+        New-BoostLabEdgeWebViewOperation -Id 'FindEdgeUpdateExecutables' -Kind 'FindEdgeUpdateExecutables' -Description 'Find MicrosoftEdgeUpdate.exe under LocalApplicationData, ProgramFilesX86, and ProgramFiles.' -Parameters @{ RelativePattern = 'Microsoft\EdgeUpdate\*.*.*.*\MicrosoftEdgeUpdate.exe'; ContextKey = 'EdgeUpdateExecutables' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveEdgeUpdateRegistryKeys' -Kind 'RemoveRegistryKeys' -Description 'Remove every source-defined EdgeUpdate registry key recursively.' -Parameters @{ Paths = @($script:BoostLabEdgeUpdateRegistryKeys) }
+        New-BoostLabEdgeWebViewOperation -Id 'UnregisterEdgeUpdateServices' -Kind 'RunEdgeUpdateExecutableForEachPath' -Description 'Run each discovered MicrosoftEdgeUpdate.exe with /unregsvc and wait for Edge setup/update processes to finish.' -Parameters @{ ContextKey = 'EdgeUpdateExecutables'; Arguments = '/unregsvc' }
+        New-BoostLabEdgeWebViewOperation -Id 'UninstallEdgeUpdate' -Kind 'RunEdgeUpdateExecutableForEachPath' -Description 'Run each discovered MicrosoftEdgeUpdate.exe with /uninstall and wait for Edge setup/update processes to finish.' -Parameters @{ ContextKey = 'EdgeUpdateExecutables'; Arguments = '/uninstall' }
+        New-BoostLabEdgeWebViewOperation -Id 'CreateEdgeSystemAppDirectory' -Kind 'NewDirectory' -Description 'Create the source Edge SystemApps directory marker.' -Parameters @{ Path = (Join-Path $systemRoot 'SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe') }
+        New-BoostLabEdgeWebViewOperation -Id 'CreateMicrosoftEdgeExeMarker' -Kind 'NewFile' -Description 'Create MicrosoftEdge.exe marker file in the source SystemApps directory.' -Parameters @{ Path = (Join-Path $systemRoot 'SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe\MicrosoftEdge.exe') }
+        New-BoostLabEdgeWebViewOperation -Id 'ReadEdgeUninstallString' -Kind 'ReadEdgeUninstallString32' -Description 'Read Microsoft Edge uninstall string from the 32-bit HKLM uninstall registry view.' -Parameters @{ ContextKey = 'EdgeUninstallString' }
+        New-BoostLabEdgeWebViewOperation -Id 'RunEdgeForceUninstall' -Kind 'RunEdgeUninstallString' -Description 'Run cmd.exe /c with the source Edge uninstall string plus --force-uninstall.' -Parameters @{ ContextKey = 'EdgeUninstallString'; ExtraArguments = '--force-uninstall' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveEdgeSystemAppDirectory' -Kind 'RemoveDirectory' -Description 'Remove the source Edge SystemApps directory recursively.' -Parameters @{ Path = (Join-Path $systemRoot 'SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe') }
+        New-BoostLabEdgeWebViewOperation -Id 'DeleteEdgeWebViewUninstallKey' -Kind 'Cmd' -Description 'Delete the Microsoft EdgeWebView uninstall registry key exactly as the source does.' -Parameters @{ Command = 'reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView" /f >nul 2>&1' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveEdgeQuickLaunchShortcut' -Kind 'RemoveFile' -Description 'Remove the Microsoft Edge Quick Launch shortcut from systemprofile.' -Parameters @{ Path = (Join-Path $systemRoot 'System32\config\systemprofile\AppData\Roaming\Microsoft\Internet Explorer\Quick Launch\Microsoft Edge.lnk') }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveMicrosoftProgramFilesX86Folder' -Kind 'RemoveDirectory' -Description 'Remove %SystemDrive%\Program Files (x86)\Microsoft recursively exactly as the source does.' -Parameters @{ Path = (Join-Path $systemDrive 'Program Files (x86)\Microsoft') }
+        New-BoostLabEdgeWebViewOperation -Id 'DeleteEdgeServices' -Kind 'DeleteEdgeServices' -Description 'Stop and delete every service whose Name matches Edge.'
+        New-BoostLabEdgeWebViewOperation -Id 'FindLegacyEdgePackage' -Kind 'FindLegacyEdgePackage' -Description 'Find the optional Windows 10 legacy Microsoft-Windows-Internet-Browser-Package CBS package.' -Parameters @{ ContextKey = 'LegacyEdgePackage' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveLegacyEdgePackageIfPresent' -Kind 'RemoveLegacyEdgePackageIfPresent' -Description 'If the legacy Edge package exists, set Visibility, delete Owners, and run DISM /Remove-Package /quiet /norestart exactly as the source does.' -Parameters @{ ContextKey = 'LegacyEdgePackage' }
+        New-BoostLabEdgeWebViewOperation -Id 'RestoreDeviceRegion' -Kind 'RestoreDeviceRegion' -Description 'Restore the captured DeviceRegion through .\reg1.exe if the source captured one.' -Parameters @{ Executable = '.\reg1.exe'; ContextKey = 'DeviceRegion' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveRegExeCopy' -Kind 'RemoveFile' -Description 'Remove .\reg1.exe exactly as the source cleanup does.' -Parameters @{ Path = '.\reg1.exe' }
+    )
+}
+
+function Get-BoostLabEdgeWebViewDefaultOperations {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param()
+
+    $systemRoot = $env:SystemRoot
+    if ([string]::IsNullOrWhiteSpace($systemRoot)) {
+        $systemRoot = 'C:\Windows'
+    }
+
+    @(
+        New-BoostLabEdgeWebViewOperation -Id 'RequireAdministrator' -Kind 'RequireAdministrator' -Description 'Require Administrator rights exactly as the source self-elevation gate requires.'
+        New-BoostLabEdgeWebViewOperation -Id 'RequireInternet' -Kind 'RequireInternet' -Description 'Verify internet availability with Test-Connection 8.8.8.8 exactly as the source requires.' -Parameters @{ ComputerName = '8.8.8.8' }
+        New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesBeforeEdgeRepair' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list before downloading Edge repair installer.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
+        New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesBeforeEdgeRepair' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* before downloading Edge repair installer.'
+        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeRepair' -Kind 'DownloadFile' -Description 'Download the source edge.exe repair artifact to %SystemRoot%\Temp\edge.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'; OutFile = (Join-Path $systemRoot 'Temp\edge.exe'); ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
+        New-BoostLabEdgeWebViewOperation -Id 'RunEdgeRepair' -Kind 'StartProcess' -Description 'Launch %SystemRoot%\Temp\edge.exe and wait exactly as the source Default branch does.' -Parameters @{ FilePath = (Join-Path $systemRoot 'Temp\edge.exe'); Wait = $true }
+        New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesBeforeWebViewRepair' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list before downloading WebView repair installer.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
+        New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesBeforeWebViewRepair' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* before downloading WebView repair installer.'
+        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeWebViewRepair' -Kind 'DownloadFile' -Description 'Download the source edgewebview.exe repair artifact to %SystemRoot%\Temp\edgewebview.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'; OutFile = (Join-Path $systemRoot 'Temp\edgewebview.exe'); ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
+        New-BoostLabEdgeWebViewOperation -Id 'RunEdgeWebViewRepair' -Kind 'StartProcess' -Description 'Launch %SystemRoot%\Temp\edgewebview.exe and wait exactly as the source Default branch does.' -Parameters @{ FilePath = (Join-Path $systemRoot 'Temp\edgewebview.exe'); Wait = $true }
+        New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesAfterRepairs' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list after both repair installers.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
+        New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesAfterRepairs' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* after both repair installers.'
+        New-BoostLabEdgeWebViewOperation -Id 'ForceInstallUblockPolicy' -Kind 'Cmd' -Description 'Import the source ExtensionInstallForcelist policy value.' -Parameters @{ Command = 'reg add HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist /v 1 /t REG_SZ /d "odfafepnkmbhccpbejgmiehpchacaeak;https://edge.microsoft.com/extensionwebstorebase/v1/crx" /f' }
+        New-BoostLabEdgeWebViewOperation -Id 'DisableHardwareAccelerationPolicy' -Kind 'Cmd' -Description 'Set HardwareAccelerationModeEnabled to REG_DWORD 0.' -Parameters @{ Command = 'reg add HKLM\SOFTWARE\Policies\Microsoft\Edge /v HardwareAccelerationModeEnabled /t REG_DWORD /d 0 /f' }
+        New-BoostLabEdgeWebViewOperation -Id 'DisableBackgroundModePolicy' -Kind 'Cmd' -Description 'Set BackgroundModeEnabled to REG_DWORD 0.' -Parameters @{ Command = 'reg add HKLM\SOFTWARE\Policies\Microsoft\Edge /v BackgroundModeEnabled /t REG_DWORD /d 0 /f' }
+        New-BoostLabEdgeWebViewOperation -Id 'DisableStartupBoostPolicy' -Kind 'Cmd' -Description 'Set StartupBoostEnabled to REG_DWORD 0.' -Parameters @{ Command = 'reg add HKLM\SOFTWARE\Policies\Microsoft\Edge /v StartupBoostEnabled /t REG_DWORD /d 0 /f' }
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveEdgeActiveSetupComponents' -Kind 'RemoveEdgeActiveSetupComponents' -Description 'Remove Active Setup installed components whose default value contains Edge.'
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveMsedgeRunOnceValues' -Kind 'RemoveMsedgeRunOnceValues' -Description 'Remove RunOnce properties whose name matches *msedge*.'
+        New-BoostLabEdgeWebViewOperation -Id 'DeleteEdgeServicesAfterRepair' -Kind 'DeleteEdgeServices' -Description 'Stop and delete every service whose Name matches Edge.'
+        New-BoostLabEdgeWebViewOperation -Id 'RemoveEdgeScheduledTasks' -Kind 'UnregisterEdgeScheduledTasks' -Description 'Unregister every scheduled task whose TaskName matches *Edge*.'
+        New-BoostLabEdgeWebViewOperation -Id 'DeleteWow6432Bho' -Kind 'Cmd' -Description 'Delete the WOW6432Node IE-to-Edge Browser Helper Object key.' -Parameters @{ Command = 'reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}" /f >nul 2>&1' }
+        New-BoostLabEdgeWebViewOperation -Id 'DeleteNativeBho' -Kind 'Cmd' -Description 'Delete the native IE-to-Edge Browser Helper Object key.' -Parameters @{ Command = 'reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}" /f >nul 2>&1' }
+    )
+}
+
+function Get-BoostLabEdgeWebViewOperationPlan {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName
+    )
+
+    $sourceStatus = Get-BoostLabEdgeWebViewSourceStatus
+    $operations = if ($ActionName -eq 'Apply') {
+        @(Get-BoostLabEdgeWebViewUninstallOperations)
+    }
+    else {
+        @(Get-BoostLabEdgeWebViewDefaultOperations)
+    }
+
+    [pscustomobject]@{
+        ToolId                = [string]$script:BoostLabToolMetadata['Id']
+        Action                = $ActionName
+        Source                = $sourceStatus
+        UltimateBranch        = if ($ActionName -eq 'Apply') { 'Edge & WebView: Uninstall (Recommended)' } else { 'Edge & WebView: Default' }
+        Operations            = $operations
+        OperationCount        = $operations.Count
+        Downloads             = @($operations | Where-Object { $_.Kind -eq 'DownloadFile' })
+        ExternalProcesses     = @($operations | Where-Object { $_.Kind -in @('StartProcess', 'RunEdgeUpdateExecutableForEachPath', 'RunEdgeUninstallString', 'Cmd', 'RemoveLegacyEdgePackageIfPresent') })
+        RegistryMutations     = @($operations | Where-Object { $_.Kind -in @('RegExeAdd', 'RemoveRegistryKeys', 'Cmd', 'RemoveEdgeActiveSetupComponents', 'RemoveMsedgeRunOnceValues', 'RemoveLegacyEdgePackageIfPresent', 'RestoreDeviceRegion') })
+        FileMutations         = @($operations | Where-Object { $_.Kind -in @('CopyRegExe', 'NewDirectory', 'NewFile', 'RemoveDirectory', 'RemoveFile', 'DownloadFile') })
+        ServiceMutations      = @($operations | Where-Object { $_.Kind -eq 'DeleteEdgeServices' })
+        ScheduledTaskMutation = @($operations | Where-Object { $_.Kind -eq 'UnregisterEdgeScheduledTasks' })
+        ProcessMutations      = @($operations | Where-Object { $_.Kind -in @('StopNamedProcesses', 'StopWildcardEdgeProcesses') })
+        RestoreSupported      = $false
+        RequiresConfirmation  = $true
+    }
+}
+
 function New-BoostLabEdgeWebViewResult {
     param(
         [Parameter(Mandatory)]
@@ -100,7 +275,9 @@ function New-BoostLabEdgeWebViewResult {
 
         [string[]]$Errors = @(),
 
-        [bool]$Cancelled = $false
+        [bool]$Cancelled = $false,
+
+        [bool]$ChangesExecuted = $false
     )
 
     [pscustomobject]@{
@@ -114,7 +291,7 @@ function New-BoostLabEdgeWebViewResult {
         Message            = $Message
         RestartRequired    = $false
         Cancelled          = $Cancelled
-        ChangesExecuted    = $false
+        ChangesExecuted    = $ChangesExecuted
         Timestamp          = Get-Date
         Data               = $Data
         Warnings           = @($Warnings)
@@ -122,136 +299,213 @@ function New-BoostLabEdgeWebViewResult {
     }
 }
 
-function Get-BoostLabEdgeWebViewBlockedApprovals {
+function Invoke-BoostLabEdgeWebViewCommandLine {
     [CmdletBinding()]
-    [OutputType([string[]])]
-    param()
-
-    @(
-        'Exact Edge and WebView repair artifact provenance approval'
-        'Repair installer SHA-256, size, signer, version, publisher, and redistributability approval'
-        'Exact Edge/WebView installer or repair execution descriptor approval'
-        'Package/AppX inventory, removal, repair, and restore scope approval'
-        'Process handling approval for every source-targeted process'
-        'Service state capture and rollback approval for every Edge-related service target'
-        'Scheduled task governance and rollback approval for every Edge-related task target'
-        'File cleanup ownership map for every Edge/WebView path'
-        'Registry, RunOnce, Active Setup, BHO, and policy scope approval'
-        'Cleanup, rollback, support, and Restore contract approval'
+    param(
+        [Parameter(Mandatory)]
+        [string]$Command
     )
+
+    $cmd = $env:ComSpec
+    if ([string]::IsNullOrWhiteSpace($cmd)) {
+        $cmd = 'cmd.exe'
+    }
+    & $cmd /c $Command
 }
 
-function Get-BoostLabEdgeWebViewRiskWarnings {
+function Wait-BoostLabEdgeWebViewSourceSetupProcesses {
     [CmdletBinding()]
-    [OutputType([string[]])]
     param()
 
-    @(
-        'Original Ultimate source requires Administrator and internet access.'
-        'Original Ultimate source stops many Edge, WebView, Store, Widgets, Search, OneDrive, and related processes.'
-        'Original Ultimate source changes DeviceRegion, removes EdgeUpdate registry keys, launches Edge uninstall/update executables, deletes Edge/WebView uninstall and policy state, deletes Edge services and scheduled tasks, and removes Edge folders and shortcuts.'
-        'Original Ultimate source contains a Windows 10 legacy Edge package branch using CBS package registry changes and DISM package removal.'
-        'Original Ultimate source Default downloads Edge and Edge WebView repair installers from mutable mirror URLs and launches them.'
-        'Original Ultimate source imports Edge policies, removes Active Setup and RunOnce entries, deletes services/tasks, and deletes Browser Helper Object registry keys.'
-        'No artifact provenance, package scope, process handling, service rollback, scheduled-task rollback, cleanup ownership, registry rollback, or support approval exists for automated Edge & WebView behavior.'
-        'This BoostLab implementation prepares manual handoff instructions only and performs no automated download, repair, installer launch, package action, process handling, registry/service/file mutation, cleanup, or system mutation.'
-    )
+    do {
+        Start-Sleep -Seconds 3
+        $running = @(Get-Process -Name 'setup', 'MicrosoftEdge*' -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*\Microsoft\Edge*' })
+    } while ($running.Count -gt 0)
 }
 
-function Get-BoostLabEdgeWebViewAnalysis {
+function Invoke-BoostLabEdgeWebViewOperation {
     [CmdletBinding()]
-    [OutputType([pscustomobject])]
-    param()
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$Operation,
 
-    $sourceStatus = Get-BoostLabEdgeWebViewSourceStatus
-    [pscustomobject]@{
-        Mode                         = 'ManualHandoffOnly'
-        AutoMode                     = 'AutoBlockedUntilArtifactApproval'
-        Source                       = $sourceStatus
-        SourceBehaviorSummary        = @(
-            'Checks for Administrator rights and internet connectivity.'
-            'Uninstall branch changes DeviceRegion, stops broad process targets, removes EdgeUpdate registry state, runs Edge update/uninstall executables, creates and removes an Edge system-app marker path, removes Edge WebView uninstall registry state, deletes an Edge shortcut, deletes Microsoft Edge folders, deletes Edge services, and may remove a Windows 10 legacy Edge package.'
-            'Default branch stops broad process targets, downloads Edge and Edge WebView repair installers from the Ultimate-Files mirror, launches those repair installers, then applies Edge policies and removes Edge Active Setup, RunOnce, services, scheduled tasks, and Browser Helper Object state.'
-            'The source has destructive file, registry, service, scheduled-task, process, download, installer, package, and repair behavior that cannot be safely automated without exact approvals.'
-            'The source does not define a safe captured-state Restore model for Edge/WebView package, file, registry, service, task, process, repair, and cleanup side effects.'
-        )
-        SupportedManualHandoffScope  = @(
-            'Display source identity, checksum status, source behavior, missing approvals, and manual-handoff status.'
-            'Prepare guidance inside BoostLab only.'
-            'Do not open a browser, Explorer, Settings, Store, Edge, WebView, repair installer, package manager, script, or external tool.'
-            'Do not download, run, create, delete, mutate, install, uninstall, repair, update, reset, configure, clean up, stop/start processes or services, or launch anything.'
-        )
-        MissingApprovals             = @(Get-BoostLabEdgeWebViewBlockedApprovals)
-        Warnings                     = @(Get-BoostLabEdgeWebViewRiskWarnings)
-        SourceDownloadArtifactCount  = 2
-        SourceMenuActionCount        = 2
-        NoAutomatedExecution         = $true
-        NoDownloadOccurred           = $true
-        NoRepairOccurred             = $true
-        NoInstallerExecutionOccurred = $true
-        NoExternalProcessStarted     = $true
-        NoPackageMutationOccurred    = $true
-        NoAppxMutationOccurred       = $true
-        NoFileMutationOccurred       = $true
-        NoRegistryMutationOccurred   = $true
-        NoServiceMutationOccurred    = $true
-        NoScheduledTaskMutation      = $true
-        NoProcessMutationOccurred    = $true
-        NoCleanupOccurred            = $true
-        NoDeviceMutationOccurred     = $true
-        NoDriverMutationOccurred     = $true
-        NoRebootOccurred             = $true
-        NoSystemMutationOccurred     = $true
+        [Parameter(Mandatory)]
+        [hashtable]$Context
+    )
+
+    switch ([string]$Operation.Kind) {
+        'RequireAdministrator' {
+            $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+            if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+                throw 'Edge & WebView requires BoostLab to run as Administrator.'
+            }
+        }
+        'RequireInternet' {
+            if (-not (Test-Connection -ComputerName ([string]$Operation.Parameters.ComputerName) -Count 1 -Quiet)) {
+                throw 'Edge & WebView requires internet connectivity.'
+            }
+        }
+        'ReadRegistryValue' {
+            $Context[[string]$Operation.Parameters.ContextKey] = Get-ItemPropertyValue -Path ([string]$Operation.Parameters.Path) -Name ([string]$Operation.Parameters.Name) -ErrorAction SilentlyContinue
+        }
+        'CopyRegExe' {
+            Copy-Item -LiteralPath (Get-Command reg.exe -ErrorAction Stop).Source -Destination ([string]$Operation.Parameters.Destination) -Force -ErrorAction Stop
+        }
+        'RegExeAdd' {
+            & ([string]$Operation.Parameters.Executable) add ([string]$Operation.Parameters.Key) /v ([string]$Operation.Parameters.Name) /t ([string]$Operation.Parameters.Type) /d ([string]$Operation.Parameters.Data) /f
+        }
+        'StopNamedProcesses' {
+            Get-Process -Name @($Operation.Parameters.Names) -ErrorAction SilentlyContinue | Stop-Process -Force
+        }
+        'StopWildcardEdgeProcesses' {
+            Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like '*edge*' } | Stop-Process -Force
+        }
+        'FindEdgeUpdateExecutables' {
+            $roots = @($env:LocalApplicationData, $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+            $Context[[string]$Operation.Parameters.ContextKey] = @(
+                foreach ($root in $roots) {
+                    Get-ChildItem -Path (Join-Path $root ([string]$Operation.Parameters.RelativePattern)) -ErrorAction SilentlyContinue
+                }
+            )
+        }
+        'RemoveRegistryKeys' {
+            foreach ($path in @($Operation.Parameters.Paths)) {
+                Remove-Item -Path ([string]$path) -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+        'RunEdgeUpdateExecutableForEachPath' {
+            foreach ($edgeUpdatePath in @($Context[[string]$Operation.Parameters.ContextKey])) {
+                if ($edgeUpdatePath -and (Test-Path -LiteralPath $edgeUpdatePath.FullName -PathType Leaf)) {
+                    Start-Process -FilePath $edgeUpdatePath.FullName -ArgumentList ([string]$Operation.Parameters.Arguments) -Wait
+                    Wait-BoostLabEdgeWebViewSourceSetupProcesses
+                }
+            }
+        }
+        'NewDirectory' {
+            New-Item -Path ([string]$Operation.Parameters.Path) -ItemType Directory -Force | Out-Null
+        }
+        'NewFile' {
+            New-Item -Path ([string]$Operation.Parameters.Path) -ItemType File -Force | Out-Null
+        }
+        'ReadEdgeUninstallString32' {
+            $registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry32)
+            try {
+                $key = $registry.OpenSubKey('SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge')
+                if ($null -ne $key) {
+                    try {
+                        $Context[[string]$Operation.Parameters.ContextKey] = [string]$key.GetValue('UninstallString')
+                    }
+                    finally {
+                        $key.Dispose()
+                    }
+                }
+            }
+            finally {
+                $registry.Dispose()
+            }
+        }
+        'RunEdgeUninstallString' {
+            $uninstallString = [string]$Context[[string]$Operation.Parameters.ContextKey]
+            if (-not [string]::IsNullOrWhiteSpace($uninstallString)) {
+                Start-Process -FilePath 'cmd.exe' -ArgumentList ('/c {0} {1}' -f $uninstallString, [string]$Operation.Parameters.ExtraArguments) -WindowStyle Hidden -Wait
+            }
+        }
+        'RemoveDirectory' {
+            Remove-Item -Path ([string]$Operation.Parameters.Path) -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        'RemoveFile' {
+            Remove-Item -Path ([string]$Operation.Parameters.Path) -Force -ErrorAction SilentlyContinue
+        }
+        'Cmd' {
+            Invoke-BoostLabEdgeWebViewCommandLine -Command ([string]$Operation.Parameters.Command)
+        }
+        'DeleteEdgeServices' {
+            foreach ($service in @(Get-Service | Where-Object { $_.Name -match 'Edge' })) {
+                Invoke-BoostLabEdgeWebViewCommandLine -Command ('sc stop "{0}" >nul 2>&1' -f $service.Name)
+                Invoke-BoostLabEdgeWebViewCommandLine -Command ('sc delete "{0}" >nul 2>&1' -f $service.Name)
+            }
+        }
+        'FindLegacyEdgePackage' {
+            $Context[[string]$Operation.Parameters.ContextKey] = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\Packages' -ErrorAction SilentlyContinue |
+                Where-Object { $_.PSChildName -like '*Microsoft-Windows-Internet-Browser-Package*~~*' } |
+                Select-Object -First 1
+        }
+        'RemoveLegacyEdgePackageIfPresent' {
+            $legacyPackage = $Context[[string]$Operation.Parameters.ContextKey]
+            if ($legacyPackage) {
+                $packagePath = ($legacyPackage.Name -replace '^HKEY_LOCAL_MACHINE', 'HKLM')
+                & reg.exe add $packagePath /v Visibility /t REG_DWORD /d 1 /f
+                & reg.exe delete "$packagePath\Owners" /va /f
+                & dism.exe /online /Remove-Package "/PackageName:$($legacyPackage.PSChildName)" /quiet /norestart
+            }
+        }
+        'RestoreDeviceRegion' {
+            if ($Context.ContainsKey([string]$Operation.Parameters.ContextKey) -and $null -ne $Context[[string]$Operation.Parameters.ContextKey]) {
+                & ([string]$Operation.Parameters.Executable) add 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\DeviceRegion' /v DeviceRegion /t REG_DWORD /d ([string]$Context[[string]$Operation.Parameters.ContextKey]) /f
+            }
+        }
+        'DownloadFile' {
+            Invoke-WebRequest -Uri ([string]$Operation.Parameters.Uri) -OutFile ([string]$Operation.Parameters.OutFile)
+        }
+        'StartProcess' {
+            if ([bool]$Operation.Parameters.Wait) {
+                Start-Process -FilePath ([string]$Operation.Parameters.FilePath) -Wait
+            }
+            else {
+                Start-Process -FilePath ([string]$Operation.Parameters.FilePath)
+            }
+        }
+        'RemoveEdgeActiveSetupComponents' {
+            Get-ChildItem -Path 'HKLM:\Software\Microsoft\Active Setup\Installed Components' -ErrorAction SilentlyContinue |
+                Where-Object { $_.GetValue('') -like '*Edge*' } |
+                Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        }
+        'RemoveMsedgeRunOnceValues' {
+            $runOncePath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
+            $item = Get-ItemProperty -Path $runOncePath -ErrorAction SilentlyContinue
+            if ($item) {
+                foreach ($property in @($item.PSObject.Properties | Where-Object { $_.Name -like '*msedge*' })) {
+                    Remove-ItemProperty -Path $runOncePath -Name $property.Name -Force -ErrorAction SilentlyContinue
+                }
+            }
+        }
+        'UnregisterEdgeScheduledTasks' {
+            Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like '*Edge*' } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue
+        }
+        default {
+            throw "Unsupported Edge & WebView operation kind: $($Operation.Kind)"
+        }
     }
 }
 
-function New-BoostLabEdgeWebViewManualHandoffPlan {
+function Invoke-BoostLabEdgeWebViewWorkflow {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
-    param()
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
 
-    $analysis = Get-BoostLabEdgeWebViewAnalysis
+        [scriptblock]$OperationExecutor = $null
+    )
+
+    $plan = Get-BoostLabEdgeWebViewOperationPlan -ActionName $ActionName
+    $context = @{}
+    $executed = [System.Collections.Generic.List[object]]::new()
+    foreach ($operation in @($plan.Operations)) {
+        if ($OperationExecutor) {
+            & $OperationExecutor $operation $context
+        }
+        else {
+            Invoke-BoostLabEdgeWebViewOperation -Operation $operation -Context $context
+        }
+        $executed.Add($operation)
+    }
+
     [pscustomobject]@{
-        PlanType                     = 'ManualHandoffOnly'
-        SourceChecksumStatus         = [string]$analysis.Source.ChecksumStatus
-        Steps                        = @(
-            'Review source checksum and blocked Edge/WebView approvals.'
-            'Prepare manual handoff instructions inside BoostLab only.'
-            'Do not open a browser, Explorer, Settings, Store, Edge, WebView, repair installer, package manager, script, or external tool.'
-            'Do not download Edge, WebView, installer, repair, script, package, archive, or artifact content.'
-            'Do not run setup, repair, installer, winget, Store, AppX, MSI, EXE, script, package, or helper behavior.'
-            'Do not install, uninstall, repair, update, reset, remove, or configure Edge, WebView, packages, services, tasks, policies, BHO, Active Setup, or RunOnce state.'
-            'Do not stop or start Edge/WebView processes or services.'
-            'Do not create, delete, or mutate files, temp folders, shortcuts, registry, services, scheduled tasks, firewall, devices, drivers, reboot/session state, or app configuration.'
-            'Explain that Auto remains blocked until artifact provenance, repair/installer descriptors, package/process/service/task/file/registry scopes, cleanup ownership, rollback, and support approvals exist.'
-            'Record Latest Result and Activity Log with no automated execution.'
-        )
-        BlockedActions               = @(
-            'Apply Auto'
-            'Edge or WebView download'
-            'Edge or WebView repair'
-            'installer launch'
-            'package, AppX, Store, or winget action'
-            'process stop or start'
-            'service stop, delete, or create'
-            'scheduled task removal'
-            'file, folder, or shortcut deletion'
-            'registry, RunOnce, Active Setup, BHO, or policy mutation'
-            'cleanup'
-            'Default'
-            'Restore'
-        )
-        Warnings                     = @($analysis.Warnings)
-        MissingApprovals             = @($analysis.MissingApprovals)
-        NoDownloadOccurred           = $true
-        NoRepairOccurred             = $true
-        NoInstallerExecutionOccurred = $true
-        NoExternalProcessStarted     = $true
-        NoPackageMutationOccurred    = $true
-        NoRegistryMutationOccurred   = $true
-        NoFileMutationOccurred       = $true
-        NoServiceMutationOccurred    = $true
-        NoSystemMutationOccurred     = $true
+        Plan               = $plan
+        ExecutedOperations = @($executed)
+        ContextKeys        = @($context.Keys)
     }
 }
 
@@ -271,8 +525,8 @@ function Get-BoostLabToolInfo {
         Actions                     = @($script:BoostLabToolMetadata['Actions'])
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
-        ConfirmationRequiredActions = @('Open', 'Apply')
-        ConfirmationText            = 'Edge & WebView manual handoff prepares instructions only. BoostLab will not open external tools, download repair artifacts, run installers, modify packages, stop processes, mutate files, registry, services, tasks, shortcuts, devices, or drivers, perform cleanup, or reboot. Continue preparing the manual handoff result?'
+        ConfirmationRequiredActions = @('Apply', 'Default')
+        ConfirmationText            = 'Edge & WebView will run the source-equivalent high-risk workflow for the selected action. Continue only if you intentionally approved Edge/WebView package, registry, service, task, process, file, download, installer, cleanup, and support impact.'
     }
 }
 
@@ -283,10 +537,10 @@ function Test-BoostLabToolCompatibility {
 
     $sourceStatus = Get-BoostLabEdgeWebViewSourceStatus
     [pscustomobject]@{
-        Supported            = $true
+        Supported            = [string]$sourceStatus.ChecksumStatus -eq 'Passed'
         ToolId               = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle            = [string]$script:BoostLabToolMetadata['Title']
-        Reason               = 'Edge & WebView manual handoff is available. Auto mode remains blocked.'
+        Reason               = if ([string]$sourceStatus.ChecksumStatus -eq 'Passed') { 'Edge & WebView source-equivalent Apply and Default are available after confirmation.' } else { 'Edge & WebView source identity is missing or mismatched.' }
         SourceChecksumStatus = [string]$sourceStatus.ChecksumStatus
         Timestamp            = Get-Date
     }
@@ -300,7 +554,7 @@ function Get-BoostLabToolState {
     [pscustomobject]@{
         ToolId          = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
-        Status          = 'ManualHandoffOnly'
+        Status          = 'SourceEquivalentControlled'
         LastAction      = $null
         LastResult      = $null
         RestartRequired = $false
@@ -315,13 +569,14 @@ function Invoke-BoostLabToolAction {
         [Parameter(Mandatory)]
         [string]$ActionName,
 
-        [bool]$Confirmed = $false
+        [bool]$Confirmed = $false,
+
+        [scriptblock]$OperationExecutor = $null
     )
 
     $canonicalActionName = switch ($ActionName) {
-        'Prepare Manual Handoff' { 'Open' }
-        'Manual Handoff' { 'Open' }
-        'Apply Auto' { 'Apply' }
+        'Edge & WebView: Uninstall (Recommended)' { 'Apply' }
+        'Edge & WebView: Default' { 'Default' }
         default { $ActionName }
     }
 
@@ -332,113 +587,81 @@ function Invoke-BoostLabToolAction {
             -Status 'Unsupported' `
             -CommandStatus 'Refused before execution' `
             -VerificationStatus 'NotApplicable' `
-            -Message 'Unsupported Edge & WebView action. Only Analyze, Open, Apply, Default, and Restore are exposed.'
+            -Message 'Unsupported Edge & WebView action. The source exposes only Apply/Uninstall and Default behavior.'
     }
 
-    if ($canonicalActionName -eq 'Analyze') {
-        $analysis = Get-BoostLabEdgeWebViewAnalysis
-        $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        $status = if ($sourceOk) { 'Analyzed' } else { 'SourceVerificationFailed' }
-        $message = if ($sourceOk) {
-            'Edge & WebView analyzed. Manual handoff only; Auto remains blocked until exact artifact, repair, installer, package, process, service, task, file, registry, cleanup, rollback, and support approvals exist.'
-        }
-        else {
-            'Edge & WebView source checksum verification failed or source file is missing.'
-        }
-        $errors = if ($sourceOk) {
-            @()
-        }
-        else {
-            @('Edge & WebView source checksum did not match the expected value or the source file is missing.')
-        }
-
+    $plan = Get-BoostLabEdgeWebViewOperationPlan -ActionName $canonicalActionName
+    if ([string]$plan.Source.ChecksumStatus -ne 'Passed') {
         return New-BoostLabEdgeWebViewResult `
-            -Success $sourceOk `
-            -Action 'Analyze' `
-            -Status $status `
-            -CommandStatus 'No execution performed' `
-            -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-            -Message $message `
-            -Data $analysis `
-            -Errors $errors
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'SourceVerificationFailed' `
+            -CommandStatus 'Blocked before execution' `
+            -VerificationStatus ([string]$plan.Source.ChecksumStatus) `
+            -Message 'Edge & WebView blocked because source checksum verification failed or the source file is missing.' `
+            -Data $plan `
+            -Errors @('Edge & WebView source checksum did not match the expected value or the source file is missing.')
     }
 
-    if ($canonicalActionName -eq 'Open') {
-        if (-not $Confirmed) {
-            return New-BoostLabEdgeWebViewResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'Cancelled' `
-                -CommandStatus 'Cancelled before execution' `
-                -VerificationStatus 'NotApplicable' `
-                -Message 'Edge & WebView manual handoff cancelled by user. No browser, Explorer, Settings, Store, Edge, WebView, external tool, download, repair, installer launch, package action, process handling, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurred.' `
-                -Cancelled $true
+    if (-not $Confirmed) {
+        return New-BoostLabEdgeWebViewResult `
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'Cancelled' `
+            -CommandStatus 'Cancelled before execution' `
+            -VerificationStatus 'NotApplicable' `
+            -Message 'Edge & WebView action cancelled before execution. No download, installer, process, file, registry, service, task, package, DISM, cleanup, or system-changing operation occurred.' `
+            -Data $plan `
+            -Cancelled $true
+    }
+
+    try {
+        $workflow = Invoke-BoostLabEdgeWebViewWorkflow -ActionName $canonicalActionName -OperationExecutor $OperationExecutor
+        $expectedCount = [int]$workflow.Plan.OperationCount
+        $actualCount = @($workflow.ExecutedOperations).Count
+        if ($actualCount -ne $expectedCount) {
+            throw "Edge & WebView operation verification failed. Expected $expectedCount operations, executed $actualCount."
         }
 
-        $analysis = Get-BoostLabEdgeWebViewAnalysis
-        $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
-        if (-not $sourceOk) {
-            return New-BoostLabEdgeWebViewResult `
-                -Success $false `
-                -Action 'Open' `
-                -Status 'SourceVerificationFailed' `
-                -CommandStatus 'Blocked before handoff' `
-                -VerificationStatus ([string]$analysis.Source.ChecksumStatus) `
-                -Message 'Edge & WebView manual handoff blocked because source checksum verification failed or the source file is missing.' `
-                -Data $analysis `
-                -Errors @('Edge & WebView source checksum did not match the expected value or the source file is missing.')
+        $message = if ($canonicalActionName -eq 'Apply') {
+            'Edge & WebView Apply completed the source-equivalent Uninstall (Recommended) branch.'
         }
-
-        $plan = New-BoostLabEdgeWebViewManualHandoffPlan
+        else {
+            'Edge & WebView Default completed the source-defined repair/default branch.'
+        }
         return New-BoostLabEdgeWebViewResult `
             -Success $true `
-            -Action 'Open' `
-            -Status 'ManualHandoffPrepared' `
-            -CommandStatus 'No execution performed' `
+            -Action $canonicalActionName `
+            -Status 'Completed' `
+            -CommandStatus 'Completed' `
             -VerificationStatus 'Passed' `
-            -Message 'Manual handoff prepared. No browser, Explorer, Settings, Store, Edge, WebView, external tool, download, repair, installer launch, package action, process handling, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurred.' `
-            -Data $plan
+            -Message $message `
+            -Data $workflow `
+            -ChangesExecuted $true
     }
-
-    if ($canonicalActionName -eq 'Apply') {
-        $analysis = Get-BoostLabEdgeWebViewAnalysis
+    catch {
         return New-BoostLabEdgeWebViewResult `
             -Success $false `
-            -Action 'Apply' `
-            -Status 'AutoBlockedUntilArtifactApproval' `
-            -CommandStatus 'Blocked before execution' `
-            -VerificationStatus 'Blocked' `
-            -Message 'AutoBlockedUntilArtifactApproval. Auto mode is blocked until exact Edge/WebView artifact provenance, repair and installer descriptors, package scopes, process handling, service/task/file/registry cleanup scopes, rollback, and support approvals exist. No download, repair, installer launch, package action, process handling, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurred.' `
-            -Data $analysis
-    }
-
-    if ($canonicalActionName -eq 'Default') {
-        return New-BoostLabEdgeWebViewResult `
-            -Success $false `
-            -Action 'Default' `
-            -Status 'DefaultUnavailable' `
-            -CommandStatus 'Refused before execution' `
-            -VerificationStatus 'NotApplicable' `
-            -Message 'Default is unavailable for Edge & WebView manual handoff. The source Default branch downloads and runs repair installers plus policy, service, task, Active Setup, RunOnce, and BHO mutations. Default is not Restore, and no package, repair, file, registry, service, task, cleanup, reboot, or system state is changed.'
-    }
-
-    if ($canonicalActionName -eq 'Restore') {
-        return New-BoostLabEdgeWebViewResult `
-            -Success $false `
-            -Action 'Restore' `
-            -Status 'RestoreUnavailable' `
-            -CommandStatus 'Refused before execution' `
-            -VerificationStatus 'NotApplicable' `
-            -Message 'Restore is unavailable without approved captured Edge/WebView package, installer, file, registry, service, scheduled-task, process, cleanup, and support state plus a Restore contract. Default is not Restore, and no system-changing operation is planned.'
+            -Action $canonicalActionName `
+            -Status 'Error' `
+            -CommandStatus 'Error' `
+            -VerificationStatus 'Failed' `
+            -Message ("Edge & WebView {0} failed: {1}" -f $canonicalActionName, $_.Exception.Message) `
+            -Data $plan `
+            -Errors @($_.Exception.Message)
     }
 }
 
 function Restore-BoostLabToolDefault {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
-    param()
+    param(
+        [bool]$Confirmed = $false,
 
-    Invoke-BoostLabToolAction -ActionName 'Default'
+        [scriptblock]$OperationExecutor = $null
+    )
+
+    Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed -OperationExecutor $OperationExecutor
 }
 
 Export-ModuleMember -Function @(

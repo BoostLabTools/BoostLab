@@ -9,16 +9,16 @@
         DeferredPlaceholders = 6
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 23
+        UltimateParityImplemented = 24
         NearParityControlled = 22
         ControlledSubset = 3
-        ManualHandoffOnly = 1
+        ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
         DeferredForParityWork = 6
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'edge-webview'
+    CurrentOrderedParityTarget = 'notepad-settings'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -610,11 +610,12 @@
             StageOrder = 6
             ToolOrder = 13
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ManualHandoffOnly'
-            UltimateParity = 'No'
-            GapSummary = 'Removal/repair automation remains blocked; manual handoff only.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Exact source Apply/Uninstall and Default repair branches are implemented with explicit confirmation.'
             YazanFinalException = $false
-            NextParityAction = 'Approve repair artifacts, installer descriptors, package/process/service/task/file/registry cleanup scopes, rollback, and support contract.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'notepad-settings'

@@ -2,24 +2,23 @@
 
 ## Purpose
 
-This Phase 52 document defines the future Auto implementation scope for the
-`Edge & WebView` tool.
+This Phase 52 document defined the future Auto implementation scope for the
+`Edge & WebView` tool. Phase 147 supersedes the manual-handoff status by
+implementing the two non-exit Ultimate source branches as source-equivalent
+controlled Apply and Default workflows.
 
-Phase 106 implements controlled manual handoff only. No automated Edge or
-WebView removal, repair, download, installer execution, package action,
-process handling, file mutation, registry mutation, service mutation, task
-mutation, cleanup, Default behavior, or Restore behavior is approved here.
-
-Edge & WebView Auto remains blocked until a later approved phase adds exact
-bounded production scopes and implementation.
+The Phase 147 implementation is module-scoped exact parity. It does not add
+global artifact provenance approvals, production allowlist entries, reusable
+Edge/WebView cleanup scopes, reusable installer approval, Open behavior, or
+captured-state Restore behavior.
 
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/13 Edge & WebView.ps1`
 * Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`
 * Current BoostLab module path: `modules/Windows/edge-webview.psm1`
-* Current status: controlled manual handoff only
-* Current implemented actions: `Analyze`, `Open`, `Apply`, `Default`, `Restore`
+* Current status: exact source-equivalent controlled runtime
+* Current implemented actions: `Apply`, `Default`
 * Migration record: `docs/migrations/edge-webview.md`
 
 Relevant foundations:
@@ -65,17 +64,18 @@ Browser Helper Object registry keys.
 
 ## Current Decision
 
-Edge & WebView is implemented as controlled manual handoff only in Phase 106.
-Analyze is read-only, Open prepares instructions inside BoostLab only, Apply is
-blocked as `AutoBlockedUntilArtifactApproval`, and Default/Restore remain
-unavailable.
+Edge & WebView is implemented as exact source-equivalent controlled runtime in
+Phase 147. Apply runs the source `Edge & WebView: Uninstall (Recommended)`
+branch after confirmation. Default runs the source `Edge & WebView: Default`
+repair branch after confirmation. Open and Restore remain unavailable because
+the source does not define those branches.
 
-Auto remains blocked because the source combines package repair/removal, download and installer execution,
+The source combines package repair/removal, download and installer execution,
 process termination, service deletion, scheduled task removal, broad file and
 directory deletion, registry mutation, RunOnce and Active Setup deletion, and a
-Windows 10 CBS/DISM package removal branch. These require exact production
-allowlists and several tool-specific governance decisions before implementation
-can preserve Ultimate Auto behavior safely.
+Windows 10 CBS/DISM package removal branch. Phase 147 represents that exact
+module-scoped behavior in operation descriptors with test-safe mocks; it does
+not create reusable global production allowlists or artifact approvals.
 
 ## Behavior Groups
 
@@ -554,9 +554,9 @@ A future safe Apply would require all of the following:
 The source Default branch is a repair/reinstall plus policy/cleanup workflow,
 not a Restore action.
 
-BoostLab must not expose Edge & WebView Default until exact repair artifacts,
-installer execution, registry scopes, service scopes, scheduled task scopes,
-and process handling are approved.
+BoostLab exposes Edge & WebView Default only as the source repair/default
+branch after explicit confirmation. Default is still not Restore and does not
+claim captured-state rollback.
 
 BoostLab must not expose Restore until exact inventory restore,
 captured-state restore, repair provenance, or quarantine restore selection is
@@ -564,8 +564,9 @@ implemented. Restore must be target-specific and record-based.
 
 ## Production Approval State
 
-No production AppX/package/download/installer/cleanup/file/registry/service/
-task/DISM/CBS/Default/Restore scopes are approved by this document.
+No reusable production AppX/package/download/installer/cleanup/file/registry/
+service/task/DISM/CBS/Restore scopes are approved by this document. Phase 147
+implements only this tool's source-equivalent Apply and Default runtime.
 
 Specifically, this document does not approve:
 
@@ -589,9 +590,8 @@ Specifically, this document does not approve:
 * uBlock Origin force-install policy
 * CBS/DISM package removal
 * Windows 10-only branches
-* Default behavior
 * Restore behavior
 
-Edge & WebView manual handoff is implemented in Phase 106. Auto, Default, and
-Restore remain blocked until a future phase explicitly approves exact bounded
-scopes and implements a narrower reviewed workflow.
+Edge & WebView exact source-equivalent Apply and Default are implemented in
+Phase 147. Restore remains blocked until a future phase explicitly approves a
+captured-state restore contract; no such Restore behavior is added here.

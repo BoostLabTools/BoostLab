@@ -6,8 +6,8 @@
 - Module: `modules/Windows/edge-webview.psm1`
 - Source script path: `source-ultimate/6 Windows/13 Edge & WebView.ps1`
 - Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`
-- Migration status: Controlled manual handoff only
-- Yazan approval status: Approved for Phase 106 manual handoff only
+- Migration status: Exact Ultimate parity implemented
+- Yazan approval status: Approved for Phase 147 exact source-equivalent Apply/Default behavior
 
 ## Original Ultimate Behavior
 
@@ -27,59 +27,77 @@ scheduled tasks, and Browser Helper Object state.
 
 ## Approved BoostLab Behavior
 
-BoostLab implements only:
+BoostLab implements the two non-exit Ultimate source branches:
 
-- `Analyze`: read-only source/checksum/status analysis.
-- `Open`: controlled manual handoff instructions prepared inside BoostLab only.
-- `Apply`: blocked with `AutoBlockedUntilArtifactApproval`.
-- `Default`: blocked with `DefaultUnavailable`.
-- `Restore`: blocked with `RestoreUnavailable`.
+- `Apply`: source-equivalent `Edge & WebView: Uninstall (Recommended)`.
+- `Default`: source-defined `Edge & WebView: Default` repair branch.
 
-No downloads, repair, installer launches, package actions, process handling,
-file changes, registry changes, service changes, scheduled-task changes,
-cleanup, reboot, or system mutation are implemented.
+The runtime verifies the source checksum before mutation, requires explicit
+Action Plan confirmation, and represents the source operation order as
+test-safe operation descriptors so validators can mock every dangerous step.
+No `Open` or `Restore` action is exposed because the Ultimate source does not
+define those branches.
 
 ## Preserved Commands
 
-No operational source commands are executed in Phase 106. The source behavior is
-preserved as documented operational intent and remains blocked for Auto until
-all required artifact, package, process, service, task, file, registry, cleanup,
-rollback, and support approvals exist.
+The implementation preserves the source Apply/Uninstall branch operations:
+
+- Administrator and internet checks.
+- DeviceRegion capture, temporary `REG_DWORD 244` write through `reg1.exe`,
+  and source-defined DeviceRegion restoration when a previous value exists.
+- Exact source process stop list plus wildcard `*edge*` process handling.
+- EdgeUpdate registry key removal.
+- Discovered `MicrosoftEdgeUpdate.exe` `/unregsvc` and `/uninstall` runs.
+- Edge SystemApps marker directory/file creation and removal.
+- 32-bit Microsoft Edge uninstall string execution with `--force-uninstall`.
+- EdgeWebView uninstall key deletion, Edge shortcut deletion,
+  `%SystemDrive%\Program Files (x86)\Microsoft` directory deletion, Edge
+  service stop/delete, and conditional legacy Edge CBS/DISM branch.
+
+The implementation also preserves the source Default branch operations:
+
+- Process stops before and after the source repair installers.
+- Source `edge.exe` and `edgewebview.exe` downloads to `%SystemRoot%\Temp`.
+- Source repair executable launches with wait.
+- Edge policy writes, Active Setup cleanup, RunOnce cleanup, Edge service
+  deletion, Edge scheduled task removal, and native/WOW6432Node BHO key
+  deletion.
 
 ## Intentional Deviations
 
-Automated Edge/WebView removal, repair, download, installer launch, package
-actions, process handling, service/task mutation, cleanup, Default, and Restore
-behavior are not implemented. This is an intentional controlled-manual-handoff
-boundary because the source requires unapproved artifacts, installer/repair
-descriptors, side-effect scopes, and rollback contracts.
+No `Open` action is added because the source does not define an Open branch.
+No `Restore` action is added because the source does not define a captured-state
+Restore contract. `Default` remains the source repair/default branch and is not
+treated as Restore.
 
 ## Side Effects
 
-None in Phase 106.
+High-risk source-equivalent side effects are possible only after explicit
+confirmation: downloads, repair executable launches, process stops, registry
+mutation, file/folder/shortcut deletion, service deletion, scheduled task
+removal, conditional CBS/DISM package removal, and cleanup. Validators use
+mocks/stubs and do not perform real host mutation.
 
 ## Required Privileges
 
-The original Ultimate source requires Administrator rights. The Phase 106
-manual-handoff implementation does not perform privileged operations, so the
-implemented metadata does not require Administrator for Analyze/Open/blocked
-Apply/Default/Restore.
+The original Ultimate source requires Administrator rights. The Phase 147
+runtime metadata requires Administrator for Apply and Default.
 
 ## Capabilities
 
-- RequiresAdmin: false
-- RequiresInternet: false
+- RequiresAdmin: true
+- RequiresInternet: true
 - CanReboot: false
-- CanModifyRegistry: false
-- CanModifyServices: false
-- CanInstallSoftware: false
-- CanDownload: false
+- CanModifyRegistry: true
+- CanModifyServices: true
+- CanInstallSoftware: true
+- CanDownload: true
 - CanModifyDrivers: false
-- CanModifySecurity: false
-- CanDeleteFiles: false
+- CanModifySecurity: true
+- CanDeleteFiles: true
 - UsesTrustedInstaller: false
 - UsesSafeMode: false
-- SupportsDefault: false
+- SupportsDefault: true
 - SupportsRestore: false
 - NeedsExplicitConfirmation: true
 
@@ -91,16 +109,15 @@ removal, file cleanup, registry mutation, and package behavior.
 
 ## Confirmation Requirements
 
-Manual handoff and blocked Auto paths require explicit confirmation before the
-result is recorded through the Action Plan surface.
+Apply and Default require explicit confirmation through the Action Plan surface.
 
 ## Default And Restore
 
-Default is unavailable because the source Default branch is a repair/reinstall
-plus policy and cleanup workflow that is not approved for automated execution.
-Restore is unavailable because BoostLab has no captured Edge/WebView package,
-installer, file, registry, service, scheduled-task, process, cleanup, or
-support state for this tool. Default is not Restore.
+Default is available as the source repair/reinstall plus policy and cleanup
+branch. Restore is unavailable because the Ultimate source does not define a
+captured Edge/WebView package, installer, file, registry, service,
+scheduled-task, process, cleanup, or support restore contract. Default is not
+Restore.
 
 ## Restart Behavior
 
@@ -110,12 +127,10 @@ installer restart/session effects before approval.
 ## Test Requirements
 
 - Verify source path and SHA-256.
-- Verify Analyze is read-only.
-- Verify Open/manual handoff opens no browser or external tool and downloads,
-  repairs, runs, mutates, installs, uninstalls, resets, removes, configures,
-  stops processes, changes services/tasks, or cleans up nothing.
-- Verify Apply is blocked as `AutoBlockedUntilArtifactApproval`.
-- Verify Default and Restore are unavailable and separate.
+- Verify Apply preserves the source Uninstall (Recommended) operation order.
+- Verify Default preserves the source repair/default operation order.
+- Verify Open and Restore are not exposed as source actions.
 - Verify no artifact provenance or production allowlist entries are added.
+- Verify validators use mocks/stubs and perform no real host mutation.
 - Verify source-ultimate, source mirror, and intake files are untouched.
 - Verify deleted tools remain deleted.

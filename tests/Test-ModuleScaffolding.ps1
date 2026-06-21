@@ -109,7 +109,7 @@ $implementedModules = @{
     }
     'edge-webview' = @{
         RelativePath          = 'Windows\edge-webview.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'game-bar' = @{
         RelativePath          = 'Windows\game-bar.psm1'
@@ -467,6 +467,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'edge-settings' -and
             $commandName -in @('New-ItemProperty', 'Remove-Item', 'Remove-ItemProperty', 'Invoke-WebRequest')
         )
+        $approvedEdgeWebViewCommand = (
+            $toolId -eq 'edge-webview' -and
+            $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Remove-ItemProperty')
+        )
         $approvedInstallersCommand = (
             $toolId -eq 'installers' -and
             $commandName -in @('Invoke-WebRequest', 'Set-Content', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item')
@@ -528,6 +532,7 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedUpdatesDriversBlockCommand -and
             -not $approvedReinstallCommand -and
             -not $approvedEdgeSettingsCommand -and
+            -not $approvedEdgeWebViewCommand -and
             -not $approvedInstallersCommand -and
             -not $approvedDriverCleanCommand -and
             -not $approvedDriverInstallLatestCommand -and
@@ -613,7 +618,7 @@ foreach ($entry in $expectedModules.Values) {
             3
         }
         elseif ($toolId -eq 'edge-webview') {
-            0
+            4
         }
         elseif ($toolId -eq 'reinstall') {
             1

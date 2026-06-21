@@ -130,7 +130,7 @@ foreach ($requiredPhrase in @(
     "$($inventoryBaseline.DeferredPlaceholders)/$($inventoryBaseline.DeferredPlaceholders) deferred tools covered",
     "Scope or scope/provenance design covered tools: **$($inventoryBaseline.DeferredPlaceholders)**",
     'Standalone provenance review covered tools: **0**',
-    'Manual-handoff implemented with Auto provenance review still blocking automation: **6**',
+    'Manual-handoff implemented with Auto provenance review still blocking automation: **5**',
     'No deferred tool is marked ready for implementation by this matrix.',
     'The presence of a scope design or provenance review is evidence for planning, not permission to execute.',
     'Production Allowlist Governance',

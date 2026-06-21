@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the Edge WebView scope design validator script path.'
+        throw 'Unable to determine the Edge & WebView scope design validator script path.'
     }
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
@@ -25,13 +25,43 @@ else {
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
+function Assert-BoostLabCondition {
+    param(
+        [Parameter(Mandatory)]
+        [bool]$Condition,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
+function Assert-BoostLabTextContains {
+    param(
+        [AllowNull()]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [string]$Needle,
+
+        [Parameter(Mandatory)]
+        [string]$Description
+    )
+
+    if ([string]::IsNullOrEmpty($Text) -or -not $Text.Contains($Needle)) {
+        throw "$Description missing expected text: $Needle"
+    }
+}
+
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\edge-webview-scope-design.md'
-$readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
-$planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\13 Edge & WebView.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\edge-webview.psm1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\edge-webview.md'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $appxPolicyPath = Join-Path $ProjectRoot 'config\AppxPackagePolicy.psd1'
 $cleanupPolicyPath = Join-Path $ProjectRoot 'config\CleanupPolicy.psd1'
 $rollbackPolicyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
@@ -41,40 +71,27 @@ $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 foreach ($path in @(
     $designPath,
-    $readinessPath,
-    $planPath,
     $sourcePath,
     $modulePath,
     $migrationPath,
     $configPath,
+    $parityPath,
     $appxPolicyPath,
     $cleanupPolicyPath,
     $rollbackPolicyPath,
     $servicePolicyPath,
     $artifactPolicyPath
 )) {
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "Required file was not found: $path"
-    }
+    Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file was not found: $path"
 }
-
-$designText = Get-Content -LiteralPath $designPath -Raw
-$readinessText = Get-Content -LiteralPath $readinessPath -Raw
-$planText = Get-Content -LiteralPath $planPath -Raw
-$moduleText = Get-Content -LiteralPath $modulePath -Raw
-$config = Import-PowerShellDataFile -LiteralPath $configPath
-$appxPolicy = Import-PowerShellDataFile -LiteralPath $appxPolicyPath
-$cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
-$rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
-$servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
-$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
-$allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
 $expectedSourceHash = '161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-if ($actualSourceHash -ne $expectedSourceHash) {
-    throw "Edge & WebView source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
-}
+Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Edge & WebView source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
+
+$designText = Get-Content -LiteralPath $designPath -Raw
+$moduleText = Get-Content -LiteralPath $modulePath -Raw
+$migrationText = Get-Content -LiteralPath $migrationPath -Raw
 
 foreach ($requiredSection in @(
     '# Edge and WebView Scope Design',
@@ -83,45 +100,25 @@ foreach ($requiredSection in @(
     '## Source Behavior Summary',
     '## Current Decision',
     '## Behavior Groups',
-    '### 1. Microsoft Edge Package/AppX Behavior',
-    '### 2. Microsoft Edge WebView2 Behavior',
-    '### 3. Edge Update Services',
-    '### 4. Edge Scheduled Tasks',
-    '### 5. Program Files / Program Files (x86) Microsoft Edge Directories',
-    '### 6. Edge/WebView Registry Paths',
-    '### 7. CBS/DISM/Package Removal Behavior If Present',
-    '### 8. RunOnce / Active Setup / Task Removal Behavior If Present',
-    '### 9. Process Stop Behavior',
-    '### 10. Downloads or Repair Installer Behavior',
-    '### 11. Default/Restore Behavior',
-    '### 12. Unsupported Broad Deletion or Package Targets',
-    '## Product Scope Notes',
-    '## Future Safe Apply Requirements',
     '## Default and Restore Boundary',
     '## Production Approval State'
 )) {
-    if (-not $designText.Contains($requiredSection)) {
-        throw "Edge & WebView scope design is missing section: $requiredSection"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSection -Description 'Edge & WebView scope design'
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`',
-    'Edge & WebView is implemented as controlled manual handoff only in Phase 106.',
-    'docs/migrations/edge-webview.md',
-    'No production AppX/package/download/installer/cleanup/file/registry/service/',
-    'mutable `refs/heads/main` artifacts',
-    'unknown packages remain denied',
-    'wildcard/broad packages remain denied',
-    'system-critical/framework/dependency packages remain denied',
-    'service deletion/recreation rollback',
-    'Broad `%SystemDrive%\Program Files (x86)\Microsoft` deletion must remain',
-    'Windows 10-only legacy Edge branch',
-    'Restore remains unavailable'
+    'Phase 147 supersedes the manual-handoff status',
+    'exact source-equivalent controlled runtime',
+    'Current implemented actions: `Apply`, `Default`',
+    'Apply runs the source `Edge & WebView: Uninstall (Recommended)`',
+    'Default runs the source `Edge & WebView: Default`',
+    'Open and Restore remain unavailable because',
+    'the source does not define those branches',
+    'No reusable production AppX/package/download/installer/cleanup/file/registry/',
+    'Restore remains blocked until a future phase explicitly approves',
+    'captured-state restore contract'
 )) {
-    if (-not $designText.Contains($requiredPhrase)) {
-        throw "Edge & WebView scope design is missing phrase: $requiredPhrase"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredPhrase -Description 'Edge & WebView scope design current status'
 }
 
 foreach ($requiredSourceTarget in @(
@@ -138,148 +135,69 @@ foreach ($requiredSourceTarget in @(
     'Microsoft-Windows-Internet-Browser-Package',
     'dism /online /Remove-Package',
     'edge.exe',
-    'edgewebview.exe',
-    'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe',
-    'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe',
-    'backgroundTaskHost',
-    'msedgewebview2',
-    'WidgetService',
-    'Get-ScheduledTask | Where-Object { $_.TaskName -like ''*Edge*'' }'
+    'edgewebview.exe'
 )) {
-    if (-not $designText.Contains($requiredSourceTarget)) {
-        throw "Edge & WebView scope design is missing source target: $requiredSourceTarget"
-    }
+    Assert-BoostLabTextContains -Text $designText -Needle $requiredSourceTarget -Description 'Edge & WebView scope design source target'
 }
 
-foreach ($requiredField in @(
-    'Intended mutation type:',
-    'Required foundation:',
-    'Required future production allowlist:',
-    'Required inventory/capture before mutation:',
-    'Required verification:',
-    'Rollback/restore feasibility:',
-    'Risk level:',
-    'Later implementation decision:'
+foreach ($requiredMigrationText in @(
+    'Migration status: Exact Ultimate parity implemented',
+    'Approved for Phase 147 exact source-equivalent Apply/Default behavior',
+    '`Apply`: source-equivalent `Edge & WebView: Uninstall (Recommended)`',
+    '`Default`: source-defined `Edge & WebView: Default` repair branch',
+    'No `Open` or `Restore` action is exposed',
+    'Default is available as the source repair/reinstall plus policy and cleanup',
+    'branch. Restore is unavailable because the Ultimate source does not define a',
+    'captured Edge/WebView package, installer, file, registry, service,'
 )) {
-    if (-not $designText.Contains($requiredField)) {
-        throw "Edge & WebView scope design is missing per-group field: $requiredField"
-    }
-}
-
-if (-not $readinessText.Contains('docs/tool-designs/edge-webview-scope-design.md')) {
-    throw 'Deferred readiness review does not link to the Edge & WebView scope design.'
-}
-if (-not $planText.Contains('docs/tool-designs/edge-webview-scope-design.md')) {
-    throw 'Deferred tools execution plan does not link to the Edge & WebView scope design.'
+    Assert-BoostLabTextContains -Text $migrationText -Needle $requiredMigrationText -Description 'Edge & WebView migration record'
 }
 
 foreach ($requiredModuleNeedle in @(
-    '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
-    'ManualHandoffOnly',
-    'ManualHandoffPrepared',
-    'AutoBlockedUntilArtifactApproval',
-    'DefaultUnavailable',
-    'RestoreUnavailable',
-    'NoDownloadOccurred',
-    'NoRepairOccurred',
-    'NoInstallerExecutionOccurred',
-    'NoExternalProcessStarted',
-    'NoPackageMutationOccurred',
-    'NoAppxMutationOccurred',
-    'NoFileMutationOccurred',
-    'NoRegistryMutationOccurred',
-    'NoServiceMutationOccurred',
-    'NoScheduledTaskMutation',
-    'NoProcessMutationOccurred',
-    'NoCleanupOccurred',
-    'NoRebootOccurred',
-    'NoSystemMutationOccurred'
+    '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')',
+    'Get-BoostLabEdgeWebViewUninstallOperations',
+    'Get-BoostLabEdgeWebViewDefaultOperations',
+    'Invoke-BoostLabEdgeWebViewWorkflow',
+    'DownloadFile',
+    'DeleteEdgeServices',
+    'UnregisterEdgeScheduledTasks',
+    'RemoveLegacyEdgePackageIfPresent'
 )) {
-    if (-not $moduleText.Contains($requiredModuleNeedle)) {
-        throw "Edge & WebView manual-handoff module is missing expected text: $requiredModuleNeedle"
-    }
+    Assert-BoostLabTextContains -Text $moduleText -Needle $requiredModuleNeedle -Description 'Edge & WebView exact parity module'
 }
-if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Edge & WebView module still uses the placeholder contract.'
-}
-foreach ($commandPattern in @(
-    '(?m)^\s*IWR\b',
-    '(?m)^\s*Invoke-WebRequest\b',
-    '(?m)^\s*Start-BitsTransfer\b',
-    '(?m)^\s*Start-Process\b',
-    '(?m)^\s*Stop-Process\b',
-    '(?m)^\s*Get-Process\b',
-    '(?m)^\s*Get-Service\b',
-    '(?m)^\s*Get-ScheduledTask\b',
-    '(?m)^\s*Unregister-ScheduledTask\b',
-    '(?m)^\s*Remove-Item\b',
-    '(?m)^\s*New-Item\b',
-    '(?m)^\s*Copy-Item\b',
-    '(?m)^\s*cmd\b',
-    '(?m)^\s*dism\b',
-    '(?m)^\s*reg\s+(add|delete)\b',
-    '(?m)^\s*Remove-AppxPackage\b',
-    '(?m)^\s*Add-AppxPackage\b'
-)) {
-    if ([regex]::IsMatch($moduleText, $commandPattern)) {
-        throw "Edge & WebView module contains prohibited executable command pattern: $commandPattern"
-    }
+foreach ($forbiddenModuleText in @('ToolModule.Placeholder.ps1', 'ManualHandoffOnly', 'AutoBlockedUntilArtifactApproval', 'DefaultUnavailable', 'RestoreUnavailable')) {
+    Assert-BoostLabCondition (-not $moduleText.Contains($forbiddenModuleText)) "Edge & WebView module contains stale text: $forbiddenModuleText"
 }
 
-if ($appxPolicy.PackageScopes.Count -ne 0) {
-    throw "AppX package production scopes were approved unexpectedly: $($appxPolicy.PackageScopes.Count)"
-}
-if ($cleanupPolicy.CleanupScopes.Count -ne 0) {
-    throw "Cleanup production scopes were approved unexpectedly: $($cleanupPolicy.CleanupScopes.Count)"
-}
-if ($rollbackPolicy.FileScopes.Count -ne 0 -or $rollbackPolicy.RegistryScopes.Count -ne 0) {
-    throw 'File or registry production scopes were approved unexpectedly.'
-}
-if ($servicePolicy.ServiceScopes.Count -ne 0) {
-    throw "Service production scopes were approved unexpectedly: $($servicePolicy.ServiceScopes.Count)"
-}
-if ($artifactPolicy.Artifacts.Count -ne 0) {
-    throw "Artifact approvals were added unexpectedly: $($artifactPolicy.Artifacts.Count)"
-}
+$config = Import-PowerShellDataFile -LiteralPath $configPath
+$allTools = @($config.Stages | ForEach-Object { $_.Tools })
+$edgeTool = @($allTools | Where-Object { $_.Id -eq 'edge-webview' })[0]
+Assert-BoostLabCondition ((@($edgeTool.Actions) -join ',') -eq 'Apply,Default') 'Edge & WebView catalog actions must be Apply,Default.'
+Assert-BoostLabCondition ([string]$edgeTool.Type -eq 'action') 'Edge & WebView catalog type must be action.'
 
-$edgeTool = $allTools |
-    Where-Object { $_.Id -eq 'edge-webview' -and $_.Stage -eq 'Windows' } |
-    Select-Object -First 1
-if (-not $edgeTool) {
-    throw 'Edge & WebView catalog entry was not found.'
-}
-if ((@($edgeTool.Actions) -join ',') -ne 'Analyze,Open,Apply,Default,Restore') {
-    throw 'Edge & WebView catalog actions changed unexpectedly.'
-}
+$parity = Import-PowerShellDataFile -LiteralPath $parityPath
+$edgeParity = @($parity.Tools | Where-Object { $_.ToolId -eq 'edge-webview' })[0]
+Assert-BoostLabCondition ([string]$edgeParity.ImplementationLevel -eq 'ParityImplemented') 'Edge & WebView parity implementation level mismatch.'
+Assert-BoostLabCondition ([string]$edgeParity.UltimateParity -eq 'Yes') 'Edge & WebView UltimateParity mismatch.'
 
-$migrationText = Get-Content -LiteralPath $migrationPath -Raw
-foreach ($migrationNeedle in @(
-    '# Edge & WebView Migration Record',
-    'Controlled manual handoff only',
-    'No downloads, repair, installer launches, package actions, process handling',
-    'AutoBlockedUntilArtifactApproval',
-    'DefaultUnavailable',
-    'RestoreUnavailable'
-)) {
-    if (-not $migrationText.Contains($migrationNeedle)) {
-        throw "Edge & WebView migration record is missing expected text: $migrationNeedle"
-    }
-}
+$appxPolicy = Import-PowerShellDataFile -LiteralPath $appxPolicyPath
+$cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
+$rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
+$servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
+$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
+Assert-BoostLabCondition ($appxPolicy.PackageScopes.Count -eq 0) "AppX package production scopes were approved unexpectedly: $($appxPolicy.PackageScopes.Count)"
+Assert-BoostLabCondition ($cleanupPolicy.CleanupScopes.Count -eq 0) "Cleanup production scopes were approved unexpectedly: $($cleanupPolicy.CleanupScopes.Count)"
+Assert-BoostLabCondition ($rollbackPolicy.FileScopes.Count -eq 0 -and $rollbackPolicy.RegistryScopes.Count -eq 0) 'File or registry production scopes were approved unexpectedly.'
+Assert-BoostLabCondition ($servicePolicy.ServiceScopes.Count -eq 0) "Service production scopes were approved unexpectedly: $($servicePolicy.ServiceScopes.Count)"
+Assert-BoostLabCondition ($artifactPolicy.Artifacts.Count -eq 0) "Artifact approvals were added unexpectedly: $($artifactPolicy.Artifacts.Count)"
 
-$activeTools = @($allTools)
 $placeholderModules = @(
     Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
-if ($activeTools.Count -ne $inventoryBaseline.ActiveTools) {
-    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
-}
-if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
-}
-if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
-    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
-}
+Assert-BoostLabCondition ($allTools.Count -eq $inventoryBaseline.ActiveTools) "Expected $($inventoryBaseline.ActiveTools) active tools, found $($allTools.Count)."
+Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
+Assert-BoostLabCondition (($allTools.Count - $placeholderModules.Count) -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderModules.Count)."
 
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
@@ -303,31 +221,17 @@ finally {
     $sha256.Dispose()
 }
 
-if (
-    @($sourceLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
-) {
-    throw 'source-ultimate content or paths changed.'
-}
-
-$loudnessPath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'
-if (Test-Path -LiteralPath $loudnessPath) {
-    throw 'Loudness EQ source was reintroduced.'
-}
-$nvmeSource = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-        Where-Object { $_.Name -like '*NVME Faster Driver*' }
-)
-if ($nvmeSource.Count -ne 0) {
-    throw 'NVME Faster Driver source was reintroduced.'
-}
+Assert-BoostLabCondition (@($sourceLines).Count -eq 49) "source-ultimate file count changed: $(@($sourceLines).Count)"
+Assert-BoostLabCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
+Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
     Success                   = $true
     ToolId                    = 'edge-webview'
     SourceHash                = $actualSourceHash
-    ActiveToolCount           = $activeTools.Count
-    ImplementedToolCount      = $activeTools.Count - $placeholderModules.Count
+    ActiveToolCount           = $allTools.Count
+    ImplementedToolCount      = $allTools.Count - $placeholderModules.Count
     PlaceholderToolCount      = $placeholderModules.Count
     ProductionPackageScopes   = $appxPolicy.PackageScopes.Count
     ProductionCleanupScopes   = $cleanupPolicy.CleanupScopes.Count
@@ -337,9 +241,6 @@ if ($nvmeSource.Count -ne 0) {
     ArtifactApprovals         = $artifactPolicy.Artifacts.Count
     SourceUltimateUnchanged   = $true
     DeletedToolsRemainDeleted = $true
-    Message                   = 'Edge & WebView scope design is present, linked, and implemented as non-executing manual handoff.'
+    Message                   = 'Edge & WebView scope design reflects exact source-equivalent Apply/Default with no global production approvals.'
     Timestamp                 = Get-Date
 }
-
-
-

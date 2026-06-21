@@ -513,11 +513,11 @@
                     Title       = 'Edge & WebView'
                     Stage       = 'Windows'
                     Order       = 13
-                    Type        = 'assistant'
+                    Type        = 'action'
                     RiskLevel   = 'high'
-                    Description = 'Controlled manual handoff only. Analyze the source-defined Edge and WebView removal/repair workflow without automated downloads, repair, installer execution, package actions, process handling, registry/service/file mutation, cleanup, or system mutation.'
-                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Description = 'Run the source-equivalent Edge and WebView uninstall branch or the source-defined Default repair branch.'
+                    Actions     = @('Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'notepad-settings'

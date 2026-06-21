@@ -241,9 +241,9 @@ Assert-GameBarCondition ([string]$gameBarRecord.ImplementationLevel -eq 'ParityI
 Assert-GameBarCondition ([string]$gameBarRecord.UltimateParity -eq 'Yes') 'GameBar UltimateParity must be Yes after Phase 146.'
 Assert-GameBarCondition ([string]$gameBarRecord.FinalProgressStatus -eq 'DoneParity') 'GameBar final progress status must be DoneParity.'
 Assert-GameBarCondition (-not [bool]$gameBarRecord.YazanFinalException) 'GameBar must not use a Yazan final exception.'
-Assert-GameBarCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'edge-webview') 'Current ordered parity target must advance to edge-webview.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-GameBarCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central baseline cursor.'
+Assert-GameBarCondition ([string]$parityBaseline.CurrentOrderedParityTarget -ne 'game-bar') 'Current ordered parity target must have advanced beyond game-bar.'
 
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 Assert-GameBarCondition ([int]$inventoryAssertion.Baseline.ImplementedTools -eq [int]$inventoryAssertion.Snapshot.ImplementedTools) 'Inventory implemented count must remain baseline-derived.'
