@@ -50,7 +50,7 @@ $baseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 $assertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 $snapshot = $assertion.Snapshot
 
-Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Inventory baseline ActiveTools must remain 55 for Phase 103.'
+Assert-BoostLabCondition ([int]$snapshot.ActiveTools -eq [int]$baseline.ActiveTools) 'Live active tool count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$snapshot.ImplementedTools -eq [int]$baseline.ImplementedTools) 'Live implemented tool count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$snapshot.DeferredPlaceholders -eq [int]$baseline.DeferredPlaceholders) 'Live deferred placeholder count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$baseline.SourcePromotedMirrorFiles -eq 7) 'Inventory baseline SourcePromotedMirrorFiles must remain 7 for Phase 103.'

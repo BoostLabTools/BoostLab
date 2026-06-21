@@ -301,7 +301,7 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq [int]
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
-Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq 55) 'Active tool count must remain 55.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq [int]$inventory.Baseline.ActiveTools) 'Active tool count must match the central baseline.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Runtime implemented tool count must match the central baseline.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred/placeholders count must match the central baseline.'
 

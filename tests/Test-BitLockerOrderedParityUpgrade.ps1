@@ -225,7 +225,7 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
     Assert-BoostLabCondition (@($productionPolicy.ProductionAllowlistProposals).Count -eq 0) 'Production allowlist proposals must remain empty.'
 }
 
-Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryAssertion.Baseline.ActiveTools) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryAssertion.Baseline.ImplementedTools) 'Runtime implemented count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryAssertion.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 

@@ -348,7 +348,7 @@ Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$pa
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.NearParityControlled -eq [int]$categoryCounts['NearParityControlled']) 'NearParityControlled baseline count must match the current parity records.'
 
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
-Assert-BoostLabCondition ([int]$inventoryAssertion.Baseline.ActiveTools -eq 55) 'Active tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.ActiveTools -eq [int]$inventoryAssertion.Baseline.ActiveTools) 'Active tool count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.ImplementedTools -eq [int]$inventoryAssertion.Baseline.ImplementedTools) 'Implemented tool count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.DeferredPlaceholders -eq [int]$inventoryAssertion.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed unexpectedly.'
 

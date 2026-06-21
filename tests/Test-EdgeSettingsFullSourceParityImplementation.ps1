@@ -347,10 +347,10 @@ Assert-BoostLabTextContains -Text ([string]$edgeRecord.GapSummary) -Needle 'sour
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
 
-Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline must remain 55.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Active tool baseline must match live inventory after Edge Settings.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq [int]$inventorySnapshot.ImplementedTools) 'Implemented tool baseline must match live inventory after Edge Settings.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.DeferredPlaceholders -eq [int]$inventorySnapshot.DeferredPlaceholders) 'Deferred placeholder baseline must match live inventory after Edge Settings.'
-Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Live active tool count changed unexpectedly.'
+Assert-BoostLabCondition ([int]$parityBaseline.Counts.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Parity active count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Live implemented tool count changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Live deferred placeholder count changed unexpectedly.'
 

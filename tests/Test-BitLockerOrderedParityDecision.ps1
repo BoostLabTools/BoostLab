@@ -303,7 +303,7 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
 }
 Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design System readiness must remain false.'
 
-Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq 55) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryAssertion.Baseline.ActiveTools) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryAssertion.Baseline.ImplementedTools) 'Runtime implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryAssertion.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count changed.'

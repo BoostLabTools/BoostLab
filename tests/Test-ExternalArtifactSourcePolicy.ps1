@@ -94,7 +94,7 @@ $stageToolIndex = Get-BoostLabStageToolIndex -Stages $stagesConfig.Stages
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 $baseline = $inventoryAssertion.Baseline
 $snapshot = $inventoryAssertion.Snapshot
-Assert-BoostLabCondition ([int]$baseline.ActiveTools -eq 55) 'Active tool count changed during external artifact source policy phase.'
+Assert-BoostLabCondition ([int]$snapshot.ActiveTools -eq [int]$baseline.ActiveTools) 'Active tool count changed during external artifact source policy phase.'
 Assert-BoostLabCondition ([int]$snapshot.ImplementedTools -eq [int]$baseline.ImplementedTools) 'Implemented tool count changed during external artifact source policy phase.'
 Assert-BoostLabCondition ([int]$snapshot.DeferredPlaceholders -eq [int]$baseline.DeferredPlaceholders) 'Deferred placeholder count changed during external artifact source policy phase.'
 

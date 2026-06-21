@@ -224,7 +224,7 @@ $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 $inventoryBaseline = $inventoryAssertion.Baseline
 $inventorySnapshot = $inventoryAssertion.Snapshot
 
-Assert-BoostLabCondition ([int]$inventoryBaseline.ActiveTools -eq 55) 'Active tool baseline changed unexpectedly.'
+Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Active tool baseline changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Implemented tool baseline changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder baseline changed unexpectedly.'
 

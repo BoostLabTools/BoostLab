@@ -166,7 +166,7 @@ Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX tool is missing from 
 Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Apply') 'DirectX actions mismatch.'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
-Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq 55) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq [int]$inventory.Baseline.ActiveTools) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 

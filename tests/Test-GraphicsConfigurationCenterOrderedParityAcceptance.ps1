@@ -107,7 +107,7 @@ Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$pa
 Assert-BoostLabCondition ([int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset) 'ControlledSubset count mismatch.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.UltimateParityImplemented -eq [int]$categoryCounts['ParityImplemented']) 'Ultimate parity implemented baseline count must match the current parity records.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq [int]$categoryCounts['ControlledSubset']) 'ControlledSubset baseline count must match the current parity records.'
-Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq 55) 'Active tool count changed.'
+Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq [int]$inventory.Baseline.ActiveTools) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Runtime implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parityBaseline.CurrentOrderedParityTarget)) 'Central current ordered parity target must be populated.'
