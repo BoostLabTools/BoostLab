@@ -376,8 +376,10 @@ Assert-CopilotCondition ($null -ne $copilotParity) 'Copilot parity record is mis
 Assert-CopilotCondition ([string]$copilotParity.RuntimeStatus -eq 'RuntimeImplemented') 'Copilot parity RuntimeStatus must be RuntimeImplemented.'
 Assert-CopilotCondition ([string]$copilotParity.ImplementationLevel -eq 'ParityImplemented') 'Copilot parity ImplementationLevel must be ParityImplemented.'
 Assert-CopilotCondition ([string]$copilotParity.UltimateParity -eq 'Yes') 'Copilot UltimateParity must be Yes.'
-Assert-CopilotCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'game-mode') 'Current ordered parity cursor must advance to game-mode.'
-Assert-CopilotCondition ($null -ne $nextTarget -and [string]$nextTarget.ToolId -eq 'game-mode') 'Next ordered parity target must be game-mode.'
+Assert-CopilotCondition ([string]$copilotParity.NextParityAction -match 'gamemode') 'Copilot parity action must document advancing to GameMode.'
+Assert-CopilotCondition ($null -ne $nextTarget) 'Next ordered parity target must be derived from the central baseline.'
+Assert-CopilotCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity cursor must match the derived first non-final target.'
+Assert-CopilotCondition ([string]$parityBaseline.CurrentOrderedParityTarget -ne 'copilot') 'Current ordered parity cursor must advance beyond Copilot.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 foreach ($level in @('ParityImplemented', 'NearParityControlled', 'ControlledSubset', 'ManualHandoffOnly', 'DeferredForParityWork')) {

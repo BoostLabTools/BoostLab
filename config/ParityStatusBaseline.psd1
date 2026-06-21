@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'game-mode'
+    CurrentOrderedParityTarget = 'pointer-precision'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -540,13 +540,11 @@
             StageOrder = 6
             ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Open-only runtime exists; pending ordered parity review after Copilot.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Open preserves the exact Ultimate GameMode launcher: Start-Process "ms-settings:gaming-gamemode". The source contains no Apply, Default, Restore, registry, file, service, task, process, download, installer, or reboot behavior.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'NeedsYazanAcceptance'
-            NextParityAction = 'Review and accept GameMode open-only source parity next.'
+            NextParityAction = 'No parity work required; advance ordered cursor to pointer-precision.'
         }
         @{
             ToolId = 'pointer-precision'
@@ -555,11 +553,13 @@
             StageOrder = 6
             ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Open-only launcher behavior is preserved.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Open-only runtime exists; pending ordered parity review after GameMode.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'NeedsYazanAcceptance'
+            NextParityAction = 'Review and accept Pointer Precision open-only source parity next.'
         }
         @{
             ToolId = 'bloatware'
