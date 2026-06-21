@@ -311,8 +311,13 @@ for ($i = 0; $i -lt $expectedDownloads.Count; $i++) {
     Assert-BoostLabCondition ($null -ne $entry) "Missing Visual C++ external source entry for $fileName."
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ external source classification mismatch for $fileName."
     Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ mirror status mismatch for $fileName."
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "Visual C++ must not add artifact hash approval for $fileName."
+    Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Visual C++ SHA evidence missing or malformed for $fileName."
+    Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Visual C++ size evidence missing for $fileName."
     Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Visual C++ must not add mirror URL for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "Visual C++ SHA evidence must not mark mirror available for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "Visual C++ SHA evidence must not approve artifact provenance for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "Visual C++ SHA evidence must not approve production allowlist for $fileName."
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Visual C++ SHA evidence must remain release-blocked for $fileName."
 }
 
 $artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
@@ -335,7 +340,6 @@ foreach ($needle in @(
 foreach ($needle in @(
     'Phase 130 supersedes the manual-handoff-only runtime'
     'source-equivalent controlled behavior accepted by Yazan as near parity'
-    'ExpectedSha256 = $null'
     'No real Visual C++ redistributable is approved as a reusable BoostLab'
 )) {
     Assert-BoostLabTextContains -Text $provenanceText -Needle $needle -Description 'Visual C++ provenance review'

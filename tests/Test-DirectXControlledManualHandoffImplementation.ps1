@@ -188,8 +188,13 @@ Assert-BoostLabCondition ($directXExternalSources.Count -eq 2) 'DirectX must cla
 foreach ($entry in $directXExternalSources) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "DirectX source classification mismatch for $($entry.Id)."
     Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "DirectX mirror status mismatch for $($entry.Id)."
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "DirectX must not invent artifact hashes for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "DirectX SHA evidence missing or malformed for $($entry.Id)."
+    Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "DirectX size evidence missing for $($entry.Id)."
     Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "DirectX must not approve a BoostLab mirror for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "DirectX SHA evidence must not mark mirror available for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "DirectX SHA evidence must not approve artifact provenance for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "DirectX SHA evidence must not approve production allowlist for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "DirectX SHA evidence must remain release-blocked for $($entry.Id)."
 }
 Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe' }).Count -eq 1) 'DirectX 7-Zip source URL classification missing.'
 Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe' }).Count -eq 1) 'DirectX runtime source URL classification missing.'

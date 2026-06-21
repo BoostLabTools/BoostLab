@@ -290,7 +290,6 @@ foreach ($expectation in $windowsArtifactExpectations) {
         Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Source classification mismatch for $($expectation.ToolId) artifact $artifactFile."
         Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Mirror status mismatch for $($expectation.ToolId) artifact $artifactFile."
         Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Unexpected BoostLab mirror URL for $($expectation.ToolId) artifact $artifactFile."
-        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "Unexpected SHA-256 approval for $($expectation.ToolId) artifact $artifactFile."
     }
 }
 
@@ -299,6 +298,99 @@ $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'N
 Assert-BoostLabCondition ($officialEntries.Count -ge 20) 'Expected official vendor/project sources were not classified.'
 Assert-BoostLabCondition ($needsMirrorEntries.Count -ge 8) 'Expected author-hosted artifacts were not classified as needing BoostLab mirror.'
 Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 0) 'No BoostLab mirror should be approved in this phase.'
+Assert-BoostLabCondition (@($officialEntries | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.ExpectedSha256) }).Count -eq 0) 'Official vendor direct entries must not receive Phase 164B SHA evidence.'
+
+$phase164BEvidenceIds = @(
+    'reinstall-windows11-media-creation-tool'
+    'edge-settings-edge-exe'
+    'driver-clean-ddu'
+    'driver-clean-seven-zip'
+    'driver-install-debloat-settings-inspector'
+    'driver-install-debloat-settings-seven-zip'
+    'nvidia-settings-inspector'
+    'nvidia-settings-seven-zip'
+    'directx-runtime-package'
+    'directx-seven-zip'
+    'visual-cpp-vcredist2005-x64'
+    'visual-cpp-vcredist2005-x86'
+    'visual-cpp-vcredist2008-x64'
+    'visual-cpp-vcredist2008-x86'
+    'visual-cpp-vcredist2010-x64'
+    'visual-cpp-vcredist2010-x86'
+    'visual-cpp-vcredist2012-x64'
+    'visual-cpp-vcredist2012-x86'
+    'visual-cpp-vcredist2013-x64'
+    'visual-cpp-vcredist2013-x86'
+    'visual-cpp-vcredist2015-2017-2019-2022-x64'
+    'visual-cpp-vcredist2015-2017-2019-2022-x86'
+    'bloatware-remote-desktop-connection'
+    'bloatware-snipping-tool'
+    'game-bar-edge-webview'
+    'game-bar-gaming-repair-tool'
+    'edge-webview-edge-exe'
+    'edge-webview-edge-webview'
+)
+$phase164BMirrorCandidates = @{
+    'reinstall-windows11-media-creation-tool' = 'mirrors/reinstall/mediacreationtoolw11.exe'
+    'edge-settings-edge-exe' = 'mirrors/edge-settings/edge.exe'
+    'driver-clean-ddu' = 'mirrors/driver-clean/ddu.exe'
+    'driver-clean-seven-zip' = 'mirrors/driver-clean/7zip.exe'
+    'driver-install-debloat-settings-inspector' = 'mirrors/driver-install-debloat-settings/inspector.exe'
+    'driver-install-debloat-settings-seven-zip' = 'mirrors/driver-install-debloat-settings/7zip.exe'
+    'nvidia-settings-inspector' = 'mirrors/nvidia-settings/inspector.exe'
+    'nvidia-settings-seven-zip' = 'mirrors/nvidia-settings/7zip.exe'
+    'directx-runtime-package' = 'mirrors/directx/directx.exe'
+    'directx-seven-zip' = 'mirrors/directx/7zip.exe'
+    'visual-cpp-vcredist2005-x64' = 'mirrors/visual-cpp/vcredist2005_x64.exe'
+    'visual-cpp-vcredist2005-x86' = 'mirrors/visual-cpp/vcredist2005_x86.exe'
+    'visual-cpp-vcredist2008-x64' = 'mirrors/visual-cpp/vcredist2008_x64.exe'
+    'visual-cpp-vcredist2008-x86' = 'mirrors/visual-cpp/vcredist2008_x86.exe'
+    'visual-cpp-vcredist2010-x64' = 'mirrors/visual-cpp/vcredist2010_x64.exe'
+    'visual-cpp-vcredist2010-x86' = 'mirrors/visual-cpp/vcredist2010_x86.exe'
+    'visual-cpp-vcredist2012-x64' = 'mirrors/visual-cpp/vcredist2012_x64.exe'
+    'visual-cpp-vcredist2012-x86' = 'mirrors/visual-cpp/vcredist2012_x86.exe'
+    'visual-cpp-vcredist2013-x64' = 'mirrors/visual-cpp/vcredist2013_x64.exe'
+    'visual-cpp-vcredist2013-x86' = 'mirrors/visual-cpp/vcredist2013_x86.exe'
+    'visual-cpp-vcredist2015-2017-2019-2022-x64' = 'mirrors/visual-cpp/vcredist2015_2017_2019_2022_x64.exe'
+    'visual-cpp-vcredist2015-2017-2019-2022-x86' = 'mirrors/visual-cpp/vcredist2015_2017_2019_2022_x86.exe'
+    'bloatware-remote-desktop-connection' = 'mirrors/bloatware/remotedesktopconnection.exe'
+    'bloatware-snipping-tool' = 'mirrors/bloatware/snippingtool.exe'
+    'game-bar-edge-webview' = 'mirrors/game-bar/edgewebview.exe'
+    'game-bar-gaming-repair-tool' = 'mirrors/game-bar/gamingrepairtool.exe'
+    'edge-webview-edge-exe' = 'mirrors/edge-webview/edge.exe'
+    'edge-webview-edge-webview' = 'mirrors/edge-webview/edgewebview.exe'
+}
+$phase164BEvidenceEntries = @($entries | Where-Object { $phase164BEvidenceIds -contains [string]$_.Id })
+Assert-BoostLabCondition ($phase164BEvidenceEntries.Count -eq 28) 'Phase 164B SHA evidence entry count mismatch.'
+foreach ($entry in $phase164BEvidenceEntries) {
+    $id = [string]$entry.Id
+    Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Phase 164B evidence entry must remain UltimateAuthorHostedArtifact: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Phase 164B evidence entry must still need BoostLab mirror: $id"
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Phase 164B evidence must not populate runtime mirror URL: $id"
+    Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Phase 164B evidence SHA-256 missing or malformed: $id"
+    Assert-BoostLabCondition ([string]$entry.ExpectedSha1 -match '^[A-Fa-f0-9]{40}$') "Phase 164B evidence SHA-1 missing or malformed: $id"
+    Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Phase 164B evidence size missing: $id"
+    Assert-BoostLabCondition ([string]$entry.AuthenticodeStatus -in @('Valid', 'NotSigned')) "Phase 164B evidence signature status unexpected: $id"
+    Assert-BoostLabCondition ([string]$entry.EvidenceSource -eq 'Phase164BLocalIntake') "Phase 164B evidence source mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.EvidenceCapturedAt -eq '20260621-205731') "Phase 164B evidence timestamp mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorCandidatePath -eq [string]$phase164BMirrorCandidates[$id]) "Phase 164B mirror candidate path mismatch: $id"
+    Assert-BoostLabCondition ($entry.BoostLabMirrorAvailable -eq $false) "Phase 164B evidence must not mark mirror available: $id"
+    Assert-BoostLabCondition ($entry.ArtifactProvenanceApproved -eq $false) "Phase 164B evidence must not approve artifact provenance: $id"
+    Assert-BoostLabCondition ($entry.ProductionAllowlistApproved -eq $false) "Phase 164B evidence must not approve production allowlist: $id"
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Phase 164B evidence must remain release-blocked: $id"
+}
+
+$expectedDuplicateGroups = @(
+    @('edge-settings-edge-exe', 'edge-webview-edge-exe')
+    @('driver-clean-seven-zip', 'driver-install-debloat-settings-seven-zip', 'nvidia-settings-seven-zip', 'directx-seven-zip')
+    @('driver-install-debloat-settings-inspector', 'nvidia-settings-inspector')
+    @('game-bar-edge-webview', 'edge-webview-edge-webview')
+)
+foreach ($group in $expectedDuplicateGroups) {
+    $hashes = @($phase164BEvidenceEntries | Where-Object { $group -contains [string]$_.Id } | ForEach-Object { [string]$_.ExpectedSha256 } | Sort-Object -Unique)
+    Assert-BoostLabCondition ($hashes.Count -eq 1) "Phase 164B duplicate SHA group mismatch: $($group -join ', ')"
+}
+Assert-BoostLabCondition (@($phase164BEvidenceEntries | Where-Object { [string]$_.ReleaseReadiness -eq 'ReleaseReady' }).Count -eq 0) 'Phase 164B evidence must not mark any entry release-ready.'
 
 $outOfScopeToolIds = @($manifest.AuditScope.ExplicitlyOutOfScopeToolIds | ForEach-Object { [string]$_ })
 foreach ($toolId in $outOfScopeToolIds) {

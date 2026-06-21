@@ -122,8 +122,13 @@ Assert-BoostLabCondition ($visualEntries.Count -eq 12) 'Visual C++ must classify
 foreach ($entry in $visualEntries) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ artifact must remain UltimateAuthorHostedArtifact: $($entry.Id)"
     Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ artifact must remain NeedsBoostLabMirror: $($entry.Id)"
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "Visual C++ artifact must not add reusable SHA approval: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Visual C++ artifact must carry Phase 164B/164C SHA evidence: $($entry.Id)"
+    Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Visual C++ artifact must carry Phase 164B/164C size evidence: $($entry.Id)"
     Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Visual C++ artifact must not add mirror URL: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "Visual C++ SHA evidence must not mark mirror available: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "Visual C++ SHA evidence must not approve provenance: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "Visual C++ SHA evidence must not approve production allowlist: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Visual C++ SHA evidence must remain release-blocked: $($entry.Id)"
     Assert-BoostLabCondition ([string]$entry.OriginalDownloadUrl -like 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist*.exe') "Visual C++ source URL mismatch: $($entry.Id)"
 }
 
