@@ -176,6 +176,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\Widgets.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'copilot' = @{
+        RelativePath          = 'Windows\copilot.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'restore-point' = @{
         RelativePath          = 'Windows\RestorePoint.psm1'
         LaunchText            = 'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
@@ -543,6 +547,9 @@ foreach ($entry in $expectedModules.Values) {
             2
         }
         elseif ($toolId -eq 'widgets') {
+            0
+        }
+        elseif ($toolId -eq 'copilot') {
             0
         }
         elseif ($toolId -eq 'memory-compression') {

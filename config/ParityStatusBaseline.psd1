@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 46
-        DeferredPlaceholders = 9
+        RuntimeImplementedTools = 47
+        DeferredPlaceholders = 8
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 20
-        NearParityControlled = 22
+        NearParityControlled = 23
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 9
+        DeferredForParityWork = 8
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'copilot'
+    CurrentOrderedParityTarget = 'game-mode'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -526,12 +526,12 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 8
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Registry-only subset would weaken source; full source requires AppX and broad process handling.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply preserves the approved source Copilot Off branch: all source named process stops, wildcard *edge* process stop, AppX package removal matching *Copilot*, and HKCU/HKLM TurnOffWindowsCopilot DWORD 1. Default preserves AppX re-registration matching *Copilot* and HKCU/HKLM WindowsCopilot policy key deletion.'
             YazanFinalException = $false
-            NextParityAction = 'Approve package/process scopes or explicitly accept a final non-parity exception.'
+            NextParityAction = 'No parity work required; advance ordered cursor to gamemode.'
         }
         @{
             ToolId = 'game-mode'
@@ -540,11 +540,13 @@
             StageOrder = 6
             ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Open-only launcher behavior is preserved.'
+            ImplementationLevel = 'NearParityControlled'
+            UltimateParity = 'Partial'
+            GapSummary = 'Open-only runtime exists; pending ordered parity review after Copilot.'
             YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
+            YazanAcceptedNearParity = $false
+            FinalProgressStatus = 'NeedsYazanAcceptance'
+            NextParityAction = 'Review and accept GameMode open-only source parity next.'
         }
         @{
             ToolId = 'pointer-precision'

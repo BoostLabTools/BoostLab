@@ -147,6 +147,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\Widgets.psm1'
         Actions = @('Apply', 'Default')
     }
+    'copilot' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\copilot.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'restore-point' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\RestorePoint.psm1'
         Actions = @('Apply', 'Open')

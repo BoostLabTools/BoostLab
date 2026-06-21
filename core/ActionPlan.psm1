@@ -383,6 +383,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
         'Restore the approved default Windows Widgets policy behavior.'
     }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Apply') {
+        'Run the approved source-equivalent Copilot Off branch: stop the source process list, stop *edge* process matches, remove AppX packages matching *Copilot*, and set HKCU/HKLM TurnOffWindowsCopilot to REG_DWORD 1.'
+    }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Default') {
+        'Run the approved source-equivalent Copilot Default branch: re-register AppX packages matching *Copilot* and delete the HKCU/HKLM WindowsCopilot policy keys. Default is not Restore.'
+    }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
         'Disable Windows Memory Compression using the approved Ultimate recommendation.'
     }
@@ -1013,6 +1019,19 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Set PolicyManager AllowNewsAndInterests value to 1.')
         $plannedChanges.Add('Remove the Dsh policy key used to block Widgets.')
     }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Stop every source-defined named process: backgroundTaskHost, Copilot, CrossDeviceResume, GameBar, MicrosoftEdgeUpdate, msedge, msedgewebview2, OneDrive, OneDrive.Sync.Service, OneDriveStandaloneUpdater, Resume, RuntimeBroker, Search, SearchHost, Setup, StoreDesktopExtension, WidgetService, and Widgets.')
+        $plannedChanges.Add('Stop every running process whose ProcessName matches *edge*.')
+        $plannedChanges.Add('Remove AppX packages returned by Get-AppXPackage -AllUsers where Name matches *Copilot*.')
+        $plannedChanges.Add('Set HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot TurnOffWindowsCopilot to REG_DWORD 1.')
+        $plannedChanges.Add('Set HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot TurnOffWindowsCopilot to REG_DWORD 1.')
+    }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Re-register AppX packages returned by Get-AppXPackage -AllUsers where Name matches *Copilot* using each package AppXManifest.xml.')
+        $plannedChanges.Add('Delete HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot exactly as the Ultimate Default branch defines.')
+        $plannedChanges.Add('Delete HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot exactly as the Ultimate Default branch defines.')
+        $plannedChanges.Add('Default is source-defined and is not captured-state Restore.')
+    }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Run Disable-MMAgent -MemoryCompression.')
         $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
@@ -1556,6 +1575,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Widgets availability returns to the approved Windows default policy behavior.')
         $sideEffects.Add('The taskbar may update after Windows refreshes its policy state.')
     }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The source process list and any process matching *edge* may be force-closed, including Edge, Search, Widgets, GameBar, OneDrive, and related hosts.')
+        $sideEffects.Add('All-users AppX packages with names matching *Copilot* are removed according to the approved Ultimate source.')
+        $sideEffects.Add('HKCU and HKLM WindowsCopilot policy keys are set to disable Copilot; no download, installer, service, task, driver, TrustedInstaller, Safe Mode, file cleanup, or reboot operation is performed.')
+    }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('All-users AppX packages with names matching *Copilot* are re-registered from their AppXManifest.xml when present.')
+        $sideEffects.Add('The HKCU and HKLM WindowsCopilot policy keys are deleted exactly as Ultimate defines; Default is not Restore and does not use captured state.')
+        $sideEffects.Add('No download, installer, service, task, driver, TrustedInstaller, Safe Mode, file cleanup, or reboot operation is performed.')
+    }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Windows will stop using memory compression until it is enabled again.')
         $sideEffects.Add('The setting is changed immediately; BoostLab does not restart the computer.')
@@ -1909,6 +1938,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Default') {
         'BoostLab will restore the approved default Widgets policy values. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Apply') {
+        'BoostLab will run the approved source-equivalent Copilot Off branch: force-stop the source process list and *edge* process matches, remove AppX packages matching *Copilot*, and set HKCU/HKLM TurnOffWindowsCopilot to REG_DWORD 1. This can close apps and alter package/policy state. No download, installer, service, task, driver, file cleanup, or reboot is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'copilot' -and $ActionName -eq 'Default') {
+        'BoostLab will run the approved source-equivalent Copilot Default branch: re-register AppX packages matching *Copilot* and delete the HKCU/HKLM WindowsCopilot policy keys. Default is not Restore. No download, installer, service, task, driver, file cleanup, or reboot is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
         'BoostLab will run Disable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'

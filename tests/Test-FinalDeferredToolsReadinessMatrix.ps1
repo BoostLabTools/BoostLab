@@ -88,7 +88,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 }
 
 $expectedDeferred = @(
-    @{ Id = 'copilot'; Title = 'Copilot'; Link = 'docs/tool-designs/copilot-scope-design.md'; Source = 'source-ultimate/6 Windows/8 Copilot.ps1'; Hash = '21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90' }
     @{ Id = 'bloatware'; Title = 'Bloatware'; Link = 'docs/tool-designs/bloatware-scope-design.md'; Source = 'source-ultimate/6 Windows/11 Bloatware.ps1'; Hash = '36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5' }
     @{ Id = 'game-bar'; Title = 'GameBar'; Link = 'docs/tool-designs/gamebar-scope-design.md'; Source = 'source-ultimate/6 Windows/12 Gamebar.ps1'; Hash = '8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59' }
     @{ Id = 'control-panel-settings'; Title = 'Control Panel Settings'; Link = 'docs/tool-designs/control-panel-settings-scope-design.md'; Source = 'source-ultimate/6 Windows/15 Control Panel Settings.ps1'; Hash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B' }
@@ -130,8 +129,8 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    '10/10 deferred tools covered',
-    'Scope or scope/provenance design covered tools: **10**',
+    '8/8 deferred tools covered',
+    'Scope or scope/provenance design covered tools: **8**',
     'Standalone provenance review covered tools: **0**',
     'Manual-handoff implemented with Auto provenance review still blocking automation: **6**',
     'No deferred tool is marked ready for implementation by this matrix.',
@@ -150,8 +149,7 @@ foreach ($requiredPhrase in @(
 
 foreach ($requiredBlocker in @(
     '| Missing artifact provenance | 2 |',
-    '| Missing production allowlist | 2 |',
-    '| Missing process handling governance | 1 |',
+    '| Missing production allowlist | 1 |',
     '| Missing AppX/package restore model | 1 |',
     '| Missing TrustedInstaller approved target flow | 2 |',
     '| Missing Safe Mode/reboot workflow approval | 2 |'
