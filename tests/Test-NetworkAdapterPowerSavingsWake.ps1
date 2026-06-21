@@ -24,6 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -632,10 +633,30 @@ try {
         $defaultResult.Message -ne 'Network adapter power savings and wake restored to default.' -or
         $defaultResult.Data.CommandStatus -ne 'Completed' -or
         $defaultResult.VerificationResult.Status -ne 'Passed' -or
-        $defaultCommands.Count -ne 14 -or
-        @($defaultResult.Data.RegistryOperationsSkipped).Count -ne 1
+        $defaultCommands.Count -ne 15 -or
+        @($defaultResult.Data.RegistryOperationsSkipped).Count -ne 0
     ) {
-        throw 'Mocked Default did not remove the 14 unique values and skip the repeated absent value.'
+        throw 'Mocked Default did not execute and verify the complete 15-command Ultimate delete sequence.'
+    }
+
+    $defaultCommands.Clear()
+    $repeatedDefaultResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Default' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $mutableDefaultReader $defaultCommandInvoker
+    if (
+        -not $repeatedDefaultResult.Success -or
+        $repeatedDefaultResult.Data.CommandStatus -ne 'Completed' -or
+        $repeatedDefaultResult.VerificationResult.Status -ne 'Passed' -or
+        $defaultCommands.Count -ne 15 -or
+        @($repeatedDefaultResult.Data.RegistryOperationsSkipped).Count -ne 0
+    ) {
+        throw 'Mocked repeated Default must still attempt the source-defined delete sequence and verify absent values.'
     }
 
     foreach ($result in @($applyResult, $defaultResult, $partialResult, $emptyResult)) {
@@ -862,6 +883,60 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$networkParityRecord = @(
+    $parityBaseline.Tools |
+        Where-Object { [string]$_.ToolId -eq 'network-adapter-power-savings-wake' }
+) | Select-Object -First 1
+if ($null -eq $networkParityRecord) {
+    throw 'Network Adapter Power Savings & Wake parity baseline record is missing.'
+}
+if (
+    [string]$networkParityRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+    [string]$networkParityRecord.ImplementationLevel -ne 'ParityImplemented' -or
+    [string]$networkParityRecord.UltimateParity -ne 'Yes' -or
+    [bool]$networkParityRecord.YazanFinalException -or
+    [string]$networkParityRecord.FinalProgressStatus -ne 'DoneParity' -or
+    [string]$networkParityRecord.NextParityAction -ne 'DoneParity'
+) {
+    throw 'Network Adapter Power Savings & Wake parity baseline was not finalized as exact parity.'
+}
+$nextOrderedParityTarget = Get-BoostLabNextOrderedParityTarget `
+    -ParityBaseline $parityBaseline `
+    -ExecutionOrder $executionOrder
+if (
+    $null -eq $nextOrderedParityTarget -or
+    [string]$nextOrderedParityTarget.ToolId -ne [string]$parityBaseline.CurrentOrderedParityTarget
+) {
+    throw 'The ordered parity cursor does not match the first non-final parity target.'
+}
+$windowsOrderStage = @(
+    $executionOrder.Stages |
+        Where-Object { [string]$_.Name -eq 'Windows' }
+) | Select-Object -First 1
+$networkOrderEntry = @(
+    $windowsOrderStage.Tools |
+        Where-Object { [string]$_.ToolId -eq 'network-adapter-power-savings-wake' }
+) | Select-Object -First 1
+$sourceOrderNextEntry = @(
+    $windowsOrderStage.Tools |
+        Where-Object { [int]$_.Order -eq ([int]$networkOrderEntry.Order + 1) }
+) | Select-Object -First 1
+if (
+    $null -eq $sourceOrderNextEntry -or
+    [string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNextEntry.ToolId
+) {
+    throw 'Network Adapter Power Savings & Wake did not advance the ordered cursor to the next Windows source-order tool.'
+}
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+if (
+    [int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented -or
+    [int]$categoryCounts['NearParityControlled'] -ne [int]$parityBaseline.Counts.NearParityControlled
+) {
+    throw 'Network Adapter Power Savings & Wake parity category counts are inconsistent with the central baseline.'
+}
+
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = @(
     Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
@@ -899,6 +974,10 @@ if (
     VerificationCheckCount   = 14
     ImplementedModuleCount   = $implementedCount
     PlaceholderModuleCount   = $placeholderCount
+    UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
+    NearParityControlled      = $parityBaseline.Counts.NearParityControlled
+    CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+    SourceOrderNextTool       = $sourceOrderNextEntry.ToolId
     SourceUltimateUnchanged  = $true
     ProtectedModulesUnchanged = $true
     Message                  = 'Network Adapter Power Savings & Wake was validated with static inspection and mocks only.'

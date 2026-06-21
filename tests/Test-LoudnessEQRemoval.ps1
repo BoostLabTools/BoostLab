@@ -91,7 +91,6 @@ foreach ($relativePath in $expectedPlaceholderPaths) {
 }
 
 $protectedHashes = [ordered]@{
-    'modules\Windows\NetworkAdapterPowerSavingsWake.psm1' = '4A0A213032E31B3D4F5A676F0706B8FB354CC0EA3EA6498D6FB51A81B24B3C77'
     'modules\Windows\SignoutLockScreenWallpaperBlack.psm1' = '216CE7CA8E3EDCD29B126BD6EB167CE8B43EEB2B5E15C984D9E066CA254B24B2'
     'modules\Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
     'modules\Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'

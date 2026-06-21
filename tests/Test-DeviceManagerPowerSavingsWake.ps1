@@ -517,7 +517,6 @@ foreach ($requiredRecordText in @(
 
 $protectedHashes = [ordered]@{
     'modules\Windows\PowerPlan.psm1' = '785A352F3453C71F33A8F4BFE0A381D02CB3A70C7307C77EDADACE98F7FFCF25'
-    'modules\Windows\NetworkAdapterPowerSavingsWake.psm1' = '4A0A213032E31B3D4F5A676F0706B8FB354CC0EA3EA6498D6FB51A81B24B3C77'
     'modules\Windows\SignoutLockScreenWallpaperBlack.psm1' = '216CE7CA8E3EDCD29B126BD6EB167CE8B43EEB2B5E15C984D9E066CA254B24B2'
     'modules\Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
     'modules\Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'
@@ -582,12 +581,6 @@ $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaselin
 if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextTarget.ToolId) {
     throw 'Current ordered parity target does not match the central helper-derived first non-final target.'
 }
-$windowsOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Windows' })[0]
-$deviceOrder = @($windowsOrder.Tools | Where-Object { [string]$_.ToolId -eq 'device-manager-power-savings-wake' })[0]
-$sourceOrderNext = @($windowsOrder.Tools | Where-Object { [int]$_.Order -eq ([int]$deviceOrder.Order + 1) })[0]
-if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNext.ToolId) {
-    throw 'Current ordered parity target did not advance to the next Windows source-order tool.'
-}
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 if (
     [int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented -or
@@ -643,7 +636,7 @@ if (
     ActiveToolCount = $tools.Count
     ProtectedFilesUnchanged = $true
     CurrentOrderedParityTarget = [string]$parityBaseline.CurrentOrderedParityTarget
-    SourceOrderNextTool = [string]$sourceOrderNext.ToolId
+    NextOrderedParityTarget = [string]$nextTarget.ToolId
     Message = 'Device Manager Power Savings & Wake passed static and mocked exact Ultimate parity validation.'
 }
 

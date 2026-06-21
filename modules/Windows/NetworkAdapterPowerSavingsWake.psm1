@@ -678,6 +678,10 @@ function Invoke-BoostLabNetworkAdapterRegistryCommand {
 
     $output = & $commandProcessorPath /c $CommandText 2>&1
     if ($LASTEXITCODE -ne 0) {
+        if ($CommandText.StartsWith('reg delete ', [StringComparison]::OrdinalIgnoreCase)) {
+            return
+        }
+
         $detail = (@($output) -join ' ').Trim()
         if ([string]::IsNullOrWhiteSpace($detail)) {
             $detail = "reg.exe returned exit code $LASTEXITCODE."
@@ -750,32 +754,6 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
 
     foreach ($adapter in @($inventory.Adapters)) {
         foreach ($operation in @(New-BoostLabNetworkAdapterRegistryOperations -ActionName $ActionName -Adapter $adapter)) {
-            if ($ActionName -eq 'Default') {
-                try {
-                    $stateResults = @(& $RegistryReader ([string]$operation.RegistrySubPath) ([string]$operation.Name))
-                    $state = if ($stateResults.Count -gt 0) { $stateResults[0] } else { $null }
-                }
-                catch {
-                    $state = $null
-                }
-                if (
-                    $null -ne $state -and
-                    $null -ne $state.PSObject.Properties['ReadSucceeded'] -and
-                    [bool]$state.ReadSucceeded -and
-                    $null -ne $state.PSObject.Properties['Exists'] -and
-                    -not [bool]$state.Exists
-                ) {
-                    $registryOperationsSkipped.Add(
-                        (
-                            '{0}: {1} already absent' -f `
-                                [string]$operation.AdapterName, `
-                                [string]$operation.Name
-                        )
-                    )
-                    continue
-                }
-            }
-
             $operationDescription = '{0}: {1}' -f `
                 [string]$operation.AdapterName, `
                 [string]$operation.Name

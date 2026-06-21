@@ -9,8 +9,8 @@
         DeferredPlaceholders = 5
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 27
-        NearParityControlled = 20
+        UltimateParityImplemented = 28
+        NearParityControlled = 19
         ControlledSubset = 3
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'network-adapter-power-savings-wake'
+    CurrentOrderedParityTarget = 'write-cache-buffer-flushing'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -679,11 +679,12 @@
             StageOrder = 6
             ToolOrder = 18
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source-defined adapter values and repeated operation are preserved with unsupported-value warnings.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Exact source Off and Default adapter registry operation sets, adapter key filter, repeated Modern Standby operation, and verification are preserved.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm warning-based unsupported adapter handling is accepted as final parity.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'write-cache-buffer-flushing'
