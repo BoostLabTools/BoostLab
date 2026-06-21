@@ -431,7 +431,6 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
 }
 
 $remainingRefusedPlaceholders = @(
-    'Advanced\timer-resolution-assistant.psm1'
     'Advanced\defender-optimize-assistant.psm1'
 )
 foreach ($relativePath in $remainingRefusedPlaceholders) {

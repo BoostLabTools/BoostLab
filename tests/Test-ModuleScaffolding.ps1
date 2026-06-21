@@ -89,6 +89,10 @@ $implementedModules = @{
         RelativePath          = 'Advanced\services-optimizer.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
+    'timer-resolution-assistant' = @{
+        RelativePath          = 'Advanced\timer-resolution-assistant.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    }
     'background-apps' = @{
         RelativePath          = 'Setup\BackgroundApps.psm1'
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
@@ -531,6 +535,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'services-optimizer' -and
             $commandName -in @('Set-Content', 'Enable-ComputerRestore', 'Checkpoint-Computer')
         )
+        $approvedTimerResolutionCommand = (
+            $toolId -eq 'timer-resolution-assistant' -and
+            $commandName -in @('Set-Content', 'Remove-Item')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -561,7 +569,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedStartMenuTaskbarCommand -and
             -not $approvedSignoutWallpaperCommand -and
             -not $approvedCleanupCommand -and
-            -not $approvedServicesOptimizerCommand
+            -not $approvedServicesOptimizerCommand -and
+            -not $approvedTimerResolutionCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -607,6 +616,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'services-optimizer') {
             0
+        }
+        elseif ($toolId -eq 'timer-resolution-assistant') {
+            1
         }
         elseif ($toolId -eq 'store-settings') {
             2
@@ -1731,6 +1743,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated or rejected Services Optimizer behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'timer-resolution-assistant') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+                '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+                'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
+                'Get-BoostLabTimerCSharpPayload'
+                'Timer Resolution: On (Recommended)'
+                'Timer Resolution: Default'
+                'Set Timer Resolution Service'
+                'STR'
+                'SetTimerResolutionService.cs'
+                'SetTimerResolutionService.exe'
+                'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+                'GlobalTimerResolutionRequests'
+                'NtSetTimerResolution'
+                'NtQueryTimerResolution'
+                'taskmgr.exe'
+                'SupportsRestore = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Timer Resolution Assistant source-equivalent behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'ToolModule.Placeholder.ps1'
+                'ManualHandoffOnly'
+                'AutoBlockedUntilArtifactApproval'
+                'SupportsRestore = $true'
+                'UsesTrustedInstaller = $true'
+                'UsesSafeMode = $true'
+                'Restart-Computer'
+                'Stop-Computer'
+                'bcdedit'
+                'Invoke-WebRequest'
+                'Start-BitsTransfer'
+                'msiexec'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains stale or unrelated Timer Resolution Assistant behavior: $forbiddenText")
                 }
             }
         }

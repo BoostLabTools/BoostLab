@@ -2,18 +2,17 @@
 
 ## Purpose
 
-This Phase 55 document defines the future implementation scope for the
-`Timer Resolution Assistant` tool. It is design-only.
+This Phase 55 document defined the future implementation scope for the
+`Timer Resolution Assistant` tool. Phase 160 supersedes the placeholder
+decision by implementing exact Ultimate parity for this tool only.
 
-No Timer Resolution Assistant behavior is implemented by this document. No
-runtime behavior, module behavior, production service scope, file scope,
-registry scope, compiler scope, LocalSystem scope, scheduled task scope, reboot
-scope, download artifact, installer execution, Default behavior, or Restore
-behavior is approved here.
-
-Timer Resolution Assistant remains a refused placeholder until a later
-approved phase adds exact bounded production scopes, generated-artifact
-governance, service rollback rules, verification, and implementation.
+Phase 160 did not add reusable production service scope, file scope, registry
+scope, compiler scope, LocalSystem scope, scheduled task scope, reboot scope,
+download artifact, installer execution, or Restore behavior. No production
+service/file/registry/compiler/LocalSystem/download/installer scopes are
+approved globally. The approved behavior is module-scoped to the exact
+source-defined Apply and Default branches, with explicit confirmation and
+mocked validator coverage.
 
 ## Source Reference
 
@@ -21,8 +20,8 @@ governance, service rollback rules, verification, and implementation.
 * Source SHA-256: `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621`
 * Current BoostLab module path:
   `modules/Advanced/timer-resolution-assistant.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status: exact Ultimate parity implemented in Phase 160
+* Current implemented actions: `Analyze`, `Apply`, `Default`
 
 Relevant foundations:
 
@@ -60,11 +59,12 @@ The source contains no external download URL and no installer launch.
 
 ## Current Decision
 
-Do not implement Analyze, Apply, Default, or Restore yet.
+Phase 160 implements the exact source-defined `Timer Resolution: On
+(Recommended)` and `Timer Resolution: Default` branches.
 
 The source combines generated compiler input, a generated executable under the
 Windows directory, service creation/deletion, timer-resolution API calls,
-registry mutation under `HKLM\SYSTEM`, and protected-path cleanup. LocalSystem service creation and C# compilation are high risk because they can create a persistent privileged binary from generated source. These behaviors require exact production scopes, source hashing, generated artifact hashing, service identity decisions, cleanup rules, and verification before BoostLab can preserve the Ultimate behavior safely.
+registry mutation under `HKLM\SYSTEM`, and protected-path cleanup. LocalSystem service creation and C# compilation are high risk because they can create a persistent privileged binary from generated source. Phase 160 accepts this exact tool-specific parity workflow with explicit confirmation, source checksum verification, and test-safe mocks. Restore remains unavailable because no captured-state restore contract exists.
 
 ## Behavior Groups
 
@@ -442,8 +442,8 @@ A future safe Apply would require all of the following:
 The Ultimate `Timer Resolution: Default` branch is a source-defined cleanup
 operation. It is not the same thing as BoostLab Restore.
 
-Current Default/Restore must remain unavailable. A future Default would need
-the same service, file, registry, and cleanup governance as Apply.
+Phase 160 implements source-defined Default separately from Restore. Restore
+remains unavailable.
 
 Restore remains unavailable unless exact service rollback, file rollback,
 registry rollback, and generated-artifact cleanup/restore selection are
@@ -452,10 +452,8 @@ Ultimate default path.
 
 ## Production Approval State
 
-No production service/file/registry/compiler/LocalSystem/download/installer scopes are approved by this document.
+No reusable production service/file/registry/compiler/LocalSystem/download/installer scopes are approved by this document.
 
-Timer Resolution Assistant remains a placeholder/refused tool.
-
-The current placeholder module must remain non-executing. A future migration
-phase must not implement a partial "safe-looking" subset if doing so would
-weaken the source's effective generated-service behavior.
+Timer Resolution Assistant is implemented as exact source-equivalent parity in
+Phase 160. This does not create a reusable approval for other generated
+service, compiler, protected-path, registry, or process-launch behavior.

@@ -665,9 +665,9 @@
                     Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Analyze timer behavior and explain latency, power, and stability tradeoffs.'
+                    Description = 'Apply the approved Ultimate timer resolution service workflow or remove it with the source-defined Default branch.'
                     Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'defender-optimize-assistant'

@@ -147,19 +147,28 @@ if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedT
 }
 $advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
 $advancedTools = @($advancedOrder.Tools)
+$advancedToolIds = @($advancedTools | ForEach-Object { [string]$_.ToolId })
 $servicesIndex = -1
+$nextIndex = -1
 for ($index = 0; $index -lt $advancedTools.Count; $index++) {
     if ([string]$advancedTools[$index].ToolId -eq 'services-optimizer') {
         $servicesIndex = $index
-        break
+    }
+    if ([string]$advancedTools[$index].ToolId -eq [string]$nextOrderedTarget.ToolId) {
+        $nextIndex = $index
     }
 }
-if ($servicesIndex -lt 0 -or $servicesIndex -ge ($advancedTools.Count - 1)) {
-    throw 'Services Optimizer is not followed by another ordered Advanced target.'
+if ($servicesIndex -lt 0) {
+    throw 'Services Optimizer was not found in the ordered Advanced stage.'
 }
-$expectedNextAdvancedTool = [string]$advancedTools[$servicesIndex + 1].ToolId
-if ([string]$nextOrderedTarget.ToolId -ne $expectedNextAdvancedTool) {
-    throw 'Services Optimizer acceptance did not advance to the next ordered Advanced tool.'
+if ($nextIndex -ge 0 -and $nextIndex -le $servicesIndex) {
+    throw 'Services Optimizer acceptance did not move the ordered cursor beyond Services Optimizer.'
+}
+if (
+    $advancedToolIds -contains 'timer-resolution-assistant' -and
+    [string]$nextOrderedTarget.ToolId -eq 'timer-resolution-assistant'
+) {
+    throw 'Timer Resolution Assistant should not remain the next ordered target after Phase 160.'
 }
 
 $module = Import-Module -Name $modulePath -Force -PassThru -Prefix 'ServicesTest' -Scope Local -DisableNameChecking -ErrorAction Stop

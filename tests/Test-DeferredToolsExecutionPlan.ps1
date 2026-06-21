@@ -23,7 +23,9 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryBaseline = $inventory.Baseline
+$inventorySnapshot = $inventory.Snapshot
 
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
 $triagePath = Join-Path $ProjectRoot 'docs\remaining-tool-migration-triage.md'
@@ -43,22 +45,29 @@ $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
 $placeholderModules = @(
-    Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
+    Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -File -Filter '*.psm1' |
         Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
 )
 
-$placeholderTools = foreach ($module in $placeholderModules) {
+$placeholderTools = [System.Collections.Generic.List[object]]::new()
+foreach ($module in $placeholderModules) {
     $stageName = Split-Path -Path (Split-Path -Path $module.FullName -Parent) -Leaf
     $toolId = [IO.Path]::GetFileNameWithoutExtension($module.Name)
     $tool = $allTools | Where-Object { $_.Stage -eq $stageName -and $_.Id -eq $toolId } | Select-Object -First 1
     if (-not $tool) {
         throw "Unable to map placeholder module to config metadata: $($module.FullName)"
     }
-    $tool
+    $placeholderTools.Add([pscustomobject]$tool) | Out-Null
 }
 
 if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
     throw "Expected $($inventoryBaseline.DeferredPlaceholders) remaining placeholder tools, found $($placeholderTools.Count)."
+}
+if (
+    [int]$placeholderTools.Count -ne [int]$inventorySnapshot.DeferredPlaceholders -or
+    [int]($allTools.Count - $placeholderTools.Count) -ne [int]$inventorySnapshot.ImplementedTools
+) {
+    throw 'Deferred execution plan placeholder scan does not match the centralized inventory snapshot.'
 }
 
 foreach ($requiredSection in @(

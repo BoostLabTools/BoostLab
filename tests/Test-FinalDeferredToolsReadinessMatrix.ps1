@@ -23,7 +23,9 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryBaseline = $inventory.Baseline
+$inventorySnapshot = $inventory.Snapshot
 
 $matrixPath = Join-Path $ProjectRoot 'docs\final-deferred-tools-readiness-matrix.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
@@ -57,7 +59,7 @@ $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
 $placeholderModules = @(
-    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
+    Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1' |
         Where-Object {
             (Get-Content -LiteralPath $_.FullName -Raw).Contains(
                 'ToolModule.Placeholder.ps1'
@@ -65,7 +67,8 @@ $placeholderModules = @(
         }
 )
 
-$placeholderTools = foreach ($module in $placeholderModules) {
+$placeholderTools = [System.Collections.Generic.List[object]]::new()
+foreach ($module in $placeholderModules) {
     $stageName = Split-Path -Path (Split-Path -Path $module.FullName -Parent) -Leaf
     $toolId = [IO.Path]::GetFileNameWithoutExtension($module.Name)
     $tool = $allTools |
@@ -74,7 +77,7 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     if (-not $tool) {
         throw "Unable to map placeholder module to config metadata: $($module.FullName)"
     }
-    $tool
+    $placeholderTools.Add([pscustomobject]$tool) | Out-Null
 }
 
 if ($allTools.Count -ne $inventoryBaseline.ActiveTools) {
@@ -86,9 +89,14 @@ if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
 if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.ImplementedTools) {
     throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($allTools.Count - $placeholderTools.Count)."
 }
+if (
+    [int]$placeholderTools.Count -ne [int]$inventorySnapshot.DeferredPlaceholders -or
+    [int]($allTools.Count - $placeholderTools.Count) -ne [int]$inventorySnapshot.ImplementedTools
+) {
+    throw 'Final deferred matrix placeholder scan does not match the centralized inventory snapshot.'
+}
 
 $expectedDeferred = @(
-    @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Link = 'docs/tool-designs/timer-resolution-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1'; Hash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621' }
     @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Link = 'docs/tool-designs/defender-optimize-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1'; Hash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6' }
 )
 
@@ -108,6 +116,12 @@ if ($placeholderTools | Where-Object { $_.Id -eq 'services-optimizer' }) {
 }
 if ($matrixText -match '\| Services Optimizer \| `services-optimizer` \|') {
     throw 'Final deferred matrix still lists Services Optimizer as deferred.'
+}
+if ($placeholderTools | Where-Object { $_.Id -eq 'timer-resolution-assistant' }) {
+    throw 'Timer Resolution Assistant remains in the deferred placeholder set after Phase 160.'
+}
+if ($matrixText -match '\| Timer Resolution Assistant \| `timer-resolution-assistant` \|') {
+    throw 'Final deferred matrix still lists Timer Resolution Assistant as deferred.'
 }
 
 foreach ($requiredSection in @(
@@ -147,7 +161,6 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing artifact provenance | 1 |',
     '| Missing Safe Mode/reboot workflow approval | 1 |'
 )) {
     if (-not $matrixText.Contains($requiredBlocker)) {
@@ -155,12 +168,8 @@ foreach ($requiredBlocker in @(
     }
 }
 
-foreach ($candidate in @(
-    'Timer Resolution Assistant'
-)) {
-    if (-not $matrixText.Contains("**$candidate**")) {
-        throw "Final deferred matrix is missing near-term candidate '$candidate'."
-    }
+if ($matrixText.Contains('**Timer Resolution Assistant**')) {
+    throw 'Final deferred matrix still recommends Timer Resolution Assistant as a near-term deferred candidate.'
 }
 
 if (-not $planText.Contains('docs/final-deferred-tools-readiness-matrix.md')) {

@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 53
-        RuntimeImplementedTools = 51
-        DeferredPlaceholders = 2
+        RuntimeImplementedTools = 52
+        DeferredPlaceholders = 1
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 34
+        UltimateParityImplemented = 35
         NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 2
+        DeferredForParityWork = 1
         RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
-    CurrentOrderedParityTarget = 'timer-resolution-assistant'
+    CurrentOrderedParityTarget = 'defender-optimize-assistant'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -788,12 +788,12 @@
             Stage = 'Advanced'
             StageOrder = 7
             ToolOrder = 4
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source generates and compiles C#, creates/removes service, edits protected timer registry, and deletes protected-path files.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact source-defined Timer Resolution On and Default workflows with generated C# service source, source compiler invocation, service create/start/disable/stop/delete behavior, GlobalTimerResolutionRequests registry add/delete, protected generated file cleanup, and Task Manager launch.'
             YazanFinalException = $false
-            NextParityAction = 'Approve generated artifact/compiler, service, protected file, registry, and cleanup scopes.'
+            NextParityAction = 'No parity work required; advance ordered cursor to defender-optimize-assistant.'
         }
         @{
             ToolId = 'defender-optimize-assistant'

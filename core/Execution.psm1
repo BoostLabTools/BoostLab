@@ -223,6 +223,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\services-optimizer.psm1'
         Actions = @('Analyze', 'Apply', 'Default')
     }
+    'timer-resolution-assistant' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\timer-resolution-assistant.psm1'
+        Actions = @('Analyze', 'Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

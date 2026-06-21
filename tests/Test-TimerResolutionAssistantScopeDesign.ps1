@@ -108,12 +108,12 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621`',
-    'Timer Resolution Assistant remains a refused placeholder',
-    'No production service/file/registry/compiler/LocalSystem/download/installer scopes',
+    'Phase 160 supersedes the placeholder',
+    'No reusable production service/file/registry/compiler/LocalSystem/download/installer scopes',
     'The source contains no external download URL and no installer launch.',
     'LocalSystem service creation and C# compilation are high risk',
     'Unknown compiler, service, protected-path, and registry targets remain denied.',
-    'Current Default/Restore must remain unavailable.',
+    'Phase 160 implements source-defined Default separately from Restore.',
     'Restore remains unavailable unless exact service rollback',
     'Set Timer Resolution Service',
     'STR',
@@ -201,11 +201,35 @@ if (-not $planText.Contains('docs/tool-designs/timer-resolution-assistant-scope-
     throw 'Deferred tools execution plan does not link to the Timer Resolution Assistant scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Timer Resolution Assistant module is no longer a placeholder.'
+foreach ($requiredModuleText in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+    'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
+    'Get-BoostLabTimerCSharpPayload'
+    'Set Timer Resolution Service'
+    'STR'
+    'SetTimerResolutionService.cs'
+    'SetTimerResolutionService.exe'
+    'GlobalTimerResolutionRequests'
+    'taskmgr.exe'
+    'SupportsRestore = $false'
+)) {
+    if (-not $moduleText.Contains($requiredModuleText)) {
+        throw "Timer Resolution Assistant module is missing implemented parity text: $requiredModuleText"
+    }
 }
-if ($moduleText -match 'New-Service|Set-Service|sc\.exe|csc\.exe|SetTimerResolutionService|GlobalTimerResolutionRequests|Start-Process|Remove-Item|Set-Content') {
-    throw 'Timer Resolution Assistant placeholder module appears to contain real mutation behavior.'
+foreach ($forbiddenModuleText in @(
+    'ToolModule.Placeholder.ps1'
+    'SupportsRestore = $true'
+    'Restart-Computer'
+    'Stop-Computer'
+    'bcdedit'
+    'UsesTrustedInstaller = $true'
+    'UsesSafeMode = $true'
+)) {
+    if ($moduleText.Contains($forbiddenModuleText)) {
+        throw "Timer Resolution Assistant module contains stale or unrelated behavior: $forbiddenModuleText"
+    }
 }
 
 if ($servicePolicy.ServiceScopes.Count -ne 0) {
@@ -307,7 +331,7 @@ if ($nvmeSource.Count -ne 0) {
     ArtifactApprovals          = $artifactPolicy.Artifacts.Count
     SourceUltimateUnchanged    = $true
     DeletedToolsRemainDeleted  = $true
-    Message                    = 'Timer Resolution Assistant scope design is present, linked, and non-executing.'
+    Message                    = 'Timer Resolution Assistant scope design is present, linked, and superseded by Phase 160 exact parity implementation.'
     Timestamp                  = Get-Date
 }
 

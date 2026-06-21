@@ -518,6 +518,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
         'Stage the approved Ultimate Services: Default workflow, including generated Safe Mode script, RunOnce, BCD safeboot, TrustedInstaller REG import, and restart request.'
     }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
+        'Analyze the approved Ultimate Timer Resolution On and Default workflows without changing service, file, registry, or process state.'
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Apply') {
+        'Run the approved Ultimate Timer Resolution: On workflow: generate and compile the source-defined service, install and start it, set the timer registry value, and open Task Manager.'
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
+        'Run the approved Ultimate Timer Resolution: Default workflow: disable, stop, and delete the service, remove the generated executable, delete the timer registry value, and open Task Manager.'
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
     }
@@ -1268,6 +1277,27 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Request the source-defined restart with shutdown -r -t 00.')
         $plannedChanges.Add('The generated script imports serviceson.reg as TrustedInstaller and Administrator, removes safeboot, and restarts again.')
     }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the Timer Resolution Assistant Ultimate source SHA-256 and extract the embedded source-defined C# service payload.')
+        $plannedChanges.Add('Report the service names, compiler path and arguments, generated file paths, timer registry value, and Task Manager verification launcher.')
+        $plannedChanges.Add('No service, file, registry, process, download, installer, reboot, Safe Mode, or TrustedInstaller operation is executed during Analyze.')
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Write the source-defined C# payload to C:\Windows\SetTimerResolutionService.cs.')
+        $plannedChanges.Add('Run C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe with the exact source arguments to compile C:\Windows\SetTimerResolutionService.exe.')
+        $plannedChanges.Add('Delete C:\Windows\SetTimerResolutionService.cs after compilation.')
+        $plannedChanges.Add('Delete an existing Set Timer Resolution Service when present, then create it from the generated executable.')
+        $plannedChanges.Add('Set the service startup type to Auto and start the service.')
+        $plannedChanges.Add('Set HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel\GlobalTimerResolutionRequests to REG_DWORD 1.')
+        $plannedChanges.Add('Open taskmgr.exe for source-defined verification. No download, installer, reboot, Safe Mode, TrustedInstaller, or driver operation is used.')
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Set the Set Timer Resolution Service startup type to Disabled and stop the service.')
+        $plannedChanges.Add('Delete the Set Timer Resolution Service using the source-defined sc.exe command.')
+        $plannedChanges.Add('Delete C:\Windows\SetTimerResolutionService.exe.')
+        $plannedChanges.Add('Delete HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel\GlobalTimerResolutionRequests.')
+        $plannedChanges.Add('Open taskmgr.exe for source-defined verification. Default is the source-defined reset branch, not captured-state Restore.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Display the approved restart-to-firmware command and safety warnings without executing it.')
     }
@@ -1808,6 +1838,20 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Hundreds of service Start values are changed by the source-defined REG payload; this is not a smart analyzer, recommendation engine, or redesigned profile.')
         $sideEffects.Add('Default is the source-defined Services: Default preset, not captured-state Restore.')
     }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; source identity, generated service payload shape, and source-defined operation targets are reported only.')
+        $sideEffects.Add('The source workflow is high risk because Apply and Default write protected Windows files, create/delete a service, change a kernel timer registry value, compile generated C# code, and open Task Manager.')
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('A generated LocalSystem timer resolution service is compiled, installed, configured for automatic startup, and started.')
+        $sideEffects.Add('The kernel GlobalTimerResolutionRequests value is set to REG_DWORD 1, and Task Manager is opened for source-defined verification.')
+        $sideEffects.Add('No downloads, external artifacts, installers, reboots, Safe Mode, TrustedInstaller, driver changes, or Restore behavior are used.')
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The source-defined service is disabled, stopped, deleted, and its generated executable is removed.')
+        $sideEffects.Add('The kernel GlobalTimerResolutionRequests value is deleted, and Task Manager is opened for source-defined verification.')
+        $sideEffects.Add('Default is not captured-state Restore; Restore remains unavailable for this tool.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made and no restart command is executed.')
     }
@@ -2116,6 +2160,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
         'BoostLab will stage the exact Ultimate Services: Default workflow: write the generated Safe Mode script, set RunOnce, enable safeboot minimal, and request an immediate restart. The generated script changes service Start values through TrustedInstaller and Administrator REG imports, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Apply') {
+        'BoostLab will run the exact Ultimate Timer Resolution: On workflow: write and compile the generated C# service under C:\Windows, create/start the Set Timer Resolution Service, set GlobalTimerResolutionRequests to REG_DWORD 1, and open Task Manager. No download, installer, reboot, Safe Mode, TrustedInstaller, or driver operation is used. Continue only if you approve these service, protected-file, registry, and process-launch changes.'
+    }
+    elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
+        'BoostLab will run the exact Ultimate Timer Resolution: Default workflow: disable/stop/delete the Set Timer Resolution Service, delete C:\Windows\SetTimerResolutionService.exe, delete GlobalTimerResolutionRequests, and open Task Manager. This is Default, not captured-state Restore. Continue only if you approve these service, protected-file, registry, and process-launch changes.'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

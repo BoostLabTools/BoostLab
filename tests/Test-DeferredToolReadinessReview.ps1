@@ -23,7 +23,9 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$inventoryBaseline = $inventory.Baseline
+$inventorySnapshot = $inventory.Snapshot
 
 $reviewPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
 $planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
@@ -43,7 +45,7 @@ $planText = Get-Content -LiteralPath $planPath -Raw
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 $placeholderModules = @(
-    Get-ChildItem -Path $modulesRoot -Recurse -Filter '*.psm1' |
+    Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1' |
         Where-Object {
             (Get-Content -LiteralPath $_.FullName -Raw).Contains(
                 'ToolModule.Placeholder.ps1'
@@ -51,7 +53,8 @@ $placeholderModules = @(
         }
 )
 
-$placeholderTools = foreach ($module in $placeholderModules) {
+$placeholderTools = [System.Collections.Generic.List[object]]::new()
+foreach ($module in $placeholderModules) {
     $stageName = Split-Path -Path (Split-Path -Path $module.FullName -Parent) -Leaf
     $toolId = [IO.Path]::GetFileNameWithoutExtension($module.Name)
     $tool = $allTools |
@@ -60,11 +63,17 @@ $placeholderTools = foreach ($module in $placeholderModules) {
     if (-not $tool) {
         throw "Unable to map placeholder module to config metadata: $($module.FullName)"
     }
-    $tool
+    $placeholderTools.Add([pscustomobject]$tool) | Out-Null
 }
 
 if ($placeholderTools.Count -ne $inventoryBaseline.DeferredPlaceholders) {
     throw "Expected $($inventoryBaseline.DeferredPlaceholders) remaining placeholder tools, found $($placeholderTools.Count)."
+}
+if (
+    [int]$placeholderTools.Count -ne [int]$inventorySnapshot.DeferredPlaceholders -or
+    [int]($allTools.Count - $placeholderTools.Count) -ne [int]$inventorySnapshot.ImplementedTools
+) {
+    throw 'Deferred readiness review placeholder scan does not match the centralized inventory snapshot.'
 }
 
 foreach ($requiredSection in @(
@@ -83,15 +92,15 @@ foreach ($requiredSection in @(
     }
 }
 
-foreach ($requiredCategory in @(
-    'Not ready: **2**'
-    'Foundation-ready but needs production allowlists: **2**'
-    'Foundation-ready but needs artifact provenance approvals: **1**'
-    'Foundation-ready but needs tool-specific design: **4**'
-    'Candidate for next implementation attempt: **0**'
+foreach ($requiredCategoryName in @(
+    'Not ready'
+    'Foundation-ready but needs production allowlists'
+    'Foundation-ready but needs artifact provenance approvals'
+    'Foundation-ready but needs tool-specific design'
+    'Candidate for next implementation attempt'
 )) {
-    if (-not $reviewText.Contains($requiredCategory)) {
-        throw "Deferred readiness review is missing category summary: $requiredCategory"
+    if (-not $reviewText.Contains($requiredCategoryName)) {
+        throw "Deferred readiness review is missing category definition: $requiredCategoryName"
     }
 }
 
