@@ -9,8 +9,8 @@
         DeferredPlaceholders = 8
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 20
-        NearParityControlled = 23
+        UltimateParityImplemented = 21
+        NearParityControlled = 22
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'pointer-precision'
+    CurrentOrderedParityTarget = 'bloatware'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -553,13 +553,11 @@
             StageOrder = 6
             ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Open-only runtime exists; pending ordered parity review after GameMode.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Open preserves the exact Ultimate Pointer Precision launcher: Start-Process "control.exe" -ArgumentList "main.cpl ,2". The source contains no Apply, Default, Restore, registry, file, service, task, process, download, installer, or reboot behavior.'
             YazanFinalException = $false
-            YazanAcceptedNearParity = $false
-            FinalProgressStatus = 'NeedsYazanAcceptance'
-            NextParityAction = 'Review and accept Pointer Precision open-only source parity next.'
+            NextParityAction = 'No parity work required; advance ordered cursor to bloatware.'
         }
         @{
             ToolId = 'bloatware'

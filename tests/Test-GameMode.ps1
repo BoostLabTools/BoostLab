@@ -136,16 +136,14 @@ $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 $gameModeRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'game-mode' }) | Select-Object -First 1
-$pointerRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'pointer-precision' }) | Select-Object -First 1
 Assert-GameModeCondition ($null -ne $gameModeRecord) 'GameMode parity record is missing.'
 Assert-GameModeCondition ([string]$gameModeRecord.RuntimeStatus -eq 'RuntimeImplemented') 'GameMode runtime status must remain RuntimeImplemented.'
 Assert-GameModeCondition ([string]$gameModeRecord.ImplementationLevel -eq 'ParityImplemented') 'GameMode must be marked ParityImplemented.'
 Assert-GameModeCondition ([string]$gameModeRecord.UltimateParity -eq 'Yes') 'GameMode UltimateParity must be Yes.'
 Assert-GameModeCondition (-not [bool]$gameModeRecord.YazanFinalException) 'GameMode must not use a Yazan final exception.'
-Assert-GameModeCondition ($null -ne $pointerRecord) 'Pointer Precision parity record is missing.'
-Assert-GameModeCondition (-not (Test-BoostLabParityRecordFinal -Record $pointerRecord)) 'Pointer Precision must remain pending for the next ordered review.'
+Assert-GameModeCondition ([string]$gameModeRecord.NextParityAction -match 'pointer-precision') 'GameMode parity action must document advancing to Pointer Precision.'
 Assert-GameModeCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the derived first non-final target.'
-Assert-GameModeCondition ([string]$nextTarget.ToolId -eq [string]$pointerRecord.ToolId) 'Pointer Precision must be the next ordered pending target.'
+Assert-GameModeCondition ([string]$parityBaseline.CurrentOrderedParityTarget -ne 'game-mode') 'Current ordered parity cursor must advance beyond GameMode.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 foreach ($level in @('ParityImplemented', 'NearParityControlled', 'ControlledSubset', 'ManualHandoffOnly', 'DeferredForParityWork')) {
