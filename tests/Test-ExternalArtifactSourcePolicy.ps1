@@ -190,6 +190,9 @@ $expectedReachedToolIds = @(
     'msi-mode'
     'directx'
     'visual-cpp'
+    'bloatware'
+    'game-bar'
+    'edge-webview'
 )
 Assert-BoostLabCondition ((@($reachedToolIds) -join '|') -eq (@($expectedReachedToolIds) -join '|')) 'Reached-tool artifact source audit scope changed.'
 Assert-BoostLabCondition ('visual-cpp' -notin @($manifest.AuditScope.PrepOnlyToolIds | ForEach-Object { [string]$_ })) 'Visual C++ must no longer be prep-classified after Phase 130.'
@@ -204,6 +207,9 @@ $toolsWithRuntimeExternalDownloads = @(
     'nvidia-settings'
     'directx'
     'visual-cpp'
+    'bloatware'
+    'game-bar'
+    'edge-webview'
 )
 foreach ($toolId in $toolsWithRuntimeExternalDownloads) {
     Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.ToolId -eq $toolId }).Count -gt 0) "Reached tool with runtime external download has no manifest entries: $toolId"
@@ -247,6 +253,47 @@ foreach ($packageFile in @(
     Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ mirror status mismatch for $packageFile."
 }
 
+$windowsArtifactExpectations = @(
+    @{
+        ToolId = 'bloatware'
+        ExpectedCount = 2
+        Artifacts = @(
+            'remotedesktopconnection.exe'
+            'snippingtool.exe'
+        )
+    }
+    @{
+        ToolId = 'game-bar'
+        ExpectedCount = 2
+        Artifacts = @(
+            'edgewebview.exe'
+            'gamingrepairtool.exe'
+        )
+    }
+    @{
+        ToolId = 'edge-webview'
+        ExpectedCount = 2
+        Artifacts = @(
+            'edge.exe'
+            'edgewebview.exe'
+        )
+    }
+)
+foreach ($expectation in $windowsArtifactExpectations) {
+    $toolEntries = @($entries | Where-Object { [string]$_.ToolId -eq [string]$expectation.ToolId })
+    Assert-BoostLabCondition ($toolEntries.Count -eq [int]$expectation.ExpectedCount) "Windows artifact source count mismatch for $($expectation.ToolId)."
+
+    foreach ($artifactFile in @($expectation.Artifacts)) {
+        $url = "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/$artifactFile"
+        $entry = @($toolEntries | Where-Object { [string]$_.OriginalDownloadUrl -eq $url })[0]
+        Assert-BoostLabCondition ($null -ne $entry) "External source missing for $($expectation.ToolId) artifact $artifactFile."
+        Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Source classification mismatch for $($expectation.ToolId) artifact $artifactFile."
+        Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Mirror status mismatch for $($expectation.ToolId) artifact $artifactFile."
+        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Unexpected BoostLab mirror URL for $($expectation.ToolId) artifact $artifactFile."
+        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.ExpectedSha256)) "Unexpected SHA-256 approval for $($expectation.ToolId) artifact $artifactFile."
+    }
+}
+
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
 Assert-BoostLabCondition ($officialEntries.Count -ge 20) 'Expected official vendor/project sources were not classified.'
@@ -268,6 +315,9 @@ $sourceTextByTool = @{
     'nvidia-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\4 Nvidia Settings.ps1') -Raw
     'directx' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\directx.psm1') -Raw
     'visual-cpp' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1') -Raw
+    'bloatware' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\bloatware.psm1') -Raw
+    'game-bar' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\game-bar.psm1') -Raw
+    'edge-webview' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\edge-webview.psm1') -Raw
 }
 
 foreach ($entry in $entries) {

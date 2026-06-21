@@ -54,6 +54,9 @@
             'msi-mode'
             'directx'
             'visual-cpp'
+            'bloatware'
+            'game-bar'
+            'edge-webview'
         )
         PrepOnlyToolIds = @()
         ExplicitlyOutOfScopeToolIds = @(
@@ -828,6 +831,108 @@
             MirrorStatus = 'NeedsBoostLabMirror'
             OperationKind = 'DownloadInstaller'
             Notes = 'Visual C++ source-equivalent workflow downloads this redistributable installer from the Ultimate author mirror; exact BoostLab mirror/hash approval is still required for future source substitution.'
+        }
+        @{
+            Id = 'bloatware-remote-desktop-connection'
+            ToolId = 'bloatware'
+            ToolTitle = 'Bloatware'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 11
+            CanonicalOrder = 'Windows 11'
+            SourceScriptPath = 'source-ultimate/6 Windows/11 Bloatware.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Bloatware Install: Remote Desktop Connection downloads remotedesktopconnection.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
+        }
+        @{
+            Id = 'bloatware-snipping-tool'
+            ToolId = 'bloatware'
+            ToolTitle = 'Bloatware'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 11
+            CanonicalOrder = 'Windows 11'
+            SourceScriptPath = 'source-ultimate/6 Windows/11 Bloatware.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Bloatware Install: Snipping Tool downloads snippingtool.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
+        }
+        @{
+            Id = 'game-bar-edge-webview'
+            ToolId = 'game-bar'
+            ToolTitle = 'GameBar'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 12
+            CanonicalOrder = 'Windows 12'
+            SourceScriptPath = 'source-ultimate/6 Windows/12 Gamebar.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'GameBar Default downloads edgewebview.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
+        }
+        @{
+            Id = 'game-bar-gaming-repair-tool'
+            ToolId = 'game-bar'
+            ToolTitle = 'GameBar'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 12
+            CanonicalOrder = 'Windows 12'
+            SourceScriptPath = 'source-ultimate/6 Windows/12 Gamebar.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/gamingrepairtool.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'GameBar Default downloads gamingrepairtool.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
+        }
+        @{
+            Id = 'edge-webview-edge-exe'
+            ToolId = 'edge-webview'
+            ToolTitle = 'Edge & WebView'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 13
+            CanonicalOrder = 'Windows 13'
+            SourceScriptPath = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Edge & WebView Default downloads edge.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
+        }
+        @{
+            Id = 'edge-webview-edge-webview'
+            ToolId = 'edge-webview'
+            ToolTitle = 'Edge & WebView'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 13
+            CanonicalOrder = 'Windows 13'
+            SourceScriptPath = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'
+            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'
+            SourceClassification = 'UltimateAuthorHostedArtifact'
+            IntendedBoostLabMirrorUrl = $null
+            ExpectedSha256 = $null
+            MirrorStatus = 'NeedsBoostLabMirror'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Edge & WebView Default downloads edgewebview.exe from the Ultimate author mirror; final release remains blocked until exact BoostLab mirror and SHA-256 evidence exist. Design System work is not blocked by this inventory entry.'
         }
     )
 }
