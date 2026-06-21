@@ -23,9 +23,12 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$parityBaselinePath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
+$parityOrderPath = Join-Path $ProjectRoot 'config\UltimateParityExecutionOrder.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\PowerPlan.psm1'
 $legacyModulePath = Join-Path $ProjectRoot 'modules\Windows\power-plan.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\21 Power Plan.ps1'
@@ -42,6 +45,8 @@ $boostLabGuid = '99999999-9999-9999-9999-999999999999'
 $balancedGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 $tools = @($configuration['Stages'] | ForEach-Object { @($_['Tools']) })
 $tool = $tools | Where-Object { $_['Id'] -eq 'power-plan' } | Select-Object -First 1
 if ($null -eq $tool) {
@@ -993,6 +998,56 @@ if ($sourceLines.Count -ne 49 -or $sourceManifestHash -ne '4804366AADB45394EB3E8
     throw 'source-ultimate content or paths changed.'
 }
 
+$powerPlanParityRecord = @(
+    $parityBaseline.Tools |
+        Where-Object { [string]$_.ToolId -eq 'power-plan' }
+) | Select-Object -First 1
+if (
+    $null -eq $powerPlanParityRecord -or
+    [string]$powerPlanParityRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+    [string]$powerPlanParityRecord.ImplementationLevel -ne 'ParityImplemented' -or
+    [string]$powerPlanParityRecord.UltimateParity -ne 'Yes' -or
+    [bool]$powerPlanParityRecord.YazanFinalException -or
+    [string]$powerPlanParityRecord.FinalProgressStatus -ne 'DoneParity' -or
+    [string]$powerPlanParityRecord.NextParityAction -ne 'DoneParity'
+) {
+    throw 'Power Plan parity baseline was not finalized as exact parity.'
+}
+$nextOrderedParityTarget = Get-BoostLabNextOrderedParityTarget `
+    -ParityBaseline $parityBaseline `
+    -ExecutionOrder $parityOrder
+if (
+    $null -eq $nextOrderedParityTarget -or
+    [string]$nextOrderedParityTarget.ToolId -ne [string]$parityBaseline.CurrentOrderedParityTarget
+) {
+    throw 'Power Plan did not advance the ordered cursor to the central first non-final target.'
+}
+$windowsOrderStage = @(
+    $parityOrder.Stages |
+        Where-Object { [string]$_.Name -eq 'Windows' }
+) | Select-Object -First 1
+$powerPlanOrderEntry = @(
+    $windowsOrderStage.Tools |
+        Where-Object { [string]$_.ToolId -eq 'power-plan' }
+) | Select-Object -First 1
+$sourceOrderNextEntry = @(
+    $windowsOrderStage.Tools |
+        Where-Object { [int]$_.Order -eq ([int]$powerPlanOrderEntry.Order + 1) }
+) | Select-Object -First 1
+if (
+    $null -eq $sourceOrderNextEntry -or
+    [string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNextEntry.ToolId
+) {
+    throw 'Power Plan did not advance the ordered cursor to the next Windows source-order tool.'
+}
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+if (
+    [int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented -or
+    [int]$categoryCounts['NearParityControlled'] -ne [int]$parityBaseline.Counts.NearParityControlled
+) {
+    throw 'Power Plan parity category counts are inconsistent with the central baseline.'
+}
+
 [pscustomobject]@{
     Success = $true
     ToolId = 'power-plan'
@@ -1004,6 +1059,10 @@ if ($sourceLines.Count -ne 49 -or $sourceManifestHash -ne '4804366AADB45394EB3E8
     SourcePowerSettingCommandCount = $sourceSettingCommands.Count
     ImplementedModuleCount = $implementedCount
     PlaceholderModuleCount = $placeholderCount
+    UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
+    NearParityControlled = $parityBaseline.Counts.NearParityControlled
+    CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+    SourceOrderNextTool = $sourceOrderNextEntry.ToolId
     SourceUltimateUnchanged = $true
     ProtectedModulesUnchanged = $true
     Message = 'Power Plan was validated with static inspection and injected mocks only.'

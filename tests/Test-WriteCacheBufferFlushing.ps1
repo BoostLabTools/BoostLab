@@ -587,14 +587,15 @@ try {
         $windowsOrderStage.Tools |
             Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
     ) | Select-Object -First 1
-    $sourceOrderNextEntry = @(
+    $currentOrderEntry = @(
         $windowsOrderStage.Tools |
-            Where-Object { [int]$_.Order -eq ([int]$writeCacheOrderEntry.Order + 1) }
+            Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }
     ) | Select-Object -First 1
     Assert-BoostLabCondition (
-        $null -ne $sourceOrderNextEntry -and
-        [string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$sourceOrderNextEntry.ToolId
-    ) 'Write Cache Buffer Flushing did not advance the ordered cursor to the next Windows source-order tool.'
+        $null -ne $writeCacheOrderEntry -and
+        $null -ne $currentOrderEntry -and
+        [int]$currentOrderEntry.Order -gt [int]$writeCacheOrderEntry.Order
+    ) 'Write Cache Buffer Flushing did not advance the ordered cursor beyond itself.'
     $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
     Assert-BoostLabCondition (
         [int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented -and
@@ -616,7 +617,7 @@ try {
         UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
         ControlledSubset          = $parityBaseline.Counts.ControlledSubset
         CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
-        SourceOrderNextTool       = $sourceOrderNextEntry.ToolId
+        NextOrderedParityTarget   = $nextOrderedParityTarget.ToolId
         SourceUltimateUnchanged = $true
         ImplementedModuleCount  = $implementedModules.Count
         PlaceholderModuleCount  = $placeholderModules.Count

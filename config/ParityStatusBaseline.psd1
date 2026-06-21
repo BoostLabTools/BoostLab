@@ -9,8 +9,8 @@
         DeferredPlaceholders = 5
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 29
-        NearParityControlled = 19
+        UltimateParityImplemented = 30
+        NearParityControlled = 18
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'power-plan'
+    CurrentOrderedParityTarget = 'cleanup'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -707,11 +707,12 @@
             StageOrder = 6
             ToolOrder = 20
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'All source-defined commands are represented; unsupported settings become structured warnings rather than silent suppression.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the source-defined powercfg scheme duplication, activation, deletion, hibernation, registry operations, 72 setting commands, and Power Options launch. Source-defined unsupported settings are reported as structured warnings while unexpected failures remain errors.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm warning classification and idempotency mechanics are accepted as final parity.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'cleanup'
