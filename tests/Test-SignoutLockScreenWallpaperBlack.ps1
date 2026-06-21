@@ -486,12 +486,19 @@ Assert-BoostLabCondition ($null -ne $signoutRecord) 'Signout parity baseline rec
 Assert-BoostLabCondition ([string]$signoutRecord.ImplementationLevel -eq 'ParityImplemented') 'Signout must be ParityImplemented after Phase 139.'
 Assert-BoostLabCondition ([string]$signoutRecord.UltimateParity -eq 'Yes') 'Signout UltimateParity must be Yes after Phase 139.'
 Assert-BoostLabCondition (-not [bool]$signoutRecord.YazanFinalException) 'Signout must not use YazanFinalException for exact parity.'
-$cursorRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
-Assert-BoostLabCondition ($null -ne $cursorRecord) 'Current ordered parity target must resolve to a parity baseline record.'
-$cursorOrderRecord = @($parityOrder.Stages | ForEach-Object { @($_.Tools) } | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
-Assert-BoostLabCondition ($null -ne $cursorOrderRecord) 'Current ordered parity target must resolve to the canonical ordered parity list.'
 $firstNonFinalTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
 Assert-BoostLabCondition ($null -ne $firstNonFinalTarget) 'Ordered parity helper must still resolve a first non-final target.'
+$isOrderedParityComplete = ($parityBaseline.ContainsKey('OrderedParityComplete') -and [bool]$parityBaseline.OrderedParityComplete)
+if ($isOrderedParityComplete) {
+    Assert-BoostLabCondition ($null -eq $parityBaseline.CurrentOrderedParityTarget) 'Completed ordered parity must not keep a current target.'
+    Assert-BoostLabCondition ([bool]$firstNonFinalTarget.IsOrderedParityComplete) 'Ordered parity helper must report completion.'
+}
+else {
+    $cursorRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $cursorRecord) 'Current ordered parity target must resolve to a parity baseline record.'
+    $cursorOrderRecord = @($parityOrder.Stages | ForEach-Object { @($_.Tools) } | Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $cursorOrderRecord) 'Current ordered parity target must resolve to the canonical ordered parity list.'
+}
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'

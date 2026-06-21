@@ -30,6 +30,9 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 $actionPlanModule = Import-Module -Name $actionPlanPath -Force -PassThru -Scope Local -ErrorAction Stop
 $safetyModule = Import-Module -Name $safetyPath -Force -PassThru -Scope Local -ErrorAction Stop
 
@@ -222,14 +225,16 @@ try {
             break
         }
     }
-    if ($null -eq $placeholderTool) {
+    if ($null -eq $placeholderTool -and [int]$inventoryBaseline.DeferredPlaceholders -ne 0) {
         throw 'No current placeholder module was available for the dry-run action plan boundary check.'
     }
 
-    $placeholderAction = [string]@($placeholderTool['Actions'])[0]
-    $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName $placeholderAction
-    if (-not $placeholderPlan.IsDryRun) {
-        throw 'Placeholder planning is not marked as a dry run.'
+    if ($null -ne $placeholderTool) {
+        $placeholderAction = [string]@($placeholderTool['Actions'])[0]
+        $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName $placeholderAction
+        if (-not $placeholderPlan.IsDryRun) {
+            throw 'Placeholder planning is not marked as a dry run.'
+        }
     }
 
     $executionSource = Get-Content -Raw -LiteralPath $executionPath

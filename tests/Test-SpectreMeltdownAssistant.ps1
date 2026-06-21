@@ -70,7 +70,13 @@ $nextOrderedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity
 if ($null -eq $nextOrderedTarget) {
     throw 'Ordered parity cursor did not identify the next Advanced target after Spectre / Meltdown.'
 }
-if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
+$isOrderedParityComplete = ($parityBaseline.ContainsKey('OrderedParityComplete') -and [bool]$parityBaseline.OrderedParityComplete)
+if ($isOrderedParityComplete) {
+    if ($null -ne $parityBaseline.CurrentOrderedParityTarget -or -not [bool]$nextOrderedTarget.IsOrderedParityComplete) {
+        throw 'Ordered parity completion state is inconsistent after Spectre / Meltdown.'
+    }
+}
+elseif ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
     throw 'Central ordered parity cursor does not match the derived first non-final target.'
 }
 $advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
@@ -84,6 +90,9 @@ for ($index = 0; $index -lt $advancedTools.Count; $index++) {
     if ([string]$advancedTools[$index].ToolId -eq [string]$nextOrderedTarget.ToolId) {
         $nextOrderedIndex = $index
     }
+}
+if ($isOrderedParityComplete) {
+    $nextOrderedIndex = $advancedTools.Count
 }
 if ($spectreIndex -lt 0 -or $nextOrderedIndex -le $spectreIndex) {
     throw 'Spectre / Meltdown acceptance did not leave the ordered cursor at a later Advanced target.'

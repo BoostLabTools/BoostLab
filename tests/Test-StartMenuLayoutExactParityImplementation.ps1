@@ -96,11 +96,18 @@ Assert-BoostLabCondition ([string]$record.ImplementationLevel -eq 'ParityImpleme
 Assert-BoostLabCondition ([string]$record.UltimateParity -eq 'Yes') 'Start Menu Layout must be marked Ultimate parity after Yazan acceptance.'
 Assert-BoostLabCondition (-not [bool]$record.YazanFinalException) 'Start Menu Layout must not use YazanFinalException.'
 Assert-BoostLabCondition (Test-BoostLabParityRecordFinal -Record $record) 'Start Menu Layout must be treated as final after Yazan acceptance.'
-Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parity.CurrentOrderedParityTarget)) 'Current ordered parity target must remain populated.'
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity cursor must identify a next target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parity.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
+$isOrderedParityComplete = ($parity.ContainsKey('OrderedParityComplete') -and [bool]$parity.OrderedParityComplete)
+if ($isOrderedParityComplete) {
+    Assert-BoostLabCondition ($null -eq $parity.CurrentOrderedParityTarget) 'Completed ordered parity must not keep a current target.'
+    Assert-BoostLabCondition ([bool]$nextTarget.IsOrderedParityComplete) 'Ordered parity helper must report completion.'
+}
+else {
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parity.CurrentOrderedParityTarget)) 'Current ordered parity target must remain populated.'
+    Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parity.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
+}
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 Assert-BoostLabCondition ([int]$inventory.Baseline.ActiveTools -eq [int]$inventory.Snapshot.ActiveTools) 'Active inventory count mismatch.'

@@ -78,7 +78,13 @@ $nextOrderedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity
 if ($null -eq $nextOrderedTarget) {
     throw 'Ordered parity cursor did not identify the next Advanced target after MMAgent Assistant.'
 }
-if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
+$isOrderedParityComplete = ($parityBaseline.ContainsKey('OrderedParityComplete') -and [bool]$parityBaseline.OrderedParityComplete)
+if ($isOrderedParityComplete) {
+    if ($null -ne $parityBaseline.CurrentOrderedParityTarget -or -not [bool]$nextOrderedTarget.IsOrderedParityComplete) {
+        throw 'Ordered parity completion state is inconsistent after MMAgent Assistant.'
+    }
+}
+elseif ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
     throw 'Central ordered parity cursor does not match the derived first non-final target.'
 }
 $advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
@@ -99,6 +105,9 @@ for ($index = 0; $index -lt $advancedTools.Count; $index++) {
         $nextAdvancedIndex = $index
         break
     }
+}
+if ($isOrderedParityComplete) {
+    $nextAdvancedIndex = $advancedTools.Count
 }
 if ($nextAdvancedIndex -le $mmaIndex) {
     throw 'MMAgent acceptance did not advance to a later ordered Advanced tool.'

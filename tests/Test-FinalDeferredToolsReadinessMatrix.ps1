@@ -96,9 +96,7 @@ if (
     throw 'Final deferred matrix placeholder scan does not match the centralized inventory snapshot.'
 }
 
-$expectedDeferred = @(
-    @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Link = 'docs/tool-designs/defender-optimize-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1'; Hash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6' }
-)
+$expectedDeferred = @()
 
 foreach ($expected in $expectedDeferred) {
     if (-not ($placeholderTools | Where-Object { $_.Id -eq $expected.Id })) {
@@ -123,6 +121,12 @@ if ($placeholderTools | Where-Object { $_.Id -eq 'timer-resolution-assistant' })
 if ($matrixText -match '\| Timer Resolution Assistant \| `timer-resolution-assistant` \|') {
     throw 'Final deferred matrix still lists Timer Resolution Assistant as deferred.'
 }
+if ($placeholderTools | Where-Object { $_.Id -eq 'defender-optimize-assistant' }) {
+    throw 'Defender Optimize Assistant remains in the deferred placeholder set after Phase 161.'
+}
+if ($matrixText -match '\| Defender Optimize Assistant \| `defender-optimize-assistant` \|') {
+    throw 'Final deferred matrix still lists Defender Optimize Assistant as deferred.'
+}
 
 foreach ($requiredSection in @(
     '# Final Deferred Tools Readiness Matrix',
@@ -146,8 +150,8 @@ foreach ($requiredSection in @(
 foreach ($requiredPhrase in @(
     'Standalone provenance review covered tools: **0**',
     'Manual-handoff implemented with Auto provenance review still blocking automation: **5**',
-    'No deferred tool is marked ready for implementation by this matrix.',
-    'The presence of a scope design or provenance review is evidence for planning, not permission to execute.',
+    'No deferred tools remain in the active BoostLab product scope.',
+    'Historical scope designs and provenance reviews remain planning evidence only.',
     'Production Allowlist Governance',
     'Restore Selection UI / Runtime Foundation',
     'Process Handling Policy Foundation',
@@ -161,7 +165,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing Safe Mode/reboot workflow approval | 1 |'
+    '| None | 0 | None |'
 )) {
     if (-not $matrixText.Contains($requiredBlocker)) {
         throw "Final deferred matrix is missing blocker frequency row: $requiredBlocker"

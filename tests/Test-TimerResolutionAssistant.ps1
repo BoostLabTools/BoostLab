@@ -146,11 +146,26 @@ if (
 }
 
 $nextOrderedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
-if ($null -eq $nextOrderedTarget -or [string]$nextOrderedTarget.ToolId -ne 'defender-optimize-assistant') {
-    throw 'Timer Resolution Assistant acceptance did not advance the ordered cursor to Defender Optimize Assistant.'
+if ($null -eq $nextOrderedTarget) {
+    throw 'Ordered parity cursor helper did not return a result after Timer Resolution Assistant.'
 }
-if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
-    throw 'Central ordered parity cursor does not match the derived first non-final target.'
+$defenderRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'defender-optimize-assistant' }) | Select-Object -First 1
+if ($null -eq $defenderRecord) {
+    throw 'Defender Optimize Assistant parity record is missing.'
+}
+$isOrderedParityComplete = ($parityBaseline.ContainsKey('OrderedParityComplete') -and [bool]$parityBaseline.OrderedParityComplete)
+if ($isOrderedParityComplete) {
+    if (-not (Test-BoostLabParityRecordFinal -Record $defenderRecord) -or $null -ne $parityBaseline.CurrentOrderedParityTarget -or -not [bool]$nextOrderedTarget.IsOrderedParityComplete) {
+        throw 'Timer Resolution Assistant acceptance did not reach the final Defender Optimize Assistant completion state.'
+    }
+}
+else {
+    if ([string]$nextOrderedTarget.ToolId -ne 'defender-optimize-assistant') {
+        throw 'Timer Resolution Assistant acceptance did not advance the ordered cursor to Defender Optimize Assistant.'
+    }
+    if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
+        throw 'Central ordered parity cursor does not match the derived first non-final target.'
+    }
 }
 
 $module = Import-Module -Name $modulePath -Force -PassThru -Prefix 'TimerTest' -Scope Local -DisableNameChecking -ErrorAction Stop

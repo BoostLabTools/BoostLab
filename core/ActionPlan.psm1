@@ -527,6 +527,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
         'Run the approved Ultimate Timer Resolution: Default workflow: disable, stop, and delete the service, remove the generated executable, delete the timer registry value, and open Task Manager.'
     }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Analyze') {
+        'Analyze the approved Ultimate Defender Optimize and Defender Default Safe Mode workflows without staging Defender/security changes.'
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Apply') {
+        'Stage the approved Ultimate Defender: Optimize (Recommended) workflow, including generated Safe Mode script, RunOnce, SmartScreen registry changes, scheduled task disable commands, BCD safeboot, and restart request.'
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Default') {
+        'Stage the approved Ultimate Defender: Default workflow, including generated Safe Mode script, RunOnce, SmartScreen registry changes, scheduled task enable commands, BCD safeboot, and restart request.'
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
     }
@@ -1298,6 +1307,27 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Delete HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel\GlobalTimerResolutionRequests.')
         $plannedChanges.Add('Open taskmgr.exe for source-defined verification. Default is the source-defined reset branch, not captured-state Restore.')
     }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the Defender Optimize Assistant Ultimate source SHA-256 and parse the source-defined Optimize and Default generated scripts.')
+        $plannedChanges.Add('Report generated script names, RunOnce value names, scheduled task targets, normal-boot commands, Safe Mode workflow, TrustedInstaller behavior, and restart sequence without staging changes.')
+        $plannedChanges.Add('No registry, scheduled task, RunOnce, BCD, file, service, TrustedInstaller, Safe Mode, restart, download, installer, or external artifact operation is executed during Analyze.')
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Write %SystemRoot%\Temp\defenderoptimize.ps1 from the verified Ultimate Defender: Optimize generated script.')
+        $plannedChanges.Add('Create RunOnce value *defenderoptimize to run the generated script in Safe Mode.')
+        $plannedChanges.Add('Apply the source-defined normal-boot SmartScreen registry values and disable the five source-defined Defender/ExploitGuard scheduled tasks.')
+        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
+        $plannedChanges.Add('Wait five seconds, then request the source-defined restart with shutdown -r -t 00.')
+        $plannedChanges.Add('The generated script applies the Defender/security registry and BCD command list through TrustedInstaller and Administrator, removes safeboot, and restarts again.')
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Write %SystemRoot%\Temp\defenderdefault.ps1 from the verified Ultimate Defender: Default generated script.')
+        $plannedChanges.Add('Create RunOnce value *defenderdefault to run the generated script in Safe Mode.')
+        $plannedChanges.Add('Apply the source-defined normal-boot SmartScreen registry values and enable the five source-defined Defender/ExploitGuard scheduled tasks.')
+        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
+        $plannedChanges.Add('Wait five seconds, then request the source-defined restart with shutdown -r -t 00.')
+        $plannedChanges.Add('The generated script applies the Defender/security registry and BCD command list through TrustedInstaller and Administrator, removes safeboot, and restarts again. Default is not captured-state Restore.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Display the approved restart-to-firmware command and safety warnings without executing it.')
     }
@@ -1852,6 +1882,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The kernel GlobalTimerResolutionRequests value is deleted, and Task Manager is opened for source-defined verification.')
         $sideEffects.Add('Default is not captured-state Restore; Restore remains unavailable for this tool.')
     }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; source identity and workflow shape are reported only.')
+        $sideEffects.Add('The source workflow is high risk because Apply and Default stage Safe Mode, RunOnce, Defender/security registry changes, scheduled task changes, TrustedInstaller execution, BCD changes, and restarts.')
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -in @('Apply', 'Default')) {
+        $sideEffects.Add('Windows will be configured to boot into Safe Mode and restart immediately after staging.')
+        $sideEffects.Add('The generated Safe Mode script temporarily reconfigures TrustedInstaller to run the source-defined Defender/security command list, also runs it as Administrator, removes safeboot, and restarts again.')
+        $sideEffects.Add('Defender, SmartScreen, firewall notification, Smart App Control, memory-integrity/VBS, LSA, vulnerable-driver-blocklist, and scheduled-task state are changed exactly as defined by the source branch.')
+        $sideEffects.Add('Default is the source-defined Defender: Default preset, not captured-state Restore.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made and no restart command is executed.')
     }
@@ -2166,6 +2206,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Default') {
         'BoostLab will run the exact Ultimate Timer Resolution: Default workflow: disable/stop/delete the Set Timer Resolution Service, delete C:\Windows\SetTimerResolutionService.exe, delete GlobalTimerResolutionRequests, and open Task Manager. This is Default, not captured-state Restore. Continue only if you approve these service, protected-file, registry, and process-launch changes.'
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Apply') {
+        'BoostLab will stage the exact Ultimate Defender: Optimize workflow: write the generated Safe Mode script, set RunOnce, apply normal-boot SmartScreen and scheduled-task changes, enable safeboot minimal, and request an immediate restart. The generated script changes Defender/security, Smart App Control, VBS, LSA, vulnerable-driver-blocklist, and BCD state through TrustedInstaller and Administrator, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
+    }
+    elseif ($toolId -eq 'defender-optimize-assistant' -and $ActionName -eq 'Default') {
+        'BoostLab will stage the exact Ultimate Defender: Default workflow: write the generated Safe Mode script, set RunOnce, apply normal-boot SmartScreen and scheduled-task changes, enable safeboot minimal, and request an immediate restart. The generated script changes Defender/security, Smart App Control, VBS, LSA, vulnerable-driver-blocklist, and BCD state through TrustedInstaller and Administrator, removes safeboot, and restarts again. This is Default, not captured-state Restore. Continue only with unsaved work closed and recovery plan understood.'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

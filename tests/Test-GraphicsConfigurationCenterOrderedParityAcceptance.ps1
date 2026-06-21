@@ -110,11 +110,20 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.ControlledSubset -eq [int]
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ActiveTools -eq [int]$inventory.Baseline.ActiveTools) 'Active tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.ImplementedTools -eq [int]$inventory.Baseline.ImplementedTools) 'Runtime implemented tool count changed.'
 Assert-BoostLabCondition ([int]$inventory.Snapshot.DeferredPlaceholders -eq [int]$inventory.Baseline.DeferredPlaceholders) 'Deferred placeholder count changed.'
-Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parityBaseline.CurrentOrderedParityTarget)) 'Central current ordered parity target must be populated.'
-
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity cursor must identify the next target.'
-Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
+$isOrderedParityComplete = (
+    $parityBaseline.ContainsKey('OrderedParityComplete') -and
+    [bool]$parityBaseline.OrderedParityComplete
+)
+if ($isOrderedParityComplete) {
+    Assert-BoostLabCondition ($null -eq $parityBaseline.CurrentOrderedParityTarget) 'Completed ordered parity must not keep a current target.'
+    Assert-BoostLabCondition ([bool]$nextTarget.IsOrderedParityComplete) 'Ordered parity helper must report completion.'
+}
+else {
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$parityBaseline.CurrentOrderedParityTarget)) 'Central current ordered parity target must be populated.'
+    Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central parity baseline cursor.'
+}
 
 $hardcodedCursorAssertions = @(
     Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'tests') -Filter 'Test-*.ps1' |

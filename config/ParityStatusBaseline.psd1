@@ -5,20 +5,21 @@
 
     Counts = @{
         ActiveTools = 53
-        RuntimeImplementedTools = 52
-        DeferredPlaceholders = 1
+        RuntimeImplementedTools = 53
+        DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 35
+        UltimateParityImplemented = 36
         NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 1
+        DeferredForParityWork = 0
         RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
-    CurrentOrderedParityTarget = 'defender-optimize-assistant'
+    CurrentOrderedParityTarget = $null
+    OrderedParityComplete = $true
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -801,12 +802,13 @@
             Stage = 'Advanced'
             StageOrder = 7
             ToolOrder = 5
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source includes security-sensitive Safe Mode, TrustedInstaller, Defender registry, scheduled task, RunOnce, BCD, generated script, and reboot behavior.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact source-defined Defender Optimize and Defender Default Safe Mode workflows with generated scripts, RunOnce, normal-boot SmartScreen and scheduled-task commands, BCD safeboot, TrustedInstaller and Administrator execution of the Defender/security command lists, safeboot removal, and restart requests.'
             YazanFinalException = $false
-            NextParityAction = 'Approve security-sensitive scopes, TrustedInstaller, Safe Mode, task, RunOnce, BCD, reboot, and verification plan.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity; ordered Ultimate parity cursor is complete.'
         }
     )
 }

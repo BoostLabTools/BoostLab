@@ -35,6 +35,9 @@ $biosInformationPath = Join-Path $ProjectRoot 'modules\Check\BIOSInformation.psm
 $biosSettingsPath = Join-Path $ProjectRoot 'modules\Check\BIOSSettings.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 
+. (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
@@ -120,7 +123,7 @@ try {
             (Get-Content -Raw -LiteralPath $candidateModulePath).Contains('ToolModule.Placeholder.ps1')
         } |
         Select-Object -First 1
-    if ($null -eq $placeholderTool) {
+    if ($null -eq $placeholderTool -and [int]$inventoryBaseline.DeferredPlaceholders -ne 0) {
         throw 'No placeholder tool is available for UI placeholder rendering validation.'
     }
 
@@ -209,48 +212,53 @@ try {
         -Scope Local `
         -ErrorAction Stop
 
-    $placeholderCard = New-BoostLabToolCard -Tool $placeholderTool
-    $placeholderCardLayout = [System.Windows.Controls.Grid]$placeholderCard.Child
-    $placeholderActionsPanel = $placeholderCardLayout.Children |
-        Where-Object {
-            $_ -is [System.Windows.Controls.WrapPanel] -and
-            [System.Windows.Controls.Grid]::GetRow($_) -eq 4
-        } |
-        Select-Object -First 1
-    $placeholderAnalyzeButton = $placeholderActionsPanel.Children |
-        Where-Object { [string]$_.Content -eq 'Analyze' } |
-        Select-Object -First 1
-    if ($null -eq $placeholderAnalyzeButton) {
-        throw 'The placeholder Analyze button was not generated.'
-    }
-
-    $logCountBeforeClick = $script:BoostLabVisibleLogText.Count
-    $placeholderAnalyzeButton.RaiseEvent(
-        [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
-    )
-    if ($script:BoostLabVisibleLogText.Count -ne ($logCountBeforeClick + 1)) {
-        throw 'A real placeholder card click did not append exactly one visible activity entry.'
-    }
-
-    $placeholderText = Get-BoostLabTestText -Root $window.FindName('LatestResultPanel')
-    foreach ($expectedText in @(
-        'Tool:'
-        [string]$placeholderTool['Title']
-        'Action:'
-        'Analyze'
-        'Command Status:'
-        'Not implemented'
-        'Message:'
-        'Action not implemented yet'
-    )) {
-        if ($expectedText -notin $placeholderText) {
-            throw "Placeholder result formatting is missing: $expectedText"
+    $placeholderResultRendered = $false
+    if ($null -ne $placeholderTool) {
+        $placeholderCard = New-BoostLabToolCard -Tool $placeholderTool
+        $placeholderCardLayout = [System.Windows.Controls.Grid]$placeholderCard.Child
+        $placeholderActionsPanel = $placeholderCardLayout.Children |
+            Where-Object {
+                $_ -is [System.Windows.Controls.WrapPanel] -and
+                [System.Windows.Controls.Grid]::GetRow($_) -eq 4
+            } |
+            Select-Object -First 1
+        $placeholderAnalyzeButton = $placeholderActionsPanel.Children |
+            Where-Object { [string]$_.Content -eq 'Analyze' } |
+            Select-Object -First 1
+        if ($null -eq $placeholderAnalyzeButton) {
+            throw 'The placeholder Analyze button was not generated.'
         }
+
+        $logCountBeforeClick = $script:BoostLabVisibleLogText.Count
+        $placeholderAnalyzeButton.RaiseEvent(
+            [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        )
+        if ($script:BoostLabVisibleLogText.Count -ne ($logCountBeforeClick + 1)) {
+            throw 'A real placeholder card click did not append exactly one visible activity entry.'
+        }
+
+        $placeholderText = Get-BoostLabTestText -Root $window.FindName('LatestResultPanel')
+        foreach ($expectedText in @(
+            'Tool:'
+            [string]$placeholderTool['Title']
+            'Action:'
+            'Analyze'
+            'Command Status:'
+            'Not implemented'
+            'Message:'
+            'Action not implemented yet'
+        )) {
+            if ($expectedText -notin $placeholderText) {
+                throw "Placeholder result formatting is missing: $expectedText"
+            }
+        }
+        $placeholderResultRendered = $true
     }
 
     $failureStatusText = [System.Windows.Controls.TextBlock]::new()
+    $failureTool = if ($null -ne $placeholderTool) { $placeholderTool } else { $biosInformationTool }
     $failureContext = [pscustomobject]@{
-        ToolMetadata = $placeholderTool
+        ToolMetadata = $failureTool
         ActionName   = 'Analyze'
         StatusText   = $failureStatusText
     }
@@ -483,7 +491,7 @@ try {
     ) {
         throw 'NotApplicable activity severity did not render as a neutral INFO entry.'
     }
-    foreach ($expectedEntryText in @(
+    $expectedEntryTexts = @(
         'BoostLab'
         'Startup'
         'Interface initialized.'
@@ -492,10 +500,13 @@ try {
         'Hardware and BIOS information detected.'
         'BIOS Settings'
         'Guidance prepared'
-        [string]$placeholderTool['Title']
-        'Action not implemented yet'
         ([string][char]0x2192)
-    )) {
+    )
+    if ($null -ne $placeholderTool) {
+        $expectedEntryTexts += [string]$placeholderTool['Title']
+        $expectedEntryTexts += 'Action not implemented yet'
+    }
+    foreach ($expectedEntryText in $expectedEntryTexts) {
         if (-not $visibleLogText.Contains($expectedEntryText)) {
             throw "The visible log is missing action entry text: $expectedEntryText"
         }
@@ -538,7 +549,7 @@ try {
         LayoutColumns              = $rootGrid.ColumnDefinitions.Count
         BiosInformationAnalyze     = $biosInformationResult.Success
         BiosSettingsAnalyze        = $biosSettingsResult.Success
-        PlaceholderResultRendered  = $true
+        PlaceholderResultRendered  = $placeholderResultRendered
         RuntimeFailureContained    = $true
         VisibleLogLevels           = 5
         ClearLogValidated          = $true

@@ -575,28 +575,35 @@ try {
     $nextOrderedParityTarget = Get-BoostLabNextOrderedParityTarget `
         -ParityBaseline $parityBaseline `
         -ExecutionOrder $executionOrder
-    Assert-BoostLabCondition (
-        $null -ne $nextOrderedParityTarget -and
-        [string]$nextOrderedParityTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget
-    ) 'The ordered parity cursor does not match the first non-final parity target.'
-    $windowsOrderStage = @(
-        $executionOrder.Stages |
-            Where-Object { [string]$_.Name -eq 'Windows' }
-    ) | Select-Object -First 1
-    $writeCacheOrderEntry = @(
-        $windowsOrderStage.Tools |
-            Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
-    ) | Select-Object -First 1
-    $currentOrderEntry = @(
-        $executionOrder.Stages |
-            ForEach-Object { $_.Tools } |
-            Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }
-    ) | Select-Object -First 1
-    Assert-BoostLabCondition (
-        $null -ne $writeCacheOrderEntry -and
-        $null -ne $currentOrderEntry -and
-        [string]$currentOrderEntry.ToolId -ne [string]$writeCacheOrderEntry.ToolId
-    ) 'Write Cache Buffer Flushing did not advance the ordered cursor beyond itself.'
+    Assert-BoostLabCondition ($null -ne $nextOrderedParityTarget) 'The ordered parity cursor helper did not return a result.'
+    $isOrderedParityComplete = ($parityBaseline.ContainsKey('OrderedParityComplete') -and [bool]$parityBaseline.OrderedParityComplete)
+    if ($isOrderedParityComplete) {
+        Assert-BoostLabCondition ($null -eq $parityBaseline.CurrentOrderedParityTarget) 'Completed ordered parity must not keep a current target.'
+        Assert-BoostLabCondition ([bool]$nextOrderedParityTarget.IsOrderedParityComplete) 'Ordered parity helper must report completion.'
+    }
+    else {
+        Assert-BoostLabCondition (
+            [string]$nextOrderedParityTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget
+        ) 'The ordered parity cursor does not match the first non-final parity target.'
+        $windowsOrderStage = @(
+            $executionOrder.Stages |
+                Where-Object { [string]$_.Name -eq 'Windows' }
+        ) | Select-Object -First 1
+        $writeCacheOrderEntry = @(
+            $windowsOrderStage.Tools |
+                Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
+        ) | Select-Object -First 1
+        $currentOrderEntry = @(
+            $executionOrder.Stages |
+                ForEach-Object { $_.Tools } |
+                Where-Object { [string]$_.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget }
+        ) | Select-Object -First 1
+        Assert-BoostLabCondition (
+            $null -ne $writeCacheOrderEntry -and
+            $null -ne $currentOrderEntry -and
+            [string]$currentOrderEntry.ToolId -ne [string]$writeCacheOrderEntry.ToolId
+        ) 'Write Cache Buffer Flushing did not advance the ordered cursor beyond itself.'
+    }
     $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
     Assert-BoostLabCondition (
         [int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented -and

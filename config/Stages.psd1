@@ -676,9 +676,9 @@
                     Order       = 5
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Analyze Microsoft Defender settings before recommending approved changes.'
-                    Actions     = @('Analyze', 'Apply', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $true; SupportsDefault = $false; SupportsRestore = $true; NeedsExplicitConfirmation = $true }
+                    Description = 'Stage the approved Ultimate Defender Optimize or Defender Default Safe Mode workflow.'
+                    Actions     = @('Analyze', 'Apply', 'Default')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $true; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $true; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
             )
         }

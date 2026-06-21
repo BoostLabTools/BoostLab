@@ -93,6 +93,10 @@ $implementedModules = @{
         RelativePath          = 'Advanced\timer-resolution-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
+    'defender-optimize-assistant' = @{
+        RelativePath          = 'Advanced\defender-optimize-assistant.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    }
     'background-apps' = @{
         RelativePath          = 'Setup\BackgroundApps.psm1'
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
@@ -539,6 +543,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'timer-resolution-assistant' -and
             $commandName -in @('Set-Content', 'Remove-Item')
         )
+        $approvedDefenderOptimizeCommand = (
+            $toolId -eq 'defender-optimize-assistant' -and
+            $commandName -eq 'Set-Content'
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -570,7 +578,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedSignoutWallpaperCommand -and
             -not $approvedCleanupCommand -and
             -not $approvedServicesOptimizerCommand -and
-            -not $approvedTimerResolutionCommand
+            -not $approvedTimerResolutionCommand -and
+            -not $approvedDefenderOptimizeCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -619,6 +628,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'timer-resolution-assistant') {
             1
+        }
+        elseif ($toolId -eq 'defender-optimize-assistant') {
+            0
         }
         elseif ($toolId -eq 'store-settings') {
             2
@@ -1786,6 +1798,49 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains stale or unrelated Timer Resolution Assistant behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'defender-optimize-assistant') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+                '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6'
+                'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
+                'Get-BoostLabDefenderScriptPayload'
+                'Get-BoostLabDefenderSecurityCommands'
+                'Defender: Optimize (Recommended)'
+                'Defender: Default'
+                'defenderoptimize.ps1'
+                'defenderdefault.ps1'
+                '*defenderoptimize'
+                '*defenderdefault'
+                'RunOnce'
+                'bcdedit /set {current} safeboot minimal'
+                'shutdown -r -t 00'
+                'TrustedInstaller'
+                'GeneratedSecurityCommandCount'
+                'SupportsDefault = $true'
+                'SupportsRestore = $false'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Defender Optimize Assistant exact Ultimate behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'ToolModule.Placeholder.ps1'
+                'ManualHandoffOnly'
+                'AutoBlockedUntilArtifactApproval'
+                'SupportsRestore = $true'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'msiexec'
+                'Start-Process'
+                'RestoreSupported = $true'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains stale or unrelated Defender Optimize Assistant behavior: $forbiddenText")
                 }
             }
         }

@@ -117,5 +117,22 @@ function Get-BoostLabNextOrderedParityTarget {
         }
     }
 
+    $declaresComplete = (
+        $ParityBaseline.ContainsKey('OrderedParityComplete') -and
+        [bool]$ParityBaseline.OrderedParityComplete
+    )
+    if ($declaresComplete -and $null -eq $ParityBaseline.CurrentOrderedParityTarget) {
+        return @{
+            ToolId = $null
+            DisplayName = 'Ordered Ultimate parity complete'
+            Stage = $null
+            RuntimeStatus = 'Complete'
+            ImplementationLevel = 'Complete'
+            UltimateParity = 'Yes'
+            FinalProgressStatus = 'DoneParity'
+            IsOrderedParityComplete = $true
+        }
+    }
+
     return $null
 }
