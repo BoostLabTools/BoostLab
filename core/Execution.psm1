@@ -201,7 +201,7 @@ $script:BoostLabImplementedToolModules = @{
     }
     'write-cache-buffer-flushing' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\write-cache-buffer-flushing.psm1'
-        Actions = @('Analyze', 'Apply')
+        Actions = @('Analyze', 'Apply', 'Default')
     }
     'power-plan' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\PowerPlan.psm1'

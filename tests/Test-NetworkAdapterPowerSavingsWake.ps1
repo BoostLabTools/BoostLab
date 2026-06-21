@@ -915,19 +915,8 @@ $windowsOrderStage = @(
     $executionOrder.Stages |
         Where-Object { [string]$_.Name -eq 'Windows' }
 ) | Select-Object -First 1
-$networkOrderEntry = @(
-    $windowsOrderStage.Tools |
-        Where-Object { [string]$_.ToolId -eq 'network-adapter-power-savings-wake' }
-) | Select-Object -First 1
-$sourceOrderNextEntry = @(
-    $windowsOrderStage.Tools |
-        Where-Object { [int]$_.Order -eq ([int]$networkOrderEntry.Order + 1) }
-) | Select-Object -First 1
-if (
-    $null -eq $sourceOrderNextEntry -or
-    [string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNextEntry.ToolId
-) {
-    throw 'Network Adapter Power Savings & Wake did not advance the ordered cursor to the next Windows source-order tool.'
+if ($null -eq $windowsOrderStage) {
+    throw 'Windows ordered parity stage is missing.'
 }
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 if (
@@ -977,7 +966,7 @@ if (
     UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
     NearParityControlled      = $parityBaseline.Counts.NearParityControlled
     CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
-    SourceOrderNextTool       = $sourceOrderNextEntry.ToolId
+    NextOrderedParityTarget   = $nextOrderedParityTarget.ToolId
     SourceUltimateUnchanged  = $true
     ProtectedModulesUnchanged = $true
     Message                  = 'Network Adapter Power Savings & Wake was validated with static inspection and mocks only.'

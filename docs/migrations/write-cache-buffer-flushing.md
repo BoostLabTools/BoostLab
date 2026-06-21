@@ -7,7 +7,7 @@
 - Stage: Windows
 - Source script path: `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`
 - Source SHA-256: `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D`
-- Yazan approval status: Phase 47 approved Apply-only re-attempt with unsafe Default refused.
+- Yazan approval status: Phase 152 approved exact Ultimate parity with Apply and Default implemented.
 
 ## Original Ultimate Behavior
 
@@ -28,15 +28,18 @@ The original Ultimate Default path discovers `Disk` keys under the same SCSI and
 
 BoostLab preserves the Apply behavior by discovering the same SCSI and NVME registry targets and setting only `CacheIsPowerProtected` to `REG_DWORD 1`.
 
+BoostLab preserves the Default behavior by discovering source-targeted `Disk` keys recursively under the same SCSI and NVME roots and deleting each complete `Disk` key after confirmation and pre-mutation key-state capture.
+
 The Ultimate source has no explicit Windows 10-only branch or option. Under the clarified branch-level product scope, BoostLab preserves this shared Windows behavior instead of blocking Windows 10 hosts merely because Windows 11 is the preferred supported product target. If a future source contains an explicit Windows 10-only optimization branch, that branch remains unsupported unless Yazan expands scope.
 
-Before any registry write, BoostLab captures the exact prior state of the target value using the Phase 36 registry state capture foundation:
+Before any registry write or source-defined key deletion, BoostLab captures the exact prior state of the target using the Phase 36 registry state capture foundation:
 
 - target path
 - value name
 - previous existence
 - previous type
 - previous data
+- key values when Default captures a complete `Disk` key
 
 Execution is blocked if capture fails for any discovered target.
 
@@ -46,10 +49,10 @@ Execution is blocked if capture fails for any discovered target.
 - Preserved discovery concept: recursive `Device Parameters` discovery with `Disk` child targeting
 - Preserved value: `CacheIsPowerProtected`
 - Preserved value type/data: `REG_DWORD 1`
+- Preserved Default discovery concept: recursive `Disk` key discovery under the same SCSI and NVME roots
+- Preserved Default operation: delete each complete discovered `Disk` registry key
 
 ## Intentional Deviations
-
-Default is not implemented because the Ultimate Default deletes complete storage `Disk` keys. That broad deletion can remove unrelated storage configuration and is outside the approved Phase 47 safety scope.
 
 Restore is not exposed in this phase. BoostLab records pre-change value state, but there is not yet a reviewed user-facing restore-selection flow for this tool. A future Restore may restore only captured prior state for exact values changed by BoostLab.
 
@@ -57,8 +60,8 @@ The source warning referencing `NVME Faster Driver.ps1` is not acted on. `NVME F
 
 ## Side Effects
 
-- Writes only `CacheIsPowerProtected` on discovered source-targeted storage registry paths.
-- Does not delete registry keys.
+- Apply writes only `CacheIsPowerProtected` on discovered source-targeted storage registry paths.
+- Default deletes complete source-discovered storage `Disk` registry keys.
 - Does not modify drivers.
 - Does not modify services.
 - Does not reboot.
@@ -82,7 +85,7 @@ Administrator is required because the approved Apply behavior writes under `HKLM
 - CanDeleteFiles: false
 - UsesTrustedInstaller: false
 - UsesSafeMode: false
-- SupportsDefault: false
+- SupportsDefault: true
 - SupportsRestore: false
 - NeedsExplicitConfirmation: true
 
@@ -92,11 +95,11 @@ High. The tool targets storage-related registry paths.
 
 ## Confirmation Requirements
 
-Apply requires explicit Action Plan confirmation. Analyze is read-only.
+Apply and Default require explicit Action Plan confirmation. Analyze is read-only.
 
 ## Rollback / Default Behavior
 
-Default is unavailable because preserving the original Default would require broad `Disk` key deletion. Restore is unavailable until a tool-specific captured-state restore flow is reviewed and approved.
+Default is the source-defined deletion of discovered SCSI/NVME `Disk` registry keys. Restore is unavailable until a tool-specific captured-state restore flow is reviewed and approved.
 
 ## Restart Behavior
 
@@ -109,7 +112,12 @@ Apply verifies:
 - target discovery completed
 - pre-change capture records exist before mutation
 - every changed value equals `REG_DWORD 1`
-- no broad key deletion behavior is present in the BoostLab module
+
+Default verifies:
+
+- target discovery completed
+- pre-change key capture records exist before mutation
+- every source-discovered `Disk` key is absent after deletion
 
 Analyze reports discovered targets and current value states without mutation.
 
@@ -120,6 +128,6 @@ Analyze reports discovered targets and current value states without mutation.
 - Verify missing targets are reported as not applicable, not failure.
 - Verify capture failure blocks writes.
 - Verify Apply writes only `CacheIsPowerProtected = 1`.
-- Verify Default is not exposed.
+- Verify Default deletes only source-discovered SCSI/NVME `Disk` keys through mocks.
 - Verify source-ultimate is untouched.
 - Verify Loudness EQ and NVME Faster Driver remain deleted.

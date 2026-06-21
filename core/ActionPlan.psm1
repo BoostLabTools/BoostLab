@@ -464,6 +464,9 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
         'Set CacheIsPowerProtected to 1 on source-targeted storage Disk registry paths after capturing each prior value state.'
     }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Default') {
+        'Delete each source-discovered SCSI and NVME Disk registry key exactly as the Ultimate Default branch does.'
+    }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         'Analyze BitLocker volume state read-only and preview the source-equivalent Off and On/status behavior without changing encryption state.'
     }
@@ -1172,14 +1175,19 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Enumerate source-targeted Device Parameters keys under HKLM:\SYSTEM\ControlSet001\Enum\SCSI and NVME.')
         $plannedChanges.Add('Report whether each detected Disk child key has CacheIsPowerProtected set, absent, or unreadable.')
-        $plannedChanges.Add('Make no registry changes and expose no Default key deletion.')
+        $plannedChanges.Add('Make no registry changes.')
     }
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Enumerate the same source-targeted SCSI and NVME Device Parameters paths and validate the exact Disk child path.')
         $plannedChanges.Add('Capture the prior CacheIsPowerProtected existence, type, and data for every target before any write.')
         $plannedChanges.Add('Set only CacheIsPowerProtected to REG_DWORD 1 on each captured target.')
         $plannedChanges.Add('Verify each changed value and record post-mutation evidence for future review.')
-        $plannedChanges.Add('Do not run the Ultimate Default broad Disk-key deletion.')
+    }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Enumerate source-discovered Disk keys under HKLM:\SYSTEM\ControlSet001\Enum\SCSI and NVME.')
+        $plannedChanges.Add('Capture each target Disk key state before deletion.')
+        $plannedChanges.Add('Delete each discovered Disk key exactly as the Ultimate Default branch does.')
+        $plannedChanges.Add('Verify each target Disk key is absent and record post-mutation evidence for future review.')
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Duplicate Ultimate Performance to the source GUID 99999999-9999-9999-9999-999999999999 and activate it.')
@@ -1725,7 +1733,13 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Storage write-cache buffer flushing policy may change for detected SCSI and NVME disk registry paths.')
         $sideEffects.Add('Only CacheIsPowerProtected is written; no driver, service, device, or reboot action is performed.')
-        $sideEffects.Add('The unsafe Ultimate Default broad Disk-key deletion is not implemented; captured value state is retained for future review.')
+        $sideEffects.Add('Captured value state is retained for future review; Restore is not exposed.')
+    }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('The complete source-discovered SCSI/NVME Disk registry keys are deleted exactly as defined by Ultimate.')
+        $sideEffects.Add('This may remove storage write-cache configuration values inside those Disk keys.')
+        $sideEffects.Add('No driver, service, device, file, process, download, installer, or reboot action is performed.')
+        $sideEffects.Add('Captured key state is retained for future review; Restore is not exposed.')
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Ultimate deletes every enumerated non-active power scheme. Existing custom power schemes are not captured and cannot be restored by Default.')
@@ -2056,6 +2070,9 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Apply') {
         'BoostLab will capture the exact prior CacheIsPowerProtected value state on every detected source-targeted SCSI/NVME Disk path, then set only that value to REG_DWORD 1 and verify it. No driver change, broad key deletion, or reboot is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'write-cache-buffer-flushing' -and $ActionName -eq 'Default') {
+        'BoostLab will capture each source-discovered SCSI/NVME Disk registry key, delete the complete Disk key exactly as the Ultimate Default branch does, and verify each key is absent. No driver, service, device, file, process, download, installer, or reboot action is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'power-plan' -and $ActionName -eq 'Apply') {
         'BoostLab will activate the approved Ultimate scheme, permanently delete other enumerated power schemes, disable hibernation, apply 36 AC/DC setting pairs and 10 registry values, and set battery warnings/actions/levels to zero. Custom schemes are not captured and Default cannot restore them. No restart is performed. Do you want to continue?'

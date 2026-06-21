@@ -834,7 +834,7 @@ foreach ($toolName in $implementedTools.Keys) {
         }
         'Write Cache Buffer Flushing' {
             foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
                 'HKLM:\SYSTEM\ControlSet001\Enum'
                 'SCSI'
                 'NVME'
@@ -844,17 +844,18 @@ foreach ($toolName in $implementedTools.Keys) {
                 '$script:BoostLabCacheExpectedValue = 1'
                 'New-BoostLabRegistryStateCapture'
                 'Set-BoostLabRollbackMutationState'
-                'SupportsDefault           = $false'
+                'SupportsDefault           = $true'
                 'SupportsRestore           = $false'
                 'function Test-BoostLabWriteCacheState'
-                'Default is refused because it deletes entire storage Disk registry keys.'
+                'function Remove-BoostLabWriteCacheRegistryKey'
+                'reg delete "{0}" /f'
+                'RegistryKeysDeleteAttempted'
             )) {
                 if (-not $moduleSource.Contains($requiredText)) {
                     throw "Write Cache Buffer Flushing preserved behavior is missing: $requiredText"
                 }
             }
             foreach ($forbiddenText in @(
-                'reg delete'
                 'Remove-ItemProperty'
                 'Remove-Item -LiteralPath'
                 'Disable-PnpDevice'

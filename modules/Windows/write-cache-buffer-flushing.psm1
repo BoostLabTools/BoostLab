@@ -15,8 +15,8 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 19
     Type = 'action'
     RiskLevel = 'high'
-    Description = 'Analyze and apply the approved storage write-cache buffer flushing registry value with captured prior state.'
-    Actions = @('Analyze', 'Apply')
+    Description = 'Analyze, apply, or default the approved storage write-cache buffer flushing registry behavior.'
+    Actions = @('Analyze', 'Apply', 'Default')
     Capabilities = [ordered]@{
         RequiresAdmin             = $true
         RequiresInternet          = $false
@@ -30,12 +30,12 @@ $script:BoostLabToolMetadata = [ordered]@{
         CanDeleteFiles            = $false
         UsesTrustedInstaller      = $false
         UsesSafeMode              = $false
-        SupportsDefault           = $false
+        SupportsDefault           = $true
         SupportsRestore           = $false
         NeedsExplicitConfirmation = $true
     }
 }
-$script:BoostLabImplementedActions = @('Analyze', 'Apply')
+$script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabStorageClasses = @('SCSI', 'NVME')
 $script:BoostLabEnumRoot = 'HKLM:\SYSTEM\ControlSet001\Enum'
 $script:BoostLabCacheValueName = 'CacheIsPowerProtected'
@@ -69,7 +69,10 @@ function ConvertTo-BoostLabWriteCacheRegistryPath {
 function Test-BoostLabWriteCacheRegistryTarget {
     param(
         [Parameter(Mandatory)]
-        [string]$RegistryPath
+        [string]$RegistryPath,
+
+        [ValidateSet('ApplyValue', 'DefaultKey')]
+        [string]$TargetKind = 'ApplyValue'
     )
 
     $normalized = ConvertTo-BoostLabWriteCacheRegistryPath -Path $RegistryPath
@@ -81,7 +84,16 @@ function Test-BoostLabWriteCacheRegistryTarget {
         $prefix = '{0}\{1}\' -f $script:BoostLabEnumRoot, $className
         if (
             $normalized.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) -and
-            $normalized.EndsWith('\Device Parameters\Disk', [StringComparison]::OrdinalIgnoreCase)
+            (
+                (
+                    $TargetKind -eq 'ApplyValue' -and
+                    $normalized.EndsWith('\Device Parameters\Disk', [StringComparison]::OrdinalIgnoreCase)
+                ) -or
+                (
+                    $TargetKind -eq 'DefaultKey' -and
+                    $normalized.EndsWith('\Disk', [StringComparison]::OrdinalIgnoreCase)
+                )
+            )
         ) {
             return $true
         }
@@ -217,7 +229,7 @@ function Test-BoostLabWriteCacheProductScope {
 function New-BoostLabWriteCacheProductScopeResult {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Analyze', 'Apply')]
+        [ValidateSet('Analyze', 'Apply', 'Default')]
         [string]$ActionName,
 
         [Parameter(Mandatory)]
@@ -335,6 +347,11 @@ function Get-BoostLabToolState {
 }
 
 function Get-BoostLabWriteCacheRealTargets {
+    param(
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName = 'Apply'
+    )
+
     $targets = [System.Collections.Generic.List[object]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
 
@@ -345,15 +362,27 @@ function Get-BoostLabWriteCacheRealTargets {
                 continue
             }
 
-            $deviceParameterKeys = @(
-                Get-ChildItem -Path $basePath -Recurse -ErrorAction SilentlyContinue |
-                    Where-Object { $_.PSChildName -eq 'Device Parameters' }
+            $keys = @(
+                if ($ActionName -eq 'Default') {
+                    Get-ChildItem -Path $basePath -Recurse -ErrorAction SilentlyContinue |
+                        Where-Object { $_.PSChildName -eq 'Disk' }
+                }
+                else {
+                    Get-ChildItem -Path $basePath -Recurse -ErrorAction SilentlyContinue |
+                        Where-Object { $_.PSChildName -eq 'Device Parameters' }
+                }
             )
-            foreach ($key in $deviceParameterKeys) {
-                $diskPath = ConvertTo-BoostLabWriteCacheRegistryPath -Path (
-                    Join-Path ([string]$key.PSPath) 'Disk'
-                )
-                if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $diskPath)) {
+            foreach ($key in $keys) {
+                $diskPath = if ($ActionName -eq 'Default') {
+                    ConvertTo-BoostLabWriteCacheRegistryPath -Path ([string]$key.PSPath)
+                }
+                else {
+                    ConvertTo-BoostLabWriteCacheRegistryPath -Path (
+                        Join-Path ([string]$key.PSPath) 'Disk'
+                    )
+                }
+                $targetKind = if ($ActionName -eq 'Default') { 'DefaultKey' } else { 'ApplyValue' }
+                if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $diskPath -TargetKind $targetKind)) {
                     $warnings.Add("Skipped unexpected $className target: $diskPath")
                     continue
                 }
@@ -377,16 +406,19 @@ function Get-BoostLabWriteCacheRealTargets {
         Targets   = @($targets | Sort-Object ClassName, RegistryPath -Unique)
         Warnings  = $warnings.ToArray()
         Message   = if ($targets.Count -eq 0) {
-            'No SCSI or NVME Device Parameters registry targets were found.'
+            'No SCSI or NVME Disk registry targets were found.'
         }
         else {
-            '{0} storage Device Parameters target(s) detected.' -f $targets.Count
+            '{0} storage Disk registry target(s) detected.' -f $targets.Count
         }
     }
 }
 
 function Get-BoostLabWriteCacheDiscovery {
     param(
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName = 'Apply',
+
         [AllowNull()]
         [scriptblock]$TargetEnumerator = $null
     )
@@ -395,7 +427,7 @@ function Get-BoostLabWriteCacheDiscovery {
         & $TargetEnumerator
     }
     else {
-        Get-BoostLabWriteCacheRealTargets
+        Get-BoostLabWriteCacheRealTargets -ActionName $ActionName
     }
 
     if ($null -eq $discovery -or $null -eq $discovery.PSObject.Properties['Targets']) {
@@ -417,7 +449,8 @@ function Get-BoostLabWriteCacheDiscovery {
 
     foreach ($target in @($discovery.Targets)) {
         $path = ConvertTo-BoostLabWriteCacheRegistryPath -Path ([string]$target.RegistryPath)
-        if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $path)) {
+        $targetKind = if ($ActionName -eq 'Default') { 'DefaultKey' } else { 'ApplyValue' }
+        if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $path -TargetKind $targetKind)) {
             $warnings.Add("Skipped unexpected target outside SCSI/NVME Device Parameters Disk scope: $path")
             continue
         }
@@ -469,6 +502,27 @@ function Get-BoostLabWriteCacheRegistryValueState {
         }
 
         $key = Get-Item -LiteralPath $path -ErrorAction Stop
+        if ($ItemType -eq 'RegistryKey') {
+            $valueMetadata = foreach ($name in @($key.GetValueNames())) {
+                [ordered]@{
+                    ValueName = $name
+                    ValueType = [string]$key.GetValueKind($name)
+                    ValueData = $key.GetValue($name, $null, 'DoNotExpandEnvironmentNames')
+                }
+            }
+
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists     = $true
+                Exists        = $true
+                Metadata      = [ordered]@{
+                    Values = @($valueMetadata)
+                }
+                DisplayValue  = 'Present'
+                Message       = 'Registry key detected.'
+            }
+        }
+
         $valueExists = $ValueName -in @($key.GetValueNames())
         if (-not $valueExists) {
             return [pscustomobject]@{
@@ -517,7 +571,7 @@ function Set-BoostLabWriteCacheRegistryValue {
     )
 
     $path = ConvertTo-BoostLabWriteCacheRegistryPath -Path $RegistryPath
-    if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $path)) {
+    if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $path -TargetKind 'ApplyValue')) {
         throw "Registry target is outside the approved storage Disk scope: $path"
     }
 
@@ -533,13 +587,40 @@ function Set-BoostLabWriteCacheRegistryValue {
         -ErrorAction Stop | Out-Null
 }
 
+function Remove-BoostLabWriteCacheRegistryKey {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath
+    )
+
+    $path = ConvertTo-BoostLabWriteCacheRegistryPath -Path $RegistryPath
+    if (-not (Test-BoostLabWriteCacheRegistryTarget -RegistryPath $path -TargetKind 'DefaultKey')) {
+        throw "Registry target is outside the approved storage Disk key scope: $path"
+    }
+    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        throw 'The Windows system directory is unavailable.'
+    }
+
+    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
+    if (-not (Test-Path -LiteralPath $commandProcessorPath -PathType Leaf)) {
+        throw 'cmd.exe was not found.'
+    }
+
+    $regPath = $path -replace '^HKLM:\\', 'HKLM\'
+    $command = 'reg delete "{0}" /f' -f $regPath
+    & $commandProcessorPath /d /c $command 2>&1 | Out-Null
+}
+
 function New-BoostLabWriteCacheCapturePolicy {
     param(
         [Parameter(Mandatory)]
         [object]$Target,
 
         [Parameter(Mandatory)]
-        [string]$ScopeId
+        [string]$ScopeId,
+
+        [ValidateSet('RegistryValue', 'RegistryKey')]
+        [string]$ItemType = 'RegistryValue'
     )
 
     return @{
@@ -551,7 +632,7 @@ function New-BoostLabWriteCacheCapturePolicy {
                 ToolIds              = @([string]$script:BoostLabToolMetadata['Id'])
                 AllowedPath          = [string]$Target.RegistryPath
                 AllowedValueNames    = @($script:BoostLabCacheValueName)
-                AllowKeyCapture      = $false
+                AllowKeyCapture      = ($ItemType -eq 'RegistryKey')
                 AllowProtectedSystem = $true
             }
         )
@@ -565,7 +646,7 @@ function New-BoostLabWriteCacheCapturePolicy {
 function Test-BoostLabWriteCacheState {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Analyze', 'Apply')]
+        [ValidateSet('Analyze', 'Apply', 'Default')]
         [string]$ActionName,
 
         [AllowNull()]
@@ -597,7 +678,7 @@ function Test-BoostLabWriteCacheState {
             -Message $(if ($targetCount -gt 0) { 'Storage registry targets were discovered.' } else { 'No storage registry targets were discovered.' }))
     )
 
-    if ($ActionName -eq 'Apply') {
+    if ($ActionName -in @('Apply', 'Default')) {
         $checks.Add(
             (New-BoostLabVerificationCheck `
                 -Name 'Pre-mutation capture records' `
@@ -608,7 +689,8 @@ function Test-BoostLabWriteCacheState {
     }
 
     foreach ($target in @($Targets)) {
-        $state = & $reader ([string]$target.RegistryPath) 'RegistryValue' $script:BoostLabCacheValueName
+        $itemType = if ($ActionName -eq 'Default') { 'RegistryKey' } else { 'RegistryValue' }
+        $state = & $reader ([string]$target.RegistryPath) $itemType $script:BoostLabCacheValueName
         if ($ActionName -eq 'Analyze') {
             $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
                 'Warning'
@@ -618,7 +700,7 @@ function Test-BoostLabWriteCacheState {
             }
             $expected = 'Readable target state'
         }
-        else {
+        elseif ($ActionName -eq 'Apply') {
             $valueData = if ($null -ne $state -and $null -ne $state.Metadata) {
                 $state.Metadata.ValueData
             }
@@ -647,6 +729,18 @@ function Test-BoostLabWriteCacheState {
                 'Passed'
             }
             $expected = 'CacheIsPowerProtected DWORD 1'
+        }
+        else {
+            $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
+                'Warning'
+            }
+            elseif ([bool]$state.Exists) {
+                'Failed'
+            }
+            else {
+                'Passed'
+            }
+            $expected = 'Disk registry key absent'
         }
 
         $checks.Add(
@@ -680,6 +774,12 @@ function Test-BoostLabWriteCacheState {
             CaptureRequired   = $true
         }
     }
+    elseif ($ActionName -eq 'Default') {
+        [pscustomobject]@{
+            TargetKeyAbsent = $true
+            CaptureRequired = $true
+        }
+    }
     else {
         [pscustomobject]@{
             TargetDiscoveryOnly = $true
@@ -696,6 +796,9 @@ function Test-BoostLabWriteCacheState {
         'Passed' {
             if ($ActionName -eq 'Apply') {
                 'All discovered storage registry targets have CacheIsPowerProtected set to 1.'
+            }
+            elseif ($ActionName -eq 'Default') {
+                'All discovered storage Disk registry keys are absent.'
             }
             else {
                 'Storage write-cache buffer flushing targets were analyzed.'
@@ -734,7 +837,7 @@ function Invoke-BoostLabWriteCacheAnalyze {
         return New-BoostLabWriteCacheProductScopeResult -ActionName 'Analyze' -Scope $scope
     }
 
-    $discovery = Get-BoostLabWriteCacheDiscovery -TargetEnumerator $TargetEnumerator
+    $discovery = Get-BoostLabWriteCacheDiscovery -ActionName 'Apply' -TargetEnumerator $TargetEnumerator
     $verification = Test-BoostLabWriteCacheState `
         -ActionName 'Analyze' `
         -Targets @($discovery.Targets) `
@@ -747,7 +850,7 @@ function Invoke-BoostLabWriteCacheAnalyze {
         ApplySupported           = $true
         DefaultSupported         = $false
         RestoreSupported         = $false
-        DefaultUnavailableReason = 'Ultimate Default deletes entire storage Disk registry keys, so BoostLab does not expose it.'
+        DefaultSupportedReason   = 'Default preserves the Ultimate source by deleting discovered SCSI/NVME Disk registry keys after explicit confirmation.'
         RestoreUnavailableReason = 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
     }
 
@@ -799,7 +902,7 @@ function Invoke-BoostLabWriteCacheApply {
             -Message 'Administrator rights are required to change storage write-cache buffer flushing registry values.'
     }
 
-    $discovery = Get-BoostLabWriteCacheDiscovery -TargetEnumerator $TargetEnumerator
+    $discovery = Get-BoostLabWriteCacheDiscovery -ActionName 'Apply' -TargetEnumerator $TargetEnumerator
     $targets = @($discovery.Targets)
     if ($targets.Count -eq 0) {
         $verification = Test-BoostLabWriteCacheState -ActionName 'Apply' -Targets @()
@@ -813,7 +916,7 @@ function Invoke-BoostLabWriteCacheApply {
                 ChangesExecuted          = $false
                 CaptureRecords           = @()
                 DiscoveryWarnings        = @($discovery.Warnings)
-                DefaultUnavailableReason = 'Ultimate Default deletes entire storage Disk registry keys, so BoostLab does not expose it.'
+                DefaultSupportedReason   = 'Default preserves the Ultimate source by deleting discovered SCSI/NVME Disk registry keys after explicit confirmation.'
                 RestoreUnavailableReason = 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
             }) `
             -VerificationResult $verification
@@ -941,9 +1044,9 @@ function Invoke-BoostLabWriteCacheApply {
         RegistryChangesCompleted = $changesCompleted.ToArray()
         CaptureRecords           = $captureRecords.ToArray()
         DiscoveryWarnings        = @($discovery.Warnings)
-        DefaultImplemented       = $false
+        DefaultImplemented       = $true
         RestoreImplemented       = $false
-        DefaultUnavailableReason = 'Ultimate Default deletes entire storage Disk registry keys, so BoostLab does not expose it.'
+        DefaultSupportedReason   = 'Default preserves the Ultimate source by deleting discovered SCSI/NVME Disk registry keys after explicit confirmation.'
         RestoreUnavailableReason = 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
         VerificationStatus       = [string]$verification.Status
         Errors                   = $errors.ToArray()
@@ -978,6 +1081,220 @@ function Invoke-BoostLabWriteCacheApply {
         -VerificationResult $verification
 }
 
+function Invoke-BoostLabWriteCacheDefault {
+    param(
+        [AllowNull()]
+        [scriptblock]$WindowsInfoReader = $null,
+
+        [AllowNull()]
+        [scriptblock]$AdministratorChecker = $null,
+
+        [AllowNull()]
+        [scriptblock]$TargetEnumerator = $null,
+
+        [AllowNull()]
+        [scriptblock]$RegistryReader = $null,
+
+        [AllowNull()]
+        [scriptblock]$RegistryKeyDeleter = $null,
+
+        [string]$StateRoot = (Get-BoostLabRollbackStateRoot)
+    )
+
+    $scope = Test-BoostLabWriteCacheProductScope -WindowsInfoReader $WindowsInfoReader
+    if (-not [bool]$scope.Supported) {
+        return New-BoostLabWriteCacheProductScopeResult -ActionName 'Default' -Scope $scope
+    }
+
+    $isAdmin = if ($null -ne $AdministratorChecker) {
+        [bool](& $AdministratorChecker)
+    }
+    else {
+        Test-BoostLabAdministrator
+    }
+    if (-not $isAdmin) {
+        return New-BoostLabWriteCacheResult `
+            -Success $false `
+            -Status 'Error' `
+            -Action 'Default' `
+            -Message 'Administrator rights are required to delete storage write-cache buffer flushing Disk registry keys.'
+    }
+
+    $discovery = Get-BoostLabWriteCacheDiscovery -ActionName 'Default' -TargetEnumerator $TargetEnumerator
+    $targets = @($discovery.Targets)
+    if ($targets.Count -eq 0) {
+        $verification = Test-BoostLabWriteCacheState -ActionName 'Default' -Targets @()
+        return New-BoostLabWriteCacheResult `
+            -Success $true `
+            -Status 'NotApplicable' `
+            -Action 'Default' `
+            -Message 'No source-targeted SCSI or NVME Disk registry keys were found. No changes were executed.' `
+            -Data ([pscustomobject]@{
+                TargetCount              = 0
+                ChangesExecuted          = $false
+                CaptureRecords           = @()
+                DiscoveryWarnings        = @($discovery.Warnings)
+                RestoreUnavailableReason = 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
+            }) `
+            -VerificationResult $verification
+    }
+
+    $reader = if ($null -ne $RegistryReader) {
+        $RegistryReader
+    }
+    else {
+        { param($Path, $ItemType, $ValueName) Get-BoostLabWriteCacheRegistryValueState -RegistryPath $Path -ItemType $ItemType -ValueName $ValueName }
+    }
+    $deleter = if ($null -ne $RegistryKeyDeleter) {
+        $RegistryKeyDeleter
+    }
+    else {
+        { param($Target) Remove-BoostLabWriteCacheRegistryKey -RegistryPath ([string]$Target.RegistryPath) }
+    }
+
+    $captureRecords = [System.Collections.Generic.List[object]]::new()
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $changesAttempted = [System.Collections.Generic.List[string]]::new()
+    $changesCompleted = [System.Collections.Generic.List[string]]::new()
+
+    for ($i = 0; $i -lt $targets.Count; $i++) {
+        $target = $targets[$i]
+        $scopeId = 'write-cache-buffer-flushing-default-{0}' -f ($i + 1)
+        $policy = New-BoostLabWriteCacheCapturePolicy -Target $target -ScopeId $scopeId -ItemType RegistryKey
+        $capture = New-BoostLabRegistryStateCapture `
+            -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+            -ActionId 'Default' `
+            -ScopeId $scopeId `
+            -RegistryPath ([string]$target.RegistryPath) `
+            -ItemType RegistryKey `
+            -IntendedMutation RegistryDelete `
+            -RiskClassification High `
+            -VerificationRequirement 'Verify the source-targeted Disk registry key is absent after Default.' `
+            -Policy $policy `
+            -RegistryReader $reader `
+            -StateRoot $StateRoot
+        if (-not [bool]$capture.Success) {
+            $errors.Add(
+                ('State capture failed for {0}: {1}' -f `
+                    ([string]$target.RegistryPath),
+                    (@($capture.Errors) -join '; '))
+            )
+            continue
+        }
+
+        $captureRecords.Add(
+            [pscustomobject]@{
+                TargetPath     = [string]$target.RegistryPath
+                ScopeId        = $scopeId
+                OperationId    = [string]$capture.OperationId
+                RecordPath     = [string]$capture.RecordPath
+                OriginalExists = [bool]$capture.Record.OriginalExists
+            }
+        )
+    }
+
+    if ($errors.Count -gt 0) {
+        return New-BoostLabWriteCacheResult `
+            -Success $false `
+            -Status 'Error' `
+            -Action 'Default' `
+            -Message 'Registry key state capture failed before mutation. No changes were executed.' `
+            -Data ([pscustomobject]@{
+                TargetCount       = $targets.Count
+                ChangesExecuted   = $false
+                CaptureRecords    = $captureRecords.ToArray()
+                Errors            = $errors.ToArray()
+                DiscoveryWarnings = @($discovery.Warnings)
+            })
+    }
+
+    foreach ($target in $targets) {
+        $changesAttempted.Add([string]$target.RegistryPath)
+        try {
+            & $deleter $target
+            $changesCompleted.Add([string]$target.RegistryPath)
+        }
+        catch {
+            $errors.Add(
+                ('Deleting source-targeted Disk key failed for {0}: {1}' -f `
+                    ([string]$target.RegistryPath),
+                    $_.Exception.Message)
+            )
+        }
+    }
+
+    foreach ($captureRecord in $captureRecords) {
+        $target = $targets | Where-Object {
+            [string]$_.RegistryPath -eq [string]$captureRecord.TargetPath
+        } | Select-Object -First 1
+        $postState = & $reader ([string]$target.RegistryPath) 'RegistryKey' ''
+        if ($null -eq $postState -or -not [bool]$postState.ReadSucceeded) {
+            $errors.Add("Post-mutation key state could not be read for $($captureRecord.TargetPath).")
+            continue
+        }
+
+        $recordResult = Set-BoostLabRollbackMutationState `
+            -RecordPath ([string]$captureRecord.RecordPath) `
+            -StateRoot $StateRoot `
+            -PostMutationExists ([bool]$postState.Exists) `
+            -PostMutationMetadata $postState.Metadata
+        if (-not [bool]$recordResult.Success) {
+            $errors.Add(
+                ('Recording post-mutation key state failed for {0}: {1}' -f `
+                    ([string]$captureRecord.TargetPath),
+                    (@($recordResult.Errors) -join '; '))
+            )
+        }
+    }
+
+    $verification = Test-BoostLabWriteCacheState `
+        -ActionName 'Default' `
+        -Targets $targets `
+        -CaptureRecords $captureRecords.ToArray() `
+        -RegistryReader $reader
+
+    $data = [pscustomobject]@{
+        TargetCount              = $targets.Count
+        ChangesExecuted          = $changesCompleted.Count -gt 0
+        RegistryKeysDeleteAttempted = $changesAttempted.ToArray()
+        RegistryKeysDeleteCompleted = $changesCompleted.ToArray()
+        CaptureRecords           = $captureRecords.ToArray()
+        DiscoveryWarnings        = @($discovery.Warnings)
+        RestoreImplemented       = $false
+        RestoreUnavailableReason = 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
+        VerificationStatus       = [string]$verification.Status
+        Errors                   = $errors.ToArray()
+    }
+
+    if ($errors.Count -gt 0) {
+        return New-BoostLabWriteCacheResult `
+            -Success $false `
+            -Status 'Error' `
+            -Action 'Default' `
+            -Message ('Write Cache Buffer Flushing Default completed with errors: {0}' -f ($errors -join '; ')) `
+            -Data $data `
+            -VerificationResult $verification
+    }
+
+    if ($verification.Status -eq 'Failed') {
+        return New-BoostLabWriteCacheResult `
+            -Success $false `
+            -Status 'Error' `
+            -Action 'Default' `
+            -Message 'Write Cache Buffer Flushing Default completed, but verification failed.' `
+            -Data $data `
+            -VerificationResult $verification
+    }
+
+    return New-BoostLabWriteCacheResult `
+        -Success $true `
+        -Status $(if ($verification.Status -eq 'Warning') { 'Warning' } else { 'Completed' }) `
+        -Action 'Default' `
+        -Message 'Write Cache Buffer Flushing Default completed with source-defined Disk key deletion.' `
+        -Data $data `
+        -VerificationResult $verification
+}
+
 function Invoke-BoostLabToolAction {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -993,7 +1310,7 @@ function Invoke-BoostLabToolAction {
             -Success $false `
             -Status 'Error' `
             -Action $ActionName `
-            -Message 'Unsupported action. Only Analyze and Apply are allowed; Default is refused because it deletes entire storage Disk registry keys.'
+            -Message 'Unsupported action. Only Analyze, Apply, and Default are allowed.'
     }
     if ($ActionName -eq 'Analyze') {
         return Invoke-BoostLabWriteCacheAnalyze
@@ -1007,6 +1324,10 @@ function Invoke-BoostLabToolAction {
             -Cancelled $true
     }
 
+    if ($ActionName -eq 'Default') {
+        return Invoke-BoostLabWriteCacheDefault
+    }
+
     return Invoke-BoostLabWriteCacheApply
 }
 
@@ -1017,11 +1338,7 @@ function Restore-BoostLabToolDefault {
         [bool]$Confirmed = $false
     )
 
-    return New-BoostLabWriteCacheResult `
-        -Success $false `
-        -Status 'NotImplemented' `
-        -Action 'Restore' `
-        -Message 'Restore is not exposed until BoostLab has a reviewed UI/runtime flow for selecting exact captured rollback records.'
+    return Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$Confirmed
 }
 
 Export-ModuleMember -Function @(

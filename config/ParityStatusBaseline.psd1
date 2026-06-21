@@ -9,16 +9,16 @@
         DeferredPlaceholders = 5
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 28
+        UltimateParityImplemented = 29
         NearParityControlled = 19
-        ControlledSubset = 3
+        ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
         DeferredForParityWork = 5
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'write-cache-buffer-flushing'
+    CurrentOrderedParityTarget = 'power-plan'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -693,11 +693,12 @@
             StageOrder = 6
             ToolOrder = 19
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ControlledSubset'
-            UltimateParity = 'Partial'
-            GapSummary = 'Apply preserves source value write with capture; unsafe source Default broad key deletion is refused.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply preserves source CacheIsPowerProtected REG_DWORD 1 writes under SCSI/NVME Device Parameters Disk paths; Default preserves source SCSI/NVME Disk key deletion with confirmation, capture, and verification.'
             YazanFinalException = $false
-            NextParityAction = 'Resolve Default via captured-state Restore path or obtain final exception for omitted Default.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'power-plan'

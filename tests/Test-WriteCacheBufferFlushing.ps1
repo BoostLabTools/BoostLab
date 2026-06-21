@@ -24,6 +24,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
@@ -63,33 +64,36 @@ try {
         Where-Object { [string]$_['Id'] -eq 'write-cache-buffer-flushing' } |
         Select-Object -First 1
     Assert-BoostLabCondition ($null -ne $tool) 'Write Cache Buffer Flushing catalog entry is missing.'
-    Assert-BoostLabCondition ((@($tool['Actions']) -join ',') -eq 'Analyze,Apply') 'Write Cache Buffer Flushing must expose only Analyze and Apply.'
+    Assert-BoostLabCondition ((@($tool['Actions']) -join ',') -eq 'Analyze,Apply,Default') 'Write Cache Buffer Flushing must expose Analyze, Apply, and Default.'
     Assert-BoostLabCondition ([string]$tool['Type'] -eq 'action') 'Write Cache Buffer Flushing must be an action tool.'
     Assert-BoostLabCondition ([string]$tool['RiskLevel'] -eq 'high') 'Write Cache Buffer Flushing must remain high risk.'
     Assert-BoostLabCondition ([bool]$tool['Capabilities']['RequiresAdmin']) 'Write Cache Buffer Flushing must require Administrator.'
     Assert-BoostLabCondition ([bool]$tool['Capabilities']['CanModifyRegistry']) 'Write Cache Buffer Flushing must declare registry modification capability.'
     Assert-BoostLabCondition (-not [bool]$tool['Capabilities']['CanModifyDrivers']) 'Write Cache Buffer Flushing must not declare driver modification capability.'
     Assert-BoostLabCondition (-not [bool]$tool['Capabilities']['CanReboot']) 'Write Cache Buffer Flushing must not declare reboot capability.'
-    Assert-BoostLabCondition (-not [bool]$tool['Capabilities']['SupportsDefault']) 'Write Cache Buffer Flushing must not claim Default support.'
+    Assert-BoostLabCondition ([bool]$tool['Capabilities']['SupportsDefault']) 'Write Cache Buffer Flushing must claim source-backed Default support.'
     Assert-BoostLabCondition (-not [bool]$tool['Capabilities']['SupportsRestore']) 'Write Cache Buffer Flushing must not claim Restore support.'
     Assert-BoostLabCondition ([bool]$tool['Capabilities']['NeedsExplicitConfirmation']) 'Write Cache Buffer Flushing Apply must require explicit confirmation.'
 
     $moduleSource = Get-Content -LiteralPath $modulePath -Raw
     foreach ($requiredText in @(
-        '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+        '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
         'New-BoostLabRegistryStateCapture'
         'Set-BoostLabRollbackMutationState'
         'CacheIsPowerProtected'
         'HKLM:\SYSTEM\ControlSet001\Enum'
         'Test-BoostLabWriteCacheProductScope'
         'shared Windows storage registry behavior'
-        'SupportsDefault           = $false'
+        'SupportsDefault           = $true'
         'SupportsRestore           = $false'
+        'function Remove-BoostLabWriteCacheRegistryKey'
+        'reg delete "{0}" /f'
+        'RegistryKeysDeleteAttempted'
+        'Default preserves the Ultimate source by deleting discovered SCSI/NVME Disk registry keys'
     )) {
         Assert-BoostLabCondition ($moduleSource.Contains($requiredText)) "Write Cache module is missing required text: $requiredText"
     }
     foreach ($forbiddenText in @(
-        'reg delete'
         'Remove-ItemProperty'
         'Remove-Item -LiteralPath'
         'Disable-PnpDevice'
@@ -111,13 +115,13 @@ try {
 
     $executionSource = Get-Content -LiteralPath $executionPath -Raw
     Assert-BoostLabCondition ($executionSource.Contains("'write-cache-buffer-flushing'")) 'Execution runtime does not register Write Cache Buffer Flushing.'
-    Assert-BoostLabCondition ($executionSource.Contains("Actions = @('Analyze', 'Apply')")) 'Execution runtime does not restrict Write Cache actions to Analyze and Apply.'
+    Assert-BoostLabCondition ($executionSource.Contains("Actions = @('Analyze', 'Apply', 'Default')")) 'Execution runtime does not expose the exact Write Cache actions.'
 
     $actionPlanSource = Get-Content -LiteralPath $actionPlanPath -Raw
     foreach ($requiredPlanText in @(
         'write-cache-buffer-flushing'
         'Capture the prior CacheIsPowerProtected existence, type, and data'
-        'Do not run the Ultimate Default broad Disk-key deletion.'
+        'Delete each source-discovered SCSI and NVME Disk registry key'
     )) {
         Assert-BoostLabCondition ($actionPlanSource.Contains($requiredPlanText)) "Action Plan is missing Write Cache text: $requiredPlanText"
     }
@@ -147,11 +151,12 @@ try {
     $migrationText = Get-Content -LiteralPath $migrationPath -Raw
     foreach ($requiredMigrationText in @(
         'Source SHA-256: `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D`'
-        'Default is not implemented'
+        'Default deletes complete source-discovered storage `Disk` registry keys.'
         'Restore is not exposed'
         'no explicit Windows 10-only branch'
         'CacheIsPowerProtected'
         'REG_DWORD 1'
+        'SupportsDefault: true'
     )) {
         Assert-BoostLabCondition ($migrationText.Contains($requiredMigrationText)) "Migration record is missing: $requiredMigrationText"
     }
@@ -393,13 +398,145 @@ try {
     Assert-BoostLabCondition ([string]$noTargetResult.Status -eq 'NotApplicable') "No-target Apply should be NotApplicable, got $($noTargetResult.Status)."
     Assert-BoostLabCondition (-not [bool]$noTargetResult.Data.ChangesExecuted) 'No-target Apply must not execute changes.'
 
-    $unsupportedDefault = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$unsupportedDefault.Success) 'Default action should be unsupported.'
-    Assert-BoostLabCondition ([string]$unsupportedDefault.Message -like '*Default is refused*') 'Default refusal message should explain broad Disk key deletion.'
+    $defaultRegistryStore = @{
+        $targets[0].RegistryPath = [pscustomobject]@{ Exists = $true; ValueType = 'DWord'; ValueData = 1 }
+        $targets[1].RegistryPath = [pscustomobject]@{ Exists = $true; ValueType = 'DWord'; ValueData = 1 }
+    }
+    $defaultEvents = [System.Collections.Generic.List[string]]::new()
+    $defaultResult = & $moduleInfo {
+        param($Targets, $RegistryStore, $Events, $StateRoot)
 
-    $restoreResult = Restore-BoostLabToolDefault -Confirmed:$true
-    Assert-BoostLabCondition (-not [bool]$restoreResult.Success) 'Restore should not be exposed as implemented.'
-    Assert-BoostLabCondition ([string]$restoreResult.Status -eq 'NotImplemented') 'Restore must return NotImplemented.'
+        $targetEnumerator = {
+            [pscustomobject]@{
+                Succeeded = $true
+                Targets   = @($Targets)
+                Warnings  = @()
+                Message   = 'Mocked storage Disk keys.'
+            }
+        }.GetNewClosure()
+        $registryReader = {
+            param($Path, $ItemType, $ValueName)
+
+            $Events.Add("READ:$($ItemType):$Path")
+            if (-not $RegistryStore.ContainsKey($Path)) {
+                return [pscustomobject]@{
+                    ReadSucceeded = $true
+                    KeyExists     = $false
+                    Exists        = $false
+                    Metadata      = $null
+                    DisplayValue  = 'Absent'
+                    Message       = 'Mock Disk key absent.'
+                }
+            }
+
+            $entry = $RegistryStore[$Path]
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists     = [bool]$entry.Exists
+                Exists        = [bool]$entry.Exists
+                Metadata      = if ([bool]$entry.Exists) {
+                    [ordered]@{
+                        Values = @(
+                            [ordered]@{
+                                ValueName = 'CacheIsPowerProtected'
+                                ValueType = [string]$entry.ValueType
+                                ValueData = $entry.ValueData
+                            }
+                        )
+                    }
+                }
+                else {
+                    $null
+                }
+                DisplayValue  = if ([bool]$entry.Exists) { 'Present' } else { 'Absent' }
+                Message       = 'Mock Disk key state read.'
+            }
+        }.GetNewClosure()
+        $registryKeyDeleter = {
+            param($Target)
+
+            $path = [string]$Target.RegistryPath
+            $Events.Add("DELETE:$path")
+            [void]$RegistryStore.Remove($path)
+        }.GetNewClosure()
+
+        Invoke-BoostLabWriteCacheDefault `
+            -WindowsInfoReader { [pscustomobject]@{ OperatingSystem = 'Windows_NT'; Caption = 'Microsoft Windows 11 Pro'; BuildNumber = '22631' } } `
+            -AdministratorChecker { $true } `
+            -TargetEnumerator $targetEnumerator `
+            -RegistryReader $registryReader `
+            -RegistryKeyDeleter $registryKeyDeleter `
+            -StateRoot $StateRoot
+    } $targets $defaultRegistryStore $defaultEvents $tempRoot
+
+    Assert-BoostLabCondition ([bool]$defaultResult.Success) "Mock Default should succeed: $($defaultResult.Message)"
+    Assert-BoostLabCondition ([string]$defaultResult.Status -eq 'Completed') "Mock Default status should be Completed, got $($defaultResult.Status)."
+    Assert-BoostLabCondition (-not $defaultRegistryStore.ContainsKey($targets[0].RegistryPath)) 'Mock SCSI Disk key was not deleted.'
+    Assert-BoostLabCondition (-not $defaultRegistryStore.ContainsKey($targets[1].RegistryPath)) 'Mock NVME Disk key was not deleted.'
+    Assert-BoostLabCondition (@($defaultResult.Data.CaptureRecords).Count -eq 2) 'Mock Default did not record one key capture record per target.'
+    Assert-BoostLabCondition ([string]$defaultResult.VerificationResult.Status -eq 'Passed') "Mock Default verification should pass, got $($defaultResult.VerificationResult.Status)."
+    $firstDeleteIndex = -1
+    for ($i = 0; $i -lt $defaultEvents.Count; $i++) {
+        if ($defaultEvents[$i].StartsWith('DELETE:', [StringComparison]::Ordinal)) {
+            $firstDeleteIndex = $i
+            break
+        }
+    }
+    Assert-BoostLabCondition ($firstDeleteIndex -ge 2) 'Mock Default deleted before reading/capturing both target keys.'
+
+    $failedDefaultEvents = [System.Collections.Generic.List[string]]::new()
+    $defaultCaptureFailure = & $moduleInfo {
+        param($Targets, $Events, $StateRoot)
+
+        $targetEnumerator = {
+            [pscustomobject]@{ Succeeded = $true; Targets = @($Targets); Warnings = @(); Message = 'Mocked targets.' }
+        }.GetNewClosure()
+        $invalidReader = {
+            param($Path, $ItemType, $ValueName)
+            $Events.Add("READ:$Path")
+            return $null
+        }.GetNewClosure()
+        $deleter = {
+            param($Target)
+            $Events.Add("DELETE:$([string]$Target.RegistryPath)")
+        }.GetNewClosure()
+
+        Invoke-BoostLabWriteCacheDefault `
+            -WindowsInfoReader { [pscustomobject]@{ OperatingSystem = 'Windows_NT'; Caption = 'Microsoft Windows 11 Pro'; BuildNumber = '22631' } } `
+            -AdministratorChecker { $true } `
+            -TargetEnumerator $targetEnumerator `
+            -RegistryReader $invalidReader `
+            -RegistryKeyDeleter $deleter `
+            -StateRoot $StateRoot
+    } @($targets[0]) $failedDefaultEvents $tempRoot
+
+    Assert-BoostLabCondition (-not [bool]$defaultCaptureFailure.Success) 'Default capture failure should block Default.'
+    Assert-BoostLabCondition ([string]$defaultCaptureFailure.Status -eq 'Error') 'Default capture failure should return Error.'
+    Assert-BoostLabCondition (-not [bool]$defaultCaptureFailure.Data.ChangesExecuted) 'Default capture failure must report no changes executed.'
+    Assert-BoostLabCondition (-not (@($failedDefaultEvents) -match '^DELETE:')) 'Default capture failure still invoked the registry key deleter.'
+
+    $noTargetDefaultResult = & $moduleInfo {
+        param($StateRoot)
+
+        $targetEnumerator = {
+            [pscustomobject]@{ Succeeded = $true; Targets = @(); Warnings = @(); Message = 'No mock Disk keys.' }
+        }
+        Invoke-BoostLabWriteCacheDefault `
+            -WindowsInfoReader { [pscustomobject]@{ OperatingSystem = 'Windows_NT'; Caption = 'Microsoft Windows 11 Pro'; BuildNumber = '22631' } } `
+            -AdministratorChecker { $true } `
+            -TargetEnumerator $targetEnumerator `
+            -RegistryReader { param($Path, $ItemType, $ValueName) throw 'Reader should not be called.' } `
+            -RegistryKeyDeleter { param($Target) throw 'Deleter should not be called.' } `
+            -StateRoot $StateRoot
+    } $tempRoot
+
+    Assert-BoostLabCondition ([bool]$noTargetDefaultResult.Success) 'No-target Default should be a clean not-applicable result.'
+    Assert-BoostLabCondition ([string]$noTargetDefaultResult.Status -eq 'NotApplicable') "No-target Default should be NotApplicable, got $($noTargetDefaultResult.Status)."
+    Assert-BoostLabCondition (-not [bool]$noTargetDefaultResult.Data.ChangesExecuted) 'No-target Default must not execute changes.'
+
+    $restoreResult = Invoke-BoostLabToolAction -ActionName 'Restore' -Confirmed:$true
+    Assert-BoostLabCondition (-not [bool]$restoreResult.Success) 'Restore action should not be exposed as implemented.'
+    Assert-BoostLabCondition ([string]$restoreResult.Message -like '*Unsupported action*') 'Restore must remain unsupported.'
 
     $allModules = @(
         Get-ChildItem -LiteralPath $modulesRoot -Recurse -File -Filter '*.psm1' |
@@ -419,21 +556,71 @@ try {
     Assert-BoostLabCondition ($implementedModules.Count -eq $inventoryBaseline.ImplementedTools) "Expected $($inventoryBaseline.ImplementedTools) implemented modules, found $($implementedModules.Count)."
     Assert-BoostLabCondition ($placeholderModules.Count -eq $inventoryBaseline.DeferredPlaceholders) "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
 
+    $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+    $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+    $writeCacheParityRecord = @(
+        $parityBaseline.Tools |
+            Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
+    ) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $writeCacheParityRecord) 'Write Cache Buffer Flushing parity baseline record is missing.'
+    Assert-BoostLabCondition (
+        [string]$writeCacheParityRecord.RuntimeStatus -eq 'RuntimeImplemented' -and
+        [string]$writeCacheParityRecord.ImplementationLevel -eq 'ParityImplemented' -and
+        [string]$writeCacheParityRecord.UltimateParity -eq 'Yes' -and
+        -not [bool]$writeCacheParityRecord.YazanFinalException -and
+        [string]$writeCacheParityRecord.FinalProgressStatus -eq 'DoneParity' -and
+        [string]$writeCacheParityRecord.NextParityAction -eq 'DoneParity'
+    ) 'Write Cache Buffer Flushing parity baseline was not finalized as exact parity.'
+
+    $nextOrderedParityTarget = Get-BoostLabNextOrderedParityTarget `
+        -ParityBaseline $parityBaseline `
+        -ExecutionOrder $executionOrder
+    Assert-BoostLabCondition (
+        $null -ne $nextOrderedParityTarget -and
+        [string]$nextOrderedParityTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget
+    ) 'The ordered parity cursor does not match the first non-final parity target.'
+    $windowsOrderStage = @(
+        $executionOrder.Stages |
+            Where-Object { [string]$_.Name -eq 'Windows' }
+    ) | Select-Object -First 1
+    $writeCacheOrderEntry = @(
+        $windowsOrderStage.Tools |
+            Where-Object { [string]$_.ToolId -eq 'write-cache-buffer-flushing' }
+    ) | Select-Object -First 1
+    $sourceOrderNextEntry = @(
+        $windowsOrderStage.Tools |
+            Where-Object { [int]$_.Order -eq ([int]$writeCacheOrderEntry.Order + 1) }
+    ) | Select-Object -First 1
+    Assert-BoostLabCondition (
+        $null -ne $sourceOrderNextEntry -and
+        [string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$sourceOrderNextEntry.ToolId
+    ) 'Write Cache Buffer Flushing did not advance the ordered cursor to the next Windows source-order tool.'
+    $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+    Assert-BoostLabCondition (
+        [int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented -and
+        [int]$categoryCounts['ControlledSubset'] -eq [int]$parityBaseline.Counts.ControlledSubset
+    ) 'Write Cache Buffer Flushing parity category counts are inconsistent with the central baseline.'
+
     Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
     Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*NVME Faster Driver*.ps1').Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
     [pscustomobject]@{
         Success                 = $true
         SourceHash              = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-        ImplementedActionCount  = 2
+        ImplementedActionCount  = 3
         MockTargetCount         = 2
         CaptureRecordCount      = @($applyResult.Data.CaptureRecords).Count
-        DefaultExposed          = $false
+        DefaultCaptureRecordCount = @($defaultResult.Data.CaptureRecords).Count
+        DefaultExposed          = $true
         RestoreExposed          = $false
+        UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
+        ControlledSubset          = $parityBaseline.Counts.ControlledSubset
+        CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+        SourceOrderNextTool       = $sourceOrderNextEntry.ToolId
         SourceUltimateUnchanged = $true
         ImplementedModuleCount  = $implementedModules.Count
         PlaceholderModuleCount  = $placeholderModules.Count
-        Message                 = 'Write Cache Buffer Flushing preserves Apply with mocked capture-before-write and refuses unsafe Default.'
+        Message                 = 'Write Cache Buffer Flushing preserves Apply and Default with mocked capture-before-mutation.'
         Timestamp               = Get-Date
     }
 }

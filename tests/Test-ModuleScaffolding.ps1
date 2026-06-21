@@ -223,7 +223,7 @@ $implementedModules = @{
     }
     'write-cache-buffer-flushing' = @{
         RelativePath          = 'Windows\write-cache-buffer-flushing.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
     'power-plan' = @{
         RelativePath          = 'Windows\PowerPlan.psm1'
@@ -1342,17 +1342,20 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'write-cache-buffer-flushing') {
             foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
                 'HKLM:\SYSTEM\ControlSet001\Enum'
                 'SCSI'
                 'NVME'
                 'CacheIsPowerProtected'
                 'New-BoostLabRegistryStateCapture'
                 'Set-BoostLabRollbackMutationState'
-                'SupportsDefault           = $false'
+                'SupportsDefault           = $true'
                 'SupportsRestore           = $false'
                 'CanModifyDrivers          = $false'
                 'function Test-BoostLabWriteCacheState'
+                'function Remove-BoostLabWriteCacheRegistryKey'
+                'reg delete "{0}" /f'
+                'RegistryKeysDeleteAttempted'
             )) {
                 if (-not $source.Contains($requiredText)) {
                     $errors.Add("$modulePath is missing Write Cache Buffer Flushing behavior: $requiredText")
@@ -1360,7 +1363,6 @@ foreach ($entry in $expectedModules.Values) {
             }
 
             foreach ($forbiddenText in @(
-                'reg delete'
                 'Remove-ItemProperty'
                 'Remove-Item -LiteralPath'
                 'Restart-Computer'
