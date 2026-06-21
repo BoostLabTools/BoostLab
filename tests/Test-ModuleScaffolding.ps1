@@ -85,6 +85,10 @@ $implementedModules = @{
         RelativePath          = 'Advanced\mmagent-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
+    'services-optimizer' = @{
+        RelativePath          = 'Advanced\services-optimizer.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    }
     'background-apps' = @{
         RelativePath          = 'Setup\BackgroundApps.psm1'
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
@@ -523,6 +527,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'cleanup' -and
             $commandName -eq 'Remove-Item'
         )
+        $approvedServicesOptimizerCommand = (
+            $toolId -eq 'services-optimizer' -and
+            $commandName -in @('Set-Content', 'Enable-ComputerRestore', 'Checkpoint-Computer')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -552,7 +560,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedGameBarCommand -and
             -not $approvedStartMenuTaskbarCommand -and
             -not $approvedSignoutWallpaperCommand -and
-            -not $approvedCleanupCommand
+            -not $approvedCleanupCommand -and
+            -not $approvedServicesOptimizerCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -594,6 +603,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'mmagent-assistant') {
+            0
+        }
+        elseif ($toolId -eq 'services-optimizer') {
             0
         }
         elseif ($toolId -eq 'store-settings') {
@@ -1675,6 +1687,50 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated MMAgent Assistant behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'services-optimizer') {
+            foreach ($requiredText in @(
+                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+                '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F'
+                'source-ultimate\8 Advanced\5 Services Optimizer.ps1'
+                'Get-BoostLabServicesOptimizerBranchDefinition'
+                'Services: Off'
+                'Services: Default'
+                'servicesoff'
+                'serviceson'
+                'RunOnceValueName'
+                'bcdedit /set {current} safeboot minimal'
+                'shutdown -r -t 00'
+                'Generated script imports the source-defined REG payload'
+                'TrustedInstaller'
+                'Enable-ComputerRestore'
+                'Checkpoint-Computer'
+                'SystemRestorePointCreationFrequency'
+                'RejectedRedesignBehavior'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing Services Optimizer exact Ultimate behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'ToolModule.Placeholder.ps1'
+                'Gaming profile selected'
+                'Performance profile selected'
+                'Extreme profile selected'
+                'Invoke-BoostLabServicesRecommendationEngine'
+                'New-BoostLabServiceCompatibilityScore'
+                'RestoreSupported = $true'
+                'Invoke-WebRequest'
+                'Invoke-RestMethod'
+                'Start-BitsTransfer'
+                'Restart-Computer'
+                'Stop-Computer'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains unrelated or rejected Services Optimizer behavior: $forbiddenText")
                 }
             }
         }

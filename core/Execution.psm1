@@ -219,6 +219,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\mmagent-assistant.psm1'
         Actions = @('Analyze', 'Apply', 'Default')
     }
+    'services-optimizer' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\services-optimizer.psm1'
+        Actions = @('Analyze', 'Apply', 'Default')
+    }
 }
 
 function Test-BoostLabToolMetadata {

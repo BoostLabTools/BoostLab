@@ -2,25 +2,27 @@
 
 ## Purpose
 
-This Phase 53 document defines the future implementation scope for the
-`Services Optimizer` tool. It is design-only.
+This Phase 53 document originally defined the future implementation scope for
+the `Services Optimizer` tool. It is retained as historical scope evidence.
 
-No Services Optimizer behavior is implemented by this document. No runtime
+No Services Optimizer behavior was implemented by this document. No runtime
 behavior, module behavior, production service scope, registry scope, file
 scope, cleanup scope, reboot scope, Safe Mode scope, BCD scope, RunOnce scope,
-TrustedInstaller scope, Default behavior, or Restore behavior is approved here.
+TrustedInstaller scope, Default behavior, or Restore behavior was approved by
+Phase 53.
 
-Services Optimizer remains a refused placeholder until a later approved phase
-adds exact bounded production scopes, workflow records, rollback rules, and
-implementation.
+Phase 159 supersedes the placeholder/refusal status by implementing the exact
+Ultimate Services Off and Services Default workflows for this tool only, after
+explicit Yazan approval. This historical design document still does not approve
+any reusable production allowlists, scopes, or Restore contract.
 
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/5 Services Optimizer.ps1`
 * Source SHA-256: `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F`
 * Current BoostLab module path: `modules/Advanced/services-optimizer.psm1`
-* Current status: refused placeholder
-* Current implemented actions: none
+* Current status after Phase 159: exact Ultimate parity implemented
+* Current implemented actions after Phase 159: Analyze, Apply, Default
 
 Relevant foundations:
 
@@ -57,14 +59,16 @@ The source then deletes the Safe Mode boot value and restarts again.
 
 ## Current Decision
 
-Do not implement Analyze, Apply, Default, or Restore yet.
+Phase 159 implements Analyze, Apply, and Default as exact Ultimate parity for
+this tool only. Restore remains unavailable because the Ultimate source does not
+define captured-state Restore.
 
 The source combines mass service registry mutation, generated scripts,
 generated REG files, TrustedInstaller service hijacking, Safe Mode entry,
 RunOnce resume, BCD edits, restore-point setup, and two immediate reboots per
-selected branch. These behaviors require exact production scopes and a
-tool-specific interrupted-workflow design before BoostLab can preserve the
-Ultimate behavior safely.
+selected branch. Phase 159 preserves that source behavior through explicit
+confirmation and test-safe executor injection. It does not introduce the
+previously rejected productized service analyzer/profile redesign.
 
 ## Behavior Groups
 

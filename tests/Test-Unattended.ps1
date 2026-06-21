@@ -430,12 +430,11 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
     throw "Unexpected Phase 33 inventory: $implementedCount implemented, $placeholderCount placeholders."
 }
 
-$refusedPlaceholders = @(
-    'Advanced\services-optimizer.psm1'
+$remainingRefusedPlaceholders = @(
     'Advanced\timer-resolution-assistant.psm1'
     'Advanced\defender-optimize-assistant.psm1'
 )
-foreach ($relativePath in $refusedPlaceholders) {
+foreach ($relativePath in $remainingRefusedPlaceholders) {
     $placeholderSource = Get-Content -Raw -LiteralPath (Join-Path (Join-Path $ProjectRoot 'modules') $relativePath)
     if (
         -not $placeholderSource.Contains('ToolModule.Placeholder.ps1') -or

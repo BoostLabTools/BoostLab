@@ -30,6 +30,7 @@ else {
 $xamlPath = Join-Path $ProjectRoot 'ui\MainWindow.xaml'
 $controllerPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$modulesRoot = Join-Path $ProjectRoot 'modules'
 $biosInformationPath = Join-Path $ProjectRoot 'modules\Check\BIOSInformation.psm1'
 $biosSettingsPath = Join-Path $ProjectRoot 'modules\Check\BIOSSettings.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
@@ -112,7 +113,16 @@ try {
     $biosInformationTool = $tools | Where-Object { $_['Id'] -eq 'bios-information' } | Select-Object -First 1
     $biosSettingsTool = $tools | Where-Object { $_['Id'] -eq 'bios-settings' } | Select-Object -First 1
     $powerPlanTool = $tools | Where-Object { $_['Id'] -eq 'power-plan' } | Select-Object -First 1
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'services-optimizer' } | Select-Object -First 1
+    $placeholderTool = $tools |
+        Where-Object {
+            $candidateModulePath = Join-Path $modulesRoot ("{0}\{1}.psm1" -f [string]$_['Stage'], [string]$_['Id'])
+            (Test-Path -LiteralPath $candidateModulePath -PathType Leaf) -and
+            (Get-Content -Raw -LiteralPath $candidateModulePath).Contains('ToolModule.Placeholder.ps1')
+        } |
+        Select-Object -First 1
+    if ($null -eq $placeholderTool) {
+        throw 'No placeholder tool is available for UI placeholder rendering validation.'
+    }
 
     $biosInformationModule = Import-Module `
         -Name $biosInformationPath `

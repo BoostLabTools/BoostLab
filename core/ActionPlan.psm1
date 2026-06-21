@@ -509,6 +509,15 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
         'Apply the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
     }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
+        'Analyze the approved Ultimate Services Off and Services Default Safe Mode workflows without staging them.'
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
+        'Stage the approved Ultimate Services: Off workflow, including generated Safe Mode script, RunOnce, BCD safeboot, TrustedInstaller REG import, and restart request.'
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
+        'Stage the approved Ultimate Services: Default workflow, including generated Safe Mode script, RunOnce, BCD safeboot, TrustedInstaller REG import, and restart request.'
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
     }
@@ -1238,6 +1247,27 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Preserve the source-defined Default behavior by keeping MemoryCompression and PageCombining disabled and enabling only OperationAPI.')
         $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Default profile.')
     }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the Services Optimizer Ultimate source SHA-256 and parse the source-defined Services: Off and Services: Default workflows.')
+        $plannedChanges.Add('Report generated script names, RunOnce value names, Safe Mode workflow, TrustedInstaller REG import behavior, and service target counts without staging changes.')
+        $plannedChanges.Add('Confirm the rejected smart analyzer/profile redesign is not used.')
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Attempt the source-defined restore point prelude.')
+        $plannedChanges.Add('Write and patch %SystemRoot%\\Temp\\servicesoff.ps1 from the verified Ultimate Services: Off generated script.')
+        $plannedChanges.Add('Create RunOnce value *servicesoff to run the generated script in Safe Mode.')
+        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
+        $plannedChanges.Add('Request the source-defined restart with shutdown -r -t 00.')
+        $plannedChanges.Add('The generated script imports servicesoff.reg as TrustedInstaller and Administrator, removes safeboot, and restarts again.')
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Attempt the source-defined restore point prelude.')
+        $plannedChanges.Add('Write and patch %SystemRoot%\\Temp\\serviceson.ps1 from the verified Ultimate Services: Default generated script.')
+        $plannedChanges.Add('Create RunOnce value *serviceson to run the generated script in Safe Mode.')
+        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
+        $plannedChanges.Add('Request the source-defined restart with shutdown -r -t 00.')
+        $plannedChanges.Add('The generated script imports serviceson.reg as TrustedInstaller and Administrator, removes safeboot, and restarts again.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Display the approved restart-to-firmware command and safety warnings without executing it.')
     }
@@ -1768,6 +1798,16 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The approved Ultimate Default profile does not re-enable every MMAgent feature. MemoryCompression and PageCombining remain disabled by source design.')
         $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
     }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; source identity and workflow shape are reported only.')
+        $sideEffects.Add('The source workflow is high risk because Apply and Default stage Safe Mode, RunOnce, BCD, TrustedInstaller, service registry imports, and restarts.')
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -in @('Apply', 'Default')) {
+        $sideEffects.Add('Windows will be configured to boot into Safe Mode and restart immediately after staging.')
+        $sideEffects.Add('The generated Safe Mode script temporarily reconfigures TrustedInstaller to import the source-defined service registry payload, also imports it as Administrator, removes safeboot, and restarts again.')
+        $sideEffects.Add('Hundreds of service Start values are changed by the source-defined REG payload; this is not a smart analyzer, recommendation engine, or redesigned profile.')
+        $sideEffects.Add('Default is the source-defined Services: Default preset, not captured-state Restore.')
+    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made and no restart command is executed.')
     }
@@ -2070,6 +2110,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
         'BoostLab will apply the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
+        'BoostLab will stage the exact Ultimate Services: Off workflow: write the generated Safe Mode script, set RunOnce, enable safeboot minimal, and request an immediate restart. The generated script changes service Start values through TrustedInstaller and Administrator REG imports, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
+    }
+    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
+        'BoostLab will stage the exact Ultimate Services: Default workflow: write the generated Safe Mode script, set RunOnce, enable safeboot minimal, and request an immediate restart. The generated script changes service Start values through TrustedInstaller and Administrator REG imports, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

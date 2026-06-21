@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 53
-        RuntimeImplementedTools = 50
-        DeferredPlaceholders = 3
+        RuntimeImplementedTools = 51
+        DeferredPlaceholders = 2
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 33
+        UltimateParityImplemented = 34
         NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 3
+        DeferredForParityWork = 2
         RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
-    CurrentOrderedParityTarget = 'services-optimizer'
+    CurrentOrderedParityTarget = 'timer-resolution-assistant'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -775,12 +775,12 @@
             Stage = 'Advanced'
             StageOrder = 7
             ToolOrder = 3
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source includes Safe Mode, TrustedInstaller, service/security changes, generated scripts, RunOnce, BCD, and reboot workflow.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact source-defined Services Off and Services Default Safe Mode workflows with generated scripts, RunOnce, BCD safeboot, TrustedInstaller REG import, restore-point prelude, and restart request.'
             YazanFinalException = $false
-            NextParityAction = 'Approve exact service, Safe Mode, TrustedInstaller, RunOnce, BCD, reboot, file, and registry scopes.'
+            NextParityAction = 'No parity work required; advance ordered cursor to timer-resolution-assistant.'
         }
         @{
             ToolId = 'timer-resolution-assistant'

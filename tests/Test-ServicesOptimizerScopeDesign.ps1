@@ -108,13 +108,14 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F`',
-    'Services Optimizer remains a refused placeholder',
+    'Phase 159 supersedes the placeholder/refusal status',
+    'Ultimate Services Off and Services Default workflows',
     'No production service/registry/file/reboot/Safe Mode/TrustedInstaller scopes',
     'Active source target count: `273` services',
     'Unknown or wildcard service targets remain denied',
     'Dynamic broad service mutation remains refused',
     'No commented source entries may become active without explicit approval',
-    'Current Default/Restore must remain unavailable',
+    'Restore remains unavailable because the Ultimate source does not',
     'Restore remains unavailable unless exact service rollback',
     'RunOnce',
     'bcdedit /set {current} safeboot minimal',
@@ -213,11 +214,31 @@ if (-not $planText.Contains('docs/tool-designs/services-optimizer-scope-design.m
     throw 'Deferred tools execution plan does not link to the Services Optimizer scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Services Optimizer module is no longer a placeholder.'
+foreach ($requiredImplementationText in @(
+    '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')',
+    'Get-BoostLabServicesOptimizerBranchDefinition',
+    'RunOnceValueName',
+    'bcdedit /set {current} safeboot minimal',
+    'TrustedInstaller',
+    'Checkpoint-Computer'
+)) {
+    if (-not $moduleText.Contains($requiredImplementationText)) {
+        throw "Services Optimizer implemented module is missing expected Phase 159 behavior: $requiredImplementationText"
+    }
 }
-if ($moduleText -match 'Stop-Service|sc\.exe|bcdedit|shutdown|Regedit|Set-Content|RunOnce|TrustedInstaller') {
-    throw 'Services Optimizer placeholder module appears to contain real mutation behavior.'
+if (-not $moduleText.Contains('RejectedRedesignBehavior')) {
+    throw 'Services Optimizer module does not report the rejected redesign behavior.'
+}
+foreach ($forbiddenRedesignText in @(
+    'Gaming profile selected',
+    'Performance profile selected',
+    'Extreme profile selected',
+    'Invoke-BoostLabServicesRecommendationEngine',
+    'New-BoostLabServiceCompatibilityScore'
+)) {
+    if ($moduleText.Contains($forbiddenRedesignText)) {
+        throw "Services Optimizer module appears to activate rejected redesign behavior: $forbiddenRedesignText"
+    }
 }
 
 if ($servicePolicy.ServiceScopes.Count -ne 0) {
@@ -316,7 +337,7 @@ if ($nvmeSource.Count -ne 0) {
     ProductionRebootScopes          = $rebootPolicy.WorkflowScopes.Count
     SourceUltimateUnchanged         = $true
     DeletedToolsRemainDeleted       = $true
-    Message                         = 'Services Optimizer scope design is present, linked, and non-executing.'
+    Message                         = 'Services Optimizer scope design is present, linked, and superseded by the Phase 159 exact Ultimate parity implementation.'
     Timestamp                       = Get-Date
 }
 

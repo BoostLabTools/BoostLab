@@ -93,9 +93,15 @@ for ($index = 0; $index -lt $advancedTools.Count; $index++) {
 if ($mmaIndex -lt 0 -or $mmaIndex -ge ($advancedTools.Count - 1)) {
     throw 'MMAgent Assistant is not followed by another ordered Advanced target.'
 }
-$expectedNextAdvancedTool = [string]$advancedTools[$mmaIndex + 1].ToolId
-if ([string]$nextOrderedTarget.ToolId -ne $expectedNextAdvancedTool) {
-    throw 'MMAgent acceptance did not advance to the next ordered Advanced tool.'
+$nextAdvancedIndex = -1
+for ($index = 0; $index -lt $advancedTools.Count; $index++) {
+    if ([string]$advancedTools[$index].ToolId -eq [string]$nextOrderedTarget.ToolId) {
+        $nextAdvancedIndex = $index
+        break
+    }
+}
+if ($nextAdvancedIndex -le $mmaIndex) {
+    throw 'MMAgent acceptance did not advance to a later ordered Advanced tool.'
 }
 
 $capabilities = $tool['Capabilities']

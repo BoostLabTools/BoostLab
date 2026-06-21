@@ -88,7 +88,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 }
 
 $expectedDeferred = @(
-    @{ Id = 'services-optimizer'; Title = 'Services Optimizer'; Link = 'docs/tool-designs/services-optimizer-scope-design.md'; Source = 'source-ultimate/8 Advanced/5 Services Optimizer.ps1'; Hash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F' }
     @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Link = 'docs/tool-designs/timer-resolution-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1'; Hash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621' }
     @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Link = 'docs/tool-designs/defender-optimize-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1'; Hash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6' }
 )
@@ -102,6 +101,13 @@ foreach ($expected in $expectedDeferred) {
             throw "Final deferred matrix is missing '$requiredText'."
         }
     }
+}
+
+if ($placeholderTools | Where-Object { $_.Id -eq 'services-optimizer' }) {
+    throw "Services Optimizer remains in the deferred placeholder set after Phase 159."
+}
+if ($matrixText -match '\| Services Optimizer \| `services-optimizer` \|') {
+    throw 'Final deferred matrix still lists Services Optimizer as deferred.'
 }
 
 foreach ($requiredSection in @(
@@ -142,7 +148,7 @@ foreach ($requiredPhrase in @(
 
 foreach ($requiredBlocker in @(
     '| Missing artifact provenance | 1 |',
-    '| Missing Safe Mode/reboot workflow approval | 2 |'
+    '| Missing Safe Mode/reboot workflow approval | 1 |'
 )) {
     if (-not $matrixText.Contains($requiredBlocker)) {
         throw "Final deferred matrix is missing blocker frequency row: $requiredBlocker"
