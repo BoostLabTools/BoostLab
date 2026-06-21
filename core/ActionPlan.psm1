@@ -314,6 +314,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
         'Run exactly one selected source-equivalent Bloatware branch after explicit confirmation.'
     }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Apply') {
+        'Run the source-equivalent Gamebar Xbox Off (Recommended) branch after explicit confirmation.'
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Default') {
+        'Run the source-defined Gamebar Xbox Default repair branch after explicit confirmation. Default is not captured-state Restore.'
+    }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         'Analyze the Reinstall source and report the controlled Windows 11 Media Creation Tool operation without downloading or launching anything.'
     }
@@ -819,6 +825,21 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Execute only the selected source-equivalent branch: Remove all bloatware, Install Store, Install all UWP apps, Open/list UWP optional features, Open/list legacy optional features, Install OneDrive, Install Remote Desktop Connection, or Install Snipping Tool.')
         $plannedChanges.Add('Preserve source-defined AppX, Windows capability, optional feature, service, task, process, registry/hive, protected file, MSI/uninstaller, OneDrive setup, download, and installer intents in source order for that branch.')
         $plannedChanges.Add('Do not expose Exit, Default, Restore, or unrelated repair behavior for Bloatware.')
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Verify the exact Gamebar Ultimate source checksum before execution.')
+        $plannedChanges.Add('Run the source Administrator and internet preflight checks.')
+        $plannedChanges.Add('Stop GameBar, remove all-users AppX packages where Name matches *Gaming* or *Xbox*, stop GameInputSvc, stop gamingservices, gamingservicesnet, and GameInputRedistService, wait two seconds, uninstall Microsoft GameInput with msiexec when present, then stop the source GameInput targets again.')
+        $plannedChanges.Add('Write %SystemRoot%\Temp\gamebaroff.reg with the exact source registry payload, import it with regedit.exe /S, and run the source TrustedInstaller reg add command that sets PresenceWriter ActivationType to DWORD 0.')
+        $plannedChanges.Add('Do not expose source Exit, Open, or captured-state Restore for GameBar.')
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Default') {
+        $plannedChanges.Add('Verify the exact Gamebar Ultimate source checksum before execution.')
+        $plannedChanges.Add('Run the source Administrator and internet preflight checks.')
+        $plannedChanges.Add('Write %SystemRoot%\Temp\gamebaron.reg with the exact source Default registry payload, import it with regedit.exe /S, and run the source TrustedInstaller reg add command that sets PresenceWriter ActivationType to DWORD 1.')
+        $plannedChanges.Add('Re-register all-users AppX packages where Name matches *Gaming*, *Xbox*, or *Store* from each package AppXManifest.xml.')
+        $plannedChanges.Add('Download the source edgewebview.exe and gamingrepairtool.exe Ultimate-author-hosted artifacts to %SystemRoot%\Temp, launch edgewebview.exe with wait, then launch gamingrepairtool.exe.')
+        $plannedChanges.Add('Default is the source repair/default branch, not captured-state Restore.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Reinstall source checksum and implementation status.')
@@ -1472,6 +1493,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Downloaded EXEs remain classified as UltimateAuthorHostedArtifact / NeedsBoostLabMirror; no artifact provenance approval, production allowlist entry, binary vendoring, or mirror substitution is created.')
         $sideEffects.Add('Bloatware has no source-defined Default or captured-state Restore action; BoostLab does not expose either one.')
     }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Apply can remove Gaming/Xbox AppX packages, stop GameBar/GameInput processes, stop GameInputSvc, uninstall Microsoft GameInput with msiexec, write/import source registry payloads, and run the source TrustedInstaller registry command.')
+        $sideEffects.Add('No download or installer launch is part of the source Off branch. No reboot, Safe Mode, driver mutation, source file change, mirror file change, artifact provenance, or production allowlist behavior is changed.')
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Default') {
+        $sideEffects.Add('Default can write/import source registry payloads, run the source TrustedInstaller registry command, re-register Gaming/Xbox/Store AppX packages, download source edgewebview.exe and gamingrepairtool.exe, and launch both downloaded tools.')
+        $sideEffects.Add('The downloaded EXEs remain classified as UltimateAuthorHostedArtifact / NeedsBoostLabMirror; no artifact provenance approval, production allowlist entry, binary vendoring, or mirror substitution is created.')
+        $sideEffects.Add('Default is not Restore. No reboot, Safe Mode, driver mutation, source file change, mirror file change, artifact provenance, or production allowlist behavior is changed.')
+    }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Reinstall analysis is read-only.')
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
@@ -1904,6 +1934,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
         'Bloatware will run exactly one selected source-equivalent Ultimate branch after confirmation. Depending on the selected branch it may remove or re-register AppX packages, remove Windows capabilities, disable optional features, stop/delete services, unregister tasks, stop processes, write/delete/import registry state and hives, change ownership/ACLs, delete protected files, download the source-defined Remote Desktop Connection or Snipping Tool EXEs, and run installers/uninstallers. No Default or Restore branch exists. Continue only if this selected branch should run.'
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Apply') {
+        'GameBar will run the source-defined Off (Recommended) branch: stop GameBar, remove all-users Gaming/Xbox AppX packages, stop GameInput service/processes, uninstall Microsoft GameInput when present, write/import gamebaroff.reg, and run the source TrustedInstaller PresenceWriter registry command. No download, repair installer, reboot, Safe Mode, or Restore runs. Continue?'
+    }
+    elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Default') {
+        'GameBar will run the source-defined Default branch: write/import gamebaron.reg, run the source TrustedInstaller PresenceWriter registry command, re-register Gaming/Xbox/Store AppX packages, download edgewebview.exe and gamingrepairtool.exe from the Ultimate author-hosted URLs, and launch them. Default is not captured-state Restore. Continue?'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Reinstall guidance only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'

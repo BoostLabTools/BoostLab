@@ -1,7 +1,7 @@
 @{
 ActiveTools = 55
-    ImplementedTools = 48
-    DeferredPlaceholders = 7
+    ImplementedTools = 49
+    DeferredPlaceholders = 6
 SourcePromotedMirrorFiles = 7
     RemainingSourcePromotedIntakeCandidates = 0
 }

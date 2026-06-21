@@ -500,7 +500,7 @@ $protectedModuleHashes = [ordered]@{
     'Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
     'Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'
     'Windows\ThemeBlack.psm1' = '29F3474D93061B01E3CF9F23EADA88E932E90E4984EBB39F7DB2BEB24732230F'
-    'Windows\game-bar.psm1' = 'E301B2AA588537B81CAB577DA51342FAFFFB7B452C2C36054BD269C51F10CC24'
+    'Windows\game-bar.psm1' = 'B8E0A3A6751BA55E4E4F1DAF92103304EF80A7BD8B861F3BCD49068A6644D2C6'
     'Windows\copilot.psm1' = 'FB1277012C4A537E1C3F335AAB862DC00A4A5F665EF42A8FC81BDFE1CDDAE162'
     'Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
 }
@@ -519,8 +519,8 @@ Assert-BoostLabCondition ($sourceUltimateFiles.Count -gt 0) 'source-ultimate inv
 
 $gameBarSource = Get-Content -Raw -LiteralPath (Join-Path $modulesRoot 'Windows\game-bar.psm1')
 Assert-BoostLabCondition (
-    $gameBarSource.Contains('ToolModule.Placeholder.ps1')
-) 'GameBar is no longer a placeholder.'
+    $gameBarSource.Contains('$script:BoostLabImplementedActions = @(''Apply'', ''Default'')')
+) 'GameBar is no longer implemented with Apply/Default.'
 
 $deletedToolNames = @(
     'Windows Activation Helper'

@@ -503,10 +503,10 @@
                     Stage       = 'Windows'
                     Order       = 12
                     Type        = 'action'
-                    RiskLevel   = 'low'
-                    Description = 'Manage the reversible Xbox Game Bar preference.'
+                    RiskLevel   = 'high'
+                    Description = 'Apply the source-equivalent Gamebar Xbox Off branch or run the source-defined Default repair branch.'
                     Actions     = @('Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $true; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $true; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'edge-webview'

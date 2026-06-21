@@ -14,8 +14,9 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $MyInvocation.MyCommand.Path
     }
     else {
-        throw 'Unable to determine the GameBar scope design validator script path.'
+        throw 'Unable to determine the GameBar validator script path.'
     }
+
     $ProjectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 }
 else {
@@ -23,317 +24,249 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
-$inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 
-$designPath = Join-Path $ProjectRoot 'docs\tool-designs\gamebar-scope-design.md'
-$readinessPath = Join-Path $ProjectRoot 'docs\deferred-tool-readiness-review.md'
-$planPath = Join-Path $ProjectRoot 'docs\deferred-tools-execution-plan.md'
+function Assert-GameBarCondition {
+    param(
+        [bool]$Condition,
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\12 Gamebar.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\game-bar.psm1'
-$configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$artifactPolicyPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
-$appxPolicyPath = Join-Path $ProjectRoot 'config\AppxPackagePolicy.psd1'
-$cleanupPolicyPath = Join-Path $ProjectRoot 'config\CleanupPolicy.psd1'
-$rollbackPolicyPath = Join-Path $ProjectRoot 'config\RollbackPolicy.psd1'
-$servicePolicyPath = Join-Path $ProjectRoot 'config\ServiceRollbackPolicy.psd1'
-$rebootPolicyPath = Join-Path $ProjectRoot 'config\RebootRecoveryPolicy.psd1'
-$trustedPolicyPath = Join-Path $ProjectRoot 'config\TrustedInstallerPolicy.psd1'
-$sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-
-foreach ($path in @(
-    $designPath,
-    $readinessPath,
-    $planPath,
-    $sourcePath,
-    $modulePath,
-    $configPath,
-    $artifactPolicyPath,
-    $appxPolicyPath,
-    $cleanupPolicyPath,
-    $rollbackPolicyPath,
-    $servicePolicyPath,
-    $rebootPolicyPath,
-    $trustedPolicyPath
-)) {
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "Required file was not found: $path"
-    }
-}
-
-$designText = Get-Content -LiteralPath $designPath -Raw
-$readinessText = Get-Content -LiteralPath $readinessPath -Raw
-$planText = Get-Content -LiteralPath $planPath -Raw
-$sourceText = Get-Content -LiteralPath $sourcePath -Raw
-$moduleText = Get-Content -LiteralPath $modulePath -Raw
-$config = Import-PowerShellDataFile -LiteralPath $configPath
-$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
-$appxPolicy = Import-PowerShellDataFile -LiteralPath $appxPolicyPath
-$cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
-$rollbackPolicy = Import-PowerShellDataFile -LiteralPath $rollbackPolicyPath
-$servicePolicy = Import-PowerShellDataFile -LiteralPath $servicePolicyPath
-$rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
-$trustedPolicy = Import-PowerShellDataFile -LiteralPath $trustedPolicyPath
-$allTools = @($config.Stages | ForEach-Object { $_.Tools })
+$stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
+$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$artifactProvenancePath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
+$productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 
 $expectedSourceHash = '8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59'
-$actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-if ($actualSourceHash -ne $expectedSourceHash) {
-    throw "GameBar source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
-}
+Assert-GameBarCondition (Test-Path -LiteralPath $sourcePath -PathType Leaf) 'GameBar Ultimate source file is missing.'
+$actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+Assert-GameBarCondition ($actualSourceHash -eq $expectedSourceHash) "GameBar source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 
-foreach ($requiredSection in @(
-    '# GameBar Scope Design',
-    '## Purpose',
-    '## Source Reference',
-    '## Product Scope Decision',
-    '## Source Behavior Summary',
-    '## Current Decision',
-    '## Behavior Groups',
-    '### 1. Xbox Game Bar AppX/Package Behavior',
-    '### 2. Xbox-Related AppX/Package Behavior',
-    '### 3. GameInput Behavior',
-    '### 4. Service Behavior If Present',
-    '### 5. Process Stop Behavior If Present',
-    '### 6. Registry Policy/Settings Behavior',
-    '### 7. File/Directory Cleanup Behavior If Present',
-    '### 8. AppX Re-Registration or Repair Behavior If Present',
-    '### 9. Downloads/Installers or Repair Installer Behavior If Present',
-    '### 10. Default/Restore Behavior',
-    '### 11. Unsupported Broad Package/Service/File/Registry Targets',
-    '### 12. Unsupported Windows 10-Only Branches/Options If Present',
-    '## Exact Source Target Inventory',
-    '## Future Safe Apply Requirements',
-    '## Default and Restore Boundary',
-    '## Production Approval State'
-)) {
-    if (-not $designText.Contains($requiredSection)) {
-        throw "GameBar scope design is missing section: $requiredSection"
-    }
-}
-
-foreach ($requiredPhrase in @(
-    'Source SHA-256: `8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59`',
-    'GameBar remains a refused placeholder',
-    'No production AppX/package/service/registry/file/cleanup/download/installer/reboot scopes',
-    'The current catalog metadata understates source risk',
-    'unknown packages remain denied',
-    'wildcard AppX package matching remains refused',
-    'No Windows 10-only branch was found',
-    'Current Default/Restore must remain unavailable',
-    'mutable GitHub raw URLs',
-    'TrustedInstaller',
-    'edgewebview.exe',
-    'gamingrepairtool.exe',
-    'Microsoft GameInput'
-)) {
-    if (-not $designText.Contains($requiredPhrase)) {
-        throw "GameBar scope design is missing phrase: $requiredPhrase"
-    }
-}
-
-foreach ($requiredField in @(
-    'Intended mutation type:',
-    'Required foundation:',
-    'Required future production allowlist:',
-    'Required inventory/capture before mutation:',
-    'Required confirmation level:',
-    'Required verification:',
-    'Rollback/restore feasibility:',
-    'Risk level:',
-    'Whether it can be implemented later:',
-    'Whether it must remain refused:'
-)) {
-    if (-not $designText.Contains($requiredField)) {
-        throw "GameBar scope design is missing per-group field: $requiredField"
-    }
-}
-
-foreach ($requiredSourceTarget in @(
-    'Get-AppXPackage -AllUsers | Where-Object',
-    'Remove-AppxPackage',
-    'Add-AppxPackage -DisableDevelopmentMode -Register',
-    '*Gaming*',
-    '*Xbox*',
-    '*Store*',
-    'GameInputSvc',
-    'gamingservices',
-    'gamingservicesnet',
-    'GameInputRedistService',
+$sourceText = Get-Content -LiteralPath $sourcePath -Raw
+foreach ($requiredSourceText in @(
+    'Gamebar Xbox: Off (Recommended)',
+    'Gamebar Xbox: Default',
     'Stop-Process -Force -Name GameBar',
-    'HKCU\System\GameConfigStore',
-    'HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR',
-    'HKCU\Software\Microsoft\GameBar',
-    'HKEY_CLASSES_ROOT\ms-gamebar',
-    'HKEY_CLASSES_ROOT\ms-gamebarservices',
-    'HKEY_CLASSES_ROOT\ms-gamingoverlay',
-    'HKLM\SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId\Windows.Gaming.GameBar.PresenceServer.Internal.PresenceWriter',
-    '$env:SystemRoot\Temp\gamebaroff.reg',
-    '$env:SystemRoot\Temp\gamebaron.reg',
-    '$env:SystemRoot\Temp\edgewebview.exe',
-    '$env:SystemRoot\Temp\gamingrepairtool.exe',
-    'Run-Trusted -command',
-    'sc.exe config TrustedInstaller binPath=',
-    'sc.exe start TrustedInstaller'
+    'Get-AppXPackage -AllUsers',
+    'Remove-AppxPackage',
+    'GameInputSvc',
+    'Microsoft GameInput',
+    'msiexec.exe',
+    'gamebaroff.reg',
+    'gamebaron.reg',
+    'HKEY_CURRENT_USER\Software\Microsoft\GameBar',
+    'ms-gamebar',
+    'ms-gamebarservices',
+    'ms-gamingoverlay',
+    'PresenceServer.Internal.PresenceWriter',
+    'Run-Trusted',
+    'edgewebview.exe',
+    'gamingrepairtool.exe'
 )) {
-    if (-not $designText.Contains($requiredSourceTarget)) {
-        throw "GameBar scope design is missing source target: $requiredSourceTarget"
-    }
+    Assert-GameBarCondition ($sourceText.Contains($requiredSourceText)) "GameBar source is missing expected source-backed behavior: $requiredSourceText"
 }
+Assert-GameBarCondition (-not ($sourceText -match 'Restart-Computer|shutdown\.exe|bcdedit')) 'GameBar source unexpectedly contains direct reboot or BCD behavior.'
 
-$urls = [regex]::Matches(
-    $sourceText,
-    'https://github\.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/[A-Za-z0-9_.-]+'
-) | ForEach-Object { $_.Value } | Sort-Object -Unique
-if (@($urls).Count -ne 2) {
-    throw "Expected 2 GameBar source URLs, found $(@($urls).Count)."
-}
-foreach ($url in $urls) {
-    if (-not $designText.Contains($url)) {
-        throw "GameBar scope design is missing source URL: $url"
-    }
-}
-
-$nonElevationStartProcess = @(
-    [regex]::Matches($sourceText, 'Start-Process') |
-        ForEach-Object { $_.Value }
-).Count - 1
-if ($nonElevationStartProcess -ne 5) {
-    throw "Expected 5 non-elevation Start-Process calls, found $nonElevationStartProcess."
-}
-foreach ($commandSnippet in @(
-    'Start-Process "msiexec.exe"',
-    'Start-Process -Wait "regedit.exe"',
-    'Start-Process -Wait "$env:SystemRoot\Temp\edgewebview.exe"',
-    'Start-Process "$env:SystemRoot\Temp\gamingrepairtool.exe"'
+$moduleText = Get-Content -LiteralPath $modulePath -Raw
+Assert-GameBarCondition (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) 'GameBar module must not use the placeholder implementation.'
+foreach ($requiredModuleText in @(
+    '$script:BoostLabExpectedSourceHash',
+    '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')',
+    'Get-BoostLabGameBarOperationPlan',
+    'Invoke-BoostLabGameBarBranchWorkflow',
+    'Invoke-BoostLabGameBarTrustedInstallerCommand',
+    'UltimateAuthorHostedArtifact',
+    'NeedsBoostLabMirror = $true',
+    'RestoreSupported          = $false'
 )) {
-    if (-not $designText.Contains($commandSnippet)) {
-        throw "GameBar scope design is missing Start-Process snippet: $commandSnippet"
-    }
+    Assert-GameBarCondition ($moduleText.Contains($requiredModuleText)) "GameBar module is missing expected implementation text: $requiredModuleText"
 }
 
-if ($sourceText -match 'Restart-Computer|shutdown\s|bcdedit') {
-    throw 'GameBar source unexpectedly contains direct reboot or BCD behavior.'
+$stages = Import-PowerShellDataFile -LiteralPath $stagesPath
+$gameBarStageEntry = @($stages.Stages | ForEach-Object { $_.Tools } | Where-Object { $_.Id -eq 'game-bar' }) | Select-Object -First 1
+Assert-GameBarCondition ($null -ne $gameBarStageEntry) 'GameBar stage entry was not found.'
+Assert-GameBarCondition ([string]$gameBarStageEntry.RiskLevel -eq 'high') 'GameBar risk level must be high.'
+Assert-GameBarCondition ((@($gameBarStageEntry.Actions) -join ',') -eq 'Apply,Default') 'GameBar actions must be Apply and Default only.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.RequiresAdmin) 'GameBar must require Administrator.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.RequiresInternet) 'GameBar must require internet.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.CanModifyRegistry) 'GameBar must declare registry capability.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.CanModifyServices) 'GameBar must declare service capability.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.CanInstallSoftware) 'GameBar must declare software install/repair capability.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.CanDownload) 'GameBar must declare download capability.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.CanModifySecurity) 'GameBar must declare security/protected registration capability.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.UsesTrustedInstaller) 'GameBar must declare TrustedInstaller usage.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.SupportsDefault) 'GameBar must support source-defined Default.'
+Assert-GameBarCondition (-not [bool]$gameBarStageEntry.Capabilities.SupportsRestore) 'GameBar must not claim captured-state Restore support.'
+Assert-GameBarCondition ([bool]$gameBarStageEntry.Capabilities.NeedsExplicitConfirmation) 'GameBar must require explicit confirmation.'
+
+$executionText = Get-Content -LiteralPath $executionPath -Raw
+Assert-GameBarCondition ($executionText.Contains("'game-bar' = @{")) 'GameBar must be registered as an implemented runtime module.'
+Assert-GameBarCondition ($executionText.Contains("Path    = Join-Path `$script:BoostLabModulesRoot 'Windows\game-bar.psm1'")) 'GameBar runtime module path is not registered.'
+Assert-GameBarCondition ($executionText.Contains("Actions = @('Apply', 'Default')")) 'GameBar runtime actions are not registered as Apply/Default.'
+
+$actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
+foreach ($requiredPlanText in @(
+    'Gamebar Xbox Off (Recommended)',
+    'Gamebar Xbox Default repair',
+    'all-users AppX packages where Name matches *Gaming* or *Xbox*',
+    'source TrustedInstaller PresenceWriter registry command',
+    'edgewebview.exe and gamingrepairtool.exe',
+    'Default is not captured-state Restore'
+)) {
+    Assert-GameBarCondition ($actionPlanText.Contains($requiredPlanText)) "GameBar Action Plan is missing expected wording: $requiredPlanText"
 }
 
-if (-not $readinessText.Contains('docs/tool-designs/gamebar-scope-design.md')) {
-    throw 'Deferred readiness review does not link to the GameBar scope design.'
-}
-if (-not $planText.Contains('docs/tool-designs/gamebar-scope-design.md')) {
-    throw 'Deferred tools execution plan does not link to the GameBar scope design.'
-}
-
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'GameBar module is no longer a placeholder.'
-}
-if ($moduleText -match 'Get-AppXPackage|Remove-AppxPackage|Add-AppxPackage|Start-Process|IWR|Invoke-WebRequest|Run-Trusted|TrustedInstaller|regedit|msiexec|Stop-Process|sc stop') {
-    throw 'GameBar placeholder module appears to contain real mutation behavior.'
-}
-
-if ($artifactPolicy.Artifacts.Count -ne 0) {
-    throw "Artifact approvals were added unexpectedly: $($artifactPolicy.Artifacts.Count)"
-}
-if ($appxPolicy.PackageScopes.Count -ne 0) {
-    throw "AppX package production scopes were approved unexpectedly: $($appxPolicy.PackageScopes.Count)"
-}
-if ($cleanupPolicy.CleanupScopes.Count -ne 0) {
-    throw "Cleanup production scopes were approved unexpectedly: $($cleanupPolicy.CleanupScopes.Count)"
-}
-if ($rollbackPolicy.FileScopes.Count -ne 0 -or $rollbackPolicy.RegistryScopes.Count -ne 0) {
-    throw 'File or registry production scopes were approved unexpectedly.'
-}
-if ($servicePolicy.ServiceScopes.Count -ne 0) {
-    throw "Service production scopes were approved unexpectedly: $($servicePolicy.ServiceScopes.Count)"
-}
-if ($rebootPolicy.WorkflowScopes.Count -ne 0) {
-    throw "Reboot workflow production scopes were approved unexpectedly: $($rebootPolicy.WorkflowScopes.Count)"
-}
-if ($trustedPolicy.TrustedInstallerScopes.Count -ne 0) {
-    throw "TrustedInstaller production scopes were approved unexpectedly: $($trustedPolicy.TrustedInstallerScopes.Count)"
-}
-
-$gameBarTool = $allTools |
-    Where-Object { $_.Id -eq 'game-bar' -and $_.Stage -eq 'Windows' } |
-    Select-Object -First 1
-if (-not $gameBarTool) {
-    throw 'GameBar catalog entry was not found.'
-}
-
-$activeTools = @($allTools)
-$placeholderModules = @(
-    Get-ChildItem -Path (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' |
-        Where-Object { (Get-Content -LiteralPath $_.FullName -Raw).Contains('ToolModule.Placeholder.ps1') }
-)
-if ($activeTools.Count -ne $inventoryBaseline.ActiveTools) {
-    throw "Expected $($inventoryBaseline.ActiveTools) active tools, found $($activeTools.Count)."
-}
-if ($placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Expected $($inventoryBaseline.DeferredPlaceholders) placeholder modules, found $($placeholderModules.Count)."
-}
-if (($activeTools.Count - $placeholderModules.Count) -ne $inventoryBaseline.ImplementedTools) {
-    throw "Expected $($inventoryBaseline.ImplementedTools) implemented tools, found $($activeTools.Count - $placeholderModules.Count)."
-}
-
-$root = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-    Sort-Object {
-        $_.FullName.Substring($root.Length + 1).Replace('\', '/')
-    } |
-    ForEach-Object {
-        '{0}|{1}' -f `
-            $_.FullName.Substring($root.Length + 1).Replace('\', '/'), `
-            (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash
-    }
-$sha256 = [Security.Cryptography.SHA256]::Create()
+$module = Import-Module -Name $modulePath -Force -PassThru
 try {
-    $manifestHash = [BitConverter]::ToString(
-        $sha256.ComputeHash(
-            [Text.Encoding]::UTF8.GetBytes(($sourceLines -join "`n"))
-        )
-    ).Replace('-', '')
+    $info = Get-BoostLabToolInfo
+    Assert-GameBarCondition ([string]$info.Id -eq 'game-bar') 'GameBar module exported the wrong tool id.'
+    Assert-GameBarCondition ([string]$info.RiskLevel -eq 'high') 'GameBar module metadata risk level must be high.'
+    Assert-GameBarCondition ((@($info.ImplementedActions) -join ',') -eq 'Apply,Default') 'GameBar implemented action list must be Apply/Default.'
+
+    $compatibility = Test-BoostLabToolCompatibility
+    Assert-GameBarCondition ([bool]$compatibility.Supported) 'GameBar compatibility must pass when source checksum matches.'
+    Assert-GameBarCondition ([string]$compatibility.Source.ActualSHA256 -eq $expectedSourceHash) 'GameBar compatibility did not report the expected source hash.'
+
+    $analysis = Get-BoostLabToolState
+    Assert-GameBarCondition ([bool]$analysis.NoMutationOccurred) 'GameBar analysis must be read-only.'
+    Assert-GameBarCondition ([bool]$analysis.NoDownloadOccurred) 'GameBar analysis must not download.'
+    Assert-GameBarCondition ([bool]$analysis.NoExternalProcessStarted) 'GameBar analysis must not start external processes.'
+    Assert-GameBarCondition (-not [bool]$analysis.OpenSupported) 'GameBar must not expose Open.'
+    Assert-GameBarCondition (-not [bool]$analysis.RestoreSupported) 'GameBar must not expose Restore.'
+
+    $offPlan = Get-BoostLabGameBarOperationPlan -Branch OffRecommended
+    $defaultPlan = Get-BoostLabGameBarOperationPlan -Branch Default
+    Assert-GameBarCondition ([string]$offPlan.SourceBranchLabel -eq 'Gamebar Xbox: Off (Recommended)') 'Apply must map to the source Off branch.'
+    Assert-GameBarCondition ([string]$defaultPlan.SourceBranchLabel -eq 'Gamebar Xbox: Default') 'Default must map to the source Default branch.'
+    Assert-GameBarCondition ([int]$offPlan.OperationCount -eq 13) "GameBar Off branch operation count changed: $($offPlan.OperationCount)"
+    Assert-GameBarCondition ([int]$defaultPlan.OperationCount -eq 10) "GameBar Default branch operation count changed: $($defaultPlan.OperationCount)"
+
+    foreach ($operationType in @('RequireAdministrator', 'RequireInternet', 'StopProcess', 'RemoveAppxWhereNameLike', 'Cmd', 'StopProcesses', 'Sleep', 'MsiUninstallByDisplayName', 'SetContent', 'ImportRegFile', 'TrustedInstallerCommand')) {
+        Assert-GameBarCondition ($operationType -in @($offPlan.Operations.OperationType)) "GameBar Off plan is missing operation type: $operationType"
+    }
+    foreach ($operationType in @('RequireAdministrator', 'RequireInternet', 'SetContent', 'ImportRegFile', 'TrustedInstallerCommand', 'AppxRegisterWhereNameLike', 'DownloadFile', 'StartProcess')) {
+        Assert-GameBarCondition ($operationType -in @($defaultPlan.Operations.OperationType)) "GameBar Default plan is missing operation type: $operationType"
+    }
+
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"GameDVR_Enabled"=dword:00000000')) 'GameBar Off registry payload is missing GameDVR_Enabled.'
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"AppCaptureEnabled"=dword:00000000')) 'GameBar Off registry payload is missing AppCaptureEnabled.'
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"UseNexusForGameBarEnabled"=dword:00000000')) 'GameBar Off registry payload is missing UseNexusForGameBarEnabled.'
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"GamepadNexusChordEnabled"=dword:00000000')) 'GameBar Off registry payload is missing GamepadNexusChordEnabled.'
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('[HKEY_CLASSES_ROOT\ms-gamebar]')) 'GameBar Off registry payload is missing ms-gamebar.'
+    Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('PresenceServer.Internal.PresenceWriter')) 'GameBar Off registry payload is missing PresenceWriter.'
+    Assert-GameBarCondition ($defaultPlan.RegistryPayloads.Default.Contains('"ActivationType"=dword:00000001')) 'GameBar Default registry payload is missing ActivationType DWORD 1.'
+    foreach ($serviceName in @('GameInputSvc', 'BcastDVRUserService', 'XboxGipSvc', 'XblAuthManager', 'XblGameSave', 'XboxNetApiSvc')) {
+        Assert-GameBarCondition ($defaultPlan.RegistryPayloads.Default.Contains($serviceName)) "GameBar Default registry payload is missing service start value: $serviceName"
+    }
+
+    $downloadArtifacts = @($defaultPlan.DownloadArtifacts)
+    Assert-GameBarCondition ($downloadArtifacts.Count -eq 2) 'GameBar Default must declare the two source download artifacts.'
+    foreach ($artifact in $downloadArtifacts) {
+        Assert-GameBarCondition ([string]$artifact.Classification -eq 'UltimateAuthorHostedArtifact') 'GameBar downloads must be classified as UltimateAuthorHostedArtifact.'
+        Assert-GameBarCondition ([bool]$artifact.NeedsBoostLabMirror) 'GameBar downloads must be marked NeedsBoostLabMirror.'
+    }
+    Assert-GameBarCondition ($downloadArtifacts.Url -contains 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe') 'GameBar Default is missing the source Edge WebView URL.'
+    Assert-GameBarCondition ($downloadArtifacts.Url -contains 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/gamingrepairtool.exe') 'GameBar Default is missing the source gaming repair tool URL.'
+
+    $unsupportedOpen = Invoke-BoostLabToolAction -ActionName Open
+    Assert-GameBarCondition (-not [bool]$unsupportedOpen.Success) 'GameBar Open must not be supported.'
+    Assert-GameBarCondition ([string]$unsupportedOpen.CommandStatus -eq 'NotSupported') 'GameBar Open should return NotSupported.'
+    $unsupportedRestore = Invoke-BoostLabToolAction -ActionName Restore
+    Assert-GameBarCondition (-not [bool]$unsupportedRestore.Success) 'GameBar Restore must not be supported.'
+    Assert-GameBarCondition ([string]$unsupportedRestore.CommandStatus -eq 'NotSupported') 'GameBar Restore should return NotSupported.'
+
+    $unconfirmedApply = Invoke-BoostLabToolAction -ActionName Apply
+    Assert-GameBarCondition (-not [bool]$unconfirmedApply.Success) 'GameBar Apply without confirmation must not run.'
+    Assert-GameBarCondition ([string]$unconfirmedApply.CommandStatus -eq 'ConfirmationRequired') 'GameBar Apply without confirmation must request confirmation.'
+    Assert-GameBarCondition (-not [bool]$unconfirmedApply.ChangesExecuted) 'GameBar Apply without confirmation must not execute changes.'
+
+    $executedOperations = [System.Collections.Generic.List[string]]::new()
+    $mockExecutor = {
+        param($Operation)
+        $script:GameBarExecutedOperations.Add([string]$Operation.OperationType)
+        [pscustomobject]@{
+            Success       = $true
+            OperationType = [string]$Operation.OperationType
+            Description   = [string]$Operation.Description
+        }
+    }
+
+    $script:GameBarExecutedOperations = $executedOperations
+    $applyResult = Invoke-BoostLabToolAction -ActionName Apply -Confirmed -OperationExecutor $mockExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition ([bool]$applyResult.Success) 'GameBar Apply should complete with mocked operations.'
+    Assert-GameBarCondition ([string]$applyResult.CommandStatus -eq 'Completed') 'GameBar Apply mock should report Completed.'
+    Assert-GameBarCondition ([bool]$applyResult.ChangesExecuted) 'GameBar Apply mock should report changes executed.'
+    Assert-GameBarCondition (-not ('RequireAdministrator' -in @($script:GameBarExecutedOperations))) 'GameBar Apply mock should skip admin preflight when requested.'
+    Assert-GameBarCondition (-not ('RequireInternet' -in @($script:GameBarExecutedOperations))) 'GameBar Apply mock should skip internet preflight when requested.'
+    Assert-GameBarCondition ($script:GameBarExecutedOperations.Count -eq 11) "GameBar Apply mock should execute 11 non-preflight operations, found $($script:GameBarExecutedOperations.Count)."
+
+    $script:GameBarExecutedOperations = [System.Collections.Generic.List[string]]::new()
+    $defaultResult = Invoke-BoostLabToolAction -ActionName Default -Confirmed -OperationExecutor $mockExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition ([bool]$defaultResult.Success) 'GameBar Default should complete with mocked operations.'
+    Assert-GameBarCondition ([string]$defaultResult.CommandStatus -eq 'Completed') 'GameBar Default mock should report Completed.'
+    Assert-GameBarCondition ([bool]$defaultResult.ChangesExecuted) 'GameBar Default mock should report changes executed.'
+    Assert-GameBarCondition ($script:GameBarExecutedOperations.Count -eq 8) "GameBar Default mock should execute 8 non-preflight operations, found $($script:GameBarExecutedOperations.Count)."
+
+    $failureExecutor = {
+        param($Operation)
+        if ([string]$Operation.OperationType -eq 'TrustedInstallerCommand') {
+            throw 'mock TI failure'
+        }
+        [pscustomobject]@{ Success = $true; OperationType = [string]$Operation.OperationType }
+    }
+    $failedApply = Invoke-BoostLabToolAction -ActionName Apply -Confirmed -OperationExecutor $failureExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition (-not [bool]$failedApply.Success) 'GameBar Apply must fail closed when a mocked operation fails.'
+    Assert-GameBarCondition ([string]$failedApply.CommandStatus -eq 'Failed') 'GameBar Apply failure must report Failed.'
+    Assert-GameBarCondition ([string]$failedApply.VerificationStatus -eq 'Failed') 'GameBar Apply failure must fail verification.'
 }
 finally {
-    $sha256.Dispose()
+    Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
+    Remove-Variable -Name GameBarExecutedOperations -Scope Script -ErrorAction SilentlyContinue
 }
 
-if (
-    @($sourceLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
-) {
-    throw 'source-ultimate content or paths changed.'
-}
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$gameBarRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'game-bar' }) | Select-Object -First 1
+Assert-GameBarCondition ($null -ne $gameBarRecord) 'GameBar parity baseline record is missing.'
+Assert-GameBarCondition ([string]$gameBarRecord.RuntimeStatus -eq 'RuntimeImplemented') 'GameBar must be runtime implemented after Phase 146.'
+Assert-GameBarCondition ([string]$gameBarRecord.ImplementationLevel -eq 'ParityImplemented') 'GameBar must be marked ParityImplemented after Phase 146.'
+Assert-GameBarCondition ([string]$gameBarRecord.UltimateParity -eq 'Yes') 'GameBar UltimateParity must be Yes after Phase 146.'
+Assert-GameBarCondition ([string]$gameBarRecord.FinalProgressStatus -eq 'DoneParity') 'GameBar final progress status must be DoneParity.'
+Assert-GameBarCondition (-not [bool]$gameBarRecord.YazanFinalException) 'GameBar must not use a Yazan final exception.'
+Assert-GameBarCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'edge-webview') 'Current ordered parity target must advance to edge-webview.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-GameBarCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Next ordered parity target must match the central baseline cursor.'
 
-$loudnessPath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'
-if (Test-Path -LiteralPath $loudnessPath) {
-    throw 'Loudness EQ source was reintroduced.'
-}
-$nvmeSource = @(
-    Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
-        Where-Object { $_.Name -like '*NVME Faster Driver*' }
-)
-if ($nvmeSource.Count -ne 0) {
-    throw 'NVME Faster Driver source was reintroduced.'
-}
+$inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
+Assert-GameBarCondition ([int]$inventoryAssertion.Baseline.ImplementedTools -eq [int]$inventoryAssertion.Snapshot.ImplementedTools) 'Inventory implemented count must remain baseline-derived.'
+Assert-GameBarCondition ([int]$inventoryAssertion.Baseline.DeferredPlaceholders -eq [int]$inventoryAssertion.Snapshot.DeferredPlaceholders) 'Inventory deferred count must remain baseline-derived.'
+
+$artifactProvenance = Get-Content -LiteralPath $artifactProvenancePath -Raw
+$productionAllowlist = Get-Content -LiteralPath $productionAllowlistPath -Raw
+Assert-GameBarCondition (-not $artifactProvenance.Contains('edgewebview.exe')) 'GameBar phase must not add edgewebview.exe to artifact provenance.'
+Assert-GameBarCondition (-not $artifactProvenance.Contains('gamingrepairtool.exe')) 'GameBar phase must not add gamingrepairtool.exe to artifact provenance.'
+Assert-GameBarCondition (-not $productionAllowlist.Contains('game-bar')) 'GameBar phase must not add production allowlist entries.'
+
+Assert-GameBarCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\loudness-eq.psm1'))) 'Loudness EQ module must remain deleted.'
+Assert-GameBarCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\nvme-faster-driver.psm1'))) 'NVME Faster Driver module must remain deleted.'
 
 [pscustomobject]@{
-    Success                       = $true
-    ToolId                        = 'game-bar'
-    SourceHash                    = $actualSourceHash
-    ActiveToolCount               = $activeTools.Count
-    ImplementedToolCount          = $activeTools.Count - $placeholderModules.Count
-    PlaceholderToolCount          = $placeholderModules.Count
-    ProductionArtifactApprovals   = $artifactPolicy.Artifacts.Count
-    ProductionPackageScopes       = $appxPolicy.PackageScopes.Count
-    ProductionCleanupScopes       = $cleanupPolicy.CleanupScopes.Count
-    ProductionFileScopes          = $rollbackPolicy.FileScopes.Count
-    ProductionRegistryScopes      = $rollbackPolicy.RegistryScopes.Count
-    ProductionServiceScopes       = $servicePolicy.ServiceScopes.Count
-    ProductionRebootScopes        = $rebootPolicy.WorkflowScopes.Count
-    ProductionTrustedScopes       = $trustedPolicy.TrustedInstallerScopes.Count
-    SourceUltimateUnchanged       = $true
-    DeletedToolsRemainDeleted     = $true
-    Message                       = 'GameBar scope design is present, linked, and non-executing.'
-    Timestamp                     = Get-Date
+    Test = 'GameBarExactUltimateParityImplementation'
+    SourceSHA256 = $actualSourceHash
+    ImplementedActions = @('Apply', 'Default')
+    ApplyOperationCount = $offPlan.OperationCount
+    DefaultOperationCount = $defaultPlan.OperationCount
+    DownloadArtifacts = $downloadArtifacts.Count
+    CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+    InventoryImplementedTools = $inventoryAssertion.Baseline.ImplementedTools
+    InventoryDeferredPlaceholders = $inventoryAssertion.Baseline.DeferredPlaceholders
+    ProtectedPathsUntouched = $true
 }
-
-
-

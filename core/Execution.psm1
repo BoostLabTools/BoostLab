@@ -119,6 +119,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\edge-webview.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
+    'game-bar' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\game-bar.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'bloatware' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\bloatware.psm1'
         Actions = @('Analyze', 'Apply')

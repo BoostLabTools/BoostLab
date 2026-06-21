@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 48
-        DeferredPlaceholders = 7
+        RuntimeImplementedTools = 49
+        DeferredPlaceholders = 6
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 22
+        UltimateParityImplemented = 23
         NearParityControlled = 22
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 7
+        DeferredForParityWork = 6
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'game-bar'
+    CurrentOrderedParityTarget = 'edge-webview'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -590,12 +590,18 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 12
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source requires AppX, GameInput, service/protocol, download/repair, and TrustedInstaller behavior.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Yazan approved complete exact Ultimate parity for Gamebar. Apply preserves the source Gamebar Xbox Off branch; Default preserves the source Gamebar Xbox Default branch, including AppX removal/re-registration, GameInput service/process handling, Microsoft GameInput MSI uninstall, registry payload import, TrustedInstaller PresenceWriter command, and source repair downloads/launches.'
             YazanFinalException = $false
-            NextParityAction = 'Approve package, TrustedInstaller, service, repair artifact, and registry scopes.'
+            FinalProgressStatus = 'DoneParity'
+            ApprovedSourceBranches = @(
+                'Gamebar Xbox: Off (Recommended)'
+                'Gamebar Xbox: Default'
+            )
+            DownloadArtifactClassification = 'UltimateAuthorHostedArtifact; NeedsBoostLabMirror; no artifact provenance or production allowlist entry added.'
+            NextParityAction = 'No parity work required; advance ordered cursor to edge-webview.'
         }
         @{
             ToolId = 'edge-webview'

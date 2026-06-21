@@ -111,6 +111,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\edge-webview.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'game-bar' = @{
+        RelativePath          = 'Windows\game-bar.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'bloatware' = @{
         RelativePath          = 'Windows\bloatware.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
@@ -495,6 +499,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'bloatware' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content')
         )
+        $approvedGameBarCommand = (
+            $toolId -eq 'game-bar' -and
+            $commandName -in @('Invoke-WebRequest', 'Set-Content')
+        )
         $approvedStartMenuTaskbarCommand = (
             $toolId -eq 'start-menu-taskbar' -and
             $commandName -in @('New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
@@ -528,6 +536,7 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedDirectXCommand -and
             -not $approvedVisualCppCommand -and
             -not $approvedBloatwareCommand -and
+            -not $approvedGameBarCommand -and
             -not $approvedStartMenuTaskbarCommand -and
             -not $approvedSignoutWallpaperCommand
         ) {
@@ -598,6 +607,9 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'bloatware') {
+            3
+        }
+        elseif ($toolId -eq 'game-bar') {
             3
         }
         elseif ($toolId -eq 'edge-webview') {
@@ -705,7 +717,54 @@ foreach ($entry in $expectedModules.Values) {
             $errors.Add("$modulePath must contain exactly $expectedStartProcessCount Start-Process command(s).")
         }
 
-        if ($toolId -eq 'bios-information') {
+        if ($toolId -eq 'game-bar') {
+            foreach ($requiredText in @(
+                '$script:BoostLabExpectedSourceHash = ''8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59'''
+                'Get-BoostLabGameBarOperationPlan'
+                'Invoke-BoostLabGameBarBranchWorkflow'
+                'Invoke-BoostLabGameBarTrustedInstallerCommand'
+                'Get-AppXPackage -AllUsers'
+                'Remove-AppxPackage'
+                'Add-AppxPackage'
+                'GameInputSvc'
+                'Microsoft GameInput'
+                'msiexec.exe'
+                'gamebaroff.reg'
+                'gamebaron.reg'
+                'GameDVR_Enabled'
+                'AppCaptureEnabled'
+                'UseNexusForGameBarEnabled'
+                'GamepadNexusChordEnabled'
+                'ms-gamebar'
+                'ms-gamebarservices'
+                'ms-gamingoverlay'
+                'PresenceServer.Internal.PresenceWriter'
+                'edgewebview.exe'
+                'gamingrepairtool.exe'
+                'UltimateAuthorHostedArtifact'
+                'NeedsBoostLabMirror = $true'
+            )) {
+                if (-not $source.Contains($requiredText)) {
+                    $errors.Add("$modulePath is missing GameBar source-equivalent behavior: $requiredText")
+                }
+            }
+
+            foreach ($forbiddenText in @(
+                'ToolModule.Placeholder.ps1'
+                'ManualHandoffOnly'
+                'AutoBlockedUntilArtifactApproval'
+                'RestoreSupported = $true'
+                'UsesSafeMode = $true'
+                'Restart-Computer'
+                'Stop-Computer'
+                'bcdedit'
+            )) {
+                if ($source.Contains($forbiddenText)) {
+                    $errors.Add("$modulePath contains stale or unrelated GameBar behavior: $forbiddenText")
+                }
+            }
+        }
+        elseif ($toolId -eq 'bios-information') {
             foreach ($requiredText in @(
                 'Get-CimInstance'
                 '[System.Uri]::EscapeDataString'

@@ -431,7 +431,6 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
 }
 
 $refusedPlaceholders = @(
-    'Windows\game-bar.psm1'
     'Windows\control-panel-settings.psm1'
     'Windows\cleanup.psm1'
     'Advanced\resizable-bar-assistant.psm1'

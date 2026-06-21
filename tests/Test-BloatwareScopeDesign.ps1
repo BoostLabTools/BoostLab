@@ -274,7 +274,7 @@ Assert-BloatwareCondition ([string]$bloatwareRecord.FinalProgressStatus -eq 'Don
 Assert-BloatwareCondition (-not [bool]$bloatwareRecord.YazanFinalException) 'Bloatware must not use a Yazan final exception.'
 Assert-BloatwareCondition (($bloatwareRecord.ApprovedSourceBranches -join ',') -eq ($expectedParityBranchTitles -join ',')) 'Bloatware parity record must list every approved non-Exit source branch.'
 Assert-BloatwareCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the derived first non-final target.'
-Assert-BloatwareCondition ([string]$nextTarget.ToolId -eq 'game-bar') 'Bloatware acceptance must advance the ordered cursor to Game Bar.'
+Assert-BloatwareCondition ([string]$bloatwareRecord.FinalProgressStatus -eq 'DoneParity') 'Bloatware must remain accepted before the ordered cursor advances past it.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 foreach ($level in @('ParityImplemented', 'NearParityControlled', 'ControlledSubset', 'ManualHandoffOnly', 'DeferredForParityWork')) {
