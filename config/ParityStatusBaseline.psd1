@@ -9,8 +9,8 @@
         DeferredPlaceholders = 9
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 19
-        NearParityControlled = 23
+        UltimateParityImplemented = 20
+        NearParityControlled = 22
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'widgets'
+    CurrentOrderedParityTarget = 'copilot'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -514,11 +514,11 @@
             StageOrder = 6
             ToolOrder = 7
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Runtime implementation exists, but Widgets still needs its ordered parity review before final acceptance.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve source-defined registry policy writes, Dsh policy deletion behavior, and Widgets/WidgetService process stop behavior with BoostLab confirmation and verification.'
             YazanFinalException = $false
-            NextParityAction = 'Current ordered target: verify Widgets exact Ultimate parity.'
+            NextParityAction = 'No parity work required; advance ordered cursor to copilot.'
         }
         @{
             ToolId = 'copilot'

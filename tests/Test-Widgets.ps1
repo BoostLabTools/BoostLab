@@ -24,7 +24,10 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\Widgets.psm1'
@@ -550,7 +553,7 @@ $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/6 Windows/7 Widgets.ps1'
     '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
-    'Approved by Yazan'
+    'Exact Ultimate parity implemented and accepted in Phase 141'
     'Verification Strategy'
     'Windows may delay the taskbar''s visual update'
     'Default is idempotent'
@@ -616,6 +619,31 @@ if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCo
     throw "Unexpected module counts: $implementedCount implemented, $placeholderCount placeholders."
 }
 
+$widgetsRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'widgets' }) | Select-Object -First 1
+if ($null -eq $widgetsRecord) {
+    throw 'Widgets parity baseline record is missing.'
+}
+if ([string]$widgetsRecord.ImplementationLevel -ne 'ParityImplemented') {
+    throw 'Widgets must be ParityImplemented after Phase 141 acceptance.'
+}
+if ([string]$widgetsRecord.UltimateParity -ne 'Yes') {
+    throw 'Widgets UltimateParity must be Yes after Phase 141 acceptance.'
+}
+if ([bool]$widgetsRecord.YazanFinalException) {
+    throw 'Widgets must not use YazanFinalException for exact parity.'
+}
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+if ([int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented) {
+    throw 'ParityImplemented count mismatch.'
+}
+if ([int]$categoryCounts['NearParityControlled'] -ne [int]$parityBaseline.Counts.NearParityControlled) {
+    throw 'NearParityControlled count mismatch.'
+}
+$nextParityTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
+if ($null -eq $nextParityTarget -or [string]$nextParityTarget.ToolId -ne [string]$parityBaseline.CurrentOrderedParityTarget) {
+    throw 'Current ordered parity target must match the first non-final ordered target.'
+}
+
 $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $sourceLines = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.FullName -notlike (Join-Path $sourceRoot '_intake-promoted*') } |
     Sort-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
@@ -648,6 +676,8 @@ if (
     DefaultExecuted         = $false
     ImplementedModuleCount  = $implementedCount
     PlaceholderModuleCount  = $placeholderCount
+    CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+    FirstNonFinalParityTarget = $nextParityTarget.ToolId
     SourceUltimateUnchanged = $true
     Message                 = 'Widgets Apply/Default behavior was validated statically; no registry or process action was executed.'
     Timestamp               = Get-Date

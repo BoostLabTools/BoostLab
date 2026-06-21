@@ -6,7 +6,7 @@
 * **Source checksum:** `7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73`
 * **Risk level:** Low
 * **Required privileges:** Administrator
-* **Yazan approval status:** Approved by Yazan
+* **Parity status:** Exact Ultimate parity implemented and accepted in Phase 141
 
 ## Original Ultimate Behavior
 
@@ -34,7 +34,7 @@ reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNew
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /f
 ```
 
-## Intentional Deviations
+## BoostLab GUI and Verification Mechanics
 
 The original script suppresses command output and ignores process-stop errors. BoostLab checks each registry command result and returns structured errors. It ignores a missing Widgets process as the original intended, but reports a failure when a process remains running after a failed stop attempt.
 

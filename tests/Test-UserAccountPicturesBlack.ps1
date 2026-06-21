@@ -26,6 +26,7 @@ else {
 . (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
     param(
@@ -339,7 +340,9 @@ Assert-BoostLabCondition ($null -ne $userRecord) 'User Account Pictures Black pa
 Assert-BoostLabCondition ([string]$userRecord.ImplementationLevel -eq 'ParityImplemented') 'User Account Pictures Black must be ParityImplemented after Phase 140.'
 Assert-BoostLabCondition ([string]$userRecord.UltimateParity -eq 'Yes') 'User Account Pictures Black UltimateParity must be Yes after Phase 140.'
 Assert-BoostLabCondition (-not [bool]$userRecord.YazanFinalException) 'User Account Pictures Black must not use YazanFinalException for exact parity.'
-Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'widgets') 'Current ordered parity target must advance to Widgets after Phase 140.'
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $parityOrder
+Assert-BoostLabCondition ($null -ne $nextTarget) 'Ordered parity helper must resolve a first non-final target.'
+Assert-BoostLabCondition ([string]$nextTarget.ToolId -eq [string]$parityBaseline.CurrentOrderedParityTarget) 'Current ordered parity target must match the first non-final ordered target.'
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'ParityImplemented count mismatch.'
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
@@ -372,6 +375,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     MockedApplyPassed = $true
     MockedDefaultPassed = $true
     CurrentOrderedParityTarget = $parityBaseline.CurrentOrderedParityTarget
+    FirstNonFinalParityTarget = $nextTarget.ToolId
     ActiveToolCount = $tools.Count
     ImplementedModuleCount = $implementedCount
     PlaceholderModuleCount = $placeholderCount
