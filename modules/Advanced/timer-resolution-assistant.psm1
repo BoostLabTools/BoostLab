@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Stage = 'Advanced'; Order = 6
+    Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Stage = 'Advanced'; Order = 4
     Type = 'assistant'; RiskLevel = 'high'
     Description = 'Analyze timer behavior and explain latency, power, and stability tradeoffs.'
     Actions = @('Analyze', 'Apply', 'Default')

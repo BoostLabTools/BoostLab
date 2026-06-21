@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'services-optimizer'; Title = 'Services Optimizer'; Stage = 'Advanced'; Order = 5
+    Id = 'services-optimizer'; Title = 'Services Optimizer'; Stage = 'Advanced'; Order = 3
     Type = 'assistant'; RiskLevel = 'high'
     Description = 'Analyze Windows services and prepare a reviewed optimization plan.'
     Actions = @('Analyze', 'Apply', 'Restore')

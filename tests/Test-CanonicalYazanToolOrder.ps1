@@ -124,8 +124,6 @@ function Get-BoostLabCanonicalYazanOrder {
             Tools = @(
                 @{ Id = 'spectre-meltdown-assistant'; Title = 'Spectre / Meltdown Assistant' }
                 @{ Id = 'mmagent-assistant'; Title = 'MMAgent Assistant' }
-                @{ Id = 'resizable-bar-assistant'; Title = 'Resizable BAR Assistant' }
-                @{ Id = 'smt-ht-assistant'; Title = 'SMT / HT Assistant' }
                 @{ Id = 'services-optimizer'; Title = 'Services Optimizer' }
                 @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant' }
                 @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant' }
@@ -243,7 +241,7 @@ Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A
 $sourcePromotedRoot = Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate'
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recurse -File).Count -eq 7) 'Source-promoted mirror count changed.'
 
-foreach ($deletedName in @('Loudness EQ', 'NVME Faster Driver')) {
+foreach ($deletedName in @('Loudness EQ', 'NVME Faster Driver', 'Resizable BAR Assistant', 'SMT / HT Assistant')) {
     $normalizedDeleted = ($deletedName -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
     $catalogHit = @(
         $stagesFlat | Where-Object {

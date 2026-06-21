@@ -509,15 +509,6 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
         'Restore the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
     }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Analyze') {
-        'Analyze processor topology, compute the source SMT / HT-off affinity mask, and explain the two approved temporary per-process workflows.'
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Apply') {
-        'Apply the approved Already Running SMT / HT-off affinity mask to a selected running process.'
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Open') {
-        'Run the approved Startup SMT / HT-off workflow by stopping specific launchers, selecting a file, and launching it with the source affinity mask.'
-    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
     }
@@ -1247,23 +1238,6 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Preserve the source-defined Default behavior by keeping MemoryCompression and PageCombining disabled and enabling only OperationAPI.')
         $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Default profile.')
     }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the number of logical processors from Win32_ComputerSystem.')
-        $plannedChanges.Add('Generate the exact alternating SMT / HT-off binary and hexadecimal affinity mask from the source logic.')
-        $plannedChanges.Add('List running processes larger than 500 MB for the source Already Running path.')
-        $plannedChanges.Add('Display the approved launcher stop list used by the source Startup path.')
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('List running processes larger than 500 MB and select one process ID.')
-        $plannedChanges.Add('Apply the source-derived integer affinity mask directly to the selected running process.')
-        $plannedChanges.Add('Reload the process and verify that its processor affinity matches the expected SMT / HT-off mask.')
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Stop only the source-defined launcher processes before launch.')
-        $plannedChanges.Add('Select a launcher, game, shortcut, or executable file.')
-        $plannedChanges.Add('Launch the selected file with `start "" /affinity <hex-mask> "<path>"` through cmd.exe exactly in the approved source style.')
-        $plannedChanges.Add('Wait for the source delay window, then try to verify the launched process affinity by base file name.')
-    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Display the approved restart-to-firmware command and safety warnings without executing it.')
     }
@@ -1794,19 +1768,6 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The approved Ultimate Default profile does not re-enable every MMAgent feature. MemoryCompression and PageCombining remain disabled by source design.')
         $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
     }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; the result explains the temporary per-process affinity mask derived from the source logic.')
-        $sideEffects.Add('The source workflow is temporary and affects a running process or a newly launched process rather than BIOS SMT/HT settings.')
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Only the selected running process receives the temporary SMT / HT-off affinity mask. BIOS settings and permanent CPU configuration are not changed.')
-        $sideEffects.Add('The selected process may behave differently because sibling logical threads are disabled for that process only.')
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Only the source-defined launcher process names are stopped before launch.')
-        $sideEffects.Add('The selected launcher or executable is started with a temporary SMT / HT-off affinity mask. BIOS settings and permanent CPU configuration are not changed.')
-        $sideEffects.Add('Verification may be inconclusive when a shortcut or launcher spawns a differently named child process.')
-    }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made and no restart command is executed.')
     }
@@ -2109,12 +2070,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
         'BoostLab will restore the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Apply') {
-        'BoostLab will let you choose a running process larger than 500 MB, then apply the source-derived SMT / HT-off affinity mask to that process only and verify the result. BIOS settings and permanent CPU configuration are not changed. No restart is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'smt-ht-assistant' -and $ActionName -eq 'Open') {
-        'BoostLab will stop only the approved launcher process names, let you select a launcher, game, shortcut, or executable, then launch it with the source SMT / HT-off affinity mask and attempt verification after the source delay window. BIOS settings and permanent CPU configuration are not changed. No restart is performed. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

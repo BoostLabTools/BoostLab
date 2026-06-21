@@ -648,32 +648,10 @@
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
-                    Id          = 'resizable-bar-assistant'
-                    Title       = 'Resizable BAR Assistant'
-                    Stage       = 'Advanced'
-                    Order       = 3
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Analyze hardware support and explain firmware requirements for Resizable BAR.'
-                    Actions     = @('Analyze', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'smt-ht-assistant'
-                    Title       = 'SMT / HT Assistant'
-                    Stage       = 'Advanced'
-                    Order       = 4
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Analyze processor topology and temporarily disable sibling CPU threads per selected app or launcher.'
-                    Actions     = @('Analyze', 'Apply', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
                     Id          = 'services-optimizer'
                     Title       = 'Services Optimizer'
                     Stage       = 'Advanced'
-                    Order       = 5
+                    Order       = 3
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Analyze Windows services and prepare a reviewed optimization plan.'
@@ -684,7 +662,7 @@
                     Id          = 'timer-resolution-assistant'
                     Title       = 'Timer Resolution Assistant'
                     Stage       = 'Advanced'
-                    Order       = 6
+                    Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Analyze timer behavior and explain latency, power, and stability tradeoffs.'
@@ -695,7 +673,7 @@
                     Id          = 'defender-optimize-assistant'
                     Title       = 'Defender Optimize Assistant'
                     Stage       = 'Advanced'
-                    Order       = 7
+                    Order       = 5
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Analyze Microsoft Defender settings before recommending approved changes.'

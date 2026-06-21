@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $script:BoostLabToolMetadata = [ordered]@{
-    Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Stage = 'Advanced'; Order = 7
+    Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Stage = 'Advanced'; Order = 5
     Type = 'assistant'; RiskLevel = 'high'
     Description = 'Analyze Microsoft Defender settings before recommending approved changes.'
     Actions = @('Analyze', 'Apply', 'Restore')

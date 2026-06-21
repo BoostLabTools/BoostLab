@@ -88,7 +88,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 }
 
 $expectedDeferred = @(
-    @{ Id = 'resizable-bar-assistant'; Title = 'Resizable BAR Assistant'; Link = 'docs/tool-designs/resizable-bar-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1'; Hash = 'E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443' }
     @{ Id = 'services-optimizer'; Title = 'Services Optimizer'; Link = 'docs/tool-designs/services-optimizer-scope-design.md'; Source = 'source-ultimate/8 Advanced/5 Services Optimizer.ps1'; Hash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F' }
     @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant'; Link = 'docs/tool-designs/timer-resolution-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1'; Hash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621' }
     @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant'; Link = 'docs/tool-designs/defender-optimize-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1'; Hash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6' }
@@ -142,7 +141,7 @@ foreach ($requiredPhrase in @(
 }
 
 foreach ($requiredBlocker in @(
-    '| Missing artifact provenance | 2 |',
+    '| Missing artifact provenance | 1 |',
     '| Missing Safe Mode/reboot workflow approval | 2 |'
 )) {
     if (-not $matrixText.Contains($requiredBlocker)) {
@@ -209,6 +208,14 @@ foreach ($deletedTool in @('Loudness EQ', 'NVME Faster Driver')) {
     }
     if ($allTools | Where-Object { $_.Title -eq $deletedTool -or $_.Id -like "*$($deletedTool.ToLowerInvariant().Replace(' ', '-'))*" }) {
         throw "Deleted tool '$deletedTool' was reintroduced into active config."
+    }
+}
+foreach ($deletedToolId in @('resizable-bar-assistant', 'smt-ht-assistant')) {
+    if ($matrixText.Contains("| $deletedToolId |")) {
+        throw "Final deferred matrix must not list deleted tool '$deletedToolId' as active or deferred."
+    }
+    if ($allTools | Where-Object { $_.Id -eq $deletedToolId }) {
+        throw "Deleted tool '$deletedToolId' was reintroduced into active config."
     }
 }
 

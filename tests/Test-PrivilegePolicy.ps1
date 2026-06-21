@@ -318,7 +318,6 @@ $implementedModules = [ordered]@{
     'user-account-pictures-black' = 'Windows\user-account-pictures-black.psm1'
     'spectre-meltdown-assistant' = 'Advanced\spectre-meltdown-assistant.psm1'
     'mmagent-assistant' = 'Advanced\mmagent-assistant.psm1'
-    'smt-ht-assistant' = 'Advanced\smt-ht-assistant.psm1'
     'notepad-settings' = 'Windows\notepad-settings.psm1'
 }
 foreach ($toolId in $implementedModules.Keys) {

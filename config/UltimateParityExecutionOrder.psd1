@@ -102,11 +102,9 @@
             Tools = @(
                 @{ Order = 1; ToolId = 'spectre-meltdown-assistant'; DisplayName = 'Spectre / Meltdown Assistant' }
                 @{ Order = 2; ToolId = 'mmagent-assistant'; DisplayName = 'MMAgent Assistant' }
-                @{ Order = 3; ToolId = 'resizable-bar-assistant'; DisplayName = 'Resizable BAR Assistant' }
-                @{ Order = 4; ToolId = 'smt-ht-assistant'; DisplayName = 'SMT / HT Assistant' }
-                @{ Order = 5; ToolId = 'services-optimizer'; DisplayName = 'Services Optimizer' }
-                @{ Order = 6; ToolId = 'timer-resolution-assistant'; DisplayName = 'Timer Resolution Assistant' }
-                @{ Order = 7; ToolId = 'defender-optimize-assistant'; DisplayName = 'Defender Optimize Assistant' }
+                @{ Order = 3; ToolId = 'services-optimizer'; DisplayName = 'Services Optimizer' }
+                @{ Order = 4; ToolId = 'timer-resolution-assistant'; DisplayName = 'Timer Resolution Assistant' }
+                @{ Order = 5; ToolId = 'defender-optimize-assistant'; DisplayName = 'Defender Optimize Assistant' }
             )
         }
     )

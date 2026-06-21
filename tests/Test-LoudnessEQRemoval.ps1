@@ -72,11 +72,11 @@ $placeholderModules = @(
     }
 )
 if (
-    $moduleFiles.Count -ne 55 -or
+    $moduleFiles.Count -ne $inventoryBaseline.ActiveTools -or
     $implementedModules.Count -ne $inventoryBaseline.ImplementedTools -or
     $placeholderModules.Count -ne $inventoryBaseline.DeferredPlaceholders
 ) {
-    throw "Unexpected Phase 95 inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
+    throw "Unexpected active inventory: $($moduleFiles.Count) modules, $($implementedModules.Count) implemented, $($placeholderModules.Count) placeholders."
 }
 
 $expectedPlaceholderPaths = @()

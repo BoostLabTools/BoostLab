@@ -86,7 +86,7 @@ foreach ($requiredSection in @(
 foreach ($requiredCategory in @(
     'Not ready: **2**'
     'Foundation-ready but needs production allowlists: **2**'
-    'Foundation-ready but needs artifact provenance approvals: **2**'
+    'Foundation-ready but needs artifact provenance approvals: **1**'
     'Foundation-ready but needs tool-specific design: **4**'
     'Candidate for next implementation attempt: **0**'
 )) {

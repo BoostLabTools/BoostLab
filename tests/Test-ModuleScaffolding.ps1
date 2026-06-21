@@ -85,10 +85,6 @@ $implementedModules = @{
         RelativePath          = 'Advanced\mmagent-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     }
-    'smt-ht-assistant' = @{
-        RelativePath          = 'Advanced\smt-ht-assistant.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Open'')'
-    }
     'background-apps' = @{
         RelativePath          = 'Setup\BackgroundApps.psm1'
         LaunchText            = 'Start-Process ms-settings:privacy-backgroundapps -ErrorAction Stop'
@@ -600,9 +596,6 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'mmagent-assistant') {
             0
         }
-        elseif ($toolId -eq 'smt-ht-assistant') {
-            0
-        }
         elseif ($toolId -eq 'store-settings') {
             2
         }
@@ -838,20 +831,6 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Updates Pause behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'smt-ht-assistant') {
-            foreach ($requiredText in @(
-                'WorkingSet64 -gt 500MB'
-                '$script:BoostLabLauncherStopList = @('
-                'ProcessorAffinity = [int]$affinityProfile.IntegerMask'
-                'Show-BoostLabSmtHtProcessSelectionDialog'
-                'Show-BoostLabSmtHtExecutableSelectionDialog'
-                'Start-Sleep -Seconds $Seconds'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing SMT / HT preserved behavior: $requiredText")
                 }
             }
         }

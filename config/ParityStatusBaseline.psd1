@@ -4,18 +4,18 @@
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 55
-        RuntimeImplementedTools = 51
-        DeferredPlaceholders = 4
+        ActiveTools = 53
+        RuntimeImplementedTools = 50
+        DeferredPlaceholders = 3
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
         UltimateParityImplemented = 31
-        NearParityControlled = 18
+        NearParityControlled = 17
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 4
-        RefusedOrDeletedOutsideActiveCatalog = 19
+        DeferredForParityWork = 3
+        RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
     CurrentOrderedParityTarget = 'spectre-meltdown-assistant'
@@ -52,6 +52,8 @@
         'Scaling'
         'Start Menu Shortcuts'
         'Loudness EQ'
+        'Resizable BAR Assistant'
+        'SMT / HT Assistant'
     )
 
     Tools = @(
@@ -768,37 +770,11 @@
             NextParityAction = 'Confirm assistant/verification mechanics are accepted as final parity.'
         }
         @{
-            ToolId = 'resizable-bar-assistant'
-            DisplayName = 'Resizable BAR Assistant'
-            Stage = 'Advanced'
-            StageOrder = 7
-            ToolOrder = 3
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source requires NVIDIA Profile Inspector artifact, generated .nip import, driver profile mutation, and firmware restart path.'
-            YazanFinalException = $false
-            NextParityAction = 'Approve artifact, NVIDIA profile, generated-file, driver state, and firmware restart scopes.'
-        }
-        @{
-            ToolId = 'smt-ht-assistant'
-            DisplayName = 'SMT / HT Assistant'
-            Stage = 'Advanced'
-            StageOrder = 7
-            ToolOrder = 4
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source affinity behavior is preserved through selected process UX and explicit confirmation.'
-            YazanFinalException = $false
-            NextParityAction = 'Confirm selected-process UX and temporary-affinity behavior are accepted as final parity.'
-        }
-        @{
             ToolId = 'services-optimizer'
             DisplayName = 'Services Optimizer'
             Stage = 'Advanced'
             StageOrder = 7
-            ToolOrder = 5
+            ToolOrder = 3
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -811,7 +787,7 @@
             DisplayName = 'Timer Resolution Assistant'
             Stage = 'Advanced'
             StageOrder = 7
-            ToolOrder = 6
+            ToolOrder = 4
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
@@ -824,7 +800,7 @@
             DisplayName = 'Defender Optimize Assistant'
             Stage = 'Advanced'
             StageOrder = 7
-            ToolOrder = 7
+            ToolOrder = 5
             RuntimeStatus = 'DeferredPlaceholder'
             ImplementationLevel = 'DeferredForParityWork'
             UltimateParity = 'No'
