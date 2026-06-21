@@ -71,24 +71,24 @@ foreach ($capability in @('RequiresAdmin', 'RequiresInternet', 'CanModifyRegistr
 }
 
 $expectedBranches = @(
-    @{ Id = 'RemoveAllBloatware'; Title = 'Remove all bloatware'; SourceMenuNumber = 2; Count = 25 }
-    @{ Id = 'InstallStore'; Title = 'Install Store'; SourceMenuNumber = 3; Count = 9 }
-    @{ Id = 'InstallAllUwpApps'; Title = 'Install all UWP apps'; SourceMenuNumber = 4; Count = 4 }
-    @{ Id = 'OpenUwpFeatures'; Title = 'Open/list UWP optional features'; SourceMenuNumber = 5; Count = 6 }
-    @{ Id = 'OpenLegacyFeatures'; Title = 'Open/list legacy optional features'; SourceMenuNumber = 6; Count = 6 }
-    @{ Id = 'InstallOneDrive'; Title = 'Install OneDrive'; SourceMenuNumber = 7; Count = 5 }
-    @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install Remote Desktop Connection'; SourceMenuNumber = 8; Count = 5 }
-    @{ Id = 'InstallSnippingTool'; Title = 'Install Snipping Tool'; SourceMenuNumber = 9; Count = 6 }
+    @{ Id = 'RemoveAllBloatware'; Title = 'Remove : All Bloatware (Recommended)'; SourceMenuNumber = 2; Count = 25 }
+    @{ Id = 'InstallStore'; Title = 'Install: Store'; SourceMenuNumber = 3; Count = 9 }
+    @{ Id = 'InstallAllUwpApps'; Title = 'Install: All UWP Apps'; SourceMenuNumber = 4; Count = 4 }
+    @{ Id = 'OpenUwpFeatures'; Title = 'Install: UWP Features'; SourceMenuNumber = 5; Count = 6 }
+    @{ Id = 'OpenLegacyFeatures'; Title = 'Install: Legacy Features'; SourceMenuNumber = 6; Count = 6 }
+    @{ Id = 'InstallOneDrive'; Title = 'Install: One Drive'; SourceMenuNumber = 7; Count = 5 }
+    @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install: Remote Desktop Connection'; SourceMenuNumber = 8; Count = 5 }
+    @{ Id = 'InstallSnippingTool'; Title = 'Install: Snipping Tool'; SourceMenuNumber = 9; Count = 6 }
 )
 $expectedParityBranchTitles = @(
-    'Remove all bloatware'
-    'Install Store'
-    'Install all UWP apps'
-    'Open/list UWP optional features'
-    'Open/list legacy optional features'
-    'Install OneDrive'
-    'Download/install Remote Desktop Connection'
-    'Download/install Snipping Tool'
+    'Remove : All Bloatware (Recommended)'
+    'Install: Store'
+    'Install: All UWP Apps'
+    'Install: UWP Features'
+    'Install: Legacy Features'
+    'Install: One Drive'
+    'Install: Remote Desktop Connection'
+    'Install: Snipping Tool'
 )
 $stageBranchIds = @($bloatwareTool.SelectionItems | ForEach-Object { [string]$_.Id })
 Assert-BloatwareCondition (($stageBranchIds -join ',') -eq (($expectedBranches.Id) -join ',')) 'Bloatware stage branch order does not match the approved Ultimate branches.'

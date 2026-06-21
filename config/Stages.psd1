@@ -486,14 +486,14 @@
                     SelectionRequiredActions = @('Apply')
                     SelectionLabel = 'Select exactly one Bloatware source branch'
                     SelectionItems = @(
-                        @{ Id = 'RemoveAllBloatware'; Title = 'Remove all bloatware'; SourceMenuNumber = 2 }
-                        @{ Id = 'InstallStore'; Title = 'Install Store'; SourceMenuNumber = 3 }
-                        @{ Id = 'InstallAllUwpApps'; Title = 'Install all UWP apps'; SourceMenuNumber = 4 }
-                        @{ Id = 'OpenUwpFeatures'; Title = 'Open/list UWP optional features'; SourceMenuNumber = 5 }
-                        @{ Id = 'OpenLegacyFeatures'; Title = 'Open/list legacy optional features'; SourceMenuNumber = 6 }
-                        @{ Id = 'InstallOneDrive'; Title = 'Install OneDrive'; SourceMenuNumber = 7 }
-                        @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install Remote Desktop Connection'; SourceMenuNumber = 8 }
-                        @{ Id = 'InstallSnippingTool'; Title = 'Install Snipping Tool'; SourceMenuNumber = 9 }
+                        @{ Id = 'RemoveAllBloatware'; Title = 'Remove : All Bloatware (Recommended)'; SourceMenuNumber = 2 }
+                        @{ Id = 'InstallStore'; Title = 'Install: Store'; SourceMenuNumber = 3 }
+                        @{ Id = 'InstallAllUwpApps'; Title = 'Install: All UWP Apps'; SourceMenuNumber = 4 }
+                        @{ Id = 'OpenUwpFeatures'; Title = 'Install: UWP Features'; SourceMenuNumber = 5 }
+                        @{ Id = 'OpenLegacyFeatures'; Title = 'Install: Legacy Features'; SourceMenuNumber = 6 }
+                        @{ Id = 'InstallOneDrive'; Title = 'Install: One Drive'; SourceMenuNumber = 7 }
+                        @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install: Remote Desktop Connection'; SourceMenuNumber = 8 }
+                        @{ Id = 'InstallSnippingTool'; Title = 'Install: Snipping Tool'; SourceMenuNumber = 9 }
                     )
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

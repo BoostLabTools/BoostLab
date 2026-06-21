@@ -134,6 +134,36 @@ foreach ($outOfScope in @('graphics-configuration-center')) {
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 Assert-BoostLabTextContains -Text $uiText -Needle 'function Get-BoostLabToolActionDisplayLabel' -Description 'UI action display label helper'
 
+$sourceAlignedActionLabelBlock = Get-BoostLabTextBetween -Text $uiText -Start '$sourceAlignedActionLabels = @{' -End 'if ($toolId -eq ''driver-install-latest'')'
+$expectedSourceAlignedLabels = @(
+    @{ ToolId = 'memory-compression'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Enable'") }
+    @{ ToolId = 'background-apps'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'edge-settings'; Labels = @("'Apply' = 'Optimize (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'store-settings'; Labels = @("'Apply' = 'Optimize (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'start-menu-layout'; Labels = @("'Apply' = '25H2 (Recommended)'", "'Default' = '24H2'") }
+    @{ ToolId = 'context-menu'; Labels = @("'Apply' = 'Clean (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'theme-black'; Labels = @("'Apply' = 'Black (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'signout-lockscreen-wallpaper-black'; Labels = @("'Apply' = 'Black (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'user-account-pictures-black'; Labels = @("'Apply' = 'Black'", "'Default' = 'Default'") }
+    @{ ToolId = 'widgets'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'copilot'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'game-bar'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'edge-webview'; Labels = @("'Apply' = 'Uninstall (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'notepad-settings'; Labels = @("'Apply' = 'On (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'control-panel-settings'; Labels = @("'Apply' = 'Optimize (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'device-manager-power-savings-wake'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'network-adapter-power-savings-wake'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'write-cache-buffer-flushing'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
+    @{ ToolId = 'power-plan'; Labels = @("'Apply' = 'On (Recommended)'", "'Default' = 'Default'") }
+)
+foreach ($expected in $expectedSourceAlignedLabels) {
+    Assert-BoostLabCondition ($toolById.ContainsKey([string]$expected.ToolId)) "Stage 1-6 source-label tool missing from active catalog: $($expected.ToolId)"
+    Assert-BoostLabTextContains -Text $sourceAlignedActionLabelBlock -Needle "'$($expected.ToolId)' = @{" -Description "$($expected.ToolId) source-aligned label block"
+    foreach ($label in @($expected.Labels)) {
+        Assert-BoostLabTextContains -Text $sourceAlignedActionLabelBlock -Needle $label -Description "$($expected.ToolId) source-aligned visible label"
+    }
+}
+
 $driverInstallLatestBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''driver-install-latest'')' -End 'if ($toolId -eq ''driver-clean'')'
 Assert-BoostLabTextContains -Text $driverInstallLatestBlock -Needle "'Open' { return 'Open Intel Driver Page' }" -Description 'Driver Install Latest Open label'
 Assert-BoostLabTextContains -Text $driverInstallLatestBlock -Needle "'Apply' { return 'Apply Source Workflow' }" -Description 'Driver Install Latest Apply label'

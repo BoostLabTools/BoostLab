@@ -13,14 +13,14 @@ $script:BoostLabToolMetadata = [ordered]@{
     SelectionRequiredActions = @('Apply')
     SelectionLabel = 'Select exactly one Bloatware source branch'
     SelectionItems = @(
-        @{ Id = 'RemoveAllBloatware'; Title = 'Remove all bloatware'; SourceMenuNumber = 2 }
-        @{ Id = 'InstallStore'; Title = 'Install Store'; SourceMenuNumber = 3 }
-        @{ Id = 'InstallAllUwpApps'; Title = 'Install all UWP apps'; SourceMenuNumber = 4 }
-        @{ Id = 'OpenUwpFeatures'; Title = 'Open/list UWP optional features'; SourceMenuNumber = 5 }
-        @{ Id = 'OpenLegacyFeatures'; Title = 'Open/list legacy optional features'; SourceMenuNumber = 6 }
-        @{ Id = 'InstallOneDrive'; Title = 'Install OneDrive'; SourceMenuNumber = 7 }
-        @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install Remote Desktop Connection'; SourceMenuNumber = 8 }
-        @{ Id = 'InstallSnippingTool'; Title = 'Install Snipping Tool'; SourceMenuNumber = 9 }
+        @{ Id = 'RemoveAllBloatware'; Title = 'Remove : All Bloatware (Recommended)'; SourceMenuNumber = 2 }
+        @{ Id = 'InstallStore'; Title = 'Install: Store'; SourceMenuNumber = 3 }
+        @{ Id = 'InstallAllUwpApps'; Title = 'Install: All UWP Apps'; SourceMenuNumber = 4 }
+        @{ Id = 'OpenUwpFeatures'; Title = 'Install: UWP Features'; SourceMenuNumber = 5 }
+        @{ Id = 'OpenLegacyFeatures'; Title = 'Install: Legacy Features'; SourceMenuNumber = 6 }
+        @{ Id = 'InstallOneDrive'; Title = 'Install: One Drive'; SourceMenuNumber = 7 }
+        @{ Id = 'InstallRemoteDesktopConnection'; Title = 'Install: Remote Desktop Connection'; SourceMenuNumber = 8 }
+        @{ Id = 'InstallSnippingTool'; Title = 'Install: Snipping Tool'; SourceMenuNumber = 9 }
     )
     Capabilities = [ordered]@{
         RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false
@@ -44,14 +44,14 @@ $script:BoostLabBranchOrder = @(
     'InstallSnippingTool'
 )
 $script:BoostLabBranchTitles = [ordered]@{
-    RemoveAllBloatware = 'Remove all bloatware'
-    InstallStore = 'Install Store'
-    InstallAllUwpApps = 'Install all UWP apps'
-    OpenUwpFeatures = 'Open/list UWP optional features'
-    OpenLegacyFeatures = 'Open/list legacy optional features'
-    InstallOneDrive = 'Install OneDrive'
-    InstallRemoteDesktopConnection = 'Install Remote Desktop Connection'
-    InstallSnippingTool = 'Install Snipping Tool'
+    RemoveAllBloatware = 'Remove : All Bloatware (Recommended)'
+    InstallStore = 'Install: Store'
+    InstallAllUwpApps = 'Install: All UWP Apps'
+    OpenUwpFeatures = 'Install: UWP Features'
+    OpenLegacyFeatures = 'Install: Legacy Features'
+    InstallOneDrive = 'Install: One Drive'
+    InstallRemoteDesktopConnection = 'Install: Remote Desktop Connection'
+    InstallSnippingTool = 'Install: Snipping Tool'
 }
 $script:BoostLabRemoteDesktopConnectionUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe'
 $script:BoostLabSnippingToolUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe'

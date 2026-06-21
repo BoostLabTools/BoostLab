@@ -513,6 +513,91 @@ function Get-BoostLabToolActionDisplayLabel {
     )
 
     $toolId = [string]$ToolMetadata['Id']
+    $sourceAlignedActionLabels = @{
+        'memory-compression' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Enable'
+        }
+        'background-apps' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'edge-settings' = @{
+            'Apply' = 'Optimize (Recommended)'
+            'Default' = 'Default'
+        }
+        'store-settings' = @{
+            'Apply' = 'Optimize (Recommended)'
+            'Default' = 'Default'
+        }
+        'start-menu-layout' = @{
+            'Apply' = '25H2 (Recommended)'
+            'Default' = '24H2'
+        }
+        'context-menu' = @{
+            'Apply' = 'Clean (Recommended)'
+            'Default' = 'Default'
+        }
+        'theme-black' = @{
+            'Apply' = 'Black (Recommended)'
+            'Default' = 'Default'
+        }
+        'signout-lockscreen-wallpaper-black' = @{
+            'Apply' = 'Black (Recommended)'
+            'Default' = 'Default'
+        }
+        'user-account-pictures-black' = @{
+            'Apply' = 'Black'
+            'Default' = 'Default'
+        }
+        'widgets' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'copilot' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'game-bar' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'edge-webview' = @{
+            'Apply' = 'Uninstall (Recommended)'
+            'Default' = 'Default'
+        }
+        'notepad-settings' = @{
+            'Apply' = 'On (Recommended)'
+            'Default' = 'Default'
+        }
+        'control-panel-settings' = @{
+            'Apply' = 'Optimize (Recommended)'
+            'Default' = 'Default'
+        }
+        'device-manager-power-savings-wake' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'network-adapter-power-savings-wake' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'write-cache-buffer-flushing' = @{
+            'Apply' = 'Off (Recommended)'
+            'Default' = 'Default'
+        }
+        'power-plan' = @{
+            'Apply' = 'On (Recommended)'
+            'Default' = 'Default'
+        }
+    }
+    if ($sourceAlignedActionLabels.ContainsKey($toolId)) {
+        $toolActionLabels = $sourceAlignedActionLabels[$toolId]
+        if ($toolActionLabels.ContainsKey($ActionName)) {
+            return [string]$toolActionLabels[$ActionName]
+        }
+    }
+
     if ($toolId -eq 'driver-install-latest') {
         switch ($ActionName) {
             'Open' { return 'Open Intel Driver Page' }

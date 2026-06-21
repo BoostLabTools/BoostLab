@@ -572,14 +572,14 @@
             YazanFinalException = $false
             FinalProgressStatus = 'DoneParity'
             ApprovedSourceBranches = @(
-                'Remove all bloatware'
-                'Install Store'
-                'Install all UWP apps'
-                'Open/list UWP optional features'
-                'Open/list legacy optional features'
-                'Install OneDrive'
-                'Download/install Remote Desktop Connection'
-                'Download/install Snipping Tool'
+                'Remove : All Bloatware (Recommended)'
+                'Install: Store'
+                'Install: All UWP Apps'
+                'Install: UWP Features'
+                'Install: Legacy Features'
+                'Install: One Drive'
+                'Install: Remote Desktop Connection'
+                'Install: Snipping Tool'
             )
             DownloadArtifactClassification = 'UltimateAuthorHostedArtifact; NeedsBoostLabMirror; no artifact provenance or production allowlist entry added.'
             NextParityAction = 'No parity work required; advance ordered cursor to game-bar.'
