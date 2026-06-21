@@ -136,16 +136,12 @@ $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 $pointerRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'pointer-precision' }) | Select-Object -First 1
-$bloatwareRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'bloatware' }) | Select-Object -First 1
 Assert-PointerPrecisionCondition ($null -ne $pointerRecord) 'Pointer Precision parity record is missing.'
 Assert-PointerPrecisionCondition ([string]$pointerRecord.RuntimeStatus -eq 'RuntimeImplemented') 'Pointer Precision runtime status must remain RuntimeImplemented.'
 Assert-PointerPrecisionCondition ([string]$pointerRecord.ImplementationLevel -eq 'ParityImplemented') 'Pointer Precision must be marked ParityImplemented.'
 Assert-PointerPrecisionCondition ([string]$pointerRecord.UltimateParity -eq 'Yes') 'Pointer Precision UltimateParity must be Yes.'
 Assert-PointerPrecisionCondition (-not [bool]$pointerRecord.YazanFinalException) 'Pointer Precision must not use a Yazan final exception.'
-Assert-PointerPrecisionCondition ($null -ne $bloatwareRecord) 'Bloatware parity record is missing.'
-Assert-PointerPrecisionCondition (-not (Test-BoostLabParityRecordFinal -Record $bloatwareRecord)) 'Bloatware must remain pending and not implemented by this phase.'
 Assert-PointerPrecisionCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the derived first non-final target.'
-Assert-PointerPrecisionCondition ([string]$nextTarget.ToolId -eq [string]$bloatwareRecord.ToolId) 'Bloatware must be the next ordered pending target.'
 
 $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
 foreach ($level in @('ParityImplemented', 'NearParityControlled', 'ControlledSubset', 'ManualHandoffOnly', 'DeferredForParityWork')) {
@@ -183,6 +179,6 @@ foreach ($deletedPath in @(
     OpenActionExecuted         = $false
     SourceUltimateUnchanged    = $true
     DeletedToolsRemainDeleted  = $true
-    Message                    = 'Pointer Precision is exact source-equivalent Open-only parity and the ordered cursor advances to Bloatware.'
+    Message                    = 'Pointer Precision is exact source-equivalent Open-only parity and the ordered cursor matches the central parity baseline.'
     Timestamp                  = Get-Date
 }

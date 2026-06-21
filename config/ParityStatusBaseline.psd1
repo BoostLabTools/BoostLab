@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 47
-        DeferredPlaceholders = 8
+        RuntimeImplementedTools = 48
+        DeferredPlaceholders = 7
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 21
+        UltimateParityImplemented = 22
         NearParityControlled = 22
         ControlledSubset = 3
         ManualHandoffOnly = 1
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 8
+        DeferredForParityWork = 7
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'bloatware'
+    CurrentOrderedParityTarget = 'game-bar'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -565,12 +565,24 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 11
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Source includes broad AppX/package/service/cleanup/download/repair behavior without approved restore model.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Yazan approved full exact Ultimate parity for all non-Exit source Bloatware branches. BoostLab preserves the source admin/internet preflight, AppX removal/re-registration, Windows capability and optional feature operations, service/task/process/file/registry/hive/MSI/installer/download behavior, and Windows 10/Windows 11 source branches through a single selected branch Apply model.'
             YazanFinalException = $false
-            NextParityAction = 'Approve exact AppX/package, service, cleanup, artifact, and restore scopes before implementation.'
+            FinalProgressStatus = 'DoneParity'
+            ApprovedSourceBranches = @(
+                'Remove all bloatware'
+                'Install Store'
+                'Install all UWP apps'
+                'Open/list UWP optional features'
+                'Open/list legacy optional features'
+                'Install OneDrive'
+                'Download/install Remote Desktop Connection'
+                'Download/install Snipping Tool'
+            )
+            DownloadArtifactClassification = 'UltimateAuthorHostedArtifact; NeedsBoostLabMirror; no artifact provenance or production allowlist entry added.'
+            NextParityAction = 'No parity work required; advance ordered cursor to game-bar.'
         }
         @{
             ToolId = 'game-bar'

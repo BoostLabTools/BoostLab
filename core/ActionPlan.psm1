@@ -308,6 +308,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Restore') {
         'Restore is unavailable because no captured artifact, package, registry, temp-file, installer, or cleanup state restore contract exists.'
     }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Analyze') {
+        'Analyze the Bloatware Ultimate source identity and all approved non-Exit branch operation plans without executing package, registry, service, task, process, file, download, installer, or feature operations.'
+    }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
+        'Run exactly one selected source-equivalent Bloatware branch after explicit confirmation.'
+    }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         'Analyze the Reinstall source and report the controlled Windows 11 Media Creation Tool operation without downloading or launching anything.'
     }
@@ -799,6 +805,20 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Require valid selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved Restore contract before any Restore can be planned.')
         $plannedChanges.Add('Do not treat source installation, Apply, or Default as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
+    }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the exact Bloatware Ultimate source checksum and report all approved non-Exit source branches.')
+        $plannedChanges.Add('Report the source admin, internet, and password sign-in registry preflight used before each source branch.')
+        $plannedChanges.Add('Report branch plans for AppX removal/re-registration, Windows capability removal, optional feature disable/list/open behavior, service stop/delete, scheduled-task unregister, process stop, registry/hive import/delete, protected file ownership/delete, MSI/uninstaller execution, OneDrive setup, Remote Desktop Connection download/install, and Snipping Tool download/install.')
+        $plannedChanges.Add('Perform no package, capability, feature, registry, hive, service, task, process, file, ownership, ACL, download, installer, uninstaller, external process, reboot, or system mutation during Analyze.')
+    }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Require explicit confirmation and exactly one selected Bloatware source branch.')
+        $plannedChanges.Add('Verify the exact Bloatware Ultimate source checksum before execution.')
+        $plannedChanges.Add('Run the source Administrator and internet checks, then set the source password sign-in registry value before the selected branch.')
+        $plannedChanges.Add('Execute only the selected source-equivalent branch: Remove all bloatware, Install Store, Install all UWP apps, Open/list UWP optional features, Open/list legacy optional features, Install OneDrive, Install Remote Desktop Connection, or Install Snipping Tool.')
+        $plannedChanges.Add('Preserve source-defined AppX, Windows capability, optional feature, service, task, process, registry/hive, protected file, MSI/uninstaller, OneDrive setup, download, and installer intents in source order for that branch.')
+        $plannedChanges.Add('Do not expose Exit, Default, Restore, or unrelated repair behavior for Bloatware.')
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Reinstall source checksum and implementation status.')
@@ -1443,6 +1463,15 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract.')
         $sideEffects.Add('No system-changing operation occurs.')
     }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; Bloatware analysis is read-only.')
+        $sideEffects.Add('No package, capability, feature, registry, hive, service, task, process, file, ACL, ownership, download, installer, uninstaller, or reboot operation occurs during Analyze.')
+    }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The selected source branch can remove or re-register AppX packages, remove Windows capabilities, disable optional features, stop/delete services, unregister tasks, stop processes, write/delete/import registry state and hives, change ownership/ACLs, delete protected files, download source-defined EXEs, and run installers or uninstallers.')
+        $sideEffects.Add('Downloaded EXEs remain classified as UltimateAuthorHostedArtifact / NeedsBoostLabMirror; no artifact provenance approval, production allowlist entry, binary vendoring, or mirror substitution is created.')
+        $sideEffects.Add('Bloatware has no source-defined Default or captured-state Restore action; BoostLab does not expose either one.')
+    }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Reinstall analysis is read-only.')
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
@@ -1872,6 +1901,9 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Restore') {
         'Visual C++ Restore requires selected captured artifact, package, registry, temp-file, installer, and cleanup state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'bloatware' -and $ActionName -eq 'Apply') {
+        'Bloatware will run exactly one selected source-equivalent Ultimate branch after confirmation. Depending on the selected branch it may remove or re-register AppX packages, remove Windows capabilities, disable optional features, stop/delete services, unregister tasks, stop processes, write/delete/import registry state and hives, change ownership/ACLs, delete protected files, download the source-defined Remote Desktop Connection or Snipping Tool EXEs, and run installers/uninstallers. No Default or Restore branch exists. Continue only if this selected branch should run.'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Reinstall guidance only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'

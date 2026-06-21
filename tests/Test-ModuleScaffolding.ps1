@@ -111,6 +111,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\edge-webview.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     }
+    'bloatware' = @{
+        RelativePath          = 'Windows\bloatware.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
+    }
     'driver-clean' = @{
         RelativePath          = 'Graphics\driver-clean.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
@@ -487,6 +491,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'visual-cpp' -and
             $commandName -eq 'Invoke-WebRequest'
         )
+        $approvedBloatwareCommand = (
+            $toolId -eq 'bloatware' -and
+            $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content')
+        )
         $approvedStartMenuTaskbarCommand = (
             $toolId -eq 'start-menu-taskbar' -and
             $commandName -in @('New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
@@ -519,6 +527,7 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedNvidiaSettingsCommand -and
             -not $approvedDirectXCommand -and
             -not $approvedVisualCppCommand -and
+            -not $approvedBloatwareCommand -and
             -not $approvedStartMenuTaskbarCommand -and
             -not $approvedSignoutWallpaperCommand
         ) {
@@ -587,6 +596,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'visual-cpp') {
             1
+        }
+        elseif ($toolId -eq 'bloatware') {
+            3
         }
         elseif ($toolId -eq 'edge-webview') {
             0

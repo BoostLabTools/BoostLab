@@ -119,6 +119,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\edge-webview.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
+    'bloatware' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\bloatware.psm1'
+        Actions = @('Analyze', 'Apply')
+    }
     'start-menu-taskbar' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\start-menu-taskbar.psm1'
         Actions = @('Apply', 'Default')
