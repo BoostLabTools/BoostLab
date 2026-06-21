@@ -718,6 +718,10 @@ function Invoke-BoostLabDeviceManagerRegistryCommand {
 
     $output = & $commandProcessorPath /c $CommandText 2>&1
     if ($LASTEXITCODE -ne 0) {
+        if ($CommandText.StartsWith('reg delete ', [StringComparison]::OrdinalIgnoreCase)) {
+            return
+        }
+
         $detail = (@($output) -join ' ').Trim()
         if ([string]::IsNullOrWhiteSpace($detail)) {
             $detail = "reg.exe returned exit code $LASTEXITCODE."
@@ -796,26 +800,6 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
             [string]$operation.ClassName, `
             [string]$operation.RegistryPath, `
             [string]$operation.Name
-
-        if ($ActionName -eq 'Default') {
-            try {
-                $stateResults = @(& $RegistryReader ([string]$operation.RegistrySubPath) ([string]$operation.Name))
-                $state = if ($stateResults.Count -gt 0) { $stateResults[0] } else { $null }
-            }
-            catch {
-                $state = $null
-            }
-            if (
-                $null -ne $state -and
-                $null -ne $state.PSObject.Properties['ReadSucceeded'] -and
-                [bool]$state.ReadSucceeded -and
-                $null -ne $state.PSObject.Properties['Exists'] -and
-                -not [bool]$state.Exists
-            ) {
-                $operationsSkipped.Add("$description already absent")
-                continue
-            }
-        }
 
         $operationsAttempted.Add($description)
         try {

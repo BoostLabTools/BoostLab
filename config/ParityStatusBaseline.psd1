@@ -9,8 +9,8 @@
         DeferredPlaceholders = 5
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 26
-        NearParityControlled = 21
+        UltimateParityImplemented = 27
+        NearParityControlled = 20
         ControlledSubset = 3
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'device-manager-power-savings-wake'
+    CurrentOrderedParityTarget = 'network-adapter-power-savings-wake'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -665,11 +665,12 @@
             StageOrder = 6
             ToolOrder = 17
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source operations and spelling asymmetry are preserved with idempotent Default and verification.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Exact source Off and Default registry operation sets, device classes, value names, source spelling asymmetry, and verification are preserved.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm idempotent safety mechanics are accepted as final parity.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'network-adapter-power-savings-wake'

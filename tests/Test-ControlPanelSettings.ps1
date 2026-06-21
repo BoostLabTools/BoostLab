@@ -274,7 +274,9 @@ Assert-BoostLabCondition ([string]$record.FinalProgressStatus -eq 'DoneParity') 
 Assert-BoostLabCondition ([string]$record.NextParityAction -eq 'DoneParity') 'Control Panel Settings next action must be DoneParity.'
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the central first non-final target.'
-Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'device-manager-power-savings-wake') 'Current ordered parity target should skip already-final Sound and advance to Device Manager Power Savings & Wake.'
+$deviceManagerRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'device-manager-power-savings-wake' }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $deviceManagerRecord) 'Device Manager Power Savings & Wake parity record is missing.'
+Assert-BoostLabCondition ([string]$deviceManagerRecord.FinalProgressStatus -eq 'DoneParity') 'Device Manager Power Savings & Wake must remain final accepted after Phase 150.'
 
 $windowsOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Windows' })[0]
 $controlOrder = @($windowsOrder.Tools | Where-Object { [string]$_.ToolId -eq 'control-panel-settings' })[0]

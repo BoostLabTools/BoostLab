@@ -24,6 +24,7 @@ else {
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Windows\device-manager-power-savings-wake.psm1'
@@ -125,6 +126,8 @@ foreach ($requiredModuleText in @(
     'function New-BoostLabDeviceManagerRegistryOperations'
     'function Test-BoostLabDeviceManagerPowerWakeState'
     'function Invoke-BoostLabDeviceManagerPowerWakeAction'
+    'reg delete '
+    'StartsWith'
     'New-BoostLabVerificationResult'
     'NeedsExplicitConfirmation = $true'
     'CanModifyDrivers = $false'
@@ -394,10 +397,10 @@ try {
     if (
         -not $defaultResult.Success -or
         $defaultResult.VerificationResult.Status -ne 'Passed' -or
-        $commands.Count -ne 17 -or
-        @($defaultResult.Data.SkippedItems).Count -ne 3
+        $commands.Count -ne 20 -or
+        @($defaultResult.Data.SkippedItems).Count -ne 0
     ) {
-        throw 'Mocked Default did not preserve the source removals and spelling asymmetry.'
+        throw 'Mocked Default did not preserve the full source removal set and spelling asymmetry.'
     }
     foreach ($className in @('hid', 'pci', 'usb')) {
         $correctKey = "system\controlset001\enum\$className\mock0001\device parameters|selectivesuspendenabled"
@@ -418,11 +421,11 @@ try {
     } $enumerator $reader $invoker
     if (
         -not $idempotentDefault.Success -or
-        $idempotentDefault.Data.CommandStatus -ne 'Already default' -or
-        $commands.Count -ne 0 -or
-        @($idempotentDefault.Data.SkippedItems).Count -ne 20
+        $idempotentDefault.Data.CommandStatus -ne 'Completed' -or
+        $commands.Count -ne 20 -or
+        @($idempotentDefault.Data.SkippedItems).Count -ne 0
     ) {
-        throw 'Repeated Default is not idempotent.'
+        throw 'Repeated Default did not preserve the full source removal set safely.'
     }
 
     $warningInventory = [pscustomobject]@{
@@ -559,6 +562,40 @@ if ($tools.Count -ne $inventoryBaseline.ActiveTools -or $implementedCount -ne $i
     throw "Unexpected Phase 26 inventory: $($tools.Count) tools, $implementedCount implemented, $placeholderCount placeholders."
 }
 
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$parityRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'device-manager-power-savings-wake' }) | Select-Object -First 1
+if ($null -eq $parityRecord) {
+    throw 'Device Manager Power Savings & Wake parity record is missing.'
+}
+if (
+    [string]$parityRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+    [string]$parityRecord.ImplementationLevel -ne 'ParityImplemented' -or
+    [string]$parityRecord.UltimateParity -ne 'Yes' -or
+    [bool]$parityRecord.YazanFinalException -or
+    [string]$parityRecord.FinalProgressStatus -ne 'DoneParity' -or
+    [string]$parityRecord.NextParityAction -ne 'DoneParity'
+) {
+    throw 'Device Manager Power Savings & Wake final parity status is incorrect.'
+}
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextTarget.ToolId) {
+    throw 'Current ordered parity target does not match the central helper-derived first non-final target.'
+}
+$windowsOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Windows' })[0]
+$deviceOrder = @($windowsOrder.Tools | Where-Object { [string]$_.ToolId -eq 'device-manager-power-savings-wake' })[0]
+$sourceOrderNext = @($windowsOrder.Tools | Where-Object { [int]$_.Order -eq ([int]$deviceOrder.Order + 1) })[0]
+if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$sourceOrderNext.ToolId) {
+    throw 'Current ordered parity target did not advance to the next Windows source-order tool.'
+}
+$categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseline
+if (
+    [int]$categoryCounts['ParityImplemented'] -ne [int]$parityBaseline.Counts.UltimateParityImplemented -or
+    [int]$categoryCounts['NearParityControlled'] -ne [int]$parityBaseline.Counts.NearParityControlled
+) {
+    throw 'Parity category counts do not match the central baseline.'
+}
+
 if (
     @($tools | Where-Object { $_['Id'] -eq 'loudness-eq' }).Count -ne 0 -or
     (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\loudness-eq.psm1')) -or
@@ -605,7 +642,9 @@ if (
     PlaceholderModuleCount = $placeholderCount
     ActiveToolCount = $tools.Count
     ProtectedFilesUnchanged = $true
-    Message = 'Device Manager Power Savings & Wake passed static and mocked Phase 26 validation.'
+    CurrentOrderedParityTarget = [string]$parityBaseline.CurrentOrderedParityTarget
+    SourceOrderNextTool = [string]$sourceOrderNext.ToolId
+    Message = 'Device Manager Power Savings & Wake passed static and mocked exact Ultimate parity validation.'
 }
 
 
