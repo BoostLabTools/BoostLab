@@ -9,8 +9,8 @@
         DeferredPlaceholders = 3
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 32
-        NearParityControlled = 16
+        UltimateParityImplemented = 33
+        NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
-    CurrentOrderedParityTarget = 'mmagent-assistant'
+    CurrentOrderedParityTarget = 'services-optimizer'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -763,11 +763,11 @@
             StageOrder = 7
             ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source-defined MMAgent Apply/Default profile is preserved with assistant layer and verification.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact source-defined MMAgent Off and Default profiles with BoostLab confirmation, warnings, logging, and verification.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm assistant/verification mechanics are accepted as final parity.'
+            NextParityAction = 'No parity work required; advance ordered cursor to services-optimizer.'
         }
         @{
             ToolId = 'services-optimizer'

@@ -24,7 +24,10 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\mmagent-assistant.psm1'
@@ -45,9 +48,54 @@ if (
     [int]$tool['Order'] -ne 2 -or
     [string]$tool['Type'] -ne 'assistant' -or
     [string]$tool['RiskLevel'] -ne 'high' -or
-    (@($tool['Actions']) -join ',') -ne 'Analyze,Apply,Default'
+    (@($tool['Actions']) -join ',') -ne 'Analyze,Apply,Default' -or
+    [string]$tool['Description'] -match '\b[Rr]estore\b'
 ) {
     throw 'MMAgent Assistant metadata is incorrect.'
+}
+
+$allActiveToolIds = @($tools | ForEach-Object { [string]$_['Id'] })
+foreach ($deletedToolId in @('resizable-bar-assistant', 'smt-ht-assistant')) {
+    if ($allActiveToolIds -contains $deletedToolId) {
+        throw "Deleted tool returned to active product scope: $deletedToolId"
+    }
+}
+
+$parityRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'mmagent-assistant' }) | Select-Object -First 1
+if ($null -eq $parityRecord) {
+    throw 'MMAgent Assistant parity baseline record is missing.'
+}
+if (
+    [string]$parityRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+    [string]$parityRecord.ImplementationLevel -ne 'ParityImplemented' -or
+    [string]$parityRecord.UltimateParity -ne 'Yes' -or
+    [bool]$parityRecord.YazanFinalException
+) {
+    throw 'MMAgent Assistant parity baseline was not finalized as exact Ultimate parity.'
+}
+
+$nextOrderedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+if ($null -eq $nextOrderedTarget) {
+    throw 'Ordered parity cursor did not identify the next Advanced target after MMAgent Assistant.'
+}
+if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
+    throw 'Central ordered parity cursor does not match the derived first non-final target.'
+}
+$advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
+$advancedTools = @($advancedOrder.Tools)
+$mmaIndex = -1
+for ($index = 0; $index -lt $advancedTools.Count; $index++) {
+    if ([string]$advancedTools[$index].ToolId -eq 'mmagent-assistant') {
+        $mmaIndex = $index
+        break
+    }
+}
+if ($mmaIndex -lt 0 -or $mmaIndex -ge ($advancedTools.Count - 1)) {
+    throw 'MMAgent Assistant is not followed by another ordered Advanced target.'
+}
+$expectedNextAdvancedTool = [string]$advancedTools[$mmaIndex + 1].ToolId
+if ([string]$nextOrderedTarget.ToolId -ne $expectedNextAdvancedTool) {
+    throw 'MMAgent acceptance did not advance to the next ordered Advanced tool.'
 }
 
 $capabilities = $tool['Capabilities']
@@ -69,6 +117,9 @@ if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'C7E6E787
 $source = Get-Content -Raw -LiteralPath $sourcePath
 $moduleSource = Get-Content -Raw -LiteralPath $modulePath
 foreach ($requiredSourceText in @(
+    '1. Off'
+    '2. Default'
+    '3. Check'
     'Disable-MMAgent -ApplicationLaunchPrefetching'
     'Disable-MMAgent -ApplicationPreLaunch'
     'Set-MMAgent -MaxOperationAPIFiles 1'
@@ -101,6 +152,10 @@ foreach ($requiredModuleText in @(
     if (-not $moduleSource.Contains($requiredModuleText)) {
         throw "MMAgent Assistant module is missing: $requiredModuleText"
     }
+}
+
+if ($moduleSource.Contains('MMAgent profile restored to the approved source Default state.')) {
+    throw 'MMAgent Assistant Default result must not be worded as Restore.'
 }
 
 foreach ($forbiddenText in @(
@@ -196,7 +251,7 @@ try {
             ExpectedMemoryCompression = $false
             ExpectedOperationApi = $true
             ExpectedPageCombining = $false
-            ExpectedStatus = 'MMAgent profile restored to the approved source Default state.'
+            ExpectedStatus = 'MMAgent profile set to the approved source Default state.'
         }
     )) {
         $invocations = [System.Collections.Generic.List[string]]::new()
@@ -275,7 +330,9 @@ try {
     $defaultPlan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName 'Default' -IsDryRun $false
     if (
         (@($defaultPlan.PlannedChanges) -join ' ') -notmatch 'MemoryCompression' -or
-        (@($defaultPlan.PlannedChanges) -join ' ') -notmatch 'PageCombining'
+        (@($defaultPlan.PlannedChanges) -join ' ') -notmatch 'PageCombining' -or
+        [string]$defaultPlan.Summary -match '\b[Rr]estore\b' -or
+        [string]$defaultPlan.ConfirmationMessage -match '\b[Rr]estore\b'
     ) {
         throw 'MMAgent Assistant Default action plan does not preserve the source-defined disabled features.'
     }

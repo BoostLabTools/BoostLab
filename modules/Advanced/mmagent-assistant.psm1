@@ -12,7 +12,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 2
     Type = 'assistant'
     RiskLevel = 'high'
-    Description = 'Analyze current MMAgent state and apply or restore the approved Ultimate MMAgent feature profile.'
+    Description = 'Analyze current MMAgent state and apply the approved Ultimate Off or Default MMAgent feature profile.'
     Actions = @('Analyze', 'Apply', 'Default')
     Capabilities = [ordered]@{
         RequiresAdmin = $true
@@ -604,7 +604,7 @@ function Invoke-BoostLabMMAgentAssistantAction {
         'MMAgent profile set to Off.'
     }
     else {
-        'MMAgent profile restored to the approved source Default state.'
+        'MMAgent profile set to the approved source Default state.'
     }
 
     return New-BoostLabMMAgentAssistantResult `

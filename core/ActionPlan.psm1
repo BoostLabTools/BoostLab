@@ -507,7 +507,7 @@ function New-BoostLabActionPlan {
         'Apply the approved Ultimate MMAgent Off profile, including the source-defined prefetch and MMAgent feature changes.'
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        'Restore the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
+        'Apply the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
     }
     elseif ($toolId -eq 'to-bios' -and $ActionName -eq 'Analyze') {
         'Review the approved immediate restart-to-firmware behavior without restarting the computer.'
@@ -2069,7 +2069,7 @@ function New-BoostLabActionPlan {
         'BoostLab will apply the approved Ultimate MMAgent Off profile: set EnablePrefetcher to 0, disable ApplicationLaunchPrefetching, ApplicationPreLaunch, MemoryCompression, OperationAPI, and PageCombining, set MaxOperationAPIFiles to 1, and verify the result. No restart is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        'BoostLab will restore the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
+        'BoostLab will apply the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
     }
     elseif ($capabilities.UsesTrustedInstaller) {
         "This action requires approved TrustedInstaller-level execution through BoostLab's centralized runtime helper. Administrator elevation and explicit confirmation are required. No TrustedInstaller execution is implemented yet."

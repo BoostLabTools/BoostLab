@@ -76,18 +76,26 @@ if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedT
 $advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
 $advancedTools = @($advancedOrder.Tools)
 $spectreIndex = -1
+$nextOrderedIndex = -1
 for ($index = 0; $index -lt $advancedTools.Count; $index++) {
     if ([string]$advancedTools[$index].ToolId -eq 'spectre-meltdown-assistant') {
         $spectreIndex = $index
-        break
+    }
+    if ([string]$advancedTools[$index].ToolId -eq [string]$nextOrderedTarget.ToolId) {
+        $nextOrderedIndex = $index
     }
 }
-if ($spectreIndex -lt 0 -or $spectreIndex -ge ($advancedTools.Count - 1)) {
-    throw 'Spectre / Meltdown Assistant is not followed by another ordered Advanced target.'
+if ($spectreIndex -lt 0 -or $nextOrderedIndex -le $spectreIndex) {
+    throw 'Spectre / Meltdown acceptance did not leave the ordered cursor at a later Advanced target.'
 }
-$expectedNextAdvancedTool = [string]$advancedTools[$spectreIndex + 1].ToolId
-if ([string]$nextOrderedTarget.ToolId -ne $expectedNextAdvancedTool) {
-    throw 'Spectre / Meltdown acceptance did not advance to the next ordered Advanced tool.'
+if ($nextOrderedIndex -gt ($spectreIndex + 1)) {
+    foreach ($index in (($spectreIndex + 1)..($nextOrderedIndex - 1))) {
+        $intermediateToolId = [string]$advancedTools[$index].ToolId
+        $intermediateRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq $intermediateToolId }) | Select-Object -First 1
+        if ($null -eq $intermediateRecord -or -not (Test-BoostLabParityRecordFinal -Record $intermediateRecord)) {
+            throw "Ordered cursor skipped non-final Advanced target after Spectre / Meltdown: $intermediateToolId"
+        }
+    }
 }
 
 $capabilities = $tool['Capabilities']
