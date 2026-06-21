@@ -9,8 +9,8 @@
         DeferredPlaceholders = 6
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 24
-        NearParityControlled = 22
+        UltimateParityImplemented = 25
+        NearParityControlled = 21
         ControlledSubset = 3
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'notepad-settings'
+    CurrentOrderedParityTarget = 'control-panel-settings'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -624,11 +624,12 @@
             StageOrder = 6
             ToolOrder = 14
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source behavior is preserved on systems with the exact settings.dat; unsupported Notepad builds return NotApplicable.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Exact source Apply and Default branches are implemented: Stop-Process Notepad, two-second delay, source notepadsettings.reg hive import when reg load succeeds, and source settings.dat deletion.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm compatibility-gated behavior is accepted as final parity.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'control-panel-settings'

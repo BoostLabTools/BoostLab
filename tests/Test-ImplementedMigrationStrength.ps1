@@ -554,7 +554,8 @@ foreach ($toolName in $implementedTools.Keys) {
                 '"OpenFile"=hex(5f5e104):01,00,00,00,d1,55,24,57,d1,84,db,01'
                 '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
                 '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
-                'Copy-Item -LiteralPath $SourcePath -Destination $BackupPath -Force -ErrorAction Stop'
+                'Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction SilentlyContinue'
+                'if ($null -ne $loadResult -and [bool]$loadResult.Success)'
                 'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
                 'Invoke-BoostLabNotepadRegistryCommand'
             )) {
@@ -569,6 +570,7 @@ foreach ($toolName in $implementedTools.Keys) {
                 'Set-Service'
                 'Restart-Computer'
                 'UsesTrustedInstaller = $true'
+                'New-BoostLabNotepadNotApplicableResult'
                 'safeboot'
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {

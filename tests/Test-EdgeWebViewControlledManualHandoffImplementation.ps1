@@ -23,6 +23,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 function Assert-BoostLabCondition {
@@ -211,7 +212,9 @@ Assert-BoostLabCondition (@($allowlistPolicy.ProductionAllowlistProposals).Count
 
 $parity = Import-PowerShellDataFile -LiteralPath $parityPath
 $edgeParity = @($parity.Tools | Where-Object { $_.ToolId -eq 'edge-webview' })[0]
-Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq 'notepad-settings') 'Ordered parity cursor should advance to notepad-settings.'
+$nextParityTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parity -ExecutionOrder (Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot)
+Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -eq [string]$nextParityTarget.ToolId) 'Ordered parity cursor should match the derived first non-final target.'
+Assert-BoostLabCondition ([string]$parity.CurrentOrderedParityTarget -ne 'edge-webview') 'Ordered parity cursor should remain advanced beyond Edge & WebView.'
 Assert-BoostLabCondition ([string]$edgeParity.ImplementationLevel -eq 'ParityImplemented') 'Edge & WebView should be marked ParityImplemented.'
 Assert-BoostLabCondition ([string]$edgeParity.UltimateParity -eq 'Yes') 'Edge & WebView UltimateParity should be Yes.'
 Assert-BoostLabCondition ([string]$edgeParity.FinalProgressStatus -eq 'DoneParity') 'Edge & WebView FinalProgressStatus should be DoneParity.'

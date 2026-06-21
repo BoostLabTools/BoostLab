@@ -20,6 +20,7 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -28,34 +29,35 @@ $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\14 Notepad Setti
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
-$recordPath = Join-Path $ProjectRoot 'docs\migrations\notepad-settings.md'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-$sourceHash = '2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB'
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne $sourceHash) {
-    throw 'Notepad Settings Ultimate source hash changed.'
+function Assert-BoostLabCondition {
+    param(
+        [Parameter(Mandatory)][bool]$Condition,
+        [Parameter(Mandatory)][string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
 }
+
+$sourceHash = '2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB'
+Assert-BoostLabCondition ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq $sourceHash) 'Notepad Settings Ultimate source hash changed.'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
 $tool = $tools | Where-Object { $_['Id'] -eq 'notepad-settings' } | Select-Object -First 1
-if ($null -eq $tool) {
-    throw 'Notepad Settings metadata is missing.'
-}
-if (
-    [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 14 -or
-    [string]$tool['Type'] -ne 'action' -or
-    [string]$tool['RiskLevel'] -ne 'medium' -or
-    (@($tool['Actions']) -join ',') -ne 'Apply,Default'
-) {
-    throw 'Notepad Settings metadata does not match Phase 32.'
-}
+Assert-BoostLabCondition ($null -ne $tool) 'Notepad Settings metadata is missing.'
+Assert-BoostLabCondition ([string]$tool['Stage'] -eq 'Windows') 'Notepad Settings stage is incorrect.'
+Assert-BoostLabCondition ([int]$tool['Order'] -eq 14) 'Notepad Settings order is incorrect.'
+Assert-BoostLabCondition ([string]$tool['Type'] -eq 'action') 'Notepad Settings type is incorrect.'
+Assert-BoostLabCondition ([string]$tool['RiskLevel'] -eq 'medium') 'Notepad Settings risk level is incorrect.'
+Assert-BoostLabCondition ((@($tool['Actions']) -join ',') -eq 'Apply,Default') 'Notepad Settings actions are incorrect.'
+
 $trueCapabilities = @('RequiresAdmin', 'CanModifyRegistry', 'CanDeleteFiles', 'SupportsDefault', 'NeedsExplicitConfirmation')
 foreach ($field in $tool['Capabilities'].Keys) {
-    if ([bool]$tool['Capabilities'][$field] -ne ($field -in $trueCapabilities)) {
-        throw "Notepad Settings capability '$field' is incorrect."
-    }
+    Assert-BoostLabCondition ([bool]$tool['Capabilities'][$field] -eq ($field -in $trueCapabilities)) "Notepad Settings capability '$field' is incorrect."
 }
 
 $source = Get-Content -Raw -LiteralPath $sourcePath
@@ -64,13 +66,23 @@ foreach ($requiredText in @(
     'Start-Sleep -Seconds 2'
     'Set-Content -Path "$env:SystemRoot\Temp\notepadsettings.reg" -Value $NotepadSettings -Force'
     'reg load "HKLM\Settings" $SettingsDat'
+    'if ($LASTEXITCODE -eq 0) {'
     'reg import $RegFileNotepadSettings'
     'reg unload "HKLM\Settings"'
     'Remove-Item "$env:LocalAppData\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat" -Force'
 )) {
-    if (-not $source.Contains($requiredText)) {
-        throw "Notepad Settings source no longer contains: $requiredText"
-    }
+    Assert-BoostLabCondition ($source.Contains($requiredText)) "Notepad Settings source no longer contains: $requiredText"
+}
+foreach ($forbiddenSourceText in @(
+    'Invoke-WebRequest'
+    'Get-AppxPackage'
+    'Remove-AppxPackage'
+    'Get-Service'
+    'Get-ScheduledTask'
+    'Restart-Computer'
+    'Copy-Item'
+)) {
+    Assert-BoostLabCondition (-not $source.Contains($forbiddenSourceText)) "Notepad Settings source unexpectedly contains unsupported behavior: $forbiddenSourceText"
 }
 
 $moduleSource = Get-Content -Raw -LiteralPath $modulePath
@@ -81,18 +93,25 @@ foreach ($requiredText in @(
     '"OpenFile"=hex(5f5e104):01,00,00,00,d1,55,24,57,d1,84,db,01'
     '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
     '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
-    'Copy-Item -LiteralPath $SourcePath -Destination $BackupPath -Force -ErrorAction Stop'
+    'Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction SilentlyContinue'
+    'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
     'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
-    'Backups\NotepadSettings'
-    'BoostLabOwnsTargetFile = $false'
+    'if ($null -ne $loadResult -and [bool]$loadResult.Success)'
     '[bool]$Confirmed = $false'
     'New-BoostLabVerificationResult'
 )) {
-    if (-not $moduleSource.Contains($requiredText)) {
-        throw "Notepad Settings module is missing: $requiredText"
-    }
+    Assert-BoostLabCondition ($moduleSource.Contains($requiredText)) "Notepad Settings module is missing: $requiredText"
 }
 foreach ($forbiddenText in @(
+    'New-BoostLabNotepadNotApplicableResult'
+    'NotApplicable'
+    'Already default'
+    'Backups\NotepadSettings'
+    'Backup-BoostLabNotepadSettingsFile'
+    'Save-BoostLabNotepadState'
+    'BackupWriter'
+    'StateWriter'
+    'ProgramData\BoostLab\State'
     'Remove-AppxPackage'
     'Get-AppxPackage'
     'Invoke-WebRequest'
@@ -103,9 +122,7 @@ foreach ($forbiddenText in @(
     'UsesTrustedInstaller = $true'
     'safeboot'
 )) {
-    if ($moduleSource.Contains($forbiddenText)) {
-        throw "Notepad Settings module contains unrelated behavior: $forbiddenText"
-    }
+    Assert-BoostLabCondition (-not $moduleSource.Contains($forbiddenText)) "Notepad Settings module contains non-source behavior: $forbiddenText"
 }
 
 $tokens = $null
@@ -122,12 +139,11 @@ if (@($parseErrors).Count -gt 0) {
 $notepadModule = Import-Module -Name $modulePath -Force -PassThru -Prefix 'NotepadTest' -Scope Local -DisableNameChecking -ErrorAction Stop
 try {
     $info = Get-NotepadTestBoostLabToolInfo
-    if (
-        [string]$info.Id -ne 'notepad-settings' -or
-        (@($info.Actions) -join ',') -ne 'Apply,Default' -or
-        (@($info.ImplementedActions) -join ',') -ne 'Apply,Default'
-    ) {
-        throw 'Notepad Settings exported metadata is incorrect.'
+    Assert-BoostLabCondition ([string]$info.Id -eq 'notepad-settings') 'Notepad Settings exported Id is incorrect.'
+    Assert-BoostLabCondition ((@($info.Actions) -join ',') -eq 'Apply,Default') 'Notepad Settings exported actions are incorrect.'
+    Assert-BoostLabCondition ((@($info.ImplementedActions) -join ',') -eq 'Apply,Default') 'Notepad Settings implemented actions are incorrect.'
+    foreach ($unsupportedAction in @('Open', 'Restore')) {
+        Assert-BoostLabCondition (-not ($unsupportedAction -in @($info.Actions) -or $unsupportedAction -in @($info.ImplementedActions))) "Notepad Settings must not expose unsupported action: $unsupportedAction"
     }
 
     $expectedValues = [ordered]@{
@@ -143,13 +159,9 @@ try {
             Message = $Message
         }
     }
-    $backupWriter = {
-        param($SourcePath, $BackupPath)
-        [pscustomobject]@{ Success = $true; BackupPath = $BackupPath; Sha256 = 'ORIGINAL'; Message = 'Verified settings.dat backup created.' }
-    }
-    $stateWriter = { param($State, $ManifestPath) }
-    $processStopper = { [pscustomobject]@{ Success = $true; Status = 'Stopped'; Message = 'Notepad stopped.' } }
-    $delay = { param($Seconds) }
+    $processStopper = { [pscustomobject]@{ Success = $true; Status = 'StopRequested'; Message = 'Stop-Process Notepad was invoked with SilentlyContinue, matching Ultimate.' } }
+    $delayEvents = [System.Collections.Generic.List[int]]::new()
+    $delay = { param($Seconds) $delayEvents.Add([int]$Seconds) }.GetNewClosure()
     $registryWriter = { param($Path, $Content) if ($Content -notmatch 'RewriteEnabled') { throw 'Missing source payload.' } }
     $registryReader = {
         param($Name)
@@ -171,181 +183,118 @@ try {
                 return $false
             }
     }
-    if (
-        -not [bool]$compatibility.Supported -or
-        [bool]$compatibility.Applicable -or
-        -not [bool]$compatibility.PackageDirectoryExists -or
-        [bool]$compatibility.SettingsDatExists -or
-        [string]$compatibility.ExpectedSettingsDatPath -ne 'C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
-    ) {
-        throw 'Notepad Settings compatibility diagnostics are incorrect for a missing settings.dat.'
-    }
+    Assert-BoostLabCondition ([bool]$compatibility.Supported) 'Notepad Settings compatibility should be supported on Windows with reg.exe.'
+    Assert-BoostLabCondition ([bool]$compatibility.Applicable) 'Missing settings.dat must not make Notepad Settings NotApplicable because Ultimate does not gate on it.'
+    Assert-BoostLabCondition (-not [bool]$compatibility.SettingsDatExists) 'Mock compatibility should report missing settings.dat.'
+    Assert-BoostLabCondition ([string]$compatibility.Reason -match 'Ultimate still attempts') 'Compatibility reason should explain exact source behavior for missing settings.dat.'
 
     $missingApplyEvents = [System.Collections.Generic.List[string]]::new()
+    $missingApplyCommand = {
+        param($Operation, $Arguments, $Root)
+        $missingApplyEvents.Add("$Operation|$($Arguments -join '|')")
+        [pscustomobject]@{ Success = $false; Operation = $Operation; ExitCode = 1 }
+    }.GetNewClosure()
     $missingApplyResult = & $notepadModule {
-        param($FileState, $Events)
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Apply' `
             -Confirmed:$true `
             -AdministratorChecker { $true } `
-            -DirectoryTester { param($Path) $true } `
             -FileStateReader { param($Path) $FileState } `
-            -ProcessStopper { $Events.Add('PROCESS'); throw 'Process handling must not run.' } `
-            -DelayInvoker { param($Seconds) $Events.Add('DELAY'); throw 'Delay must not run.' } `
-            -BackupWriter { param($Source, $Destination) $Events.Add('BACKUP'); throw 'Backup must not run.' } `
-            -StateWriter { param($State, $Path) $Events.Add('STATE'); throw 'State write must not run.' } `
-            -RegistryFileWriter { param($Path, $Content) $Events.Add('REGFILE'); throw 'Registry file write must not run.' } `
-            -RegistryCommandInvoker { param($Operation, $Arguments, $Root) $Events.Add('REGCOMMAND'); throw 'Registry command must not run.' } `
-            -RegistryReader { param($Name) $Events.Add('REGREAD'); throw 'Registry read must not run.' } `
-            -FileRemover { param($Path) $Events.Add('DELETE'); throw 'Delete must not run.' } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader { param($Name) throw 'Registry read must not run when reg load fails.' } `
+            -FileRemover { param($Path) throw 'Delete must not run during Apply.' } `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
-            -SystemRoot 'C:\Windows' `
-            -ProgramData 'C:\ProgramData'
-    } (& $newFileState $false $null 'File absent.') $missingApplyEvents
-    if (
-        -not $missingApplyResult.Success -or
-        [string]$missingApplyResult.Status -ne 'NotApplicable' -or
-        [string]$missingApplyResult.Data.CommandStatus -ne 'Not applicable' -or
-        [string]$missingApplyResult.Data.VerificationStatus -ne 'NotApplicable' -or
-        $null -ne $missingApplyResult.VerificationResult -or
-        [bool]$missingApplyResult.Data.SettingsDatExists -or
-        [bool]$missingApplyResult.Data.ChangesExecuted -or
-        -not [bool]$missingApplyResult.Data.NotepadPackageDirectoryExists -or
-        $missingApplyEvents.Count -ne 0 -or
-        [string]$missingApplyResult.Message -notmatch 'classic Notepad'
-    ) {
-        throw "Missing settings.dat Apply did not return a clean side-effect-free NotApplicable result: $($missingApplyResult | ConvertTo-Json -Depth 8 -Compress)"
-    }
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $false $null 'File absent.') $processStopper $delay $registryWriter $missingApplyCommand
+    Assert-BoostLabCondition ([bool]$missingApplyResult.Success) 'Missing settings.dat Apply must complete the source sequence rather than return NotApplicable.'
+    Assert-BoostLabCondition ([string]$missingApplyResult.Status -ne 'NotApplicable') 'Missing settings.dat Apply must not return NotApplicable.'
+    Assert-BoostLabCondition ([string]$missingApplyResult.Data.CommandStatus -eq 'Completed') 'Missing settings.dat Apply should report completed source sequence.'
+    Assert-BoostLabCondition ([bool]$missingApplyResult.Data.ChangesExecuted) 'Missing settings.dat Apply should report that the source command sequence was executed.'
+    Assert-BoostLabCondition (($missingApplyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat') "Missing settings.dat Apply must attempt only source reg load before skipping import. Events: $($missingApplyEvents -join ',')"
 
     $applyEvents = [System.Collections.Generic.List[string]]::new()
     $applyCommand = {
         param($Operation, $Arguments, $Root)
         $applyEvents.Add("$Operation|$($Arguments -join '|')")
-        [pscustomobject]@{ Success = $true; Operation = $Operation }
-    }.GetNewClosure()
-    $applyReadCount = 0
-    $applyFileReader = {
-        param($Path)
-        $applyReadCount++
-        if ($applyReadCount -eq 1) { return (& $newFileState $true 'ORIGINAL' 'Original detected.') }
-        return (& $newFileState $true 'UPDATED' 'Updated file detected.')
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0 }
     }.GetNewClosure()
     $applyResult = & $notepadModule {
-        param($FileReader, $BackupWriter, $StateWriter, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader)
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Apply' `
             -Confirmed:$true `
             -AdministratorChecker { $true } `
-            -FileStateReader $FileReader `
-            -BackupWriter $BackupWriter `
-            -StateWriter $StateWriter `
+            -FileStateReader { param($Path) $FileState } `
             -ProcessStopper $ProcessStopper `
             -DelayInvoker $Delay `
             -RegistryFileWriter $RegistryWriter `
             -RegistryCommandInvoker $RegistryCommand `
             -RegistryReader $RegistryReader `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
-            -SystemRoot 'C:\Windows' `
-            -ProgramData 'C:\ProgramData'
-    } $applyFileReader $backupWriter $stateWriter $processStopper $delay $registryWriter $applyCommand $registryReader
-    if (
-        -not $applyResult.Success -or
-        $applyResult.Message -ne 'Notepad settings applied.' -or
-        $applyResult.VerificationResult.Status -ne 'Passed' -or
-        $applyResult.Data.CommandStatus -ne 'Completed'
-    ) {
-        throw 'Mocked Notepad Settings Apply did not pass.'
-    }
-    if (($applyEvents -join ',') -ne 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat,import|C:\Windows\Temp\notepadsettings.reg,unload|HKLM\Settings') {
-        throw "Notepad Settings hive operation order changed: $($applyEvents -join ',')"
-    }
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $applyCommand $registryReader
+    Assert-BoostLabCondition ([bool]$applyResult.Success) 'Mocked Notepad Settings Apply did not pass.'
+    Assert-BoostLabCondition ([string]$applyResult.Message -eq 'Notepad settings Apply source sequence completed.') 'Apply message should describe source sequence completion.'
+    Assert-BoostLabCondition ([string]$applyResult.VerificationResult.Status -eq 'Passed') 'Apply verification should pass for mocked values.'
+    Assert-BoostLabCondition ([string]$applyResult.Data.CommandStatus -eq 'Completed') 'Apply command status should be completed.'
+    Assert-BoostLabCondition (($applyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat,import|C:\Windows\Temp\notepadsettings.reg,unload|HKLM\Settings') "Notepad Settings hive operation order changed: $($applyEvents -join ',')"
+    Assert-BoostLabCondition ([string]$applyResult.Data.BackupStatus -match 'does not create a backup') 'Apply must not claim backup creation.'
 
-    $defaultStates = [System.Collections.Queue]::new()
-    $defaultStates.Enqueue((& $newFileState $true 'ORIGINAL' 'Original detected.'))
-    $defaultStates.Enqueue((& $newFileState $false $null 'File absent.'))
-    $defaultFileReader = {
-        param($Path)
-        return $defaultStates.Dequeue()
-    }.GetNewClosure()
     $removedPaths = [System.Collections.Generic.List[string]]::new()
-    $fileRemover = { param($Path) $removedPaths.Add($Path) }.GetNewClosure()
+    $fileRemover = {
+        param($Path)
+        $removedPaths.Add($Path)
+        [pscustomobject]@{ Success = $true; Message = 'settings.dat delete was invoked.' }
+    }.GetNewClosure()
     $defaultResult = & $notepadModule {
-        param($FileReader, $BackupWriter, $StateWriter, $ProcessStopper, $Delay, $FileRemover)
+        param($FileState, $ProcessStopper, $Delay, $FileRemover)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Default' `
             -Confirmed:$true `
             -AdministratorChecker { $true } `
-            -FileStateReader $FileReader `
-            -BackupWriter $BackupWriter `
-            -StateWriter $StateWriter `
+            -FileStateReader { param($Path) $FileState } `
             -ProcessStopper $ProcessStopper `
             -DelayInvoker $Delay `
             -FileRemover $FileRemover `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
-            -SystemRoot 'C:\Windows' `
-            -ProgramData 'C:\ProgramData'
-    } $defaultFileReader $backupWriter $stateWriter $processStopper $delay $fileRemover
-    if (
-        -not $defaultResult.Success -or
-        $defaultResult.Message -ne 'Notepad settings restored to default.' -or
-        $defaultResult.VerificationResult.Status -ne 'Passed' -or
-        $removedPaths.Count -ne 1 -or
-        $removedPaths[0] -ne 'C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
-    ) {
-        throw "Mocked Notepad Settings Default did not delete only the approved file. Result: $($defaultResult | ConvertTo-Json -Depth 8 -Compress) Removed: $($removedPaths -join ',')"
-    }
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $false $null 'File absent.') $processStopper $delay $fileRemover
+    Assert-BoostLabCondition ([bool]$defaultResult.Success) 'Mocked Notepad Settings Default did not pass.'
+    Assert-BoostLabCondition ([string]$defaultResult.Message -eq 'Notepad settings Default source sequence completed.') 'Default message should describe source sequence completion.'
+    Assert-BoostLabCondition ([string]$defaultResult.VerificationResult.Status -eq 'Passed') 'Default verification should pass when settings.dat is absent after delete.'
+    Assert-BoostLabCondition ($removedPaths.Count -eq 1) 'Default must attempt exactly one delete operation.'
+    Assert-BoostLabCondition ($removedPaths[0] -eq 'C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat') 'Default must delete only the exact source settings.dat path.'
+    Assert-BoostLabCondition ([bool]$defaultResult.Data.ChangesExecuted) 'Default must not report an already-default short circuit.'
+    Assert-BoostLabCondition ([string]$defaultResult.Data.BackupStatus -match 'does not create a backup') 'Default must not claim backup creation.'
 
-    $alreadyDefaultEvents = [System.Collections.Generic.List[string]]::new()
-    $alreadyDefaultResult = & $notepadModule {
-        param($FileState, $Events)
-        Invoke-BoostLabNotepadSettingsAction `
-            -ActionName 'Default' `
-            -Confirmed:$true `
-            -AdministratorChecker { $true } `
-            -DirectoryTester { param($Path) $false } `
-            -FileStateReader { param($Path) $FileState } `
-            -ProcessStopper { $Events.Add('PROCESS'); throw 'Process handling must not run.' } `
-            -DelayInvoker { param($Seconds) $Events.Add('DELAY'); throw 'Delay must not run.' } `
-            -BackupWriter { param($Source, $Destination) $Events.Add('BACKUP'); throw 'Backup must not run.' } `
-            -StateWriter { param($State, $Path) $Events.Add('STATE'); throw 'State write must not run.' } `
-            -RegistryFileWriter { param($Path, $Content) $Events.Add('REGFILE'); throw 'Registry file write must not run.' } `
-            -RegistryCommandInvoker { param($Operation, $Arguments, $Root) $Events.Add('REGCOMMAND'); throw 'Registry command must not run.' } `
-            -RegistryReader { param($Name) $Events.Add('REGREAD'); throw 'Registry read must not run.' } `
-            -FileRemover { param($Path) $Events.Add('DELETE'); throw 'Delete must not run.' } `
-            -LocalAppData 'C:\Users\Tester\AppData\Local' `
-            -SystemRoot 'C:\Windows' `
-            -ProgramData 'C:\ProgramData'
-    } (& $newFileState $false $null 'File absent.') $alreadyDefaultEvents
-    if (
-        -not $alreadyDefaultResult.Success -or
-        $alreadyDefaultResult.Message -notmatch 'No action was needed' -or
-        $alreadyDefaultResult.Data.CommandStatus -ne 'Already default' -or
-        [bool]$alreadyDefaultResult.Data.ChangesExecuted -or
-        $alreadyDefaultEvents.Count -ne 0
-    ) {
-        throw "Notepad Settings already-default handling is incorrect. Result: $($alreadyDefaultResult | ConvertTo-Json -Depth 8 -Compress) Events: $($alreadyDefaultEvents -join ',')"
-    }
-
-    $mutationCalled = $false
-    $backupFailureResult = & $notepadModule {
-        param($FileState, $StateWriter, $ProcessStopper, $Delay, [ref]$MutationCalled)
+    $missingDefaultEvents = [System.Collections.Generic.List[string]]::new()
+    $missingDefaultRemover = {
+        param($Path)
+        $missingDefaultEvents.Add("DELETE|$Path")
+        [pscustomobject]@{ Success = $false; Message = 'Cannot find path.' }
+    }.GetNewClosure()
+    $missingDefaultResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $FileRemover)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Default' `
             -Confirmed:$true `
             -AdministratorChecker { $true } `
             -FileStateReader { param($Path) $FileState } `
-            -BackupWriter { param($Source, $Destination) [pscustomobject]@{ Success = $false; Message = 'Mock backup failure.' } } `
-            -StateWriter $StateWriter `
             -ProcessStopper $ProcessStopper `
             -DelayInvoker $Delay `
-            -FileRemover { param($Path) $MutationCalled.Value = $true } `
+            -FileRemover $FileRemover `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
-            -SystemRoot 'C:\Windows' `
-            -ProgramData 'C:\ProgramData'
-    } (& $newFileState $true 'ORIGINAL' 'Original detected.') $stateWriter $processStopper $delay ([ref]$mutationCalled)
-    if ($backupFailureResult.Success -or $mutationCalled -or $backupFailureResult.Message -notmatch 'backup failed') {
-        throw 'Notepad Settings did not block mutation after backup failure.'
-    }
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $false $null 'File absent.') $processStopper $delay $missingDefaultRemover
+    Assert-BoostLabCondition ([bool]$missingDefaultResult.Success) 'Missing settings.dat Default should still complete if the file is absent after the source delete attempt.'
+    Assert-BoostLabCondition ([string]$missingDefaultResult.Status -ne 'NotApplicable') 'Missing settings.dat Default must not return NotApplicable.'
+    Assert-BoostLabCondition ([string]$missingDefaultResult.Data.CommandStatus -eq 'Completed') 'Missing settings.dat Default should report completed source sequence.'
+    Assert-BoostLabCondition ([bool]$missingDefaultResult.Data.ChangesExecuted) 'Missing settings.dat Default should report that the source delete action was attempted.'
+    Assert-BoostLabCondition ($missingDefaultEvents.Count -eq 1) 'Missing settings.dat Default must still attempt the source delete action.'
 }
 finally {
     Remove-Module -ModuleInfo $notepadModule -Force -ErrorAction SilentlyContinue
@@ -354,67 +303,75 @@ finally {
 $executionSource = Get-Content -Raw -LiteralPath $executionPath
 $actionPlanSource = Get-Content -Raw -LiteralPath $actionPlanPath
 $uiSource = Get-Content -Raw -LiteralPath $uiPath
-$recordSource = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     '''notepad-settings'' = @{'
     'Windows\notepad-settings.psm1'
-    'ToolAction.NotApplicable'
-    '''Not applicable'''
 )) {
-    if (-not $executionSource.Contains($requiredText)) {
-        throw "Execution runtime is missing Notepad Settings integration: $requiredText"
-    }
+    Assert-BoostLabCondition ($executionSource.Contains($requiredText)) "Execution runtime is missing Notepad Settings integration: $requiredText"
 }
 foreach ($requiredText in @(
-    'Create and verify a unique backup of the exact Notepad settings.dat before mutation.'
-    'Delete only Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
+    'Stop only the Notepad process and wait for the source-defined two-second delay.'
+    'Do not create a backup or state record because Ultimate does not define backup or Restore behavior.'
     'Running Notepad is closed and unsaved Notepad work can be lost.'
 )) {
-    if (-not $actionPlanSource.Contains($requiredText)) {
-        throw "Action Plan is missing Notepad Settings safety text: $requiredText"
-    }
+    Assert-BoostLabCondition ($actionPlanSource.Contains($requiredText)) "Action Plan is missing exact Notepad Settings text: $requiredText"
+}
+foreach ($forbiddenPlanText in @(
+    'Create and verify a unique backup of the exact Notepad settings.dat'
+    'Persist the target path, original hash, backup hash'
+    'Treat an already-absent settings.dat as the approved default state'
+)) {
+    Assert-BoostLabCondition (-not $actionPlanSource.Contains($forbiddenPlanText)) "Action Plan still contains non-source Notepad behavior: $forbiddenPlanText"
 }
 foreach ($requiredText in @(
     '$toolId -eq ''notepad-settings'''
     '''Backup status'''
     '''File disposition'''
-    '''Package directory exists'''
     '''settings.dat exists'''
     '''Changes executed'''
-    '''Compatibility detail'''
-    'return ''Not applicable'''
 )) {
-    if (-not $uiSource.Contains($requiredText)) {
-        throw "Latest Result is missing Notepad Settings output: $requiredText"
-    }
-}
-foreach ($requiredText in @(
-    $sourceHash
-    'SupportsRestore = false'
-    'No unrelated AppX package'
-    'Approved by Yazan for Phase 32'
-)) {
-    if (-not $recordSource.Contains($requiredText)) {
-        throw "Notepad Settings migration record is incomplete: $requiredText"
-    }
+    Assert-BoostLabCondition ($uiSource.Contains($requiredText)) "Latest Result is missing Notepad Settings output: $requiredText"
 }
 
 $actionPlanModule = Import-Module -Name $actionPlanPath -Force -PassThru -Scope Local -ErrorAction Stop
 try {
     $plan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName 'Default' -IsDryRun:$false
-    if (
-        -not [bool]$plan.NeedsExplicitConfirmation -or
-        -not [bool]$plan.RequiresAdmin -or
-        -not [bool]$plan.Capabilities.CanDeleteFiles -or
-        (@($plan.PlannedChanges) -join ' ') -notmatch 'backup' -or
-        [string]$plan.ConfirmationMessage -notmatch 'delete only that file'
-    ) {
-        throw 'Notepad Settings Action Plan does not enforce the approved confirmation and backup policy.'
-    }
+    Assert-BoostLabCondition ([bool]$plan.NeedsExplicitConfirmation) 'Notepad Settings Default must still require Action Plan confirmation.'
+    Assert-BoostLabCondition ([bool]$plan.RequiresAdmin) 'Notepad Settings Default must still require administrator execution.'
+    Assert-BoostLabCondition ([bool]$plan.Capabilities.CanDeleteFiles) 'Notepad Settings Default must retain file-delete capability metadata.'
+    Assert-BoostLabCondition ((@($plan.PlannedChanges) -join ' ') -notmatch 'Create and verify.*backup') 'Notepad Settings Action Plan must not claim a backup.'
+    Assert-BoostLabCondition ([string]$plan.ConfirmationMessage -match 'source-defined delete action') 'Notepad Settings Action Plan confirmation must describe source delete behavior.'
 }
 finally {
     Remove-Module -ModuleInfo $actionPlanModule -Force -ErrorAction SilentlyContinue
 }
+
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
+$notepadRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'notepad-settings' }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $notepadRecord) 'Notepad Settings parity baseline record is missing.'
+Assert-BoostLabCondition ([string]$notepadRecord.RuntimeStatus -eq 'RuntimeImplemented') 'Notepad Settings runtime status is incorrect.'
+Assert-BoostLabCondition ([string]$notepadRecord.ImplementationLevel -eq 'ParityImplemented') 'Notepad Settings must be exact ParityImplemented.'
+Assert-BoostLabCondition ([string]$notepadRecord.UltimateParity -eq 'Yes') 'Notepad Settings UltimateParity must be Yes.'
+Assert-BoostLabCondition (-not [bool]$notepadRecord.YazanFinalException) 'Notepad Settings must not use a Yazan final exception.'
+Assert-BoostLabCondition ($null -eq $notepadRecord.PSObject.Properties['YazanAcceptedNearParity']) 'Notepad Settings must not claim YazanAcceptedNearParity.'
+Assert-BoostLabCondition ([string]$notepadRecord.FinalProgressStatus -eq 'DoneParity') 'Notepad Settings final status must be DoneParity.'
+Assert-BoostLabCondition ([string]$notepadRecord.NextParityAction -eq 'DoneParity') 'Notepad Settings next action must be DoneParity.'
+
+$nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the derived first non-final target.'
+Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'control-panel-settings') 'Current ordered parity target must advance to Control Panel Settings after exact Notepad parity.'
+
+$categoryCounts = @{}
+foreach ($record in @($parityBaseline.Tools)) {
+    $level = [string]$record.ImplementationLevel
+    if (-not $categoryCounts.ContainsKey($level)) {
+        $categoryCounts[$level] = 0
+    }
+    $categoryCounts[$level]++
+}
+Assert-BoostLabCondition ([int]$categoryCounts['ParityImplemented'] -eq [int]$parityBaseline.Counts.UltimateParityImplemented) 'Ultimate parity implemented count mismatch.'
+Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch.'
 
 $implementedCount = @(
     Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -File -Filter '*.psm1' |
@@ -422,20 +379,16 @@ $implementedCount = @(
         Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions') }
 ).Count
 $placeholderCount = $inventoryBaseline.ActiveTools - $implementedCount
-if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
-    throw "Unexpected Phase 32 inventory: $implementedCount implemented, $placeholderCount placeholders."
-}
+Assert-BoostLabCondition ($implementedCount -eq $inventoryBaseline.ImplementedTools) 'Implemented tool count changed unexpectedly.'
+Assert-BoostLabCondition ($placeholderCount -eq $inventoryBaseline.DeferredPlaceholders) 'Placeholder count changed unexpectedly.'
 
 $deletedNames = @('Loudness EQ', 'Windows Activation Helper', 'Firewall', 'DEP', 'DDU', 'UAC')
 $normalizedCatalog = @($tools | ForEach-Object { ([string]$_['Title'] -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant() })
 foreach ($deletedName in $deletedNames) {
-    if ((($deletedName -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()) -in $normalizedCatalog) {
-        throw "Deleted tool returned to the catalog: $deletedName"
-    }
+    Assert-BoostLabCondition (-not (((($deletedName -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()) -in $normalizedCatalog))) "Deleted tool returned to the catalog: $deletedName"
 }
-if (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1')) {
-    throw 'Loudness EQ source was reintroduced.'
-}
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
+Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '5 Graphics\NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
     Test = 'Notepad Settings'
@@ -443,7 +396,7 @@ if (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1'
     SourceHash = $sourceHash
     ImplementedCount = $implementedCount
     PlaceholderCount = $placeholderCount
-    Message = 'Notepad Settings passed static and mocked Phase 32 validation.'
+    CurrentOrderedParityTarget = [string]$parityBaseline.CurrentOrderedParityTarget
+    FinalProgressStatus = [string]$notepadRecord.FinalProgressStatus
+    Message = 'Notepad Settings passed exact Ultimate parity validation with mocked source-equivalent Apply and Default actions.'
 }
-
-

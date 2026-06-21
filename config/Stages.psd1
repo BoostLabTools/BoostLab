@@ -526,7 +526,7 @@
                     Order       = 14
                     Type        = 'action'
                     RiskLevel   = 'medium'
-                    Description = 'Apply the approved Notepad settings or reset Notepad by deleting its settings.dat after a verified backup.'
+                    Description = 'Apply the source-defined Notepad LocalState settings or reset Notepad by deleting its settings.dat.'
                     Actions     = @('Apply', 'Default')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }

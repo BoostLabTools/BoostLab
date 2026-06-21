@@ -6,7 +6,7 @@ Import-Module -Name $verificationModulePath -Scope Local -ErrorAction Stop
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'notepad-settings'; Title = 'Notepad Settings'; Stage = 'Windows'; Order = 14
     Type = 'action'; RiskLevel = 'medium'
-    Description = 'Apply the approved Notepad settings or reset Notepad by deleting its settings.dat after a verified backup.'
+    Description = 'Apply the source-defined Notepad LocalState settings or reset Notepad by deleting its settings.dat.'
     Actions = @('Apply', 'Default')
     Capabilities = [ordered]@{
         RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false
@@ -48,36 +48,13 @@ function Test-BoostLabAdministrator {
 function Get-BoostLabNotepadPaths {
     param(
         [string]$LocalAppData = $env:LocalAppData,
-        [string]$SystemRoot = $env:SystemRoot,
-        [string]$ProgramData = $env:ProgramData,
-        [string]$BackupId = ('{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmssfff'), [guid]::NewGuid().ToString('N'))
+        [string]$SystemRoot = $env:SystemRoot
     )
 
-    $stateDirectory = Join-Path $ProgramData 'BoostLab\State'
-    $backupDirectory = Join-Path $stateDirectory "Backups\NotepadSettings\$BackupId"
     [pscustomobject]@{
         SettingsDatPath = Join-Path $LocalAppData $script:BoostLabNotepadRelativeSettingsPath
         PackageDirectoryPath = Join-Path $LocalAppData 'Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe'
         RegistryFilePath = Join-Path $SystemRoot "Temp\$($script:BoostLabNotepadRegistryFileName)"
-        StateDirectory = $stateDirectory
-        ManifestPath = Join-Path $stateDirectory 'notepad-settings.json'
-        BackupDirectory = $backupDirectory
-        BackupPath = Join-Path $backupDirectory 'settings.dat'
-    }
-}
-
-function Test-BoostLabNotepadSettingsPath {
-    param(
-        [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$LocalAppData
-    )
-
-    try {
-        $expected = [IO.Path]::GetFullPath((Join-Path $LocalAppData $script:BoostLabNotepadRelativeSettingsPath))
-        return [IO.Path]::GetFullPath($Path).Equals($expected, [StringComparison]::OrdinalIgnoreCase)
-    }
-    catch {
-        return $false
     }
 }
 
@@ -107,53 +84,10 @@ function Get-BoostLabNotepadFileState {
     }
 }
 
-function Backup-BoostLabNotepadSettingsFile {
-    param(
-        [Parameter(Mandatory)][string]$SourcePath,
-        [Parameter(Mandatory)][string]$BackupPath
-    )
-
-    try {
-        $directory = Split-Path -Parent $BackupPath
-        [IO.Directory]::CreateDirectory($directory) | Out-Null
-        Copy-Item -LiteralPath $SourcePath -Destination $BackupPath -Force -ErrorAction Stop
-        $sourceHash = (Get-FileHash -LiteralPath $SourcePath -Algorithm SHA256 -ErrorAction Stop).Hash
-        $backupHash = (Get-FileHash -LiteralPath $BackupPath -Algorithm SHA256 -ErrorAction Stop).Hash
-        if ($sourceHash -ne $backupHash) {
-            throw 'The Notepad settings backup hash does not match the source file.'
-        }
-        return [pscustomobject]@{
-            Success = $true; BackupPath = $BackupPath; Sha256 = $backupHash
-            Message = 'Verified settings.dat backup created.'
-        }
-    }
-    catch {
-        return [pscustomobject]@{
-            Success = $false; BackupPath = $BackupPath; Sha256 = $null
-            Message = $_.Exception.Message
-        }
-    }
-}
-
-function Save-BoostLabNotepadState {
-    param(
-        [Parameter(Mandatory)][object]$State,
-        [Parameter(Mandatory)][string]$ManifestPath
-    )
-
-    $directory = Split-Path -Parent $ManifestPath
-    [IO.Directory]::CreateDirectory($directory) | Out-Null
-    $State | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ManifestPath -Encoding UTF8 -Force -ErrorAction Stop
-}
-
 function Stop-BoostLabNotepadProcess {
     try {
-        $processes = @(Get-Process -Name $script:BoostLabNotepadProcessName -ErrorAction SilentlyContinue)
-        if ($processes.Count -eq 0) {
-            return [pscustomobject]@{ Success = $true; Status = 'Not running'; Message = 'Notepad was not running.' }
-        }
-        Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction Stop
-        return [pscustomobject]@{ Success = $true; Status = 'Stopped'; Message = 'Notepad stopped.' }
+        Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction SilentlyContinue
+        return [pscustomobject]@{ Success = $true; Status = 'StopRequested'; Message = 'Stop-Process Notepad was invoked with SilentlyContinue, matching Ultimate.' }
     }
     catch {
         return [pscustomobject]@{ Success = $false; Status = 'Failed'; Message = $_.Exception.Message }
@@ -169,10 +103,13 @@ function Invoke-BoostLabNotepadRegistryCommand {
 
     $regPath = Join-Path $SystemRoot 'System32\reg.exe'
     $output = @(& $regPath $Operation @Arguments 2>&1)
-    if ($LASTEXITCODE -ne 0) {
-        throw "reg $Operation failed with exit code $LASTEXITCODE. $($output -join ' ')"
+    $exitCode = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
+    return [pscustomobject]@{
+        Success = $exitCode -eq 0
+        Operation = $Operation
+        ExitCode = $exitCode
+        Output = $output
     }
-    return [pscustomobject]@{ Success = $true; Operation = $Operation; Output = $output }
 }
 
 function ConvertTo-BoostLabNotepadValueDisplay {
@@ -213,6 +150,18 @@ function Get-BoostLabNotepadRegistryValue {
     }
 }
 
+function Invoke-BoostLabNotepadFileRemoval {
+    param([Parameter(Mandatory)][string]$Path)
+
+    try {
+        Remove-Item -LiteralPath $Path -Force -ErrorAction Stop
+        return [pscustomobject]@{ Success = $true; Message = 'settings.dat delete was invoked.' }
+    }
+    catch {
+        return [pscustomobject]@{ Success = $false; Message = $_.Exception.Message }
+    }
+}
+
 function New-BoostLabNotepadResult {
     param(
         [Parameter(Mandatory)][bool]$Success,
@@ -249,46 +198,6 @@ function New-BoostLabNotepadResult {
     }
 }
 
-function New-BoostLabNotepadNotApplicableResult {
-    param(
-        [Parameter(Mandatory)][string]$Action,
-        [Parameter(Mandatory)][object]$Paths,
-        [Parameter(Mandatory)][bool]$PackageDirectoryExists
-    )
-
-    $compatibilityMessage = 'The source-targeted Notepad settings.dat is absent. This system may be using classic Notepad or a Notepad build that does not expose the source-targeted settings.dat.'
-    $data = [pscustomobject]@{
-        CommandStatus = 'Not applicable'
-        VerificationStatus = 'NotApplicable'
-        CompatibilityStatus = 'Not applicable'
-        CompatibilityMessage = $compatibilityMessage
-        ExpectedNotepadSettingsState = 'The exact source-targeted settings.dat exists'
-        DetectedNotepadSettingsState = 'settings.dat absent'
-        SettingsDatPath = [string]$Paths.SettingsDatPath
-        NotepadPackageDirectoryPath = [string]$Paths.PackageDirectoryPath
-        NotepadPackageDirectoryExists = $PackageDirectoryExists
-        SettingsDatExists = $false
-        ChangesExecuted = $false
-        BackupStatus = 'Not attempted'
-        BackupPath = ''
-        OriginalSha256 = $null
-        DetectedSha256 = $null
-        ProcessActions = @('None; applicability was checked before process handling.')
-        HiveOperations = @()
-        RegistryValuesChecked = @()
-        FileDisposition = 'No changes executed.'
-        Warnings = @($compatibilityMessage)
-        CompletedAt = Get-Date
-    }
-
-    return New-BoostLabNotepadResult `
-        -Success $true `
-        -Action $Action `
-        -Status 'NotApplicable' `
-        -Message $compatibilityMessage `
-        -Data $data
-}
-
 function New-BoostLabNotepadFailureVerification {
     param(
         [Parameter(Mandatory)][string]$Action,
@@ -300,12 +209,12 @@ function New-BoostLabNotepadFailureVerification {
         -ToolTitle 'Notepad Settings' `
         -Action $Action `
         -Status 'Failed' `
-        -ExpectedState ([pscustomobject]@{ NotepadSettings = if ($Action -eq 'Apply') { 'Approved values present' } else { 'settings.dat absent' } }) `
+        -ExpectedState ([pscustomobject]@{ NotepadSettings = if ($Action -eq 'Apply') { 'Ultimate Apply command sequence completes' } else { 'Ultimate Default delete command completes' } }) `
         -DetectedState ([pscustomobject]@{ NotepadSettings = 'Operation failed' }) `
         -Checks @(
             New-BoostLabVerificationCheck `
                 -Name 'Notepad Settings operation' `
-                -Expected 'Completed without error' `
+                -Expected 'Completed without terminating error' `
                 -Actual $Message `
                 -Status 'Failed' `
                 -Message $Message
@@ -315,28 +224,26 @@ function New-BoostLabNotepadFailureVerification {
 
 function New-BoostLabNotepadApplyVerification {
     param(
-        [Parameter(Mandatory)][object[]]$RegistryStates,
-        [Parameter(Mandatory)][object]$FileState,
-        [Parameter(Mandatory)][object]$BackupResult
+        [Parameter(Mandatory)][object]$LoadResult,
+        [object[]]$RegistryStates = @(),
+        [Parameter(Mandatory)][object]$FileState
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
+    $loadSucceeded = $null -ne $LoadResult -and [bool]$LoadResult.Success
     $checks.Add((New-BoostLabVerificationCheck `
-        -Name 'settings.dat backup' `
-        -Expected 'Verified backup present before mutation' `
-        -Actual $(if ([bool]$BackupResult.Success) { [string]$BackupResult.BackupPath } else { [string]$BackupResult.Message }) `
-        -Status $(if ([bool]$BackupResult.Success) { 'Passed' } else { 'Failed' }) `
-        -Message ([string]$BackupResult.Message)))
-    $checks.Add((New-BoostLabVerificationCheck `
-        -Name 'settings.dat after Apply' `
-        -Expected 'Present' `
-        -Actual $(if (-not [bool]$FileState.ReadSucceeded) { 'Unknown' } elseif ([bool]$FileState.Exists) { 'Present' } else { 'Absent' }) `
-        -Status $(if (-not [bool]$FileState.ReadSucceeded) { 'Warning' } elseif ([bool]$FileState.Exists) { 'Passed' } else { 'Failed' }) `
-        -Message ([string]$FileState.Message)))
+        -Name 'reg load HKLM\Settings' `
+        -Expected 'Exit code 0 imports source-defined values; non-zero skips import per Ultimate source.' `
+        -Actual $(if ($null -eq $LoadResult) { 'No load result' } else { "ExitCode=$($LoadResult.ExitCode)" }) `
+        -Status $(if ($loadSucceeded) { 'Passed' } else { 'Warning' }) `
+        -Message $(if ($loadSucceeded) { 'Notepad settings.dat was mounted.' } else { 'reg load did not succeed; Ultimate skips import and exits after the load attempt.' })))
 
     foreach ($definition in $script:BoostLabNotepadExpectedValues) {
         $state = @($RegistryStates | Where-Object { $_.Name -eq $definition.Name }) | Select-Object -First 1
-        $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
+        $status = if (-not $loadSucceeded) {
+            'Warning'
+        }
+        elseif ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
             'Warning'
         }
         elseif (-not [bool]$state.Exists -or [string]$state.DisplayValue -ne [string]$definition.Expected) {
@@ -345,8 +252,8 @@ function New-BoostLabNotepadApplyVerification {
         else {
             'Passed'
         }
-        $actual = if ($null -eq $state) { 'Unknown' } else { [string]$state.DisplayValue }
-        $message = if ($null -eq $state) { 'Registry value was not captured.' } else { [string]$state.Message }
+        $actual = if ($null -eq $state) { if ($loadSucceeded) { 'Unknown' } else { 'Not checked because hive load failed.' } } else { [string]$state.DisplayValue }
+        $message = if ($null -eq $state) { if ($loadSucceeded) { 'Registry value was not captured.' } else { 'Source import was skipped because reg load failed.' } } else { [string]$state.Message }
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Notepad LocalState | $($definition.Name)" `
             -Expected ([string]$definition.Expected) `
@@ -355,6 +262,13 @@ function New-BoostLabNotepadApplyVerification {
             -Message $message))
     }
 
+    $checks.Add((New-BoostLabVerificationCheck `
+        -Name 'settings.dat after Apply' `
+        -Expected 'Source-targeted path checked after Ultimate sequence' `
+        -Actual $(if (-not [bool]$FileState.ReadSucceeded) { 'Unknown' } elseif ([bool]$FileState.Exists) { 'Present' } else { 'Absent' }) `
+        -Status $(if (-not [bool]$FileState.ReadSucceeded) { 'Warning' } else { 'Passed' }) `
+        -Message ([string]$FileState.Message)))
+
     $statuses = @($checks | ForEach-Object { $_.Status })
     $overall = if ('Failed' -in $statuses) { 'Failed' } elseif ('Warning' -in $statuses) { 'Warning' } else { 'Passed' }
     New-BoostLabVerificationResult `
@@ -362,34 +276,30 @@ function New-BoostLabNotepadApplyVerification {
         -ToolTitle 'Notepad Settings' `
         -Action 'Apply' `
         -Status $overall `
-        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'Approved OpenFile, GhostFile, and RewriteEnabled values present' }) `
+        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'Ultimate Apply sequence executed' }) `
         -DetectedState ([pscustomobject]@{ NotepadSettings = "$(@($checks | Where-Object Status -eq 'Passed').Count) passed, $(@($checks | Where-Object Status -eq 'Warning').Count) warning, $(@($checks | Where-Object Status -eq 'Failed').Count) failed" }) `
         -Checks $checks.ToArray() `
-        -Message $(if ($overall -eq 'Passed') { 'Notepad settings verified.' } elseif ($overall -eq 'Warning') { 'Notepad settings were applied, but some verification was unavailable.' } else { 'Notepad settings verification failed.' })
+        -Message $(if ($overall -eq 'Passed') { 'Notepad settings verified.' } elseif ($overall -eq 'Warning') { 'Notepad Apply matched the source control flow, but import verification was unavailable or skipped.' } else { 'Notepad settings verification failed.' })
 }
 
 function New-BoostLabNotepadDefaultVerification {
     param(
         [Parameter(Mandatory)][object]$FileState,
-        [AllowNull()][object]$BackupResult,
-        [Parameter(Mandatory)][bool]$WasInitiallyPresent
+        [Parameter(Mandatory)][object]$RemoveResult
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
-    if ($WasInitiallyPresent) {
-        $checks.Add((New-BoostLabVerificationCheck `
-            -Name 'settings.dat backup' `
-            -Expected 'Verified backup present before deletion' `
-            -Actual $(if ($null -ne $BackupResult -and [bool]$BackupResult.Success) { [string]$BackupResult.BackupPath } else { 'Unavailable' }) `
-            -Status $(if ($null -ne $BackupResult -and [bool]$BackupResult.Success) { 'Passed' } else { 'Failed' }) `
-            -Message $(if ($null -eq $BackupResult) { 'Backup result is unavailable.' } else { [string]$BackupResult.Message })))
-    }
-    $fileStatus = if (-not [bool]$FileState.ReadSucceeded) { 'Warning' } elseif ([bool]$FileState.Exists) { 'Failed' } else { 'Passed' }
+    $checks.Add((New-BoostLabVerificationCheck `
+        -Name 'Remove-Item settings.dat' `
+        -Expected 'Delete command attempted against exact source path' `
+        -Actual $(if ($null -eq $RemoveResult) { 'No delete result' } else { [string]$RemoveResult.Message }) `
+        -Status $(if ($null -ne $RemoveResult -and [bool]$RemoveResult.Success) { 'Passed' } else { 'Warning' }) `
+        -Message $(if ($null -ne $RemoveResult -and [bool]$RemoveResult.Success) { 'Delete command completed.' } else { 'Delete command was attempted; missing files or non-terminating errors still leave the source default state as absent.' })))
     $checks.Add((New-BoostLabVerificationCheck `
         -Name 'settings.dat after Default' `
         -Expected 'Absent' `
         -Actual $(if (-not [bool]$FileState.ReadSucceeded) { 'Unknown' } elseif ([bool]$FileState.Exists) { 'Present' } else { 'Absent' }) `
-        -Status $fileStatus `
+        -Status $(if (-not [bool]$FileState.ReadSucceeded) { 'Warning' } elseif ([bool]$FileState.Exists) { 'Failed' } else { 'Passed' }) `
         -Message ([string]$FileState.Message)))
 
     $statuses = @($checks | ForEach-Object { $_.Status })
@@ -399,10 +309,10 @@ function New-BoostLabNotepadDefaultVerification {
         -ToolTitle 'Notepad Settings' `
         -Action 'Default' `
         -Status $overall `
-        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'settings.dat absent' }) `
+        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'settings.dat absent after source delete action' }) `
         -DetectedState ([pscustomobject]@{ NotepadSettings = if (-not [bool]$FileState.ReadSucceeded) { 'Unknown' } elseif ([bool]$FileState.Exists) { 'Present' } else { 'Absent' } }) `
         -Checks $checks.ToArray() `
-        -Message $(if ($overall -eq 'Passed') { 'Notepad default state verified.' } elseif ($overall -eq 'Warning') { 'Notepad Default completed, but verification was unavailable.' } else { 'Notepad Default verification failed.' })
+        -Message $(if ($overall -eq 'Passed') { 'Notepad default state verified.' } elseif ($overall -eq 'Warning') { 'Notepad Default matched the source delete attempt, but delete status included a warning.' } else { 'Notepad Default verification failed.' })
 }
 
 function Get-BoostLabToolInfo {
@@ -460,7 +370,7 @@ function Test-BoostLabToolCompatibility {
 
     [pscustomobject]@{
         Supported = $runtimeSupported
-        Applicable = $runtimeSupported -and $settingsDatExists
+        Applicable = $runtimeSupported
         ToolId = 'notepad-settings'
         ToolTitle = 'Notepad Settings'
         ExpectedSettingsDatPath = $paths.SettingsDatPath
@@ -471,7 +381,7 @@ function Test-BoostLabToolCompatibility {
             'Notepad Settings requires Windows, LocalAppData, SystemRoot, and reg.exe.'
         }
         elseif (-not $settingsDatExists) {
-            'The source-targeted settings.dat is absent. Apply is not applicable; Default is already satisfied.'
+            'settings.dat is absent; Ultimate still attempts the source Apply/Default command sequence rather than using an applicability short-circuit.'
         }
         else {
             'The source-targeted Notepad settings.dat is available.'
@@ -490,7 +400,7 @@ function Get-BoostLabToolState {
     [pscustomobject]@{
         ToolId = 'notepad-settings'
         ToolTitle = 'Notepad Settings'
-        Status = if (-not [bool]$state.ReadSucceeded) { 'Unavailable' } elseif ([bool]$state.Exists) { 'settings.dat present' } else { 'Default' }
+        Status = if (-not [bool]$state.ReadSucceeded) { 'Unavailable' } elseif ([bool]$state.Exists) { 'settings.dat present' } else { 'settings.dat absent' }
         LastAction = $null
         LastResult = $null
         RestartRequired = $false
@@ -507,17 +417,13 @@ function Invoke-BoostLabNotepadSettingsAction {
         [scriptblock]$AdministratorChecker = { Test-BoostLabAdministrator },
         [scriptblock]$ProcessStopper = { Stop-BoostLabNotepadProcess },
         [scriptblock]$DelayInvoker = { param($Seconds) Start-Sleep -Seconds $Seconds },
-        [scriptblock]$DirectoryTester = { param($Path) Test-Path -LiteralPath $Path -PathType Container },
         [scriptblock]$FileStateReader = { param($Path) Get-BoostLabNotepadFileState -Path $Path },
-        [scriptblock]$BackupWriter = { param($SourcePath, $BackupPath) Backup-BoostLabNotepadSettingsFile -SourcePath $SourcePath -BackupPath $BackupPath },
-        [scriptblock]$StateWriter = { param($State, $ManifestPath) Save-BoostLabNotepadState -State $State -ManifestPath $ManifestPath },
         [scriptblock]$RegistryFileWriter = { param($Path, $Content) Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop },
         [scriptblock]$RegistryCommandInvoker = { param($Operation, $Arguments, $Root) Invoke-BoostLabNotepadRegistryCommand -Operation $Operation -Arguments $Arguments -SystemRoot $Root },
         [scriptblock]$RegistryReader = { param($Name) Get-BoostLabNotepadRegistryValue -Name $Name },
-        [scriptblock]$FileRemover = { param($Path) Remove-Item -LiteralPath $Path -Force -ErrorAction Stop },
+        [scriptblock]$FileRemover = { param($Path) Invoke-BoostLabNotepadFileRemoval -Path $Path },
         [string]$LocalAppData = $env:LocalAppData,
-        [string]$SystemRoot = $env:SystemRoot,
-        [string]$ProgramData = $env:ProgramData
+        [string]$SystemRoot = $env:SystemRoot
     )
 
     if (-not $Confirmed) {
@@ -527,114 +433,26 @@ function Invoke-BoostLabNotepadSettingsAction {
         return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message 'Administrator rights are required.'
     }
 
-    $paths = Get-BoostLabNotepadPaths -LocalAppData $LocalAppData -SystemRoot $SystemRoot -ProgramData $ProgramData
-    if (-not (Test-BoostLabNotepadSettingsPath -Path $paths.SettingsDatPath -LocalAppData $LocalAppData)) {
-        return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message 'The Notepad settings.dat path is outside the approved target.'
-    }
-
-    $initialState = & $FileStateReader $paths.SettingsDatPath
-    if ($null -eq $initialState -or -not [bool]$initialState.ReadSucceeded) {
-        $message = if ($null -eq $initialState) { 'settings.dat state reader returned no result.' } else { [string]$initialState.Message }
-        $verification = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
-        return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message $message -VerificationResult $verification
-    }
-
-    $packageDirectoryExists = [bool](& $DirectoryTester $paths.PackageDirectoryPath)
-    if (-not [bool]$initialState.Exists) {
-        if ($ActionName -eq 'Apply') {
-            return New-BoostLabNotepadNotApplicableResult `
-                -Action $ActionName `
-                -Paths $paths `
-                -PackageDirectoryExists $packageDirectoryExists
-        }
-
-        $verificationResult = New-BoostLabNotepadDefaultVerification `
-            -FileState $initialState `
-            -BackupResult $null `
-            -WasInitiallyPresent $false
-        $compatibilityMessage = 'No action was needed because the source-targeted Notepad settings.dat is already absent.'
-        $data = [pscustomobject]@{
-            CommandStatus = 'Already default'
-            VerificationStatus = $verificationResult.Status
-            CompatibilityStatus = 'Default already satisfied'
-            CompatibilityMessage = 'This system may be using classic Notepad or a Notepad build that does not expose the source-targeted settings.dat.'
-            ExpectedNotepadSettingsState = 'settings.dat absent'
-            DetectedNotepadSettingsState = 'settings.dat absent'
-            SettingsDatPath = $paths.SettingsDatPath
-            NotepadPackageDirectoryPath = $paths.PackageDirectoryPath
-            NotepadPackageDirectoryExists = $packageDirectoryExists
-            SettingsDatExists = $false
-            ChangesExecuted = $false
-            BackupStatus = 'Not required because settings.dat was already absent.'
-            BackupPath = ''
-            OriginalSha256 = $null
-            DetectedSha256 = $null
-            ProcessActions = @('None; Default was already satisfied before process handling.')
-            HiveOperations = @()
-            RegistryValuesChecked = @()
-            FileDisposition = 'No changes executed; settings.dat was already absent.'
-            Warnings = @()
-            CompletedAt = Get-Date
-        }
-        return New-BoostLabNotepadResult `
-            -Success $true `
-            -Action $ActionName `
-            -Message $compatibilityMessage `
-            -Data $data `
-            -VerificationResult $verificationResult
-    }
-
-    $processResult = & $ProcessStopper
-    if ($null -eq $processResult -or -not [bool]$processResult.Success) {
-        $message = if ($null -eq $processResult) { 'Notepad process handling returned no result.' } else { [string]$processResult.Message }
-        $verification = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
-        return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message $message -VerificationResult $verification
-    }
-    & $DelayInvoker 2
-
-    $backupResult = $null
-    $backupResult = & $BackupWriter $paths.SettingsDatPath $paths.BackupPath
-    if ($null -eq $backupResult -or -not [bool]$backupResult.Success) {
-        $message = if ($null -eq $backupResult) { 'settings.dat backup returned no result.' } else { "settings.dat backup failed: $($backupResult.Message)" }
-        $verification = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
-        return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message $message -VerificationResult $verification
-    }
-
-    $stateRecord = [ordered]@{
-        ToolId = 'notepad-settings'
-        Action = $ActionName
-        TargetPath = $paths.SettingsDatPath
-        OriginalExisted = [bool]$initialState.Exists
-        OriginalSha256 = $initialState.Sha256
-        OriginalLength = $initialState.Length
-        BackupPath = if ($null -ne $backupResult) { $backupResult.BackupPath } else { $null }
-        BackupSha256 = if ($null -ne $backupResult) { $backupResult.Sha256 } else { $null }
-        BackupVerified = $null -ne $backupResult -and [bool]$backupResult.Success
-        BoostLabOwnsTargetFile = $false
-        Status = 'Pending'
-        CapturedAt = Get-Date
-    }
+    $paths = Get-BoostLabNotepadPaths -LocalAppData $LocalAppData -SystemRoot $SystemRoot
+    $processResult = $null
     try {
-        & $StateWriter ([pscustomobject]$stateRecord) $paths.ManifestPath
-    }
-    catch {
-        $message = "Notepad state record could not be saved: $($_.Exception.Message)"
-        $verification = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
-        return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message $message -VerificationResult $verification
-    }
+        $processResult = & $ProcessStopper
+        if ($null -eq $processResult -or -not [bool]$processResult.Success) {
+            $message = if ($null -eq $processResult) { 'Notepad process handling returned no result.' } else { [string]$processResult.Message }
+            $verification = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
+            return New-BoostLabNotepadResult -Success $false -Action $ActionName -Message $message -VerificationResult $verification
+        }
+        & $DelayInvoker 2
 
-    $registryStates = @()
-    $hiveOperations = [System.Collections.Generic.List[string]]::new()
-    try {
         if ($ActionName -eq 'Apply') {
             & $RegistryFileWriter $paths.RegistryFilePath $script:BoostLabNotepadRegistryFileContent
-            $hiveLoaded = $false
-            try {
-                & $RegistryCommandInvoker 'load' @('HKLM\Settings', $paths.SettingsDatPath) $SystemRoot | Out-Null
-                $hiveLoaded = $true
-                $hiveOperations.Add('Loaded HKLM\Settings from Notepad settings.dat.')
+            $registryStates = @()
+            $hiveOperations = [System.Collections.Generic.List[string]]::new()
+            $loadResult = & $RegistryCommandInvoker 'load' @('HKLM\Settings', $paths.SettingsDatPath) $SystemRoot
+            $hiveOperations.Add("reg load HKLM\Settings exited with code $($loadResult.ExitCode).")
+            if ($null -ne $loadResult -and [bool]$loadResult.Success) {
                 & $RegistryCommandInvoker 'import' @($paths.RegistryFilePath) $SystemRoot | Out-Null
-                $hiveOperations.Add('Imported the approved notepadsettings.reg values.')
+                $hiveOperations.Add('reg import notepadsettings.reg was invoked.')
                 $registryStates = @(
                     foreach ($definition in $script:BoostLabNotepadExpectedValues) {
                         $state = & $RegistryReader $definition.Name
@@ -649,91 +467,66 @@ function Invoke-BoostLabNotepadSettingsAction {
                         }
                     }
                 )
-            }
-            finally {
-                if ($hiveLoaded) {
-                    [gc]::Collect()
-                    & $DelayInvoker 2
-                    & $RegistryCommandInvoker 'unload' @('HKLM\Settings') $SystemRoot | Out-Null
-                    $hiveOperations.Add('Unloaded HKLM\Settings.')
-                }
+                [gc]::Collect()
+                & $DelayInvoker 2
+                & $RegistryCommandInvoker 'unload' @('HKLM\Settings') $SystemRoot | Out-Null
+                $hiveOperations.Add('reg unload HKLM\Settings was invoked.')
             }
 
             $detectedFileState = & $FileStateReader $paths.SettingsDatPath
             $verificationResult = New-BoostLabNotepadApplyVerification `
+                -LoadResult $loadResult `
                 -RegistryStates @($registryStates) `
-                -FileState $detectedFileState `
-                -BackupResult $backupResult
+                -FileState $detectedFileState
             $success = $verificationResult.Status -ne 'Failed'
-            $message = if ($success) { 'Notepad settings applied.' } else { 'Notepad settings were applied, but verification failed.' }
-            $stateRecord['Status'] = if ($success) { 'Completed' } else { 'VerificationFailed' }
-            $stateRecord['CompletedAt'] = Get-Date
-            $stateRecord['DetectedSha256'] = $detectedFileState.Sha256
-            & $StateWriter ([pscustomobject]$stateRecord) $paths.ManifestPath
+            $message = if ($success) { 'Notepad settings Apply source sequence completed.' } else { 'Notepad settings Apply source sequence completed, but verification failed.' }
             $data = [pscustomobject]@{
                 CommandStatus = if ($success) { 'Completed' } else { 'Completed with verification failure' }
                 VerificationStatus = $verificationResult.Status
-                ExpectedNotepadSettingsState = 'Approved OpenFile, GhostFile, and RewriteEnabled values present'
+                ExpectedNotepadSettingsState = 'Ultimate Apply writes source-defined OpenFile, GhostFile, and RewriteEnabled values when reg load succeeds'
                 DetectedNotepadSettingsState = $verificationResult.DetectedState.NotepadSettings
                 SettingsDatPath = $paths.SettingsDatPath
                 NotepadPackageDirectoryPath = $paths.PackageDirectoryPath
-                NotepadPackageDirectoryExists = $packageDirectoryExists
                 SettingsDatExists = [bool]$detectedFileState.Exists
                 ChangesExecuted = $true
-                BackupStatus = [string]$backupResult.Message
-                BackupPath = [string]$backupResult.BackupPath
-                OriginalSha256 = $initialState.Sha256
+                BackupStatus = 'Not used; Ultimate source does not create a backup.'
+                BackupPath = ''
+                OriginalSha256 = $null
                 DetectedSha256 = $detectedFileState.Sha256
                 ProcessActions = @([string]$processResult.Message)
                 HiveOperations = $hiveOperations.ToArray()
                 RegistryValuesChecked = @($registryStates | ForEach-Object { "$($_.Name): $($_.DisplayValue)" })
-                FileDisposition = 'settings.dat retained and updated through the mounted hive.'
+                FileDisposition = 'settings.dat was targeted through the source-defined mounted hive sequence.'
                 Warnings = @()
                 CompletedAt = Get-Date
             }
             return New-BoostLabNotepadResult -Success $success -Action $ActionName -Message $message -Data $data -VerificationResult $verificationResult
         }
 
-        if ([bool]$initialState.Exists) {
-            & $FileRemover $paths.SettingsDatPath
-        }
+        $removeResult = & $FileRemover $paths.SettingsDatPath
         $detectedFileState = & $FileStateReader $paths.SettingsDatPath
         $verificationResult = New-BoostLabNotepadDefaultVerification `
             -FileState $detectedFileState `
-            -BackupResult $backupResult `
-            -WasInitiallyPresent ([bool]$initialState.Exists)
+            -RemoveResult $removeResult
         $success = $verificationResult.Status -ne 'Failed'
-        $message = if (-not [bool]$initialState.Exists -and $success) {
-            'Notepad settings were already default.'
-        }
-        elseif ($success) {
-            'Notepad settings restored to default.'
-        }
-        else {
-            'Notepad Default completed, but verification failed.'
-        }
-        $stateRecord['Status'] = if ($success) { 'Completed' } else { 'VerificationFailed' }
-        $stateRecord['CompletedAt'] = Get-Date
-        $stateRecord['DetectedExists'] = $detectedFileState.Exists
-        & $StateWriter ([pscustomobject]$stateRecord) $paths.ManifestPath
+        $message = if ($success) { 'Notepad settings Default source sequence completed.' } else { 'Notepad Default source sequence completed, but verification failed.' }
         $data = [pscustomobject]@{
-            CommandStatus = if (-not [bool]$initialState.Exists) { 'Already default' } elseif ($success) { 'Completed' } else { 'Completed with verification failure' }
+            CommandStatus = if ($success) { 'Completed' } else { 'Completed with verification failure' }
             VerificationStatus = $verificationResult.Status
-            ExpectedNotepadSettingsState = 'settings.dat absent'
+            ExpectedNotepadSettingsState = 'settings.dat absent after source-defined Remove-Item'
             DetectedNotepadSettingsState = $verificationResult.DetectedState.NotepadSettings
             SettingsDatPath = $paths.SettingsDatPath
             NotepadPackageDirectoryPath = $paths.PackageDirectoryPath
-            NotepadPackageDirectoryExists = $packageDirectoryExists
             SettingsDatExists = [bool]$detectedFileState.Exists
-            ChangesExecuted = [bool]$initialState.Exists
-            BackupStatus = if ($null -eq $backupResult) { 'Not required because settings.dat was already absent.' } else { [string]$backupResult.Message }
-            BackupPath = if ($null -eq $backupResult) { '' } else { [string]$backupResult.BackupPath }
-            OriginalSha256 = $initialState.Sha256
+            ChangesExecuted = $true
+            BackupStatus = 'Not used; Ultimate source does not create a backup.'
+            BackupPath = ''
+            OriginalSha256 = $null
             DetectedSha256 = $detectedFileState.Sha256
             ProcessActions = @([string]$processResult.Message)
             HiveOperations = @()
             RegistryValuesChecked = @()
-            FileDisposition = if ([bool]$initialState.Exists) { 'Deleted only the approved Notepad settings.dat after backup.' } else { 'No file deleted; settings.dat was already absent.' }
+            FileDisposition = 'Delete was attempted only against the exact source-defined settings.dat path.'
             Warnings = @()
             CompletedAt = Get-Date
         }
@@ -741,29 +534,24 @@ function Invoke-BoostLabNotepadSettingsAction {
     }
     catch {
         $message = $_.Exception.Message
-        $stateRecord['Status'] = 'Failed'
-        $stateRecord['Error'] = $message
-        $stateRecord['CompletedAt'] = Get-Date
-        try { & $StateWriter ([pscustomobject]$stateRecord) $paths.ManifestPath } catch {}
         $verificationResult = New-BoostLabNotepadFailureVerification -Action $ActionName -Message $message
         $data = [pscustomobject]@{
             CommandStatus = 'Failed'
             VerificationStatus = 'Failed'
-            ExpectedNotepadSettingsState = if ($ActionName -eq 'Apply') { 'Approved values present' } else { 'settings.dat absent' }
+            ExpectedNotepadSettingsState = if ($ActionName -eq 'Apply') { 'Ultimate Apply source sequence completed' } else { 'settings.dat absent' }
             DetectedNotepadSettingsState = 'Operation failed'
             SettingsDatPath = $paths.SettingsDatPath
             NotepadPackageDirectoryPath = $paths.PackageDirectoryPath
-            NotepadPackageDirectoryExists = $packageDirectoryExists
             SettingsDatExists = $null
             ChangesExecuted = $true
-            BackupStatus = if ($null -eq $backupResult) { 'Not available' } else { [string]$backupResult.Message }
-            BackupPath = if ($null -eq $backupResult) { '' } else { [string]$backupResult.BackupPath }
-            OriginalSha256 = $initialState.Sha256
+            BackupStatus = 'Not used; Ultimate source does not create a backup.'
+            BackupPath = ''
+            OriginalSha256 = $null
             DetectedSha256 = $null
-            ProcessActions = @([string]$processResult.Message)
-            HiveOperations = $hiveOperations.ToArray()
-            RegistryValuesChecked = @($registryStates | ForEach-Object { "$($_.Name): $($_.DisplayValue)" })
-            FileDisposition = 'Operation stopped after an error.'
+            ProcessActions = @($(if ($null -eq $processResult) { 'Unknown' } else { [string]$processResult.Message }))
+            HiveOperations = @()
+            RegistryValuesChecked = @()
+            FileDisposition = 'Operation stopped after a terminating error.'
             Warnings = @()
             CompletedAt = Get-Date
         }
