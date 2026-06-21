@@ -204,16 +204,30 @@ try {
         throw 'TrustedInstaller capability is not visible in the Action Plan.'
     }
 
-    $placeholderModulePath = Join-Path $ProjectRoot 'modules\Windows\control-panel-settings.psm1'
-    $placeholderSource = Get-Content -Raw -LiteralPath $placeholderModulePath
-    if (
-        -not $placeholderSource.Contains('ToolModule.Placeholder.ps1') -or
-        $placeholderSource.Contains('$script:BoostLabImplementedActions')
-    ) {
-        throw 'The placeholder module execution boundary changed.'
+    $placeholderTool = $null
+    foreach ($candidateTool in $tools) {
+        $candidateStage = [string]$candidateTool['Stage']
+        $candidateId = [string]$candidateTool['Id']
+        $candidateModulePath = Join-Path $ProjectRoot ("modules\{0}\{1}.psm1" -f $candidateStage, $candidateId)
+        if (-not (Test-Path -LiteralPath $candidateModulePath -PathType Leaf)) {
+            continue
+        }
+
+        $candidateSource = Get-Content -Raw -LiteralPath $candidateModulePath
+        if (
+            $candidateSource.Contains('ToolModule.Placeholder.ps1') -and
+            -not $candidateSource.Contains('$script:BoostLabImplementedActions')
+        ) {
+            $placeholderTool = $candidateTool
+            break
+        }
     }
-    $placeholderTool = $tools | Where-Object { $_['Id'] -eq 'control-panel-settings' } | Select-Object -First 1
-    $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName 'Open'
+    if ($null -eq $placeholderTool) {
+        throw 'No current placeholder module was available for the dry-run action plan boundary check.'
+    }
+
+    $placeholderAction = [string]@($placeholderTool['Actions'])[0]
+    $placeholderPlan = New-BoostLabActionPlan -ToolMetadata $placeholderTool -ActionName $placeholderAction
     if (-not $placeholderPlan.IsDryRun) {
         throw 'Placeholder planning is not marked as a dry run.'
     }

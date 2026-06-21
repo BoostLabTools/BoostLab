@@ -5,20 +5,20 @@
 
     Counts = @{
         ActiveTools = 55
-        RuntimeImplementedTools = 49
-        DeferredPlaceholders = 6
+        RuntimeImplementedTools = 50
+        DeferredPlaceholders = 5
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 25
+        UltimateParityImplemented = 26
         NearParityControlled = 21
         ControlledSubset = 3
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
-        DeferredForParityWork = 6
+        DeferredForParityWork = 5
         RefusedOrDeletedOutsideActiveCatalog = 19
     }
 
-    CurrentOrderedParityTarget = 'control-panel-settings'
+    CurrentOrderedParityTarget = 'device-manager-power-savings-wake'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -637,12 +637,13 @@
             Stage = 'Windows'
             StageOrder = 6
             ToolOrder = 15
-            RuntimeStatus = 'DeferredPlaceholder'
-            ImplementationLevel = 'DeferredForParityWork'
-            UltimateParity = 'No'
-            GapSummary = 'Very broad source needs decomposition across registry, service, cleanup, security, and TrustedInstaller behavior.'
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Exact source Optimize and Default branches are represented through checksum-verified source-backed execution with explicit confirmation and test-safe script runner injection.'
             YazanFinalException = $false
-            NextParityAction = 'Decompose into ordered implementable slices with exact scopes before parity work.'
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
         }
         @{
             ToolId = 'sound'

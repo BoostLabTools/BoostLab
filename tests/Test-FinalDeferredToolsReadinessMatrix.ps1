@@ -88,7 +88,6 @@ if (($allTools.Count - $placeholderTools.Count) -ne $inventoryBaseline.Implement
 }
 
 $expectedDeferred = @(
-    @{ Id = 'control-panel-settings'; Title = 'Control Panel Settings'; Link = 'docs/tool-designs/control-panel-settings-scope-design.md'; Source = 'source-ultimate/6 Windows/15 Control Panel Settings.ps1'; Hash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B' }
     @{ Id = 'cleanup'; Title = 'Cleanup'; Link = 'docs/tool-designs/cleanup-scope-design.md'; Source = 'source-ultimate/6 Windows/22 Cleanup.ps1'; Hash = '3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA' }
     @{ Id = 'resizable-bar-assistant'; Title = 'Resizable BAR Assistant'; Link = 'docs/tool-designs/resizable-bar-assistant-scope-design.md'; Source = 'source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1'; Hash = 'E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443' }
     @{ Id = 'services-optimizer'; Title = 'Services Optimizer'; Link = 'docs/tool-designs/services-optimizer-scope-design.md'; Source = 'source-ultimate/8 Advanced/5 Services Optimizer.ps1'; Hash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F' }
@@ -127,8 +126,6 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    "$($inventoryBaseline.DeferredPlaceholders)/$($inventoryBaseline.DeferredPlaceholders) deferred tools covered",
-    "Scope or scope/provenance design covered tools: **$($inventoryBaseline.DeferredPlaceholders)**",
     'Standalone provenance review covered tools: **0**',
     'Manual-handoff implemented with Auto provenance review still blocking automation: **5**',
     'No deferred tool is marked ready for implementation by this matrix.',

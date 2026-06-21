@@ -233,6 +233,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\notepad-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'control-panel-settings' = @{
+        RelativePath          = 'Windows\control-panel-settings.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
+    }
     'start-menu-taskbar' = @{
         RelativePath          = 'Windows\start-menu-taskbar.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -709,6 +713,9 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'notepad-settings') {
+            0
+        }
+        elseif ($toolId -eq 'control-panel-settings') {
             0
         }
         elseif ($toolId -eq 'start-menu-taskbar') {

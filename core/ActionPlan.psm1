@@ -446,6 +446,12 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
         'Stop Notepad and run the source-defined settings.dat delete action.'
     }
+    elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Apply') {
+        'Run the exact source-defined Control Panel Settings Optimize branch after checksum verification.'
+    }
+    elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Default') {
+        'Run the exact source-defined Control Panel Settings Default branch after checksum verification.'
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'Disable the approved network adapter power-saving and wake values across detected adapter class keys.'
     }
@@ -1146,6 +1152,13 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Run the source-defined Remove-Item action only against Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat.')
         $plannedChanges.Add('Do not create a backup or state record because Ultimate does not define backup or Restore behavior.')
     }
+    elseif ($toolId -eq 'control-panel-settings' -and ($ActionName -eq 'Apply' -or $ActionName -eq 'Default')) {
+        $branchName = if ($ActionName -eq 'Apply') { 'Optimize (Recommended)' } else { 'Default' }
+        $plannedChanges.Add("Verify the Control Panel Settings Ultimate source checksum before running the $branchName branch.")
+        $plannedChanges.Add('Execute the exact source-backed branch through BoostLab runtime confirmation and script-runner plumbing.')
+        $plannedChanges.Add('The source branch may stop services/processes, change TrustedInstaller service binPath temporarily, import broad registry payloads, change scheduled tasks and powercfg values, and write/delete source-defined settings files.')
+        $plannedChanges.Add('Do not expose Restore or Open because the Ultimate source defines only Optimize and Default branches.')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
         $plannedChanges.Add('Set the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
@@ -1694,6 +1707,11 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The exact current user Notepad settings.dat is deleted, so Notepad recreates default settings later.')
         $sideEffects.Add('No backup or Restore state is created because the Ultimate source does not define one.')
     }
+    elseif ($toolId -eq 'control-panel-settings' -and ($ActionName -eq 'Apply' -or $ActionName -eq 'Default')) {
+        $sideEffects.Add('Control Panel, Settings, privacy, security, accessibility, Explorer, sound, notification, app-action, scheduled task, service, process, and power settings may change exactly as the Ultimate source defines.')
+        $sideEffects.Add('TrustedInstaller is used by the source helper for protected CapabilityAccessManager database cleanup.')
+        $sideEffects.Add('No Restore action is exposed; Default is the separate source-defined Default branch, not captured-state restore.')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Detected network adapters may use more power and will not wake from the source-defined wake events.')
         $sideEffects.Add('No adapter is disabled and no driver is installed, removed, replaced, or updated.')
@@ -2023,6 +2041,12 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'notepad-settings' -and $ActionName -eq 'Default') {
         'BoostLab will close Notepad and run the source-defined delete action only against the exact Notepad settings.dat. No backup or Restore state is created. Unsaved Notepad work can be lost. No restart is required. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Apply') {
+        'BoostLab will run the exact Control Panel Settings Optimize branch after source checksum verification. This broad source branch can change registry, services, TrustedInstaller state, scheduled tasks, power settings, app-action state, processes, and source-defined files. No Restore is available. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Default') {
+        'BoostLab will run the exact Control Panel Settings Default branch after source checksum verification. This broad source branch can change registry, services, TrustedInstaller state, scheduled tasks, power settings, app-action state, processes, and source-defined files. Default is not Restore. Do you want to continue?'
     }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'BoostLab will set the 14 approved power-saving and wake values on every detected network adapter class key and verify each value. No adapter will be disabled and no restart is required. Do you want to continue?'

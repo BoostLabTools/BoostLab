@@ -115,7 +115,6 @@ foreach ($requiredSection in @(
 
 foreach ($requiredPhrase in @(
     'Source SHA-256: `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B`',
-    'Control Panel Settings remains a refused placeholder',
     'No production Control Panel',
     'No Windows 10-only branch was found',
     'Privacy and security mutation is high risk',
@@ -223,11 +222,20 @@ if (-not $planText.Contains('docs/tool-designs/control-panel-settings-scope-desi
     throw 'Deferred tools execution plan does not link to the Control Panel Settings scope design.'
 }
 
-if (-not $moduleText.Contains('ToolModule.Placeholder.ps1')) {
-    throw 'Control Panel Settings module is no longer a placeholder.'
+foreach ($requiredModuleText in @(
+    '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')',
+    '$script:BoostLabExpectedSourceHash',
+    'Get-BoostLabControlPanelSettingsSourceStatus',
+    'Get-BoostLabControlPanelSettingsBranchScript',
+    'Invoke-BoostLabControlPanelSettingsScript',
+    'ScriptRunner'
+)) {
+    if (-not $moduleText.Contains($requiredModuleText)) {
+        throw "Control Panel Settings implemented module is missing source-backed behavior: $requiredModuleText"
+    }
 }
-if ($moduleText -match 'Run-Trusted|TrustedInstaller|Regedit|reg import|reg load|reg unload|Remove-Item|Stop-Process|Stop-Service|Set-Service|Get-ScheduledTask|Disable-ScheduledTask|Enable-ScheduledTask|powercfg|Start-Process|IWR|Invoke-WebRequest') {
-    throw 'Control Panel Settings placeholder module appears to contain real mutation behavior.'
+if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
+    throw 'Control Panel Settings must no longer use the placeholder module after Phase 149.'
 }
 
 if ($artifactPolicy.Artifacts.Count -ne 0) {

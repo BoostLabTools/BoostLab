@@ -187,6 +187,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\notepad-settings.psm1'
         Actions = @('Apply', 'Default')
     }
+    'control-panel-settings' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\control-panel-settings.psm1'
+        Actions = @('Apply', 'Default')
+    }
     'device-manager-power-savings-wake' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\device-manager-power-savings-wake.psm1'
         Actions = @('Apply', 'Default')

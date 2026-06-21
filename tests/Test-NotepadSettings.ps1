@@ -360,7 +360,9 @@ Assert-BoostLabCondition ([string]$notepadRecord.NextParityAction -eq 'DoneParit
 
 $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
 Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq [string]$nextTarget.ToolId) 'Current ordered parity target must match the derived first non-final target.'
-Assert-BoostLabCondition ([string]$parityBaseline.CurrentOrderedParityTarget -eq 'control-panel-settings') 'Current ordered parity target must advance to Control Panel Settings after exact Notepad parity.'
+$controlPanelRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'control-panel-settings' }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $controlPanelRecord) 'Control Panel Settings parity record is missing.'
+Assert-BoostLabCondition ([string]$controlPanelRecord.FinalProgressStatus -eq 'DoneParity') 'Control Panel Settings must remain final accepted after Phase 149.'
 
 $categoryCounts = @{}
 foreach ($record in @($parityBaseline.Tools)) {
