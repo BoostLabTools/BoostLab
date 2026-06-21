@@ -9,8 +9,8 @@
         DeferredPlaceholders = 3
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 31
-        NearParityControlled = 17
+        UltimateParityImplemented = 32
+        NearParityControlled = 16
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
@@ -18,7 +18,7 @@
         RefusedOrDeletedOutsideActiveCatalog = 21
     }
 
-    CurrentOrderedParityTarget = 'spectre-meltdown-assistant'
+    CurrentOrderedParityTarget = 'mmagent-assistant'
 
     Policy = @{
         UltimateParityIsDefaultFinalTarget = $true
@@ -750,11 +750,11 @@
             StageOrder = 7
             ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Source-defined security registry Apply/Default is preserved with assistant warnings and confirmation.'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Apply and Default preserve the exact source-defined Spectre / Meltdown mitigation registry behavior with BoostLab confirmation, warnings, logging, and verification.'
             YazanFinalException = $false
-            NextParityAction = 'Confirm assistant/confirmation mechanics are accepted as final parity.'
+            NextParityAction = 'No parity work required; advance ordered cursor to mmagent-assistant.'
         }
         @{
             ToolId = 'mmagent-assistant'

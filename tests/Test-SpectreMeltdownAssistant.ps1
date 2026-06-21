@@ -24,7 +24,10 @@ else {
 }
 
 . (Join-Path $ProjectRoot 'tests\BoostLab.InventoryBaseline.ps1')
+. (Join-Path $ProjectRoot 'tests\BoostLab.ParityStatusBaseline.ps1')
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
+$parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
+$executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\spectre-meltdown-assistant.psm1'
@@ -48,6 +51,43 @@ if (
     (@($tool['Actions']) -join ',') -ne 'Analyze,Apply,Default'
 ) {
     throw 'Spectre / Meltdown Assistant metadata is incorrect.'
+}
+
+$parityRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'spectre-meltdown-assistant' }) | Select-Object -First 1
+if ($null -eq $parityRecord) {
+    throw 'Spectre / Meltdown Assistant parity baseline record is missing.'
+}
+if (
+    [string]$parityRecord.RuntimeStatus -ne 'RuntimeImplemented' -or
+    [string]$parityRecord.ImplementationLevel -ne 'ParityImplemented' -or
+    [string]$parityRecord.UltimateParity -ne 'Yes' -or
+    [bool]$parityRecord.YazanFinalException
+) {
+    throw 'Spectre / Meltdown Assistant parity baseline was not finalized as exact Ultimate parity.'
+}
+
+$nextOrderedTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaseline -ExecutionOrder $executionOrder
+if ($null -eq $nextOrderedTarget) {
+    throw 'Ordered parity cursor did not identify the next Advanced target after Spectre / Meltdown.'
+}
+if ([string]$parityBaseline.CurrentOrderedParityTarget -ne [string]$nextOrderedTarget.ToolId) {
+    throw 'Central ordered parity cursor does not match the derived first non-final target.'
+}
+$advancedOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Advanced' } | Select-Object -First 1)
+$advancedTools = @($advancedOrder.Tools)
+$spectreIndex = -1
+for ($index = 0; $index -lt $advancedTools.Count; $index++) {
+    if ([string]$advancedTools[$index].ToolId -eq 'spectre-meltdown-assistant') {
+        $spectreIndex = $index
+        break
+    }
+}
+if ($spectreIndex -lt 0 -or $spectreIndex -ge ($advancedTools.Count - 1)) {
+    throw 'Spectre / Meltdown Assistant is not followed by another ordered Advanced target.'
+}
+$expectedNextAdvancedTool = [string]$advancedTools[$spectreIndex + 1].ToolId
+if ([string]$nextOrderedTarget.ToolId -ne $expectedNextAdvancedTool) {
+    throw 'Spectre / Meltdown acceptance did not advance to the next ordered Advanced tool.'
 }
 
 $capabilities = $tool['Capabilities']
