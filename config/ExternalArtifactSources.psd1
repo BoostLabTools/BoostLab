@@ -1,4 +1,4 @@
-﻿@{
+@{
     SchemaVersion = '1.0'
 
     # This manifest classifies external source URLs for reached tools. It is
@@ -117,6 +117,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-reinstall-windows11-media-creation-tool'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -156,6 +158,8 @@
             DuplicateHashGroup = 'DUP-SHA256-01'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-edge-settings-edge-exe'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -501,6 +505,8 @@
             DuplicateHashGroup = 'DUP-SHA256-02'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-driver-clean-seven-zip'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -540,6 +546,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-driver-clean-ddu'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -579,6 +587,8 @@
             DuplicateHashGroup = 'DUP-SHA256-02'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-driver-install-debloat-settings-seven-zip'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -618,6 +628,8 @@
             DuplicateHashGroup = 'DUP-SHA256-03'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-driver-install-debloat-settings-inspector'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -725,6 +737,8 @@
             DuplicateHashGroup = 'DUP-SHA256-02'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-nvidia-settings-seven-zip'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -764,6 +778,8 @@
             DuplicateHashGroup = 'DUP-SHA256-03'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-nvidia-settings-inspector'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -803,6 +819,8 @@
             DuplicateHashGroup = 'DUP-SHA256-02'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-directx-seven-zip'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -842,6 +860,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-directx-runtime-package'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -881,6 +901,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2005-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -920,6 +942,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2005-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -959,6 +983,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2008-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -998,6 +1024,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2008-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1037,6 +1065,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2010-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1076,6 +1106,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2010-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1115,6 +1147,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2012-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1154,6 +1188,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2012-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1193,6 +1229,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2013-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1232,6 +1270,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2013-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1271,6 +1311,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2015-2017-2019-2022-x64'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1310,6 +1352,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2015-2017-2019-2022-x86'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1349,6 +1393,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-bloatware-remote-desktop-connection'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1388,6 +1434,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-bloatware-snipping-tool'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1427,6 +1475,8 @@
             DuplicateHashGroup = 'DUP-SHA256-04'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-game-bar-edge-webview'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1466,6 +1516,8 @@
             DuplicateHashGroup = $null
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-game-bar-gaming-repair-tool'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1505,6 +1557,8 @@
             DuplicateHashGroup = 'DUP-SHA256-01'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-edge-webview-edge-exe'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1544,6 +1598,8 @@
             DuplicateHashGroup = 'DUP-SHA256-04'
             BoostLabMirrorAvailable = $false
             ArtifactProvenanceApproved = $false
+            ArtifactProvenanceOnlyApproved = $true
+            ArtifactProvenanceId = 'phase164g-edge-webview-edge-webview'
             ProductionAllowlistApproved = $false
             ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
             MirrorStatus = 'NeedsBoostLabMirror'
@@ -1552,4 +1608,6 @@
         }
     )
 }
+
+
 

@@ -249,10 +249,22 @@ $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 Assert-GameBarCondition ([int]$inventoryAssertion.Baseline.ImplementedTools -eq [int]$inventoryAssertion.Snapshot.ImplementedTools) 'Inventory implemented count must remain baseline-derived.'
 Assert-GameBarCondition ([int]$inventoryAssertion.Baseline.DeferredPlaceholders -eq [int]$inventoryAssertion.Snapshot.DeferredPlaceholders) 'Inventory deferred count must remain baseline-derived.'
 
-$artifactProvenance = Get-Content -LiteralPath $artifactProvenancePath -Raw
+$artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath
 $productionAllowlist = Get-Content -LiteralPath $productionAllowlistPath -Raw
-Assert-GameBarCondition (-not $artifactProvenance.Contains('edgewebview.exe')) 'GameBar phase must not add edgewebview.exe to artifact provenance.'
-Assert-GameBarCondition (-not $artifactProvenance.Contains('gamingrepairtool.exe')) 'GameBar phase must not add gamingrepairtool.exe to artifact provenance.'
+$runtimeArtifactText = (@($artifactProvenance.Artifacts) | Out-String)
+Assert-GameBarCondition (-not $runtimeArtifactText.Contains('edgewebview.exe')) 'GameBar phase must not add edgewebview.exe to runtime artifact approvals.'
+Assert-GameBarCondition (-not $runtimeArtifactText.Contains('gamingrepairtool.exe')) 'GameBar phase must not add gamingrepairtool.exe to runtime artifact approvals.'
+$gameBarProvenanceOnlyApprovals = @(
+    $artifactProvenance.ProvenanceOnlyApprovals |
+        Where-Object { [string]$_.SourceToolId -eq 'game-bar' }
+)
+Assert-GameBarCondition ($gameBarProvenanceOnlyApprovals.Count -eq 2) 'GameBar must have exactly two Phase 164G provenance-only records.'
+foreach ($approval in $gameBarProvenanceOnlyApprovals) {
+    Assert-GameBarCondition ([string]$approval.ApprovalStatus -eq 'ApprovedForProvenanceOnly') "GameBar artifact record must be provenance-only: $($approval.ArtifactId)"
+    Assert-GameBarCondition ($approval.AllowExecution -eq $false) "GameBar provenance-only record must not allow execution: $($approval.ArtifactId)"
+    Assert-GameBarCondition ($approval.DownloadExecutionApproved -eq $false) "GameBar provenance-only record must not approve download execution: $($approval.ArtifactId)"
+    Assert-GameBarCondition ($approval.ProductionAllowlistApproved -eq $false) "GameBar provenance-only record must not approve production allowlist: $($approval.ArtifactId)"
+}
 Assert-GameBarCondition (-not $productionAllowlist.Contains('game-bar')) 'GameBar phase must not add production allowlist entries.'
 
 Assert-GameBarCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\loudness-eq.psm1'))) 'Loudness EQ module must remain deleted.'

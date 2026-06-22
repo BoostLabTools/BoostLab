@@ -296,10 +296,13 @@ foreach ($expectation in $windowsArtifactExpectations) {
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
 $availableMirrorEntries = @($entries | Where-Object { $_.ContainsKey('VerifiedBoostLabMirrorAvailable') -and $_.VerifiedBoostLabMirrorAvailable -eq $true })
+$provenanceOnlyLinkedEntries = @($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceOnlyApproved') -and $_.ArtifactProvenanceOnlyApproved -eq $true })
 Assert-BoostLabCondition ($officialEntries.Count -ge 20) 'Expected official vendor/project sources were not classified.'
 Assert-BoostLabCondition ($needsMirrorEntries.Count -eq 28) 'Author-hosted artifacts must still require BoostLab mirror governance for runtime source selection.'
 Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 28) 'Expected all 28 author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 164F.'
+Assert-BoostLabCondition ($provenanceOnlyLinkedEntries.Count -eq 28) 'Expected all 28 verified mirror entries to link to Phase 164G provenance-only approvals.'
 Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 0) 'Verified mirror evidence must not flip runtime mirror status approval.'
+Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceApproved') -and $_.ArtifactProvenanceApproved -eq $true }).Count -eq 0) 'Phase 164G must not flip the legacy artifact-provenance runtime approval flag.'
 Assert-BoostLabCondition (@($officialEntries | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.ExpectedSha256) }).Count -eq 0) 'Official vendor direct entries must not receive Phase 164B SHA evidence.'
 
 $phase164BEvidenceIds = @(
@@ -364,9 +367,40 @@ $phase164BMirrorCandidates = @{
 }
 $phase164BEvidenceEntries = @($entries | Where-Object { $phase164BEvidenceIds -contains [string]$_.Id })
 Assert-BoostLabCondition ($phase164BEvidenceEntries.Count -eq 28) 'Phase 164B SHA evidence entry count mismatch.'
+$provenanceOnlyApprovals = @($artifactProvenance.ProvenanceOnlyApprovals)
+Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Runtime artifact allowlist must remain empty; Phase 164G approvals are provenance-only.'
+Assert-BoostLabCondition ($provenanceOnlyApprovals.Count -eq 28) 'Phase 164G provenance-only approval count mismatch.'
+$provenanceOnlyApprovalByArtifactId = @{}
+foreach ($approval in $provenanceOnlyApprovals) {
+    $artifactId = [string]$approval.ArtifactId
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($artifactId)) 'Phase 164G provenance-only approval is missing ArtifactId.'
+    Assert-BoostLabCondition ($phase164BEvidenceIds -contains $artifactId) "Phase 164G approval is outside the verified mirror evidence scope: $artifactId"
+    Assert-BoostLabCondition (-not $provenanceOnlyApprovalByArtifactId.ContainsKey($artifactId)) "Duplicate Phase 164G approval for artifact: $artifactId"
+    $provenanceOnlyApprovalByArtifactId[$artifactId] = $approval
+
+    Assert-BoostLabCondition ([string]$approval.Id -eq "phase164g-$artifactId") "Phase 164G approval id mismatch: $artifactId"
+    Assert-BoostLabCondition ([string]$approval.ApprovalStatus -eq 'ApprovedForProvenanceOnly') "Phase 164G approval status mismatch: $artifactId"
+    Assert-BoostLabCondition ([string]$approval.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Phase 164G approval classification mismatch: $artifactId"
+    Assert-BoostLabCondition ([string]$approval.VerifiedBoostLabMirrorUrl -like 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/*') "Phase 164G approval mirror URL mismatch: $artifactId"
+    Assert-BoostLabCondition ([string]$approval.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Phase 164G approval SHA-256 missing or malformed: $artifactId"
+    Assert-BoostLabCondition ([int64]$approval.ExpectedSizeBytes -gt 0) "Phase 164G approval size missing: $artifactId"
+    Assert-BoostLabCondition ($approval.VerifiedBoostLabMirrorAvailable -eq $true) "Phase 164G approval mirror evidence missing: $artifactId"
+    Assert-BoostLabCondition ($approval.ArtifactProvenanceApproved -eq $true) "Phase 164G approval flag mismatch: $artifactId"
+    Assert-BoostLabCondition ($approval.ProductionAllowlistApproved -eq $false) "Phase 164G approval must not approve production allowlist: $artifactId"
+    Assert-BoostLabCondition ($approval.RuntimeSourceSelectionApproved -eq $false) "Phase 164G approval must not approve runtime source selection: $artifactId"
+    Assert-BoostLabCondition ($approval.DownloadExecutionApproved -eq $false) "Phase 164G approval must not approve download execution: $artifactId"
+    Assert-BoostLabCondition ($approval.InstallerExecutionApproved -eq $false) "Phase 164G approval must not approve installer execution: $artifactId"
+    Assert-BoostLabCondition ($approval.AllowExecution -eq $false) "Phase 164G approval must not allow execution: $artifactId"
+    Assert-BoostLabCondition ($approval.ReleaseReady -eq $false) "Phase 164G approval must not mark release ready: $artifactId"
+    Assert-BoostLabCondition ('SHA256' -in @($approval.VerificationRequirements)) "Phase 164G approval must require SHA256 verification: $artifactId"
+    Assert-BoostLabCondition ('NoDirectNetworkExecution' -in @($approval.VerificationRequirements)) "Phase 164G approval must block direct network execution: $artifactId"
+    Assert-BoostLabCondition ('Phase164G' -in @($approval.EvidencePhases)) "Phase 164G approval must record the approval phase: $artifactId"
+}
 foreach ($entry in $phase164BEvidenceEntries) {
     $id = [string]$entry.Id
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Phase 164B evidence entry must remain UltimateAuthorHostedArtifact: $id"
+    Assert-BoostLabCondition ($provenanceOnlyApprovalByArtifactId.ContainsKey($id)) "Phase 164G approval missing for evidence entry: $id"
+    $approval = $provenanceOnlyApprovalByArtifactId[$id]
     $mirrorAssetName = ('{0}__{1}' -f $id, (Split-Path -Leaf ([string]$phase164BMirrorCandidates[$id])))
     $mirrorUrl = ('https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/{0}' -f $mirrorAssetName)
     Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Phase 164F evidence must not approve runtime mirror source selection: $id"
@@ -387,9 +421,14 @@ foreach ($entry in $phase164BEvidenceEntries) {
     Assert-BoostLabCondition ([string]$entry.EvidenceCapturedAt -eq '20260621-205731') "Phase 164B evidence timestamp mismatch: $id"
     Assert-BoostLabCondition ([string]$entry.MirrorCandidatePath -eq [string]$phase164BMirrorCandidates[$id]) "Phase 164B mirror candidate path mismatch: $id"
     Assert-BoostLabCondition ($entry.BoostLabMirrorAvailable -eq $false) "Phase 164F evidence must not approve mirror use for runtime: $id"
-    Assert-BoostLabCondition ($entry.ArtifactProvenanceApproved -eq $false) "Phase 164B evidence must not approve artifact provenance: $id"
+    Assert-BoostLabCondition ($entry.ArtifactProvenanceApproved -eq $false) "Phase 164G evidence must not flip the legacy artifact-provenance runtime approval flag: $id"
+    Assert-BoostLabCondition ($entry.ArtifactProvenanceOnlyApproved -eq $true) "Phase 164G evidence must approve provenance-only tracking: $id"
+    Assert-BoostLabCondition ([string]$entry.ArtifactProvenanceId -eq "phase164g-$id") "Phase 164G evidence provenance id mismatch: $id"
     Assert-BoostLabCondition ($entry.ProductionAllowlistApproved -eq $false) "Phase 164B evidence must not approve production allowlist: $id"
     Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Phase 164F evidence must remain release-blocked: $id"
+    Assert-BoostLabCondition ([string]$approval.VerifiedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "Phase 164G approval mirror URL linkage mismatch: $id"
+    Assert-BoostLabCondition ([string]$approval.ExpectedSha256 -eq [string]$entry.ExpectedSha256) "Phase 164G approval SHA linkage mismatch: $id"
+    Assert-BoostLabCondition ([int64]$approval.ExpectedSizeBytes -eq [int64]$entry.ExpectedSizeBytes) "Phase 164G approval size linkage mismatch: $id"
 }
 
 $expectedDuplicateGroups = @(
@@ -466,7 +505,8 @@ foreach ($needle in @(
     Assert-BoostLabContains -Text $policyDoc -Needle $needle -Description 'External artifact source policy documentation'
 }
 
-Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Artifact provenance config must remain empty; no real artifacts were approved.'
+Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Runtime artifact allowlist must remain empty; no artifact execution approval was added.'
+Assert-BoostLabCondition (@($artifactProvenance.ProvenanceOnlyApprovals).Count -eq 28) 'Phase 164G provenance-only approvals must remain exactly scoped to 28 verified mirror entries.'
 if (Test-Path -LiteralPath $allowlistPath -PathType Leaf) {
     $allowlistText = Get-Content -LiteralPath $allowlistPath -Raw
     Assert-BoostLabCondition (-not $allowlistText.Contains('BoostLabMirrorAvailable')) 'Production allowlist must not approve external artifact mirrors.'
@@ -504,7 +544,9 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     NeedsBoostLabMirrorCount = $needsMirrorEntries.Count
     BoostLabMirrorAvailableCount = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count
     VerifiedBoostLabMirrorAvailableCount = $availableMirrorEntries.Count
-    ArtifactProvenanceApprovals = @($artifactProvenance.Artifacts).Count
+    ProvenanceOnlyLinkedCount = $provenanceOnlyLinkedEntries.Count
+    RuntimeArtifactApprovals = @($artifactProvenance.Artifacts).Count
+    ProvenanceOnlyApprovals = @($artifactProvenance.ProvenanceOnlyApprovals).Count
     BinaryFilesAdded = $binaryFiles.Count
     RuntimeUrlsChanged = $false
     SourceUltimateUnchanged = $true

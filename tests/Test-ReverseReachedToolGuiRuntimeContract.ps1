@@ -366,9 +366,21 @@ $amdIntelSelectionOwners = @(
 )
 Assert-BoostLabCondition ((@($amdIntelSelectionOwners | Sort-Object) -join '|') -eq 'driver-install-debloat-settings|driver-install-latest') 'AMD/INTEL branch selectors must remain scoped to explicitly approved driver tools only.'
 
-$artifactText = Get-Content -LiteralPath $artifactPath -Raw
+$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPath
 $allowlistText = Get-Content -LiteralPath $allowlistPath -Raw
-Assert-BoostLabCondition (-not ($artifactText -match '(?i)DDU|Display Driver Uninstaller|7zip|7-Zip')) 'DDU/7-Zip artifact approval was added unexpectedly.'
+$runtimeArtifactText = (@($artifactPolicy.Artifacts) | Out-String)
+Assert-BoostLabCondition (-not ($runtimeArtifactText -match '(?i)DDU|Display Driver Uninstaller|7zip|7-Zip')) 'DDU/7-Zip runtime artifact approval was added unexpectedly.'
+$driverCleanProvenanceOnlyApprovals = @(
+    $artifactPolicy.ProvenanceOnlyApprovals |
+        Where-Object { [string]$_.SourceToolId -eq 'driver-clean' }
+)
+Assert-BoostLabCondition ($driverCleanProvenanceOnlyApprovals.Count -eq 2) 'Driver Clean must have exactly two Phase 164G provenance-only records.'
+foreach ($approval in $driverCleanProvenanceOnlyApprovals) {
+    Assert-BoostLabCondition ([string]$approval.ApprovalStatus -eq 'ApprovedForProvenanceOnly') "Driver Clean artifact record must be provenance-only: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.AllowExecution -eq $false) "Driver Clean provenance-only record must not allow execution: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.DownloadExecutionApproved -eq $false) "Driver Clean provenance-only record must not approve download execution: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.ProductionAllowlistApproved -eq $false) "Driver Clean provenance-only record must not approve production allowlist: $($approval.ArtifactId)"
+}
 Assert-BoostLabCondition (-not $allowlistText.Contains('driver-install-debloat-settings')) 'Production allowlist unexpectedly approved Driver Install Debloat & Settings.'
 
 $analyzeTools = @($reachedToolsForward | Where-Object {

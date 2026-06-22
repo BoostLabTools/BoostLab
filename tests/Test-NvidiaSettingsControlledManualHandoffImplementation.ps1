@@ -325,9 +325,21 @@ finally {
     Remove-Item -LiteralPath $tempProgramData -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-$artifactText = Get-Content -LiteralPath $artifactPath -Raw
+$artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPath
+$runtimeArtifactText = (@($artifactPolicy.Artifacts) | Out-String)
 foreach ($forbiddenArtifactText in @('7zip.exe', 'inspector.exe', 'NVIDIA Profile Inspector', 'inspector.nip', 'FR33THYFR33THY')) {
-    Assert-BoostLabCondition (-not $artifactText.Contains($forbiddenArtifactText)) "Unexpected artifact approval related to HDCP: $forbiddenArtifactText"
+    Assert-BoostLabCondition (-not $runtimeArtifactText.Contains($forbiddenArtifactText)) "Unexpected runtime artifact approval related to Nvidia Settings: $forbiddenArtifactText"
+}
+$nvidiaSettingsProvenanceOnlyApprovals = @(
+    $artifactPolicy.ProvenanceOnlyApprovals |
+        Where-Object { [string]$_.SourceToolId -eq 'nvidia-settings' }
+)
+Assert-BoostLabCondition ($nvidiaSettingsProvenanceOnlyApprovals.Count -eq 2) 'Nvidia Settings must have exactly two Phase 164G provenance-only records.'
+foreach ($approval in $nvidiaSettingsProvenanceOnlyApprovals) {
+    Assert-BoostLabCondition ([string]$approval.ApprovalStatus -eq 'ApprovedForProvenanceOnly') "Nvidia Settings artifact record must be provenance-only: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.AllowExecution -eq $false) "Nvidia Settings provenance-only record must not allow execution: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.DownloadExecutionApproved -eq $false) "Nvidia Settings provenance-only record must not approve download execution: $($approval.ArtifactId)"
+    Assert-BoostLabCondition ($approval.ProductionAllowlistApproved -eq $false) "Nvidia Settings provenance-only record must not approve production allowlist: $($approval.ArtifactId)"
 }
 $externalArtifactSource = Import-PowerShellDataFile -LiteralPath $externalArtifactSourcePath
 $nvidiaExternalEntries = @($externalArtifactSource.ExternalSources | Where-Object { [string]$_.ToolId -eq 'nvidia-settings' })
