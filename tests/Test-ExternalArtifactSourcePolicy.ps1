@@ -289,15 +289,17 @@ foreach ($expectation in $windowsArtifactExpectations) {
         Assert-BoostLabCondition ($null -ne $entry) "External source missing for $($expectation.ToolId) artifact $artifactFile."
         Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Source classification mismatch for $($expectation.ToolId) artifact $artifactFile."
         Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Mirror status mismatch for $($expectation.ToolId) artifact $artifactFile."
-        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Unexpected BoostLab mirror URL for $($expectation.ToolId) artifact $artifactFile."
+        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Unexpected runtime BoostLab mirror URL for $($expectation.ToolId) artifact $artifactFile."
     }
 }
 
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
+$availableMirrorEntries = @($entries | Where-Object { $_.ContainsKey('VerifiedBoostLabMirrorAvailable') -and $_.VerifiedBoostLabMirrorAvailable -eq $true })
 Assert-BoostLabCondition ($officialEntries.Count -ge 20) 'Expected official vendor/project sources were not classified.'
-Assert-BoostLabCondition ($needsMirrorEntries.Count -ge 8) 'Expected author-hosted artifacts were not classified as needing BoostLab mirror.'
-Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 0) 'No BoostLab mirror should be approved in this phase.'
+Assert-BoostLabCondition ($needsMirrorEntries.Count -eq 28) 'Author-hosted artifacts must still require BoostLab mirror governance for runtime source selection.'
+Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 28) 'Expected all 28 author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 164F.'
+Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 0) 'Verified mirror evidence must not flip runtime mirror status approval.'
 Assert-BoostLabCondition (@($officialEntries | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.ExpectedSha256) }).Count -eq 0) 'Official vendor direct entries must not receive Phase 164B SHA evidence.'
 
 $phase164BEvidenceIds = @(
@@ -365,8 +367,18 @@ Assert-BoostLabCondition ($phase164BEvidenceEntries.Count -eq 28) 'Phase 164B SH
 foreach ($entry in $phase164BEvidenceEntries) {
     $id = [string]$entry.Id
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Phase 164B evidence entry must remain UltimateAuthorHostedArtifact: $id"
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Phase 164B evidence entry must still need BoostLab mirror: $id"
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Phase 164B evidence must not populate runtime mirror URL: $id"
+    $mirrorAssetName = ('{0}__{1}' -f $id, (Split-Path -Leaf ([string]$phase164BMirrorCandidates[$id])))
+    $mirrorUrl = ('https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/{0}' -f $mirrorAssetName)
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Phase 164F evidence must not approve runtime mirror source selection: $id"
+    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Phase 164F evidence must not populate runtime mirror URL: $id"
+    Assert-BoostLabCondition ([string]$entry.VerifiedBoostLabMirrorUrl -eq $mirrorUrl) "Phase 164F verified mirror URL mismatch: $id"
+    Assert-BoostLabCondition ($entry.VerifiedBoostLabMirrorAvailable -eq $true) "Phase 164F verified mirror availability mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorReleaseTag -eq 'boostlab-artifacts-v1') "Phase 164F mirror release tag mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorAssetName -eq $mirrorAssetName) "Phase 164F mirror asset name mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorVerifiedAt -eq 'Phase164E') "Phase 164F mirror verification evidence mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorVerificationMethod -eq 'HEAD') "Phase 164F mirror verification method mismatch: $id"
+    Assert-BoostLabCondition ([string]$entry.MirrorHttpStatus -eq '302 -> 200') "Phase 164F mirror HTTP status mismatch: $id"
+    Assert-BoostLabCondition ([int64]$entry.MirrorContentLength -eq [int64]$entry.ExpectedSizeBytes) "Phase 164F mirror content length mismatch: $id"
     Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Phase 164B evidence SHA-256 missing or malformed: $id"
     Assert-BoostLabCondition ([string]$entry.ExpectedSha1 -match '^[A-Fa-f0-9]{40}$') "Phase 164B evidence SHA-1 missing or malformed: $id"
     Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Phase 164B evidence size missing: $id"
@@ -374,10 +386,10 @@ foreach ($entry in $phase164BEvidenceEntries) {
     Assert-BoostLabCondition ([string]$entry.EvidenceSource -eq 'Phase164BLocalIntake') "Phase 164B evidence source mismatch: $id"
     Assert-BoostLabCondition ([string]$entry.EvidenceCapturedAt -eq '20260621-205731') "Phase 164B evidence timestamp mismatch: $id"
     Assert-BoostLabCondition ([string]$entry.MirrorCandidatePath -eq [string]$phase164BMirrorCandidates[$id]) "Phase 164B mirror candidate path mismatch: $id"
-    Assert-BoostLabCondition ($entry.BoostLabMirrorAvailable -eq $false) "Phase 164B evidence must not mark mirror available: $id"
+    Assert-BoostLabCondition ($entry.BoostLabMirrorAvailable -eq $false) "Phase 164F evidence must not approve mirror use for runtime: $id"
     Assert-BoostLabCondition ($entry.ArtifactProvenanceApproved -eq $false) "Phase 164B evidence must not approve artifact provenance: $id"
     Assert-BoostLabCondition ($entry.ProductionAllowlistApproved -eq $false) "Phase 164B evidence must not approve production allowlist: $id"
-    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Phase 164B evidence must remain release-blocked: $id"
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Phase 164F evidence must remain release-blocked: $id"
 }
 
 $expectedDuplicateGroups = @(
@@ -434,6 +446,13 @@ foreach ($entry in $entries) {
     if ([string]$entry.MirrorStatus -ne 'BoostLabMirrorAvailable') {
         Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Runtime URL must not be substituted without verified mirror/hash: $($entry.Id)"
     }
+    else {
+        Assert-BoostLabCondition (-not $text.Contains([string]$entry.IntendedBoostLabMirrorUrl)) "Runtime module/source must not switch to the BoostLab mirror URL yet: $($entry.Id)"
+    }
+
+    if ($entry.ContainsKey('VerifiedBoostLabMirrorUrl')) {
+        Assert-BoostLabCondition (-not $text.Contains([string]$entry.VerifiedBoostLabMirrorUrl)) "Runtime module/source must not switch to the verified BoostLab mirror URL yet: $($entry.Id)"
+    }
 }
 
 $policyDoc = Get-Content -LiteralPath $policyDocPath -Raw
@@ -484,6 +503,7 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     OfficialVendorDirectCount = $officialEntries.Count
     NeedsBoostLabMirrorCount = $needsMirrorEntries.Count
     BoostLabMirrorAvailableCount = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count
+    VerifiedBoostLabMirrorAvailableCount = $availableMirrorEntries.Count
     ArtifactProvenanceApprovals = @($artifactProvenance.Artifacts).Count
     BinaryFilesAdded = $binaryFiles.Count
     RuntimeUrlsChanged = $false
