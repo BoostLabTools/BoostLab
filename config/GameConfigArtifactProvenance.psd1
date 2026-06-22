@@ -1,8 +1,8 @@
 @{
     SchemaVersion = '1.0'
-    Phase = '165C'
-    StageImplemented = $false
-    RuntimeSourceSelectionApproved = $false
+    Phase = '165D'
+    StageImplemented = $true
+    RuntimeSourceSelectionApproved = $true
     ProductionAllowlistApproved = $false
     ReleaseReady = $false
     Release = @{
@@ -43,10 +43,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1104
             MirrorContentLength = 1104
             VerifiedBoostLabMirrorAvailable = $true
@@ -54,10 +54,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -81,13 +81,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-1'
@@ -115,10 +115,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 5689
             MirrorContentLength = 5689
             VerifiedBoostLabMirrorAvailable = $true
@@ -126,10 +126,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -153,13 +153,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-2042'
@@ -187,10 +187,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1873
             MirrorContentLength = 1873
             VerifiedBoostLabMirrorAvailable = $true
@@ -198,10 +198,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -225,13 +225,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-3'
@@ -259,10 +259,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1078
             MirrorContentLength = 1078
             VerifiedBoostLabMirrorAvailable = $true
@@ -270,10 +270,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -297,13 +297,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-4'
@@ -331,10 +331,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 919
             MirrorContentLength = 919
             VerifiedBoostLabMirrorAvailable = $true
@@ -342,10 +342,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -369,13 +369,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-6'
@@ -403,10 +403,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 4428
             MirrorContentLength = 4428
             VerifiedBoostLabMirrorAvailable = $true
@@ -414,10 +414,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -441,13 +441,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-bad-company-2'
@@ -475,10 +475,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 161706
             MirrorContentLength = 161706
             VerifiedBoostLabMirrorAvailable = $true
@@ -486,10 +486,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -513,13 +513,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-hardline'
@@ -547,10 +547,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 2052
             MirrorContentLength = 2052
             VerifiedBoostLabMirrorAvailable = $true
@@ -558,10 +558,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -585,13 +585,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-battlefield-v'
@@ -619,10 +619,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 7530
             MirrorContentLength = 7530
             VerifiedBoostLabMirrorAvailable = $true
@@ -630,10 +630,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -657,13 +657,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-black-ops-4'
@@ -691,10 +691,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 6601
             MirrorContentLength = 6601
             VerifiedBoostLabMirrorAvailable = $true
@@ -702,10 +702,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -729,13 +729,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-black-ops-6'
@@ -763,10 +763,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 34446
             MirrorContentLength = 34446
             VerifiedBoostLabMirrorAvailable = $true
@@ -774,10 +774,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -801,13 +801,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-black-ops-7'
@@ -835,10 +835,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 11514
             MirrorContentLength = 11514
             VerifiedBoostLabMirrorAvailable = $true
@@ -846,10 +846,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -873,13 +873,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-black-ops-cold-war'
@@ -907,10 +907,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 6758
             MirrorContentLength = 6758
             VerifiedBoostLabMirrorAvailable = $true
@@ -918,10 +918,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -945,13 +945,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-modern-warfare-2019'
@@ -979,10 +979,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 3130
             MirrorContentLength = 3130
             VerifiedBoostLabMirrorAvailable = $true
@@ -990,10 +990,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1017,13 +1017,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-modern-warfare-2-2022'
@@ -1051,10 +1051,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 16505
             MirrorContentLength = 16505
             VerifiedBoostLabMirrorAvailable = $true
@@ -1062,10 +1062,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1089,13 +1089,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-modern-warfare-3-2023'
@@ -1123,10 +1123,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 16407
             MirrorContentLength = 16407
             VerifiedBoostLabMirrorAvailable = $true
@@ -1134,10 +1134,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1161,13 +1161,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-call-of-duty-vanguard'
@@ -1195,10 +1195,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 6349
             MirrorContentLength = 6349
             VerifiedBoostLabMirrorAvailable = $true
@@ -1206,10 +1206,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1233,13 +1233,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-counter-strike-2'
@@ -1267,10 +1267,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1016
             MirrorContentLength = 1016
             VerifiedBoostLabMirrorAvailable = $true
@@ -1278,10 +1278,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1305,13 +1305,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-delta-force'
@@ -1339,10 +1339,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 5052
             MirrorContentLength = 5052
             VerifiedBoostLabMirrorAvailable = $true
@@ -1350,10 +1350,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1377,13 +1377,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-frag-punk'
@@ -1411,10 +1411,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 9715
             MirrorContentLength = 9715
             VerifiedBoostLabMirrorAvailable = $true
@@ -1422,10 +1422,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1449,13 +1449,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-marvel-rivals'
@@ -1483,10 +1483,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1902
             MirrorContentLength = 1902
             VerifiedBoostLabMirrorAvailable = $true
@@ -1494,10 +1494,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1521,13 +1521,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-profile-inspector-inspector-exe'
@@ -1555,21 +1555,21 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 643072
             MirrorContentLength = 643072
             VerifiedBoostLabMirrorAvailable = $true
             ArtifactProvenanceApproved = $true
-            AllowExecution = $false
+            AllowExecution = $true
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1593,13 +1593,13 @@
                 'UnsignedExecutableExactHash'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-pubg-battlegrounds'
@@ -1627,10 +1627,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 26153
             MirrorContentLength = 26153
             VerifiedBoostLabMirrorAvailable = $true
@@ -1638,10 +1638,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1665,13 +1665,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-splitgate-1'
@@ -1699,10 +1699,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 639
             MirrorContentLength = 639
             VerifiedBoostLabMirrorAvailable = $true
@@ -1710,10 +1710,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1737,13 +1737,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-splitgate-2'
@@ -1771,10 +1771,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1167
             MirrorContentLength = 1167
             VerifiedBoostLabMirrorAvailable = $true
@@ -1782,10 +1782,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1809,13 +1809,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-star-wars-battlefront-i-2015'
@@ -1843,10 +1843,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 2086
             MirrorContentLength = 2086
             VerifiedBoostLabMirrorAvailable = $true
@@ -1854,10 +1854,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1881,13 +1881,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-star-wars-battlefront-ii-2017'
@@ -1915,10 +1915,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 2217
             MirrorContentLength = 2217
             VerifiedBoostLabMirrorAvailable = $true
@@ -1926,10 +1926,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -1953,13 +1953,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
         @{
             Id = 'phase165c-game-configs-the-finals'
@@ -1987,10 +1987,10 @@
             MirrorVerifiedAt = 'Phase165C'
             MirrorVerificationMethod = 'HEAD'
             MirrorHttpStatus = '200'
-            ApprovalStatus = 'ApprovedForProvenanceOnly'
+            ApprovalStatus = 'ApprovedForStage8Runtime'
             YazanApprovalSource = 'Phase165C'
             ProductionApprovalStatus = 'NotApproved'
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
             ExpectedSizeBytes = 1959
             MirrorContentLength = 1959
             VerifiedBoostLabMirrorAvailable = $true
@@ -1998,10 +1998,10 @@
             AllowExecution = $false
             RequiresAdmin = $true
             CanReboot = $false
-            RuntimeSourceSelectionApproved = $false
+            RuntimeSourceSelectionApproved = $true
             ProductionAllowlistApproved = $false
             InstallerExecutionApproved = $false
-            DownloadExecutionApproved = $false
+            DownloadExecutionApproved = $true
             ReleaseReady = $false
             SourceToolIds = @(
                 'game-configs'
@@ -2025,13 +2025,13 @@
                 'ArchivePayload'
             )
             Constraints = @(
-                'Stage 8 Game Configs runtime is not implemented in Phase 165C.'
-                'Runtime source selection remains blocked until the Stage 8 implementation phase.'
+                'Stage 8 Game Configs runtime is implemented in Phase 165D.'
+                'Runtime source selection is approved only through verified BoostLab mirrors for the native Stage 8 Game Configs runtime.'
                 'Raw upstream Github-Game-Configs URLs are not approved final runtime sources.'
                 'Runtime must verify local file name, SHA-256, and size before use.'
                 'No direct network execution is approved.'
             )
-            Notes = 'Verified BoostLab mirror evidence is approved for future Game Configs provenance tracking only. This record does not implement Stage 8 or authorize runtime execution.'
+            Notes = 'Verified BoostLab mirror evidence is approved for native Stage 8 Game Configs runtime source selection with local file name, SHA-256, and size verification. This record does not approve production allowlist scope, installers, or direct network execution.'
         }
     )
 }

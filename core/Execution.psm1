@@ -231,6 +231,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\defender-optimize-assistant.psm1'
         Actions = @('Analyze', 'Apply', 'Default')
     }
+    'game-configs' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'GameConfigs\game-configs.psm1'
+        Actions = @('Apply')
+    }
 }
 
 function Test-BoostLabToolMetadata {

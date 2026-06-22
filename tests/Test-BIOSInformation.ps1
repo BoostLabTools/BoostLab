@@ -150,28 +150,9 @@ try {
         throw 'BIOS Information Open query builder must not broaden the query when motherboard model is unavailable.'
     }
 
-    $allModules = @(
-        Get-ChildItem `
-            (Join-Path $modulesRoot 'Check'), `
-            (Join-Path $modulesRoot 'Refresh'), `
-            (Join-Path $modulesRoot 'Setup'), `
-            (Join-Path $modulesRoot 'Installers'), `
-            (Join-Path $modulesRoot 'Graphics'), `
-            (Join-Path $modulesRoot 'Windows'), `
-            (Join-Path $modulesRoot 'Advanced') `
-            -File `
-            -Filter '*.psm1'
-    )
-    $implementedCount = @(
-        $allModules | Where-Object {
-            (Get-Content -Raw -LiteralPath $_.FullName).Contains('$script:BoostLabImplementedActions')
-        }
-    ).Count
-    $placeholderCount = @(
-        $allModules | Where-Object {
-            (Get-Content -Raw -LiteralPath $_.FullName).Contains('ToolModule.Placeholder.ps1')
-        }
-    ).Count
+    $inventorySnapshot = Get-BoostLabInventorySnapshot -ProjectRoot $ProjectRoot
+    $implementedCount = [int]$inventorySnapshot.ImplementedTools
+    $placeholderCount = [int]$inventorySnapshot.DeferredPlaceholders
 
     if ($implementedCount -ne $inventoryBaseline.ImplementedTools -or $placeholderCount -ne $inventoryBaseline.DeferredPlaceholders) {
         throw "Unexpected implementation counts: $implementedCount implemented, $placeholderCount placeholders."

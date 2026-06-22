@@ -4,8 +4,8 @@
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 53
-        RuntimeImplementedTools = 53
+        ActiveTools = 54
+        RuntimeImplementedTools = 54
         DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0

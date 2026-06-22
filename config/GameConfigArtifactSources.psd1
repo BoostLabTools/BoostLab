@@ -1,8 +1,8 @@
 @{
     SchemaVersion = '1.0'
-    Phase = '165C'
-    StageImplemented = $false
-    RuntimeSourceSelectionApproved = $false
+    Phase = '165D'
+    StageImplemented = $true
+    RuntimeSourceSelectionApproved = $true
     ProductionAllowlistApproved = $false
     ReleaseReady = $false
     Release = @{
@@ -59,11 +59,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-1'
@@ -107,11 +107,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-2042'
@@ -155,11 +155,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-3'
@@ -203,11 +203,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-4'
@@ -251,11 +251,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-6'
@@ -299,11 +299,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-bad-company-2'
@@ -347,11 +347,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-hardline'
@@ -395,11 +395,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-battlefield-v'
@@ -443,11 +443,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-black-ops-4'
@@ -491,11 +491,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-black-ops-6'
@@ -539,11 +539,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-black-ops-7'
@@ -587,11 +587,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-black-ops-cold-war'
@@ -635,11 +635,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-modern-warfare-2019'
@@ -683,11 +683,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-modern-warfare-2-2022'
@@ -731,11 +731,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-modern-warfare-3-2023'
@@ -779,11 +779,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-call-of-duty-vanguard'
@@ -827,11 +827,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-counter-strike-2'
@@ -875,11 +875,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-delta-force'
@@ -923,11 +923,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-frag-punk'
@@ -971,11 +971,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-marvel-rivals'
@@ -1019,11 +1019,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-profile-inspector-inspector-exe'
@@ -1067,11 +1067,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-pubg-battlegrounds'
@@ -1115,11 +1115,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-splitgate-1'
@@ -1163,11 +1163,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-splitgate-2'
@@ -1211,11 +1211,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-star-wars-battlefront-i-2015'
@@ -1259,11 +1259,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-star-wars-battlefront-ii-2017'
@@ -1307,11 +1307,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
         @{
             Id = 'game-configs-the-finals'
@@ -1355,11 +1355,11 @@
             ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ProductionAllowlistApproved = $false
-            RuntimeSourceSelectionApproved = $false
-            DownloadExecutionApproved = $false
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
             InstallerExecutionApproved = $false
-            ReleaseReadiness = 'BlockedPendingStage8RuntimeImplementation'
-            Notes = 'Phase 165C mirrors this Github-Game-Configs payload for future Stage 8 use. Stage 8 runtime/UI is not implemented and raw upstream URLs are not approved final runtime sources.'
+            ReleaseReadiness = 'Stage8RuntimeImplemented'
+            Notes = 'Phase 165D implements native Stage 8 runtime source selection for this mirrored Github-Game-Configs payload. Runtime must use the verified BoostLab mirror and verify local file name, SHA-256, and size before use; raw upstream URLs remain trace-only.'
         }
     )
 }

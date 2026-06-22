@@ -241,6 +241,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\cleanup.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
     }
+    'game-configs' = @{
+        RelativePath          = 'GameConfigs\game-configs.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
+    }
     'notepad-settings' = @{
         RelativePath          = 'Windows\notepad-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -547,6 +551,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'defender-optimize-assistant' -and
             $commandName -eq 'Set-Content'
         )
+        $approvedGameConfigsCommand = (
+            $toolId -eq 'game-configs' -and
+            $commandName -in @('Copy-Item', 'Expand-Archive', 'Invoke-WebRequest', 'Move-Item', 'New-Item', 'Remove-Item', 'Start-Sleep', 'Unblock-File')
+        )
         if (
             $commandName -in $prohibitedCommands -and
             -not $approvedRestorePointCommand -and
@@ -579,7 +587,8 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedCleanupCommand -and
             -not $approvedServicesOptimizerCommand -and
             -not $approvedTimerResolutionCommand -and
-            -not $approvedDefenderOptimizeCommand
+            -not $approvedDefenderOptimizeCommand -and
+            -not $approvedGameConfigsCommand
         ) {
             $errors.Add("$modulePath contains prohibited command: $commandName")
         }
@@ -758,6 +767,9 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'start-menu-taskbar') {
             0
+        }
+        elseif ($toolId -eq 'game-configs') {
+            2
         }
         else {
             1
