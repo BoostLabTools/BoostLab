@@ -682,55 +682,5 @@
                 }
             )
         }
-        @{
-            Name        = 'Game Configs'
-            Order       = 8
-            Description = 'Apply upstream Github-Game-Configs payloads through verified BoostLab mirrors.'
-            Tools       = @(
-                @{
-                    Id          = 'game-configs'
-                    Title       = 'Game Configs'
-                    Stage       = 'Game Configs'
-                    Order       = 1
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Apply one upstream Github-Game-Configs payload after verified BoostLab mirror download, SHA/size verification, extraction, and source-defined copy/delete/open/import steps.'
-                    Actions     = @('Apply')
-                    SelectionMode = 'SingleSelect'
-                    SelectionRequiredActions = @('Apply')
-                    SelectionLabel = 'Select exactly one upstream game config'
-                    SelectionItems = @(
-                        @{ Id = 'arc-raiders'; Title = 'ARC Raiders'; SourceMenuNumber = 1 }
-                        @{ Id = 'battlefield-6'; Title = 'Battlefield / Battlefield 6'; SourceMenuNumber = 2 }
-                        @{ Id = 'battlefield-2042'; Title = 'Battlefield / Battlefield 2042'; SourceMenuNumber = 3 }
-                        @{ Id = 'battlefield-v'; Title = 'Battlefield / Battlefield V'; SourceMenuNumber = 4 }
-                        @{ Id = 'battlefield-1'; Title = 'Battlefield / Battlefield 1'; SourceMenuNumber = 5 }
-                        @{ Id = 'battlefield-hardline'; Title = 'Battlefield / Battlefield Hardline'; SourceMenuNumber = 6 }
-                        @{ Id = 'battlefield-4'; Title = 'Battlefield / Battlefield 4'; SourceMenuNumber = 7 }
-                        @{ Id = 'battlefield-3'; Title = 'Battlefield / Battlefield 3'; SourceMenuNumber = 8 }
-                        @{ Id = 'battlefield-bad-company-2'; Title = 'Battlefield / Battlefield Bad Company 2'; SourceMenuNumber = 9 }
-                        @{ Id = 'call-of-duty-black-ops-7'; Title = 'Call of Duty / Black Ops 7'; SourceMenuNumber = 10 }
-                        @{ Id = 'call-of-duty-black-ops-6'; Title = 'Call of Duty / Black Ops 6 & WZ'; SourceMenuNumber = 11 }
-                        @{ Id = 'call-of-duty-modern-warfare-3-2023'; Title = 'Call of Duty / Modern Warfare 3 2023'; SourceMenuNumber = 12 }
-                        @{ Id = 'call-of-duty-modern-warfare-2-2022'; Title = 'Call of Duty / Modern Warfare 2 2022'; SourceMenuNumber = 13 }
-                        @{ Id = 'call-of-duty-black-ops-cold-war'; Title = 'Call of Duty / Black Ops Cold War'; SourceMenuNumber = 14 }
-                        @{ Id = 'call-of-duty-vanguard'; Title = 'Call of Duty / Vanguard'; SourceMenuNumber = 15 }
-                        @{ Id = 'call-of-duty-modern-warfare-2019'; Title = 'Call of Duty / Modern Warfare 2019'; SourceMenuNumber = 16 }
-                        @{ Id = 'call-of-duty-black-ops-4'; Title = 'Call of Duty / Black Ops 4'; SourceMenuNumber = 17 }
-                        @{ Id = 'counter-strike-2'; Title = 'Counter Strike 2'; SourceMenuNumber = 18 }
-                        @{ Id = 'delta-force'; Title = 'Delta Force'; SourceMenuNumber = 19 }
-                        @{ Id = 'frag-punk'; Title = 'Frag Punk'; SourceMenuNumber = 20 }
-                        @{ Id = 'marvel-rivals'; Title = 'Marvel Rivals'; SourceMenuNumber = 21 }
-                        @{ Id = 'pubg-battlegrounds'; Title = 'PUBG BATTLEGROUNDS'; SourceMenuNumber = 22 }
-                        @{ Id = 'splitgate-1'; Title = 'Splitgate / Splitgate 1'; SourceMenuNumber = 23 }
-                        @{ Id = 'splitgate-2'; Title = 'Splitgate / Splitgate 2'; SourceMenuNumber = 24 }
-                        @{ Id = 'star-wars-battlefront-i-2015'; Title = 'STAR WARS Battlefront / I 2015'; SourceMenuNumber = 25 }
-                        @{ Id = 'star-wars-battlefront-ii-2017'; Title = 'STAR WARS Battlefront / II 2017'; SourceMenuNumber = 26 }
-                        @{ Id = 'the-finals'; Title = 'The Finals'; SourceMenuNumber = 27 }
-                    )
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-            )
-        }
     )
 }

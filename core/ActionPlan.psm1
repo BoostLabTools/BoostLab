@@ -338,9 +338,6 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
         'Restore only from a valid selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.'
     }
-    elseif ($toolId -eq 'game-configs' -and $ActionName -eq 'Apply') {
-        'Run exactly one selected upstream Github-Game-Configs Apply recipe after verified BoostLab mirror download, SHA/size/provenance verification, extraction, source-defined copy/delete/move/open/import steps, and temp cleanup.'
-    }
     elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
         'Read the Nvidia Settings source mirror and report the source-equivalent On (Recommended) and Default operation plans without changing settings.'
     }
@@ -720,17 +717,6 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Require an approved selected captured-state restore contract before any Edge Settings Restore can be planned.')
         $plannedChanges.Add('Do not treat source Default as Restore.')
         $plannedChanges.Add('No Edge Settings registry, service, scheduled-task, process, download, installer, Edge, or system mutation is planned.')
-    }
-    elseif ($toolId -eq 'game-configs' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Require selecting exactly one upstream Github-Game-Configs entry.')
-        $plannedChanges.Add('Download only the selected payload from the verified BoostLab mirror artifact id, not the upstream raw GitHub payload URL.')
-        $plannedChanges.Add('Verify approved provenance, runtime source approval, expected file name, SHA-256, and size before extraction or use.')
-        $plannedChanges.Add('Extract the selected ZIP to the source-defined Windows Temp path.')
-        $plannedChanges.Add('Run only the selected upstream Apply recipe copy/delete/move/open/import steps.')
-        $plannedChanges.Add('Use inspector.exe only for Battlefield 6 and Frag Punk, matching upstream.')
-        $plannedChanges.Add('Preserve Battlefield 3 and Battlefield Bad Company 2 browser-open behavior when those entries are selected.')
-        $plannedChanges.Add('Clean the source-defined temporary archive and extraction folder after the selected recipe.')
-        $plannedChanges.Add('Do not expose Backup, Restore, Analyze, Default, IWR.ps1, irm | iex, AllowScripts.cmd, installers, services, registry edits, Defender, boot, or reboot behavior.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
@@ -2043,9 +2029,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'game-bar' -and $ActionName -eq 'Default') {
         'GameBar will run the source-defined Default branch: write/import gamebaron.reg, run the source TrustedInstaller PresenceWriter registry command, re-register Gaming/Xbox/Store AppX packages, download edgewebview.exe and gamingrepairtool.exe from the Ultimate author-hosted URLs, and launch them. Default is not captured-state Restore. Continue?'
-    }
-    elseif ($toolId -eq 'game-configs' -and $ActionName -eq 'Apply') {
-        'BoostLab will run exactly one selected upstream Github-Game-Configs Apply recipe: download the approved BoostLab mirror payload, verify file name/SHA/size/provenance, extract it, perform the source-defined file copy/delete/move/open/import steps, and clean temp files. No Backup, Restore, Analyze, Default, IWR.ps1, irm | iex, upstream raw payload URL, installer, service, registry, Defender, boot, or reboot operation is used. Continue?'
     }
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Open') {
         'BoostLab will prepare Reinstall guidance only. It will not open a browser, Explorer, Settings, Media Creation Tool, setup executable, installer, recovery tool, or external tool; download Windows media; mutate files, registry, services, packages, devices, or drivers; start recovery; or reboot. Continue?'

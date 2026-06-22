@@ -2084,17 +2084,4 @@
         }
     )
 
-    GameConfigPayloadSourceManifest = @{
-        Phase = '165D'
-        Path = 'config/GameConfigArtifactSources.psd1'
-        RecordCount = 28
-        ReleaseTag = 'boostlab-game-configs-v1'
-        SourceClassification = 'UltimateAuthorHostedArtifact'
-        MirrorStatus = 'BoostLabMirrorAvailable'
-        RuntimeSourceSelectionApproved = $true
-        ProductionAllowlistApproved = $false
-        StageImplemented = $true
-        Notes = 'Stage 8 Game Configs payload mirrors are recorded in a separate manifest so the existing active-stage ExternalSources count remains 50; runtime source selection is approved only through verified BoostLab mirrors.'
-    }
 }
-

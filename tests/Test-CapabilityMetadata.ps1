@@ -73,7 +73,7 @@ if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) {
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $stages = @($configuration['Stages'] | Sort-Object { [int]$_['Order'] })
-$expectedStageOrder = @('Check', 'Refresh', 'Setup', 'Installers', 'Graphics', 'Windows', 'Advanced', 'Game Configs')
+$expectedStageOrder = @('Check', 'Refresh', 'Setup', 'Installers', 'Graphics', 'Windows', 'Advanced')
 if (($stages.Name -join '|') -ne ($expectedStageOrder -join '|')) {
     throw 'Approved stage order changed.'
 }

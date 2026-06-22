@@ -145,9 +145,7 @@ Assert-BoostLabCondition (-not [bool]$parityBaseline.DesignSystemReady) 'Design 
 
 $actualStageNames = @($stages.Stages | ForEach-Object { [string]$_.Name })
 $canonicalStageNames = @($canonical | ForEach-Object { [string]$_.Name })
-$runtimePostParityStageNames = @('Game Configs')
-$expectedRuntimeStageNames = @($canonicalStageNames + $runtimePostParityStageNames)
-Assert-BoostLabCondition (($actualStageNames -join '|') -eq ($expectedRuntimeStageNames -join '|')) 'config/Stages.psd1 stage order must match Yazan canonical order plus approved post-parity runtime stages.'
+Assert-BoostLabCondition (($actualStageNames -join '|') -eq ($canonicalStageNames -join '|')) 'config/Stages.psd1 stage order must match Yazan canonical order.'
 Assert-BoostLabCondition ((@($executionOrder.StageOrder) -join '|') -eq ($canonicalStageNames -join '|')) 'UltimateParityExecutionOrder stage order must match Yazan canonical order.'
 
 $parityById = @{}
@@ -198,26 +196,8 @@ for ($stageIndex = 0; $stageIndex -lt $canonical.Count; $stageIndex++) {
     }
 }
 
-$postParityFlat = @()
-foreach ($postParityStageName in $runtimePostParityStageNames) {
-    $postParityStage = @($stages.Stages | Where-Object { [string]$_.Name -eq $postParityStageName }) | Select-Object -First 1
-    Assert-BoostLabCondition ($null -ne $postParityStage) "Missing approved post-parity runtime stage: $postParityStageName."
-    Assert-BoostLabCondition ([int]$postParityStage.Order -gt $canonical.Count) "Post-parity runtime stage must remain after ordered parity stages: $postParityStageName."
-
-    if ($postParityStageName -eq 'Game Configs') {
-        $postParityTools = @($postParityStage.Tools)
-        Assert-BoostLabCondition ($postParityTools.Count -eq 1) 'Game Configs post-parity stage must expose exactly one grouped runtime tool.'
-        Assert-BoostLabCondition ([string]$postParityTools[0].Id -eq 'game-configs') 'Game Configs post-parity stage must expose the game-configs tool.'
-        Assert-BoostLabCondition ([string]$postParityTools[0].Title -eq 'Game Configs') 'Game Configs post-parity tool title changed.'
-        Assert-BoostLabCondition ((@($postParityTools[0].Actions) -join '|') -eq 'Apply') 'Game Configs post-parity tool must remain Apply-only.'
-    }
-
-    $postParityFlat += @($postParityStage.Tools | ForEach-Object { [string]$_.Id })
-}
-
-$runtimeAllFlat = @($stagesFlat + $postParityFlat)
 Assert-BoostLabCondition (($stagesFlat -join '|') -eq ($orderFlat -join '|')) 'Runtime and ordered parity tool order must agree exactly for ordered parity stages.'
-Assert-BoostLabCondition ($runtimeAllFlat.Count -eq [int]$inventoryBaseline.ActiveTools) 'Runtime order must include every active tool.'
+Assert-BoostLabCondition ($stagesFlat.Count -eq [int]$inventoryBaseline.ActiveTools) 'Runtime order must include every active tool.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Active tool count must match the central inventory baseline.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.ImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented tool count must remain unchanged.'
 Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]$inventoryBaseline.DeferredPlaceholders) 'Deferred placeholder count must remain unchanged.'
@@ -264,7 +244,7 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourcePromotedRoot -Recu
 foreach ($deletedName in @('Loudness EQ', 'NVME Faster Driver', 'Resizable BAR Assistant', 'SMT / HT Assistant')) {
     $normalizedDeleted = ($deletedName -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()
     $catalogHit = @(
-        $runtimeAllFlat | Where-Object {
+        $stagesFlat | Where-Object {
             (($_ -replace '[^a-zA-Z0-9]+', '').ToLowerInvariant()) -eq $normalizedDeleted
         }
     )
@@ -292,7 +272,6 @@ if ($productionPolicy.ContainsKey('ProductionAllowlistProposals')) {
     RuntimeOrderSource = 'config/Stages.psd1'
     OrderedParityOrderSource = 'config/UltimateParityExecutionOrder.psd1'
     ParityOrderFieldsValidated = $true
-    PostParityRuntimeStages = @($runtimePostParityStageNames)
     SourceUltimateUnchanged = $true
     DeletedToolsRemainDeleted = $true
     Message = 'Yazan canonical stage/tool order is applied across runtime order, ordered parity order, and parity baseline order fields.'

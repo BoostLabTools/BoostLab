@@ -2080,16 +2080,4 @@
         }
     )
 
-    GameConfigPayloadProvenanceManifest = @{
-        Phase = '165D'
-        Path = 'config/GameConfigArtifactProvenance.psd1'
-        RecordCount = 28
-        ReleaseTag = 'boostlab-game-configs-v1'
-        ApprovalStatus = 'ApprovedForStage8Runtime'
-        ProductionApprovalStatus = 'NotApproved'
-        RuntimeSourceSelectionApproved = $true
-        ProductionAllowlistApproved = $false
-        StageImplemented = $true
-        Notes = 'Stage 8 Game Configs payload provenance is recorded in a separate manifest with runtime source selection approved only through verified BoostLab mirrors; production allowlist and installer execution remain unapproved.'
-    }
 }

@@ -48,11 +48,6 @@ $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $Project
 $stages = Import-PowerShellDataFile -LiteralPath (Join-Path $ProjectRoot 'config\Stages.psd1')
 $allTools = @($stages.Stages | ForEach-Object { $_.Tools })
 $parityTools = @($parityBaseline.Tools)
-$orderedStageNames = @($executionOrder.StageOrder | ForEach-Object { [string]$_ })
-$orderedRuntimeStages = @($stages.Stages | Where-Object { [string]$_.Name -in $orderedStageNames })
-$orderedRuntimeTools = @($orderedRuntimeStages | ForEach-Object { $_.Tools })
-$postParityRuntimeStages = @($stages.Stages | Where-Object { [string]$_.Name -notin $orderedStageNames })
-$postParityRuntimeTools = @($postParityRuntimeStages | ForEach-Object { $_.Tools })
 
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Parity baseline active count must match central inventory baseline.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.RuntimeImplementedTools -eq [int]$inventoryBaseline.ImplementedTools) 'Runtime implemented count must match central inventory baseline.'
@@ -60,14 +55,14 @@ Assert-BoostLabCondition ([int]$parityBaseline.Counts.DeferredPlaceholders -eq [
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.SourcePromotedMirrorFiles -eq [int]$inventoryBaseline.SourcePromotedMirrorFiles) 'Source-promoted mirror count must match central inventory baseline.'
 Assert-BoostLabCondition ([int]$parityBaseline.Counts.RemainingSourcePromotedIntakeCandidates -eq [int]$inventoryBaseline.RemainingSourcePromotedIntakeCandidates) 'Remaining source-promoted intake count must match central inventory baseline.'
 
-Assert-BoostLabCondition ($parityTools.Count -eq $orderedRuntimeTools.Count) 'Every ordered parity tool must have exactly one parity baseline record.'
-$toolIds = @($orderedRuntimeTools | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition ($parityTools.Count -eq $allTools.Count) 'Every active tool must have exactly one parity baseline record.'
+$toolIds = @($allTools | ForEach-Object { [string]$_['Id'] })
 $baselineToolIds = @($parityTools | ForEach-Object { [string]$_.ToolId })
 foreach ($toolId in $toolIds) {
     Assert-BoostLabCondition (@($baselineToolIds | Where-Object { $_ -eq $toolId }).Count -eq 1) "Missing or duplicate parity baseline record for active tool: $toolId"
 }
 foreach ($toolId in $baselineToolIds) {
-    Assert-BoostLabCondition ($toolIds -contains $toolId) "Parity baseline contains non-ordered-parity tool: $toolId"
+    Assert-BoostLabCondition ($toolIds -contains $toolId) "Parity baseline contains non-active tool: $toolId"
 }
 
 $allowedLevels = @(
@@ -126,7 +121,7 @@ Assert-BoostLabCondition ([bool]$parityBaseline.Policy.RuntimeImplementedIsNotUl
 Assert-BoostLabCondition ([bool]$parityBaseline.Policy.WorkOrderFollowsStageToolOrder) 'Ordered parity work policy is missing.'
 Assert-BoostLabCondition ([string]$executionOrder.Rule -match 'final canonical') 'Ordered parity execution rule must record the Phase 116 canonical Yazan order.'
 
-$expectedStageOrder = @($orderedRuntimeStages | ForEach-Object { [string]$_.Name })
+$expectedStageOrder = @($stages.Stages | ForEach-Object { [string]$_.Name })
 $actualStageOrder = @($executionOrder.StageOrder | ForEach-Object { [string]$_ })
 Assert-BoostLabCondition (($expectedStageOrder -join '|') -eq ($actualStageOrder -join '|')) 'Execution order stage list must match config/Stages.psd1.'
 
@@ -135,8 +130,8 @@ $catalogById = @{}
 foreach ($tool in $allTools) {
     $catalogById[[string]$tool['Id']] = $tool
 }
-foreach ($stageIndex in 0..($orderedRuntimeStages.Count - 1)) {
-    $stage = $orderedRuntimeStages[$stageIndex]
+foreach ($stageIndex in 0..($stages.Stages.Count - 1)) {
+    $stage = $stages.Stages[$stageIndex]
     $orderStage = $executionOrder.Stages[$stageIndex]
     Assert-BoostLabCondition ([string]$orderStage.Name -eq [string]$stage.Name) "Execution order stage mismatch at index $stageIndex."
     Assert-BoostLabCondition ([int]$orderStage.Order -eq ($stageIndex + 1)) "Execution order stage number mismatch for $($stage.Name)."
@@ -160,17 +155,9 @@ foreach ($stageIndex in 0..($orderedRuntimeStages.Count - 1)) {
 }
 Assert-BoostLabCondition ($flattenedOrder.Count -eq $parityTools.Count) 'Flattened execution order must include every ordered parity tool.'
 
-if ($postParityRuntimeStages.Count -gt 0) {
-    $gameConfigsStage = @($postParityRuntimeStages | Where-Object { [string]$_.Name -eq 'Game Configs' }) | Select-Object -First 1
-    Assert-BoostLabCondition ($null -ne $gameConfigsStage) 'Only the approved Game Configs post-parity runtime stage may exist after ordered parity completion.'
-    Assert-BoostLabCondition (@($gameConfigsStage.Tools).Count -eq 1) 'Game Configs post-parity stage must expose exactly one grouped tool.'
-    Assert-BoostLabCondition ([string]$gameConfigsStage.Tools[0].Id -eq 'game-configs') 'Unexpected post-parity runtime tool.'
-    Assert-BoostLabCondition ((@($gameConfigsStage.Tools[0].Actions) -join '|') -eq 'Apply') 'Game Configs post-parity tool must remain Apply-only.'
-}
-
 $runtimeImplementedFromBaseline = @($parityTools | Where-Object { [string]$_.RuntimeStatus -eq 'RuntimeImplemented' })
 $deferredFromBaseline = @($parityTools | Where-Object { [string]$_.RuntimeStatus -eq 'DeferredPlaceholder' })
-Assert-BoostLabCondition (($runtimeImplementedFromBaseline.Count + $postParityRuntimeTools.Count) -eq [int]$inventorySnapshot.ImplementedTools) 'Runtime implemented parity records plus approved post-parity runtime tools must match live module inventory.'
+Assert-BoostLabCondition ($runtimeImplementedFromBaseline.Count -eq [int]$inventorySnapshot.ImplementedTools) 'Runtime implemented parity records must match live module inventory.'
 Assert-BoostLabCondition ($deferredFromBaseline.Count -eq [int]$inventorySnapshot.DeferredPlaceholders) 'Deferred parity records must match live module inventory.'
 
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
