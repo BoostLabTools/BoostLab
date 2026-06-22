@@ -39,7 +39,9 @@ function Assert-BoostLabCondition {
 $sourceVerificationPath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
 $reinstallModulePath = Join-Path $ProjectRoot 'modules\Refresh\reinstall.psm1'
 $reinstallSourcePath = Join-Path $ProjectRoot 'source-ultimate\2 Refresh\1 Reinstall.ps1'
-foreach ($path in @($sourceVerificationPath, $reinstallModulePath, $reinstallSourcePath)) {
+$updatesDriversModulePath = Join-Path $ProjectRoot 'modules\Refresh\updates-drivers-block.psm1'
+$updatesDriversSourcePath = Join-Path $ProjectRoot 'source-ultimate\2 Refresh\3 Updates Drivers Block.ps1'
+foreach ($path in @($sourceVerificationPath, $reinstallModulePath, $reinstallSourcePath, $updatesDriversModulePath, $updatesDriversSourcePath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required checksum robustness file missing: $path"
 }
 
@@ -112,6 +114,81 @@ try {
             Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
         }
     }
+
+    $updatesRawExpected = '4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991'
+    $updatesCanonicalExpected = 'D18878A8856096913643F7619917CAE688A19368A34792D94F3CC53BE45B0367'
+    $updatesBytes = [IO.File]::ReadAllBytes($updatesDriversSourcePath)
+    $updatesText = [Text.UTF8Encoding]::new($false, $true).GetString($updatesBytes)
+    $updatesText = $updatesText -replace "`r`n", "`n"
+    $updatesText = $updatesText -replace "`r", "`n"
+    $updatesPackagedLfPath = Join-Path $tempRoot 'Updates-Drivers-Block-Packaged-Lf.ps1'
+    [IO.File]::WriteAllBytes($updatesPackagedLfPath, $utf8NoBom.GetBytes($updatesText))
+
+    $updatesPackagedStatus = Test-BoostLabSourceChecksum `
+        -LiteralPath $updatesPackagedLfPath `
+        -ExpectedSha256 $updatesRawExpected `
+        -ExpectedCanonicalSha256 $updatesCanonicalExpected `
+        -TextNormalizationEnabled $true
+
+    Assert-BoostLabCondition ([string]$updatesPackagedStatus.ChecksumStatus -eq 'Passed') 'Updates Drivers Block packaged LF source should pass canonical verification.'
+    Assert-BoostLabCondition ([string]$updatesPackagedStatus.VerificationMode -eq 'CanonicalTextSha256') 'Updates Drivers Block packaged LF source should not require the raw CRLF hash.'
+
+    $updatesMutatedPath = Join-Path $tempRoot 'Updates-Drivers-Block-Mutated.ps1'
+    [IO.File]::WriteAllBytes($updatesMutatedPath, $utf8NoBom.GetBytes($updatesText + "`n# mutation must fail`n"))
+    $updatesMutatedStatus = Test-BoostLabSourceChecksum `
+        -LiteralPath $updatesMutatedPath `
+        -ExpectedSha256 $updatesRawExpected `
+        -ExpectedCanonicalSha256 $updatesCanonicalExpected `
+        -TextNormalizationEnabled $true
+    Assert-BoostLabCondition ([string]$updatesMutatedStatus.ChecksumStatus -eq 'Failed') 'Updates Drivers Block real content mutation must fail source verification.'
+
+    $updatesModule = Import-Module -Name $updatesDriversModulePath -Force -PassThru -ErrorAction Stop
+    try {
+        $updatesAnalyze = Invoke-BoostLabToolAction -ActionName 'Analyze' -DriveReader { @() }
+        Assert-BoostLabCondition ([bool]$updatesAnalyze.Success) 'Updates Drivers Block Analyze should pass source verification.'
+        Assert-BoostLabCondition ([string]$updatesAnalyze.Data.Source.ChecksumStatus -eq 'Passed') 'Updates Drivers Block Analyze source status should pass.'
+        Assert-BoostLabCondition ([string]$updatesAnalyze.Data.Source.ExpectedCanonicalSha256 -eq $updatesCanonicalExpected) 'Updates Drivers Block Analyze should report the canonical source checksum.'
+        Assert-BoostLabCondition (-not [bool]$updatesAnalyze.ChangesExecuted) 'Checksum robustness test must not execute Updates Drivers Block mutations.'
+    }
+    finally {
+        if ($null -ne $updatesModule) {
+            Remove-Module -ModuleInfo $updatesModule -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    $sourceBackedModules = @(Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -Filter '*.psm1' | Where-Object {
+        $moduleText = Get-Content -LiteralPath $_.FullName -Raw
+        $moduleText -match 'source-ultimate|_intake-promoted' -and
+        $moduleText -match 'BoostLabExpectedSourceHash|BoostLab[A-Za-z0-9]+SourceHash'
+    })
+    Assert-BoostLabCondition ($sourceBackedModules.Count -gt 0) 'Source-backed module guard did not find any modules to inspect.'
+
+    foreach ($sourceBackedModule in $sourceBackedModules) {
+        $tokens = $null
+        $parseErrors = $null
+        $moduleAst = [System.Management.Automation.Language.Parser]::ParseFile($sourceBackedModule.FullName, [ref]$tokens, [ref]$parseErrors)
+        Assert-BoostLabCondition ($parseErrors.Count -eq 0) "Unable to parse source-backed module $($sourceBackedModule.FullName): $($parseErrors | ForEach-Object Message -join '; ')"
+
+        $sourceFunctions = @($moduleAst.FindAll({
+            param($node)
+            $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+            $node.Name -match 'Source(Status|Info|Integrity)$'
+        }, $true))
+        Assert-BoostLabCondition ($sourceFunctions.Count -gt 0) "Source-backed module $($sourceBackedModule.FullName) must expose a source status/info/integrity function."
+
+        foreach ($sourceFunction in $sourceFunctions) {
+            $functionText = $sourceFunction.Extent.Text
+            if ($functionText -notmatch 'BoostLabExpectedSourceHash|BoostLab[A-Za-z0-9]+SourceHash') {
+                continue
+            }
+
+            Assert-BoostLabCondition ($functionText -match 'Test-BoostLabSourceChecksum') "Source verification function $($sourceFunction.Name) in $($sourceBackedModule.FullName) must use the central SourceVerification helper."
+            Assert-BoostLabCondition ($functionText -notmatch 'Get-FileHash') "Source verification function $($sourceFunction.Name) in $($sourceBackedModule.FullName) must not use raw-only Get-FileHash verification."
+        }
+
+        $sourceBackedModuleText = Get-Content -LiteralPath $sourceBackedModule.FullName -Raw
+        Assert-BoostLabCondition ($sourceBackedModuleText -match 'ExpectedCanonical') "Source-backed module $($sourceBackedModule.FullName) must declare or report a canonical source checksum."
+    }
 }
 finally {
     Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -124,6 +201,8 @@ finally {
     BomVariantVerified = $true
     ContentMutationBlocked = $true
     ReinstallPackagedSourceVerified = $true
+    UpdatesDriversBlockPackagedSourceVerified = $true
+    SourceBackedModuleGuardPassed = $true
     RuntimeActionExecuted = $false
     Message = 'Canonical source checksum verification tolerates packaging line-ending/BOM normalization while blocking real content mutation.'
 }

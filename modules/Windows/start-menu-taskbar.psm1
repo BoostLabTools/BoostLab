@@ -20,6 +20,7 @@ $script:BoostLabToolMetadata = [ordered]@{
 }
 $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabExpectedSourceHash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91'
+$script:BoostLabExpectedCanonicalSourceHash = 'D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4'
 $script:BoostLabSourceRelativePath = 'source-ultimate/6 Windows/1 Start Menu Taskbar.ps1'
 $script:BoostLabExpectedStart2Sha256 = '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D'
 $script:BoostLabExpectedStart2Length = 4540
@@ -54,21 +55,26 @@ function Get-BoostLabStartMenuTaskbarSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabStartMenuTaskbarSourcePath
-    $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
-    $hash = if ($exists) {
-        (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-    }
-    else {
-        ''
+    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
 
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $sourcePath -ExpectedSha256 $script:BoostLabExpectedSourceHash -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+
     [pscustomobject]@{
-        SourcePath         = $sourcePath
-        SourceRelativePath = $script:BoostLabSourceRelativePath
-        Exists             = $exists
-        ExpectedSha256     = $script:BoostLabExpectedSourceHash
-        DetectedSha256     = $hash
-        ChecksumStatus     = if ($exists -and $hash -eq $script:BoostLabExpectedSourceHash) { 'Passed' } elseif ($exists) { 'Failed' } else { 'Missing' }
+        SourcePath                = $sourcePath
+        SourceRelativePath        = $script:BoostLabSourceRelativePath
+        Exists                    = [bool]$verification.Exists
+        ExpectedSha256            = $script:BoostLabExpectedSourceHash
+        DetectedSha256            = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256   = $script:BoostLabExpectedCanonicalSourceHash
+        DetectedCanonicalSha256   = [string]$verification.DetectedCanonicalSha256
+        ChecksumStatus            = [string]$verification.ChecksumStatus
+        RawChecksumStatus         = [string]$verification.RawChecksumStatus
+        CanonicalChecksumStatus   = [string]$verification.CanonicalChecksumStatus
+        VerificationMode          = [string]$verification.VerificationMode
     }
 }
 

@@ -51,6 +51,7 @@ $script:BoostLabToolMetadata = [ordered]@{
 
 $script:BoostLabImplementedActions = @('Analyze', 'Apply')
 $script:BoostLabExpectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
+$script:BoostLabExpectedCanonicalSourceHash = 'B944AE03DE0AFDD7329B84BBF53FF5624739465CBB7130A021E097A6723B1B27'
 $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
 
 $script:BoostLabDirectX7ZipUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
@@ -80,29 +81,26 @@ function Get-BoostLabDirectXSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabDirectXSourcePath
-    $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
-    $detectedHash = if ($exists) {
-        (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-    }
-    else {
-        ''
+    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
 
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $sourcePath -ExpectedSha256 $script:BoostLabExpectedSourceHash -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+
     [pscustomobject]@{
-        SourcePath         = $sourcePath
-        SourceRelativePath = $script:BoostLabSourceRelativePath
-        Exists             = $exists
-        ExpectedSha256     = $script:BoostLabExpectedSourceHash
-        DetectedSha256     = $detectedHash
-        ChecksumStatus     = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) {
-            'Passed'
-        }
-        elseif ($exists) {
-            'Failed'
-        }
-        else {
-            'Missing'
-        }
+        SourcePath                = $sourcePath
+        SourceRelativePath        = $script:BoostLabSourceRelativePath
+        Exists                    = [bool]$verification.Exists
+        ExpectedSha256            = $script:BoostLabExpectedSourceHash
+        DetectedSha256            = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256   = $script:BoostLabExpectedCanonicalSourceHash
+        DetectedCanonicalSha256   = [string]$verification.DetectedCanonicalSha256
+        ChecksumStatus            = [string]$verification.ChecksumStatus
+        RawChecksumStatus         = [string]$verification.RawChecksumStatus
+        CanonicalChecksumStatus   = [string]$verification.CanonicalChecksumStatus
+        VerificationMode          = [string]$verification.VerificationMode
     }
 }
 

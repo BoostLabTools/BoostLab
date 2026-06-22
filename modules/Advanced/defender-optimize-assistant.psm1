@@ -32,6 +32,7 @@ $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $script:BoostLabDefenderSourcePath = Join-Path $script:BoostLabProjectRoot 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
 $script:BoostLabDefenderSourceHash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6'
+$script:BoostLabDefenderCanonicalSourceHash = 'FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92'
 $script:BoostLabDefenderScheduledTasks = @(
     'Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh'
     'Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance'
@@ -117,20 +118,23 @@ function Get-BoostLabDefenderSourceInfo {
         [string]$SourcePath = $script:BoostLabDefenderSourcePath
     )
 
-    $exists = Test-Path -LiteralPath $SourcePath -PathType Leaf
-    $hash = if ($exists) {
-        (Get-FileHash -Algorithm SHA256 -LiteralPath $SourcePath).Hash
+    $sourceVerificationModulePath = Join-Path $script:BoostLabProjectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
-    else {
-        ''
-    }
+
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $SourcePath -ExpectedSha256 $script:BoostLabDefenderSourceHash -ExpectedCanonicalSha256 $script:BoostLabDefenderCanonicalSourceHash
 
     [pscustomobject]@{
         SourcePath = $SourcePath
-        Exists = $exists
+        Exists = [bool]$verification.Exists
         ExpectedSha256 = $script:BoostLabDefenderSourceHash
-        ActualSha256 = $hash
-        HashMatches = ($exists -and $hash -eq $script:BoostLabDefenderSourceHash)
+        ActualSha256 = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256 = $script:BoostLabDefenderCanonicalSourceHash
+        ActualCanonicalSha256 = [string]$verification.DetectedCanonicalSha256
+        HashMatches = [string]$verification.ChecksumStatus -eq 'Passed'
+        ChecksumStatus = [string]$verification.ChecksumStatus
+        VerificationMode = [string]$verification.VerificationMode
     }
 }
 

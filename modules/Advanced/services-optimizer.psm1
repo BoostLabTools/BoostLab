@@ -32,6 +32,7 @@ $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $script:BoostLabServicesOptimizerSourcePath = Join-Path $script:BoostLabProjectRoot 'source-ultimate\8 Advanced\5 Services Optimizer.ps1'
 $script:BoostLabServicesOptimizerSourceHash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F'
+$script:BoostLabServicesOptimizerCanonicalSourceHash = '15E4E1EAE613C70F91B15DC2614C6EB7DB8A80ADA1618297188FB41A38F0F1AE'
 $script:BoostLabServicesOptimizerServiceRoot = 'HKLM:\SYSTEM\ControlSet001\Services'
 $script:BoostLabServicesOptimizerRestorePointCommands = @(
     'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v "SystemRestorePointCreationFrequency" /t REG_DWORD /d "0" /f >nul 2>&1'
@@ -117,20 +118,23 @@ function Get-BoostLabServicesOptimizerSourceInfo {
         [string]$SourcePath = $script:BoostLabServicesOptimizerSourcePath
     )
 
-    $exists = Test-Path -LiteralPath $SourcePath -PathType Leaf
-    $hash = if ($exists) {
-        (Get-FileHash -Algorithm SHA256 -LiteralPath $SourcePath).Hash
+    $sourceVerificationModulePath = Join-Path $script:BoostLabProjectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
-    else {
-        ''
-    }
+
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $SourcePath -ExpectedSha256 $script:BoostLabServicesOptimizerSourceHash -ExpectedCanonicalSha256 $script:BoostLabServicesOptimizerCanonicalSourceHash
 
     [pscustomobject]@{
         SourcePath = $SourcePath
-        Exists = $exists
+        Exists = [bool]$verification.Exists
         ExpectedSha256 = $script:BoostLabServicesOptimizerSourceHash
-        ActualSha256 = $hash
-        HashMatches = ($exists -and $hash -eq $script:BoostLabServicesOptimizerSourceHash)
+        ActualSha256 = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256 = $script:BoostLabServicesOptimizerCanonicalSourceHash
+        ActualCanonicalSha256 = [string]$verification.DetectedCanonicalSha256
+        HashMatches = [string]$verification.ChecksumStatus -eq 'Passed'
+        ChecksumStatus = [string]$verification.ChecksumStatus
+        VerificationMode = [string]$verification.VerificationMode
     }
 }
 

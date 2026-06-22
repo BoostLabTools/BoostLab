@@ -43,6 +43,7 @@ $script:BoostLabCopilotWildcardProcessPattern = '*edge*'
 $script:BoostLabCopilotPackagePattern = '*Copilot*'
 $script:BoostLabCopilotValueName = 'TurnOffWindowsCopilot'
 $script:BoostLabExpectedSourceHash = '21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90'
+$script:BoostLabExpectedCanonicalSourceHash = '45F87252A018398E87B281DE094E4943A63026567EB0782B631BBEF989CF6A9E'
 $script:BoostLabSourceRelativePath = 'source-ultimate\6 Windows\8 Copilot.ps1'
 $script:BoostLabCopilotUserPolicyKey = 'HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot'
 $script:BoostLabCopilotMachinePolicyKey = 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot'
@@ -191,24 +192,27 @@ function Test-BoostLabCopilotSourceIntegrity {
     )
 
     $sourcePath = Join-Path $ProjectRoot $script:BoostLabSourceRelativePath
-    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-        return [pscustomobject]@{
-            Valid        = $false
-            SourcePath   = $sourcePath
-            ExpectedHash = $script:BoostLabExpectedSourceHash
-            ActualHash   = ''
-            Message      = 'Approved Copilot Ultimate source file was not found.'
-        }
+    $sourceVerificationModulePath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
 
     try {
-        $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath -ErrorAction Stop).Hash
+        $verification = Test-BoostLabSourceChecksum -LiteralPath $sourcePath -ExpectedSha256 $script:BoostLabExpectedSourceHash -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+
         return [pscustomobject]@{
-            Valid        = ($actualHash -eq $script:BoostLabExpectedSourceHash)
-            SourcePath   = $sourcePath
-            ExpectedHash = $script:BoostLabExpectedSourceHash
-            ActualHash   = $actualHash
-            Message      = if ($actualHash -eq $script:BoostLabExpectedSourceHash) {
+            Valid                 = [string]$verification.ChecksumStatus -eq 'Passed'
+            SourcePath            = $sourcePath
+            ExpectedHash          = $script:BoostLabExpectedSourceHash
+            ActualHash            = [string]$verification.DetectedSha256
+            ExpectedCanonicalHash = $script:BoostLabExpectedCanonicalSourceHash
+            ActualCanonicalHash   = [string]$verification.DetectedCanonicalSha256
+            ChecksumStatus        = [string]$verification.ChecksumStatus
+            VerificationMode      = [string]$verification.VerificationMode
+            Message               = if (-not [bool]$verification.Exists) {
+                'Approved Copilot Ultimate source file was not found.'
+            }
+            elseif ([string]$verification.ChecksumStatus -eq 'Passed') {
                 'Approved Copilot Ultimate source checksum verified.'
             }
             else {
@@ -218,11 +222,15 @@ function Test-BoostLabCopilotSourceIntegrity {
     }
     catch {
         return [pscustomobject]@{
-            Valid        = $false
-            SourcePath   = $sourcePath
-            ExpectedHash = $script:BoostLabExpectedSourceHash
-            ActualHash   = ''
-            Message      = $_.Exception.Message
+            Valid                 = $false
+            SourcePath            = $sourcePath
+            ExpectedHash          = $script:BoostLabExpectedSourceHash
+            ActualHash            = ''
+            ExpectedCanonicalHash = $script:BoostLabExpectedCanonicalSourceHash
+            ActualCanonicalHash   = ''
+            ChecksumStatus        = 'Failed'
+            VerificationMode      = 'Failed'
+            Message               = $_.Exception.Message
         }
     }
 }

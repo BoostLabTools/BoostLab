@@ -1,6 +1,7 @@
 Set-StrictMode -Version Latest
 
 $script:BoostLabExpectedSourceHash = '8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59'
+$script:BoostLabExpectedCanonicalSourceHash = 'C35831AFE527DFA090E5DA6EBF0F6132256A4ABF3BEBDA90FC8605C47F55C0D2'
 $script:BoostLabSourceRelativePath = 'source-ultimate\6 Windows\12 Gamebar.ps1'
 $script:BoostLabEdgeWebViewUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'
 $script:BoostLabGamingRepairToolUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/gamingrepairtool.exe'
@@ -55,19 +56,24 @@ function Get-BoostLabGameBarSourceStatus {
 
     $projectRoot = Get-BoostLabGameBarProjectRoot
     $sourcePath = Join-Path $projectRoot $script:BoostLabSourceRelativePath
-    $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
-    $actualHash = $null
-    if ($exists) {
-        $actualHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+    $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
 
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $sourcePath -ExpectedSha256 $script:BoostLabExpectedSourceHash -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+
     [pscustomobject]@{
-        SourcePath     = $sourcePath
-        RelativePath   = $script:BoostLabSourceRelativePath
-        ExpectedSHA256 = $script:BoostLabExpectedSourceHash
-        ActualSHA256   = $actualHash
-        Exists         = $exists
-        Matches        = ($exists -and $actualHash -eq $script:BoostLabExpectedSourceHash)
+        SourcePath              = $sourcePath
+        RelativePath            = $script:BoostLabSourceRelativePath
+        ExpectedSHA256          = $script:BoostLabExpectedSourceHash
+        ActualSHA256            = [string]$verification.DetectedSha256
+        ExpectedCanonicalSHA256 = $script:BoostLabExpectedCanonicalSourceHash
+        ActualCanonicalSHA256   = [string]$verification.DetectedCanonicalSha256
+        Exists                  = [bool]$verification.Exists
+        Matches                 = [string]$verification.ChecksumStatus -eq 'Passed'
+        ChecksumStatus          = [string]$verification.ChecksumStatus
+        VerificationMode        = [string]$verification.VerificationMode
     }
 }
 

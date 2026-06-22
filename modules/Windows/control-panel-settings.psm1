@@ -2,6 +2,7 @@ Set-StrictMode -Version Latest
 
 $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabExpectedSourceHash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B'
+$script:BoostLabExpectedCanonicalSourceHash = 'F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83'
 $script:BoostLabSourceRelativePath = 'source-ultimate\6 Windows\15 Control Panel Settings.ps1'
 
 $script:BoostLabToolMetadata = [ordered]@{
@@ -48,34 +49,53 @@ function Get-BoostLabControlPanelSettingsSourceStatus {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [scriptblock]$HashReader = {
-            param([string]$Path)
-            (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
-        }
+        [AllowNull()]
+        [scriptblock]$HashReader = $null
     )
 
     $sourcePath = Get-BoostLabControlPanelSettingsSourcePath
-    $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
-    $detectedHash = ''
-    if ($exists) {
-        $detectedHash = [string](& $HashReader $sourcePath)
+    if ($null -ne $HashReader) {
+        $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
+        $detectedHash = ''
+        if ($exists) {
+            $detectedHash = [string](& $HashReader $sourcePath)
+        }
+
+        return [pscustomobject]@{
+            SourcePath                = $sourcePath
+            SourceRelativePath        = $script:BoostLabSourceRelativePath
+            Exists                    = $exists
+            ExpectedSha256            = $script:BoostLabExpectedSourceHash
+            DetectedSha256            = $detectedHash
+            ExpectedCanonicalSha256   = $script:BoostLabExpectedCanonicalSourceHash
+            DetectedCanonicalSha256   = ''
+            ChecksumStatus            = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) { 'Passed' } elseif ($exists) { 'Failed' } else { 'Missing' }
+            RawChecksumStatus         = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) { 'Passed' } elseif ($exists) { 'Failed' } else { 'Missing' }
+            CanonicalChecksumStatus   = 'NotAvailableForCustomHashReader'
+            VerificationMode          = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) { 'ExactRawSha256' } elseif ($exists) { 'Failed' } else { 'Missing' }
+        }
     }
 
+    $projectRoot = Get-BoostLabControlPanelSettingsProjectRoot
+    $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $verification = Test-BoostLabSourceChecksum -LiteralPath $sourcePath -ExpectedSha256 $script:BoostLabExpectedSourceHash -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+
     [pscustomobject]@{
-        SourcePath         = $sourcePath
-        SourceRelativePath = $script:BoostLabSourceRelativePath
-        Exists             = $exists
-        ExpectedSha256     = $script:BoostLabExpectedSourceHash
-        DetectedSha256     = $detectedHash
-        ChecksumStatus     = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) {
-            'Passed'
-        }
-        elseif ($exists) {
-            'Failed'
-        }
-        else {
-            'Missing'
-        }
+        SourcePath                = $sourcePath
+        SourceRelativePath        = $script:BoostLabSourceRelativePath
+        Exists                    = [bool]$verification.Exists
+        ExpectedSha256            = $script:BoostLabExpectedSourceHash
+        DetectedSha256            = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256   = $script:BoostLabExpectedCanonicalSourceHash
+        DetectedCanonicalSha256   = [string]$verification.DetectedCanonicalSha256
+        ChecksumStatus            = [string]$verification.ChecksumStatus
+        RawChecksumStatus         = [string]$verification.RawChecksumStatus
+        CanonicalChecksumStatus   = [string]$verification.CanonicalChecksumStatus
+        VerificationMode          = [string]$verification.VerificationMode
     }
 }
 
@@ -385,10 +405,8 @@ function Invoke-BoostLabToolAction {
             Get-Content -LiteralPath $Path -Raw
         },
 
-        [scriptblock]$HashReader = {
-            param([string]$Path)
-            (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
-        },
+        [AllowNull()]
+        [scriptblock]$HashReader = $null,
 
         [scriptblock]$ScriptRunner = {
             param([string]$ScriptText, [string]$ActionName)
