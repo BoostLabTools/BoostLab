@@ -98,12 +98,12 @@ foreach ($requiredPhrase in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')',
     'SourceEquivalentControlledRuntime',
     'SourceEquivalentDirectXInstall',
-    'Invoke-WebRequest',
+    'Invoke-BoostLabDirectXVerifiedArtifactDownload',
     'Start-Process',
     'New-ItemProperty',
     'Move-Item',
     'Remove-Item',
-    'NeedsBoostLabMirror',
+    'BoostLabMirrorAvailable',
     $expectedSourceHash
 )) {
     Assert-BoostLabTextContains -Text $moduleText -Needle $requiredPhrase -Description 'DirectX source-equivalent module text'
@@ -120,14 +120,17 @@ $directXEntries = @($externalSources.ExternalSources | Where-Object { [string]$_
 Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'External artifact source manifest must track DirectX 7zip.exe and directx.exe.'
 foreach ($entry in $directXEntries) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "DirectX entry must remain author-hosted: $($entry.Id)"
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "DirectX entry must still need BoostLab mirror: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'BoostLabMirrorAvailable') "DirectX entry must use verified BoostLab mirror status: $($entry.Id)"
     Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "DirectX entry must carry Phase 164B/164C SHA evidence: $($entry.Id)"
     Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "DirectX entry must carry Phase 164B/164C size evidence: $($entry.Id)"
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "DirectX entry must not approve mirror URL: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "DirectX SHA evidence must not mark mirror available: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "DirectX SHA evidence must not approve provenance: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "DirectX SHA evidence must not approve production allowlist: $($entry.Id)"
-    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "DirectX SHA evidence must remain release-blocked: $($entry.Id)"
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.VerifiedBoostLabMirrorUrl)) "DirectX entry must carry verified mirror URL: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.IntendedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "DirectX runtime mirror must match verified mirror URL: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $true) "DirectX mirror must be available: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $true) "DirectX provenance approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $true) "DirectX production approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('RuntimeSourceSelectionApproved') -and $entry.RuntimeSourceSelectionApproved -eq $true) "DirectX runtime source selection approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('DownloadExecutionApproved') -and $entry.DownloadExecutionApproved -eq $true) "DirectX download approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'RuntimeApprovedPendingOfficialVendorDirectClosure') "DirectX release readiness mismatch: $($entry.Id)"
 }
 
 $reviewText = Get-Content -LiteralPath $reviewPath -Raw
@@ -206,8 +209,8 @@ Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A
     DirectXImplemented = $true
     ProductionArtifactCount = $artifacts.Count
     DirectXExternalSourceEntries = $directXEntries.Count
-    DirectXArtifactApproved = $false
+    DirectXArtifactApproved = $true
     SourceUltimateUnchanged = $true
-    Message = 'DirectX source-equivalent runtime is implemented; artifacts remain source-classified only, with no provenance approval or mirror substitution.'
+    Message = 'DirectX source-equivalent runtime uses verified BoostLab mirror artifacts with SHA, size, provenance, and production/runtime approval gates.'
     Timestamp = Get-Date
 }

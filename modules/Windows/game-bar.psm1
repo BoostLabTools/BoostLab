@@ -24,6 +24,23 @@ function Get-BoostLabGameBarProjectRoot {
     Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
 
+function Invoke-BoostLabGameBarVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Get-BoostLabGameBarProjectRoot) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 function Get-BoostLabGameBarSystemRoot {
     if (-not [string]::IsNullOrWhiteSpace($env:SystemRoot)) {
         return $env:SystemRoot
@@ -230,9 +247,9 @@ function Get-BoostLabGameBarOperationPlan {
         $operations.Add((New-BoostLabGameBarOperation -OperationType 'ImportRegFile' -Description 'Import the source gamebaron.reg payload with regedit.exe /S.' -Parameters @{ Path = $defaultRegPath }))
         $operations.Add((New-BoostLabGameBarOperation -OperationType 'TrustedInstallerCommand' -Description 'Restore GameBar PresenceWriter ActivationType with the source TrustedInstaller command.' -Parameters @{ Command = 'reg add "HKLM\SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId\Windows.Gaming.GameBar.PresenceServer.Internal.PresenceWriter" /v "ActivationType" /t REG_DWORD /d "1" /f' }))
         $operations.Add((New-BoostLabGameBarOperation -OperationType 'AppxRegisterWhereNameLike' -Description 'Re-register all-users AppX packages whose Name matches *Gaming*, *Xbox*, or *Store*.' -Parameters @{ Patterns = @('*Gaming*', '*Xbox*', '*Store*') }))
-        $operations.Add((New-BoostLabGameBarOperation -OperationType 'DownloadFile' -Description 'Download the source Edge WebView installer from the Ultimate author-hosted URL.' -Parameters @{ Url = $script:BoostLabEdgeWebViewUrl; Destination = $edgeWebViewPath; ArtifactId = 'game-bar.edgewebview.exe'; FileName = 'edgewebview.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
+        $operations.Add((New-BoostLabGameBarOperation -OperationType 'DownloadFile' -Description 'Download the source Edge WebView installer from the Ultimate author-hosted URL.' -Parameters @{ Url = $script:BoostLabEdgeWebViewUrl; Destination = $edgeWebViewPath; ArtifactId = 'game-bar-edge-webview'; FileName = 'edgewebview.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
         $operations.Add((New-BoostLabGameBarOperation -OperationType 'StartProcess' -Description 'Launch the downloaded source Edge WebView installer and wait for it.' -Parameters @{ FilePath = $edgeWebViewPath; Wait = $true }))
-        $operations.Add((New-BoostLabGameBarOperation -OperationType 'DownloadFile' -Description 'Download the source Gamebar repair tool from the Ultimate author-hosted URL.' -Parameters @{ Url = $script:BoostLabGamingRepairToolUrl; Destination = $gamingRepairToolPath; ArtifactId = 'game-bar.gamingrepairtool.exe'; FileName = 'gamingrepairtool.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
+        $operations.Add((New-BoostLabGameBarOperation -OperationType 'DownloadFile' -Description 'Download the source Gamebar repair tool from the Ultimate author-hosted URL.' -Parameters @{ Url = $script:BoostLabGamingRepairToolUrl; Destination = $gamingRepairToolPath; ArtifactId = 'game-bar-gaming-repair-tool'; FileName = 'gamingrepairtool.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
         $operations.Add((New-BoostLabGameBarOperation -OperationType 'StartProcess' -Description 'Launch the downloaded source Gamebar repair tool.' -Parameters @{ FilePath = $gamingRepairToolPath; Wait = $false }))
     }
 
@@ -376,7 +393,9 @@ function Invoke-BoostLabGameBarOperation {
             }
         }
         'DownloadFile' {
-            Invoke-WebRequest ([string]$Operation.Parameters.Url) -OutFile ([string]$Operation.Parameters.Destination)
+            Invoke-BoostLabGameBarVerifiedArtifactDownload `
+                -ArtifactId ([string]$Operation.Parameters.ArtifactId) `
+                -Destination ([string]$Operation.Parameters.Destination) | Out-Null
         }
         'StartProcess' {
             $parameters = @{ FilePath = [string]$Operation.Parameters.FilePath }

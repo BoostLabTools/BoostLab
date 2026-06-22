@@ -4,6 +4,23 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationCheck' -ErrorAction Silentl
     Import-Module -Name (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1') -Scope Local -Force -ErrorAction Stop
 }
 
+function Invoke-BoostLabVisualCppVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'visual-cpp'
     Title = 'Visual C++'
@@ -53,6 +70,15 @@ $script:BoostLabVisualCppDownloadFiles = @(
     'vcredist2015_2017_2019_2022_x64.exe',
     'vcredist2015_2017_2019_2022_x86.exe'
 )
+
+function Get-BoostLabVisualCppArtifactId {
+    param(
+        [Parameter(Mandatory)]
+        [string]$FileName
+    )
+
+    'visual-cpp-{0}' -f (($FileName -replace '\.exe$', '') -replace '_', '-')
+}
 
 $script:BoostLabVisualCppInstallerPlan = @(
     @{ FileName = 'vcredist2005_x86.exe'; Arguments = '/q' },
@@ -231,6 +257,7 @@ function Get-BoostLabVisualCppOperationPlan {
                     Url = ('{0}/{1}' -f $script:BoostLabUltimateFilesBaseUrl, $fileName)
                     OutFile = Join-Path ([string]$paths.WindowsTemp) $fileName
                     ExpectedFileName = $fileName
+                    ArtifactId = Get-BoostLabVisualCppArtifactId -FileName $fileName
                     SourceTempPath = ('%SystemRoot%\Temp\{0}' -f $fileName)
                     MirrorStatus = $script:BoostLabArtifactMirrorStatus
                     SourceClassification = $script:BoostLabArtifactSourceClassification
@@ -263,7 +290,8 @@ function Get-BoostLabVisualCppOperationPlan {
         InstallerCount = @($script:BoostLabVisualCppInstallerPlan).Count
         Operations = $operations.ToArray()
         NoRebootRequested = $true
-        RuntimeUrlUnchanged = $true
+        RuntimeUrlUnchanged = $false
+        RuntimeSourceSelection = 'VerifiedBoostLabMirror'
         BoostLabMirrorRequired = $true
     }
 }
@@ -348,11 +376,13 @@ function Invoke-BoostLabVisualCppRealOperation {
                 return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('ProgressPreference set to {0}.' -f [string]$parameters['Value'])
             }
             'DownloadFile' {
-                Invoke-WebRequest -Uri ([string]$parameters['Url']) -OutFile ([string]$parameters['OutFile']) -UseBasicParsing -ErrorAction Stop
+                $download = Invoke-BoostLabVisualCppVerifiedArtifactDownload `
+                    -ArtifactId ([string]$parameters['ArtifactId']) `
+                    -Destination ([string]$parameters['OutFile'])
                 if (-not (Test-Path -LiteralPath ([string]$parameters['OutFile']) -PathType Leaf)) {
                     return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $false -Message ('Download did not create expected file: {0}' -f [string]$parameters['OutFile'])
                 }
-                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('Downloaded {0} to {1}.' -f [string]$parameters['ExpectedFileName'], [string]$parameters['SourceTempPath']) -Data ([pscustomobject]@{ Url = [string]$parameters['Url']; OutFile = [string]$parameters['OutFile'] })
+                return New-BoostLabVisualCppOperationResult -Operation $Operation -Success $true -Message ('Downloaded {0} from verified BoostLab mirror to {1}.' -f [string]$parameters['ExpectedFileName'], [string]$parameters['SourceTempPath']) -Data ([pscustomobject]@{ Url = [string]$download.SourceUrl; SourceDefinedUrl = [string]$parameters['Url']; ArtifactId = [string]$download.ArtifactId; OutFile = [string]$parameters['OutFile'] })
             }
             'StartInstallerWait' {
                 $filePath = [string]$parameters['FilePath']

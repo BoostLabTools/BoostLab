@@ -34,6 +34,23 @@ $script:BoostLabSevenZipUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/
 $script:BoostLabInspectorUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
 $script:BoostLabControlPanelTarget = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
 
+function Invoke-BoostLabNvidiaSettingsVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Get-BoostLabNvidiaSettingsProjectRoot) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 function Get-BoostLabNvidiaSettingsProjectRoot {
     Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
@@ -182,7 +199,7 @@ function Get-BoostLabNvidiaSettingsOperationPlan {
     foreach ($operation in @(
         @{ Type = 'RequireAdmin'; Label = 'Require Administrator rights'; SourceCommand = 'SCRIPT RUN AS ADMIN'; Parameters = @{} }
         @{ Type = 'RequireInternet'; Label = 'Require internet connectivity'; SourceCommand = 'Test-Connection 8.8.8.8'; Parameters = @{} }
-        @{ Type = 'DownloadFile'; Label = 'Download source-defined 7-Zip installer'; SourceCommand = 'IWR 7zip.exe'; Parameters = @{ Url = $script:BoostLabSevenZipUrl; Destination = $paths.SevenZipInstaller } }
+        @{ Type = 'DownloadFile'; Label = 'Download source-defined 7-Zip installer'; SourceCommand = 'IWR 7zip.exe'; Parameters = @{ Url = $script:BoostLabSevenZipUrl; Destination = $paths.SevenZipInstaller; ArtifactId = 'nvidia-settings-seven-zip' } }
         @{ Type = 'StartProcess'; Label = 'Install 7-Zip silently'; SourceCommand = 'Start-Process 7zip.exe /S -Wait'; Parameters = @{ FilePath = $paths.SevenZipInstaller; ArgumentList = @('/S'); Wait = $true } }
         @{ Type = 'SetRegistryValue'; Label = 'Set 7-Zip ContextMenu option'; SourceCommand = 'reg add HKCU\Software\7-Zip\Options ContextMenu 259'; Parameters = @{ Path = 'HKCU:\Software\7-Zip\Options'; Name = 'ContextMenu'; Type = 'DWord'; Data = 259 } }
         @{ Type = 'SetRegistryValue'; Label = 'Set 7-Zip CascadedMenu option'; SourceCommand = 'reg add HKCU\Software\7-Zip\Options CascadedMenu 0'; Parameters = @{ Path = 'HKCU:\Software\7-Zip\Options'; Name = 'CascadedMenu'; Type = 'DWord'; Data = 0 } }
@@ -202,7 +219,7 @@ function Get-BoostLabNvidiaSettingsOperationPlan {
             @{ Type = 'SetRegistryValue'; Label = 'Allow GPU performance counters for all users on NVTweak'; SourceCommand = 'reg add NVTweak RmProfilingAdminOnly 0'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'RmProfilingAdminOnly'; Type = 'DWord'; Data = 0 } }
             @{ Type = 'SetRegistryValue'; Label = 'Disable NVIDIA tray login startup'; SourceCommand = 'reg add HKCU\Software\NVIDIA Corporation\NvTray StartOnLogin 0'; Parameters = @{ Path = $paths.NvTrayPath; Name = 'StartOnLogin'; Type = 'DWord'; Data = 0 } }
             @{ Type = 'SetRegistryValueCollection'; Label = 'Enable source-defined NVIDIA legacy sharpen behavior'; SourceCommand = 'reg add EnableGR535 0 on three FTS paths'; Parameters = @{ Paths = $paths.FtsPaths; Name = 'EnableGR535'; Type = 'DWord'; Data = 0 } }
-            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe } }
+            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe; ArtifactId = 'nvidia-settings-inspector' } }
             @{ Type = 'WriteTextFile'; Label = 'Write source-defined On inspector.nip'; SourceCommand = 'Set-Content inspector.nip On payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Apply; Encoding = 'Unicode' } }
             @{ Type = 'StartProcess'; Label = 'Import source-defined On .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
             @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
@@ -217,7 +234,7 @@ function Get-BoostLabNvidiaSettingsOperationPlan {
             @{ Type = 'RemoveRegistryValue'; Label = 'Delete NVTweak GPU performance counter override'; SourceCommand = 'reg delete NVTweak RmProfilingAdminOnly'; Parameters = @{ Path = $paths.NVTweakPath; Name = 'RmProfilingAdminOnly' } }
             @{ Type = 'RemoveRegistryKey'; Label = 'Delete NVIDIA tray key'; SourceCommand = 'reg delete HKCU\Software\NVIDIA Corporation\NvTray'; Parameters = @{ Path = $paths.NvTrayPath; Recurse = $true } }
             @{ Type = 'SetRegistryValueCollection'; Label = 'Restore source-defined NVIDIA legacy sharpen default'; SourceCommand = 'reg add EnableGR535 1 on three FTS paths'; Parameters = @{ Paths = $paths.FtsPaths; Name = 'EnableGR535'; Type = 'DWord'; Data = 1 } }
-            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe } }
+            @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe; ArtifactId = 'nvidia-settings-inspector' } }
             @{ Type = 'WriteTextFile'; Label = 'Write source-defined Default inspector.nip'; SourceCommand = 'Set-Content inspector.nip Default payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Default; Encoding = 'Unicode' } }
             @{ Type = 'StartProcess'; Label = 'Import source-defined Default .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
             @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
@@ -336,7 +353,9 @@ function Invoke-BoostLabNvidiaSettingsDefaultOperation {
                 if (-not [string]::IsNullOrWhiteSpace($destinationParent)) {
                     New-Item -Path $destinationParent -ItemType Directory -Force | Out-Null
                 }
-                Invoke-WebRequest -Uri ([string]$parameters['Url']) -OutFile ([string]$parameters['Destination']) -UseBasicParsing -ErrorAction Stop
+                Invoke-BoostLabNvidiaSettingsVerifiedArtifactDownload `
+                    -ArtifactId ([string]$parameters['ArtifactId']) `
+                    -Destination ([string]$parameters['Destination']) | Out-Null
             }
             'StartProcess' {
                 $startParameters = @{ FilePath = [string]$parameters['FilePath']; ErrorAction = 'Stop' }

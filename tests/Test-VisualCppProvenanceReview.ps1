@@ -111,7 +111,7 @@ foreach ($sourceBehavior in @(
 }
 
 Assert-BoostLabTextContains -Text $moduleText -Needle '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')' -Description 'Visual C++ implemented actions'
-Assert-BoostLabTextContains -Text $moduleText -Needle 'Invoke-WebRequest' -Description 'Visual C++ source-equivalent download command'
+Assert-BoostLabTextContains -Text $moduleText -Needle 'Invoke-BoostLabVisualCppVerifiedArtifactDownload' -Description 'Visual C++ verified artifact download command'
 Assert-BoostLabTextContains -Text $moduleText -Needle 'Start-Process' -Description 'Visual C++ source-equivalent installer command'
 Assert-BoostLabTextContains -Text $moduleText -Needle 'OperationExecutor' -Description 'Visual C++ test-safe executor seam'
 Assert-BoostLabCondition (-not $moduleText.Contains('ManualHandoffOnly')) 'Visual C++ module must not remain ManualHandoffOnly.'
@@ -121,14 +121,17 @@ $visualEntries = @($externalSources.ExternalSources | Where-Object { [string]$_.
 Assert-BoostLabCondition ($visualEntries.Count -eq 12) 'Visual C++ must classify exactly twelve external source artifacts.'
 foreach ($entry in $visualEntries) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ artifact must remain UltimateAuthorHostedArtifact: $($entry.Id)"
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ artifact must remain NeedsBoostLabMirror: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'BoostLabMirrorAvailable') "Visual C++ artifact must use verified BoostLab mirror status: $($entry.Id)"
     Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Visual C++ artifact must carry Phase 164B/164C SHA evidence: $($entry.Id)"
     Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Visual C++ artifact must carry Phase 164B/164C size evidence: $($entry.Id)"
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Visual C++ artifact must not add mirror URL: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "Visual C++ SHA evidence must not mark mirror available: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "Visual C++ SHA evidence must not approve provenance: $($entry.Id)"
-    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "Visual C++ SHA evidence must not approve production allowlist: $($entry.Id)"
-    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Visual C++ SHA evidence must remain release-blocked: $($entry.Id)"
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.VerifiedBoostLabMirrorUrl)) "Visual C++ artifact must carry verified mirror URL: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.IntendedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "Visual C++ runtime mirror must match verified mirror URL: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $true) "Visual C++ mirror must be available: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $true) "Visual C++ provenance approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $true) "Visual C++ production approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('RuntimeSourceSelectionApproved') -and $entry.RuntimeSourceSelectionApproved -eq $true) "Visual C++ runtime source selection approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ($entry.ContainsKey('DownloadExecutionApproved') -and $entry.DownloadExecutionApproved -eq $true) "Visual C++ download approval missing: $($entry.Id)"
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'RuntimeApprovedPendingOfficialVendorDirectClosure') "Visual C++ release readiness mismatch: $($entry.Id)"
     Assert-BoostLabCondition ([string]$entry.OriginalDownloadUrl -like 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist*.exe') "Visual C++ source URL mismatch: $($entry.Id)"
 }
 
@@ -185,9 +188,9 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     SourceSha256                 = $actualSourceHash
     ExternalSourceEntries        = $visualEntries.Count
     ArtifactProvenanceApprovals  = @($artifactProvenance.Artifacts).Count
-    RuntimeUrlsChanged           = $false
+    RuntimeUrlsChanged           = $true
     BinaryFilesAdded             = $binaryFiles.Count
     SourceUltimateUnchanged      = $true
     DeletedToolsRemainDeleted    = $true
-    Message                      = 'Visual C++ source-equivalent runtime keeps all source URLs classified as NeedsBoostLabMirror and adds no artifact approval, mirror, allowlist, or binary.'
+    Message                      = 'Visual C++ source-equivalent runtime uses verified BoostLab mirror artifacts with SHA, size, provenance, and production/runtime approval gates.'
 }

@@ -42,6 +42,22 @@ $script:BoostLabDriverSearchRegistryPath = 'HKLM:\Software\Microsoft\Windows\Cur
 $script:BoostLabDriverSearchValueName = 'SearchOrderConfig'
 $script:BoostLabDriverSearchValue = 0
 
+function Invoke-BoostLabDriverCleanVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name (Join-Path $coreRoot 'DownloadProvenance.psm1') -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 function Get-BoostLabDriverCleanSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
@@ -270,6 +286,7 @@ function Get-BoostLabDriverCleanOperationPlan {
     $operations.Add((New-BoostLabDriverCleanOperation -Order (++$order) -Type DownloadFile -Label 'Download 7-Zip source artifact' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe" -OutFile "$env:SystemRoot\Temp\7zip.exe"' -Parameters @{
         Uri = $script:BoostLabSevenZipUrl
         OutFile = $paths.SevenZipInstaller
+        ArtifactId = 'driver-clean-seven-zip'
     }))
     $operations.Add((New-BoostLabDriverCleanOperation -Order (++$order) -Type StartProcess -Label 'Install 7-Zip silently' -SourceCommand 'Start-Process -Wait "$env:SystemRoot\Temp\7zip.exe" -ArgumentList "/S"' -Parameters @{
         FilePath = $paths.SevenZipInstaller
@@ -293,6 +310,7 @@ function Get-BoostLabDriverCleanOperationPlan {
     $operations.Add((New-BoostLabDriverCleanOperation -Order (++$order) -Type DownloadFile -Label 'Download DDU source artifact' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/ddu.exe" -OutFile "$env:SystemRoot\Temp\ddu.exe"' -Parameters @{
         Uri = $script:BoostLabDduUrl
         OutFile = $paths.DduArchive
+        ArtifactId = 'driver-clean-ddu'
     }))
     $operations.Add((New-BoostLabDriverCleanOperation -Order (++$order) -Type ExternalCommand -Label 'Extract DDU with 7-Zip' -SourceCommand '& "$env:SystemDrive\Program Files\7-Zip\7z.exe" x "$env:SystemRoot\Temp\ddu.exe" -o"$env:SystemRoot\Temp\ddu" -y | Out-Null' -Parameters @{
         FilePath = $paths.SevenZipExecutable
@@ -504,7 +522,9 @@ function Invoke-BoostLabDriverCleanOperation {
     try {
         switch ([string]$Operation.Type) {
             'DownloadFile' {
-                Invoke-WebRequest -Uri ([string]$Operation.Parameters.Uri) -OutFile ([string]$Operation.Parameters.OutFile) -ErrorAction Stop
+                Invoke-BoostLabDriverCleanVerifiedArtifactDownload `
+                    -ArtifactId ([string]$Operation.Parameters.ArtifactId) `
+                    -Destination ([string]$Operation.Parameters.OutFile) | Out-Null
             }
             'StartProcess' {
                 Start-Process -FilePath ([string]$Operation.Parameters.FilePath) -ArgumentList ([string]$Operation.Parameters.ArgumentList) -Wait:([bool]$Operation.Parameters.Wait) -ErrorAction Stop

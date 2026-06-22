@@ -70,6 +70,23 @@ function Get-BoostLabEdgeWebViewProjectRoot {
     return Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
 
+function Invoke-BoostLabEdgeWebViewVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Get-BoostLabEdgeWebViewProjectRoot) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 function Get-BoostLabEdgeWebViewSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
@@ -191,11 +208,11 @@ function Get-BoostLabEdgeWebViewDefaultOperations {
         New-BoostLabEdgeWebViewOperation -Id 'RequireInternet' -Kind 'RequireInternet' -Description 'Verify internet availability with Test-Connection 8.8.8.8 exactly as the source requires.' -Parameters @{ ComputerName = '8.8.8.8' }
         New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesBeforeEdgeRepair' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list before downloading Edge repair installer.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
         New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesBeforeEdgeRepair' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* before downloading Edge repair installer.'
-        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeRepair' -Kind 'DownloadFile' -Description 'Download the source edge.exe repair artifact to %SystemRoot%\Temp\edge.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'; OutFile = (Join-Path $systemRoot 'Temp\edge.exe'); ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
+        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeRepair' -Kind 'DownloadFile' -Description 'Download the source edge.exe repair artifact to %SystemRoot%\Temp\edge.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'; OutFile = (Join-Path $systemRoot 'Temp\edge.exe'); ArtifactId = 'edge-webview-edge-exe'; ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
         New-BoostLabEdgeWebViewOperation -Id 'RunEdgeRepair' -Kind 'StartProcess' -Description 'Launch %SystemRoot%\Temp\edge.exe and wait exactly as the source Default branch does.' -Parameters @{ FilePath = (Join-Path $systemRoot 'Temp\edge.exe'); Wait = $true }
         New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesBeforeWebViewRepair' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list before downloading WebView repair installer.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
         New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesBeforeWebViewRepair' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* before downloading WebView repair installer.'
-        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeWebViewRepair' -Kind 'DownloadFile' -Description 'Download the source edgewebview.exe repair artifact to %SystemRoot%\Temp\edgewebview.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'; OutFile = (Join-Path $systemRoot 'Temp\edgewebview.exe'); ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
+        New-BoostLabEdgeWebViewOperation -Id 'DownloadEdgeWebViewRepair' -Kind 'DownloadFile' -Description 'Download the source edgewebview.exe repair artifact to %SystemRoot%\Temp\edgewebview.exe.' -Parameters @{ Uri = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'; OutFile = (Join-Path $systemRoot 'Temp\edgewebview.exe'); ArtifactId = 'edge-webview-edge-webview'; ArtifactClassification = 'UltimateAuthorHostedArtifact'; ApprovalStatus = 'NeedsBoostLabMirror' }
         New-BoostLabEdgeWebViewOperation -Id 'RunEdgeWebViewRepair' -Kind 'StartProcess' -Description 'Launch %SystemRoot%\Temp\edgewebview.exe and wait exactly as the source Default branch does.' -Parameters @{ FilePath = (Join-Path $systemRoot 'Temp\edgewebview.exe'); Wait = $true }
         New-BoostLabEdgeWebViewOperation -Id 'StopNamedProcessesAfterRepairs' -Kind 'StopNamedProcesses' -Description 'Stop the exact source-defined process list after both repair installers.' -Parameters @{ Names = @($script:BoostLabEdgeProcesses) }
         New-BoostLabEdgeWebViewOperation -Id 'StopWildcardEdgeProcessesAfterRepairs' -Kind 'StopWildcardEdgeProcesses' -Description 'Stop every running process whose ProcessName matches *edge* after both repair installers.'
@@ -445,7 +462,9 @@ function Invoke-BoostLabEdgeWebViewOperation {
             }
         }
         'DownloadFile' {
-            Invoke-WebRequest -Uri ([string]$Operation.Parameters.Uri) -OutFile ([string]$Operation.Parameters.OutFile)
+            Invoke-BoostLabEdgeWebViewVerifiedArtifactDownload `
+                -ArtifactId ([string]$Operation.Parameters.ArtifactId) `
+                -Destination ([string]$Operation.Parameters.OutFile) | Out-Null
         }
         'StartProcess' {
             if ([bool]$Operation.Parameters.Wait) {

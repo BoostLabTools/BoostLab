@@ -346,7 +346,15 @@ $nvidiaExternalEntries = @($externalArtifactSource.ExternalSources | Where-Objec
 Assert-BoostLabCondition ($nvidiaExternalEntries.Count -eq 2) 'Nvidia Settings must keep exactly two external artifact source policy records.'
 foreach ($entry in $nvidiaExternalEntries) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') 'Nvidia Settings external artifact source classification changed.'
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') 'Nvidia Settings external artifact mirror status changed.'
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'BoostLabMirrorAvailable') 'Nvidia Settings external artifact mirror status changed.'
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.VerifiedBoostLabMirrorUrl)) "Nvidia Settings verified BoostLab mirror URL missing for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.IntendedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "Nvidia Settings runtime mirror URL must match verified mirror URL for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $true) "Nvidia Settings mirror must be available for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $true) "Nvidia Settings provenance approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $true) "Nvidia Settings production/runtime approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('RuntimeSourceSelectionApproved') -and $entry.RuntimeSourceSelectionApproved -eq $true) "Nvidia Settings runtime source selection approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('DownloadExecutionApproved') -and $entry.DownloadExecutionApproved -eq $true) "Nvidia Settings download execution approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'RuntimeApprovedPendingOfficialVendorDirectClosure') "Nvidia Settings release readiness mismatch for $($entry.Id)."
 }
 
 $productionPolicy = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath

@@ -95,7 +95,7 @@
             SourceScriptPath = 'source-ultimate/2 Refresh/1 Reinstall.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/mediacreationtoolw11.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/reinstall-windows11-media-creation-tool__mediacreationtoolw11.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/reinstall-windows11-media-creation-tool__mediacreationtoolw11.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -115,15 +115,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-reinstall-windows11-media-creation-tool'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'edge-settings-edge-exe'
@@ -136,7 +139,7 @@
             SourceScriptPath = 'source-ultimate/3 Setup/6 Edge Settings.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-settings-edge-exe__edge.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-settings-edge-exe__edge.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -156,15 +159,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-01'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-edge-settings-edge-exe'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'installers-discord'
@@ -483,7 +489,7 @@
             SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-clean-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-clean-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -503,15 +509,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-02'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-driver-clean-seven-zip'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'driver-clean-ddu'
@@ -524,7 +533,7 @@
             SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/1 Driver Clean.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/ddu.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-clean-ddu__ddu.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-clean-ddu__ddu.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -544,15 +553,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-driver-clean-ddu'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'driver-install-debloat-settings-seven-zip'
@@ -565,7 +577,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-install-debloat-settings-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-install-debloat-settings-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -585,15 +597,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-02'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-driver-install-debloat-settings-seven-zip'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'driver-install-debloat-settings-inspector'
@@ -606,7 +621,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-install-debloat-settings-inspector__inspector.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/driver-install-debloat-settings-inspector__inspector.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -626,15 +641,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-03'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-driver-install-debloat-settings-inspector'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'driver-install-latest-nvidia-lookup'
@@ -715,7 +733,7 @@
             SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -735,15 +753,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-02'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-nvidia-settings-seven-zip'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'nvidia-settings-inspector'
@@ -756,7 +777,7 @@
             SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-inspector__inspector.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-inspector__inspector.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -776,15 +797,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-03'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-nvidia-settings-inspector'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'directx-seven-zip'
@@ -797,7 +821,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/directx-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/directx-seven-zip__7zip.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -817,15 +841,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-02'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-directx-seven-zip'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'directx-runtime-package'
@@ -838,7 +865,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/directx-runtime-package__directx.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/directx-runtime-package__directx.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -858,15 +885,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-directx-runtime-package'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadArtifact'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2005-x64'
@@ -879,7 +909,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2005-x64__vcredist2005_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2005-x64__vcredist2005_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -899,15 +929,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2005-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2005-x86'
@@ -920,7 +953,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2005-x86__vcredist2005_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2005-x86__vcredist2005_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -940,15 +973,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2005-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2008-x64'
@@ -961,7 +997,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2008-x64__vcredist2008_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2008-x64__vcredist2008_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -981,15 +1017,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2008-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2008-x86'
@@ -1002,7 +1041,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2008-x86__vcredist2008_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2008-x86__vcredist2008_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1022,15 +1061,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2008-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2010-x64'
@@ -1043,7 +1085,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2010-x64__vcredist2010_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2010-x64__vcredist2010_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1063,15 +1105,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2010-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2010-x86'
@@ -1084,7 +1129,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2010-x86__vcredist2010_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2010-x86__vcredist2010_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1104,15 +1149,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2010-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2012-x64'
@@ -1125,7 +1173,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2012-x64__vcredist2012_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2012-x64__vcredist2012_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1145,15 +1193,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2012-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2012-x86'
@@ -1166,7 +1217,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2012-x86__vcredist2012_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2012-x86__vcredist2012_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1186,15 +1237,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2012-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2013-x64'
@@ -1207,7 +1261,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2013-x64__vcredist2013_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2013-x64__vcredist2013_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1227,15 +1281,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2013-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2013-x86'
@@ -1248,7 +1305,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2013-x86__vcredist2013_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2013-x86__vcredist2013_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1268,15 +1325,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2013-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2015-2017-2019-2022-x64'
@@ -1289,7 +1349,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2015-2017-2019-2022-x64__vcredist2015_2017_2019_2022_x64.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2015-2017-2019-2022-x64__vcredist2015_2017_2019_2022_x64.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1309,15 +1369,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2015-2017-2019-2022-x64'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'visual-cpp-vcredist2015-2017-2019-2022-x86'
@@ -1330,7 +1393,7 @@
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2015-2017-2019-2022-x86__vcredist2015_2017_2019_2022_x86.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/visual-cpp-vcredist2015-2017-2019-2022-x86__vcredist2015_2017_2019_2022_x86.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1350,15 +1413,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-visual-cpp-vcredist2015-2017-2019-2022-x86'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'bloatware-remote-desktop-connection'
@@ -1371,7 +1437,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/11 Bloatware.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/bloatware-remote-desktop-connection__remotedesktopconnection.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/bloatware-remote-desktop-connection__remotedesktopconnection.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1391,15 +1457,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-bloatware-remote-desktop-connection'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'bloatware-snipping-tool'
@@ -1412,7 +1481,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/11 Bloatware.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/bloatware-snipping-tool__snippingtool.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/bloatware-snipping-tool__snippingtool.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1432,15 +1501,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-bloatware-snipping-tool'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'game-bar-edge-webview'
@@ -1453,7 +1525,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/12 Gamebar.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/game-bar-edge-webview__edgewebview.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/game-bar-edge-webview__edgewebview.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1473,15 +1545,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-04'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-game-bar-edge-webview'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'game-bar-gaming-repair-tool'
@@ -1494,7 +1569,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/12 Gamebar.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/gamingrepairtool.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/game-bar-gaming-repair-tool__gamingrepairtool.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/game-bar-gaming-repair-tool__gamingrepairtool.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1514,15 +1589,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = $null
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-game-bar-gaming-repair-tool'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'edge-webview-edge-exe'
@@ -1535,7 +1613,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-webview-edge-exe__edge.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-webview-edge-exe__edge.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1555,15 +1633,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-01'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-edge-webview-edge-exe'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
             Id = 'edge-webview-edge-webview'
@@ -1576,7 +1657,7 @@
             SourceScriptPath = 'source-ultimate/6 Windows/13 Edge & WebView.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edgewebview.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = $null
+            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-webview-edge-webview__edgewebview.exe'
             VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/edge-webview-edge-webview__edgewebview.exe'
             VerifiedBoostLabMirrorAvailable = $true
             MirrorReleaseTag = 'boostlab-artifacts-v1'
@@ -1596,15 +1677,18 @@
             EvidenceSource = 'Phase164BLocalIntake'
             EvidenceCapturedAt = '20260621-205731'
             DuplicateHashGroup = 'DUP-SHA256-04'
-            BoostLabMirrorAvailable = $false
-            ArtifactProvenanceApproved = $false
+            BoostLabMirrorAvailable = $true
+            ArtifactProvenanceApproved = $true
             ArtifactProvenanceOnlyApproved = $true
             ArtifactProvenanceId = 'phase164g-edge-webview-edge-webview'
-            ProductionAllowlistApproved = $false
-            ReleaseReadiness = 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification'
-            MirrorStatus = 'NeedsBoostLabMirror'
+            ProductionAllowlistApproved = $true
+            RuntimeSourceSelectionApproved = $true
+            DownloadExecutionApproved = $true
+            InstallerExecutionApproved = $true
+            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
+            MirrorStatus = 'BoostLabMirrorAvailable'
             OperationKind = 'DownloadInstaller'
-            Notes = 'BoostLab public mirror URL was verified by Phase 164E HEAD checks and recorded as evidence. Artifact provenance, production allowlist approval, release readiness, runtime mirror selection, and source substitution remain blocked.'
+            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
     )
 }

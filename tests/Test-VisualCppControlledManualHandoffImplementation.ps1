@@ -192,7 +192,7 @@ foreach ($needle in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
     'SourceEquivalentControlledRuntime'
     'SourceEquivalentVisualCppInstall'
-    'Invoke-WebRequest'
+    'Invoke-BoostLabVisualCppVerifiedArtifactDownload'
     'Start-Process'
     'Test-Connection -ComputerName ''8.8.8.8'''
     'NeedsBoostLabMirror'
@@ -310,14 +310,17 @@ for ($i = 0; $i -lt $expectedDownloads.Count; $i++) {
     $entry = @($visualCppExternalEntries | Where-Object { [string]$_.OriginalDownloadUrl -eq "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/$fileName" })[0]
     Assert-BoostLabCondition ($null -ne $entry) "Missing Visual C++ external source entry for $fileName."
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "Visual C++ external source classification mismatch for $fileName."
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "Visual C++ mirror status mismatch for $fileName."
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'BoostLabMirrorAvailable') "Visual C++ mirror status mismatch for $fileName."
     Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "Visual C++ SHA evidence missing or malformed for $fileName."
     Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "Visual C++ size evidence missing for $fileName."
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "Visual C++ must not add mirror URL for $fileName."
-    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "Visual C++ SHA evidence must not mark mirror available for $fileName."
-    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "Visual C++ SHA evidence must not approve artifact provenance for $fileName."
-    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "Visual C++ SHA evidence must not approve production allowlist for $fileName."
-    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "Visual C++ SHA evidence must remain release-blocked for $fileName."
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.VerifiedBoostLabMirrorUrl)) "Visual C++ verified BoostLab mirror URL missing for $fileName."
+    Assert-BoostLabCondition ([string]$entry.IntendedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "Visual C++ runtime mirror URL must match verified mirror URL for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $true) "Visual C++ mirror must be available for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $true) "Visual C++ provenance approval missing for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $true) "Visual C++ production/runtime approval missing for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('RuntimeSourceSelectionApproved') -and $entry.RuntimeSourceSelectionApproved -eq $true) "Visual C++ runtime source selection approval missing for $fileName."
+    Assert-BoostLabCondition ($entry.ContainsKey('DownloadExecutionApproved') -and $entry.DownloadExecutionApproved -eq $true) "Visual C++ download execution approval missing for $fileName."
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'RuntimeApprovedPendingOfficialVendorDirectClosure') "Visual C++ release readiness mismatch for $fileName."
 }
 
 $artifactProvenance = Import-PowerShellDataFile -LiteralPath $artifactProvenancePath

@@ -69,6 +69,8 @@ New-Item -ItemType Directory -Path $tempRoot -Force -ErrorAction Stop | Out-Null
 try {
     foreach ($commandName in @(
         'Get-BoostLabArtifactProvenanceManifest'
+        'Get-BoostLabExternalArtifactSourceManifest'
+        'Get-BoostLabExternalRuntimeArtifactDefinitions'
         'Test-BoostLabArtifactDefinition'
         'Test-BoostLabArtifactProvenanceManifest'
         'Get-BoostLabArtifactDefinition'
@@ -91,6 +93,17 @@ try {
     if ($productionValidation.ArtifactCount -ne 0) {
         $errors.Add('Phase 35 must not approve real artifacts in the production manifest.')
     }
+    $externalRuntimeArtifacts = @(Get-BoostLabExternalRuntimeArtifactDefinitions)
+    if ($externalRuntimeArtifacts.Count -ne 28) {
+        $errors.Add("Phase 164H must expose exactly 28 verified runtime mirror artifact definitions; found $($externalRuntimeArtifacts.Count).")
+    }
+    $approvedMirrorSource = Get-BoostLabApprovedArtifactRuntimeSource -ArtifactId 'directx-runtime-package'
+    if (
+        -not $approvedMirrorSource.Allowed -or
+        [string]$approvedMirrorSource.SourceUrl -notlike 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/*'
+    ) {
+        $errors.Add('Approved runtime mirror artifact source was not resolved from the verified BoostLab mirror catalog.')
+    }
 
     $mockInstallerPath = Join-Path $tempRoot 'boostlab-policy-mock.exe'
     [IO.File]::WriteAllText(
@@ -112,6 +125,8 @@ try {
         MaximumSizeBytes         = 0L
         ArtifactType             = 'Installer'
         ExpectedPublisher        = 'BoostLab Test Publisher'
+        ExpectedSignatureStatus  = 'Valid'
+        VerifiedBoostLabMirrorUrl = 'https://example.invalid/boostlab-policy-mock.exe'
         SourceToolIds            = @('mock-tool')
         LicenseNote              = 'Local mocked test data only; not redistributable software.'
         AllowExecution           = $true
@@ -124,6 +139,8 @@ try {
             'AuthenticodeSigner'
         )
         ApprovalStatus           = 'Approved'
+        ProductionAllowlistApproved = $true
+        RuntimeSourceSelectionApproved = $true
     }
     $mockManifest = @{
         SchemaVersion = '1.0'
@@ -201,6 +218,55 @@ try {
         -SignatureInspector $signatureInspector
     if (-not $verifiedProvenance.Verified -or $verifiedProvenance.Status -ne 'Verified') {
         $errors.Add("Valid local mock provenance was rejected: $($verifiedProvenance.Errors -join '; ')")
+    }
+
+    $mockDownloadRoot = Join-Path $tempRoot 'download'
+    New-Item -ItemType Directory -Path $mockDownloadRoot -Force -ErrorAction Stop | Out-Null
+    $mockDownloadPath = Join-Path $mockDownloadRoot $mockFile.Name
+    $downloadedUrls = [System.Collections.Generic.List[string]]::new()
+    $mockDownloader = {
+        param(
+            [string]$Uri,
+            [string]$OutFile
+        )
+
+        $downloadedUrls.Add($Uri) | Out-Null
+        Copy-Item -LiteralPath $mockInstallerPath -Destination $OutFile -Force
+    }
+    $downloadResult = Invoke-BoostLabVerifiedArtifactDownload `
+        -ArtifactId 'mock-local-installer' `
+        -Destination $mockDownloadPath `
+        -Manifest $mockManifest `
+        -Downloader $mockDownloader `
+        -SignatureInspector $signatureInspector
+    $downloadedUrl = if ($downloadedUrls.Count -gt 0) {
+        [string]$downloadedUrls[0]
+    }
+    else {
+        ''
+    }
+    if (
+        -not $downloadResult.Success -or
+        [string]$downloadResult.SourceUrl -ne [string]$mockArtifact.SourceUrl -or
+        $downloadedUrl -ne [string]$mockArtifact.SourceUrl
+    ) {
+        $errors.Add('Verified artifact download did not use the approved manifest source through the mock downloader.')
+    }
+
+    $missingProductionApproval = [ordered]@{}
+    foreach ($key in $mockArtifact.Keys) {
+        $missingProductionApproval[$key] = $mockArtifact[$key]
+    }
+    $missingProductionApproval['ProductionAllowlistApproved'] = $false
+    $missingProductionManifest = @{
+        SchemaVersion = '1.0'
+        Artifacts     = @($missingProductionApproval)
+    }
+    $blockedRuntimeSource = Get-BoostLabApprovedArtifactRuntimeSource `
+        -ArtifactId 'mock-local-installer' `
+        -Manifest $missingProductionManifest
+    if ($blockedRuntimeSource.Allowed -or (@($blockedRuntimeSource.Errors) -join ' ') -notmatch 'production allowlist') {
+        $errors.Add('Artifact without production allowlist approval was not blocked for runtime source selection.')
     }
 
     $hashMismatchArtifact = [ordered]@{}
@@ -336,7 +402,6 @@ try {
                 Where-Object { $_ }
         )
         foreach ($forbiddenCommand in @(
-            'Invoke-WebRequest'
             'Invoke-RestMethod'
             'Start-BitsTransfer'
             'Start-Process'
@@ -453,6 +518,7 @@ if ($errors.Count -gt 0) {
 [pscustomobject]@{
     Success                 = $true
     ProductionArtifactCount = 0
+    RuntimeMirrorArtifactApprovals = $externalRuntimeArtifacts.Count
     MockArtifactVerified    = $true
     UnknownArtifactBlocked  = $true
     MissingHashBlocked      = $true

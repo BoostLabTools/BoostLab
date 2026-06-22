@@ -53,6 +53,23 @@ $script:BoostLabBranchTitles = [ordered]@{
     InstallRemoteDesktopConnection = 'Install: Remote Desktop Connection'
     InstallSnippingTool = 'Install: Snipping Tool'
 }
+
+function Invoke-BoostLabBloatwareVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
 $script:BoostLabRemoteDesktopConnectionUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe'
 $script:BoostLabSnippingToolUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe'
 $script:BoostLabUwpFeatureListWindows11 = @(
@@ -487,11 +504,11 @@ function Get-BoostLabBloatwareOperationPlan {
             $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Installer' -Type 'Cmd' -Label 'Install Windows 11 OneDrive setup' -SourceCommand 'cmd /c "C:\Windows\System32\OneDriveSetup.exe >nul 2>&1"' -Parameters @{ Command = '"{System32OneDriveSetup}"' }))
         }
         'InstallRemoteDesktopConnection' {
-            $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Download' -Type 'DownloadFile' -Label 'Download Remote Desktop Connection installer' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe" -OutFile "$env:SystemRoot\Temp\remotedesktopconnection.exe"' -Parameters @{ Url = $script:BoostLabRemoteDesktopConnectionUrl; Destination = $paths.RemoteDesktopInstaller; ArtifactName = 'remotedesktopconnection.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
+            $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Download' -Type 'DownloadFile' -Label 'Download Remote Desktop Connection installer' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/remotedesktopconnection.exe" -OutFile "$env:SystemRoot\Temp\remotedesktopconnection.exe"' -Parameters @{ Url = $script:BoostLabRemoteDesktopConnectionUrl; Destination = $paths.RemoteDesktopInstaller; ArtifactName = 'remotedesktopconnection.exe'; ArtifactId = 'bloatware-remote-desktop-connection'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
             $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Installer' -Type 'Cmd' -Label 'Install Remote Desktop Connection' -SourceCommand 'cmd /c "%SystemRoot%\Temp\remotedesktopconnection.exe >nul 2>&1"' -Parameters @{ Command = '"{RemoteDesktopInstaller}"' }))
         }
         'InstallSnippingTool' {
-            $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Download' -Type 'DownloadFile' -Label 'Download Windows 10 Snipping Tool installer' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe" -OutFile "$env:SystemRoot\Temp\snippingtool.exe"' -Parameters @{ Url = $script:BoostLabSnippingToolUrl; Destination = $paths.SnippingToolInstaller; ArtifactName = 'snippingtool.exe'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
+            $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Download' -Type 'DownloadFile' -Label 'Download Windows 10 Snipping Tool installer' -SourceCommand 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/snippingtool.exe" -OutFile "$env:SystemRoot\Temp\snippingtool.exe"' -Parameters @{ Url = $script:BoostLabSnippingToolUrl; Destination = $paths.SnippingToolInstaller; ArtifactName = 'snippingtool.exe'; ArtifactId = 'bloatware-snipping-tool'; Classification = 'UltimateAuthorHostedArtifact'; NeedsBoostLabMirror = $true }))
             $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'Installer' -Type 'Cmd' -Label 'Install Windows 10 Snipping Tool' -SourceCommand 'cmd /c "%SystemRoot%\Temp\snippingtool.exe >nul 2>&1"' -Parameters @{ Command = '"{SnippingToolInstaller}"' }))
             $operations.Add((New-BoostLabBloatwareOperation -Order ($order++) -Branch $Branch -Category 'AppX' -Type 'AppxRegisterLike' -Label 'Register Windows 11 Snipping Tool package' -SourceCommand 'Get-AppXPackage -AllUsers *Microsoft.ScreenSketch* | Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml"' -Parameters @{ NameLike = '*Microsoft.ScreenSketch*' }))
         }
@@ -677,7 +694,11 @@ function Invoke-BoostLabBloatwareRealOperation {
                 }
             }
             'DisplayList' { }
-            'DownloadFile' { Invoke-WebRequest -Uri ([string]$p.Url) -OutFile ([string]$p.Destination) }
+            'DownloadFile' {
+                Invoke-BoostLabBloatwareVerifiedArtifactDownload `
+                    -ArtifactId ([string]$p.ArtifactId) `
+                    -Destination ([string]$p.Destination) | Out-Null
+            }
             default {
                 return New-BoostLabBloatwareOperationResult -Operation $Operation -Success $false -Message "Unsupported operation type '$($Operation.Type)'."
             }

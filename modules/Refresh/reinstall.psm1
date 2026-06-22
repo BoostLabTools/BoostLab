@@ -33,6 +33,7 @@ $script:BoostLabExpectedSourceHash = '137F519926293F37052817ACBBE20851652E5EA1B9
 $script:BoostLabSourceRelativePath = 'source-ultimate/2 Refresh/1 Reinstall.ps1'
 $script:BoostLabWindows11MediaCreationToolUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/mediacreationtoolw11.exe'
 $script:BoostLabWindows11MediaCreationToolFileName = 'mediacreationtoolw11.exe'
+$script:BoostLabWindows11MediaCreationToolArtifactId = 'reinstall-windows11-media-creation-tool'
 
 function Get-BoostLabReinstallSourcePath {
     [CmdletBinding()]
@@ -41,6 +42,22 @@ function Get-BoostLabReinstallSourcePath {
 
     $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+}
+
+function Invoke-BoostLabReinstallVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload `
+        -ArtifactId $script:BoostLabWindows11MediaCreationToolArtifactId `
+        -Destination $Destination
 }
 
 function Get-BoostLabReinstallSourceStatus {
@@ -128,6 +145,8 @@ function Get-BoostLabReinstallOperationDescriptor {
         UnsupportedBranches            = @('Windows 10 Media Creation Tool branch')
         SourceDownloadCommand          = 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/mediacreationtoolw11.exe" -OutFile "$env:SystemRoot\Temp\mediacreationtoolw11.exe"'
         SourceLaunchCommand            = 'Start-Process "$env:SystemRoot\Temp\mediacreationtoolw11.exe"'
+        RuntimeArtifactId              = $script:BoostLabWindows11MediaCreationToolArtifactId
+        RuntimeSourceSelection         = 'VerifiedBoostLabMirror'
         DownloadUrl                    = $script:BoostLabWindows11MediaCreationToolUrl
         ExpectedFileName               = $script:BoostLabWindows11MediaCreationToolFileName
         OutputDirectory                = $tempRoot
@@ -452,10 +471,8 @@ function Invoke-BoostLabToolAction {
         }
 
         try {
-            Invoke-WebRequest `
-                -Uri ([string]$descriptor.DownloadUrl) `
-                -OutFile ([string]$descriptor.OutputPath) `
-                -ErrorAction Stop
+            $download = Invoke-BoostLabReinstallVerifiedArtifactDownload `
+                -Destination ([string]$descriptor.OutputPath)
 
             $process = Start-Process `
                 -FilePath ([string]$descriptor.OutputPath) `
@@ -472,6 +489,8 @@ function Invoke-BoostLabToolAction {
                 -Data ([pscustomobject]@{
                     OperationDescriptor = $descriptor
                     DownloadedPath      = [string]$descriptor.OutputPath
+                    DownloadSourceUrl   = [string]$download.SourceUrl
+                    ArtifactId          = [string]$download.ArtifactId
                     ProcessId           = $process.Id
                     ProcessName         = $process.ProcessName
                 }) `

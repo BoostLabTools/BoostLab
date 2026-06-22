@@ -174,7 +174,7 @@ foreach ($needle in @(
     'RemoveDirectorySilently',
     'ExtractDirectX',
     'StartProcessNoWait',
-    'NeedsBoostLabMirror',
+    'BoostLabMirrorAvailable',
     $expectedSourceHash
 )) {
     Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'DirectX module source-equivalent text'
@@ -187,14 +187,17 @@ $directXExternalSources = @($externalSources.ExternalSources | Where-Object { [s
 Assert-BoostLabCondition ($directXExternalSources.Count -eq 2) 'DirectX must classify exactly 7zip.exe and directx.exe external sources.'
 foreach ($entry in $directXExternalSources) {
     Assert-BoostLabCondition ([string]$entry.SourceClassification -eq 'UltimateAuthorHostedArtifact') "DirectX source classification mismatch for $($entry.Id)."
-    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NeedsBoostLabMirror') "DirectX mirror status mismatch for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'BoostLabMirrorAvailable') "DirectX mirror status mismatch for $($entry.Id)."
     Assert-BoostLabCondition ([string]$entry.ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') "DirectX SHA evidence missing or malformed for $($entry.Id)."
     Assert-BoostLabCondition ([int64]$entry.ExpectedSizeBytes -gt 0) "DirectX size evidence missing for $($entry.Id)."
-    Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.IntendedBoostLabMirrorUrl)) "DirectX must not approve a BoostLab mirror for $($entry.Id)."
-    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $false) "DirectX SHA evidence must not mark mirror available for $($entry.Id)."
-    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $false) "DirectX SHA evidence must not approve artifact provenance for $($entry.Id)."
-    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $false) "DirectX SHA evidence must not approve production allowlist for $($entry.Id)."
-    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'BlockedPendingBoostLabMirrorProvenanceAndRuntimeVerification') "DirectX SHA evidence must remain release-blocked for $($entry.Id)."
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.VerifiedBoostLabMirrorUrl)) "DirectX verified BoostLab mirror URL missing for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.IntendedBoostLabMirrorUrl -eq [string]$entry.VerifiedBoostLabMirrorUrl) "DirectX runtime mirror URL must match verified mirror URL for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('BoostLabMirrorAvailable') -and $entry.BoostLabMirrorAvailable -eq $true) "DirectX mirror must be available for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ArtifactProvenanceApproved') -and $entry.ArtifactProvenanceApproved -eq $true) "DirectX provenance approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('ProductionAllowlistApproved') -and $entry.ProductionAllowlistApproved -eq $true) "DirectX production/runtime approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('RuntimeSourceSelectionApproved') -and $entry.RuntimeSourceSelectionApproved -eq $true) "DirectX runtime source selection approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ($entry.ContainsKey('DownloadExecutionApproved') -and $entry.DownloadExecutionApproved -eq $true) "DirectX download execution approval missing for $($entry.Id)."
+    Assert-BoostLabCondition ([string]$entry.ReleaseReadiness -eq 'RuntimeApprovedPendingOfficialVendorDirectClosure') "DirectX release readiness mismatch for $($entry.Id)."
 }
 Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe' }).Count -eq 1) 'DirectX 7-Zip source URL classification missing.'
 Assert-BoostLabCondition (@($directXExternalSources | Where-Object { [string]$_.OriginalDownloadUrl -eq 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe' }).Count -eq 1) 'DirectX runtime source URL classification missing.'
@@ -265,7 +268,7 @@ try {
     Assert-BoostLabCondition (((@($seenOperationArray | ForEach-Object { [int]$_.Order }) -join '|') -eq '1|2|3|4|5|6|7|8|9|10|11|12')) 'DirectX operation order mismatch.'
     Assert-BoostLabCondition (@($seenOperationArray | Where-Object { [string]$_.Type -eq 'DownloadFile' }).Count -eq 2) 'DirectX must have exactly two download operations.'
     Assert-BoostLabCondition (@($seenOperationArray | Where-Object { [string]$_.Type -eq 'SetRegistryDword' }).Count -eq 2) 'DirectX must have exactly two registry DWORD operations.'
-    Assert-BoostLabCondition (@($apply.Data.ArtifactSources | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' }).Count -eq 2) 'Apply data must report both artifact sources as NeedsBoostLabMirror.'
+    Assert-BoostLabCondition (@($apply.Data.ArtifactSources | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 2) 'Apply data must report both artifact sources as verified BoostLab mirrors.'
 
     $failingExecutor = {
         param($Operation, $Plan)

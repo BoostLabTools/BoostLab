@@ -28,6 +28,7 @@ $script:BoostLabActiveSetupPath = 'HKLM:\Software\Microsoft\Active Setup\Install
 $script:BoostLabRunOncePath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\RunOnce'
 $script:BoostLabEdgeInstallerUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe'
 $script:BoostLabEdgeInstallerFileName = 'edge.exe'
+$script:BoostLabEdgeInstallerArtifactId = 'edge-settings-edge-exe'
 $script:BoostLabBhoKeys = @(
     'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}'
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{1FD49718-1D00-4B19-AF5F-070AF6D5D54C}'
@@ -561,8 +562,22 @@ function Invoke-BoostLabEdgeSettingsDownload {
         [string]$OutFile
     )
 
-    Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop
-    return [pscustomobject]@{ Success = $true; Uri = $Uri; OutFile = $OutFile; Operation = 'Download' }
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $download = Invoke-BoostLabVerifiedArtifactDownload `
+        -ArtifactId $script:BoostLabEdgeInstallerArtifactId `
+        -Destination $OutFile
+    return [pscustomobject]@{
+        Success = $true
+        Uri = [string]$download.SourceUrl
+        SourceDefinedUri = $Uri
+        OutFile = $OutFile
+        ArtifactId = [string]$download.ArtifactId
+        Operation = 'Download'
+    }
 }
 
 function Invoke-BoostLabEdgeSettingsScheduledTaskRemoval {

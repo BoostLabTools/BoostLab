@@ -4,6 +4,23 @@ if (-not (Get-Command -Name 'New-BoostLabVerificationCheck' -ErrorAction Silentl
     Import-Module -Name (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1') -Scope Local -Force -ErrorAction Stop
 }
 
+function Invoke-BoostLabDirectXVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'directx'
     Title = 'DirectX'
@@ -38,7 +55,7 @@ $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
 
 $script:BoostLabDirectX7ZipUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
 $script:BoostLabDirectXPackageUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe'
-$script:BoostLabDirectXArtifactPolicyStatus = 'NeedsBoostLabMirror'
+$script:BoostLabDirectXArtifactPolicyStatus = 'BoostLabMirrorAvailable'
 $script:BoostLabDirectXArtifactClassification = 'UltimateAuthorHostedArtifact'
 
 function Get-BoostLabDirectXProjectRoot {
@@ -129,9 +146,9 @@ function Get-BoostLabDirectXArtifactSources {
             SourceUrl = $script:BoostLabDirectX7ZipUrl
             Classification = $script:BoostLabDirectXArtifactClassification
             MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus
-            RuntimeUrlUnchanged = $true
+            RuntimeUrlUnchanged = $false
             BinaryIncluded = $false
-            ArtifactApproved = $false
+            ArtifactApproved = $true
         }
         [pscustomobject]@{
             Id = 'directx-runtime-package'
@@ -140,9 +157,9 @@ function Get-BoostLabDirectXArtifactSources {
             SourceUrl = $script:BoostLabDirectXPackageUrl
             Classification = $script:BoostLabDirectXArtifactClassification
             MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus
-            RuntimeUrlUnchanged = $true
+            RuntimeUrlUnchanged = $false
             BinaryIncluded = $false
-            ArtifactApproved = $false
+            ArtifactApproved = $true
         }
     )
 }
@@ -207,13 +224,13 @@ function Get-BoostLabDirectXOperationPlan {
             New-BoostLabDirectXOperation -Order 1 -Type 'RequireAdministrator' -Label 'Verify Administrator rights' -Parameters @{}
             New-BoostLabDirectXOperation -Order 2 -Type 'RequireInternet' -Label 'Verify internet connectivity with 8.8.8.8' -Parameters @{ ComputerName = '8.8.8.8' }
             New-BoostLabDirectXOperation -Order 3 -Type 'SetProgressPreference' -Label 'Set progress preference to silentlycontinue' -Parameters @{ Value = 'silentlycontinue' }
-            New-BoostLabDirectXOperation -Order 4 -Type 'DownloadFile' -Label 'Download 7-Zip installer' -Parameters @{ Uri = $script:BoostLabDirectX7ZipUrl; Destination = $paths.SevenZipInstaller; FileName = '7zip.exe'; MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus }
+            New-BoostLabDirectXOperation -Order 4 -Type 'DownloadFile' -Label 'Download 7-Zip installer' -Parameters @{ Uri = $script:BoostLabDirectX7ZipUrl; Destination = $paths.SevenZipInstaller; FileName = '7zip.exe'; ArtifactId = 'directx-seven-zip'; MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus }
             New-BoostLabDirectXOperation -Order 5 -Type 'StartProcessWait' -Label 'Install 7-Zip silently' -Parameters @{ FilePath = $paths.SevenZipInstaller; Arguments = @('/S') }
             New-BoostLabDirectXOperation -Order 6 -Type 'SetRegistryDword' -Label 'Set 7-Zip ContextMenu option' -Parameters @{ Path = $paths.SevenZipRegistryPath; Name = 'ContextMenu'; Value = 259 }
             New-BoostLabDirectXOperation -Order 7 -Type 'SetRegistryDword' -Label 'Set 7-Zip CascadedMenu option' -Parameters @{ Path = $paths.SevenZipRegistryPath; Name = 'CascadedMenu'; Value = 0 }
             New-BoostLabDirectXOperation -Order 8 -Type 'MoveItemSilently' -Label 'Move 7-Zip Start Menu shortcut' -Parameters @{ Source = $paths.SevenZipShortcutSource; Destination = $paths.SevenZipShortcutTarget } -Required:$false
             New-BoostLabDirectXOperation -Order 9 -Type 'RemoveDirectorySilently' -Label 'Remove 7-Zip Start Menu folder' -Parameters @{ Path = $paths.SevenZipStartMenuDirectory } -Required:$false
-            New-BoostLabDirectXOperation -Order 10 -Type 'DownloadFile' -Label 'Download DirectX runtime package' -Parameters @{ Uri = $script:BoostLabDirectXPackageUrl; Destination = $paths.DirectXPackage; FileName = 'directx.exe'; MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus }
+            New-BoostLabDirectXOperation -Order 10 -Type 'DownloadFile' -Label 'Download DirectX runtime package' -Parameters @{ Uri = $script:BoostLabDirectXPackageUrl; Destination = $paths.DirectXPackage; FileName = 'directx.exe'; ArtifactId = 'directx-runtime-package'; MirrorStatus = $script:BoostLabDirectXArtifactPolicyStatus }
             New-BoostLabDirectXOperation -Order 11 -Type 'ExtractDirectX' -Label 'Extract DirectX package with 7-Zip' -Parameters @{ FilePath = $paths.SevenZipExecutable; Arguments = @('x', $paths.DirectXPackage, "-o$($paths.DirectXExtractDirectory)", '-y'); ExpectedOutput = $paths.DirectXSetupExecutable }
             New-BoostLabDirectXOperation -Order 12 -Type 'StartProcessNoWait' -Label 'Launch DirectX setup' -Parameters @{ FilePath = $paths.DirectXSetupExecutable }
         )
@@ -300,8 +317,14 @@ function Invoke-BoostLabDirectXRealOperation {
                 return New-BoostLabDirectXOperationResult -Operation $Operation -Success $true -Message "ProgressPreference set to $($parameters['Value'])."
             }
             'DownloadFile' {
-                Invoke-WebRequest -Uri ([string]$parameters['Uri']) -OutFile ([string]$parameters['Destination']) -UseBasicParsing -ErrorAction Stop
-                return New-BoostLabDirectXOperationResult -Operation $Operation -Success $true -Message "Downloaded $($parameters['FileName']) to $($parameters['Destination'])."
+                $download = Invoke-BoostLabDirectXVerifiedArtifactDownload `
+                    -ArtifactId ([string]$parameters['ArtifactId']) `
+                    -Destination ([string]$parameters['Destination'])
+                return New-BoostLabDirectXOperationResult `
+                    -Operation $Operation `
+                    -Success $true `
+                    -Message "Downloaded $($parameters['FileName']) from verified BoostLab mirror to $($parameters['Destination'])." `
+                    -Data ([pscustomobject]@{ ArtifactId = [string]$download.ArtifactId; SourceUrl = [string]$download.SourceUrl })
             }
             'StartProcessWait' {
                 $process = Start-Process -FilePath ([string]$parameters['FilePath']) -ArgumentList @($parameters['Arguments']) -Wait -PassThru -ErrorAction Stop
@@ -604,7 +627,7 @@ function Get-BoostLabToolInfo {
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
         ConfirmationRequiredActions = @('Apply')
-        ConfirmationText            = 'DirectX will run the source-equivalent workflow: verify Administrator and internet access, download author-hosted 7-Zip and DirectX artifacts, install/configure 7-Zip, extract DirectX, and launch DXSETUP. Artifact sources remain classified as NeedsBoostLabMirror; no reboot is requested by the source. Continue?'
+        ConfirmationText            = 'DirectX will run the source-equivalent workflow: verify Administrator and internet access, download verified BoostLab mirror copies of the source-defined 7-Zip and DirectX artifacts, install/configure 7-Zip, extract DirectX, and launch DXSETUP. Artifact sources are production/runtime approved with SHA and size verification; no reboot is requested by the source. Continue?'
     }
 }
 

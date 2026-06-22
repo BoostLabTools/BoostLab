@@ -41,6 +41,23 @@ $script:BoostLabExpectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE695
 $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'
 $script:BoostLabApprovedBranches = @('NVIDIA', 'AMD', 'INTEL')
 
+function Invoke-BoostLabDriverInstallDebloatSettingsVerifiedArtifactDownload {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination
+    )
+
+    $downloadModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1'
+    if (-not (Get-Command -Name 'Invoke-BoostLabVerifiedArtifactDownload' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $downloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    Invoke-BoostLabVerifiedArtifactDownload -ArtifactId $ArtifactId -Destination $Destination
+}
+
 function Get-BoostLabDriverInstallDebloatSettingsSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
@@ -350,6 +367,7 @@ function Add-BoostLabDriverInstallDebloatSettingsCommonOperations {
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'Artifact' 'DownloadFile' 'Download 7-Zip installer' 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe" -OutFile "$env:SystemRoot\Temp\7zip.exe"' ([ordered]@{
         Url = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
         Destination = $Paths.SevenZipInstaller
+        ArtifactId = 'driver-install-debloat-settings-seven-zip'
     })
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'Installer' 'StartProcess' 'Install 7-Zip silently' 'Start-Process -Wait "$env:SystemRoot\Temp\7zip.exe" -ArgumentList "/S"' ([ordered]@{
         FilePath = $Paths.SevenZipInstaller
@@ -443,6 +461,7 @@ function Add-BoostLabDriverInstallDebloatSettingsNvidiaOperations {
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $branch 'Artifact' 'DownloadFile' 'Download NVIDIA Profile Inspector' 'IWR "https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe" -OutFile "$env:SystemRoot\Temp\inspector.exe"' ([ordered]@{
         Url = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
         Destination = $Paths.NvidiaInspectorExe
+        ArtifactId = 'driver-install-debloat-settings-inspector'
     })
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $branch 'Profile' 'WriteTextFile' 'Write source-defined NVIDIA Profile Inspector .nip file' 'Set-Content -Path "$env:SystemRoot\Temp\inspector.nip" -Value $nipfile -Force' ([ordered]@{
         Path = $Paths.NvidiaInspectorNip
@@ -812,8 +831,14 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                 return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $true -Message 'Internet connectivity confirmed.'
             }
             'DownloadFile' {
-                Invoke-WebRequest -Uri ([string]$p['Url']) -OutFile ([string]$p['Destination'])
-                return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $true -Message "Downloaded artifact to $($p['Destination'])."
+                $download = Invoke-BoostLabDriverInstallDebloatSettingsVerifiedArtifactDownload `
+                    -ArtifactId ([string]$p['ArtifactId']) `
+                    -Destination ([string]$p['Destination'])
+                return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                    -Operation $Operation `
+                    -Success $true `
+                    -Message "Downloaded artifact from verified BoostLab mirror to $($p['Destination'])." `
+                    -Data ([pscustomobject]@{ ArtifactId = [string]$download.ArtifactId; SourceUrl = [string]$download.SourceUrl })
             }
             'StartProcess' {
                 $startParams = @{

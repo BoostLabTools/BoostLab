@@ -3,6 +3,9 @@ Set-StrictMode -Version Latest
 $script:BoostLabArtifactManifestPath = Join-Path `
     (Split-Path -Parent $PSScriptRoot) `
     'config\ArtifactProvenance.psd1'
+$script:BoostLabExternalArtifactSourcesPath = Join-Path `
+    (Split-Path -Parent $PSScriptRoot) `
+    'config\ExternalArtifactSources.psd1'
 
 function Get-BoostLabProvenancePropertyValue {
     param(
@@ -44,6 +47,118 @@ function Get-BoostLabArtifactProvenanceManifest {
     }
 
     return Import-PowerShellDataFile -LiteralPath $ManifestPath
+}
+
+function Get-BoostLabExternalArtifactSourceManifest {
+    [CmdletBinding()]
+    [OutputType([System.Collections.IDictionary])]
+    param(
+        [string]$ManifestPath = $script:BoostLabExternalArtifactSourcesPath
+    )
+
+    if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
+        throw "External artifact source manifest was not found: $ManifestPath"
+    }
+
+    return Import-PowerShellDataFile -LiteralPath $ManifestPath
+}
+
+function ConvertTo-BoostLabArtifactDefinitionFromExternalSource {
+    [CmdletBinding()]
+    [OutputType([System.Collections.IDictionary])]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Entry
+    )
+
+    $id = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'Id')
+    $toolId = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ToolId')
+    $toolTitle = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ToolTitle')
+    $operationKind = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'OperationKind')
+    $mirrorUrl = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'VerifiedBoostLabMirrorUrl')
+    $mirrorCandidatePath = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'MirrorCandidatePath')
+    $originalUrl = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'OriginalDownloadUrl')
+    $expectedFileName = [IO.Path]::GetFileName($mirrorCandidatePath)
+    if ([string]::IsNullOrWhiteSpace($expectedFileName)) {
+        $expectedFileName = [IO.Path]::GetFileName(([Uri]$originalUrl).AbsolutePath)
+    }
+
+    $signatureStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'AuthenticodeStatus')
+    $requirements = [System.Collections.Generic.List[string]]::new()
+    foreach ($requirement in @('FileName', 'SHA256', 'FileSize')) {
+        $requirements.Add($requirement)
+    }
+    if ($signatureStatus -eq 'NotSigned') {
+        $requirements.Add('SignatureStatus')
+    }
+    else {
+        $requirements.Add('AuthenticodeSigner')
+    }
+
+    $artifactType = if ($operationKind -eq 'DownloadInstaller') {
+        'Installer'
+    }
+    elseif ($expectedFileName -like '*.exe') {
+        'Executable'
+    }
+    else {
+        'NonExecutable'
+    }
+
+    $expectedSize = [long](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ExpectedSizeBytes')
+    $artifact = [ordered]@{
+        Id                             = $id
+        DisplayName                    = ('{0} - {1}' -f $toolTitle, $expectedFileName)
+        SourceUrl                      = $mirrorUrl
+        OriginalDownloadUrl            = $originalUrl
+        VerifiedBoostLabMirrorUrl      = $mirrorUrl
+        ExpectedSha256                 = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ExpectedSha256')
+        ExpectedFileName               = $expectedFileName
+        ExpectedSizeBytes              = $expectedSize
+        MinimumSizeBytes               = $expectedSize
+        MaximumSizeBytes               = $expectedSize
+        ArtifactType                   = $artifactType
+        ExpectedPublisher              = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'SignerPublisher')
+        ExpectedSignatureStatus        = $signatureStatus
+        SourceToolIds                  = @($toolId)
+        LicenseNote                    = 'Phase 164H runtime approval for the verified BoostLab mirror of this source-defined Ultimate artifact only.'
+        AllowExecution                 = $true
+        RequiresAdmin                  = $true
+        CanReboot                      = $false
+        VerificationRequirements       = $requirements.ToArray()
+        ApprovalStatus                 = if (
+            (Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ProductionAllowlistApproved') -eq $true
+        ) { 'Approved' } else { 'Proposed' }
+        ProductionAllowlistApproved    = Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'ProductionAllowlistApproved'
+        RuntimeSourceSelectionApproved = Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'RuntimeSourceSelectionApproved'
+        DownloadExecutionApproved      = Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'DownloadExecutionApproved'
+        InstallerExecutionApproved     = Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'InstallerExecutionApproved'
+        MirrorStatus                   = [string](Get-BoostLabProvenancePropertyValue -InputObject $Entry -Name 'MirrorStatus')
+    }
+    if ($signatureStatus -eq 'NotSigned') {
+        $artifact['UnsignedAllowedReason'] = 'Phase 164H approves this source-defined NotSigned artifact by exact BoostLab mirror URL, filename, SHA-256, and size only.'
+    }
+
+    return $artifact
+}
+
+function Get-BoostLabExternalRuntimeArtifactDefinitions {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    if ($null -eq $Manifest) {
+        $Manifest = Get-BoostLabExternalArtifactSourceManifest
+    }
+
+    @($Manifest.ExternalSources) |
+        Where-Object {
+            [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'SourceClassification') -eq 'UltimateAuthorHostedArtifact'
+        } |
+        ForEach-Object { ConvertTo-BoostLabArtifactDefinitionFromExternalSource -Entry $_ }
 }
 
 function Test-BoostLabArtifactDefinition {
@@ -89,6 +204,7 @@ function Test-BoostLabArtifactDefinition {
     $expectedFileName = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'ExpectedFileName')
     $artifactType = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'ArtifactType')
     $expectedPublisher = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'ExpectedPublisher')
+    $expectedSignatureStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'ExpectedSignatureStatus')
     $approvalStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'ApprovalStatus')
     $allowExecution = [bool](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'AllowExecution')
     $requirements = @(
@@ -160,11 +276,18 @@ function Test-BoostLabArtifactDefinition {
 
     $isExecutableType = $artifactType -in @('Executable', 'Installer')
     if ($isExecutableType -and $allowExecution) {
-        if ([string]::IsNullOrWhiteSpace($expectedPublisher)) {
-            $errors.Add('Executable artifacts allowed to run must declare ExpectedPublisher.')
+        $expectsUnsigned = $expectedSignatureStatus -eq 'NotSigned'
+        if (-not $expectsUnsigned -and [string]::IsNullOrWhiteSpace($expectedPublisher)) {
+            $errors.Add('Executable artifacts allowed to run must declare ExpectedPublisher unless explicitly recorded as NotSigned.')
         }
-        if ('AuthenticodeSigner' -notin $requirements) {
+        if (-not $expectsUnsigned -and 'AuthenticodeSigner' -notin $requirements) {
             $errors.Add('Executable artifacts allowed to run must require AuthenticodeSigner verification.')
+        }
+        if ($expectsUnsigned) {
+            $unsignedReason = [string](Get-BoostLabProvenancePropertyValue -InputObject $Artifact -Name 'UnsignedAllowedReason')
+            if ([string]::IsNullOrWhiteSpace($unsignedReason)) {
+                $errors.Add('Unsigned executable artifacts allowed to run must declare UnsignedAllowedReason.')
+            }
         }
         if ('FileSize' -notin $requirements) {
             $errors.Add('Executable artifacts allowed to run must require FileSize verification.')
@@ -183,6 +306,31 @@ function Test-BoostLabArtifactDefinition {
         ArtifactId = $id
         Errors    = $errors.ToArray()
         Timestamp = Get-Date
+    }
+}
+
+function Get-BoostLabArtifactDefinitionCollections {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    $artifacts = @()
+    if ($null -ne $Manifest -and $Manifest.Contains('Artifacts')) {
+        $artifacts = @($Manifest['Artifacts'])
+    }
+
+    $runtimeMirrorArtifacts = @()
+    if ($null -ne $Manifest -and $Manifest.Contains('RuntimeMirrorArtifacts')) {
+        $runtimeMirrorArtifacts = @($Manifest['RuntimeMirrorArtifacts'])
+    }
+
+    [pscustomobject]@{
+        Artifacts              = $artifacts
+        RuntimeMirrorArtifacts = $runtimeMirrorArtifacts
+        All                    = @($artifacts) + @($runtimeMirrorArtifacts)
     }
 }
 
@@ -209,12 +357,8 @@ function Test-BoostLabArtifactProvenanceManifest {
     $artifactIds = [System.Collections.Generic.HashSet[string]]::new(
         [System.StringComparer]::OrdinalIgnoreCase
     )
-    $artifacts = @(
-        if ($Manifest.Contains('Artifacts')) {
-            @($Manifest['Artifacts'])
-        }
-    )
-    foreach ($artifact in $artifacts) {
+    $collections = Get-BoostLabArtifactDefinitionCollections -Manifest $Manifest
+    foreach ($artifact in @($collections.All)) {
         $validation = Test-BoostLabArtifactDefinition -Artifact $artifact
         foreach ($validationError in @($validation.Errors)) {
             $errors.Add($validationError)
@@ -228,10 +372,12 @@ function Test-BoostLabArtifactProvenanceManifest {
     }
 
     return [pscustomobject]@{
-        IsValid      = $errors.Count -eq 0
-        ArtifactCount = $artifacts.Count
-        Errors       = $errors.ToArray()
-        Timestamp    = Get-Date
+        IsValid                  = $errors.Count -eq 0
+        ArtifactCount            = @($collections.Artifacts).Count
+        RuntimeMirrorArtifactCount = @($collections.RuntimeMirrorArtifacts).Count
+        TotalArtifactCount       = @($collections.All).Count
+        Errors                   = $errors.ToArray()
+        Timestamp                = Get-Date
     }
 }
 
@@ -246,7 +392,8 @@ function Get-BoostLabArtifactDefinition {
         [System.Collections.IDictionary]$Manifest
     )
 
-    if ($null -eq $Manifest) {
+    $useDefaultManifest = $null -eq $Manifest
+    if ($useDefaultManifest) {
         $Manifest = Get-BoostLabArtifactProvenanceManifest
     }
 
@@ -263,11 +410,33 @@ function Get-BoostLabArtifactDefinition {
         }
     }
 
-    $artifact = @($Manifest['Artifacts']) |
+    $collections = Get-BoostLabArtifactDefinitionCollections -Manifest $Manifest
+    $artifact = @($collections.All) |
         Where-Object {
             [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id') -eq $ArtifactId
         } |
         Select-Object -First 1
+    if ($null -eq $artifact -and $useDefaultManifest) {
+        $artifact = @(Get-BoostLabExternalRuntimeArtifactDefinitions) |
+            Where-Object {
+                [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id') -eq $ArtifactId
+            } |
+            Select-Object -First 1
+        if ($null -ne $artifact) {
+            $validation = Test-BoostLabArtifactDefinition -Artifact $artifact
+            if (-not $validation.IsValid) {
+                return [pscustomobject]@{
+                    Found      = $false
+                    ArtifactId = $ArtifactId
+                    Artifact   = $null
+                    Status     = 'Blocked'
+                    Message    = 'External runtime artifact definition failed provenance validation.'
+                    Errors     = @($validation.Errors)
+                    Timestamp  = Get-Date
+                }
+            }
+        }
+    }
 
     if ($null -eq $artifact) {
         return [pscustomobject]@{
@@ -330,6 +499,14 @@ function Test-BoostLabArtifactProvenance {
     $approvalStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ApprovalStatus')
     if ($approvalStatus -ne 'Approved') {
         $errors.Add("Artifact approval status is '$approvalStatus', not Approved.")
+    }
+    $productionApproved = Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ProductionAllowlistApproved'
+    $runtimeApproved = Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'RuntimeSourceSelectionApproved'
+    if ($productionApproved -ne $true) {
+        $errors.Add('Artifact production allowlist approval is required.')
+    }
+    if ($runtimeApproved -ne $true) {
+        $errors.Add('Artifact runtime source-selection approval is required.')
     }
     if ($LocalPath -match '^[a-zA-Z][a-zA-Z0-9+.-]*://') {
         $errors.Add('Artifact verification requires a local file path; direct network execution is prohibited.')
@@ -452,13 +629,19 @@ function Test-BoostLabArtifactProvenance {
             $expectedPublisher = [string](
                 Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ExpectedPublisher'
             )
-            $signaturePassed = (
+            $expectedSignatureStatus = [string](
+                Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ExpectedSignatureStatus'
+            )
+            $signaturePassed = if ($expectedSignatureStatus -eq 'NotSigned') {
+                $signatureStatus -eq 'NotSigned'
+            }
+            else {
                 $signatureStatus -eq 'Valid' -and
                 $actualPublisher -like "*$expectedPublisher*"
-            )
+            }
             $checks.Add([pscustomobject]@{
                 Name     = 'AuthenticodeSigner'
-                Expected = $expectedPublisher
+                Expected = if ($expectedSignatureStatus -eq 'NotSigned') { 'NotSigned' } else { $expectedPublisher }
                 Actual   = "$signatureStatus; $actualPublisher"
                 Status   = if ($signaturePassed) { 'Passed' } else { 'Failed' }
                 Message  = if ($signaturePassed) {
@@ -494,6 +677,144 @@ function Test-BoostLabArtifactProvenance {
             'Artifact provenance verification failed; use is blocked.'
         }
         Errors       = $errors.ToArray()
+        Timestamp    = Get-Date
+    }
+}
+
+function Get-BoostLabApprovedArtifactRuntimeSource {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    $lookup = Get-BoostLabArtifactDefinition -ArtifactId $ArtifactId -Manifest $Manifest
+    if (-not $lookup.Found) {
+        return [pscustomobject]@{
+            Allowed    = $false
+            Status     = 'Blocked'
+            ArtifactId = $ArtifactId
+            SourceUrl  = ''
+            Artifact   = $null
+            Errors     = @($lookup.Errors)
+            Message    = $lookup.Message
+            Timestamp  = Get-Date
+        }
+    }
+
+    $artifact = $lookup.Artifact
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $approvalStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ApprovalStatus')
+    $sourceUrl = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'SourceUrl')
+    $verifiedMirrorUrl = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'VerifiedBoostLabMirrorUrl')
+    $expectedHash = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ExpectedSha256')
+    $expectedFileName = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ExpectedFileName')
+    $productionApproved = Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ProductionAllowlistApproved'
+    $runtimeApproved = Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'RuntimeSourceSelectionApproved'
+
+    if ($approvalStatus -ne 'Approved') {
+        $errors.Add("Artifact approval status is '$approvalStatus', not Approved.")
+    }
+    if ($productionApproved -ne $true) {
+        $errors.Add('Artifact production allowlist approval is required.')
+    }
+    if ($runtimeApproved -ne $true) {
+        $errors.Add('Artifact runtime source-selection approval is required.')
+    }
+    if ([string]::IsNullOrWhiteSpace($sourceUrl) -or $sourceUrl -notmatch '^https://') {
+        $errors.Add('Artifact SourceUrl must be an HTTPS URL.')
+    }
+    if ([string]::IsNullOrWhiteSpace($verifiedMirrorUrl) -or $sourceUrl -ne $verifiedMirrorUrl) {
+        $errors.Add('Artifact runtime SourceUrl must match the verified BoostLab mirror URL.')
+    }
+    if ($expectedHash -notmatch '^[A-Fa-f0-9]{64}$') {
+        $errors.Add('Artifact ExpectedSha256 is required before runtime use.')
+    }
+    if ([string]::IsNullOrWhiteSpace($expectedFileName)) {
+        $errors.Add('Artifact ExpectedFileName is required before runtime use.')
+    }
+
+    return [pscustomobject]@{
+        Allowed    = $errors.Count -eq 0
+        Status     = if ($errors.Count -eq 0) { 'Approved' } else { 'Blocked' }
+        ArtifactId = $ArtifactId
+        SourceUrl  = if ($errors.Count -eq 0) { $sourceUrl } else { '' }
+        Artifact   = $artifact
+        Errors     = $errors.ToArray()
+        Message    = if ($errors.Count -eq 0) {
+            'Artifact runtime source is approved and points to the verified BoostLab mirror.'
+        }
+        else {
+            'Artifact runtime source is blocked by provenance or production approval policy.'
+        }
+        Timestamp  = Get-Date
+    }
+}
+
+function Invoke-BoostLabVerifiedArtifactDownload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination,
+
+        [AllowNull()]
+        [string]$SourceUrl,
+
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest,
+
+        [AllowNull()]
+        [scriptblock]$Downloader,
+
+        [AllowNull()]
+        [scriptblock]$SignatureInspector
+    )
+
+    $source = Get-BoostLabApprovedArtifactRuntimeSource -ArtifactId $ArtifactId -Manifest $Manifest
+    if (-not $source.Allowed) {
+        throw "Artifact runtime source is blocked for '$ArtifactId': $(@($source.Errors) -join '; ')"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($SourceUrl) -and [string]$SourceUrl -ne [string]$source.SourceUrl) {
+        throw "Artifact source URL mismatch for '$ArtifactId'. Runtime must use the verified BoostLab mirror URL."
+    }
+
+    $artifact = $source.Artifact
+    $expectedFileName = [string](Get-BoostLabProvenancePropertyValue -InputObject $artifact -Name 'ExpectedFileName')
+    if ([IO.Path]::GetFileName($Destination) -ne $expectedFileName) {
+        throw "Artifact destination filename mismatch for '$ArtifactId'. Expected '$expectedFileName'."
+    }
+
+    if ($null -ne $Downloader) {
+        & $Downloader ([string]$source.SourceUrl) $Destination
+    }
+    else {
+        Invoke-WebRequest -Uri ([string]$source.SourceUrl) -OutFile $Destination -UseBasicParsing -ErrorAction Stop
+    }
+
+    $verification = Test-BoostLabArtifactProvenance `
+        -ArtifactId $ArtifactId `
+        -LocalPath $Destination `
+        -Manifest $Manifest `
+        -SignatureInspector $SignatureInspector
+
+    if (-not $verification.Verified) {
+        throw "Artifact verification failed for '$ArtifactId': $(@($verification.Errors) -join '; ')"
+    }
+
+    return [pscustomobject]@{
+        Success      = $true
+        ArtifactId   = $ArtifactId
+        SourceUrl    = [string]$source.SourceUrl
+        Destination  = $Destination
+        Verification = $verification
         Timestamp    = Get-Date
     }
 }
@@ -535,9 +856,13 @@ function New-BoostLabArtifactDownloadRequest {
 
 Export-ModuleMember -Function @(
     'Get-BoostLabArtifactProvenanceManifest'
+    'Get-BoostLabExternalArtifactSourceManifest'
+    'Get-BoostLabExternalRuntimeArtifactDefinitions'
     'Test-BoostLabArtifactDefinition'
     'Test-BoostLabArtifactProvenanceManifest'
     'Get-BoostLabArtifactDefinition'
     'Test-BoostLabArtifactProvenance'
+    'Get-BoostLabApprovedArtifactRuntimeSource'
+    'Invoke-BoostLabVerifiedArtifactDownload'
     'New-BoostLabArtifactDownloadRequest'
 )
