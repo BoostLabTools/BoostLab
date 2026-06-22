@@ -2079,4 +2079,17 @@
             Notes = 'Verified BoostLab mirror evidence is approved for provenance tracking only. This record does not authorize runtime URL switching, downloading, installing, or execution.'
         }
     )
+
+    GameConfigPayloadProvenanceManifest = @{
+        Phase = '165C'
+        Path = 'config/GameConfigArtifactProvenance.psd1'
+        RecordCount = 28
+        ReleaseTag = 'boostlab-game-configs-v1'
+        ApprovalStatus = 'ApprovedForProvenanceOnly'
+        ProductionApprovalStatus = 'NotApproved'
+        RuntimeSourceSelectionApproved = $false
+        ProductionAllowlistApproved = $false
+        StageImplemented = $false
+        Notes = 'Future Stage 8 Game Configs payload provenance is recorded in a separate manifest without adding production allowlist or runtime execution approval.'
+    }
 }

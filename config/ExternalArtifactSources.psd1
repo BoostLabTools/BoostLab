@@ -2083,7 +2083,19 @@
             Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
     )
-}
 
+    GameConfigPayloadSourceManifest = @{
+        Phase = '165C'
+        Path = 'config/GameConfigArtifactSources.psd1'
+        RecordCount = 28
+        ReleaseTag = 'boostlab-game-configs-v1'
+        SourceClassification = 'UltimateAuthorHostedArtifact'
+        MirrorStatus = 'BoostLabMirrorAvailable'
+        RuntimeSourceSelectionApproved = $false
+        ProductionAllowlistApproved = $false
+        StageImplemented = $false
+        Notes = 'Future Stage 8 Game Configs payload mirrors are recorded in a separate manifest so the existing active-stage ExternalSources count remains 50.'
+    }
+}
 
 
