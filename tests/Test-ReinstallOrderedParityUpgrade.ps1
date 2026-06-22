@@ -67,17 +67,25 @@ $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Refresh\reinstall.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\2 Refresh\1 Reinstall.ps1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$sourceVerificationPath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\reinstall.md'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 
-foreach ($path in @($configPath, $modulePath, $sourcePath, $actionPlanPath, $migrationPath, $artifactPath, $productionAllowlistPath)) {
+foreach ($path in @($configPath, $modulePath, $sourcePath, $actionPlanPath, $sourceVerificationPath, $migrationPath, $artifactPath, $productionAllowlistPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Reinstall parity file was not found: $path"
 }
 
 $expectedSourceHash = '137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB'
-$actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Reinstall source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
+$expectedCanonicalSourceHash = '64F76A856E4CC57BEE34C6DEA86F2B7ADC432B01A3FA4AEB5C2A650B9AE9A477'
+Import-Module -Name $sourceVerificationPath -Force -ErrorAction Stop
+$sourceVerification = Test-BoostLabSourceChecksum `
+    -LiteralPath $sourcePath `
+    -ExpectedSha256 $expectedSourceHash `
+    -ExpectedCanonicalSha256 $expectedCanonicalSourceHash `
+    -TextNormalizationEnabled $true
+Assert-BoostLabCondition ([string]$sourceVerification.ChecksumStatus -eq 'Passed') "Reinstall source checksum mismatch. Expected raw $expectedSourceHash or canonical $expectedCanonicalSourceHash, found raw $($sourceVerification.DetectedSha256), canonical $($sourceVerification.DetectedCanonicalSha256)."
+$actualSourceHash = [string]$sourceVerification.DetectedSha256
 
 $sourceText = Get-Content -Raw -LiteralPath $sourcePath
 foreach ($needle in @(
@@ -111,6 +119,7 @@ foreach ($falseCapability in @('CanModifyRegistry', 'CanModifyServices', 'CanMod
 $moduleText = Get-Content -Raw -LiteralPath $modulePath
 foreach ($needle in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')',
+    '$script:BoostLabExpectedCanonicalSourceHash = ''64F76A856E4CC57BEE34C6DEA86F2B7ADC432B01A3FA4AEB5C2A650B9AE9A477''',
     'ControlledSourceEquivalent',
     'Windows11MediaCreationToolApplyAvailable',
     'mediacreationtoolw11.exe',
@@ -155,6 +164,9 @@ try {
     Assert-BoostLabCondition ([bool]$analysis.Success) 'Analyze should succeed when source checksum matches.'
     Assert-BoostLabCondition ([string]$analysis.Status -eq 'Analyzed') 'Analyze status mismatch.'
     Assert-BoostLabCondition ([string]$analysis.CommandStatus -eq 'No execution performed') 'Analyze must be read-only.'
+    Assert-BoostLabCondition ([string]$analysis.Data.Source.ChecksumStatus -eq 'Passed') 'Analyze source checksum should pass through canonical source verification.'
+    Assert-BoostLabCondition ([string]$analysis.Data.Source.ExpectedCanonicalSha256 -eq $expectedCanonicalSourceHash) 'Analyze source canonical checksum expectation mismatch.'
+    Assert-BoostLabCondition ([string]$analysis.Data.Source.CanonicalChecksumStatus -eq 'Passed') 'Analyze source canonical checksum status mismatch.'
     Assert-BoostLabCondition ([string]$analysis.Data.Mode -eq 'ControlledSourceEquivalent') 'Analyze mode mismatch.'
     Assert-BoostLabCondition ([string]$analysis.Data.AutoMode -eq 'Windows11MediaCreationToolApplyAvailable') 'Analyze Auto mode mismatch.'
     Assert-BoostLabCondition ([bool]$analysis.Data.SourceEquivalentWindows11) 'Analyze must report Windows 11 source equivalence.'
@@ -275,6 +287,7 @@ foreach ($deletedPath in @(
     Test = 'ReinstallOrderedParityUpgrade'
     SourcePath = 'source-ultimate/2 Refresh/1 Reinstall.ps1'
     SourceHash = $actualSourceHash
+    CanonicalSourceHash = $sourceVerification.DetectedCanonicalSha256
     RuntimeImplementedTools = $inventorySnapshot.ImplementedTools
     UltimateParityImplemented = $parityBaseline.Counts.UltimateParityImplemented
     NearParityControlled = $parityBaseline.Counts.NearParityControlled

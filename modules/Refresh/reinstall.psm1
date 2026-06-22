@@ -30,6 +30,7 @@ $script:BoostLabToolMetadata = [ordered]@{
 
 $script:BoostLabImplementedActions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
 $script:BoostLabExpectedSourceHash = '137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB'
+$script:BoostLabExpectedCanonicalSourceHash = '64F76A856E4CC57BEE34C6DEA86F2B7ADC432B01A3FA4AEB5C2A650B9AE9A477'
 $script:BoostLabSourceRelativePath = 'source-ultimate/2 Refresh/1 Reinstall.ps1'
 $script:BoostLabWindows11MediaCreationToolUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/mediacreationtoolw11.exe'
 $script:BoostLabWindows11MediaCreationToolFileName = 'mediacreationtoolw11.exe'
@@ -66,29 +67,30 @@ function Get-BoostLabReinstallSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabReinstallSourcePath
-    $exists = Test-Path -LiteralPath $sourcePath -PathType Leaf
-    $detectedHash = if ($exists) {
-        (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
     }
-    else {
-        ''
-    }
+    $verification = Test-BoostLabSourceChecksum `
+        -LiteralPath $sourcePath `
+        -ExpectedSha256 $script:BoostLabExpectedSourceHash `
+        -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash `
+        -TextNormalizationEnabled $true
 
     [pscustomobject]@{
-        SourcePath         = $sourcePath
-        SourceRelativePath = $script:BoostLabSourceRelativePath
-        Exists             = $exists
-        ExpectedSha256     = $script:BoostLabExpectedSourceHash
-        DetectedSha256     = $detectedHash
-        ChecksumStatus     = if ($exists -and $detectedHash -eq $script:BoostLabExpectedSourceHash) {
-            'Passed'
-        }
-        elseif ($exists) {
-            'Failed'
-        }
-        else {
-            'Missing'
-        }
+        SourcePath              = $sourcePath
+        SourceRelativePath      = $script:BoostLabSourceRelativePath
+        Exists                  = [bool]$verification.Exists
+        ExpectedSha256          = $script:BoostLabExpectedSourceHash
+        DetectedSha256          = [string]$verification.DetectedSha256
+        ExpectedCanonicalSha256 = $script:BoostLabExpectedCanonicalSourceHash
+        DetectedCanonicalSha256 = [string]$verification.DetectedCanonicalSha256
+        ChecksumStatus          = [string]$verification.ChecksumStatus
+        RawChecksumStatus       = [string]$verification.RawChecksumStatus
+        CanonicalChecksumStatus = [string]$verification.CanonicalChecksumStatus
+        VerificationMode        = [string]$verification.VerificationMode
+        VerificationErrors      = @($verification.Errors)
     }
 }
 
