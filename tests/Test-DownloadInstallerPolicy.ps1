@@ -71,6 +71,10 @@ try {
         'Get-BoostLabArtifactProvenanceManifest'
         'Get-BoostLabExternalArtifactSourceManifest'
         'Get-BoostLabExternalRuntimeArtifactDefinitions'
+        'Get-BoostLabOfficialVendorDirectRuntimePolicy'
+        'Get-BoostLabOfficialVendorDirectRuntimeSources'
+        'Get-BoostLabApprovedOfficialVendorRuntimeSource'
+        'Invoke-BoostLabOfficialVendorDownload'
         'Test-BoostLabArtifactDefinition'
         'Test-BoostLabArtifactProvenanceManifest'
         'Get-BoostLabArtifactDefinition'
@@ -103,6 +107,112 @@ try {
         [string]$approvedMirrorSource.SourceUrl -notlike 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/*'
     ) {
         $errors.Add('Approved runtime mirror artifact source was not resolved from the verified BoostLab mirror catalog.')
+    }
+
+    $officialPolicy = Get-BoostLabOfficialVendorDirectRuntimePolicy
+    $officialRuntimeSources = @(Get-BoostLabOfficialVendorDirectRuntimeSources)
+    if ([int]$officialPolicy.ApprovedCount -ne 22 -or $officialRuntimeSources.Count -ne 22) {
+        $errors.Add("Phase 164I must approve exactly 22 OfficialVendorDirect runtime sources; found $($officialRuntimeSources.Count).")
+    }
+    $officialKindCounts = @{}
+    foreach ($group in @($officialRuntimeSources | Group-Object SourceKind)) {
+        $officialKindCounts[[string]$group.Name] = [int]$group.Count
+    }
+    $expectedOfficialKindCounts = @{
+        StaticOfficialInstaller = 3
+        FloatingOfficialInstaller = 15
+        OfficialVendorLookupPage = 2
+        OfficialVendorApi = 1
+        BrowserExtensionOfficialSource = 1
+    }
+    foreach ($kind in $expectedOfficialKindCounts.Keys) {
+        if ([int]$officialKindCounts[$kind] -ne [int]$expectedOfficialKindCounts[$kind]) {
+            $errors.Add("OfficialVendorDirect classification count mismatch for $kind.")
+        }
+    }
+    if (@($officialRuntimeSources | Where-Object { [string]$_.SourceUrl -like 'https://github.com/BoostLabTools/BoostLab/*' }).Count -ne 0) {
+        $errors.Add('OfficialVendorDirect runtime sources must not use BoostLab mirror URLs.')
+    }
+
+    $discordOfficial = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'installers-discord' `
+        -Purpose Download `
+        -SourceUrl 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64'
+    if (-not $discordOfficial.Allowed) {
+        $errors.Add("Approved Discord official source was blocked: $($discordOfficial.Errors -join '; ')")
+    }
+    $badHostOfficial = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'installers-discord' `
+        -Purpose Download `
+        -SourceUrl 'https://example.invalid/Discord.exe'
+    if ($badHostOfficial.Allowed -or (@($badHostOfficial.Errors) -join ' ') -notmatch 'approved vendor host') {
+        $errors.Add('Official source with an unapproved host was not blocked.')
+    }
+    $badSchemeOfficial = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'installers-discord' `
+        -Purpose Download `
+        -SourceUrl 'http://discord.com/Discord.exe'
+    if ($badSchemeOfficial.Allowed -or (@($badSchemeOfficial.Errors) -join ' ') -notmatch 'HTTPS') {
+        $errors.Add('Official source with a non-HTTPS scheme was not blocked.')
+    }
+    $nvidiaLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-nvidia-lookup' `
+        -Purpose Lookup
+    $nvidiaLookupDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-nvidia-lookup' `
+        -Purpose Download
+    if (-not $nvidiaLookup.Allowed -or $nvidiaLookupDownload.Allowed) {
+        $errors.Add('NVIDIA lookup API must be lookup-approved but not executable/download-approved.')
+    }
+    $nvidiaTemplateWithoutResolvedUrl = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
+        -Purpose Download
+    $nvidiaResolvedDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
+        -Purpose Download `
+        -SourceUrl 'https://international.download.nvidia.com/Windows/555.85/555.85-desktop-win10-win11-64bit-international-dch-whql.exe'
+    $nvidiaBadResolvedDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
+        -Purpose Download `
+        -SourceUrl 'https://international.download.nvidia.com/Windows/555.85/555.85-not-approved.exe'
+    if ($nvidiaTemplateWithoutResolvedUrl.Allowed -or -not $nvidiaResolvedDownload.Allowed -or $nvidiaBadResolvedDownload.Allowed) {
+        $errors.Add('NVIDIA driver template must require a resolved, pattern-approved official download URL.')
+    }
+    $intelLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-intel-driver-page' `
+        -Purpose Lookup
+    $intelDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'driver-install-latest-intel-driver-page' `
+        -Purpose Download
+    if (-not $intelLookup.Allowed -or $intelDownload.Allowed) {
+        $errors.Add('INTEL official driver page must be lookup-approved but not executable/download-approved.')
+    }
+
+    $blockedOfficialManifest = Get-BoostLabExternalArtifactSourceManifest
+    $blockedPolicy = [ordered]@{}
+    foreach ($key in $blockedOfficialManifest.OfficialVendorDirectRuntimePolicy.Keys) {
+        $blockedPolicy[$key] = $blockedOfficialManifest.OfficialVendorDirectRuntimePolicy[$key]
+    }
+    $blockedEntries = @()
+    foreach ($entry in @($blockedOfficialManifest.OfficialVendorDirectRuntimePolicy.Entries)) {
+        $copy = [ordered]@{}
+        foreach ($key in $entry.Keys) {
+            $copy[$key] = $entry[$key]
+        }
+        if ([string]$copy.Id -eq 'installers-discord') {
+            $copy['ProductionAllowlistApproved'] = $false
+        }
+        $blockedEntries += $copy
+    }
+    $blockedPolicy['Entries'] = $blockedEntries
+    $blockedOfficialManifest['OfficialVendorDirectRuntimePolicy'] = $blockedPolicy
+    $missingOfficialApproval = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'installers-discord' `
+        -Purpose Download `
+        -SourceUrl 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' `
+        -Manifest $blockedOfficialManifest
+    if ($missingOfficialApproval.Allowed -or (@($missingOfficialApproval.Errors) -join ' ') -notmatch 'ProductionAllowlistApproved') {
+        $errors.Add('Official source without production approval was not blocked.')
     }
 
     $mockInstallerPath = Join-Path $tempRoot 'boostlab-policy-mock.exe'
@@ -251,6 +361,77 @@ try {
         $downloadedUrl -ne [string]$mockArtifact.SourceUrl
     ) {
         $errors.Add('Verified artifact download did not use the approved manifest source through the mock downloader.')
+    }
+
+    $officialDownloadPath = Join-Path $mockDownloadRoot 'Discord.exe'
+    $officialDownloadedUrls = [System.Collections.Generic.List[string]]::new()
+    $officialDownloader = {
+        param(
+            [string]$Uri,
+            [string]$OutFile
+        )
+
+        $officialDownloadedUrls.Add($Uri) | Out-Null
+        [IO.File]::WriteAllText($OutFile, 'BoostLab official direct mocked download.', [Text.Encoding]::UTF8)
+    }
+    $officialSignatureInspector = {
+        param([string]$Path)
+
+        [pscustomobject]@{
+            Status = 'Valid'
+            Publisher = 'CN=BoostLab Official Mock Publisher'
+        }
+    }
+    $officialDownload = Invoke-BoostLabOfficialVendorDownload `
+        -ArtifactId 'installers-discord' `
+        -SourceUrl 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' `
+        -Destination $officialDownloadPath `
+        -Downloader $officialDownloader `
+        -SignatureInspector $officialSignatureInspector
+    if (-not $officialDownload.Success -or $officialDownloadedUrls.Count -ne 1) {
+        $errors.Add('Official vendor mocked download did not use the approved source through the verification helper.')
+    }
+
+    $officialBadTypeBlocked = $false
+    try {
+        Invoke-BoostLabOfficialVendorDownload `
+            -ArtifactId 'installers-discord' `
+            -SourceUrl 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' `
+            -Destination (Join-Path $mockDownloadRoot 'Discord.txt') `
+            -Downloader $officialDownloader `
+            -SignatureInspector $officialSignatureInspector | Out-Null
+    }
+    catch {
+        $officialBadTypeBlocked = $_.Exception.Message -match 'filename|extension'
+    }
+    if (-not $officialBadTypeBlocked) {
+        $errors.Add('Official vendor download with the wrong local filename/type was not blocked.')
+    }
+
+    $officialBadSignerBlocked = $false
+    try {
+        Invoke-BoostLabOfficialVendorDownload `
+            -ArtifactId 'installers-discord' `
+            -SourceUrl 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' `
+            -Destination (Join-Path $mockDownloadRoot 'Discord.exe') `
+            -Downloader $officialDownloader `
+            -SignatureInspector { param([string]$Path) [pscustomobject]@{ Status = 'NotSigned'; Publisher = '' } } | Out-Null
+    }
+    catch {
+        $officialBadSignerBlocked = $_.Exception.Message -match 'signature'
+    }
+    if (-not $officialBadSignerBlocked) {
+        $errors.Add('Official vendor executable download with a bad signer was not blocked.')
+    }
+
+    $xpiDownloadPath = Join-Path $mockDownloadRoot 'uBlock0@raymondhill.net.xpi'
+    $xpiDownload = Invoke-BoostLabOfficialVendorDownload `
+        -ArtifactId 'installers-ublock-origin-xpi' `
+        -SourceUrl 'https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi' `
+        -Destination $xpiDownloadPath `
+        -Downloader $officialDownloader
+    if (-not $xpiDownload.Success -or [string]$xpiDownload.Verification.SourceKind -ne 'BrowserExtensionOfficialSource') {
+        $errors.Add('Official browser extension XPI source was not verified by extension/source policy.')
     }
 
     $missingProductionApproval = [ordered]@{}

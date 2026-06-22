@@ -3,6 +3,9 @@ Set-StrictMode -Version Latest
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1') -Force
 }
+if (-not (Get-Command -Name 'Invoke-BoostLabOfficialVendorDownload' -ErrorAction SilentlyContinue)) {
+    Import-Module (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1') -Force
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'installers'
@@ -556,6 +559,42 @@ function Resolve-BoostLabInstallersPathExpression {
         Replace('$env:AppData', $env:APPDATA)
 }
 
+function Get-BoostLabInstallersOfficialArtifactIdForUrl {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url
+    )
+
+    $map = @{
+        'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64' = 'installers-discord'
+        'https://www.roblox.com/download/client?os=win' = 'installers-roblox'
+        'https://www.7-zip.org/a/7z2301-x64.exe' = 'installers-seven-zip'
+        'https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe' = 'installers-battle-net'
+        'https://brave-browser-downloads.s3.brave.com/latest/brave_installer-x64.exe' = 'installers-brave'
+        'https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe' = 'installers-electronic-arts'
+        'https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi' = 'installers-epic-games'
+        'https://prod.escapefromtarkov.com/launcher/download' = 'installers-escape-from-tarkov'
+        'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US' = 'installers-firefox'
+        'https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi' = 'installers-ublock-origin-xpi'
+        'https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi' = 'installers-google-chrome'
+        'https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.na.exe' = 'installers-league-of-legends'
+        'https://cdn-fastly.obsproject.com/downloads/OBS-Studio-32.1.0-Windows-x64-Installer.exe' = 'installers-obs-studio'
+        'https://gamedownloads.rockstargames.com/public/installer/Rockstar-Games-Launcher.exe' = 'installers-rockstar-games'
+        'https://download.scdn.co/SpotifySetup.exe' = 'installers-spotify'
+        'https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe' = 'installers-steam'
+        'https://static3.cdn.ubi.com/orbit/launcher_installer/UbisoftConnectInstaller.exe' = 'installers-ubisoft-connect'
+        'https://valorant.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.live.ap.exe' = 'installers-valorant'
+    }
+
+    if (-not $map.ContainsKey($Url)) {
+        throw "Installers download URL is not in the official vendor runtime policy map: $Url"
+    }
+
+    return [string]$map[$Url]
+}
+
 function Invoke-BoostLabInstallersOperation {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -573,7 +612,12 @@ function Invoke-BoostLabInstallersOperation {
                 if (-not [string]::IsNullOrWhiteSpace($parent)) {
                     New-Item -Path $parent -ItemType Directory -Force | Out-Null
                 }
-                Invoke-WebRequest -Uri ([string]$parameters['Url']) -OutFile $destination -UseBasicParsing -ErrorAction Stop
+                $url = [string]$parameters['Url']
+                $artifactId = Get-BoostLabInstallersOfficialArtifactIdForUrl -Url $url
+                Invoke-BoostLabOfficialVendorDownload `
+                    -ArtifactId $artifactId `
+                    -SourceUrl $url `
+                    -Destination $destination | Out-Null
             }
             'StartProcess' {
                 $filePath = Resolve-BoostLabInstallersPathExpression ([string]$parameters['FilePath'])

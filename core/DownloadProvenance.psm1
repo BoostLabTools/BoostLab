@@ -161,6 +161,372 @@ function Get-BoostLabExternalRuntimeArtifactDefinitions {
         ForEach-Object { ConvertTo-BoostLabArtifactDefinitionFromExternalSource -Entry $_ }
 }
 
+function Get-BoostLabOfficialVendorDirectRuntimePolicy {
+    [CmdletBinding()]
+    [OutputType([System.Collections.IDictionary])]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    if ($null -eq $Manifest) {
+        $Manifest = Get-BoostLabExternalArtifactSourceManifest
+    }
+    if (-not $Manifest.Contains('OfficialVendorDirectRuntimePolicy')) {
+        throw 'OfficialVendorDirect runtime policy is missing from the external artifact source manifest.'
+    }
+
+    return $Manifest['OfficialVendorDirectRuntimePolicy']
+}
+
+function Get-BoostLabOfficialVendorDirectRuntimeSources {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    if ($null -eq $Manifest) {
+        $Manifest = Get-BoostLabExternalArtifactSourceManifest
+    }
+
+    $policy = Get-BoostLabOfficialVendorDirectRuntimePolicy -Manifest $Manifest
+    @($policy.Entries) | ForEach-Object {
+        $entryId = [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id')
+        $source = @($Manifest.ExternalSources | Where-Object {
+            [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id') -eq $entryId
+        }) | Select-Object -First 1
+        $sourceUrl = if ($null -ne $source) {
+            [string](Get-BoostLabProvenancePropertyValue -InputObject $source -Name 'OriginalDownloadUrl')
+        }
+        else {
+            ''
+        }
+        $toolId = if ($null -ne $source) {
+            [string](Get-BoostLabProvenancePropertyValue -InputObject $source -Name 'ToolId')
+        }
+        else {
+            ''
+        }
+
+        [pscustomobject]@{
+            Id              = $entryId
+            Policy          = $_
+            ExternalSource  = $source
+            SourceUrl       = $sourceUrl
+            SourceKind      = [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'OfficialSourceKind')
+            ToolId          = $toolId
+        }
+    }
+}
+
+function Test-BoostLabOfficialVendorUrlHost {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url,
+
+        [Parameter(Mandatory)]
+        [string[]]$AllowedHosts
+    )
+
+    try {
+        $uri = [Uri]$Url
+    }
+    catch {
+        return $false
+    }
+
+    if ($uri.Scheme -ne 'https') {
+        return $false
+    }
+
+    return [string]$uri.Host -in @($AllowedHosts)
+}
+
+function Get-BoostLabApprovedOfficialVendorRuntimeSource {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [ValidateSet('Lookup', 'Download')]
+        [string]$Purpose = 'Download',
+
+        [AllowNull()]
+        [string]$SourceUrl,
+
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest
+    )
+
+    if ($null -eq $Manifest) {
+        $Manifest = Get-BoostLabExternalArtifactSourceManifest
+    }
+
+    $policy = Get-BoostLabOfficialVendorDirectRuntimePolicy -Manifest $Manifest
+    $sourceEntry = @($Manifest.ExternalSources | Where-Object {
+        [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id') -eq $ArtifactId
+    }) | Select-Object -First 1
+    $policyEntry = @($policy.Entries | Where-Object {
+        [string](Get-BoostLabProvenancePropertyValue -InputObject $_ -Name 'Id') -eq $ArtifactId
+    }) | Select-Object -First 1
+
+    $errors = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $sourceEntry) {
+        $errors.Add("Unknown official vendor source id: $ArtifactId")
+    }
+    if ($null -eq $policyEntry) {
+        $errors.Add("Official vendor source is missing runtime policy approval: $ArtifactId")
+    }
+
+    if ($errors.Count -eq 0) {
+        if ([string](Get-BoostLabProvenancePropertyValue -InputObject $sourceEntry -Name 'SourceClassification') -ne 'OfficialVendorDirect') {
+            $errors.Add("Source '$ArtifactId' is not classified as OfficialVendorDirect.")
+        }
+        if ([string](Get-BoostLabProvenancePropertyValue -InputObject $sourceEntry -Name 'MirrorStatus') -ne 'NotRequiredOfficial') {
+            $errors.Add("Official vendor source '$ArtifactId' must not use a BoostLab mirror.")
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string](Get-BoostLabProvenancePropertyValue -InputObject $sourceEntry -Name 'IntendedBoostLabMirrorUrl'))) {
+            $errors.Add("Official vendor source '$ArtifactId' must not set a BoostLab mirror URL.")
+        }
+
+        $sourceKind = [string](Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'OfficialSourceKind')
+        if ($sourceKind -notin @($policy.AllowedSourceKinds | ForEach-Object { [string]$_ })) {
+            $errors.Add("Official vendor source '$ArtifactId' has an unsupported source kind: $sourceKind")
+        }
+        foreach ($approvalField in @('ProductionAllowlistApproved', 'RuntimeSourceSelectionApproved')) {
+            if ((Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name $approvalField) -ne $true) {
+                $errors.Add("Official vendor source '$ArtifactId' is missing $approvalField.")
+            }
+        }
+
+        $originalUrl = [string](Get-BoostLabProvenancePropertyValue -InputObject $sourceEntry -Name 'OriginalDownloadUrl')
+        $candidateUrl = if ([string]::IsNullOrWhiteSpace($SourceUrl)) { $originalUrl } else { [string]$SourceUrl }
+        $allowedHosts = @(
+            Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'OfficialHostAllowlist'
+        ) | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        $resolvedHosts = @(
+            Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ResolvedDownloadHostAllowlist'
+        ) | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+
+        if (-not (Test-BoostLabOfficialVendorUrlHost -Url $originalUrl -AllowedHosts $allowedHosts)) {
+            $errors.Add("Original official source URL for '$ArtifactId' must be HTTPS and use an approved vendor host.")
+        }
+
+        if ($Purpose -eq 'Lookup') {
+            if ((Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'LookupExecutionApproved') -ne $true) {
+                $errors.Add("Official vendor source '$ArtifactId' is not approved for lookup/page/API use.")
+            }
+            if (-not (Test-BoostLabOfficialVendorUrlHost -Url $candidateUrl -AllowedHosts $allowedHosts)) {
+                $errors.Add("Lookup URL for '$ArtifactId' must be HTTPS and use an approved vendor host.")
+            }
+        }
+        else {
+            $downloadApproved = (Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'DownloadExecutionApproved') -eq $true
+            $resolvedDownloadApproved = (Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ResolvedDownloadExecutionApproved') -eq $true
+            $isResolvedUrl = [string]$candidateUrl -ne [string]$originalUrl
+
+            if (-not $downloadApproved -and -not ($isResolvedUrl -and $resolvedDownloadApproved)) {
+                $errors.Add("Official vendor source '$ArtifactId' is not approved for this download path.")
+            }
+
+            $downloadHosts = if ($isResolvedUrl -and @($resolvedHosts).Count -gt 0) { $resolvedHosts } else { $allowedHosts }
+            if (-not (Test-BoostLabOfficialVendorUrlHost -Url $candidateUrl -AllowedHosts $downloadHosts)) {
+                $errors.Add("Download URL for '$ArtifactId' must be HTTPS and use an approved vendor host.")
+            }
+
+            $urlPattern = [string](Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ResolvedDownloadUrlPattern')
+            if (-not $isResolvedUrl -and -not [string]::IsNullOrWhiteSpace($urlPattern)) {
+                $errors.Add("Official vendor source '$ArtifactId' requires a resolved download URL before download.")
+            }
+            if ($isResolvedUrl -and -not [string]::IsNullOrWhiteSpace($urlPattern) -and [string]$candidateUrl -notmatch $urlPattern) {
+                $errors.Add("Resolved download URL for '$ArtifactId' does not match the approved vendor pattern.")
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Allowed    = $errors.Count -eq 0
+        Status     = if ($errors.Count -eq 0) { 'Approved' } else { 'Blocked' }
+        ArtifactId = $ArtifactId
+        Purpose    = $Purpose
+        SourceUrl  = if ($errors.Count -eq 0) {
+            if ([string]::IsNullOrWhiteSpace($SourceUrl)) {
+                [string](Get-BoostLabProvenancePropertyValue -InputObject $sourceEntry -Name 'OriginalDownloadUrl')
+            }
+            else {
+                [string]$SourceUrl
+            }
+        }
+        else {
+            ''
+        }
+        ExternalSource = $sourceEntry
+        Policy     = $policyEntry
+        Errors     = $errors.ToArray()
+        Message    = if ($errors.Count -eq 0) {
+            'Official vendor runtime source is approved by HTTPS host, type, local-path, and source-kind policy.'
+        }
+        else {
+            'Official vendor runtime source is blocked by official-source policy.'
+        }
+        Timestamp  = Get-Date
+    }
+}
+
+function Test-BoostLabOfficialVendorSignature {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [object]$Policy,
+
+        [AllowNull()]
+        [scriptblock]$SignatureInspector
+    )
+
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $signatureRequired = (Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'SignatureVerificationRequired') -eq $true
+    if (-not $signatureRequired) {
+        return [pscustomobject]@{
+            Passed = $true
+            Status = 'NotRequired'
+            Publisher = ''
+            Errors = @()
+        }
+    }
+
+    $signature = if ($null -ne $SignatureInspector) {
+        & $SignatureInspector $Path
+    }
+    else {
+        Get-AuthenticodeSignature -LiteralPath $Path -ErrorAction Stop
+    }
+
+    $status = [string](Get-BoostLabProvenancePropertyValue -InputObject $signature -Name 'Status')
+    $publisher = [string](Get-BoostLabProvenancePropertyValue -InputObject $signature -Name 'Publisher')
+    if ([string]::IsNullOrWhiteSpace($publisher)) {
+        $certificate = Get-BoostLabProvenancePropertyValue -InputObject $signature -Name 'SignerCertificate'
+        $publisher = [string](Get-BoostLabProvenancePropertyValue -InputObject $certificate -Name 'Subject')
+    }
+    $expectedStatus = [string](Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'ExpectedSignatureStatus')
+    if ([string]::IsNullOrWhiteSpace($expectedStatus)) {
+        $expectedStatus = 'Valid'
+    }
+    if ($status -ne $expectedStatus) {
+        $errors.Add("Official vendor artifact signature status '$status' did not match expected '$expectedStatus'.")
+    }
+    if ([string]::IsNullOrWhiteSpace($publisher)) {
+        $errors.Add('Official vendor executable artifact must expose a signer/publisher.')
+    }
+
+    return [pscustomobject]@{
+        Passed = $errors.Count -eq 0
+        Status = if ($errors.Count -eq 0) { 'Verified' } else { 'Blocked' }
+        Publisher = $publisher
+        Errors = $errors.ToArray()
+    }
+}
+
+function Invoke-BoostLabOfficialVendorDownload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArtifactId,
+
+        [Parameter(Mandatory)]
+        [string]$Destination,
+
+        [AllowNull()]
+        [string]$SourceUrl,
+
+        [AllowNull()]
+        [System.Collections.IDictionary]$Manifest,
+
+        [AllowNull()]
+        [scriptblock]$Downloader,
+
+        [AllowNull()]
+        [hashtable]$Headers,
+
+        [AllowNull()]
+        [scriptblock]$SignatureInspector
+    )
+
+    $source = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId $ArtifactId `
+        -Purpose Download `
+        -SourceUrl $SourceUrl `
+        -Manifest $Manifest
+    if (-not $source.Allowed) {
+        throw "Official vendor runtime source is blocked for '$ArtifactId': $(@($source.Errors) -join '; ')"
+    }
+
+    if ([Uri]::IsWellFormedUriString($Destination, [UriKind]::Absolute)) {
+        throw "Official vendor download destination for '$ArtifactId' must be a verified local path, not a URL."
+    }
+
+    $policy = $source.Policy
+    $expectedFileName = [string](Get-BoostLabProvenancePropertyValue -InputObject $policy -Name 'ExpectedFileName')
+    if (-not [string]::IsNullOrWhiteSpace($expectedFileName) -and [IO.Path]::GetFileName($Destination) -ne $expectedFileName) {
+        throw "Official vendor destination filename mismatch for '$ArtifactId'. Expected '$expectedFileName'."
+    }
+    $expectedExtension = [string](Get-BoostLabProvenancePropertyValue -InputObject $policy -Name 'ExpectedExtension')
+    if (-not [string]::IsNullOrWhiteSpace($expectedExtension) -and [IO.Path]::GetExtension($Destination) -ne $expectedExtension) {
+        throw "Official vendor destination extension mismatch for '$ArtifactId'. Expected '$expectedExtension'."
+    }
+
+    if ($null -ne $Downloader) {
+        & $Downloader ([string]$source.SourceUrl) $Destination
+    }
+    else {
+        $downloadParameters = @{
+            Uri = [string]$source.SourceUrl
+            OutFile = $Destination
+            UseBasicParsing = $true
+            ErrorAction = 'Stop'
+        }
+        if ($null -ne $Headers -and $Headers.Count -gt 0) {
+            $downloadParameters['Headers'] = $Headers
+        }
+        Invoke-WebRequest @downloadParameters
+    }
+
+    if (-not (Test-Path -LiteralPath $Destination -PathType Leaf)) {
+        throw "Official vendor download did not create the expected local file for '$ArtifactId'."
+    }
+
+    $signature = Test-BoostLabOfficialVendorSignature `
+        -Path $Destination `
+        -Policy $policy `
+        -SignatureInspector $SignatureInspector
+    if (-not $signature.Passed) {
+        throw "Official vendor signature verification failed for '$ArtifactId': $(@($signature.Errors) -join '; ')"
+    }
+
+    return [pscustomobject]@{
+        Success      = $true
+        ArtifactId   = $ArtifactId
+        SourceUrl    = [string]$source.SourceUrl
+        Destination  = $Destination
+        Verification = [pscustomobject]@{
+            Status = 'Verified'
+            LocalPath = (Resolve-Path -LiteralPath $Destination -ErrorAction Stop).Path
+            SourceKind = [string](Get-BoostLabProvenancePropertyValue -InputObject $policy -Name 'OfficialSourceKind')
+            Signature = $signature
+        }
+        Timestamp    = Get-Date
+    }
+}
+
 function Test-BoostLabArtifactDefinition {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -858,6 +1224,10 @@ Export-ModuleMember -Function @(
     'Get-BoostLabArtifactProvenanceManifest'
     'Get-BoostLabExternalArtifactSourceManifest'
     'Get-BoostLabExternalRuntimeArtifactDefinitions'
+    'Get-BoostLabOfficialVendorDirectRuntimePolicy'
+    'Get-BoostLabOfficialVendorDirectRuntimeSources'
+    'Get-BoostLabApprovedOfficialVendorRuntimeSource'
+    'Invoke-BoostLabOfficialVendorDownload'
     'Test-BoostLabArtifactDefinition'
     'Test-BoostLabArtifactProvenanceManifest'
     'Get-BoostLabArtifactDefinition'

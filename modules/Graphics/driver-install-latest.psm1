@@ -1,5 +1,9 @@
 Set-StrictMode -Version Latest
 
+if (-not (Get-Command -Name 'Invoke-BoostLabOfficialVendorDownload' -ErrorAction SilentlyContinue)) {
+    Import-Module (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\DownloadProvenance.psm1') -Force
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'driver-install-latest'
     Title = 'Driver Install Latest'
@@ -484,7 +488,15 @@ function Invoke-BoostLabDriverInstallLatestRealOperation {
                 return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $true -Message 'Source guidance represented in BoostLab result.'
             }
             'QueryNvidiaLatestDriver' {
-                $response = Invoke-WebRequest -Uri ([string]$parameters['Uri']) -Method GET -UseBasicParsing
+                $lookupSource = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+                    -ArtifactId 'driver-install-latest-nvidia-lookup' `
+                    -Purpose Lookup `
+                    -SourceUrl ([string]$parameters['Uri'])
+                if (-not $lookupSource.Allowed) {
+                    return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $false -Message "NVIDIA lookup source blocked: $(@($lookupSource.Errors) -join '; ')"
+                }
+
+                $response = Invoke-WebRequest -Uri ([string]$lookupSource.SourceUrl) -Method GET -UseBasicParsing
                 $payload = $response.Content | ConvertFrom-Json
                 $version = [string]$payload.IDS[0].downloadInfo.Version
                 if ([string]::IsNullOrWhiteSpace($version)) {
@@ -508,14 +520,25 @@ function Invoke-BoostLabDriverInstallLatestRealOperation {
                     return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $false -Message 'NVIDIA driver URL was not resolved before download.'
                 }
 
-                Invoke-WebRequest -Uri ([string]$Context['NvidiaDriverUrl']) -OutFile ([string]$parameters['Destination'])
+                Invoke-BoostLabOfficialVendorDownload `
+                    -ArtifactId 'driver-install-latest-nvidia-driver-template' `
+                    -SourceUrl ([string]$Context['NvidiaDriverUrl']) `
+                    -Destination ([string]$parameters['Destination']) | Out-Null
                 return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $true -Message "Downloaded NVIDIA driver installer to $($parameters['Destination'])." -Data ([pscustomobject]@{
                     Url = [string]$Context['NvidiaDriverUrl']
                     Destination = [string]$parameters['Destination']
                 })
             }
             'QueryAmdDriverInstaller' {
-                $downloadAmd = Invoke-WebRequest ([string]$parameters['Uri']) -UseBasicParsing |
+                $lookupSource = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+                    -ArtifactId 'driver-install-latest-amd-support-page' `
+                    -Purpose Lookup `
+                    -SourceUrl ([string]$parameters['Uri'])
+                if (-not $lookupSource.Allowed) {
+                    return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $false -Message "AMD lookup source blocked: $(@($lookupSource.Errors) -join '; ')"
+                }
+
+                $downloadAmd = Invoke-WebRequest ([string]$lookupSource.SourceUrl) -UseBasicParsing |
                     Select-Object -ExpandProperty Links |
                     Where-Object { $_.href -match ([string]$parameters['HrefRegex']) } |
                     Select-Object -First 1 -ExpandProperty href
@@ -538,18 +561,26 @@ function Invoke-BoostLabDriverInstallLatestRealOperation {
                     $headers[[string]$header.Key] = [string]$header.Value
                 }
 
-                Invoke-WebRequest `
-                    -Uri ([string]$Context['AmdDriverUrl']) `
-                    -UseBasicParsing `
-                    -Headers $headers `
-                    -OutFile ([string]$parameters['Destination']) `
-                    -ErrorAction SilentlyContinue | Out-Null
+                Invoke-BoostLabOfficialVendorDownload `
+                    -ArtifactId 'driver-install-latest-amd-support-page' `
+                    -SourceUrl ([string]$Context['AmdDriverUrl']) `
+                    -Destination ([string]$parameters['Destination']) `
+                    -Headers $headers | Out-Null
                 return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $true -Message "Requested AMD driver installer download to $($parameters['Destination'])." -Data ([pscustomobject]@{
                     Url = [string]$Context['AmdDriverUrl']
                     Destination = [string]$parameters['Destination']
                 })
             }
             'StartProcess' {
+                if ([string]$parameters['FilePath'] -like 'https://www.intel.com/*') {
+                    $lookupSource = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+                        -ArtifactId 'driver-install-latest-intel-driver-page' `
+                        -Purpose Lookup `
+                        -SourceUrl ([string]$parameters['FilePath'])
+                    if (-not $lookupSource.Allowed) {
+                        return New-BoostLabDriverInstallLatestOperationResult -Operation $Operation -Success $false -Message "INTEL driver page source blocked: $(@($lookupSource.Errors) -join '; ')"
+                    }
+                }
                 $startParameters = @{
                     FilePath = [string]$parameters['FilePath']
                 }

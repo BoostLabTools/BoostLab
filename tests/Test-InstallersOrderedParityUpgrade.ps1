@@ -158,6 +158,11 @@ try {
         Assert-BoostLabCondition (@($app.InstallerCommands).Count -ge 1) "Retained app missing installer/helper descriptor: $($app.AppId)"
         Assert-BoostLabCondition (@($app.Operations).Count -ge 2) "Retained app missing operation plan: $($app.AppId)"
         Assert-BoostLabCondition (@($app.SideEffectFamilies).Count -ge 1) "Retained app missing side-effect families: $($app.AppId)"
+
+        foreach ($artifact in @($app.Artifacts)) {
+            $artifactId = & $module { Get-BoostLabInstallersOfficialArtifactIdForUrl -Url $args[0] } ([string]$artifact.Url)
+            Assert-BoostLabCondition ([string]$artifactId -like 'installers-*') "Installers artifact URL is not mapped to an OfficialVendorDirect policy id: $($artifact.Url)"
+        }
     }
 
     $firefox = @($catalog | Where-Object { [string]$_.AppId -eq 'firefox' })[0]
@@ -258,6 +263,11 @@ foreach ($needle in @(
 )) {
     Assert-BoostLabContains -Text $actionPlanText -Needle $needle -Description 'Installers Action Plan'
 }
+
+$moduleText = Get-Content -LiteralPath $modulePath -Raw
+Assert-BoostLabContains -Text $moduleText -Needle 'Invoke-BoostLabOfficialVendorDownload' -Description 'Installers official source runtime verification'
+Assert-BoostLabContains -Text $moduleText -Needle 'Get-BoostLabInstallersOfficialArtifactIdForUrl' -Description 'Installers official artifact id mapping'
+Assert-BoostLabContains -Text $moduleText -Needle 'Installers download URL is not in the official vendor runtime policy map' -Description 'Installers unknown official source fail-closed handling'
 Assert-BoostLabCondition (-not $actionPlanText.Contains('Auto mode is blocked for Installers because per-app artifact provenance')) 'Installers Apply Action Plan must not remain ManualHandoffOnly blocked wording.'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Manual Handoff'")) 'Action Plan ValidateSet must not include display labels.'
 Assert-BoostLabCondition (-not $actionPlanText.Contains("'Apply Auto'")) 'Action Plan ValidateSet must not include display labels.'

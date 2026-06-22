@@ -299,10 +299,53 @@ foreach ($expectation in $windowsArtifactExpectations) {
 }
 
 $officialEntries = @($entries | Where-Object { [string]$_.SourceClassification -eq 'OfficialVendorDirect' })
+$officialPolicy = $manifest.OfficialVendorDirectRuntimePolicy
+$officialPolicyEntries = @($officialPolicy.Entries)
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
 $availableMirrorEntries = @($entries | Where-Object { $_.ContainsKey('VerifiedBoostLabMirrorAvailable') -and $_.VerifiedBoostLabMirrorAvailable -eq $true })
 $provenanceOnlyLinkedEntries = @($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceOnlyApproved') -and $_.ArtifactProvenanceOnlyApproved -eq $true })
-Assert-BoostLabCondition ($officialEntries.Count -ge 20) 'Expected official vendor/project sources were not classified.'
+Assert-BoostLabCondition ($officialEntries.Count -eq 22) 'Expected exactly 22 official vendor/project sources after Phase 164I closure.'
+Assert-BoostLabCondition ([int]$officialPolicy.ApprovedCount -eq 22) 'OfficialVendorDirect policy approved count mismatch.'
+Assert-BoostLabCondition ($officialPolicyEntries.Count -eq 22) 'OfficialVendorDirect policy entry count mismatch.'
+$officialEntryIds = @($officialEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
+$officialPolicyIds = @($officialPolicyEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
+Assert-BoostLabCondition (($officialEntryIds -join '|') -eq ($officialPolicyIds -join '|')) 'OfficialVendorDirect policy entries must map one-to-one to OfficialVendorDirect manifest entries.'
+$officialKindCounts = @{}
+foreach ($group in @($officialPolicyEntries | ForEach-Object { [string]$_['OfficialSourceKind'] } | Group-Object)) {
+    $officialKindCounts[[string]$group.Name] = [int]$group.Count
+}
+$expectedOfficialKindCounts = @{
+    StaticOfficialInstaller = 3
+    FloatingOfficialInstaller = 15
+    OfficialVendorLookupPage = 2
+    OfficialVendorApi = 1
+    BrowserExtensionOfficialSource = 1
+}
+foreach ($kind in $expectedOfficialKindCounts.Keys) {
+    Assert-BoostLabCondition ([int]$officialKindCounts[$kind] -eq [int]$expectedOfficialKindCounts[$kind]) "OfficialVendorDirect classification count mismatch for $kind."
+}
+foreach ($policyEntry in $officialPolicyEntries) {
+    $id = [string]$policyEntry['Id']
+    $kind = [string]$policyEntry['OfficialSourceKind']
+    Assert-BoostLabCondition ($kind -in @($officialPolicy.AllowedSourceKinds | ForEach-Object { [string]$_ })) "Invalid OfficialVendorDirect source kind for $id."
+    Assert-BoostLabCondition ($policyEntry['ProductionAllowlistApproved'] -eq $true) "OfficialVendorDirect production approval missing for $id."
+    Assert-BoostLabCondition ($policyEntry['RuntimeSourceSelectionApproved'] -eq $true) "OfficialVendorDirect runtime source-selection approval missing for $id."
+    Assert-BoostLabCondition ($policyEntry['NoUrlExecution'] -eq $true) "OfficialVendorDirect must block URL execution for $id."
+    $sourceEntry = @($officialEntries | Where-Object { [string]$_.Id -eq $id })[0]
+    Assert-BoostLabCondition ([string]$sourceEntry.IntendedBoostLabMirrorUrl -eq '') "OfficialVendorDirect must not use a BoostLab mirror URL: $id."
+    Assert-BoostLabCondition ([string]$sourceEntry.MirrorStatus -eq 'NotRequiredOfficial') "OfficialVendorDirect mirror status mismatch: $id."
+    $hostAllowlist = @($policyEntry['OfficialHostAllowlist'] | ForEach-Object { [string]$_ })
+    Assert-BoostLabCondition ($hostAllowlist.Count -gt 0) "OfficialVendorDirect host allowlist missing for $id."
+    $sourceUri = [Uri]([string]$sourceEntry.OriginalDownloadUrl)
+    Assert-BoostLabCondition ($sourceUri.Scheme -eq 'https') "OfficialVendorDirect URL must be HTTPS for $id."
+    Assert-BoostLabCondition ([string]$sourceUri.Host -in $hostAllowlist) "OfficialVendorDirect URL host is not allowlisted for $id."
+    if ($kind -in @('OfficialVendorLookupPage', 'OfficialVendorApi')) {
+        Assert-BoostLabCondition ($policyEntry['LookupExecutionApproved'] -eq $true) "OfficialVendorDirect lookup/API approval missing for $id."
+    }
+    if ($kind -eq 'BrowserExtensionOfficialSource') {
+        Assert-BoostLabCondition ([string]$policyEntry['ExpectedExtension'] -eq '.xpi') "Official browser extension source must require XPI extension for $id."
+    }
+}
 Assert-BoostLabCondition ($needsMirrorEntries.Count -eq 0) 'Author-hosted artifacts should no longer require mirror governance after Phase 164H runtime approval.'
 Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 28) 'Expected all 28 author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 164F.'
 Assert-BoostLabCondition ($provenanceOnlyLinkedEntries.Count -eq 28) 'Expected all 28 verified mirror entries to link to Phase 164G provenance-only approvals.'

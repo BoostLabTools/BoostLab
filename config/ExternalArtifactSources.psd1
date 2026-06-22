@@ -27,6 +27,398 @@
         'BlockedMissingHash'
     )
 
+    OfficialVendorDirectRuntimePolicy = @{
+        SchemaVersion = '1.0'
+        Phase = '164I'
+        ApprovedCount = 22
+        RequiredScheme = 'https'
+        AllowedSourceKinds = @(
+            'StaticOfficialInstaller'
+            'FloatingOfficialInstaller'
+            'OfficialVendorLookupPage'
+            'OfficialVendorApi'
+            'BrowserExtensionOfficialSource'
+        )
+        Entries = @(
+            @{
+                Id = 'installers-discord'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('discord.com')
+                ExpectedFileName = 'Discord.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-roblox'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('www.roblox.com')
+                ExpectedFileName = 'Roblox.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-seven-zip'
+                OfficialSourceKind = 'StaticOfficialInstaller'
+                OfficialHostAllowlist = @('www.7-zip.org')
+                ExpectedFileName = '7 Zip.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-battle-net'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('downloader.battle.net')
+                ExpectedFileName = 'Battle.net.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-brave'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('brave-browser-downloads.s3.brave.com')
+                ExpectedFileName = 'BraveInstaller.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-electronic-arts'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('origin-a.akamaihd.net')
+                ExpectedFileName = 'Electronic Arts.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-epic-games'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('launcher-public-service-prod06.ol.epicgames.com')
+                ExpectedFileName = 'Epic Games.msi'
+                ExpectedExtension = '.msi'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-escape-from-tarkov'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('prod.escapefromtarkov.com')
+                ExpectedFileName = 'Escape From Tarkov.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-firefox'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('download.mozilla.org')
+                ExpectedFileName = 'Firefox.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-ublock-origin-xpi'
+                OfficialSourceKind = 'BrowserExtensionOfficialSource'
+                OfficialHostAllowlist = @('addons.mozilla.org')
+                ExpectedFileName = 'uBlock0@raymondhill.net.xpi'
+                ExpectedExtension = '.xpi'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $false
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $false
+                BrowserExtensionVerificationRequired = $true
+            }
+            @{
+                Id = 'installers-google-chrome'
+                OfficialSourceKind = 'StaticOfficialInstaller'
+                OfficialHostAllowlist = @('dl.google.com')
+                ExpectedFileName = 'Chrome.msi'
+                ExpectedExtension = '.msi'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-league-of-legends'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('lol.secure.dyn.riotcdn.net')
+                ExpectedFileName = 'League Of Legends.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-obs-studio'
+                OfficialSourceKind = 'StaticOfficialInstaller'
+                OfficialHostAllowlist = @('cdn-fastly.obsproject.com')
+                ExpectedFileName = 'OBS Studio.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-rockstar-games'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('gamedownloads.rockstargames.com')
+                ExpectedFileName = 'Rockstar Games.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-spotify'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('download.scdn.co')
+                ExpectedFileName = 'Spotify.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-steam'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('cdn.cloudflare.steamstatic.com')
+                ExpectedFileName = 'Steam.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-ubisoft-connect'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('static3.cdn.ubi.com')
+                ExpectedFileName = 'Ubisoft Connect.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'installers-valorant'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('valorant.secure.dyn.riotcdn.net')
+                ExpectedFileName = 'Valorant.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'driver-install-latest-nvidia-lookup'
+                OfficialSourceKind = 'OfficialVendorApi'
+                OfficialHostAllowlist = @('gfwsl.geforce.com')
+                ExpectedFileName = $null
+                ExpectedExtension = $null
+                DownloadExecutionApproved = $false
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $true
+                InstallerExecutionApproved = $false
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $false
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $false
+            }
+            @{
+                Id = 'driver-install-latest-nvidia-driver-template'
+                OfficialSourceKind = 'FloatingOfficialInstaller'
+                OfficialHostAllowlist = @('international.download.nvidia.com')
+                ResolvedDownloadHostAllowlist = @('international.download.nvidia.com')
+                ResolvedDownloadUrlPattern = '^https://international\.download\.nvidia\.com/Windows/[^/]+/[^/]+-desktop-win10-win11-64bit-international-dch-whql\.exe$'
+                ExpectedFileName = 'nvidiadriver.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
+                ResolvedDownloadExecutionApproved = $true
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'driver-install-latest-amd-support-page'
+                OfficialSourceKind = 'OfficialVendorLookupPage'
+                OfficialHostAllowlist = @('www.amd.com')
+                ResolvedDownloadHostAllowlist = @('drivers.amd.com')
+                ResolvedDownloadUrlPattern = '^https://drivers\.amd\.com/drivers/installer/.*/whql/amd-software-adrenalin-edition-.*-minimalsetup-.*_web\.exe$'
+                ExpectedFileName = 'amddriver.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $false
+                ResolvedDownloadExecutionApproved = $true
+                LookupExecutionApproved = $true
+                InstallerExecutionApproved = $true
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $true
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
+            }
+            @{
+                Id = 'driver-install-latest-intel-driver-page'
+                OfficialSourceKind = 'OfficialVendorLookupPage'
+                OfficialHostAllowlist = @('www.intel.com')
+                ExpectedFileName = $null
+                ExpectedExtension = $null
+                DownloadExecutionApproved = $false
+                ResolvedDownloadExecutionApproved = $false
+                LookupExecutionApproved = $true
+                InstallerExecutionApproved = $false
+                ProductionAllowlistApproved = $true
+                RuntimeSourceSelectionApproved = $true
+                RequiresVerifiedLocalPath = $false
+                NoUrlExecution = $true
+                SignatureVerificationRequired = $false
+            }
+        )
+    }
+
     AuditScope = @{
         ReachedToolIds = @(
             'bios-information'
