@@ -374,6 +374,219 @@ function Get-BoostLabBloatwareExcludedAppxPatterns {
     )
 }
 
+function Get-BoostLabBloatwareObjectProperty {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
+function ConvertTo-BoostLabBloatwareAppxPackageRecord {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [AllowNull()]
+        [object]$Package
+    )
+
+    if ($null -eq $Package) {
+        return [pscustomobject]@{
+            Name              = ''
+            PackageFullName   = ''
+            PackageFamilyName = ''
+            User              = ''
+            InstallLocation   = ''
+        }
+    }
+
+    [pscustomobject]@{
+        Name              = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'Name')
+        PackageFullName   = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'PackageFullName')
+        PackageFamilyName = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'PackageFamilyName')
+        User              = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'User')
+        InstallLocation   = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'InstallLocation')
+    }
+}
+
+function Test-BoostLabBloatwareAppxPackageExcluded {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [string]$Name,
+
+        [string[]]$ExcludeLike = @()
+    )
+
+    foreach ($pattern in @($ExcludeLike)) {
+        if ([string]$Name -like [string]$pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Test-BoostLabBloatwareConsolePipeException {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    if ($null -eq $ErrorRecord) {
+        return $false
+    }
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    return (
+        $messageText -like '*No process is on the other end of the pipe*' -or
+        $messageText -like '*getting console output buffer information*' -or
+        $messageText -like '*0xE9*'
+    )
+}
+
+function Invoke-BoostLabBloatwareRemoveAppxExcept {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string[]]$ExcludeLike = @(),
+
+        [scriptblock]$AppxGetter = $null,
+
+        [scriptblock]$AppxRemover = $null
+    )
+
+    if ($null -eq $AppxGetter) {
+        $AppxGetter = { Get-AppXPackage -AllUsers -ErrorAction Stop }
+    }
+    if ($null -eq $AppxRemover) {
+        $AppxRemover = {
+            param(
+                [Parameter(Mandatory)]
+                [object]$Package
+            )
+
+            $Package | Remove-AppxPackage -ErrorAction Stop -WarningAction SilentlyContinue -InformationAction SilentlyContinue | Out-Null
+        }
+    }
+
+    $excluded = [System.Collections.Generic.List[object]]::new()
+    $attempted = [System.Collections.Generic.List[object]]::new()
+    $removed = [System.Collections.Generic.List[object]]::new()
+    $failed = [System.Collections.Generic.List[object]]::new()
+    $pipeWarnings = [System.Collections.Generic.List[object]]::new()
+    $allPackages = @()
+
+    $previousProgressPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        try {
+            $allPackages = @(& $AppxGetter)
+        }
+        catch {
+            if (Test-BoostLabBloatwareConsolePipeException -ErrorRecord $_) {
+                $pipeWarnings.Add([pscustomobject]@{
+                    Stage = 'EnumeratePackages'
+                    Reason = [string]$_.Exception.Message
+                    Package = $null
+                })
+                $allPackages = @()
+            }
+            else {
+                throw
+            }
+        }
+
+        foreach ($package in @($allPackages)) {
+            $record = ConvertTo-BoostLabBloatwareAppxPackageRecord -Package $package
+            if (Test-BoostLabBloatwareAppxPackageExcluded -Name ([string]$record.Name) -ExcludeLike $ExcludeLike) {
+                $excluded.Add($record)
+                continue
+            }
+
+            $attempted.Add($record)
+            try {
+                & $AppxRemover $package | Out-Null
+                $removed.Add($record)
+            }
+            catch {
+                if (Test-BoostLabBloatwareConsolePipeException -ErrorRecord $_) {
+                    $pipeWarnings.Add([pscustomobject]@{
+                        Stage = 'RemovePackage'
+                        Reason = [string]$_.Exception.Message
+                        Package = $record
+                    })
+                    continue
+                }
+
+                $failed.Add([pscustomobject]@{
+                    Package = $record
+                    Reason = [string]$_.Exception.Message
+                })
+            }
+        }
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+    }
+
+    $success = ($failed.Count -eq 0)
+    $message = if ($success) {
+        "Processed $($attempted.Count) non-excluded AppX package(s); $($excluded.Count) package(s) matched the source exclusion list."
+    }
+    else {
+        "Failed to remove $($failed.Count) non-excluded AppX package(s)."
+    }
+
+    if ($pipeWarnings.Count -gt 0) {
+        $message = "$message Console/progress output warning(s): $($pipeWarnings.Count)."
+    }
+
+    [pscustomobject]@{
+        Success = $success
+        Message = $message
+        TotalPackages = @($allPackages).Count
+        AttemptedPackages = $attempted.ToArray()
+        RemovedPackages = $removed.ToArray()
+        ExcludedPackages = $excluded.ToArray()
+        FailedPackages = $failed.ToArray()
+        ConsolePipeWarnings = $pipeWarnings.ToArray()
+    }
+}
+
 function Get-BoostLabBloatwareExcludedCapabilityPatterns {
     @(
         '*Microsoft.Windows.Ethernet*'
@@ -610,14 +823,12 @@ function Invoke-BoostLabBloatwareRealOperation {
             'RegistryCommand' { & cmd.exe /c (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths) | Out-Null }
             'Cmd' { & cmd.exe /c (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths) | Out-Null }
             'RemoveAppxExcept' {
-                Get-AppXPackage -AllUsers | Where-Object {
-                    $name = [string]$_.Name
-                    $keep = $false
-                    foreach ($pattern in @($p.ExcludeLike)) {
-                        if ($name -like [string]$pattern) { $keep = $true; break }
-                    }
-                    -not $keep
-                } | Remove-AppxPackage -ErrorAction SilentlyContinue
+                $appxResult = Invoke-BoostLabBloatwareRemoveAppxExcept -ExcludeLike @($p.ExcludeLike)
+                return New-BoostLabBloatwareOperationResult `
+                    -Operation $Operation `
+                    -Success ([bool]$appxResult.Success) `
+                    -Message ([string]$appxResult.Message) `
+                    -Data $appxResult
             }
             'RemoveWindowsCapabilityExcept' {
                 Get-WindowsCapability -Online | Where-Object {
@@ -1002,5 +1213,6 @@ Export-ModuleMember -Function @(
     'Get-BoostLabBloatwareOperationPlan'
     'Get-BoostLabBloatwareAllOperationPlans'
     'Invoke-BoostLabBloatwareBranchWorkflow'
+    'Invoke-BoostLabBloatwareRemoveAppxExcept'
 )
 

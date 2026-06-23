@@ -150,6 +150,70 @@ try {
         Assert-BloatwareCondition (($removePlan.Operations.Type -contains $requiredType) -or ($removePlan.Operations.Type -join ',' -like "*$requiredType*")) "Remove all bloatware plan is missing operation type $requiredType."
     }
     Assert-BloatwareCondition (-not ($removePlan.Operations.Type -join ',' -like '*Provisioned*')) 'Bloatware must not invent provisioned package removal absent from the source.'
+    $removeAppxOperation = @($removePlan.Operations | Where-Object { [string]$_.Type -eq 'RemoveAppxExcept' }) | Select-Object -First 1
+    Assert-BloatwareCondition ($null -ne $removeAppxOperation) 'Remove all bloatware plan must include RemoveAppxExcept.'
+    $excludePatterns = @($removeAppxOperation.Parameters.ExcludeLike)
+    Assert-BloatwareCondition (($excludePatterns -join ',') -eq '*CBS*,*Microsoft.AV1VideoExtension*,*Microsoft.AVCEncoderVideoExtension*,*Microsoft.HEIFImageExtension*,*Microsoft.HEVCVideoExtension*,*Microsoft.MPEG2VideoExtension*,*Microsoft.Paint*,*Microsoft.RawImageExtension*,*Microsoft.SecHealthUI*,*Microsoft.VP9VideoExtensions*,*Microsoft.WebMediaExtensions*,*Microsoft.WebpImageExtension*,*Microsoft.Windows.Photos*,*Microsoft.Windows.ShellExperienceHost*,*Microsoft.Windows.StartMenuExperienceHost*,*Microsoft.WindowsNotepad*,*NVIDIACorp.NVIDIAControlPanel*,*windows.immersivecontrolpanel*') 'RemoveAppxExcept exclusion patterns must preserve the Ultimate source list exactly.'
+
+    $emptyRemoveResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @() } `
+        -AppxRemover { throw 'Remover should not be called for an empty package list.' }
+    Assert-BloatwareCondition ([bool]$emptyRemoveResult.Success) 'RemoveAppxExcept must succeed for a null/empty mock package list.'
+    Assert-BloatwareCondition ([int]$emptyRemoveResult.TotalPackages -eq 0) 'RemoveAppxExcept empty package list should report zero total packages.'
+    Assert-BloatwareCondition (@($emptyRemoveResult.AttemptedPackages).Count -eq 0) 'RemoveAppxExcept empty package list should attempt no removals.'
+
+    $mockPackages = @(
+        [pscustomobject]@{ Name = 'Microsoft.Paint'; PackageFullName = 'Microsoft.Paint_1'; PackageFamilyName = 'Microsoft.Paint_family'; User = 'S-1-1'; InstallLocation = 'C:\Mock\Paint' }
+        [pscustomobject]@{ Name = 'Contoso.Bloatware'; PackageFullName = 'Contoso.Bloatware_1'; PackageFamilyName = 'Contoso.Bloatware_family'; User = 'S-1-2'; InstallLocation = 'C:\Mock\Contoso' }
+        [pscustomobject]@{ Name = 'Fabrikam.Noise'; PackageFullName = 'Fabrikam.Noise_1'; PackageFamilyName = 'Fabrikam.Noise_family'; User = 'S-1-3'; InstallLocation = 'C:\Mock\Fabrikam' }
+    )
+    $removedPackages = [System.Collections.Generic.List[string]]::new()
+    $mockRemoveResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { $mockPackages }.GetNewClosure() `
+        -AppxRemover { param($Package) $removedPackages.Add([string]$Package.PackageFullName) }.GetNewClosure()
+    Assert-BloatwareCondition ([bool]$mockRemoveResult.Success) 'RemoveAppxExcept must succeed when all non-excluded mock packages are removed.'
+    Assert-BloatwareCondition (@($mockRemoveResult.ExcludedPackages).Count -eq 1) 'RemoveAppxExcept must preserve excluded package patterns.'
+    Assert-BloatwareCondition (@($mockRemoveResult.AttemptedPackages).Count -eq 2) 'RemoveAppxExcept must attempt each non-excluded package individually.'
+    Assert-BloatwareCondition (($removedPackages.ToArray() -join ',') -eq 'Contoso.Bloatware_1,Fabrikam.Noise_1') 'RemoveAppxExcept must remove mock packages one-by-one without touching excluded packages.'
+
+    $pipeWarningResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Contoso.Pipe'; PackageFullName = 'Contoso.Pipe_1'; PackageFamilyName = 'Contoso.Pipe_family'; User = 'S-1-4'; InstallLocation = 'C:\Mock\Pipe' }) } `
+        -AppxRemover { throw 'The Win32 internal error "No process is on the other end of the pipe" 0xE9 occurred while getting console output buffer information.' }
+    Assert-BloatwareCondition ([bool]$pipeWarningResult.Success) 'RemoveAppxExcept must not hard-fail on console/progress pipe output warnings alone.'
+    Assert-BloatwareCondition (@($pipeWarningResult.ConsolePipeWarnings).Count -eq 1) 'RemoveAppxExcept must report console/progress pipe warnings in result data.'
+    Assert-BloatwareCondition (@($pipeWarningResult.FailedPackages).Count -eq 0) 'RemoveAppxExcept must not classify console/progress pipe warnings as real package failures.'
+
+    $realFailureResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Contoso.Protected'; PackageFullName = 'Contoso.Protected_1'; PackageFamilyName = 'Contoso.Protected_family'; User = 'S-1-5'; InstallLocation = 'C:\Mock\Protected' }) } `
+        -AppxRemover { throw 'Access is denied.' }
+    Assert-BloatwareCondition (-not [bool]$realFailureResult.Success) 'RemoveAppxExcept must fail when a real package removal error occurs.'
+    Assert-BloatwareCondition (@($realFailureResult.FailedPackages).Count -eq 1) 'RemoveAppxExcept must report real failed package removals.'
+    Assert-BloatwareCondition ([string]$realFailureResult.FailedPackages[0].Package.PackageFullName -eq 'Contoso.Protected_1') 'RemoveAppxExcept real failure must include PackageFullName.'
+    Assert-BloatwareCondition ([string]$realFailureResult.FailedPackages[0].Package.PackageFamilyName -eq 'Contoso.Protected_family') 'RemoveAppxExcept real failure must include PackageFamilyName.'
+
+    $stopAfterFailureSeen = [System.Collections.Generic.List[string]]::new()
+    $stopAfterFailureExecutor = {
+        param($Operation, $Branch, $Plan)
+        $stopAfterFailureSeen.Add([string]$Operation.Type)
+        [pscustomobject]@{
+            Success = ([string]$Operation.Type -ne 'RemoveAppxExcept')
+            Order = [int]$Operation.Order
+            Branch = [string]$Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Message = if ([string]$Operation.Type -eq 'RemoveAppxExcept') { 'Mocked AppX package failure.' } else { 'Mocked operation completed.' }
+            Data = [pscustomobject]@{ PlanBranch = [string]$Plan.Branch }
+        }
+    }.GetNewClosure()
+    $failedRemoveAppxWorkflow = Invoke-BoostLabBloatwareBranchWorkflow -Branch 'RemoveAllBloatware' -SkipEnvironmentChecks $true -OperationExecutor $stopAfterFailureExecutor
+    Assert-BloatwareCondition (-not [bool]$failedRemoveAppxWorkflow.Success) 'Bloatware branch must stop on a real RemoveAppxExcept failure.'
+    Assert-BloatwareCondition ([string]$failedRemoveAppxWorkflow.FailedOperation.Type -eq 'RemoveAppxExcept') 'Bloatware branch must identify RemoveAppxExcept as the failed operation.'
+    Assert-BloatwareCondition (($stopAfterFailureSeen.ToArray() -join ',') -eq 'RegistryCommand,RemoveAppxExcept') 'Bloatware branch must not continue after a real RemoveAppxExcept failure.'
 
     $storePlan = Get-BoostLabBloatwareOperationPlan -Branch 'InstallStore'
     foreach ($requiredType in @('AppxRegisterLike', 'StartProcess', 'StopProcesses', 'RegistryCommand', 'StoreSettingsHiveImport')) {
