@@ -34,6 +34,9 @@ $script:BoostLabServicesOptimizerSourcePath = Join-Path $script:BoostLabProjectR
 $script:BoostLabServicesOptimizerSourceHash = '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F'
 $script:BoostLabServicesOptimizerCanonicalSourceHash = '15E4E1EAE613C70F91B15DC2614C6EB7DB8A80ADA1618297188FB41A38F0F1AE'
 $script:BoostLabServicesOptimizerServiceRoot = 'HKLM:\SYSTEM\ControlSet001\Services'
+$script:BoostLabServicesOptimizerRunOnceRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+$script:BoostLabServicesOptimizerRunOnceSourceRegistryPath = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+$script:BoostLabServicesOptimizerRunOnceRegistrySubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
 $script:BoostLabServicesOptimizerRestorePointCommands = @(
     'reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v "SystemRestorePointCreationFrequency" /t REG_DWORD /d "0" /f >nul 2>&1'
     'Enable-ComputerRestore -Drive "C:\"'
@@ -79,6 +82,22 @@ function Get-BoostLabServicesOptimizerPropertyValue {
         return $DefaultValue
     }
     return $property.Value
+}
+
+function Get-BoostLabServicesOptimizerNonEmptyText {
+    param(
+        [AllowNull()]
+        [object]$Value,
+
+        [Parameter(Mandatory)]
+        [string]$Fallback
+    )
+
+    $text = if ($null -eq $Value) { '' } else { [string]$Value }
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $Fallback
+    }
+    return $text
 }
 
 function New-BoostLabServicesOptimizerResult {
@@ -409,6 +428,250 @@ function Invoke-BoostLabServicesOptimizerCommand {
     }
 }
 
+function Set-BoostLabServicesOptimizerNativeRunOnceValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [Parameter(Mandatory)]
+        [string]$ValueName,
+
+        [Parameter(Mandatory)]
+        [string]$ValueData
+    )
+
+    try {
+        if ($RegistryPath -ne $script:BoostLabServicesOptimizerRunOnceRegistryPath) {
+            throw "Unsupported RunOnce registry path: $RegistryPath"
+        }
+
+        $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+            [Microsoft.Win32.RegistryHive]::LocalMachine,
+            [Microsoft.Win32.RegistryView]::Default
+        )
+        try {
+            $subKey = $baseKey.CreateSubKey($script:BoostLabServicesOptimizerRunOnceRegistrySubKey)
+            if ($null -eq $subKey) {
+                throw "Unable to open or create RunOnce registry key: $RegistryPath"
+            }
+            try {
+                $subKey.SetValue($ValueName, $ValueData, [Microsoft.Win32.RegistryValueKind]::String)
+            }
+            finally {
+                $subKey.Close()
+            }
+        }
+        finally {
+            $baseKey.Close()
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Output = 'RunOnce value was written.'
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            Success = $false
+            Output = Get-BoostLabServicesOptimizerNonEmptyText -Value $_.Exception.Message -Fallback 'RunOnce registry write failed without diagnostic output.'
+        }
+    }
+}
+
+function Get-BoostLabServicesOptimizerNativeRunOnceValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [Parameter(Mandatory)]
+        [string]$ValueName
+    )
+
+    try {
+        if ($RegistryPath -ne $script:BoostLabServicesOptimizerRunOnceRegistryPath) {
+            throw "Unsupported RunOnce registry path: $RegistryPath"
+        }
+
+        $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+            [Microsoft.Win32.RegistryHive]::LocalMachine,
+            [Microsoft.Win32.RegistryView]::Default
+        )
+        try {
+            $subKey = $baseKey.OpenSubKey($script:BoostLabServicesOptimizerRunOnceRegistrySubKey, $false)
+            if ($null -eq $subKey) {
+                throw "RunOnce registry key was not found after write: $RegistryPath"
+            }
+            try {
+                $value = $subKey.GetValue($ValueName, $null)
+                if ($null -eq $value) {
+                    throw "RunOnce registry value was not found after write: $ValueName"
+                }
+            }
+            finally {
+                $subKey.Close()
+            }
+        }
+        finally {
+            $baseKey.Close()
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Value = [string]$value
+            Output = 'RunOnce value was read.'
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            Success = $false
+            Value = $null
+            Output = Get-BoostLabServicesOptimizerNonEmptyText -Value $_.Exception.Message -Fallback 'RunOnce registry verification failed without diagnostic output.'
+        }
+    }
+}
+
+function Invoke-BoostLabServicesOptimizerRunOnceInstall {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [Parameter(Mandatory)]
+        [string]$SourceRegistryPath,
+
+        [Parameter(Mandatory)]
+        [string]$ValueName,
+
+        [Parameter(Mandatory)]
+        [string]$ValueData,
+
+        [Parameter(Mandatory)]
+        [string]$SourceEquivalentCommand,
+
+        [Parameter(Mandatory)]
+        [scriptblock]$RunOnceWriter,
+
+        [Parameter(Mandatory)]
+        [scriptblock]$RunOnceReader
+    )
+
+    $writeResult = $null
+    try {
+        $writeResult = & $RunOnceWriter $RegistryPath $ValueName $ValueData
+    }
+    catch {
+        $reason = Get-BoostLabServicesOptimizerNonEmptyText -Value $_.Exception.Message -Fallback 'RunOnce registry write threw without diagnostic output.'
+        return [pscustomobject]@{
+            Success = $false
+            Output = $reason
+            FailureKind = 'RegistryWriteException'
+            RegistryPath = $RegistryPath
+            SourceRegistryPath = $SourceRegistryPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            DetectedValueData = $null
+            SourceEquivalentCommand = $SourceEquivalentCommand
+            WriteResult = $writeResult
+            VerificationResult = $null
+        }
+    }
+
+    $writeSuccess = [bool](Get-BoostLabServicesOptimizerPropertyValue -InputObject $writeResult -Name 'Success' -DefaultValue $true)
+    if (-not $writeSuccess) {
+        $reason = Get-BoostLabServicesOptimizerNonEmptyText `
+            -Value (Get-BoostLabServicesOptimizerPropertyValue -InputObject $writeResult -Name 'Output' -DefaultValue $null) `
+            -Fallback 'RunOnce registry write failed without diagnostic output.'
+        return [pscustomobject]@{
+            Success = $false
+            Output = $reason
+            FailureKind = 'RegistryWriteFailed'
+            RegistryPath = $RegistryPath
+            SourceRegistryPath = $SourceRegistryPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            DetectedValueData = $null
+            SourceEquivalentCommand = $SourceEquivalentCommand
+            WriteResult = $writeResult
+            VerificationResult = $null
+        }
+    }
+
+    $readResult = $null
+    try {
+        $readResult = & $RunOnceReader $RegistryPath $ValueName
+    }
+    catch {
+        $reason = Get-BoostLabServicesOptimizerNonEmptyText -Value $_.Exception.Message -Fallback 'RunOnce registry verification threw without diagnostic output.'
+        return [pscustomobject]@{
+            Success = $false
+            Output = $reason
+            FailureKind = 'RegistryVerificationException'
+            RegistryPath = $RegistryPath
+            SourceRegistryPath = $SourceRegistryPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            DetectedValueData = $null
+            SourceEquivalentCommand = $SourceEquivalentCommand
+            WriteResult = $writeResult
+            VerificationResult = $readResult
+        }
+    }
+
+    $readSuccess = [bool](Get-BoostLabServicesOptimizerPropertyValue -InputObject $readResult -Name 'Success' -DefaultValue $true)
+    $detectedValue = if ($readResult -is [string]) {
+        [string]$readResult
+    }
+    else {
+        Get-BoostLabServicesOptimizerPropertyValue -InputObject $readResult -Name 'Value' -DefaultValue $null
+    }
+    if (-not $readSuccess) {
+        $reason = Get-BoostLabServicesOptimizerNonEmptyText `
+            -Value (Get-BoostLabServicesOptimizerPropertyValue -InputObject $readResult -Name 'Output' -DefaultValue $null) `
+            -Fallback 'RunOnce registry verification failed without diagnostic output.'
+        return [pscustomobject]@{
+            Success = $false
+            Output = $reason
+            FailureKind = 'RegistryVerificationFailed'
+            RegistryPath = $RegistryPath
+            SourceRegistryPath = $SourceRegistryPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            DetectedValueData = $detectedValue
+            SourceEquivalentCommand = $SourceEquivalentCommand
+            WriteResult = $writeResult
+            VerificationResult = $readResult
+        }
+    }
+    if ([string]$detectedValue -ne $ValueData) {
+        return [pscustomobject]@{
+            Success = $false
+            Output = 'RunOnce registry verification failed because detected value data did not match the source-equivalent command.'
+            FailureKind = 'RegistryVerificationMismatch'
+            RegistryPath = $RegistryPath
+            SourceRegistryPath = $SourceRegistryPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            DetectedValueData = $detectedValue
+            SourceEquivalentCommand = $SourceEquivalentCommand
+            WriteResult = $writeResult
+            VerificationResult = $readResult
+        }
+    }
+
+    [pscustomobject]@{
+        Success = $true
+        Output = 'RunOnce value installed and verified.'
+        FailureKind = $null
+        RegistryPath = $RegistryPath
+        SourceRegistryPath = $SourceRegistryPath
+        ValueName = $ValueName
+        ExpectedValueData = $ValueData
+        DetectedValueData = $detectedValue
+        SourceEquivalentCommand = $SourceEquivalentCommand
+        WriteResult = $writeResult
+        VerificationResult = $readResult
+    }
+}
+
 function Invoke-BoostLabServicesOptimizerRestorePointPrelude {
     param(
         [scriptblock]$CommandInvoker,
@@ -438,7 +701,12 @@ function Invoke-BoostLabServicesOptimizerRestorePointPrelude {
     catch {
         $attempts.Add([pscustomobject]@{
             Step = 'RestorePointPreludeWarning'
-            Result = [pscustomobject]@{ Success = $false; Output = $_.Exception.Message }
+            Result = [pscustomobject]@{
+                Success = $false
+                Output = Get-BoostLabServicesOptimizerNonEmptyText -Value $_.Exception.Message -Fallback 'Restore point prelude raised a non-blocking warning without diagnostic output.'
+                FailureKind = 'RestorePointPreludeWarning'
+                IsBlocking = $false
+            }
         })
     }
 
@@ -497,6 +765,16 @@ function Invoke-BoostLabServicesOptimizerAction {
             [pscustomobject]@{ Success = $true; Output = '' }
         },
 
+        [scriptblock]$RunOnceWriter = {
+            param($RegistryPath, $ValueName, $ValueData)
+            Set-BoostLabServicesOptimizerNativeRunOnceValue -RegistryPath $RegistryPath -ValueName $ValueName -ValueData $ValueData
+        },
+
+        [scriptblock]$RunOnceReader = {
+            param($RegistryPath, $ValueName)
+            Get-BoostLabServicesOptimizerNativeRunOnceValue -RegistryPath $RegistryPath -ValueName $ValueName
+        },
+
         [string]$SystemRoot = $env:SystemRoot,
 
         [string]$SourcePath = $script:BoostLabServicesOptimizerSourcePath
@@ -528,7 +806,8 @@ function Invoke-BoostLabServicesOptimizerAction {
 
     $tempRoot = Join-Path $SystemRoot 'Temp'
     $scriptPath = Join-Path $tempRoot $branch.GeneratedScriptFileName
-    $runOnceCommand = 'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" /v "{0}" /t REG_SZ /d "powershell.exe -nop -ep bypass -WindowStyle Maximized -f {1}" /f >nul 2>&1' -f $branch.RunOnceValueName, $scriptPath
+    $runOnceValueData = 'powershell.exe -nop -ep bypass -WindowStyle Maximized -f {0}' -f $scriptPath
+    $runOnceCommand = 'reg add "{0}" /v "{1}" /t REG_SZ /d "{2}" /f >nul 2>&1' -f $script:BoostLabServicesOptimizerRunOnceSourceRegistryPath, $branch.RunOnceValueName, $runOnceValueData
     $safeBootCommand = 'bcdedit /set {current} safeboot minimal >nul 2>&1'
     $operations = [System.Collections.Generic.List[object]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
@@ -549,7 +828,16 @@ function Invoke-BoostLabServicesOptimizerAction {
         }
         [pscustomobject]@{
             Name = 'InstallRunOnce'
-            Invoke = { & $CommandInvoker $runOnceCommand }
+            Invoke = {
+                Invoke-BoostLabServicesOptimizerRunOnceInstall `
+                    -RegistryPath $script:BoostLabServicesOptimizerRunOnceRegistryPath `
+                    -SourceRegistryPath $script:BoostLabServicesOptimizerRunOnceSourceRegistryPath `
+                    -ValueName $branch.RunOnceValueName `
+                    -ValueData $runOnceValueData `
+                    -SourceEquivalentCommand $runOnceCommand `
+                    -RunOnceWriter $RunOnceWriter `
+                    -RunOnceReader $RunOnceReader
+            }
         }
         [pscustomobject]@{
             Name = 'SetSafeBootMinimal'
@@ -568,7 +856,10 @@ function Invoke-BoostLabServicesOptimizerAction {
             $result = & $step.Invoke
             $operations.Add([pscustomobject]@{ Step = $step.Name; Result = $result })
             if (-not [bool](Get-BoostLabServicesOptimizerPropertyValue -InputObject $result -Name 'Success' -DefaultValue $true)) {
-                $errors.Add(("{0} failed: {1}" -f $step.Name, (Get-BoostLabServicesOptimizerPropertyValue -InputObject $result -Name 'Output' -DefaultValue 'Unknown failure')))
+                $reason = Get-BoostLabServicesOptimizerNonEmptyText `
+                    -Value (Get-BoostLabServicesOptimizerPropertyValue -InputObject $result -Name 'Output' -DefaultValue $null) `
+                    -Fallback ('{0} failed without diagnostic output.' -f $step.Name)
+                $errors.Add(("{0} failed: {1}" -f $step.Name, $reason))
                 break
             }
         }
@@ -586,6 +877,10 @@ function Invoke-BoostLabServicesOptimizerAction {
         GeneratedScriptFileName = $branch.GeneratedScriptFileName
         GeneratedRegFileName = $branch.GeneratedRegFileName
         RunOnceValueName = $branch.RunOnceValueName
+        RunOnceKeyPath = $script:BoostLabServicesOptimizerRunOnceRegistryPath
+        RunOnceSourceKeyPath = $script:BoostLabServicesOptimizerRunOnceSourceRegistryPath
+        RunOnceExpectedValueData = $runOnceValueData
+        RunOnceDetectedValueData = Get-BoostLabServicesOptimizerPropertyValue -InputObject (@($operations | Where-Object { $_.Step -eq 'InstallRunOnce' } | Select-Object -Last 1).Result) -Name 'DetectedValueData' -DefaultValue $null
         RunOnceCommand = $runOnceCommand
         SafeBootCommand = $safeBootCommand
         ServiceTargetCount = $branch.ServiceTargetCount

@@ -230,6 +230,7 @@ try {
         $commands = [System.Collections.Generic.List[string]]::new()
         $powershellCalls = [System.Collections.Generic.List[string]]::new()
         $fileWrites = @{}
+        $runOnceValues = @{}
         $patchedFiles = [System.Collections.Generic.List[string]]::new()
         $sleepCalls = [System.Collections.Generic.List[int]]::new()
         $restartCalls = [System.Collections.Generic.List[string]]::new()
@@ -267,9 +268,26 @@ try {
             $restartCalls.Add('shutdown -r -t 00') | Out-Null
             [pscustomobject]@{ Success = $true; Output = '' }
         }.GetNewClosure()
+        $runOnceWriter = {
+            param($RegistryPath, $ValueName, $ValueData)
+            if ([string]$RegistryPath -ne 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce') {
+                throw "Unexpected RunOnce path: $RegistryPath"
+            }
+            $runOnceValues[$ValueName] = $ValueData
+            [pscustomobject]@{ Success = $true; Output = 'mock write' }
+        }.GetNewClosure()
+        $runOnceReader = {
+            param($RegistryPath, $ValueName)
+            if (-not $runOnceValues.ContainsKey($ValueName)) {
+                [pscustomobject]@{ Success = $false; Output = 'mock missing'; Value = $null }
+            }
+            else {
+                [pscustomobject]@{ Success = $true; Output = 'mock read'; Value = [string]$runOnceValues[$ValueName] }
+            }
+        }.GetNewClosure()
 
         $result = & $module {
-            param($ActionName, $CommandInvoker, $PowerShellInvoker, $FileWriter, $FilePatcher, $SleepInvoker, $RestartInvoker)
+            param($ActionName, $CommandInvoker, $PowerShellInvoker, $FileWriter, $FilePatcher, $SleepInvoker, $RestartInvoker, $RunOnceWriter, $RunOnceReader)
             Invoke-BoostLabServicesOptimizerAction `
                 -ActionName $ActionName `
                 -AdministratorChecker { return $true } `
@@ -279,8 +297,10 @@ try {
                 -FilePatcher $FilePatcher `
                 -SleepInvoker $SleepInvoker `
                 -RestartInvoker $RestartInvoker `
+                -RunOnceWriter $RunOnceWriter `
+                -RunOnceReader $RunOnceReader `
                 -SystemRoot 'C:\Windows'
-        } $case.Action $commandInvoker $powerShellInvoker $fileWriter $filePatcher $sleepInvoker $restartInvoker
+        } $case.Action $commandInvoker $powerShellInvoker $fileWriter $filePatcher $sleepInvoker $restartInvoker $runOnceWriter $runOnceReader
 
         if (
             -not $result.Success -or
@@ -289,9 +309,20 @@ try {
             [string]$result.Data.GeneratedScriptFileName -ne [string]$case.Script -or
             [string]$result.Data.GeneratedRegFileName -ne [string]$case.RegFile -or
             [string]$result.Data.RunOnceValueName -ne [string]$case.RunOnce -or
+            [string]$result.Data.RunOnceKeyPath -ne 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -or
+            [string]$result.Data.RunOnceExpectedValueData -ne "powershell.exe -nop -ep bypass -WindowStyle Maximized -f C:\Windows\Temp\$($case.Script)" -or
+            [string]$result.Data.RunOnceDetectedValueData -ne [string]$result.Data.RunOnceExpectedValueData -or
             @($result.Data.Errors).Count -ne 0
         ) {
             throw "Mocked Services Optimizer $($case.Action) staging did not return the expected structured result."
+        }
+        if (
+            -not $runOnceValues.ContainsKey([string]$case.RunOnce) -or
+            [string]$runOnceValues[[string]$case.RunOnce] -ne [string]$result.Data.RunOnceExpectedValueData -or
+            [string]$result.Data.RunOnceCommand -notmatch [regex]::Escape([string]$case.RunOnce) -or
+            [string]$result.Data.RunOnceCommand -notmatch [regex]::Escape([string]$result.Data.RunOnceExpectedValueData)
+        ) {
+            throw "Mocked Services Optimizer $($case.Action) did not write and report the exact source-equivalent RunOnce value."
         }
         if ($fileWrites.Keys.Count -ne 1 -or $patchedFiles.Count -ne 1) {
             throw "Mocked Services Optimizer $($case.Action) did not write and patch exactly one generated script."
@@ -314,8 +345,6 @@ try {
         }
         foreach ($requiredCommandText in @(
             'SystemRestorePointCreationFrequency'
-            $case.RunOnce
-            $case.Script
             'bcdedit /set {current} safeboot minimal'
         )) {
             if ((@($commands | Where-Object { $_ -match [regex]::Escape($requiredCommandText) }).Count) -lt 1) {
@@ -328,6 +357,74 @@ try {
         if ($sleepCalls.Count -ne 1 -or [int]$sleepCalls[0] -ne 5 -or $restartCalls.Count -ne 1) {
             throw "Mocked Services Optimizer $($case.Action) did not preserve the source restart staging sequence."
         }
+    }
+
+    $failingCommands = [System.Collections.Generic.List[string]]::new()
+    $failingRestarts = [System.Collections.Generic.List[string]]::new()
+    $failingRunOnceWriter = {
+        param($RegistryPath, $ValueName, $ValueData)
+        [pscustomobject]@{ Success = $false; Output = '' }
+    }.GetNewClosure()
+    $failingResult = & $module {
+        param($CommandCalls, $RestartCalls, $RunOnceWriter)
+        Invoke-BoostLabServicesOptimizerAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandInvoker {
+                param($CommandText)
+                $CommandCalls.Add($CommandText) | Out-Null
+                [pscustomobject]@{ Success = $true; Output = '' }
+            } `
+            -PowerShellInvoker { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -FileWriter { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -FilePatcher { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -SleepInvoker { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -RestartInvoker {
+                $RestartCalls.Add('restart') | Out-Null
+                [pscustomobject]@{ Success = $true; Output = '' }
+            } `
+            -RunOnceWriter $RunOnceWriter `
+            -RunOnceReader { [pscustomobject]@{ Success = $false; Output = 'should not read'; Value = $null } } `
+            -SystemRoot 'C:\Windows'
+    } $failingCommands $failingRestarts $failingRunOnceWriter
+    if (
+        $failingResult.Success -or
+        [string]$failingResult.Message -notmatch 'InstallRunOnce failed: RunOnce registry write failed without diagnostic output' -or
+        @($failingResult.Data.Operations | Where-Object { $_.Step -eq 'SetSafeBootMinimal' }).Count -ne 0 -or
+        @($failingCommands | Where-Object { $_ -match 'bcdedit /set \{current\} safeboot minimal' }).Count -ne 0 -or
+        $failingRestarts.Count -ne 0
+    ) {
+        throw 'Services Optimizer RunOnce failure did not fail closed before bcdedit/restart with a non-empty diagnostic.'
+    }
+
+    $mismatchRunOnceValues = @{}
+    $mismatchResult = & $module {
+        param($RunOnceValues)
+        Invoke-BoostLabServicesOptimizerAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandInvoker { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -PowerShellInvoker { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -FileWriter { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -FilePatcher { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -SleepInvoker { [pscustomobject]@{ Success = $true; Output = '' } } `
+            -RestartInvoker { throw 'Restart must not be reached after RunOnce verification mismatch.' } `
+            -RunOnceWriter {
+                param($RegistryPath, $ValueName, $ValueData)
+                $RunOnceValues[$ValueName] = $ValueData
+                [pscustomobject]@{ Success = $true; Output = 'mock write' }
+            } `
+            -RunOnceReader {
+                [pscustomobject]@{ Success = $true; Output = 'mock read'; Value = 'powershell.exe -bad-data' }
+            } `
+            -SystemRoot 'C:\Windows'
+    } $mismatchRunOnceValues
+    if (
+        $mismatchResult.Success -or
+        [string]$mismatchResult.Message -notmatch 'detected value data did not match' -or
+        [string]$mismatchResult.Data.RunOnceDetectedValueData -ne 'powershell.exe -bad-data'
+    ) {
+        throw 'Services Optimizer RunOnce verification mismatch did not fail closed with detected data.'
     }
 }
 finally {
