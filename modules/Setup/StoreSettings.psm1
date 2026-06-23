@@ -510,7 +510,9 @@ function Test-BoostLabStoreSettingsState {
 function Invoke-BoostLabStoreRegistryCommand {
     param(
         [Parameter(Mandatory)]
-        [string]$CommandText
+        [string]$CommandText,
+
+        [scriptblock]$ProcessRunner = $null
     )
 
     if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
@@ -521,15 +523,44 @@ function Invoke-BoostLabStoreRegistryCommand {
         throw 'cmd.exe was not found.'
     }
 
-    $output = & $commandProcessorPath /c $CommandText 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $detail = (@($output) -join ' ').Trim()
+    $result = if ($null -ne $ProcessRunner) {
+        & $ProcessRunner $commandProcessorPath $CommandText
+    }
+    else {
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $commandProcessorPath
+        $startInfo.Arguments = "/c $CommandText"
+        $startInfo.UseShellExecute = $false
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $startInfo.CreateNoWindow = $true
+
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        [void]$process.Start()
+        $standardOutput = $process.StandardOutput.ReadToEnd()
+        $standardError = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+
+        [pscustomobject]@{
+            ExitCode       = [int]$process.ExitCode
+            StandardOutput = $standardOutput
+            StandardError  = $standardError
+        }
+    }
+
+    $exitCode = [int]$result.ExitCode
+    if ($exitCode -ne 0) {
+        $detail = (@($result.StandardError, $result.StandardOutput) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ' '
+        $detail = $detail.Trim()
         if ([string]::IsNullOrWhiteSpace($detail)) {
-            $detail = "Registry command returned exit code $LASTEXITCODE."
+            $detail = "Registry command returned exit code $exitCode."
         }
 
         throw $detail
     }
+
+    return $result
 }
 
 function Stop-BoostLabStoreProcesses {
@@ -672,7 +703,7 @@ function Invoke-BoostLabStoreSettingsAction {
             if ($null -ne $processResult) {
                 $processActions.Add("$($processResult.Name): $($processResult.Status)")
                 if (-not [bool]$processResult.Success) {
-                    $errors.Add([string]$processResult.Message)
+                    $warnings.Add("Store process stop was best-effort: $($processResult.Message)")
                 }
             }
         }
@@ -765,7 +796,7 @@ function Invoke-BoostLabStoreSettingsAction {
                 if ($null -ne $processResult) {
                     $processActions.Add("$passName - $($processResult.Name): $($processResult.Status)")
                     if (-not [bool]$processResult.Success) {
-                        $errors.Add([string]$processResult.Message)
+                        $warnings.Add("Store process stop was best-effort: $($processResult.Message)")
                     }
                 }
             }

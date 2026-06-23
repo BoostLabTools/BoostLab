@@ -120,6 +120,8 @@ foreach ($requiredText in @(
     'Start-Process "ms-windows-store:settings" -ErrorAction Stop'
     'Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction Stop'
     'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
+    'RedirectStandardError = $true'
+    'ProcessRunner'
     'reg load "HKLM\Settings"'
     'reg import'
     'reg unload "HKLM\Settings"'
@@ -240,6 +242,49 @@ try {
             [pscustomobject]@{ Name = 'backgroundTaskHost'; Status = 'Stopped'; Success = $true; Message = 'Stopped.' }
             [pscustomobject]@{ Name = 'StoreDesktopExtension'; Status = 'Stopped'; Success = $true; Message = 'Stopped.' }
         )
+    }
+    $newRespawnedProcessResults = {
+        return @(
+            [pscustomobject]@{ Name = 'WinStore.App'; Status = 'Still running'; Success = $false; Message = 'WinStore.App remained running after the stop request.' }
+            [pscustomobject]@{ Name = 'backgroundTaskHost'; Status = 'Still running'; Success = $false; Message = 'backgroundTaskHost remained running after the stop request.' }
+            [pscustomobject]@{ Name = 'StoreDesktopExtension'; Status = 'Stopped'; Success = $true; Message = 'Stopped.' }
+        )
+    }
+
+    $successfulNativeRunner = {
+        param($CommandProcessorPath, $CommandText)
+        [pscustomobject]@{
+            ExitCode       = 0
+            StandardOutput = ''
+            StandardError  = 'The operation completed successfully.'
+        }
+    }
+    $nativeSuccess = & $storeModule {
+        param($Runner)
+        Invoke-BoostLabStoreRegistryCommand -CommandText 'mock successful native command' -ProcessRunner $Runner
+    } $successfulNativeRunner
+    if ([int]$nativeSuccess.ExitCode -ne 0) {
+        throw 'Store Settings native command wrapper must not fail when exit code is 0 and stderr contains benign text.'
+    }
+    $failingNativeRunner = {
+        param($CommandProcessorPath, $CommandText)
+        [pscustomobject]@{
+            ExitCode       = 9
+            StandardOutput = ''
+            StandardError  = 'Real registry failure.'
+        }
+    }
+    try {
+        & $storeModule {
+            param($Runner)
+            Invoke-BoostLabStoreRegistryCommand -CommandText 'mock failing native command' -ProcessRunner $Runner
+        } $failingNativeRunner | Out-Null
+        throw 'Store Settings native command wrapper did not fail on non-zero exit code.'
+    }
+    catch {
+        if (-not $_.Exception.Message.Contains('Real registry failure.')) {
+            throw "Store Settings native command wrapper returned the wrong failure detail: $($_.Exception.Message)"
+        }
     }
 
     $capturedHiveStates = @(
@@ -367,6 +412,7 @@ try {
     }.GetNewClosure()
     $applyRegistryReader = {
         param($Path, $Name)
+        $applyEvents.Add("READ:$Path|$Name")
         if ($Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate') {
             return (& $newRegistryValueState $true $true 2 '2' 'Mock AutoDownload detected.')
         }
@@ -419,6 +465,109 @@ try {
     }
     if ($applyEventText.IndexOf("COMMAND:$autoDownloadCommand") -gt $applyEventText.IndexOf('COMMAND:reg load "HKLM\Settings"')) {
         throw 'Store Settings Apply command order changed: AutoDownload must be set before loading the Store hive.'
+    }
+    $importIndex = $applyEventText.IndexOf('COMMAND:reg import "C:\Windows\Temp\windowsstore.reg"')
+    $unloadIndex = $applyEventText.IndexOf("COMMAND:$regUnloadCommand")
+    foreach ($hiveValue in @(
+        'READ:HKLM:\Settings\LocalState|VideoAutoplay'
+        'READ:HKLM:\Settings\LocalState|EnableAppInstallNotifications'
+        'READ:HKLM:\Settings\LocalState\PersistentSettings|PersonalizationEnabled'
+    )) {
+        $readIndex = $applyEventText.IndexOf($hiveValue)
+        if ($readIndex -lt 0 -or $readIndex -lt $importIndex -or $readIndex -gt $unloadIndex) {
+            throw "Store Settings Apply must capture $hiveValue after import and before hive unload."
+        }
+    }
+
+    $respawnEvents = [System.Collections.Generic.List[string]]::new()
+    $respawnCommandInvoker = {
+        param($CommandText)
+        $respawnEvents.Add("COMMAND:$CommandText")
+    }.GetNewClosure()
+    $respawnStoreLauncher = {
+        param($Target)
+        $respawnEvents.Add("LAUNCH:$Target")
+    }.GetNewClosure()
+    $respawnDelay = {
+        param($Seconds)
+        $respawnEvents.Add("DELAY:$Seconds")
+    }.GetNewClosure()
+    $respawnFileWriter = {
+        param($Path, $Content)
+        $respawnEvents.Add("FILE:$Path")
+    }.GetNewClosure()
+    $respawnPathTester = {
+        param($Path)
+        $respawnEvents.Add("PATH:$Path")
+        return $true
+    }.GetNewClosure()
+    $respawnRegistryReader = {
+        param($Path, $Name)
+        if ($Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate') {
+            return (& $newRegistryValueState $true $true 2 '2' 'Mock AutoDownload detected.')
+        }
+
+        $expected = $expectedHiveValues["$Path|$Name"]
+        return (& $newRegistryValueState $true $true $expected $expected 'Mock Store hive value detected.')
+    }.GetNewClosure()
+    $respawnProcessStopper = {
+        $respawnEvents.Add('PROCESSES')
+        return (& $newRespawnedProcessResults)
+    }.GetNewClosure()
+    $respawnApply = & $storeModule {
+        param($CommandInvoker, $StoreLauncher, $Delay, $FileWriter, $PathTester, $RegistryReader, $ProcessStopper)
+        Invoke-BoostLabStoreSettingsAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -RegistryCommandInvoker $CommandInvoker `
+            -StoreLauncher $StoreLauncher `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $FileWriter `
+            -PathTester $PathTester `
+            -RegistryReader $RegistryReader `
+            -ProcessStopper $ProcessStopper `
+            -SystemRoot 'C:\Windows' `
+            -LocalAppData 'C:\Users\Tester\AppData\Local'
+    } $respawnCommandInvoker $respawnStoreLauncher $respawnDelay $respawnFileWriter $respawnPathTester $respawnRegistryReader $respawnProcessStopper
+    if (
+        -not $respawnApply.Success -or
+        $respawnApply.Data.CommandStatus -ne 'Completed' -or
+        $respawnApply.VerificationResult.Status -ne 'Passed' -or
+        -not ([string]$respawnApply.Message).Contains('Warning: Store process stop was best-effort') -or
+        @($respawnApply.Data.Warnings | Where-Object { [string]$_ -like '*remained running after the stop request*' }).Count -lt 2
+    ) {
+        throw 'Store Settings Apply must treat Store process respawn/remaining-running state as a warning when registry and hive operations succeed.'
+    }
+
+    $failingApplyEvents = [System.Collections.Generic.List[string]]::new()
+    $failingCommandInvoker = {
+        param($CommandText)
+        $failingApplyEvents.Add("COMMAND:$CommandText")
+        if ($CommandText -like 'reg import*') {
+            throw 'Real registry failure.'
+        }
+    }.GetNewClosure()
+    $failingApply = & $storeModule {
+        param($CommandInvoker, $StoreLauncher, $Delay, $FileWriter, $PathTester, $RegistryReader, $ProcessStopper)
+        Invoke-BoostLabStoreSettingsAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -RegistryCommandInvoker $CommandInvoker `
+            -StoreLauncher $StoreLauncher `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $FileWriter `
+            -PathTester $PathTester `
+            -RegistryReader $RegistryReader `
+            -ProcessStopper $ProcessStopper `
+            -SystemRoot 'C:\Windows' `
+            -LocalAppData 'C:\Users\Tester\AppData\Local'
+    } $failingCommandInvoker $applyStoreLauncher $applyDelay $applyFileWriter $applyPathTester $applyRegistryReader $processStopper
+    if (
+        [bool]$failingApply.Success -or
+        $failingApply.Data.CommandStatus -ne 'Failed' -or
+        -not ([string]$failingApply.Message).Contains('Real registry failure.')
+    ) {
+        throw 'Store Settings Apply must still fail closed on real registry command failures.'
     }
 
     $defaultEvents = [System.Collections.Generic.List[string]]::new()
