@@ -156,6 +156,70 @@ try {
         Assert-GameBarCondition ($operationType -in @($defaultPlan.Operations.OperationType)) "GameBar Default plan is missing operation type: $operationType"
     }
 
+    $removeAppxOperation = @($offPlan.Operations | Where-Object { [string]$_.OperationType -eq 'RemoveAppxWhereNameLike' }) | Select-Object -First 1
+    Assert-GameBarCondition ($null -ne $removeAppxOperation) 'GameBar Off plan must include RemoveAppxWhereNameLike.'
+    $gameBarAppxPatterns = @($removeAppxOperation.Parameters.Patterns)
+    Assert-GameBarCondition (($gameBarAppxPatterns -join ',') -eq '*Gaming*,*Xbox*') 'GameBar AppX removal patterns must preserve the Ultimate source *Gaming* and *Xbox* filters exactly.'
+
+    $emptyAppxResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { @() } `
+        -AppxRemover { throw 'Remover should not be called for an empty package list.' }
+    Assert-GameBarCondition ([bool]$emptyAppxResult.Success) 'GameBar AppX removal must succeed for an empty mock package list.'
+    Assert-GameBarCondition ([int]$emptyAppxResult.TotalPackages -eq 0) 'GameBar empty mock package list should report zero packages.'
+    Assert-GameBarCondition (@($emptyAppxResult.MatchedPackages).Count -eq 0) 'GameBar empty mock package list should match no packages.'
+
+    $mockGameBarPackages = @(
+        [pscustomobject]@{ Name = 'Microsoft.GamingApp'; PackageFullName = 'Microsoft.GamingApp_1'; PackageFamilyName = 'Microsoft.GamingApp_family'; User = 'S-1-1'; InstallLocation = 'C:\Mock\Gaming' }
+        [pscustomobject]@{ Name = 'Microsoft.XboxGamingOverlay'; PackageFullName = 'Microsoft.XboxGamingOverlay_1'; PackageFamilyName = 'Microsoft.XboxGamingOverlay_family'; User = 'S-1-2'; InstallLocation = 'C:\Mock\Xbox' }
+        [pscustomobject]@{ Name = 'Microsoft.Notepad'; PackageFullName = 'Microsoft.Notepad_1'; PackageFamilyName = 'Microsoft.Notepad_family'; User = 'S-1-3'; InstallLocation = 'C:\Mock\Notepad' }
+    )
+    $removedGameBarPackages = [System.Collections.Generic.List[string]]::new()
+    $mockAppxResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { $mockGameBarPackages }.GetNewClosure() `
+        -AppxRemover { param($Package) $removedGameBarPackages.Add([string]$Package.PackageFullName) }.GetNewClosure()
+    Assert-GameBarCondition ([bool]$mockAppxResult.Success) 'GameBar AppX removal must succeed when all matching mock packages are removed.'
+    Assert-GameBarCondition (@($mockAppxResult.MatchedPackages).Count -eq 2) 'GameBar AppX removal must match only Gaming/Xbox mock packages.'
+    Assert-GameBarCondition (@($mockAppxResult.SkippedPackages).Count -eq 1) 'GameBar AppX removal must skip non-matching packages.'
+    Assert-GameBarCondition (($removedGameBarPackages.ToArray() -join ',') -eq 'Microsoft.GamingApp_1,Microsoft.XboxGamingOverlay_1') 'GameBar AppX removal must remove matching packages one-by-one.'
+
+    $pipeWarningResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.GamingPipe'; PackageFullName = 'Microsoft.GamingPipe_1'; PackageFamilyName = 'Microsoft.GamingPipe_family'; User = 'S-1-4'; InstallLocation = 'C:\Mock\Pipe' }) } `
+        -AppxRemover { throw 'The Win32 internal error "No process is on the other end of the pipe" 0xE9 occurred while getting console output buffer information.' }
+    Assert-GameBarCondition ([bool]$pipeWarningResult.Success) 'GameBar AppX removal must not hard-fail on console/progress pipe output warnings alone.'
+    Assert-GameBarCondition (@($pipeWarningResult.ConsolePipeWarnings).Count -eq 1) 'GameBar AppX removal must report console/progress pipe warnings.'
+    Assert-GameBarCondition (@($pipeWarningResult.FailedPackages).Count -eq 0) 'GameBar AppX removal must not classify console/progress pipe warnings as real package failures.'
+
+    $realAppxFailureResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.XboxProtected'; PackageFullName = 'Microsoft.XboxProtected_1'; PackageFamilyName = 'Microsoft.XboxProtected_family'; User = 'S-1-5'; InstallLocation = 'C:\Mock\Protected' }) } `
+        -AppxRemover { throw 'Access is denied.' }
+    Assert-GameBarCondition (-not [bool]$realAppxFailureResult.Success) 'GameBar AppX removal must fail on real package removal errors.'
+    Assert-GameBarCondition (@($realAppxFailureResult.FailedPackages).Count -eq 1) 'GameBar AppX removal must report real package failures.'
+    Assert-GameBarCondition ([string]$realAppxFailureResult.FailedPackages[0].Package.PackageFullName -eq 'Microsoft.XboxProtected_1') 'GameBar AppX real failure must include PackageFullName.'
+    Assert-GameBarCondition ([string]$realAppxFailureResult.FailedPackages[0].Package.PackageFamilyName -eq 'Microsoft.XboxProtected_family') 'GameBar AppX real failure must include PackageFamilyName.'
+
+    $appxFailureSeen = [System.Collections.Generic.List[string]]::new()
+    $appxFailureExecutor = {
+        param($Operation)
+        $appxFailureSeen.Add([string]$Operation.OperationType)
+        if ([string]$Operation.OperationType -eq 'RemoveAppxWhereNameLike') {
+            return $realAppxFailureResult
+        }
+
+        [pscustomobject]@{
+            Success       = $true
+            OperationType = [string]$Operation.OperationType
+            Description   = [string]$Operation.Description
+        }
+    }.GetNewClosure()
+    $failedAppxWorkflow = Invoke-BoostLabGameBarBranchWorkflow -Branch OffRecommended -OperationExecutor $appxFailureExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition (-not [bool]$failedAppxWorkflow.Success) 'GameBar branch must stop on a real RemoveAppxWhereNameLike failure.'
+    Assert-GameBarCondition ([string]$failedAppxWorkflow.CommandStatus -eq 'Failed') 'GameBar branch must report failed command status on real AppX failure.'
+    Assert-GameBarCondition (($appxFailureSeen.ToArray() -join ',') -eq 'StopProcess,RemoveAppxWhereNameLike') 'GameBar branch must not continue after a real AppX operation failure.'
+
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"GameDVR_Enabled"=dword:00000000')) 'GameBar Off registry payload is missing GameDVR_Enabled.'
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"AppCaptureEnabled"=dword:00000000')) 'GameBar Off registry payload is missing AppCaptureEnabled.'
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"UseNexusForGameBarEnabled"=dword:00000000')) 'GameBar Off registry payload is missing UseNexusForGameBarEnabled.'

@@ -328,6 +328,218 @@ function Invoke-BoostLabGameBarTrustedInstallerCommand {
     }
 }
 
+function Get-BoostLabGameBarObjectProperty {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
+function ConvertTo-BoostLabGameBarAppxPackageRecord {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object]$Package
+    )
+
+    if ($null -eq $Package) {
+        return [pscustomobject]@{
+            Name              = ''
+            PackageFullName   = ''
+            PackageFamilyName = ''
+            User              = ''
+            InstallLocation   = ''
+        }
+    }
+
+    [pscustomobject]@{
+        Name              = [string](Get-BoostLabGameBarObjectProperty -InputObject $Package -Name 'Name')
+        PackageFullName   = [string](Get-BoostLabGameBarObjectProperty -InputObject $Package -Name 'PackageFullName')
+        PackageFamilyName = [string](Get-BoostLabGameBarObjectProperty -InputObject $Package -Name 'PackageFamilyName')
+        User              = [string](Get-BoostLabGameBarObjectProperty -InputObject $Package -Name 'User')
+        InstallLocation   = [string](Get-BoostLabGameBarObjectProperty -InputObject $Package -Name 'InstallLocation')
+    }
+}
+
+function Test-BoostLabGameBarAppxNameMatch {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$Name,
+
+        [string[]]$Patterns = @()
+    )
+
+    foreach ($pattern in @($Patterns)) {
+        if ([string]$Name -like [string]$pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Test-BoostLabGameBarConsolePipeException {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    if ($null -eq $ErrorRecord) {
+        return $false
+    }
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    return (
+        $messageText -like '*No process is on the other end of the pipe*' -or
+        $messageText -like '*getting console output buffer information*' -or
+        $messageText -like '*0xE9*'
+    )
+}
+
+function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
+    [CmdletBinding()]
+    param(
+        [string[]]$Patterns = @(),
+
+        [scriptblock]$AppxGetter = $null,
+
+        [scriptblock]$AppxRemover = $null
+    )
+
+    if ($null -eq $AppxGetter) {
+        $AppxGetter = { Get-AppXPackage -AllUsers -ErrorAction Stop }
+    }
+    if ($null -eq $AppxRemover) {
+        $AppxRemover = {
+            param(
+                [Parameter(Mandatory)]
+                [object]$Package
+            )
+
+            $Package | Remove-AppxPackage -ErrorAction Stop -WarningAction SilentlyContinue -InformationAction SilentlyContinue | Out-Null
+        }
+    }
+
+    $matched = [System.Collections.Generic.List[object]]::new()
+    $removed = [System.Collections.Generic.List[object]]::new()
+    $skipped = [System.Collections.Generic.List[object]]::new()
+    $failed = [System.Collections.Generic.List[object]]::new()
+    $pipeWarnings = [System.Collections.Generic.List[object]]::new()
+    $allPackages = @()
+
+    $previousProgressPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        try {
+            $allPackages = @(& $AppxGetter)
+        }
+        catch {
+            if (Test-BoostLabGameBarConsolePipeException -ErrorRecord $_) {
+                $pipeWarnings.Add([pscustomobject]@{
+                    Stage   = 'EnumeratePackages'
+                    Reason  = [string]$_.Exception.Message
+                    Package = $null
+                })
+                $allPackages = @()
+            }
+            else {
+                throw
+            }
+        }
+
+        foreach ($package in @($allPackages)) {
+            $record = ConvertTo-BoostLabGameBarAppxPackageRecord -Package $package
+            if (-not (Test-BoostLabGameBarAppxNameMatch -Name ([string]$record.Name) -Patterns $Patterns)) {
+                $skipped.Add($record)
+                continue
+            }
+
+            $matched.Add($record)
+            try {
+                & $AppxRemover $package | Out-Null
+                $removed.Add($record)
+            }
+            catch {
+                if (Test-BoostLabGameBarConsolePipeException -ErrorRecord $_) {
+                    $pipeWarnings.Add([pscustomobject]@{
+                        Stage   = 'RemovePackage'
+                        Reason  = [string]$_.Exception.Message
+                        Package = $record
+                    })
+                    continue
+                }
+
+                $failed.Add([pscustomobject]@{
+                    Package = $record
+                    Reason  = [string]$_.Exception.Message
+                })
+            }
+        }
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+    }
+
+    $success = ($failed.Count -eq 0)
+    $message = if ($success) {
+        "Processed $($matched.Count) matching GameBar/Xbox AppX package(s); skipped $($skipped.Count) non-matching package(s)."
+    }
+    else {
+        "Failed to remove $($failed.Count) matching GameBar/Xbox AppX package(s)."
+    }
+
+    if ($pipeWarnings.Count -gt 0) {
+        $message = "$message Console/progress output warning(s): $($pipeWarnings.Count)."
+    }
+
+    [pscustomobject]@{
+        Success              = $success
+        OperationType        = 'RemoveAppxWhereNameLike'
+        Description          = 'Remove all-users AppX packages whose Name matches *Gaming* or *Xbox*.'
+        Message              = $message
+        Patterns             = @($Patterns)
+        TotalPackages        = @($allPackages).Count
+        MatchedPackages      = $matched.ToArray()
+        RemovedPackages      = $removed.ToArray()
+        SkippedPackages      = $skipped.ToArray()
+        FailedPackages       = $failed.ToArray()
+        ConsolePipeWarnings  = $pipeWarnings.ToArray()
+    }
+}
+
 function Invoke-BoostLabGameBarOperation {
     [CmdletBinding()]
     param(
@@ -350,13 +562,7 @@ function Invoke-BoostLabGameBarOperation {
         }
         'RemoveAppxWhereNameLike' {
             $patterns = @($Operation.Parameters.Patterns)
-            Get-AppXPackage -AllUsers | Where-Object {
-                $packageName = [string]$_.Name
-                foreach ($pattern in $patterns) {
-                    if ($packageName -like [string]$pattern) { return $true }
-                }
-                return $false
-            } | Remove-AppxPackage -ErrorAction SilentlyContinue
+            return Invoke-BoostLabGameBarRemoveAppxWhereNameLike -Patterns $patterns
         }
         'Cmd' {
             & $env:ComSpec /c ([string]$Operation.Parameters.Command) | Out-Null
@@ -468,6 +674,22 @@ function Invoke-BoostLabGameBarBranchWorkflow {
             $results.Add($operationResult)
             if ($operation.OperationType -notin @('RequireAdministrator', 'RequireInternet', 'Sleep')) {
                 $changesExecuted = $true
+            }
+
+            $successProperty = $operationResult.PSObject.Properties['Success']
+            if ($null -ne $successProperty -and -not [bool]$successProperty.Value) {
+                return [pscustomobject]@{
+                    Success            = $false
+                    Status             = 'Error'
+                    CommandStatus      = 'Failed'
+                    VerificationStatus = 'Failed'
+                    Branch             = $Branch
+                    SourceBranch       = $plan.SourceBranchLabel
+                    Message            = "Gamebar $($plan.SourceBranchLabel) failed at operation $($operation.OperationType): $($operationResult.Message)"
+                    ChangesExecuted    = $changesExecuted
+                    Operations         = $results.ToArray()
+                    Plan               = $plan
+                }
             }
         }
         catch {
@@ -683,5 +905,6 @@ Export-ModuleMember -Function @(
     'Get-BoostLabGameBarOperationPlan',
     'Get-BoostLabGameBarAllOperationPlans',
     'Get-BoostLabGameBarAnalysis',
-    'Invoke-BoostLabGameBarBranchWorkflow'
+    'Invoke-BoostLabGameBarBranchWorkflow',
+    'Invoke-BoostLabGameBarRemoveAppxWhereNameLike'
 )
