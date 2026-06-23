@@ -653,7 +653,7 @@ $unchangedModules = [ordered]@{
     }
     Copilot = @{
         Path = Join-Path $modulesRoot 'Windows\copilot.psm1'
-        Hash = '933B6376D702F89662ADF994DBCBD7822BD18FFF1EFA259BFCD5FCF2B8640F5E'
+        Hash = '5F47E705E357F5E8B706D488A9D5D34EE742990B0F5E2BBB1EEABB8DADA6A7D6'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
 }

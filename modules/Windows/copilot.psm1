@@ -420,9 +420,15 @@ function Get-BoostLabCopilotProcessMatches {
 
         return [pscustomobject]@{
             ReadSucceeded = $true
-            Count         = $matches.Count
-            DisplayValue  = [string]$matches.Count
-            Message       = if ($matches.Count -eq 0) { 'No matching processes detected.' } else { "$($matches.Count) matching process(es) detected." }
+            Count         = @($matches).Count
+            DisplayValue  = [string]@($matches).Count
+            Message       = if (@($matches).Count -eq 0) { 'No matching processes detected.' } else { "$(@($matches).Count) matching process(es) detected." }
+            Processes     = @($matches | ForEach-Object {
+                    [pscustomobject]@{
+                        ProcessName = [string]$_.ProcessName
+                        Id          = if ($null -ne $_.Id) { [int]$_.Id } else { $null }
+                    }
+                })
         }
     }
     catch {
@@ -435,6 +441,105 @@ function Get-BoostLabCopilotProcessMatches {
     }
 }
 
+function ConvertTo-BoostLabCopilotProcessRecord {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Process
+    )
+
+    $name = if ($null -ne $Process.PSObject.Properties['ProcessName']) {
+        [string]$Process.ProcessName
+    }
+    elseif ($null -ne $Process.PSObject.Properties['Name']) {
+        [string]$Process.Name
+    }
+    else {
+        ''
+    }
+
+    $id = if ($null -ne $Process.PSObject.Properties['Id'] -and $null -ne $Process.Id) {
+        [int]$Process.Id
+    }
+    else {
+        $null
+    }
+
+    [pscustomobject]@{
+        ProcessName = $name
+        Id          = $id
+    }
+}
+
+function ConvertTo-BoostLabCopilotProcessState {
+    param(
+        [AllowNull()]
+        [object]$State
+    )
+
+    if ($null -eq $State) {
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Count         = 0
+            DisplayValue  = '0'
+            Message       = 'No matching processes detected.'
+            Processes     = @()
+        }
+    }
+
+    $isStructuredState = $null -ne $State.PSObject.Properties['ReadSucceeded']
+    if ($isStructuredState) {
+        $processes = if ($null -ne $State.PSObject.Properties['Processes']) {
+            @($State.Processes)
+        }
+        elseif ($null -ne $State.PSObject.Properties['Matches']) {
+            @($State.Matches)
+        }
+        else {
+            @()
+        }
+        $count = if ($null -ne $State.PSObject.Properties['Count'] -and $null -ne $State.Count) {
+            [int]$State.Count
+        }
+        else {
+            @($processes).Count
+        }
+        return [pscustomobject]@{
+            ReadSucceeded = [bool]$State.ReadSucceeded
+            Count         = $count
+            DisplayValue  = if ($null -ne $State.PSObject.Properties['DisplayValue']) { [string]$State.DisplayValue } else { [string]$count }
+            Message       = if ($null -ne $State.PSObject.Properties['Message']) { [string]$State.Message } elseif ($count -eq 0) { 'No matching processes detected.' } else { "$count matching process(es) detected." }
+            Processes     = @($processes | ForEach-Object {
+                    if ($null -ne $_) { ConvertTo-BoostLabCopilotProcessRecord -Process $_ }
+                })
+        }
+    }
+
+    $matches = @($State)
+    return [pscustomobject]@{
+        ReadSucceeded = $true
+        Count         = $matches.Count
+        DisplayValue  = [string]$matches.Count
+        Message       = if ($matches.Count -eq 0) { 'No matching processes detected.' } else { "$($matches.Count) matching process(es) detected: $((@($matches | ForEach-Object { (ConvertTo-BoostLabCopilotProcessRecord -Process $_).ProcessName }) | Where-Object { $_ }) -join ', ')." }
+        Processes     = @($matches | ForEach-Object { ConvertTo-BoostLabCopilotProcessRecord -Process $_ })
+    }
+}
+
+function ConvertTo-BoostLabCopilotPackageRecord {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Package
+    )
+
+    [pscustomobject]@{
+        Name              = if ($null -ne $Package.PSObject.Properties['Name']) { [string]$Package.Name } else { '' }
+        PackageFullName   = if ($null -ne $Package.PSObject.Properties['PackageFullName']) { [string]$Package.PackageFullName } else { '' }
+        PackageFamilyName = if ($null -ne $Package.PSObject.Properties['PackageFamilyName']) { [string]$Package.PackageFamilyName } else { '' }
+        InstallLocation   = if ($null -ne $Package.PSObject.Properties['InstallLocation']) { [string]$Package.InstallLocation } else { '' }
+        User              = if ($null -ne $Package.PSObject.Properties['User']) { [string]$Package.User } elseif ($null -ne $Package.PSObject.Properties['UserSid']) { [string]$Package.UserSid } else { '' }
+        Scope             = 'AllUsersInstalled'
+    }
+}
+
 function Get-BoostLabCopilotPackageMatches {
     param(
         [Parameter(Mandatory)]
@@ -443,11 +548,14 @@ function Get-BoostLabCopilotPackageMatches {
 
     try {
         $packages = @(Get-AppxPackage -AllUsers | Where-Object { $_.Name -like $Pattern })
+        $packageRecords = @($packages | ForEach-Object { ConvertTo-BoostLabCopilotPackageRecord -Package $_ })
         return [pscustomobject]@{
-            ReadSucceeded = $true
-            Count         = $packages.Count
-            DisplayValue  = [string]$packages.Count
-            Message       = if ($packages.Count -eq 0) { 'No matching AppX packages detected.' } else { "$($packages.Count) matching AppX package(s) detected." }
+            ReadSucceeded      = $true
+            Count              = $packageRecords.Count
+            DisplayValue       = [string]$packageRecords.Count
+            Message            = if ($packageRecords.Count -eq 0) { 'No matching AppX packages detected.' } else { "$($packageRecords.Count) matching AppX package(s) detected: $((@($packageRecords | ForEach-Object { if ($_.PackageFullName) { $_.PackageFullName } else { $_.Name } }) | Where-Object { $_ }) -join '; ')." }
+            Packages           = $packageRecords
+            ProvisionedPackages = @()
         }
     }
     catch {
@@ -457,6 +565,65 @@ function Get-BoostLabCopilotPackageMatches {
             DisplayValue  = 'Unknown'
             Message       = $_.Exception.Message
         }
+    }
+}
+
+function ConvertTo-BoostLabCopilotPackageState {
+    param(
+        [AllowNull()]
+        [object]$State
+    )
+
+    if ($null -eq $State) {
+        return [pscustomobject]@{
+            ReadSucceeded      = $true
+            Count              = 0
+            DisplayValue       = '0'
+            Message            = 'No matching AppX packages detected.'
+            Packages           = @()
+            ProvisionedPackages = @()
+        }
+    }
+
+    $isStructuredState = $null -ne $State.PSObject.Properties['ReadSucceeded']
+    if ($isStructuredState) {
+        $packages = if ($null -ne $State.PSObject.Properties['Packages']) {
+            @($State.Packages)
+        }
+        elseif ($null -ne $State.PSObject.Properties['Matches']) {
+            @($State.Matches)
+        }
+        else {
+            @()
+        }
+        $packageRecords = @($packages | ForEach-Object {
+                if ($null -ne $_) { ConvertTo-BoostLabCopilotPackageRecord -Package $_ }
+            })
+        $count = if ($null -ne $State.PSObject.Properties['Count'] -and $null -ne $State.Count) {
+            [int]$State.Count
+        }
+        else {
+            $packageRecords.Count
+        }
+        return [pscustomobject]@{
+            ReadSucceeded      = [bool]$State.ReadSucceeded
+            Count              = $count
+            DisplayValue       = if ($null -ne $State.PSObject.Properties['DisplayValue']) { [string]$State.DisplayValue } else { [string]$count }
+            Message            = if ($null -ne $State.PSObject.Properties['Message']) { [string]$State.Message } elseif ($count -eq 0) { 'No matching AppX packages detected.' } else { "$count matching AppX package(s) detected." }
+            Packages           = $packageRecords
+            ProvisionedPackages = if ($null -ne $State.PSObject.Properties['ProvisionedPackages']) { @($State.ProvisionedPackages) } else { @() }
+        }
+    }
+
+    $packages = @($State)
+    $packageRecords = @($packages | ForEach-Object { ConvertTo-BoostLabCopilotPackageRecord -Package $_ })
+    return [pscustomobject]@{
+        ReadSucceeded      = $true
+        Count              = $packageRecords.Count
+        DisplayValue       = [string]$packageRecords.Count
+        Message            = if ($packageRecords.Count -eq 0) { 'No matching AppX packages detected.' } else { "$($packageRecords.Count) matching AppX package(s) detected: $((@($packageRecords | ForEach-Object { if ($_.PackageFullName) { $_.PackageFullName } else { $_.Name } }) | Where-Object { $_ }) -join '; ')." }
+        Packages           = $packageRecords
+        ProvisionedPackages = @()
     }
 }
 
@@ -531,7 +698,7 @@ function Test-BoostLabCopilotState {
         }
 
         foreach ($processName in $script:BoostLabCopilotProcessNames) {
-            $state = & $readProcess $processName ''
+            $state = ConvertTo-BoostLabCopilotProcessState -State (& $readProcess $processName '')
             $status = if (-not [bool]$state.ReadSucceeded) {
                 'Warning'
             }
@@ -551,7 +718,7 @@ function Test-BoostLabCopilotState {
             )
         }
 
-        $wildcardState = & $readProcess '' $script:BoostLabCopilotWildcardProcessPattern
+        $wildcardState = ConvertTo-BoostLabCopilotProcessState -State (& $readProcess '' $script:BoostLabCopilotWildcardProcessPattern)
         $wildcardStatus = if (-not [bool]$wildcardState.ReadSucceeded) {
             'Warning'
         }
@@ -570,7 +737,7 @@ function Test-BoostLabCopilotState {
                 -Message ([string]$wildcardState.Message))
         )
 
-        $appxState = & $readAppx $script:BoostLabCopilotPackagePattern
+        $appxState = ConvertTo-BoostLabCopilotPackageState -State (& $readAppx $script:BoostLabCopilotPackagePattern)
         $appxStatus = if (-not [bool]$appxState.ReadSucceeded) {
             'Warning'
         }
@@ -614,7 +781,7 @@ function Test-BoostLabCopilotState {
             )
         }
 
-        $appxState = & $readAppx $script:BoostLabCopilotPackagePattern
+        $appxState = ConvertTo-BoostLabCopilotPackageState -State (& $readAppx $script:BoostLabCopilotPackagePattern)
         $appxStatus = if (-not [bool]$appxState.ReadSucceeded) { 'Warning' } else { 'Passed' }
         $checks.Add(
             (New-BoostLabVerificationCheck `
@@ -653,6 +820,8 @@ function Test-BoostLabCopilotState {
         }) `
         -DetectedState ([pscustomobject]@{
             Checks = @($checks | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Actual })
+            RemainingAppxPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.Packages) } else { @() }
+            RemainingProvisionedCopilotPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.ProvisionedPackages) } else { @() }
         }) `
         -Checks $checks.ToArray() `
         -Message $message
@@ -762,8 +931,14 @@ function Invoke-BoostLabCopilotAction {
                 Where-Object { $_.Name -like $Pattern } |
                 ForEach-Object {
                     Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"
-                }
+            }
         }
+    }
+    $readAppxSnapshot = if ($null -ne $AppxReader) {
+        $AppxReader
+    }
+    else {
+        { param($Pattern) Get-BoostLabCopilotPackageMatches -Pattern $Pattern }
     }
     $runRegistryCommand = if ($null -ne $RegistryCommandRunner) {
         $RegistryCommandRunner
@@ -781,6 +956,12 @@ function Invoke-BoostLabCopilotAction {
     $operations = @(Get-BoostLabCopilotOperations -ActionName $ActionName)
     $operationStatuses = [System.Collections.Generic.List[object]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
+    $preRemovalPackageState = if ($ActionName -eq 'Apply') {
+        ConvertTo-BoostLabCopilotPackageState -State (& $readAppxSnapshot $script:BoostLabCopilotPackagePattern)
+    }
+    else {
+        $null
+    }
     foreach ($operation in $operations) {
         try {
             switch ([string]$operation.Kind) {
@@ -830,9 +1011,16 @@ function Invoke-BoostLabCopilotAction {
         -RegistryKeyReader $RegistryKeyReader `
         -ProcessReader $ProcessReader `
         -AppxReader $AppxReader
+    $remainingPackages = @($verificationResult.DetectedState.RemainingAppxPackages)
+    $remainingProvisionedPackages = @($verificationResult.DetectedState.RemainingProvisionedCopilotPackages)
     $data = [pscustomobject]@{
-        Operations = $operationStatuses.ToArray()
-        CompletedAt = Get-Date
+        Operations                          = $operationStatuses.ToArray()
+        PreRemovalCopilotPackages           = if ($null -ne $preRemovalPackageState) { @($preRemovalPackageState.Packages) } else { @() }
+        PostRemovalCopilotPackages          = $remainingPackages
+        RemainingCopilotPackages            = $remainingPackages
+        RemainingProvisionedCopilotPackages = $remainingProvisionedPackages
+        ProvisionedPackageScope             = 'NotApplicable: Ultimate Copilot source removes installed Get-AppxPackage -AllUsers matches only.'
+        CompletedAt                         = Get-Date
     }
 
     if ($errors.Count -gt 0) {
@@ -844,10 +1032,19 @@ function Invoke-BoostLabCopilotAction {
             -VerificationResult $verificationResult
     }
     if ($verificationResult.Status -eq 'Failed') {
+        $remainingPackageSummary = @($remainingPackages | ForEach-Object {
+                $identity = if (-not [string]::IsNullOrWhiteSpace([string]$_.PackageFullName)) { [string]$_.PackageFullName } elseif (-not [string]::IsNullOrWhiteSpace([string]$_.Name)) { [string]$_.Name } else { 'UnknownPackage' }
+                $family = if (-not [string]::IsNullOrWhiteSpace([string]$_.PackageFamilyName)) { " family=$($_.PackageFamilyName)" } else { '' }
+                "$identity$family"
+            })
+        $failureMessage = "Copilot $ActionName verification failed."
+        if ($remainingPackageSummary.Count -gt 0) {
+            $failureMessage = "$failureMessage Remaining Copilot package(s): $($remainingPackageSummary -join '; ')."
+        }
         return New-BoostLabCopilotResult `
             -Success $false `
             -Action $ActionName `
-            -Message "Copilot $ActionName verification failed." `
+            -Message $failureMessage `
             -Data $data `
             -VerificationResult $verificationResult
     }

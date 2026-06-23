@@ -321,6 +321,106 @@ try {
     Assert-CopilotCondition ((@($removedPatterns) -join '|') -eq '*Copilot*') 'Mocked Apply did not route AppX removal through the adapter.'
     Assert-CopilotCondition ((@($registryCommands) -join '|') -eq ($applyRegistryCommands -join '|')) 'Mocked Apply did not route exact registry commands through the adapter.'
     Assert-CopilotCondition ([string]$applyResult.VerificationResult.Status -eq 'Passed') 'Mocked Apply verification did not pass.'
+    Assert-CopilotCondition (@($applyResult.Data.PreRemovalCopilotPackages).Count -eq 0) 'Mocked Apply should report no pre-removal packages when reader reports none.'
+    Assert-CopilotCondition (@($applyResult.Data.RemainingCopilotPackages).Count -eq 0) 'Mocked Apply should report no remaining packages when verification passes.'
+
+    $nullProcessReader = {
+        param($Name, $Pattern)
+        $null = $Name
+        $null = $Pattern
+        $null
+    }
+    $nullProcessResult = & $copilotModule {
+        param(
+            $RegistryReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Test-BoostLabCopilotState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $applyRegistryReader $nullProcessReader $applyAppxReader
+    Assert-CopilotCondition ([string]$nullProcessResult.Status -eq 'Passed') 'Null process query results must verify as not running.'
+    Assert-CopilotCondition (-not ((@($nullProcessResult.Checks) | ForEach-Object { [string]$_.Message }) -join ' ').Contains('Count')) 'Null process verification must not surface Count property errors.'
+
+    $scalarProcessReader = {
+        param($Name, $Pattern)
+        $null = $Pattern
+        if ([string]$Name -eq 'Copilot') {
+            return [pscustomobject]@{ ProcessName = 'Copilot'; Id = 4242 }
+        }
+        return $null
+    }
+    $runningProcessResult = & $copilotModule {
+        param(
+            $RegistryReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Test-BoostLabCopilotState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $applyRegistryReader $scalarProcessReader $applyAppxReader
+    Assert-CopilotCondition ([string]$runningProcessResult.Status -eq 'Failed') 'Running scalar process result must fail verification.'
+    $copilotProcessCheck = @($runningProcessResult.Checks | Where-Object { [string]$_.Name -eq 'Process Copilot' })[0]
+    Assert-CopilotCondition ([string]$copilotProcessCheck.Actual -eq '1') 'Running scalar process result must report count 1.'
+    Assert-CopilotCondition ([string]$copilotProcessCheck.Message -match 'Copilot') 'Running process verification must report process identity.'
+
+    $remainingPackageReader = {
+        param($Pattern)
+        $null = $Pattern
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            Count         = 1
+            DisplayValue  = '1'
+            Message       = 'Mocked remaining Copilot package.'
+            Packages      = @(
+                [pscustomobject]@{
+                    Name              = 'Microsoft.Copilot'
+                    PackageFullName   = 'Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe'
+                    PackageFamilyName = 'Microsoft.Copilot_8wekyb3d8bbwe'
+                    InstallLocation   = 'C:\Program Files\WindowsApps\Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe'
+                    User              = 'S-1-5-21-test'
+                }
+            )
+        }
+    }
+    $remainingPackageResult = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $appxRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $remainingPackageReader
+    Assert-CopilotCondition (-not [bool]$remainingPackageResult.Success) 'Remaining Copilot package should keep Apply verification failed.'
+    Assert-CopilotCondition ([string]$remainingPackageResult.Message -match 'Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe') 'Remaining package identity must be present in result message.'
+    Assert-CopilotCondition (@($remainingPackageResult.Data.RemainingCopilotPackages).Count -eq 1) 'Remaining package data must include the package record.'
+    Assert-CopilotCondition ([string]$remainingPackageResult.Data.RemainingCopilotPackages[0].PackageFamilyName -eq 'Microsoft.Copilot_8wekyb3d8bbwe') 'Remaining package data must include PackageFamilyName.'
+    Assert-CopilotCondition ([string]$remainingPackageResult.Data.ProvisionedPackageScope -match 'NotApplicable') 'Provisioned package scope must remain source-bounded and explicit.'
 
     $namedStops.Clear()
     $wildcardStops.Clear()
