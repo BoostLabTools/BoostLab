@@ -162,7 +162,9 @@ foreach ($requiredModuleText in @(
     'Use the dedicated Memory Compression tool when you only want to change MemoryCompression.'
     '[bool]$Confirmed = $false'
     'Get-MMAgent -ErrorAction Stop'
-    'Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction Stop'
+    'Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction SilentlyContinue'
+    'function Invoke-BoostLabMMAgentCommandOperation'
+    'OperationResults'
 )) {
     if (-not $moduleSource.Contains($requiredModuleText)) {
         throw "MMAgent Assistant module is missing: $requiredModuleText"
@@ -323,6 +325,189 @@ try {
         if ($invocations.Count -ne 7) {
             throw "Mocked MMAgent Assistant $($case.Action) path did not execute the expected number of operations."
         }
+        if (@($result.Data.OperationResults).Count -ne 7) {
+            throw "Mocked MMAgent Assistant $($case.Action) path did not report all operation results."
+        }
+    }
+
+    $applyPassedStateReader = {
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            MMAgentReadSucceeded = $true
+            RegistryReadSucceeded = $true
+            EnablePrefetcher = 0
+            ApplicationLaunchPrefetching = $false
+            ApplicationPreLaunch = $false
+            MaxOperationAPIFiles = 1
+            MemoryCompression = $false
+            OperationAPI = $false
+            PageCombining = $false
+            Warnings = @()
+            Message = 'Mocked Apply state.'
+        }
+    }
+    $applyPrefetchStillDefaultStateReader = {
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            MMAgentReadSucceeded = $true
+            RegistryReadSucceeded = $true
+            EnablePrefetcher = 3
+            ApplicationLaunchPrefetching = $false
+            ApplicationPreLaunch = $false
+            MaxOperationAPIFiles = 1
+            MemoryCompression = $false
+            OperationAPI = $false
+            PageCombining = $false
+            Warnings = @()
+            Message = 'Mocked Apply state with prefetcher unchanged.'
+        }
+    }
+
+    $emptyRegistryFailureInvoker = {
+        param($Value)
+        [pscustomobject]@{ Success = $false; Output = ''; Reason = ''; Command = 'mock reg add'; Expected = $Value }
+    }
+    $successfulMMAgentInvoker = {
+        param($Operation)
+        [pscustomobject]@{
+            Success = $true
+            Classification = 'Changed'
+            Reason = "$($Operation.Type) $($Operation.Name) mocked complete."
+            Command = "$($Operation.Type) $($Operation.Name)"
+        }
+    }
+    $registryFailureResult = & $module {
+        param($CommandResolver, $RegistryInvoker, $MMAgentCommandInvoker, $StateReader)
+        Invoke-BoostLabMMAgentAssistantAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -RegistryInvoker $RegistryInvoker `
+            -MMAgentCommandInvoker $MMAgentCommandInvoker `
+            -StateReader $StateReader
+    } $scalarCommandResolver $emptyRegistryFailureInvoker $successfulMMAgentInvoker $applyPrefetchStillDefaultStateReader
+    if (
+        $registryFailureResult.Success -or
+        $registryFailureResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $registryFailureResult.VerificationResult.Status -ne 'Failed' -or
+        (@($registryFailureResult.Data.Warnings) -join ' ') -notmatch 'EnablePrefetcher write failed: EnablePrefetcher registry write returned no diagnostic text' -or
+        [string]::IsNullOrWhiteSpace([string]$registryFailureResult.Data.OperationResults[0].Reason)
+    ) {
+        throw 'MMAgent Assistant did not report a non-empty EnablePrefetcher write failure reason.'
+    }
+
+    $mixedWarningInvoker = {
+        param($Operation)
+        if ([string]$Operation.Name -eq 'ApplicationPreLaunch') {
+            return [pscustomobject]@{
+                Success = $true
+                Classification = 'HostOutputSuppressed'
+                Reason = 'EndProcessing pipe/console error.'
+                Command = "$($Operation.Type) $($Operation.Name)"
+            }
+        }
+        if ([string]$Operation.Name -eq 'OperationAPI') {
+            return [pscustomobject]@{
+                Success = $true
+                Classification = 'Unsupported'
+                Reason = 'The request is not supported.'
+                Command = "$($Operation.Type) $($Operation.Name)"
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Classification = 'Changed'
+            Reason = "$($Operation.Type) $($Operation.Name) mocked complete."
+            Command = "$($Operation.Type) $($Operation.Name)"
+        }
+    }
+    $warningRegistryInvoker = {
+        param($Value)
+        [pscustomobject]@{ Success = $true; Output = 'Registry write complete.'; Reason = 'Registry write complete.'; Command = 'mock reg add'; Expected = $Value }
+    }
+    $warningResult = & $module {
+        param($CommandResolver, $RegistryInvoker, $MMAgentCommandInvoker, $StateReader)
+        Invoke-BoostLabMMAgentAssistantAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -RegistryInvoker $RegistryInvoker `
+            -MMAgentCommandInvoker $MMAgentCommandInvoker `
+            -StateReader $StateReader
+    } $scalarCommandResolver $warningRegistryInvoker $mixedWarningInvoker $applyPassedStateReader
+    if (
+        -not $warningResult.Success -or
+        $warningResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $warningResult.VerificationResult.Status -ne 'Passed' -or
+        (@($warningResult.Data.Warnings) -join ' ') -notmatch 'HostOutputSuppressed' -or
+        (@($warningResult.Data.Warnings) -join ' ') -notmatch 'Unsupported'
+    ) {
+        throw 'MMAgent Assistant did not classify host pipe and unsupported feature results as source-equivalent warnings.'
+    }
+
+    $realFailureInvoker = {
+        param($Operation)
+        if ([string]$Operation.Name -eq 'MemoryCompression') {
+            return [pscustomobject]@{
+                Success = $false
+                Classification = 'Failed'
+                Reason = 'MMAgent subsystem failed.'
+                Command = "$($Operation.Type) $($Operation.Name)"
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Classification = 'Changed'
+            Reason = "$($Operation.Type) $($Operation.Name) mocked complete."
+            Command = "$($Operation.Type) $($Operation.Name)"
+        }
+    }
+    $realFailureResult = & $module {
+        param($CommandResolver, $RegistryInvoker, $MMAgentCommandInvoker, $StateReader)
+        Invoke-BoostLabMMAgentAssistantAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -RegistryInvoker $RegistryInvoker `
+            -MMAgentCommandInvoker $MMAgentCommandInvoker `
+            -StateReader $StateReader
+    } $scalarCommandResolver $warningRegistryInvoker $realFailureInvoker $applyPassedStateReader
+    if (
+        $realFailureResult.Success -or
+        $realFailureResult.Data.CommandStatus -ne 'Failed' -or
+        (@($realFailureResult.Data.Errors) -join ' ') -notmatch 'MemoryCompression failed: MMAgent subsystem failed.'
+    ) {
+        throw 'MMAgent Assistant did not preserve a real MMAgent command failure.'
+    }
+
+    $hostPipeState = & $module {
+        param($CommandResolver)
+        Get-BoostLabMMAgentAssistantState `
+            -CommandResolver $CommandResolver `
+            -MMAgentReader { throw 'EndProcessing pipe/console error.' } `
+            -RegistryReader {
+                param($Path, $Name)
+                [pscustomobject]@{ EnablePrefetcher = 0 }
+            }
+    } $scalarCommandResolver
+    if (
+        -not $hostPipeState.ReadSucceeded -or
+        $hostPipeState.MMAgentReadSucceeded -or
+        -not $hostPipeState.RegistryReadSucceeded -or
+        (@($hostPipeState.Warnings) -join ' ') -notmatch 'host output channel failed'
+    ) {
+        throw 'MMAgent Assistant did not convert Get-MMAgent host pipe failure into clear NotAvailable diagnostics.'
+    }
+
+    $prefetchFailureVerification = & $module {
+        param($StateReader)
+        Test-BoostLabMMAgentAssistantState -ActionName 'Apply' -StateReader $StateReader
+    } $applyPrefetchStillDefaultStateReader
+    if (
+        $prefetchFailureVerification.Status -ne 'Failed' -or
+        [int]$prefetchFailureVerification.DetectedState.EnablePrefetcher -ne 3
+    ) {
+        throw 'MMAgent Assistant verification did not fail clearly when EnablePrefetcher remained 3.'
     }
 }
 finally {

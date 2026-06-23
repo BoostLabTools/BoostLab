@@ -90,6 +90,85 @@ function ConvertTo-BoostLabMMAgentDisplayValue {
     return [string]$Value
 }
 
+function Resolve-BoostLabMMAgentReason {
+    param(
+        [AllowNull()]
+        [object]$Reason,
+
+        [string]$Fallback = 'No diagnostic text was returned.'
+    )
+
+    $text = if ($null -eq $Reason) { '' } else { [string]$Reason }
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $Fallback
+    }
+
+    return $text
+}
+
+function Test-BoostLabMMAgentHostPipeFailure {
+    param(
+        [AllowNull()]
+        [object]$Reason
+    )
+
+    $text = if ($null -eq $Reason) { '' } else { [string]$Reason }
+    return (
+        $text -match '(?i)\bEndProcessing\b' -or
+        $text -match '(?i)No process is on the other end of the pipe' -or
+        $text -match '(?i)console output buffer' -or
+        $text -match '(?i)CursorPosition'
+    )
+}
+
+function New-BoostLabMMAgentOperationResult {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [bool]$Success = $true,
+
+        [string]$Classification = 'Changed',
+
+        [AllowNull()]
+        [object]$Reason = $null,
+
+        [AllowNull()]
+        [object]$Command = $null,
+
+        [AllowNull()]
+        [object]$Expected = $null
+    )
+
+    $operationName = [string](Get-BoostLabMMAgentPropertyValue -InputObject $Operation -Name 'Name' -DefaultValue 'Unknown')
+    $operationType = [string](Get-BoostLabMMAgentPropertyValue -InputObject $Operation -Name 'Type' -DefaultValue 'Unknown')
+    $expectedValue = if ($null -ne $Expected) {
+        $Expected
+    }
+    elseif ($null -ne $Operation.PSObject.Properties['Value']) {
+        $Operation.Value
+    }
+    elseif ($operationType -eq 'Disable') {
+        $false
+    }
+    elseif ($operationType -eq 'Enable') {
+        $true
+    }
+    else {
+        $null
+    }
+
+    [pscustomobject]@{
+        OperationName = $operationName
+        OperationType = $operationType
+        Command = if ($null -eq $Command) { "$operationType $operationName" } else { [string]$Command }
+        Expected = $expectedValue
+        Classification = $Classification
+        Success = $Success
+        Reason = Resolve-BoostLabMMAgentReason -Reason $Reason -Fallback "$operationType $operationName returned no diagnostic text."
+    }
+}
+
 function New-BoostLabMMAgentAssistantResult {
     param(
         [Parameter(Mandatory)]
@@ -265,7 +344,13 @@ function Get-BoostLabMMAgentAssistantState {
         }
     }
     catch {
-        $warnings.Add("Get-MMAgent failed: $($_.Exception.Message)")
+        $reason = Resolve-BoostLabMMAgentReason -Reason $_.Exception.Message -Fallback 'Get-MMAgent returned no diagnostic text.'
+        if (Test-BoostLabMMAgentHostPipeFailure -Reason $reason) {
+            $warnings.Add("Get-MMAgent state unavailable because the host output channel failed: $reason")
+        }
+        else {
+            $warnings.Add("Get-MMAgent failed: $reason")
+        }
     }
 
     $prefetchValue = $null
@@ -488,11 +573,136 @@ function Invoke-BoostLabMMAgentRegistryCommand {
     else {
         $script:BoostLabDefaultPrefetchRegistryCommand
     }
-    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $output = & $commandProcessorPath /d /c $commandText 2>&1
-    [pscustomobject]@{
-        Success = ($LASTEXITCODE -eq 0)
-        Output = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    $arguments = @(
+        'add'
+        $script:BoostLabMMAgentPrefetchRegistryCmdKey
+        '/v'
+        'EnablePrefetcher'
+        '/t'
+        'REG_DWORD'
+        '/d'
+        [string]$Value
+        '/f'
+    )
+    $registryCommandPath = if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        'reg.exe'
+    }
+    else {
+        Join-Path $env:SystemRoot 'System32\reg.exe'
+    }
+
+    try {
+        $output = & $registryCommandPath @arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        $outputText = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+        $reason = if ($exitCode -eq 0) {
+            'EnablePrefetcher registry write completed.'
+        }
+        else {
+            Resolve-BoostLabMMAgentReason -Reason $outputText -Fallback "reg.exe exited with code $exitCode while writing EnablePrefetcher=$Value."
+        }
+        [pscustomobject]@{
+            Success = ($exitCode -eq 0)
+            Classification = if ($exitCode -eq 0) { 'Changed' } else { 'Failed' }
+            Output = $reason
+            Reason = $reason
+            ExitCode = $exitCode
+            Command = $commandText
+            Arguments = $arguments
+            RegistryPath = $script:BoostLabMMAgentPrefetchRegistryPath
+            ValueName = 'EnablePrefetcher'
+            Expected = $Value
+        }
+    }
+    catch {
+        $reason = Resolve-BoostLabMMAgentReason -Reason $_.Exception.Message -Fallback "reg.exe failed without diagnostic text while writing EnablePrefetcher=$Value."
+        [pscustomobject]@{
+            Success = $false
+            Classification = 'Failed'
+            Output = $reason
+            Reason = $reason
+            ExitCode = $null
+            Command = $commandText
+            Arguments = $arguments
+            RegistryPath = $script:BoostLabMMAgentPrefetchRegistryPath
+            ValueName = 'EnablePrefetcher'
+            Expected = $Value
+        }
+    }
+}
+
+function Invoke-BoostLabMMAgentCommandOperation {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation
+    )
+
+    $oldProgressPreference = $ProgressPreference
+    $oldWarningPreference = $WarningPreference
+    $oldInformationPreference = $InformationPreference
+    $oldVerbosePreference = $VerbosePreference
+    try {
+        $ProgressPreference = 'SilentlyContinue'
+        $WarningPreference = 'SilentlyContinue'
+        $InformationPreference = 'SilentlyContinue'
+        $VerbosePreference = 'SilentlyContinue'
+
+        switch ($Operation.Type) {
+            'Disable' {
+                switch ($Operation.Name) {
+                    'ApplicationLaunchPrefetching' { Disable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'ApplicationPreLaunch' { Disable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'MemoryCompression' { Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'OperationAPI' { Disable-MMAgent -OperationAPI -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'PageCombining' { Disable-MMAgent -PageCombining -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                }
+            }
+            'Enable' {
+                switch ($Operation.Name) {
+                    'ApplicationLaunchPrefetching' { Enable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'ApplicationPreLaunch' { Enable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                    'OperationAPI' { Enable-MMAgent -OperationAPI -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null }
+                }
+            }
+            'Set' {
+                Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction SilentlyContinue -WarningAction SilentlyContinue | Out-Null
+            }
+        }
+
+        return New-BoostLabMMAgentOperationResult `
+            -Operation $Operation `
+            -Success $true `
+            -Classification 'Changed' `
+            -Reason 'MMAgent command completed or source-equivalent non-terminating output was suppressed.'
+    }
+    catch {
+        $reason = Resolve-BoostLabMMAgentReason -Reason $_.Exception.Message -Fallback 'MMAgent command failed without diagnostic text.'
+        if (Test-BoostLabMMAgentHostPipeFailure -Reason $reason) {
+            return New-BoostLabMMAgentOperationResult `
+                -Operation $Operation `
+                -Success $true `
+                -Classification 'HostOutputSuppressed' `
+                -Reason $reason
+        }
+        if ($reason -match '(?i)(not supported|not be supported|request is not supported|unsupported)') {
+            return New-BoostLabMMAgentOperationResult `
+                -Operation $Operation `
+                -Success $true `
+                -Classification 'Unsupported' `
+                -Reason $reason
+        }
+
+        return New-BoostLabMMAgentOperationResult `
+            -Operation $Operation `
+            -Success $false `
+            -Classification 'Failed' `
+            -Reason $reason
+    }
+    finally {
+        $ProgressPreference = $oldProgressPreference
+        $WarningPreference = $oldWarningPreference
+        $InformationPreference = $oldInformationPreference
+        $VerbosePreference = $oldVerbosePreference
     }
 }
 
@@ -518,27 +728,7 @@ function Invoke-BoostLabMMAgentAssistantAction {
 
         [scriptblock]$MMAgentCommandInvoker = {
             param($Operation)
-            switch ($Operation.Type) {
-                'Disable' {
-                    switch ($Operation.Name) {
-                        'ApplicationLaunchPrefetching' { Disable-MMAgent -ApplicationLaunchPrefetching -ErrorAction Stop | Out-Null }
-                        'ApplicationPreLaunch' { Disable-MMAgent -ApplicationPreLaunch -ErrorAction Stop | Out-Null }
-                        'MemoryCompression' { Disable-MMAgent -MemoryCompression -ErrorAction Stop | Out-Null }
-                        'OperationAPI' { Disable-MMAgent -OperationAPI -ErrorAction Stop | Out-Null }
-                        'PageCombining' { Disable-MMAgent -PageCombining -ErrorAction Stop | Out-Null }
-                    }
-                }
-                'Enable' {
-                    switch ($Operation.Name) {
-                        'ApplicationLaunchPrefetching' { Enable-MMAgent -ApplicationLaunchPrefetching -ErrorAction Stop | Out-Null }
-                        'ApplicationPreLaunch' { Enable-MMAgent -ApplicationPreLaunch -ErrorAction Stop | Out-Null }
-                        'OperationAPI' { Enable-MMAgent -OperationAPI -ErrorAction Stop | Out-Null }
-                    }
-                }
-                'Set' {
-                    Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction Stop | Out-Null
-                }
-            }
+            Invoke-BoostLabMMAgentCommandOperation -Operation $Operation
         },
 
         [scriptblock]$StateReader = { Get-BoostLabMMAgentAssistantState }
@@ -561,22 +751,84 @@ function Invoke-BoostLabMMAgentAssistantAction {
     }
 
     $warnings = [System.Collections.Generic.List[string]]::new()
+    $errors = [System.Collections.Generic.List[string]]::new()
     $operationsAttempted = [System.Collections.Generic.List[string]]::new()
+    $operationResults = [System.Collections.Generic.List[object]]::new()
     foreach ($operation in @(Get-BoostLabMMAgentOperationPlan -ActionName $ActionName)) {
         $operationsAttempted.Add(("{0}:{1}" -f $operation.Type, $operation.Name))
         try {
             if ($operation.Type -eq 'RegistryAdd') {
                 $registryResult = & $RegistryInvoker $operation.Value
-                if (-not [bool](Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Success' -DefaultValue $false)) {
-                    $warnings.Add("EnablePrefetcher write failed: $(Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Output' -DefaultValue 'Unknown failure')")
+                $registryReason = Resolve-BoostLabMMAgentReason `
+                    -Reason (Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Reason' -DefaultValue (Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Output' -DefaultValue $null)) `
+                    -Fallback "EnablePrefetcher registry write returned no diagnostic text while setting value $($operation.Value)."
+                $registrySuccess = [bool](Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Success' -DefaultValue $false)
+                $operationResult = New-BoostLabMMAgentOperationResult `
+                    -Operation $operation `
+                    -Success $registrySuccess `
+                    -Classification $(if ($registrySuccess) { 'Changed' } else { 'Failed' }) `
+                    -Reason $registryReason `
+                    -Command (Get-BoostLabMMAgentPropertyValue -InputObject $registryResult -Name 'Command' -DefaultValue $(if ($operation.Value -eq 0) { $script:BoostLabApplyPrefetchRegistryCommand } else { $script:BoostLabDefaultPrefetchRegistryCommand })) `
+                    -Expected $operation.Value
+                $operationResults.Add($operationResult)
+                if (-not $registrySuccess) {
+                    $warnings.Add("EnablePrefetcher write failed: $registryReason")
                 }
             }
             else {
-                & $MMAgentCommandInvoker $operation
+                $commandResult = & $MMAgentCommandInvoker $operation
+                if ($null -eq $commandResult) {
+                    $commandResult = New-BoostLabMMAgentOperationResult `
+                        -Operation $operation `
+                        -Success $true `
+                        -Classification 'Changed' `
+                        -Reason 'MMAgent command completed.'
+                }
+                $classification = [string](Get-BoostLabMMAgentPropertyValue -InputObject $commandResult -Name 'Classification' -DefaultValue $(if ([bool](Get-BoostLabMMAgentPropertyValue -InputObject $commandResult -Name 'Success' -DefaultValue $true)) { 'Changed' } else { 'Failed' }))
+                $reason = Resolve-BoostLabMMAgentReason `
+                    -Reason (Get-BoostLabMMAgentPropertyValue -InputObject $commandResult -Name 'Reason' -DefaultValue $null) `
+                    -Fallback "$($operation.Type) $($operation.Name) returned no diagnostic text."
+                $success = [bool](Get-BoostLabMMAgentPropertyValue -InputObject $commandResult -Name 'Success' -DefaultValue ($classification -ne 'Failed'))
+                $operationResult = New-BoostLabMMAgentOperationResult `
+                    -Operation $operation `
+                    -Success $success `
+                    -Classification $classification `
+                    -Reason $reason `
+                    -Command (Get-BoostLabMMAgentPropertyValue -InputObject $commandResult -Name 'Command' -DefaultValue "$($operation.Type) $($operation.Name)") `
+                    -Expected $(if ($null -ne $operation.PSObject.Properties['Value']) { $operation.Value } elseif ($operation.Type -eq 'Disable') { $false } else { $true })
+                $operationResults.Add($operationResult)
+
+                if ($classification -in @('Unsupported', 'HostOutputSuppressed')) {
+                    $warnings.Add("$($operation.Type) $($operation.Name) reported $classification`: $reason")
+                }
+                elseif (-not $success) {
+                    $errors.Add("$($operation.Type) $($operation.Name) failed: $reason")
+                }
             }
         }
         catch {
-                $warnings.Add(("{0} {1} failed: {2}" -f $operation.Type, $operation.Name, $_.Exception.Message))
+            $reason = Resolve-BoostLabMMAgentReason -Reason $_.Exception.Message -Fallback "$($operation.Type) $($operation.Name) failed without diagnostic text."
+            $classification = if (Test-BoostLabMMAgentHostPipeFailure -Reason $reason) {
+                'HostOutputSuppressed'
+            }
+            elseif ($reason -match '(?i)(not supported|not be supported|request is not supported|unsupported)') {
+                'Unsupported'
+            }
+            else {
+                'Failed'
+            }
+            $operationResult = New-BoostLabMMAgentOperationResult `
+                -Operation $operation `
+                -Success ($classification -ne 'Failed') `
+                -Classification $classification `
+                -Reason $reason
+            $operationResults.Add($operationResult)
+            if ($classification -eq 'Failed') {
+                $errors.Add("$($operation.Type) $($operation.Name) failed: $reason")
+            }
+            else {
+                $warnings.Add("$($operation.Type) $($operation.Name) reported $classification`: $reason")
+            }
         }
     }
 
@@ -584,17 +836,22 @@ function Invoke-BoostLabMMAgentAssistantAction {
         -ActionName $ActionName `
         -StateReader $StateReader
     $data = [pscustomobject]@{
-        CommandStatus = if ($warnings.Count -eq 0) { 'Completed' } else { 'Completed with warnings' }
+        CommandStatus = if ($errors.Count -gt 0) { 'Failed' } elseif ($warnings.Count -eq 0) { 'Completed' } else { 'Completed with warnings' }
         VerificationStatus = [string]$verificationResult.Status
         ExpectedState = $verificationResult.ExpectedState
         DetectedState = $verificationResult.DetectedState
         OperationsAttempted = $operationsAttempted.ToArray()
+        OperationResults = $operationResults.ToArray()
         Warnings = $warnings.ToArray()
+        Errors = $errors.ToArray()
         CompletedAt = Get-Date
     }
 
-    $success = $verificationResult.Status -ne 'Failed'
-    $message = if ($verificationResult.Status -eq 'Failed') {
+    $success = ($errors.Count -eq 0 -and $verificationResult.Status -ne 'Failed')
+    $message = if ($errors.Count -gt 0) {
+        "MMAgent profile command path failed: $($errors -join '; ')"
+    }
+    elseif ($verificationResult.Status -eq 'Failed') {
         'MMAgent profile command path completed, but verification detected an unexpected state.'
     }
     elseif ($warnings.Count -gt 0) {
