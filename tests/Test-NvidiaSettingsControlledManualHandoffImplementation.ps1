@@ -286,6 +286,65 @@ try {
     Assert-BoostLabCondition (@($onOperations | Where-Object { [string]$_.Type -eq 'SetRegistryValueCollection' -and [int]$_.Parameters.Data -eq 0 }).Count -eq 1) 'On must set EnableGR535 to DWORD 0 on the source FTS paths.'
 
     $script:MockedOperations = New-Object System.Collections.Generic.List[object]
+    $missingControlPanelExecutor = {
+        param([Parameter(Mandatory)][object]$Operation)
+        $script:MockedOperations.Add($Operation)
+        if ([string]$Operation.Label -eq 'Open NVIDIA Control Panel') {
+            return [pscustomobject]@{
+                Success = $false
+                Operation = $Operation
+                Status = 'Failed'
+                Message = 'The system cannot find the file specified.'
+            }
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Operation = $Operation
+            Status = 'Mocked'
+            Message = "Mocked: $($Operation.Label)"
+        }
+    }
+    $missingControlPanelResult = Invoke-BoostLabToolAction -ActionName 'On (Recommended)' -Confirmed:$true -OperationExecutor $missingControlPanelExecutor
+    Assert-BoostLabCondition ([bool]$missingControlPanelResult.Success) 'Missing NVIDIA Control Panel should not fail the completed On workflow.'
+    Assert-BoostLabCondition ([string]$missingControlPanelResult.Status -eq 'SuccessWithWarning') 'Missing NVIDIA Control Panel should return SuccessWithWarning.'
+    Assert-BoostLabCondition ([string]$missingControlPanelResult.CommandStatus -eq 'Completed source-equivalent Nvidia Settings workflow with warning') 'Missing NVIDIA Control Panel command status mismatch.'
+    Assert-BoostLabCondition ([string]$missingControlPanelResult.VerificationStatus -eq 'Warning') 'Missing NVIDIA Control Panel verification status mismatch.'
+    Assert-BoostLabCondition ([bool]$missingControlPanelResult.ChangesExecuted) 'Missing Control Panel warning should preserve ChangesExecuted after completed settings/profile operations.'
+    Assert-BoostLabTextContains -Text ([string]$missingControlPanelResult.Message) -Needle 'NVIDIA Control Panel was not found' -Description 'Missing Control Panel result message'
+    Assert-BoostLabTextContains -Text ((@($missingControlPanelResult.Warnings) -join ' ') -as [string]) -Needle 'Settings/profile import completed' -Description 'Missing Control Panel warning'
+    Assert-BoostLabCondition ([string]$missingControlPanelResult.Data.ControlPanelLaunchStatus -eq 'Warning') 'Missing Control Panel status data mismatch.'
+    Assert-BoostLabCondition (@($missingControlPanelResult.Data.WarningOperations).Count -eq 1) 'Missing Control Panel must be reported as one warning operation.'
+    Assert-BoostLabCondition (@($missingControlPanelResult.Data.FailedOperations).Count -eq 0) 'Missing Control Panel must not be reported as a fatal failed operation.'
+    Assert-BoostLabCondition (@($script:MockedOperations.ToArray()).Count -eq 19) 'Missing Control Panel should be detected only after every prior source-defined operation was attempted.'
+
+    $script:MockedOperations = New-Object System.Collections.Generic.List[object]
+    $earlyFailureExecutor = {
+        param([Parameter(Mandatory)][object]$Operation)
+        $script:MockedOperations.Add($Operation)
+        if ([string]$Operation.Label -eq 'Import source-defined On .nip through NVIDIA Profile Inspector') {
+            return [pscustomobject]@{
+                Success = $false
+                Operation = $Operation
+                Status = 'Failed'
+                Message = 'mock Profile Inspector import failure'
+            }
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Operation = $Operation
+            Status = 'Mocked'
+            Message = "Mocked: $($Operation.Label)"
+        }
+    }
+    $earlyFailureResult = Invoke-BoostLabToolAction -ActionName 'On (Recommended)' -Confirmed:$true -OperationExecutor $earlyFailureExecutor
+    Assert-BoostLabCondition (-not [bool]$earlyFailureResult.Success) 'Earlier source-defined operation failure must still fail closed.'
+    Assert-BoostLabCondition ([string]$earlyFailureResult.Status -eq 'Failed') 'Earlier source-defined operation failure status mismatch.'
+    Assert-BoostLabTextContains -Text ((@($earlyFailureResult.Errors) -join ' ') -as [string]) -Needle 'Profile Inspector import failure' -Description 'Earlier failure error text'
+    Assert-BoostLabCondition (@($earlyFailureResult.Data.WarningOperations).Count -eq 0) 'Earlier source-defined operation failure must not be downgraded to warning.'
+
+    $script:MockedOperations = New-Object System.Collections.Generic.List[object]
     $defaultResult = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true -OperationExecutor $mockExecutor
     Assert-BoostLabCondition ([bool]$defaultResult.Success) 'Mocked Default should succeed.'
     Assert-BoostLabCondition ([string]$defaultResult.Action -eq 'Default') 'Default action mismatch.'
@@ -295,6 +354,10 @@ try {
     Assert-BoostLabCondition (@($defaultOperations | Where-Object { [string]$_.Type -eq 'RemoveRegistryKey' -and [string]$_.Parameters.Path -eq 'HKCU:\Software\NVIDIA Corporation\NvTray' }).Count -eq 1) 'Default must delete the source-defined NvTray key.'
     Assert-BoostLabCondition (@($defaultOperations | Where-Object { [string]$_.Type -eq 'SetRegistryValueCollection' -and [int]$_.Parameters.Data -eq 1 }).Count -eq 1) 'Default must set EnableGR535 to DWORD 1 on the source FTS paths.'
     Assert-BoostLabCondition (@($defaultOperations | Where-Object { [string]$_.Type -eq 'WriteTextFile' -and [string]$_.Parameters.Content -eq $sourceDefaultNip }).Count -eq 1) 'Default must write the exact source Default .nip payload.'
+
+    $defaultMissingControlPanelResult = Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed:$true -OperationExecutor $missingControlPanelExecutor
+    Assert-BoostLabCondition ([bool]$defaultMissingControlPanelResult.Success) 'Missing NVIDIA Control Panel should not fail the completed Default workflow.'
+    Assert-BoostLabCondition ([string]$defaultMissingControlPanelResult.Status -eq 'SuccessWithWarning') 'Missing NVIDIA Control Panel should return SuccessWithWarning for Default.'
 }
 finally {
     Remove-Module -Name 'nvidia-settings' -Force -ErrorAction SilentlyContinue

@@ -220,7 +220,7 @@ function Get-BoostLabNvidiaSettingsOperationPlan {
             @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe; ArtifactId = 'nvidia-settings-inspector' } }
             @{ Type = 'WriteTextFile'; Label = 'Write source-defined On inspector.nip'; SourceCommand = 'Set-Content inspector.nip On payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Apply; Encoding = 'Unicode' } }
             @{ Type = 'StartProcess'; Label = 'Import source-defined On .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
-            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
+            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false; BestEffort = $true } }
         )
     }
     else {
@@ -235,7 +235,7 @@ function Get-BoostLabNvidiaSettingsOperationPlan {
             @{ Type = 'DownloadFile'; Label = 'Download source-defined NVIDIA Profile Inspector'; SourceCommand = 'IWR inspector.exe'; Parameters = @{ Url = $script:BoostLabInspectorUrl; Destination = $paths.InspectorExe; ArtifactId = 'nvidia-settings-inspector' } }
             @{ Type = 'WriteTextFile'; Label = 'Write source-defined Default inspector.nip'; SourceCommand = 'Set-Content inspector.nip Default payload'; Parameters = @{ Path = $paths.InspectorNip; Content = $payloads.Default; Encoding = 'Unicode' } }
             @{ Type = 'StartProcess'; Label = 'Import source-defined Default .nip through NVIDIA Profile Inspector'; SourceCommand = 'Start-Process inspector.exe -silentImport -silent inspector.nip -Wait'; Parameters = @{ FilePath = $paths.InspectorExe; ArgumentList = @('-silentImport', '-silent', $paths.InspectorNip); Wait = $true } }
-            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false } }
+            @{ Type = 'StartProcess'; Label = 'Open NVIDIA Control Panel'; SourceCommand = 'Start-Process shell:appsFolder\NVIDIAControlPanel'; Parameters = @{ FilePath = $paths.ControlPanelTarget; ArgumentList = @(); Wait = $false; BestEffort = $true } }
         )
     }
 
@@ -463,8 +463,22 @@ function Invoke-BoostLabNvidiaSettingsOperationPlan {
 
     $executor = if ($null -ne $OperationExecutor) { $OperationExecutor } else { ${function:Invoke-BoostLabNvidiaSettingsDefaultOperation} }
     $results = New-Object System.Collections.Generic.List[object]
+    $warnings = New-Object System.Collections.Generic.List[object]
     foreach ($operation in @($Plan.Operations)) {
         $result = & $executor -Operation $operation
+        if (-not [bool]$result.Success -and [bool]$operation.Parameters['BestEffort']) {
+            $warningResult = [pscustomobject]@{
+                Success = $true
+                Operation = $operation
+                Status = 'Warning'
+                Message = "Best-effort operation warning: $($operation.Label): $($result.Message)"
+                Warning = $true
+                OriginalError = [string]$result.Message
+            }
+            $warnings.Add($warningResult)
+            $results.Add($warningResult)
+            continue
+        }
         $results.Add($result)
         if (-not [bool]$result.Success) {
             break
@@ -478,7 +492,7 @@ function Invoke-BoostLabNvidiaSettingsOperationPlan {
         OperationResults = $resultArray
         CompletedOperationCount = @($resultArray | Where-Object { [bool]$_.Success }).Count
         FailedOperations = @($failed)
-        WarningOperations = @()
+        WarningOperations = @($warnings.ToArray())
     }
 }
 
@@ -700,14 +714,33 @@ function Invoke-BoostLabToolAction {
         OperationResults = @($execution.OperationResults)
         CompletedOperationCount = [int]$execution.CompletedOperationCount
         FailedOperations = @($execution.FailedOperations)
+        WarningOperations = @($execution.WarningOperations)
         CommonPreludeExecuted = $true
         SevenZipOperationRepresented = $true
         ProfileInspectorOperationRepresented = $true
         NipPayloadWritten = $true
         ControlPanelLaunchRepresented = $true
+        ControlPanelLaunchStatus = if (@($execution.WarningOperations).Count -gt 0) { 'Warning' } elseif ([bool]$execution.Success) { 'Completed' } else { 'FailedOrNotReached' }
+        ControlPanelWarning = if (@($execution.WarningOperations).Count -gt 0) { [string]@($execution.WarningOperations)[0].OriginalError } else { '' }
     }
 
     if ([bool]$execution.Success) {
+        $warningMessages = @($execution.WarningOperations | ForEach-Object {
+            'NVIDIA Control Panel was not found or could not be opened. Settings/profile import completed. Install NVIDIA Control Panel or use a driver package that includes it if you need the panel UI.'
+        } | Select-Object -Unique)
+        if ($warningMessages.Count -gt 0) {
+            return New-BoostLabNvidiaSettingsResult `
+                -Success $true `
+                -Action $canonicalActionName `
+                -Status 'SuccessWithWarning' `
+                -CommandStatus 'Completed source-equivalent Nvidia Settings workflow with warning' `
+                -VerificationStatus 'Warning' `
+                -Message "Nvidia Settings $branch completed the source-defined common 7-Zip prelude, NVIDIA registry/profile operations, and Profile Inspector .nip import. NVIDIA Control Panel was not found or could not be opened." `
+                -Data $data `
+                -Warnings $warningMessages `
+                -ChangesExecuted $true
+        }
+
         return New-BoostLabNvidiaSettingsResult `
             -Success $true `
             -Action $canonicalActionName `
