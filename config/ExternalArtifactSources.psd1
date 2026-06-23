@@ -78,8 +78,12 @@
                 Id = 'installers-seven-zip'
                 OfficialSourceKind = 'StaticOfficialInstaller'
                 OfficialHostAllowlist = @('www.7-zip.org')
+                ExactSourceUrlRequired = $true
+                ExpectedSourceFileName = '7z2301-x64.exe'
                 ExpectedFileName = '7 Zip.exe'
                 ExpectedExtension = '.exe'
+                ExpectedSha256 = '26CB6E9F56333682122FAFE79DBCDFD51E9F47CC7217DCCD29AC6FC33B5598CD'
+                ExpectedSizeBytes = 1589510
                 DownloadExecutionApproved = $true
                 ResolvedDownloadExecutionApproved = $false
                 LookupExecutionApproved = $false
@@ -89,7 +93,10 @@
                 RequiresVerifiedLocalPath = $true
                 NoUrlExecution = $true
                 SignatureVerificationRequired = $true
-                ExpectedSignatureStatus = 'Valid'
+                ExpectedSignatureStatus = 'NotSigned'
+                UnsignedOfficialArtifactApproved = $true
+                UnsignedApprovalScope = 'ExactArtifactIdUrlHostFilenameShaSize'
+                UnsignedAllowedReason = 'The official 7-Zip 23.01 x64 installer is not Authenticode-signed; runtime approval is limited to this exact artifact id, HTTPS URL, vendor host, source filename, destination filename, SHA-256, and size.'
             }
             @{
                 Id = 'installers-battle-net'

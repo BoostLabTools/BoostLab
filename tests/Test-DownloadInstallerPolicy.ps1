@@ -434,6 +434,116 @@ try {
         $errors.Add('Official browser extension XPI source was not verified by extension/source policy.')
     }
 
+    $sevenZipPolicy = @($officialPolicy.Entries | Where-Object { [string]$_['Id'] -eq 'installers-seven-zip' })[0]
+    if (
+        $null -eq $sevenZipPolicy -or
+        [string]$sevenZipPolicy['ExpectedSignatureStatus'] -ne 'NotSigned' -or
+        $sevenZipPolicy['UnsignedOfficialArtifactApproved'] -ne $true -or
+        [string]$sevenZipPolicy['ExpectedSha256'] -ne '26CB6E9F56333682122FAFE79DBCDFD51E9F47CC7217DCCD29AC6FC33B5598CD' -or
+        [int64]$sevenZipPolicy['ExpectedSizeBytes'] -ne 1589510 -or
+        [string]$sevenZipPolicy['ExpectedSourceFileName'] -ne '7z2301-x64.exe'
+    ) {
+        $errors.Add('Installers 7-Zip must carry the exact narrow NotSigned official-source approval metadata.')
+    }
+
+    $sevenZipMockSource = Join-Path $tempRoot 'mock-7zip-source.bin'
+    [IO.File]::WriteAllText(
+        $sevenZipMockSource,
+        'BoostLab mocked 7-Zip official vendor payload for policy tests only.',
+        [Text.Encoding]::UTF8
+    )
+    $sevenZipMockFile = Get-Item -LiteralPath $sevenZipMockSource
+    $sevenZipMockHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sevenZipMockSource).Hash
+    $sevenZipMockManifest = Get-BoostLabExternalArtifactSourceManifest
+    $sevenZipMockPolicy = @($sevenZipMockManifest.OfficialVendorDirectRuntimePolicy.Entries | Where-Object { [string]$_['Id'] -eq 'installers-seven-zip' })[0]
+    $sevenZipMockPolicy['ExpectedSha256'] = $sevenZipMockHash
+    $sevenZipMockPolicy['ExpectedSizeBytes'] = [int64]$sevenZipMockFile.Length
+    $sevenZipDestination = Join-Path $mockDownloadRoot '7 Zip.exe'
+    $sevenZipDownloader = {
+        param(
+            [string]$Uri,
+            [string]$OutFile
+        )
+
+        Copy-Item -LiteralPath $sevenZipMockSource -Destination $OutFile -Force
+    }
+    $notSignedInspector = {
+        param([string]$Path)
+
+        [pscustomobject]@{
+            Status = 'NotSigned'
+            Publisher = ''
+        }
+    }
+    $sevenZipDownload = Invoke-BoostLabOfficialVendorDownload `
+        -ArtifactId 'installers-seven-zip' `
+        -SourceUrl 'https://www.7-zip.org/a/7z2301-x64.exe' `
+        -Destination $sevenZipDestination `
+        -Manifest $sevenZipMockManifest `
+        -Downloader $sevenZipDownloader `
+        -SignatureInspector $notSignedInspector
+    if (
+        -not $sevenZipDownload.Success -or
+        [string]$sevenZipDownload.Verification.Signature.Status -ne 'Verified' -or
+        [string]$sevenZipDownload.Verification.LocalFileIdentity.Status -ne 'Verified'
+    ) {
+        $errors.Add('Exact Installers 7-Zip NotSigned official artifact was not accepted by URL, hash, size, and signature-status policy.')
+    }
+
+    $sevenZipBadUrlBlocked = $false
+    try {
+        Invoke-BoostLabOfficialVendorDownload `
+            -ArtifactId 'installers-seven-zip' `
+            -SourceUrl 'https://www.7-zip.org/a/7z2302-x64.exe' `
+            -Destination (Join-Path $mockDownloadRoot '7 Zip.exe') `
+            -Manifest $sevenZipMockManifest `
+            -Downloader $sevenZipDownloader `
+            -SignatureInspector $notSignedInspector | Out-Null
+    }
+    catch {
+        $sevenZipBadUrlBlocked = $_.Exception.Message -match 'exact approved vendor URL|approved source filename'
+    }
+    if (-not $sevenZipBadUrlBlocked) {
+        $errors.Add('Installers 7-Zip NotSigned exception was not constrained to the exact approved vendor URL/source filename.')
+    }
+
+    $sevenZipMissingHashManifest = Get-BoostLabExternalArtifactSourceManifest
+    $sevenZipMissingHashPolicy = @($sevenZipMissingHashManifest.OfficialVendorDirectRuntimePolicy.Entries | Where-Object { [string]$_['Id'] -eq 'installers-seven-zip' })[0]
+    $sevenZipMissingHashPolicy['ExpectedSha256'] = ''
+    $sevenZipMissingHashBlocked = $false
+    try {
+        Invoke-BoostLabOfficialVendorDownload `
+            -ArtifactId 'installers-seven-zip' `
+            -SourceUrl 'https://www.7-zip.org/a/7z2301-x64.exe' `
+            -Destination (Join-Path $mockDownloadRoot '7 Zip.exe') `
+            -Manifest $sevenZipMissingHashManifest `
+            -Downloader $sevenZipDownloader `
+            -SignatureInspector $notSignedInspector | Out-Null
+    }
+    catch {
+        $sevenZipMissingHashBlocked = $_.Exception.Message -match 'SHA-256'
+    }
+    if (-not $sevenZipMissingHashBlocked) {
+        $errors.Add('Installers 7-Zip NotSigned exception without SHA-256 evidence was not blocked.')
+    }
+
+    $sevenZipHashMismatchBlocked = $false
+    try {
+        Invoke-BoostLabOfficialVendorDownload `
+            -ArtifactId 'installers-seven-zip' `
+            -SourceUrl 'https://www.7-zip.org/a/7z2301-x64.exe' `
+            -Destination (Join-Path $mockDownloadRoot '7 Zip.exe') `
+            -Manifest (Get-BoostLabExternalArtifactSourceManifest) `
+            -Downloader $sevenZipDownloader `
+            -SignatureInspector $notSignedInspector | Out-Null
+    }
+    catch {
+        $sevenZipHashMismatchBlocked = $_.Exception.Message -match 'SHA-256 mismatch'
+    }
+    if (-not $sevenZipHashMismatchBlocked) {
+        $errors.Add('Installers 7-Zip NotSigned exception with wrong local hash was not blocked.')
+    }
+
     $missingProductionApproval = [ordered]@{}
     foreach ($key in $mockArtifact.Keys) {
         $missingProductionApproval[$key] = $mockArtifact[$key]

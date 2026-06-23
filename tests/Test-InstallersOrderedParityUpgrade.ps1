@@ -203,6 +203,51 @@ try {
     Assert-BoostLabCondition ($lastDiscordIndex -lt $firstChromeIndex) 'Google Chrome must not start until Discord operations finish.'
     Assert-BoostLabCondition ($lastChromeIndex -lt $firstSteamIndex) 'Steam must not start until Google Chrome operations finish.'
 
+    $sevenZipQueueSeen = [System.Collections.Generic.List[string]]::new()
+    $sevenZipQueueExecutor = {
+        param($Operation, $App)
+        $sevenZipQueueSeen.Add([string]$App.AppId)
+        [pscustomobject]@{
+            Success = $true
+            Message = 'mock operation completed'
+            Operation = $Operation
+            AppId = [string]$App.AppId
+        }
+    }
+    $sevenZipQueueApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip', 'brave', 'steam') -OperationExecutor $args[0] -SkipEnvironmentChecks } $sevenZipQueueExecutor
+    Assert-BoostLabCondition ([bool]$sevenZipQueueApply.Success) 'Mocked Installers Apply should continue past 7-Zip when verification succeeds.'
+    Assert-BoostLabCondition (((@($sevenZipQueueApply.Data.Queue | ForEach-Object { [string]$_.AppId }) -join ',') -eq 'discord,seven-zip,brave,steam')) 'Discord, 7-Zip, Brave, Steam queue must remain in retained source order.'
+    Assert-BoostLabCondition ('brave' -in @($sevenZipQueueSeen)) 'Brave should start after a successful 7-Zip app queue segment.'
+    Assert-BoostLabCondition ('steam' -in @($sevenZipQueueSeen)) 'Steam should start after a successful 7-Zip app queue segment.'
+
+    $sevenZipFailureSeen = [System.Collections.Generic.List[string]]::new()
+    $sevenZipFailingExecutor = {
+        param($Operation, $App)
+        $sevenZipFailureSeen.Add([string]$App.AppId)
+        if ([string]$App.AppId -eq 'seven-zip') {
+            [pscustomobject]@{
+                Success = $false
+                Message = 'mock seven zip verification failure'
+                Operation = $Operation
+                AppId = [string]$App.AppId
+            }
+        }
+        else {
+            [pscustomobject]@{
+                Success = $true
+                Message = 'mock operation completed'
+                Operation = $Operation
+                AppId = [string]$App.AppId
+            }
+        }
+    }
+    $sevenZipFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip', 'brave', 'steam') -OperationExecutor $args[0] -SkipEnvironmentChecks } $sevenZipFailingExecutor
+    Assert-BoostLabCondition (-not [bool]$sevenZipFailedApply.Success) 'Mocked 7-Zip failure should fail closed.'
+    Assert-BoostLabCondition ([string]$sevenZipFailedApply.Status -eq 'QueueStoppedAfterFailure') '7-Zip failure status mismatch.'
+    Assert-BoostLabCondition ([string]$sevenZipFailedApply.Data.FailedApp.AppId -eq 'seven-zip') 'Failed app should be 7-Zip.'
+    Assert-BoostLabCondition ('brave' -notin @($sevenZipFailureSeen)) 'Brave must not start after a failed 7-Zip app queue segment.'
+    Assert-BoostLabCondition ('steam' -notin @($sevenZipFailureSeen)) 'Steam must not start after a failed 7-Zip app queue segment.'
+
     $failureSeen = [System.Collections.Generic.List[string]]::new()
     $failingExecutor = {
         param($Operation, $App)

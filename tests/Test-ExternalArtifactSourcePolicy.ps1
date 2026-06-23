@@ -346,6 +346,20 @@ foreach ($policyEntry in $officialPolicyEntries) {
         Assert-BoostLabCondition ([string]$policyEntry['ExpectedExtension'] -eq '.xpi') "Official browser extension source must require XPI extension for $id."
     }
 }
+$unsignedOfficialPolicyEntries = @($officialPolicyEntries | Where-Object { [string]$_['ExpectedSignatureStatus'] -eq 'NotSigned' })
+Assert-BoostLabCondition ($unsignedOfficialPolicyEntries.Count -eq 1) 'Exactly one OfficialVendorDirect NotSigned installer exception is allowed.'
+$sevenZipUnsignedPolicy = $unsignedOfficialPolicyEntries[0]
+Assert-BoostLabCondition ([string]$sevenZipUnsignedPolicy['Id'] -eq 'installers-seven-zip') 'Only Installers 7-Zip may use the OfficialVendorDirect NotSigned exception.'
+Assert-BoostLabCondition ($sevenZipUnsignedPolicy['UnsignedOfficialArtifactApproved'] -eq $true) 'Installers 7-Zip unsigned exception must be explicitly approved.'
+Assert-BoostLabCondition ([string]$sevenZipUnsignedPolicy['UnsignedApprovalScope'] -eq 'ExactArtifactIdUrlHostFilenameShaSize') 'Installers 7-Zip unsigned exception scope mismatch.'
+Assert-BoostLabCondition ([string]$sevenZipUnsignedPolicy['ExpectedSourceFileName'] -eq '7z2301-x64.exe') 'Installers 7-Zip source filename evidence mismatch.'
+Assert-BoostLabCondition ([string]$sevenZipUnsignedPolicy['ExpectedFileName'] -eq '7 Zip.exe') 'Installers 7-Zip destination filename evidence mismatch.'
+Assert-BoostLabCondition ([string]$sevenZipUnsignedPolicy['ExpectedSha256'] -eq '26CB6E9F56333682122FAFE79DBCDFD51E9F47CC7217DCCD29AC6FC33B5598CD') 'Installers 7-Zip SHA-256 evidence mismatch.'
+Assert-BoostLabCondition ([int64]$sevenZipUnsignedPolicy['ExpectedSizeBytes'] -eq 1589510) 'Installers 7-Zip size evidence mismatch.'
+foreach ($policyEntry in @($officialPolicyEntries | Where-Object { [string]$_['Id'] -ne 'installers-seven-zip' })) {
+    Assert-BoostLabCondition ([string]$policyEntry['ExpectedSignatureStatus'] -ne 'NotSigned') "Unexpected OfficialVendorDirect unsigned exception: $($policyEntry['Id'])"
+    Assert-BoostLabCondition ($policyEntry['UnsignedOfficialArtifactApproved'] -ne $true) "Unexpected unsigned approval flag outside Installers 7-Zip: $($policyEntry['Id'])"
+}
 Assert-BoostLabCondition ($needsMirrorEntries.Count -eq 0) 'Author-hosted artifacts should no longer require mirror governance after Phase 164H runtime approval.'
 Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 28) 'Expected all 28 author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 164F.'
 Assert-BoostLabCondition ($provenanceOnlyLinkedEntries.Count -eq 28) 'Expected all 28 verified mirror entries to link to Phase 164G provenance-only approvals.'

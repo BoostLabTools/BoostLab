@@ -339,6 +339,29 @@ function Get-BoostLabApprovedOfficialVendorRuntimeSource {
                 $errors.Add("Download URL for '$ArtifactId' must be HTTPS and use an approved vendor host.")
             }
 
+            if (
+                (Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ExactSourceUrlRequired') -eq $true -and
+                [string]$candidateUrl -ne [string]$originalUrl
+            ) {
+                $errors.Add("Download URL for '$ArtifactId' must match the exact approved vendor URL.")
+            }
+
+            $expectedSourceFileName = [string](
+                Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ExpectedSourceFileName'
+            )
+            if (-not [string]::IsNullOrWhiteSpace($expectedSourceFileName)) {
+                try {
+                    $candidateUri = [Uri]$candidateUrl
+                    $actualSourceFileName = [IO.Path]::GetFileName($candidateUri.AbsolutePath)
+                    if ($actualSourceFileName -ne $expectedSourceFileName) {
+                        $errors.Add("Download URL for '$ArtifactId' must end with approved source filename '$expectedSourceFileName'.")
+                    }
+                }
+                catch {
+                    $errors.Add("Download URL for '$ArtifactId' is not a valid URI.")
+                }
+            }
+
             $urlPattern = [string](Get-BoostLabProvenancePropertyValue -InputObject $policyEntry -Name 'ResolvedDownloadUrlPattern')
             if (-not $isResolvedUrl -and -not [string]::IsNullOrWhiteSpace($urlPattern)) {
                 $errors.Add("Official vendor source '$ArtifactId' requires a resolved download URL before download.")
@@ -420,10 +443,27 @@ function Test-BoostLabOfficialVendorSignature {
     if ([string]::IsNullOrWhiteSpace($expectedStatus)) {
         $expectedStatus = 'Valid'
     }
+    $expectsUnsigned = $expectedStatus -eq 'NotSigned'
     if ($status -ne $expectedStatus) {
         $errors.Add("Official vendor artifact signature status '$status' did not match expected '$expectedStatus'.")
     }
-    if ([string]::IsNullOrWhiteSpace($publisher)) {
+
+    if ($expectsUnsigned) {
+        if ((Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'UnsignedOfficialArtifactApproved') -ne $true) {
+            $errors.Add('Unsigned official vendor executable requires an explicit artifact-specific unsigned approval.')
+        }
+
+        $unsignedScope = [string](Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'UnsignedApprovalScope')
+        if ($unsignedScope -ne 'ExactArtifactIdUrlHostFilenameShaSize') {
+            $errors.Add('Unsigned official vendor executable approval must be scoped to exact artifact id, URL, host, filename, SHA-256, and size.')
+        }
+
+        $unsignedReason = [string](Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'UnsignedAllowedReason')
+        if ([string]::IsNullOrWhiteSpace($unsignedReason)) {
+            $errors.Add('Unsigned official vendor executable approval requires a documented reason.')
+        }
+    }
+    elseif ([string]::IsNullOrWhiteSpace($publisher)) {
         $errors.Add('Official vendor executable artifact must expose a signer/publisher.')
     }
 
@@ -431,6 +471,76 @@ function Test-BoostLabOfficialVendorSignature {
         Passed = $errors.Count -eq 0
         Status = if ($errors.Count -eq 0) { 'Verified' } else { 'Blocked' }
         Publisher = $publisher
+        Errors = $errors.ToArray()
+    }
+}
+
+function Test-BoostLabOfficialVendorLocalFileIdentity {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [object]$Policy
+    )
+
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $checks = [System.Collections.Generic.List[object]]::new()
+
+    $expectedHash = [string](Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'ExpectedSha256')
+    $expectedSizeValue = Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'ExpectedSizeBytes'
+    $expectedSize = 0L
+    if ($null -ne $expectedSizeValue -and -not [string]::IsNullOrWhiteSpace([string]$expectedSizeValue)) {
+        [void][long]::TryParse([string]$expectedSizeValue, [ref]$expectedSize)
+    }
+
+    $expectedSignatureStatus = [string](
+        Get-BoostLabProvenancePropertyValue -InputObject $Policy -Name 'ExpectedSignatureStatus'
+    )
+    $expectsUnsigned = $expectedSignatureStatus -eq 'NotSigned'
+    if ($expectsUnsigned) {
+        if ($expectedHash -notmatch '^[A-Fa-f0-9]{64}$') {
+            $errors.Add('Unsigned official vendor executable requires exact SHA-256 evidence.')
+        }
+        if ($expectedSize -le 0) {
+            $errors.Add('Unsigned official vendor executable requires exact size evidence.')
+        }
+    }
+
+    if ($expectedHash -match '^[A-Fa-f0-9]{64}$') {
+        $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash
+        $hashPassed = $actualHash -eq $expectedHash
+        $checks.Add([pscustomobject]@{
+            Name = 'SHA256'
+            Expected = $expectedHash
+            Actual = $actualHash
+            Status = if ($hashPassed) { 'Passed' } else { 'Failed' }
+        })
+        if (-not $hashPassed) {
+            $errors.Add('Official vendor artifact SHA-256 mismatch.')
+        }
+    }
+
+    if ($expectedSize -gt 0) {
+        $actualSize = (Get-Item -LiteralPath $Path -ErrorAction Stop).Length
+        $sizePassed = [int64]$actualSize -eq [int64]$expectedSize
+        $checks.Add([pscustomobject]@{
+            Name = 'FileSize'
+            Expected = [int64]$expectedSize
+            Actual = [int64]$actualSize
+            Status = if ($sizePassed) { 'Passed' } else { 'Failed' }
+        })
+        if (-not $sizePassed) {
+            $errors.Add('Official vendor artifact size mismatch.')
+        }
+    }
+
+    return [pscustomobject]@{
+        Passed = $errors.Count -eq 0
+        Status = if ($errors.Count -eq 0) { 'Verified' } else { 'Blocked' }
+        Checks = $checks.ToArray()
         Errors = $errors.ToArray()
     }
 }
@@ -504,6 +614,13 @@ function Invoke-BoostLabOfficialVendorDownload {
         throw "Official vendor download did not create the expected local file for '$ArtifactId'."
     }
 
+    $localIdentity = Test-BoostLabOfficialVendorLocalFileIdentity `
+        -Path $Destination `
+        -Policy $policy
+    if (-not $localIdentity.Passed) {
+        throw "Official vendor local file verification failed for '$ArtifactId': $(@($localIdentity.Errors) -join '; ')"
+    }
+
     $signature = Test-BoostLabOfficialVendorSignature `
         -Path $Destination `
         -Policy $policy `
@@ -521,6 +638,7 @@ function Invoke-BoostLabOfficialVendorDownload {
             Status = 'Verified'
             LocalPath = (Resolve-Path -LiteralPath $Destination -ErrorAction Stop).Path
             SourceKind = [string](Get-BoostLabProvenancePropertyValue -InputObject $policy -Name 'OfficialSourceKind')
+            LocalFileIdentity = $localIdentity
             Signature = $signature
         }
         Timestamp    = Get-Date
