@@ -100,29 +100,56 @@ function ConvertTo-BoostLabPowerIndex {
     return [Convert]::ToUInt32($Value, 10)
 }
 
+function Resolve-BoostLabPowerPlanMessage {
+    param(
+        [AllowNull()]
+        [object]$Message,
+
+        [string]$Fallback = 'Power Plan operation completed.'
+    )
+
+    $text = if ($null -eq $Message) { '' } else { [string]$Message }
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $Fallback
+    }
+
+    return $text
+}
+
 function ConvertTo-BoostLabCommandResult {
     param(
         [AllowNull()][object]$Result,
         [string]$FallbackMessage = 'The command returned no result.'
     )
 
+    $safeFallbackMessage = Resolve-BoostLabPowerPlanMessage `
+        -Message $FallbackMessage `
+        -Fallback 'The command returned no result.'
+
     if ($null -eq $Result) {
-        return [pscustomobject]@{ Succeeded = $false; ExitCode = $null; Output = @(); Message = $FallbackMessage }
+        return [pscustomobject]@{ Succeeded = $false; ExitCode = $null; Output = @(); Message = $safeFallbackMessage }
     }
     if ($Result -is [bool]) {
         return [pscustomobject]@{
             Succeeded = [bool]$Result
             ExitCode  = if ($Result) { 0 } else { 1 }
             Output    = @()
-            Message   = if ($Result) { 'Command completed.' } else { $FallbackMessage }
+            Message   = if ($Result) { 'Command completed.' } else { $safeFallbackMessage }
         }
+    }
+
+    $resultMessage = if ($null -ne $Result.PSObject.Properties['Message']) {
+        [string]$Result.Message
+    }
+    else {
+        $safeFallbackMessage
     }
 
     return [pscustomobject]@{
         Succeeded = if ($null -ne $Result.PSObject.Properties['Succeeded']) { [bool]$Result.Succeeded } else { $false }
         ExitCode  = if ($null -ne $Result.PSObject.Properties['ExitCode']) { $Result.ExitCode } else { $null }
         Output    = if ($null -ne $Result.PSObject.Properties['Output']) { @($Result.Output) } else { @() }
-        Message   = if ($null -ne $Result.PSObject.Properties['Message']) { [string]$Result.Message } else { $FallbackMessage }
+        Message   = Resolve-BoostLabPowerPlanMessage -Message $resultMessage -Fallback $safeFallbackMessage
     }
 }
 
@@ -202,7 +229,7 @@ function Invoke-BoostLabPowerCfgCommand {
             Succeeded = $exitCode -eq 0
             ExitCode  = $exitCode
             Output    = $output
-            Message   = if ($exitCode -eq 0) { 'powercfg command completed.' } else { (@($output) -join ' ').Trim() }
+            Message   = if ($exitCode -eq 0) { 'powercfg command completed.' } else { Resolve-BoostLabPowerPlanMessage -Message ((@($output) -join ' ').Trim()) -Fallback "powercfg exited with code $exitCode." }
         }
     }
     catch {
@@ -228,7 +255,7 @@ function Invoke-BoostLabPowerPlanRegistryCommand {
             Succeeded = $exitCode -eq 0
             ExitCode  = $exitCode
             Output    = $output
-            Message   = if ($exitCode -eq 0) { 'Registry command completed.' } else { (@($output) -join ' ').Trim() }
+            Message   = if ($exitCode -eq 0) { 'Registry command completed.' } else { Resolve-BoostLabPowerPlanMessage -Message ((@($output) -join ' ').Trim()) -Fallback "reg.exe exited with code $exitCode." }
         }
     }
     catch {
@@ -388,7 +415,7 @@ function New-BoostLabPowerPlanResult {
     param(
         [Parameter(Mandatory)][bool]$Success,
         [Parameter(Mandatory)][string]$Action,
-        [Parameter(Mandatory)][string]$Message,
+        [Parameter(Mandatory)][AllowNull()][AllowEmptyString()][string]$Message,
         [bool]$Cancelled = $false,
         [AllowNull()][object]$Data = $null,
         [AllowNull()][object]$VerificationResult = $null
@@ -413,7 +440,7 @@ function New-BoostLabPowerPlanResult {
     return [pscustomobject]@{
         Success = $Success; ToolId = 'power-plan'; ToolTitle = 'Power Plan'; Action = $Action
         Status = $status
-        Message = $Message; RestartRequired = $false; Cancelled = $Cancelled; Timestamp = Get-Date
+        Message = (Resolve-BoostLabPowerPlanMessage -Message $Message); RestartRequired = $false; Cancelled = $Cancelled; Timestamp = Get-Date
         Data = $Data; VerificationResult = $VerificationResult
     }
 }
@@ -471,7 +498,7 @@ function Test-BoostLabPowerPlanState {
     $inventory = if ($inventoryRaw.Count -gt 0) { $inventoryRaw[0] } else { $null }
     $expectedActive = if ($ActionName -eq 'Apply') { $script:BoostLabPowerSchemeGuid } else { $script:BoostLabBalancedSchemeGuid }
     if ($null -eq $inventory -or -not [bool]$inventory.Succeeded) {
-        $checks.Add((New-BoostLabVerificationCheck -Name 'Active power plan GUID' -Expected $expectedActive -Actual 'Unavailable' -Status 'Warning' -Message $(if ($null -ne $inventory) { [string]$inventory.Message } else { 'Power plan inventory returned no result.' })))
+        $checks.Add((New-BoostLabVerificationCheck -Name 'Active power plan GUID' -Expected $expectedActive -Actual 'Unavailable' -Status 'Warning' -Message (Resolve-BoostLabPowerPlanMessage -Message $(if ($null -ne $inventory) { [string]$inventory.Message } else { $null }) -Fallback 'Power plan inventory returned no result.')))
     }
     else {
         $activeStatus = if ([string]$inventory.ActiveGuid -eq $expectedActive) { 'Passed' } else { 'Failed' }
@@ -505,7 +532,7 @@ function Test-BoostLabPowerPlanState {
                 'Failed'
             }
             $actual = if ($readable) { 'AC={0}; DC={1}' -f $state.ACValue, $state.DCValue } else { 'Unavailable or unsupported' }
-            $checks.Add((New-BoostLabVerificationCheck -Name ("Power setting | {0} | {1}\{2}" -f $definition.Name, $definition.Subgroup, $definition.Setting) -Expected ("AC={0}; DC={1}" -f $expectedAC, $expectedDC) -Actual $actual -Status $status -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Power setting reader returned no result.' })))
+            $checks.Add((New-BoostLabVerificationCheck -Name ("Power setting | {0} | {1}\{2}" -f $definition.Name, $definition.Subgroup, $definition.Setting) -Expected ("AC={0}; DC={1}" -f $expectedAC, $expectedDC) -Actual $actual -Status $status -Message (Resolve-BoostLabPowerPlanMessage -Message $(if ($null -ne $state) { [string]$state.Message } else { $null }) -Fallback 'Power setting reader returned no result.')))
         }
     }
 
@@ -526,7 +553,7 @@ function Test-BoostLabPowerPlanState {
         else {
             'Failed'
         }
-        $checks.Add((New-BoostLabVerificationCheck -Name ("Registry | {0}\{1}" -f $definition.Path, $definition.Name) -Expected $(if ($definition.ExpectedExists) { [string]$definition.ExpectedValue } else { 'Absent' }) -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) -Status $status -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Registry reader returned no result.' })))
+        $checks.Add((New-BoostLabVerificationCheck -Name ("Registry | {0}\{1}" -f $definition.Path, $definition.Name) -Expected $(if ($definition.ExpectedExists) { [string]$definition.ExpectedValue } else { 'Absent' }) -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) -Status $status -Message (Resolve-BoostLabPowerPlanMessage -Message $(if ($null -ne $state) { [string]$state.Message } else { $null }) -Fallback 'Registry reader returned no result.')))
     }
 
     $failed = @($checks | Where-Object Status -eq 'Failed').Count

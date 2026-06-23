@@ -134,6 +134,7 @@ foreach ($requiredText in @(
     '$script:BoostLabPowerSettingDefinitions'
     '$script:BoostLabApplyRegistryOperations'
     '$script:BoostLabDefaultRegistryOperations'
+    'function Resolve-BoostLabPowerPlanMessage'
     'function Test-BoostLabPowerPlanState'
     'function Invoke-BoostLabPowerPlanAction'
     '/duplicatescheme'
@@ -382,6 +383,36 @@ try {
         throw 'Mocked Power Plan Default verification is incorrect.'
     }
 
+    $messageNormalization = & $powerModule {
+        $emptyCommand = ConvertTo-BoostLabCommandResult -Result ([pscustomobject]@{ Succeeded = $false; ExitCode = 1; Output = @(); Message = '' }) -FallbackMessage 'Power Plan operation completed.'
+        $whitespaceCommand = ConvertTo-BoostLabCommandResult -Result ([pscustomobject]@{ Succeeded = $false; ExitCode = 1; Output = @(); Message = '   ' }) -FallbackMessage 'Power Plan operation completed.'
+        $realFailureCommand = ConvertTo-BoostLabCommandResult -Result ([pscustomobject]@{ Succeeded = $false; ExitCode = 1; Output = @(); Message = 'Access is denied.' }) -FallbackMessage 'Power Plan operation completed.'
+        $emptyResult = New-BoostLabPowerPlanResult -Success $true -Action 'Apply' -Message ''
+
+        [pscustomobject]@{
+            EmptyMessage = Resolve-BoostLabPowerPlanMessage -Message '' -Fallback 'Power Plan fallback message.'
+            NullMessage = Resolve-BoostLabPowerPlanMessage -Message $null -Fallback 'Power Plan fallback message.'
+            WhitespaceMessage = Resolve-BoostLabPowerPlanMessage -Message '   ' -Fallback 'Power Plan fallback message.'
+            RealMessage = Resolve-BoostLabPowerPlanMessage -Message 'Real failure detail.' -Fallback 'Power Plan fallback message.'
+            EmptyCommandMessage = $emptyCommand.Message
+            WhitespaceCommandMessage = $whitespaceCommand.Message
+            RealFailureCommandMessage = $realFailureCommand.Message
+            EmptyResultMessage = $emptyResult.Message
+        }
+    }
+    if (
+        $messageNormalization.EmptyMessage -ne 'Power Plan fallback message.' -or
+        $messageNormalization.NullMessage -ne 'Power Plan fallback message.' -or
+        $messageNormalization.WhitespaceMessage -ne 'Power Plan fallback message.' -or
+        $messageNormalization.RealMessage -ne 'Real failure detail.' -or
+        $messageNormalization.EmptyCommandMessage -ne 'Power Plan operation completed.' -or
+        $messageNormalization.WhitespaceCommandMessage -ne 'Power Plan operation completed.' -or
+        $messageNormalization.RealFailureCommandMessage -ne 'Access is denied.' -or
+        $messageNormalization.EmptyResultMessage -ne 'Power Plan operation completed.'
+    ) {
+        throw 'Power Plan did not normalize empty internal messages while preserving real diagnostics.'
+    }
+
     $applyEvents = [System.Collections.Generic.List[string]]::new()
     $applyPowerCommands = [System.Collections.Generic.List[string]]::new()
     $applyRegistryCommands = [System.Collections.Generic.List[string]]::new()
@@ -444,6 +475,43 @@ try {
         $applyEvents[$applyEvents.Count - 1] -ne 'UI:powercfg.cpl'
     ) {
         throw 'Power Plan Apply command ordering changed.'
+    }
+
+    $emptyMessagePowerCommands = [System.Collections.Generic.List[string]]::new()
+    $emptyMessageRegistryCommands = [System.Collections.Generic.List[string]]::new()
+    $emptyMessagePowerInvoker = {
+        param($Arguments)
+        $command = @($Arguments) -join ' '
+        $emptyMessagePowerCommands.Add($command)
+        $isExpectedActiveDeleteFailure = (
+            $Arguments[0] -eq '/delete' -and
+            $Arguments[1] -eq $boostLabGuid
+        )
+        return [pscustomobject]@{
+            Succeeded = -not $isExpectedActiveDeleteFailure
+            ExitCode = if ($isExpectedActiveDeleteFailure) { 1 } else { 0 }
+            Output = if ($isExpectedActiveDeleteFailure) { @('The active power scheme cannot be deleted.') } else { @() }
+            Message = if ($isExpectedActiveDeleteFailure) { 'The active power scheme cannot be deleted.' } else { '' }
+        }
+    }.GetNewClosure()
+    $emptyMessageRegistryInvoker = {
+        param($Arguments)
+        $emptyMessageRegistryCommands.Add((@($Arguments) -join ' '))
+        return [pscustomobject]@{ Succeeded = $true; ExitCode = 0; Output = @(); Message = '   ' }
+    }.GetNewClosure()
+    $emptyMessageApplyResult = & $powerModule {
+        param($PowerInvoker, $RegistryInvoker, $InitialReader, $FinalReader, $SettingReader, $RegistryReader)
+        Invoke-BoostLabPowerPlanAction -ActionName 'Apply' -AdministratorChecker { return $true } -PowerCfgInvoker $PowerInvoker -RegistryInvoker $RegistryInvoker -PlanInventoryReader $InitialReader -VerificationPlanInventoryReader $FinalReader -PowerSettingReader $SettingReader -RegistryReader $RegistryReader -UiLauncher { }
+    } $emptyMessagePowerInvoker $emptyMessageRegistryInvoker $initialInventory $applyFinalInventory $applySettingReader $applyRegistryReader
+    if (
+        -not $emptyMessageApplyResult.Success -or
+        $emptyMessageApplyResult.VerificationResult.Status -ne 'Passed' -or
+        $emptyMessageApplyResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        [string]::IsNullOrWhiteSpace([string]$emptyMessageApplyResult.Message) -or
+        $emptyMessagePowerCommands.Count -ne 78 -or
+        $emptyMessageRegistryCommands.Count -ne 10
+    ) {
+        throw 'Power Plan Apply launch did not tolerate empty optional command messages.'
     }
     $actualSettingCommands = @(
         $applyPowerCommands |
