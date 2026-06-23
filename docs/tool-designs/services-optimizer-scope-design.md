@@ -11,18 +11,18 @@ scope, cleanup scope, reboot scope, Safe Mode scope, BCD scope, RunOnce scope,
 TrustedInstaller scope, Default behavior, or Restore behavior was approved by
 Phase 53.
 
-Phase 159 supersedes the placeholder/refusal status by implementing the exact
-Ultimate Services Off and Services Default workflows for this tool only, after
-explicit Yazan approval. This historical design document still does not approve
-any reusable production allowlists, scopes, or Restore contract.
+Phase 170A supersedes the Phase 159 implementation status by retiring Services
+Optimizer from active BoostLab product scope after explicit Yazan approval. This
+historical design document still does not approve any reusable production
+allowlists, scopes, or Restore contract.
 
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/5 Services Optimizer.ps1`
 * Source SHA-256: `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F`
-* Current BoostLab module path: `modules/Advanced/services-optimizer.psm1`
-* Current status after Phase 159: exact Ultimate parity implemented
-* Current implemented actions after Phase 159: Analyze, Apply, Default
+* Retired BoostLab module path: `modules/Advanced/services-optimizer.psm1`
+* Current status after Phase 170A: retired/deleted outside active catalog
+* Current implemented actions after Phase 170A: none
 
 Relevant foundations:
 
@@ -97,12 +97,8 @@ previously rejected productized service analyzer/profile redesign.
   * Phase 43 Safe Mode workflow
   * Phase 40 reboot workflow
 * Required future production allowlist:
-  * Exact tool id `services-optimizer`.
-  * Exact action ids for Off and Default if ever approved.
-  * Exact service names.
-  * Exact permitted `Start` values per service and per branch.
-  * Exact registry path rooted at
-    `HKLM\SYSTEM\ControlSet001\Services\<ServiceName>`.
+  * Not applicable while the tool remains retired/deleted outside active
+    catalog.
 * Required inventory/capture before mutation:
   * Service existence, display name, binary path, account, dependencies,
     running status, startup type, delayed auto-start, and failure actions where
@@ -412,7 +408,7 @@ previously rejected productized service analyzer/profile redesign.
     Restore on `C:\`, create restore point `beforeservices`, then delete the
     frequency value.
 * Required foundation:
-  * Existing Restore Point implementation pattern
+  * Historical Restore Point implementation pattern evidence
   * Phase 36 registry capture for the frequency value if this tool owns it
 * Required future production allowlist:
   * Exact restore point name and type.
@@ -611,8 +607,6 @@ must not infer the user's prior service state from Ultimate defaults.
 No production service/registry/file/reboot/Safe Mode/TrustedInstaller scopes
 are approved by this document.
 
-Services Optimizer remains a placeholder/refused tool.
-
-The current placeholder module must remain non-executing. A future migration
-phase must not enable partial "safe-looking" service changes if doing so would
-weaken the source's effective multi-stage behavior.
+Services Optimizer is retired/deleted outside active BoostLab product scope.
+No active module, UI card, action route, production allowlist, or runtime
+operation should reference this historical design.

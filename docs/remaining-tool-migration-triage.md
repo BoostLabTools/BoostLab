@@ -115,7 +115,6 @@ These mismatches are documented here rather than changed during this planning-on
 * **Control Panel Settings:** very large policy set with services, security-sensitive changes, deletion, and TrustedInstaller.
 * **Power Plan:** deletes all enumerated power schemes, disables hibernation, changes battery safety behavior, and cannot restore custom previous schemes.
 * **Cleanup:** recursively deletes temporary data, `Windows.old`, `inetpub`, `PerfLogs`, and dump files without a restore path.
-* **Services Optimizer:** broad service/security changes with TrustedInstaller, Safe Mode, RunOnce, restore-point, driver-related, deletion, and reboot behavior.
 * **Defender Optimize Assistant:** Defender/security changes using TrustedInstaller, Safe Mode, RunOnce, service handling, and repeated reboots.
 
 ## C. Per-Tool Audit Table
@@ -146,8 +145,6 @@ These mismatches are documented here rather than changed during this planning-on
 | Write Cache Buffer Flushing | Windows | `modules/Windows/write-cache-buffer-flushing.psm1` | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`<br>`67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | HKLM storage-device registry; destructive key deletion | Implemented | Phase 47 preserves Apply with exact pre-change value capture and refuses the unsafe source Default broad `Disk` key deletion. Source also references the intentionally deleted NVME Faster Driver tool, which remains deleted. | Yes, but unsafe | No Default is exposed; future Restore would require reviewed captured-state selection | Phase 47 complete |
 | Power Plan | Windows | `modules/Windows/power-plan.psm1` | `source-ultimate/6 Windows/21 Power Plan.ps1`<br>`97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56` | HKLM power policy; extensive `powercfg`; power-scheme deletion; UI launch | Deferred | Deletes all enumerated schemes, disables hibernation, and sets battery warnings/actions/levels to zero. Default cannot restore custom prior schemes. | Yes | Yes for true Restore; source Default only restores Windows schemes | Phase: Power Plan Capture, Apply, and Rollback |
 | Cleanup | Windows | `modules/Windows/cleanup.psm1` | `source-ultimate/6 Windows/22 Cleanup.ps1`<br>`3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Broad recursive file deletion | Deferred | Deletes user/system temp contents, `inetpub`, `PerfLogs`, `Windows.old`, and `DumpStack.log`; no rollback. | No | No practical inverse | Phase: Cleanup Inventory and Confirmation |
-| MMAgent Assistant | Advanced | `modules/Advanced/mmagent-assistant.psm1` | `source-ultimate/8 Advanced/2 MMAgent Assistant.ps1`<br>`C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79` | HKLM registry; MMAgent commands; read-only check | Medium | Focused but multi-setting system behavior. Source Default intentionally leaves MemoryCompression and PageCombining disabled, so “Default” must preserve that approved meaning. | Yes | No | Phase: MMAgent Analysis and Toggle |
-| Services Optimizer | Advanced | `modules/Advanced/services-optimizer.psm1` | `source-ultimate/8 Advanced/5 Services Optimizer.ps1`<br>`386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Broad services; HKLM; security; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | Heavy multi-stage privileged workflow. Requires service-state capture, Safe Mode recovery, TrustedInstaller runtime, and rollback design. | Yes | No, but Restore should use captured pre-action service state | Phase: Services Optimizer Recovery Architecture |
 | Timer Resolution Assistant | Advanced | `modules/Advanced/timer-resolution-assistant.psm1` | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1`<br>`883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Compiles executable; creates/starts/stops service; scoped file deletion; Task Manager launch | Medium | Narrowly scoped service, but production needs reviewed source provenance, deterministic compilation, service verification, and cleanup. | Yes | No | Phase: Timer Resolution Service Assistant |
 | Defender Optimize Assistant | Advanced | `modules/Advanced/defender-optimize-assistant.psm1` | `source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1`<br>`512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6` | Defender/security; services; drivers; deletion; RunOnce; Safe Mode; TrustedInstaller; reboot | Deferred | High-impact security workflow with repeated Safe Mode transitions and restarts. | Yes | No, but recovery must be independently verified | Phase: Defender Safe Mode Recovery Assistant |
 
@@ -160,14 +157,6 @@ Phase 26 implemented the source-defined Apply and Default registry behavior with
 ### User Account Pictures Black
 
 Phase 27 implemented the source-defined black-image and default-restore behavior with verified per-file backups, ownership tracking, explicit confirmation, unknown-file preservation, and hash-based verification. See `docs/migrations/user-account-pictures-black.md`.
-
-### MMAgent Assistant
-
-Phase 28 implemented the source-defined Check, Off, and Default behavior as an assistant with Action Plan confirmation, structured results, and verification. The approved BoostLab Default preserves the original source meaning where `MemoryCompression` and `PageCombining` remain disabled. See `docs/migrations/mmagent-assistant.md`.
-
-### Spectre / Meltdown Assistant
-
-Phase 30 implemented the source-defined Disable and Enable (Default) registry behavior as a security-sensitive assistant with read-only Analyze, explicit Action Plan confirmation, structured results, idempotent Default handling, and independent verification for both mitigation values. See `docs/migrations/spectre-meltdown-assistant.md`.
 
 ### Notepad Settings
 
@@ -253,6 +242,6 @@ Timer Resolution is the strongest remaining medium-risk candidate in this histor
 * Define a state-capture contract for file replacement and hardware-wide registry tools.
 * Define package inventory and rollback requirements before any AppX migration.
 * Define installer provenance, checksums, and distribution policy before downloads are implemented.
-* Complete TrustedInstaller execution and recovery governance before GameBar, Control Panel Settings, Services Optimizer, or Defender.
-* Define Safe Mode recovery and interrupted-run behavior before Services Optimizer or Defender.
+* Complete TrustedInstaller execution and recovery governance before GameBar, Control Panel Settings, or Defender.
+* Define Safe Mode recovery and interrupted-run behavior before Defender.
 * Require captured previous state before exposing `Restore` for driver, service, bloatware, power-plan, or system-file tools.

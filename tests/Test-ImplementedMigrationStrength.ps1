@@ -61,16 +61,6 @@ $implementedTools = [ordered]@{
         ModulePath = 'modules\Setup\MemoryCompression.psm1'
         LegacyHash = 'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352'
     }
-    'Spectre / Meltdown Assistant' = @{
-        LegacyPath = 'source-ultimate\8 Advanced\1 Spectre  Meltdown Assistant.ps1'
-        ModulePath = 'modules\Advanced\spectre-meltdown-assistant.psm1'
-        LegacyHash = '3989B93BC4B3367B1ED0CF831C93DA6C2E87C556D945854FEE4ECA5D4C66AB50'
-    }
-    'MMAgent Assistant' = @{
-        LegacyPath = 'source-ultimate\8 Advanced\2 MMAgent Assistant.ps1'
-        ModulePath = 'modules\Advanced\mmagent-assistant.psm1'
-        LegacyHash = 'C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79'
-    }
     'Background Apps' = @{
         LegacyPath = 'source-ultimate\3 Setup\5 Background Apps.ps1'
         ModulePath = 'modules\Setup\BackgroundApps.psm1'
@@ -121,11 +111,6 @@ $implementedTools = [ordered]@{
         LegacyPath = 'source-ultimate\6 Windows\7 Widgets.ps1'
         ModulePath = 'modules\Windows\Widgets.psm1'
         LegacyHash = '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
-    }
-    'Restore Point' = @{
-        LegacyPath = 'source-ultimate\6 Windows\23 Restore Point.ps1'
-        ModulePath = 'modules\Windows\RestorePoint.psm1'
-        LegacyHash = 'E9164E079DB76112A59D686B9C0C77B1A9B26E69CA4326B3B4FF46BF63C03C34'
     }
     'Theme Black' = @{
         LegacyPath = 'source-ultimate\6 Windows\4 Theme Black.ps1'
@@ -301,33 +286,6 @@ foreach ($toolName in $implementedTools.Keys) {
                 }
             }
         }
-        'Restore Point' {
-            foreach ($requiredText in @(
-                'SystemRestorePointCreationFrequency'
-                'Enable-ComputerRestore -Drive $script:BoostLabRestoreDrive -ErrorAction Stop'
-                'Checkpoint-Computer'
-                '$script:BoostLabRestorePointName = ''backup'''
-                '$script:BoostLabRestorePointType = ''MODIFY_SETTINGS'''
-                'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
-                'Start-Process "rstrui"'
-            )) {
-                if (-not $moduleSource.Contains($requiredText)) {
-                    throw "Restore Point preserved behavior is missing: $requiredText"
-                }
-            }
-            foreach ($forbiddenText in @(
-                'Disable-ComputerRestore'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-            )) {
-                if ($moduleSource.Contains($forbiddenText)) {
-                    throw "Restore Point contains unrelated behavior: $forbiddenText"
-                }
-            }
-        }
         'Widgets' {
             foreach ($requiredText in @(
                 'reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests" /v "value" /t REG_DWORD /d "0" /f'
@@ -380,76 +338,6 @@ foreach ($toolName in $implementedTools.Keys) {
             )) {
                 if ($moduleSource.Contains($forbiddenText)) {
                     throw "Memory Compression contains unrelated behavior: $forbiddenText"
-                }
-            }
-        }
-        'MMAgent Assistant' {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                'reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v "EnablePrefetcher" /t REG_DWORD /d "0" /f'
-                'reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v "EnablePrefetcher" /t REG_DWORD /d "3" /f'
-                'Disable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue'
-                'Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -OperationAPI -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -PageCombining -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -OperationAPI -ErrorAction SilentlyContinue'
-                'SETTINGS MAY TAKE A WHILE TO INITIALIZE AFTER REBOOT'
-                'WAIT A SHORT PERIOD BEFORE CHECKING'
-                'The Ultimate Default profile still disables MemoryCompression and PageCombining.'
-            )) {
-                if (-not $moduleSource.Contains($requiredText)) {
-                    throw "MMAgent Assistant preserved behavior is missing: $requiredText"
-                }
-            }
-            foreach ($forbiddenText in @(
-                'Restart-Computer'
-                'Stop-Computer'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'Set-Service'
-                'Stop-Service'
-                'Restart-Service'
-                'UsesTrustedInstaller = $true'
-                'safeboot'
-            )) {
-                if ($moduleSource.Contains($forbiddenText)) {
-                    throw "MMAgent Assistant contains unrelated behavior: $forbiddenText"
-                }
-            }
-        }
-        'Spectre / Meltdown Assistant' {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                'reg add "HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /t REG_DWORD /d "3" /f'
-                'reg add "HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /t REG_DWORD /d "3" /f'
-                'reg delete "HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /f'
-                'reg delete "HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /f'
-                'function Test-BoostLabSpectreMeltdownState'
-                'function New-BoostLabSpectreVerificationResult'
-            )) {
-                if (-not $moduleSource.Contains($requiredText)) {
-                    throw "Spectre / Meltdown preserved behavior is missing: $requiredText"
-                }
-            }
-            foreach ($forbiddenText in @(
-                'bcdedit'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'New-Service'
-                'Set-Service'
-                'UsesTrustedInstaller = $true'
-                'safeboot'
-            )) {
-                if ($moduleSource.Contains($forbiddenText)) {
-                    throw "Spectre / Meltdown contains unrelated behavior: $forbiddenText"
                 }
             }
         }

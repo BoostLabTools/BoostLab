@@ -128,7 +128,6 @@ Tool-specific scope designs created after the first-pass review:
 * Cleanup: `docs/tool-designs/cleanup-scope-design.md`
 * Bloatware: `docs/tool-designs/bloatware-scope-design.md`
 * Edge & WebView: `docs/tool-designs/edge-webview-scope-design.md`
-* Services Optimizer: `docs/tool-designs/services-optimizer-scope-design.md`
 * Defender Optimize Assistant: `docs/tool-designs/defender-optimize-assistant-scope-design.md`
 * Timer Resolution Assistant: `docs/tool-designs/timer-resolution-assistant-scope-design.md`
 * GameBar: `docs/tool-designs/gamebar-scope-design.md`
@@ -141,11 +140,11 @@ Tool-specific scope designs created after the first-pass review:
 
 Current inventory at the time of this plan:
 
-* Active approved tools: **53**
+* Active approved tools: **50**
 * Implemented tools: **50**
-* Remaining placeholders: **3**
+* Remaining placeholders: **0**
 * Remaining unimplemented source-promoted intake candidates: **0**
-* Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**
+* Deleted tools that must never return: **Loudness EQ**, **NVME Faster Driver**, **Restore Point**, **Spectre / Meltdown Assistant**, **MMAgent Assistant**, **Services Optimizer**
 
 ## Product Scope Context
 
@@ -182,8 +181,7 @@ In practice, every tool in this document is either still a placeholder and curre
 | `control-panel-settings` | Control Panel Settings | Windows | `source-ultimate/6 Windows/15 Control Panel Settings.ps1` | `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B` | Refused | TrustedInstaller execution framework | Very large optimization source with services, deletion, security-sensitive policy, and TrustedInstaller. Current `Open` metadata understates risk. Phase 64 scope design: `docs/tool-designs/control-panel-settings-scope-design.md`. | TrustedInstaller execution framework; service state capture and rollback; file/registry state capture and rollback; destructive cleanup policy | No scope exception | `Control Panel Settings Decomposition` | Yes |
 | `write-cache-buffer-flushing` | Write Cache Buffer Flushing | Windows | `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1` | `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D` | Implemented in Phase 47 | File/registry state capture and rollback | Phase 47 preserves Apply with exact value capture and refuses source Default because it deletes complete device `Disk` subkeys. | Future Restore would require a reviewed captured-state selection flow; Default remains unavailable. | No scope exception; NVME Faster Driver must remain deleted | `Storage Write Cache Restore Review` | No |
 | `cleanup` | Cleanup | Windows | `source-ultimate/6 Windows/22 Cleanup.ps1` | `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA` | Refused | Destructive cleanup policy | Recursively deletes temp data, `Windows.old`, `inetpub`, `PerfLogs`, and dumps with no approved rollback path. Phase 50 scope design: `docs/tool-designs/cleanup-scope-design.md`. | Destructive cleanup policy; file/registry state capture and rollback | No scope exception | `Cleanup Inventory and Confirmation` | Yes |
-| `services-optimizer` | Services Optimizer | Advanced | `source-ultimate/8 Advanced/5 Services Optimizer.ps1` | `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F` | Refused | Safe Mode recovery/resume framework | Heavy multi-stage privileged workflow with Safe Mode, TrustedInstaller, RunOnce, service/security changes, generated scripts/REG files, and reboot behavior. Phase 53 scope design: `docs/tool-designs/services-optimizer-scope-design.md`. | Safe Mode recovery/resume framework; TrustedInstaller execution framework; service state capture and rollback; reboot/recovery workflow | No scope exception | `Services Optimizer Recovery Architecture` | Yes |
-| `timer-resolution-assistant` | Timer Resolution Assistant | Advanced | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1` | `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Refused | Service state capture and rollback | Narrower than Services Optimizer, but still generates C# under `C:\Windows`, compiles a binary, creates/removes a service, changes protected timer registry state, and deletes scoped files without approved provenance or service rollback guarantees. Phase 55 scope design: `docs/tool-designs/timer-resolution-assistant-scope-design.md`. | Service state capture and rollback; file/registry state capture; compiler/generated artifact approval; destructive cleanup policy | No scope exception | `Timer Resolution Service Assistant` | Yes |
+| `timer-resolution-assistant` | Timer Resolution Assistant | Advanced | `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1` | `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621` | Refused | Service state capture and rollback | Generates C# under `C:\Windows`, compiles a binary, creates/removes a service, changes protected timer registry state, and deletes scoped files without approved provenance or service rollback guarantees. Phase 55 scope design: `docs/tool-designs/timer-resolution-assistant-scope-design.md`. | Service state capture and rollback; file/registry state capture; compiler/generated artifact approval; destructive cleanup policy | No scope exception | `Timer Resolution Service Assistant` | Yes |
 | `defender-optimize-assistant` | Defender Optimize Assistant | Advanced | `source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1` | `512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6` | Refused | Safe Mode recovery/resume framework | Security-sensitive workflow using TrustedInstaller, Safe Mode, RunOnce, BCD edits, generated scripts, scheduled task changes, Defender/security registry mutation, and repeated reboots. Phase 54 scope design: `docs/tool-designs/defender-optimize-assistant-scope-design.md`. | Safe Mode recovery/resume framework; TrustedInstaller execution framework; service state capture and rollback; reboot/recovery workflow | No scope exception | `Defender Safe Mode Recovery Assistant` | Yes |
 
 ## Foundation Groups
@@ -249,7 +247,6 @@ Affected tools:
 * `edge-webview`
 * `control-panel-settings`
 * `defender-optimize-assistant`
-* `services-optimizer`
 * `driver-install-debloat-settings`
 
 ### AppX/package inventory and restore framework
@@ -291,7 +288,6 @@ Affected tools:
 
 * `game-bar`
 * `control-panel-settings`
-* `services-optimizer`
 * `defender-optimize-assistant`
 
 ### Safe Mode recovery/resume framework
@@ -313,7 +309,6 @@ source-defined workflow.
 
 Affected tools:
 
-* `services-optimizer`
 * `defender-optimize-assistant`
 
 ### Service state capture and rollback
@@ -332,7 +327,6 @@ Affected tools:
 * `game-bar`
 * `edge-webview`
 * `control-panel-settings`
-* `services-optimizer`
 * `timer-resolution-assistant`
 * `defender-optimize-assistant`
 
@@ -416,7 +410,6 @@ Affected tools:
 
 * `reinstall`
 * `driver-install-debloat-settings`
-* `services-optimizer`
 * `defender-optimize-assistant`
 
 `updates-drivers-block` still does not execute reboot behavior in BoostLab.

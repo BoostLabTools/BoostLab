@@ -163,10 +163,6 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\copilot.psm1'
         Actions = @('Apply', 'Default')
     }
-    'restore-point' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Windows\RestorePoint.psm1'
-        Actions = @('Apply', 'Open')
-    }
     'theme-black' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\ThemeBlack.psm1'
         Actions = @('Apply', 'Default')
@@ -214,18 +210,6 @@ $script:BoostLabImplementedToolModules = @{
     'cleanup' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Windows\cleanup.psm1'
         Actions = @('Apply')
-    }
-    'spectre-meltdown-assistant' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\spectre-meltdown-assistant.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
-    }
-    'mmagent-assistant' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\mmagent-assistant.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
-    }
-    'services-optimizer' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\services-optimizer.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
     }
     'timer-resolution-assistant' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Advanced\timer-resolution-assistant.psm1'

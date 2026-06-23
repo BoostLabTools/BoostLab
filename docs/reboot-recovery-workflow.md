@@ -222,7 +222,6 @@ This foundation is relevant to:
 * Updates Drivers Block
 * Driver Install Debloat & Settings
 * Resizable BAR Assistant
-* Services Optimizer
 * Defender Optimize Assistant
 * Other future reboot-capable workflows
 

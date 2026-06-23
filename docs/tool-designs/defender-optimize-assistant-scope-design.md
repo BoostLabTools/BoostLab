@@ -417,7 +417,7 @@ Optimize is security-reducing.
 * Intended mutation type:
   * Not applicable in current source.
 * Required foundation:
-  * Existing Restore Point tool may be recommended separately before any
+  * A non-tool recovery checkpoint may be recommended separately before any
     future high-risk Defender change.
 * Required future production allowlist:
   * None from this source.

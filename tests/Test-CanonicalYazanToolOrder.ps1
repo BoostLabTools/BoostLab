@@ -117,15 +117,11 @@ function Get-BoostLabCanonicalYazanOrder {
                 @{ Id = 'write-cache-buffer-flushing'; Title = 'Write Cache Buffer Flushing' }
                 @{ Id = 'power-plan'; Title = 'Power Plan' }
                 @{ Id = 'cleanup'; Title = 'Cleanup' }
-                @{ Id = 'restore-point'; Title = 'Restore Point' }
             )
         }
         @{
             Name = 'Advanced'
             Tools = @(
-                @{ Id = 'spectre-meltdown-assistant'; Title = 'Spectre / Meltdown Assistant' }
-                @{ Id = 'mmagent-assistant'; Title = 'MMAgent Assistant' }
-                @{ Id = 'services-optimizer'; Title = 'Services Optimizer' }
                 @{ Id = 'timer-resolution-assistant'; Title = 'Timer Resolution Assistant' }
                 @{ Id = 'defender-optimize-assistant'; Title = 'Defender Optimize Assistant' }
             )

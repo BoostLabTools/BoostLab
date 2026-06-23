@@ -77,11 +77,9 @@ foreach ($toolId in $safeLauncherIds) {
 $trustedInstallerIds = @(
     'game-bar'
     'control-panel-settings'
-    'services-optimizer'
     'defender-optimize-assistant'
 )
 $safeModeIds = @(
-    'services-optimizer'
     'defender-optimize-assistant'
 )
 $serviceIds = @(
@@ -90,7 +88,6 @@ $serviceIds = @(
     'bloatware'
     'game-bar'
     'control-panel-settings'
-    'services-optimizer'
     'timer-resolution-assistant'
     'defender-optimize-assistant'
 )
@@ -309,15 +306,12 @@ $implementedModules = [ordered]@{
     'pointer-precision' = 'Windows\pointer-precision.psm1'
     'sound' = 'Windows\sound.psm1'
     'widgets' = 'Windows\Widgets.psm1'
-    'restore-point' = 'Windows\RestorePoint.psm1'
     'theme-black' = 'Windows\ThemeBlack.psm1'
     'start-menu-layout' = 'Windows\StartMenuLayout.psm1'
     'context-menu' = 'Windows\ContextMenu.psm1'
     'signout-lockscreen-wallpaper-black' = 'Windows\SignoutLockScreenWallpaperBlack.psm1'
     'device-manager-power-savings-wake' = 'Windows\device-manager-power-savings-wake.psm1'
     'user-account-pictures-black' = 'Windows\user-account-pictures-black.psm1'
-    'spectre-meltdown-assistant' = 'Advanced\spectre-meltdown-assistant.psm1'
-    'mmagent-assistant' = 'Advanced\mmagent-assistant.psm1'
     'notepad-settings' = 'Windows\notepad-settings.psm1'
 }
 foreach ($toolId in $implementedModules.Keys) {

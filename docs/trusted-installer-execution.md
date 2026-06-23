@@ -132,8 +132,8 @@ There is no built-in process launcher or privileged command.
 
 ## Deferred Tools
 
-Services Optimizer, Defender Optimize Assistant, Control Panel Settings,
-GameBar, Edge & WebView, and other heavy tools remain blocked.
+Defender Optimize Assistant, Control Panel Settings, GameBar, Edge & WebView,
+and other heavy tools remain blocked.
 
 Phase 42 provides only one prerequisite. Those tools still need exact
 tool-specific scopes, source-preserving command design, and all adjacent

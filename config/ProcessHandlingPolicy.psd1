@@ -128,7 +128,6 @@
         'edge-webview'
         'control-panel-settings'
         'defender-optimize-assistant'
-        'services-optimizer'
         'driver-install-debloat-settings'
     )
 

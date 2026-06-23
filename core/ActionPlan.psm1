@@ -184,10 +184,6 @@ function New-BoostLabActionPlan {
     if ($isProductScopeNotApplicable) {
         $needsConfirmation = $false
     }
-    if ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
-        $needsConfirmation = $false
-    }
-
     $summary = if ($isProductScopeNotApplicable) {
         'This Windows optimization tool is not applicable on the current host; no registry discovery, capture, or write will run.'
     }
@@ -374,12 +370,6 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
         'Run the source-defined Msi Mode Off branch after confirmation: set MSISupported DWORD 0 for every display device returned by Get-PnpDevice -Class Display after source checksum validation and pre-change registry state capture. Off is not Default or Restore.'
     }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
-        'Enable System Restore if needed and create the approved backup restore point.'
-    }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
-        'Open Windows System Protection and System Restore.'
-    }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         'Disable Windows Widgets and remove Widgets from the taskbar using the approved policies.'
     }
@@ -490,33 +480,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
         'Run the exact Ultimate cleanup branch: remove the source-defined temp, Windows.old, inetpub, PerfLogs, and DumpStack targets, then open Disk Cleanup.'
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
-        'Analyze the two source-defined Spectre / Meltdown mitigation override values and explain the security and performance tradeoff.'
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
-        'Disable the source-targeted Spectre / Meltdown mitigations by setting both approved Ultimate override values to 3.'
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
-        'Remove both source-defined mitigation overrides so Windows can use its default mitigation policy.'
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
-        'Analyze the current MMAgent and prefetcher state and compare it with the approved Ultimate Off and Default profiles.'
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
-        'Apply the approved Ultimate MMAgent Off profile, including the source-defined prefetch and MMAgent feature changes.'
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        'Apply the approved Ultimate MMAgent Default profile exactly as defined by the source, including the features that remain disabled.'
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
-        'Analyze the approved Ultimate Services Off and Services Default Safe Mode workflows without staging them.'
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
-        'Stage the approved Ultimate Services: Off workflow, including generated Safe Mode script, RunOnce, BCD safeboot, TrustedInstaller REG import, and restart request.'
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
-        'Stage the approved Ultimate Services: Default workflow, including generated Safe Mode script, RunOnce, BCD safeboot, TrustedInstaller REG import, and restart request.'
     }
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
         'Analyze the approved Ultimate Timer Resolution On and Default workflows without changing service, file, registry, or process state.'
@@ -1055,16 +1018,6 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Run SystemSettingsAdminFlows.exe EnterProductKey to show the Windows product-key entry flow.')
         $plannedChanges.Add('Do not run changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot behavior.')
     }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
-        $plannedChanges.Add('Enable System Restore on C:\ if it is disabled.')
-        $plannedChanges.Add('Create a restore point named backup with type MODIFY_SETTINGS.')
-        $plannedChanges.Add('Remove the temporary restore-point frequency override.')
-    }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Open the System Protection page.')
-        $plannedChanges.Add('Open the Windows System Restore interface.')
-    }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Set PolicyManager AllowNewsAndInterests value to 0.')
         $plannedChanges.Add('Set the Dsh AllowNewsAndInterests policy value to 0.')
@@ -1238,61 +1191,6 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Delete %SystemDrive%\inetpub, %SystemDrive%\PerfLogs, %SystemDrive%\Windows.old, and %SystemDrive%\DumpStack.log exactly as the source does.')
         $plannedChanges.Add('Launch cleanmgr.exe after the source-defined Remove-Item operations.')
         $plannedChanges.Add('Expose no Default, Restore, download, registry, service, task, process-stop, or reboot behavior.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read FeatureSettingsOverrideMask and FeatureSettingsOverride under the exact Ultimate ControlSet001 Memory Management path.')
-        $plannedChanges.Add('Classify the detected policy as source-disabled, default, custom/partial, or unknown.')
-        $plannedChanges.Add('Explain that Apply reduces speculative-execution vulnerability protection and Default is the recommended security posture.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Set FeatureSettingsOverrideMask to DWORD 3 at the exact source-defined ControlSet001 path.')
-        $plannedChanges.Add('Set FeatureSettingsOverride to DWORD 3 at the exact source-defined ControlSet001 path.')
-        $plannedChanges.Add('Verify both values independently without changing boot configuration or restarting Windows.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Delete only FeatureSettingsOverrideMask from the exact source-defined ControlSet001 path.')
-        $plannedChanges.Add('Delete only FeatureSettingsOverride from the exact source-defined ControlSet001 path.')
-        $plannedChanges.Add('Treat already-absent values as default and verify both values independently.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the source-defined EnablePrefetcher registry value.')
-        $plannedChanges.Add('Read Get-MMAgent and compare ApplicationLaunchPrefetching, ApplicationPreLaunch, MaxOperationAPIFiles, MemoryCompression, OperationAPI, and PageCombining.')
-        $plannedChanges.Add('Display the approved Ultimate Off and Default profiles and the source warning about delayed initialization after reboot.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Set HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters\\EnablePrefetcher to 0.')
-        $plannedChanges.Add('Run Disable-MMAgent -ApplicationLaunchPrefetching and Disable-MMAgent -ApplicationPreLaunch.')
-        $plannedChanges.Add('Run Set-MMAgent -MaxOperationAPIFiles 1.')
-        $plannedChanges.Add('Run Disable-MMAgent -MemoryCompression, Disable-MMAgent -OperationAPI, and Disable-MMAgent -PageCombining.')
-        $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Off profile.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Set HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management\\PrefetchParameters\\EnablePrefetcher to 3.')
-        $plannedChanges.Add('Run Enable-MMAgent -ApplicationLaunchPrefetching and Enable-MMAgent -ApplicationPreLaunch.')
-        $plannedChanges.Add('Run Set-MMAgent -MaxOperationAPIFiles 512.')
-        $plannedChanges.Add('Preserve the source-defined Default behavior by keeping MemoryCompression and PageCombining disabled and enabling only OperationAPI.')
-        $plannedChanges.Add('Verify the resulting MMAgent and prefetcher state against the approved Ultimate Default profile.')
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Verify the Services Optimizer Ultimate source SHA-256 and parse the source-defined Services: Off and Services: Default workflows.')
-        $plannedChanges.Add('Report generated script names, RunOnce value names, Safe Mode workflow, TrustedInstaller REG import behavior, and service target counts without staging changes.')
-        $plannedChanges.Add('Confirm the rejected smart analyzer/profile redesign is not used.')
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Attempt the source-defined restore point prelude.')
-        $plannedChanges.Add('Write and patch %SystemRoot%\\Temp\\servicesoff.ps1 from the verified Ultimate Services: Off generated script.')
-        $plannedChanges.Add('Create RunOnce value *servicesoff to run the generated script in Safe Mode.')
-        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
-        $plannedChanges.Add('Request the source-defined restart with shutdown -r -t 00.')
-        $plannedChanges.Add('The generated script imports servicesoff.reg as TrustedInstaller and Administrator, removes safeboot, and restarts again.')
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Attempt the source-defined restore point prelude.')
-        $plannedChanges.Add('Write and patch %SystemRoot%\\Temp\\serviceson.ps1 from the verified Ultimate Services: Default generated script.')
-        $plannedChanges.Add('Create RunOnce value *serviceson to run the generated script in Safe Mode.')
-        $plannedChanges.Add('Run bcdedit /set {current} safeboot minimal.')
-        $plannedChanges.Add('Request the source-defined restart with shutdown -r -t 00.')
-        $plannedChanges.Add('The generated script imports serviceson.reg as TrustedInstaller and Administrator, removes safeboot, and restarts again.')
     }
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the Timer Resolution Assistant Ultimate source SHA-256 and extract the embedded source-defined C# service payload.')
@@ -1692,11 +1590,6 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The generic key does not activate Windows; a valid Windows Pro license is required for activation.')
         $sideEffects.Add('BoostLab does not run activation bypass, KMS, crack, changepk, slmgr, DISM, registry, service, driver, download, installer, or reboot commands.')
     }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
-        $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
-        $sideEffects.Add('A temporary registry value is created and removed during the operation.')
-    }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Widgets and News and Interests are disabled by machine policy.')
         $sideEffects.Add('Running Widgets and WidgetService processes are closed.')
@@ -1844,43 +1737,6 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Files and directories under the six exact Ultimate cleanup targets are permanently removed with Remove-Item -Force and no quarantine or Restore path.')
         $sideEffects.Add('Disk Cleanup opens through cleanmgr.exe after the removal attempts.')
         $sideEffects.Add('No registry, service, task, package, driver, download, installer, TrustedInstaller, Safe Mode, or reboot operation is performed.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; only the two source-defined mitigation override values are read.')
-        $sideEffects.Add('Registry inspection cannot prove the currently active kernel mitigation state.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('CPU vulnerability protection is reduced by disabling the source-targeted Spectre / Meltdown mitigations.')
-        $sideEffects.Add('Only the two approved Ultimate registry values are written; no BCD, service, driver, process, or reboot behavior is added.')
-        $sideEffects.Add('Verification confirms registry configuration only and does not claim to measure active kernel mitigation state.')
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Only the two source-defined override values are removed so Windows can use its default mitigation policy.')
-        $sideEffects.Add('Already-absent values are treated as the approved default; unrelated Memory Management values are left intact.')
-        $sideEffects.Add('Verification confirms registry configuration only and does not claim to measure active kernel mitigation state.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; the result compares the current state with the source-defined Off and Default profiles.')
-        $sideEffects.Add('The source warns that MMAgent settings may take time to initialize after reboot before they can be checked accurately.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Windows prefetch and multiple MMAgent features are changed together exactly as defined by the approved Ultimate Off profile.')
-        $sideEffects.Add('MemoryCompression is disabled here as part of the MMAgent profile; use the separate Memory Compression tool when only that setting should change.')
-        $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('The approved Ultimate Default profile does not re-enable every MMAgent feature. MemoryCompression and PageCombining remain disabled by source design.')
-        $sideEffects.Add('No restart is performed, but the source warns that state initialization may take time after reboot before a later check.')
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; source identity and workflow shape are reported only.')
-        $sideEffects.Add('The source workflow is high risk because Apply and Default stage Safe Mode, RunOnce, BCD, TrustedInstaller, service registry imports, and restarts.')
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -in @('Apply', 'Default')) {
-        $sideEffects.Add('Windows will be configured to boot into Safe Mode and restart immediately after staging.')
-        $sideEffects.Add('The generated Safe Mode script temporarily reconfigures TrustedInstaller to import the source-defined service registry payload, also imports it as Administrator, removes safeboot, and restarts again.')
-        $sideEffects.Add('Hundreds of service Start values are changed by the source-defined REG payload; this is not a smart analyzer, recommendation engine, or redesigned profile.')
-        $sideEffects.Add('Default is the source-defined Services: Default preset, not captured-state Restore.')
     }
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; source identity, generated service payload shape, and source-defined operation targets are reported only.')
@@ -2104,9 +1960,6 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'convert-home-to-pro' -and $ActionName -eq 'Apply') {
         'BoostLab will show the source instruction "Disable Internet First", copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T, open Activation settings, and open the Windows product-key entry flow. This is edition conversion preparation only; activation still requires a valid Windows Pro license or digital entitlement. No changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot command will run. Continue?'
     }
-    elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
-        'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'
-    }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         'BoostLab will disable Widgets by machine policy and close Widgets processes if they are running. No restart is required. Do you want to continue?'
     }
@@ -2199,24 +2052,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'cleanup' -and $ActionName -eq 'Apply') {
         'BoostLab will permanently remove the exact Ultimate cleanup targets: user Temp contents, Windows Temp contents, inetpub, PerfLogs, Windows.old, and DumpStack.log, then launch cleanmgr.exe. There is no Default or Restore path and no quarantine. No registry, service, task, download, installer, or reboot operation is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Apply') {
-        'Security warning: BoostLab will set FeatureSettingsOverrideMask and FeatureSettingsOverride to 3 exactly as defined by Ultimate. This disables the source-targeted Spectre / Meltdown mitigations and reduces CPU vulnerability protection. No reboot is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'spectre-meltdown-assistant' -and $ActionName -eq 'Default') {
-        'BoostLab will remove only FeatureSettingsOverrideMask and FeatureSettingsOverride from the source-defined ControlSet001 path so Windows can use its default mitigation policy. Already-absent values are accepted and no reboot is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Apply') {
-        'BoostLab will apply the approved Ultimate MMAgent Off profile: set EnablePrefetcher to 0, disable ApplicationLaunchPrefetching, ApplicationPreLaunch, MemoryCompression, OperationAPI, and PageCombining, set MaxOperationAPIFiles to 1, and verify the result. No restart is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'mmagent-assistant' -and $ActionName -eq 'Default') {
-        'BoostLab will apply the approved Ultimate MMAgent Default profile exactly as defined by the source: set EnablePrefetcher to 3, enable ApplicationLaunchPrefetching, ApplicationPreLaunch, and OperationAPI, set MaxOperationAPIFiles to 512, keep MemoryCompression and PageCombining disabled, and verify the result. No restart is performed. Do you want to continue?'
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Apply') {
-        'BoostLab will stage the exact Ultimate Services: Off workflow: write the generated Safe Mode script, set RunOnce, enable safeboot minimal, and request an immediate restart. The generated script changes service Start values through TrustedInstaller and Administrator REG imports, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
-    }
-    elseif ($toolId -eq 'services-optimizer' -and $ActionName -eq 'Default') {
-        'BoostLab will stage the exact Ultimate Services: Default workflow: write the generated Safe Mode script, set RunOnce, enable safeboot minimal, and request an immediate restart. The generated script changes service Start values through TrustedInstaller and Administrator REG imports, removes safeboot, and restarts again. Continue only with unsaved work closed and recovery plan understood.'
     }
     elseif ($toolId -eq 'timer-resolution-assistant' -and $ActionName -eq 'Apply') {
         'BoostLab will run the exact Ultimate Timer Resolution: On workflow: write and compile the generated C# service under C:\Windows, create/start the Set Timer Resolution Service, set GlobalTimerResolutionRequests to REG_DWORD 1, and open Task Manager. No download, installer, reboot, Safe Mode, TrustedInstaller, or driver operation is used. Continue only if you approve these service, protected-file, registry, and process-launch changes.'

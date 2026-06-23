@@ -77,7 +77,7 @@ if ($null -eq $tool) {
 }
 if (
     [string]$tool.Stage -ne 'Advanced' -or
-    [int]$tool.Order -ne 5 -or
+    [int]$tool.Order -ne 2 -or
     [string]$tool.Type -ne 'assistant' -or
     [string]$tool.RiskLevel -ne 'high' -or
     (@($tool.Actions) -join ',') -ne 'Analyze,Apply,Default'

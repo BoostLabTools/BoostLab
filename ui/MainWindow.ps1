@@ -1151,16 +1151,7 @@ function Show-BoostLabActionResult {
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Details'
     }
 
-    if ($toolId -eq 'restore-point' -and $null -ne $data) {
-        Add-BoostLabResultSectionTitle -Panel $panel -Text 'Restore Point'
-        Add-BoostLabResultRow -Panel $panel -Label 'Restore point name' -Value (Get-BoostLabObjectPropertyValue $data 'RestorePointName')
-        Add-BoostLabResultRow -Panel $panel -Label 'Restore point type' -Value (Get-BoostLabObjectPropertyValue $data 'RestorePointType')
-        Add-BoostLabResultRow -Panel $panel -Label 'Drive' -Value (Get-BoostLabObjectPropertyValue $data 'Drive')
-        Add-BoostLabResultRow -Panel $panel -Label 'System Restore enabled' -Value (Get-BoostLabObjectPropertyValue $data 'SystemRestoreEnabled')
-        Add-BoostLabResultRow -Panel $panel -Label 'Restore point created' -Value (Get-BoostLabObjectPropertyValue $data 'RestorePointCreated')
-        Add-BoostLabResultRow -Panel $panel -Label 'Timestamp' -Value (Get-BoostLabObjectPropertyValue $data 'CreatedAt')
-    }
-    elseif ($toolId -eq 'widgets' -and $null -ne $data) {
+    if ($toolId -eq 'widgets' -and $null -ne $data) {
         $registryChanges = @((Get-BoostLabObjectPropertyValue $data 'RegistryChangesAttempted' @())) -join [Environment]::NewLine
         $processesStopped = @((Get-BoostLabObjectPropertyValue $data 'ProcessesStopped' @()))
         Add-BoostLabResultSectionTitle -Panel $panel -Text 'Widgets Changes'

@@ -336,8 +336,6 @@ foreach ($outOfScopeToolId in @(
     'graphics-configuration-center'
     'theme-black'
     'power-plan'
-    'spectre-meltdown-assistant'
-    'mmagent-assistant'
     'smt-ht-assistant'
 )) {
     Assert-BoostLabCondition (-not $asyncScopeText.Contains("'$outOfScopeToolId'")) "Unreached tool must not be explicitly opted into the Phase 124 async scope: $outOfScopeToolId"

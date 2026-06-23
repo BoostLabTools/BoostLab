@@ -4,18 +4,18 @@
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 54
-        RuntimeImplementedTools = 54
+        ActiveTools = 50
+        RuntimeImplementedTools = 50
         DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 37
+        UltimateParityImplemented = 33
         NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
         DeferredForParityWork = 0
-        RefusedOrDeletedOutsideActiveCatalog = 21
+        RefusedOrDeletedOutsideActiveCatalog = 25
     }
 
     CurrentOrderedParityTarget = $null
@@ -55,6 +55,10 @@
         'Loudness EQ'
         'Resizable BAR Assistant'
         'SMT / HT Assistant'
+        'Restore Point'
+        'Spectre / Meltdown Assistant'
+        'MMAgent Assistant'
+        'Services Optimizer'
     )
 
     Tools = @(
@@ -747,63 +751,11 @@
             NextParityAction = 'DoneParity'
         }
         @{
-            ToolId = 'restore-point'
-            DisplayName = 'Restore Point'
-            Stage = 'Windows'
-            StageOrder = 6
-            ToolOrder = 22
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply/Open preserve source-defined restore point behavior and System Protection UI access.'
-            YazanFinalException = $false
-            NextParityAction = 'No parity work required.'
-        }
-        @{
-            ToolId = 'spectre-meltdown-assistant'
-            DisplayName = 'Spectre / Meltdown Assistant'
-            Stage = 'Advanced'
-            StageOrder = 7
-            ToolOrder = 1
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve the exact source-defined Spectre / Meltdown mitigation registry behavior with BoostLab confirmation, warnings, logging, and verification.'
-            YazanFinalException = $false
-            NextParityAction = 'No parity work required; advance ordered cursor to mmagent-assistant.'
-        }
-        @{
-            ToolId = 'mmagent-assistant'
-            DisplayName = 'MMAgent Assistant'
-            Stage = 'Advanced'
-            StageOrder = 7
-            ToolOrder = 2
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve the exact source-defined MMAgent Off and Default profiles with BoostLab confirmation, warnings, logging, and verification.'
-            YazanFinalException = $false
-            NextParityAction = 'No parity work required; advance ordered cursor to services-optimizer.'
-        }
-        @{
-            ToolId = 'services-optimizer'
-            DisplayName = 'Services Optimizer'
-            Stage = 'Advanced'
-            StageOrder = 7
-            ToolOrder = 3
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'ParityImplemented'
-            UltimateParity = 'Yes'
-            GapSummary = 'Apply and Default preserve the exact source-defined Services Off and Services Default Safe Mode workflows with generated scripts, RunOnce, BCD safeboot, TrustedInstaller REG import, restore-point prelude, and restart request.'
-            YazanFinalException = $false
-            NextParityAction = 'No parity work required; advance ordered cursor to timer-resolution-assistant.'
-        }
-        @{
             ToolId = 'timer-resolution-assistant'
             DisplayName = 'Timer Resolution Assistant'
             Stage = 'Advanced'
             StageOrder = 7
-            ToolOrder = 4
+            ToolOrder = 1
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -816,7 +768,7 @@
             DisplayName = 'Defender Optimize Assistant'
             Stage = 'Advanced'
             StageOrder = 7
-            ToolOrder = 5
+            ToolOrder = 2
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'

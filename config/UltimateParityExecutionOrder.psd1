@@ -94,18 +94,14 @@
                 @{ Order = 19; ToolId = 'write-cache-buffer-flushing'; DisplayName = 'Write Cache Buffer Flushing' }
                 @{ Order = 20; ToolId = 'power-plan'; DisplayName = 'Power Plan' }
                 @{ Order = 21; ToolId = 'cleanup'; DisplayName = 'Cleanup' }
-                @{ Order = 22; ToolId = 'restore-point'; DisplayName = 'Restore Point' }
             )
         }
         @{
             Name = 'Advanced'
             Order = 7
             Tools = @(
-                @{ Order = 1; ToolId = 'spectre-meltdown-assistant'; DisplayName = 'Spectre / Meltdown Assistant' }
-                @{ Order = 2; ToolId = 'mmagent-assistant'; DisplayName = 'MMAgent Assistant' }
-                @{ Order = 3; ToolId = 'services-optimizer'; DisplayName = 'Services Optimizer' }
-                @{ Order = 4; ToolId = 'timer-resolution-assistant'; DisplayName = 'Timer Resolution Assistant' }
-                @{ Order = 5; ToolId = 'defender-optimize-assistant'; DisplayName = 'Defender Optimize Assistant' }
+                @{ Order = 1; ToolId = 'timer-resolution-assistant'; DisplayName = 'Timer Resolution Assistant' }
+                @{ Order = 2; ToolId = 'defender-optimize-assistant'; DisplayName = 'Defender Optimize Assistant' }
             )
         }
     )

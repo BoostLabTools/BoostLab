@@ -28,7 +28,6 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $startPath = Join-Path $ProjectRoot 'Start-BoostLab.ps1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $phase22ModulePath = Join-Path $ProjectRoot 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
-$spectreModulePath = Join-Path $ProjectRoot 'modules\Advanced\spectre-meltdown-assistant.psm1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
 $cleanSessionScript = @"
@@ -188,7 +187,6 @@ $executionModule = Import-Module `
     -Scope Local `
     -ErrorAction Stop
 $phase22Module = $null
-$spectreModule = $null
 try {
     foreach ($requiredCommand in @(
         'New-BoostLabVerificationCheck'
@@ -222,28 +220,8 @@ try {
         throw 'Execution lost its private production verification validator after the Phase 22 module was unloaded.'
     }
 
-    $spectreModule = Import-Module `
-        -Name $spectreModulePath `
-        -Force `
-        -PassThru `
-        -Prefix 'SpectreVerificationScopeTest' `
-        -Scope Local `
-        -DisableNameChecking `
-        -ErrorAction Stop
-    Remove-Module -ModuleInfo $spectreModule -Force -ErrorAction Stop
-    $spectreModule = $null
-
-    $validatorStillAvailable = & $executionModule {
-        [bool](Get-Command -Name 'Get-BoostLabVerificationValidation' -ErrorAction SilentlyContinue)
-    }
-    if (-not $validatorStillAvailable) {
-        throw 'Execution lost its private production verification validator after the Spectre module was unloaded.'
-    }
 }
 finally {
-    if ($null -ne $spectreModule) {
-        Remove-Module -ModuleInfo $spectreModule -Force -ErrorAction SilentlyContinue
-    }
     if ($null -ne $phase22Module) {
         Remove-Module -ModuleInfo $phase22Module -Force -ErrorAction SilentlyContinue
     }

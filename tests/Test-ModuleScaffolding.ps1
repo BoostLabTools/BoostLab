@@ -82,18 +82,6 @@ $implementedModules = @{
         LaunchText            = 'Start-Process ''ms-settings:activation'' -ErrorAction Stop'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
     }
-    'spectre-meltdown-assistant' = @{
-        RelativePath          = 'Advanced\spectre-meltdown-assistant.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
-    'mmagent-assistant' = @{
-        RelativePath          = 'Advanced\mmagent-assistant.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
-    'services-optimizer' = @{
-        RelativePath          = 'Advanced\services-optimizer.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
     'timer-resolution-assistant' = @{
         RelativePath          = 'Advanced\timer-resolution-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
@@ -200,11 +188,6 @@ $implementedModules = @{
     'copilot' = @{
         RelativePath          = 'Windows\copilot.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
-    }
-    'restore-point' = @{
-        RelativePath          = 'Windows\RestorePoint.psm1'
-        LaunchText            = 'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Open'')'
     }
     'theme-black' = @{
         RelativePath          = 'Windows\ThemeBlack.psm1'
@@ -427,10 +410,6 @@ foreach ($entry in $expectedModules.Values) {
     )
     $toolId = [string]$tool['Id']
     foreach ($commandName in $commands) {
-        $approvedRestorePointCommand = (
-            $toolId -eq 'restore-point' -and
-            $commandName -in @('Checkpoint-Computer', 'Enable-ComputerRestore')
-        )
         $approvedStoreSettingsCommand = (
             $toolId -eq 'store-settings' -and
             $commandName -eq 'Set-Content'
@@ -539,10 +518,6 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'cleanup' -and
             $commandName -eq 'Remove-Item'
         )
-        $approvedServicesOptimizerCommand = (
-            $toolId -eq 'services-optimizer' -and
-            $commandName -in @('Set-Content', 'Enable-ComputerRestore', 'Checkpoint-Computer')
-        )
         $approvedTimerResolutionCommand = (
             $toolId -eq 'timer-resolution-assistant' -and
             $commandName -in @('Set-Content', 'Remove-Item')
@@ -553,7 +528,6 @@ foreach ($entry in $expectedModules.Values) {
         )
         if (
             $commandName -in $prohibitedCommands -and
-            -not $approvedRestorePointCommand -and
             -not $approvedStoreSettingsCommand -and
             -not $approvedUpdatesPauseCommand -and
             -not $approvedThemeBlackCommand -and
@@ -581,7 +555,6 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedStartMenuTaskbarCommand -and
             -not $approvedSignoutWallpaperCommand -and
             -not $approvedCleanupCommand -and
-            -not $approvedServicesOptimizerCommand -and
             -not $approvedTimerResolutionCommand -and
             -not $approvedDefenderOptimizeCommand
         ) {
@@ -606,9 +579,6 @@ foreach ($entry in $expectedModules.Values) {
         $expectedStartProcessCount = if ($toolId -in @('bios-settings', 'to-bios')) {
             0
         }
-        elseif ($toolId -eq 'restore-point') {
-            2
-        }
         elseif ($toolId -eq 'widgets') {
             0
         }
@@ -623,15 +593,6 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'convert-home-to-pro') {
             1
-        }
-        elseif ($toolId -eq 'spectre-meltdown-assistant') {
-            0
-        }
-        elseif ($toolId -eq 'mmagent-assistant') {
-            0
-        }
-        elseif ($toolId -eq 'services-optimizer') {
-            0
         }
         elseif ($toolId -eq 'timer-resolution-assistant') {
             1
@@ -874,20 +835,6 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Updates Pause behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'spectre-meltdown-assistant') {
-            foreach ($requiredText in @(
-                'HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management'
-                'FeatureSettingsOverrideMask'
-                'FeatureSettingsOverride'
-                '/t REG_DWORD /d "3" /f'
-                'function Test-BoostLabSpectreMeltdownState'
-                'function New-BoostLabSpectreVerificationResult'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing Spectre / Meltdown preserved behavior: $requiredText")
                 }
             }
         }
@@ -1571,37 +1518,6 @@ foreach ($entry in $expectedModules.Values) {
                 }
             }
         }
-        elseif ($toolId -eq 'restore-point') {
-            foreach ($requiredText in @(
-                'Enable-ComputerRestore -Drive $script:BoostLabRestoreDrive -ErrorAction Stop'
-                'Checkpoint-Computer'
-                '-Description $script:BoostLabRestorePointName'
-                '-RestorePointType $script:BoostLabRestorePointType'
-                'SystemRestorePointCreationFrequency'
-                '$script:BoostLabRestorePointName = ''backup'''
-                '$script:BoostLabRestorePointType = ''MODIFY_SETTINGS'''
-                'Start-Process "$env:SystemRoot\system32\control.exe" -ArgumentList "sysdm.cpl,,4"'
-                'Start-Process "rstrui"'
-                'finally'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing Restore Point behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'Disable-ComputerRestore'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains forbidden Restore Point behavior: $forbiddenText")
-                }
-            }
-        }
         elseif ($toolId -eq 'widgets') {
             foreach ($requiredText in @(
                 '$script:BoostLabWidgetProcessNames = @(''Widgets'', ''WidgetService'')'
@@ -1672,96 +1588,6 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Memory Compression behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'mmagent-assistant') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '$script:BoostLabMMAgentPrefetchRegistryCmdKey = ''HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters'''
-                'Disable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue'
-                'Set-MMAgent -MaxOperationAPIFiles $Operation.Value -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -OperationAPI -ErrorAction SilentlyContinue'
-                'Disable-MMAgent -PageCombining -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -ApplicationLaunchPrefetching -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue'
-                'Enable-MMAgent -OperationAPI -ErrorAction SilentlyContinue'
-                'Get-MMAgent -ErrorAction Stop'
-                'SETTINGS MAY TAKE A WHILE TO INITIALIZE AFTER REBOOT'
-                'WAIT A SHORT PERIOD BEFORE CHECKING'
-                'The Ultimate Default profile still disables MemoryCompression and PageCombining.'
-                'Use the dedicated Memory Compression tool when you only want to change MemoryCompression.'
-                'function Test-BoostLabMMAgentAssistantState'
-                'New-BoostLabVerificationResult'
-                '-VerificationResult $verificationResult'
-                '[bool]$Confirmed = $false'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing MMAgent Assistant behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'Restart-Computer'
-                'Stop-Computer'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'Set-Service'
-                'Stop-Service'
-                'Restart-Service'
-                'Start-Process'
-                'UsesTrustedInstaller = $true'
-                'safeboot'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated MMAgent Assistant behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'services-optimizer') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F'
-                'source-ultimate\8 Advanced\5 Services Optimizer.ps1'
-                'Get-BoostLabServicesOptimizerBranchDefinition'
-                'Services: Off'
-                'Services: Default'
-                'servicesoff'
-                'serviceson'
-                'RunOnceValueName'
-                'bcdedit /set {current} safeboot minimal'
-                'shutdown -r -t 00'
-                'Generated script imports the source-defined REG payload'
-                'TrustedInstaller'
-                'Enable-ComputerRestore'
-                'Checkpoint-Computer'
-                'SystemRestorePointCreationFrequency'
-                'RejectedRedesignBehavior'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing Services Optimizer exact Ultimate behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'ToolModule.Placeholder.ps1'
-                'Gaming profile selected'
-                'Performance profile selected'
-                'Extreme profile selected'
-                'Invoke-BoostLabServicesRecommendationEngine'
-                'New-BoostLabServiceCompatibilityScore'
-                'RestoreSupported = $true'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'Restart-Computer'
-                'Stop-Computer'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated or rejected Services Optimizer behavior: $forbiddenText")
                 }
             }
         }

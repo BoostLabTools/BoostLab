@@ -262,6 +262,6 @@ Phase 66 creates governance only.
 3. **Scheduled Task State Capture / Rollback Foundation**
    Required for Edge Settings, Control Panel Settings, Defender Optimize Assistant, and installer-like workflows.
 4. **Generated Script / Temp Artifact Ownership Policy**
-   Required for Updates Drivers Block, Services Optimizer, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and registry-import workflows.
+   Required for Updates Drivers Block, Timer Resolution Assistant, Defender Optimize Assistant, DirectX-style extraction, and registry-import workflows.
 5. **RunOnce / Active Setup Governance**
    Required before persistent startup or post-reboot repair behavior can be approved.

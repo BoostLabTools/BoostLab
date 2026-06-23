@@ -619,17 +619,6 @@
                     Actions     = @('Apply')
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
-                @{
-                    Id          = 'restore-point'
-                    Title       = 'Restore Point'
-                    Stage       = 'Windows'
-                    Order       = 22
-                    Type        = 'action'
-                    RiskLevel   = 'medium'
-                    Description = 'Create an approved Windows restore point or open System Protection and System Restore.'
-                    Actions     = @('Apply', 'Open')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
             )
         }
         @{
@@ -638,43 +627,10 @@
             Description = 'Analyze advanced performance and security options before applying changes.'
             Tools       = @(
                 @{
-                    Id          = 'spectre-meltdown-assistant'
-                    Title       = 'Spectre / Meltdown Assistant'
-                    Stage       = 'Advanced'
-                    Order       = 1
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Analyze mitigation state and explain security and performance tradeoffs.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'mmagent-assistant'
-                    Title       = 'MMAgent Assistant'
-                    Stage       = 'Advanced'
-                    Order       = 2
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Analyze current MMAgent state and apply the approved Ultimate Off or Default MMAgent feature profile.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'services-optimizer'
-                    Title       = 'Services Optimizer'
-                    Stage       = 'Advanced'
-                    Order       = 3
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Stage the approved Ultimate Services Off or Services Default Safe Mode workflow.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $true; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $true; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
                     Id          = 'timer-resolution-assistant'
                     Title       = 'Timer Resolution Assistant'
                     Stage       = 'Advanced'
-                    Order       = 4
+                    Order       = 1
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Apply the approved Ultimate timer resolution service workflow or remove it with the source-defined Default branch.'
@@ -685,7 +641,7 @@
                     Id          = 'defender-optimize-assistant'
                     Title       = 'Defender Optimize Assistant'
                     Stage       = 'Advanced'
-                    Order       = 5
+                    Order       = 2
                     Type        = 'assistant'
                     RiskLevel   = 'high'
                     Description = 'Stage the approved Ultimate Defender Optimize or Defender Default Safe Mode workflow.'

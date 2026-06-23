@@ -169,8 +169,8 @@ requests return `NotImplemented`. Neither result performs a system operation.
 
 ## Why Heavy Tools Remain Blocked
 
-Services Optimizer, Defender Optimize Assistant, Updates Drivers Block, Driver
-Install Debloat & Settings, and similar multi-stage tools remain blocked.
+Defender Optimize Assistant, Updates Drivers Block, Driver Install Debloat &
+Settings, and similar multi-stage tools remain blocked.
 Phase 43 provides only the common safety contract. Each tool still needs:
 
 * Exact production Safe Mode and Phase 40 scopes

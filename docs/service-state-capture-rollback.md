@@ -131,7 +131,6 @@ This foundation is relevant to:
 * GameBar
 * Edge & WebView
 * Control Panel Settings
-* Services Optimizer
 * Timer Resolution Assistant
 * Defender Optimize Assistant
 

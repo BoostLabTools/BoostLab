@@ -173,19 +173,13 @@ The app must follow this exact order:
 19. Write Cache Buffer Flushing
 20. Power Plan
 21. Cleanup
-22. Restore Point
 
 ---
 
 ## Stage 7 - Advanced
 
-1. Spectre / Meltdown Assistant
-2. MMAgent Assistant
-3. Resizable BAR Assistant
-4. SMT / HT Assistant
-5. Services Optimizer
-6. Timer Resolution Assistant
-7. Defender Optimize Assistant
+1. Timer Resolution Assistant
+2. Defender Optimize Assistant
 
 ---
 
@@ -212,6 +206,10 @@ Do not implement or reintroduce:
 * Scaling
 * Start Menu Shortcuts
 * Loudness EQ
+* Restore Point
+* Spectre / Meltdown Assistant
+* MMAgent Assistant
+* Services Optimizer
 
 ### Phase 25 Permanent Product Removal
 
@@ -297,13 +295,8 @@ They must:
 * Show recommendation
 * Ask for confirmation before applying changes
 
-This applies to:
+Current advanced assistants this applies to:
 
-* Spectre / Meltdown Assistant
-* MMAgent Assistant
-* Resizable BAR Assistant
-* SMT / HT Assistant
-* Services Optimizer
 * Timer Resolution Assistant
 * Defender Optimize Assistant
 
@@ -334,11 +327,6 @@ This policy applies to examples including:
 
 * BIOS Information
 * Graphics Configuration Center
-* Spectre / Meltdown Assistant
-* MMAgent Assistant
-* Resizable BAR Assistant
-* SMT / HT Assistant
-* Services Optimizer
 * Timer Resolution Assistant
 * Defender Optimize Assistant
 
