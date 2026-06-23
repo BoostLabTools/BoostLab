@@ -114,17 +114,7 @@ function Test-BoostLabToolCompatibility {
         [string]$SystemRoot = $env:SystemRoot
     )
 
-    $commandProcessorPath = if ([string]::IsNullOrWhiteSpace($SystemRoot)) {
-        ''
-    }
-    else {
-        Join-Path $SystemRoot 'System32\cmd.exe'
-    }
-    $supported = (
-        $OperatingSystem -eq 'Windows_NT' -and
-        -not [string]::IsNullOrWhiteSpace($commandProcessorPath) -and
-        (Test-Path -LiteralPath $commandProcessorPath -PathType Leaf)
-    )
+    $supported = ($OperatingSystem -eq 'Windows_NT')
 
     return [pscustomobject]@{
         Supported = $supported
@@ -133,15 +123,7 @@ function Test-BoostLabToolCompatibility {
         Reason    = if ($OperatingSystem -ne 'Windows_NT') {
             'Network Adapter Power Savings & Wake requires Windows.'
         }
-        elseif ([string]::IsNullOrWhiteSpace($commandProcessorPath)) {
-            'The Windows system directory is unavailable.'
-        }
-        elseif (-not $supported) {
-            'Network adapter registry commands are unavailable because cmd.exe was not found.'
-        }
-        else {
-            'Windows network adapter class registry support is available.'
-        }
+        else { 'Windows network adapter class registry support is available.' }
         Timestamp = Get-Date
     }
 }
@@ -385,6 +367,256 @@ function Get-BoostLabNetworkAdapterRegistryValue {
     }
 }
 
+function Test-BoostLabNetworkAdapterRegistryTarget {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Target
+    )
+
+    $registryPath = [string]$Target.RegistryPath
+    $registrySubPath = [string]$Target.RegistrySubPath
+    $adapterKey = [string]$Target.AdapterKey
+    $expectedRegistryPrefix = '{0}\' -f $script:BoostLabAdapterClassRegistryPath
+    $expectedSubPathPrefix = '{0}\' -f $script:BoostLabAdapterClassSubPath
+
+    return (
+        $adapterKey -match '^\d{4}$' -and
+        $registryPath.StartsWith($expectedRegistryPrefix, [StringComparison]::OrdinalIgnoreCase) -and
+        $registrySubPath.StartsWith($expectedSubPathPrefix, [StringComparison]::OrdinalIgnoreCase) -and
+        $registryPath.EndsWith("\$adapterKey", [StringComparison]::OrdinalIgnoreCase) -and
+        $registrySubPath.EndsWith("\$adapterKey", [StringComparison]::OrdinalIgnoreCase)
+    )
+}
+
+function ConvertTo-BoostLabNetworkAdapterExpectedRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation
+    )
+
+    switch ([string]$Operation.Type) {
+        'REG_DWORD' {
+            return [int]([string]$Operation.Data)
+        }
+        'REG_SZ' {
+            return [string]$Operation.Data
+        }
+        default {
+            throw "Unsupported registry value type: $([string]$Operation.Type)"
+        }
+    }
+}
+
+function Test-BoostLabNetworkAdapterRegistryValueMatches {
+    param(
+        [AllowNull()]
+        [object]$ActualValue,
+
+        [AllowNull()]
+        [object]$ExpectedValue
+    )
+
+    return ([string]$ActualValue -eq [string]$ExpectedValue)
+}
+
+function Test-BoostLabNetworkAdapterInaccessibleRegistryError {
+    param(
+        [AllowNull()]
+        [object]$Exception
+    )
+
+    $cursor = $Exception
+    while ($null -ne $cursor) {
+        if (
+            $cursor -is [UnauthorizedAccessException] -or
+            $cursor -is [System.Security.SecurityException]
+        ) {
+            return $true
+        }
+
+        $message = [string]$cursor.Message
+        if (
+            $message -match 'access is denied' -or
+            $message -match 'Requested registry access is not allowed' -or
+            $message -match 'UnauthorizedAccessException'
+        ) {
+            return $true
+        }
+
+        $cursor = $cursor.InnerException
+    }
+
+    return $false
+}
+
+function New-BoostLabNetworkAdapterRegistryOperationResult {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Changed', 'AlreadyCorrect', 'Unsupported', 'Inaccessible', 'Failed')]
+        [string]$Status,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    $description = '{0} | {1}\{2}' -f `
+        [string]$Operation.AdapterName, `
+        [string]$Operation.RegistryPath, `
+        [string]$Operation.Name
+
+    return [pscustomobject]@{
+        AdapterName = [string]$Operation.AdapterName
+        AdapterKey = [string]$Operation.AdapterKey
+        RegistryPath = [string]$Operation.RegistryPath
+        RegistrySubPath = [string]$Operation.RegistrySubPath
+        Name = [string]$Operation.Name
+        Type = [string]$Operation.Type
+        Data = [string]$Operation.Data
+        Status = $Status
+        Description = $description
+        Message = $Message
+    }
+}
+
+function Invoke-BoostLabNetworkAdapterRegistryOperation {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [scriptblock]$RegistryReader = {
+            param($RegistrySubPath, $Name)
+            Get-BoostLabNetworkAdapterRegistryValue -RegistrySubPath $RegistrySubPath -Name $Name
+        }
+    )
+
+    if (-not (Test-BoostLabNetworkAdapterRegistryTarget -Target $Operation)) {
+        return New-BoostLabNetworkAdapterRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'Failed' `
+            -Message "Rejected out-of-scope adapter registry target: $([string]$Operation.RegistryPath)"
+    }
+
+    $existingState = $null
+    try {
+        $stateResults = @(& $RegistryReader ([string]$Operation.RegistrySubPath) ([string]$Operation.Name))
+        if ($stateResults.Count -gt 0) {
+            $existingState = $stateResults[0]
+        }
+    }
+    catch {
+        $existingState = [pscustomobject]@{
+            ReadSucceeded = $false
+            Exists = $false
+            Value = $null
+            DisplayValue = 'Unknown'
+            Message = $_.Exception.Message
+        }
+    }
+
+    $readSucceeded = (
+        $null -ne $existingState -and
+        $null -ne $existingState.PSObject.Properties['ReadSucceeded'] -and
+        [bool]$existingState.ReadSucceeded
+    )
+    $exists = (
+        $readSucceeded -and
+        $null -ne $existingState.PSObject.Properties['Exists'] -and
+        [bool]$existingState.Exists
+    )
+
+    if ($ActionName -eq 'Apply') {
+        $expectedValue = ConvertTo-BoostLabNetworkAdapterExpectedRegistryValue -Operation $Operation
+        if (
+            $exists -and
+            (Test-BoostLabNetworkAdapterRegistryValueMatches -ActualValue $existingState.Value -ExpectedValue $expectedValue)
+        ) {
+            return New-BoostLabNetworkAdapterRegistryOperationResult `
+                -Operation $Operation `
+                -Status 'AlreadyCorrect' `
+                -Message 'Adapter registry value was already source-correct.'
+        }
+    }
+    elseif ($readSucceeded -and -not $exists) {
+        return New-BoostLabNetworkAdapterRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'AlreadyCorrect' `
+            -Message 'Adapter registry value was already absent.'
+    }
+
+    $localMachine = $null
+    $adapterKey = $null
+    try {
+        $localMachine = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+            [Microsoft.Win32.RegistryHive]::LocalMachine,
+            [Microsoft.Win32.RegistryView]::Default
+        )
+        $adapterKey = $localMachine.OpenSubKey([string]$Operation.RegistrySubPath, $true)
+        if ($null -eq $adapterKey) {
+            $status = if ($ActionName -eq 'Default') { 'AlreadyCorrect' } else { 'Inaccessible' }
+            $message = if ($ActionName -eq 'Default') {
+                'Adapter registry key was absent before Default value removal.'
+            }
+            else {
+                'Adapter registry key was not available for write access.'
+            }
+            return New-BoostLabNetworkAdapterRegistryOperationResult `
+                -Operation $Operation `
+                -Status $status `
+                -Message $message
+        }
+
+        if ($ActionName -eq 'Apply') {
+            $valueKind = switch ([string]$Operation.Type) {
+                'REG_DWORD' { [Microsoft.Win32.RegistryValueKind]::DWord }
+                'REG_SZ' { [Microsoft.Win32.RegistryValueKind]::String }
+                default { throw "Unsupported registry value type: $([string]$Operation.Type)" }
+            }
+            $adapterKey.SetValue(
+                [string]$Operation.Name,
+                (ConvertTo-BoostLabNetworkAdapterExpectedRegistryValue -Operation $Operation),
+                $valueKind
+            )
+            return New-BoostLabNetworkAdapterRegistryOperationResult `
+                -Operation $Operation `
+                -Status 'Changed' `
+                -Message 'Adapter registry value was written with native registry access.'
+        }
+
+        $adapterKey.DeleteValue([string]$Operation.Name, $false)
+        return New-BoostLabNetworkAdapterRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'Changed' `
+            -Message 'Adapter registry value was removed with native registry access.'
+    }
+    catch {
+        $status = if (Test-BoostLabNetworkAdapterInaccessibleRegistryError -Exception $_.Exception) {
+            'Inaccessible'
+        }
+        else {
+            'Failed'
+        }
+        return New-BoostLabNetworkAdapterRegistryOperationResult `
+            -Operation $Operation `
+            -Status $status `
+            -Message $_.Exception.Message
+    }
+    finally {
+        if ($null -ne $adapterKey) {
+            $adapterKey.Dispose()
+        }
+        if ($null -ne $localMachine) {
+            $localMachine.Dispose()
+        }
+    }
+}
+
 function New-BoostLabNetworkAdapterRegistryOperations {
     param(
         [Parameter(Mandatory)]
@@ -394,6 +626,10 @@ function New-BoostLabNetworkAdapterRegistryOperations {
         [Parameter(Mandatory)]
         [object]$Adapter
     )
+
+    if (-not (Test-BoostLabNetworkAdapterRegistryTarget -Target $Adapter)) {
+        throw "Rejected out-of-scope network adapter registry target: $([string]$Adapter.RegistryPath)"
+    }
 
     return @(
         foreach ($definition in $script:BoostLabAdapterValueDefinitions) {
@@ -441,7 +677,10 @@ function Test-BoostLabNetworkAdapterPowerWakeState {
         [scriptblock]$RegistryReader = {
             param($RegistrySubPath, $Name)
             Get-BoostLabNetworkAdapterRegistryValue -RegistrySubPath $RegistrySubPath -Name $Name
-        }
+        },
+
+        [AllowNull()]
+        [object[]]$RegistryOperationResults = @()
     )
 
     $inventory = if ($null -ne $AdapterInventory) {
@@ -516,8 +755,77 @@ function Test-BoostLabNetworkAdapterPowerWakeState {
                 Group-Object -Property Name |
                 ForEach-Object { $_.Group[0] }
         )
+        $operationResultMap = @{}
+        foreach ($operationResult in @($RegistryOperationResults)) {
+            if ($null -eq $operationResult) {
+                continue
+            }
+            $key = '{0}|{1}|{2}' -f `
+                [string]$operationResult.AdapterKey, `
+                [string]$operationResult.RegistrySubPath, `
+                [string]$operationResult.Name
+            $operationResultMap[$key.ToLowerInvariant()] = $operationResult
+        }
+
         foreach ($adapter in @($inventory.Adapters)) {
             foreach ($definition in $uniqueDefinitions) {
+                $operationKey = ('{0}|{1}|{2}' -f `
+                    [string]$adapter.AdapterKey, `
+                    [string]$adapter.RegistrySubPath, `
+                    [string]$definition.Name).ToLowerInvariant()
+                $operationResult = if ($operationResultMap.ContainsKey($operationKey)) {
+                    $operationResultMap[$operationKey]
+                }
+                else {
+                    $null
+                }
+                if (
+                    $null -ne $operationResult -and
+                    [string]$operationResult.Status -eq 'AlreadyCorrect'
+                ) {
+                    $checks.Add(
+                        (New-BoostLabVerificationCheck `
+                            -Name ('{0} | {1}\{2}' -f `
+                                [string]$adapter.AdapterName, `
+                                [string]$adapter.RegistryPath, `
+                                [string]$definition.Name) `
+                            -Expected $(if ($ActionName -eq 'Apply') {
+                                '{0} ({1})' -f [string]$definition.Data, [string]$definition.Type
+                            } else {
+                                'Absent'
+                            }) `
+                            -Actual $(if ($ActionName -eq 'Apply') {
+                                '{0} ({1})' -f [string]$definition.Data, [string]$definition.Type
+                            } else {
+                                'Absent'
+                            }) `
+                            -Status 'Passed' `
+                            -Message ([string]$operationResult.Message))
+                    )
+                    continue
+                }
+                if (
+                    $null -ne $operationResult -and
+                    [string]$operationResult.Status -in @('Unsupported', 'Inaccessible', 'Failed')
+                ) {
+                    $checks.Add(
+                        (New-BoostLabVerificationCheck `
+                            -Name ('{0} | {1}\{2}' -f `
+                                [string]$adapter.AdapterName, `
+                                [string]$adapter.RegistryPath, `
+                                [string]$definition.Name) `
+                            -Expected $(if ($ActionName -eq 'Apply') {
+                                '{0} ({1})' -f [string]$definition.Data, [string]$definition.Type
+                            } else {
+                                'Absent'
+                            }) `
+                            -Actual ([string]$operationResult.Status) `
+                            -Status $(if ([string]$operationResult.Status -eq 'Failed') { 'Failed' } else { 'Warning' }) `
+                            -Message ([string]$operationResult.Message))
+                    )
+                    continue
+                }
+
                 try {
                     $stateResults = @(& $RegistryReader ([string]$adapter.RegistrySubPath) ([string]$definition.Name))
                     $state = if ($stateResults.Count -gt 0) { $stateResults[0] } else { $null }
@@ -662,35 +970,6 @@ function Get-BoostLabToolState {
     }
 }
 
-function Invoke-BoostLabNetworkAdapterRegistryCommand {
-    param(
-        [Parameter(Mandatory)]
-        [string]$CommandText
-    )
-
-    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
-        throw 'The Windows system directory is unavailable.'
-    }
-    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    if (-not (Test-Path -LiteralPath $commandProcessorPath -PathType Leaf)) {
-        throw 'cmd.exe was not found.'
-    }
-
-    $output = & $commandProcessorPath /c $CommandText 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        if ($CommandText.StartsWith('reg delete ', [StringComparison]::OrdinalIgnoreCase)) {
-            return
-        }
-
-        $detail = (@($output) -join ' ').Trim()
-        if ([string]::IsNullOrWhiteSpace($detail)) {
-            $detail = "reg.exe returned exit code $LASTEXITCODE."
-        }
-
-        throw $detail
-    }
-}
-
 function Invoke-BoostLabNetworkAdapterPowerWakeAction {
     param(
         [Parameter(Mandatory)]
@@ -711,8 +990,11 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
         },
 
         [scriptblock]$RegistryCommandInvoker = {
-            param($CommandText)
-            Invoke-BoostLabNetworkAdapterRegistryCommand -CommandText $CommandText
+            param($CommandText, $Operation, $Action, $Reader)
+            Invoke-BoostLabNetworkAdapterRegistryOperation `
+                -ActionName $Action `
+                -Operation $Operation `
+                -RegistryReader $Reader
         }
     )
 
@@ -748,7 +1030,7 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
             }
     )
     $registryOperationsAttempted = [System.Collections.Generic.List[string]]::new()
-    $registryOperationsCompleted = [System.Collections.Generic.List[string]]::new()
+    $registryOperationResults = [System.Collections.Generic.List[object]]::new()
     $registryOperationsSkipped = [System.Collections.Generic.List[string]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
 
@@ -759,16 +1041,34 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
                 [string]$operation.Name
             $registryOperationsAttempted.Add($operationDescription)
             try {
-                & $RegistryCommandInvoker ([string]$operation.Command) | Out-Null
-                $registryOperationsCompleted.Add($operationDescription)
+                $invokerResults = @(& $RegistryCommandInvoker ([string]$operation.Command) $operation $ActionName $RegistryReader)
+                $operationResult = if (
+                    $invokerResults.Count -gt 0 -and
+                    $null -ne $invokerResults[0] -and
+                    $null -ne $invokerResults[0].PSObject.Properties['Status']
+                ) {
+                    $invokerResults[0]
+                }
+                else {
+                    New-BoostLabNetworkAdapterRegistryOperationResult `
+                        -Operation $operation `
+                        -Status 'Changed' `
+                        -Message 'Adapter registry command completed.'
+                }
+                $registryOperationResults.Add($operationResult)
             }
             catch {
-                $errors.Add(
-                    (
-                        '{0} failed: {1}' -f `
-                            $operationDescription, `
-                            $_.Exception.Message
-                    )
+                $status = if (Test-BoostLabNetworkAdapterInaccessibleRegistryError -Exception $_.Exception) {
+                    'Inaccessible'
+                }
+                else {
+                    'Failed'
+                }
+                $registryOperationResults.Add(
+                    (New-BoostLabNetworkAdapterRegistryOperationResult `
+                        -Operation $operation `
+                        -Status $status `
+                        -Message $_.Exception.Message)
                 )
             }
         }
@@ -777,10 +1077,48 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
     $verificationResult = Test-BoostLabNetworkAdapterPowerWakeState `
         -ActionName $ActionName `
         -AdapterInventory $inventory `
-        -RegistryReader $RegistryReader
+        -RegistryReader $RegistryReader `
+        -RegistryOperationResults $registryOperationResults.ToArray()
+    $changedResults = @($registryOperationResults | Where-Object { [string]$_.Status -eq 'Changed' })
+    $alreadyCorrectResults = @($registryOperationResults | Where-Object { [string]$_.Status -eq 'AlreadyCorrect' })
+    $unsupportedResults = @($registryOperationResults | Where-Object { [string]$_.Status -eq 'Unsupported' })
+    $inaccessibleResults = @($registryOperationResults | Where-Object { [string]$_.Status -eq 'Inaccessible' })
+    $failedResults = @($registryOperationResults | Where-Object { [string]$_.Status -eq 'Failed' })
     $completedAt = Get-Date
     $expectedState = [string]$verificationResult.ExpectedState.AdapterPowerWake
     $detectedState = [string]$verificationResult.DetectedState.AdapterPowerWake
+    $sampleLimit = 10
+    $unsupportedSamples = @(
+        $unsupportedResults |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Description, [string]$_.Message }
+    )
+    $inaccessibleSamples = @(
+        $inaccessibleResults |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Description, [string]$_.Message }
+    )
+    $failedSamples = @(
+        $failedResults |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Description, [string]$_.Message }
+    )
+    $operationWarningNames = @(
+        @($unsupportedResults + $inaccessibleResults) |
+            ForEach-Object { [string]$_.Description }
+    )
+    $verificationWarningProperties = @(
+        $verificationResult.Checks |
+            Where-Object {
+                [string]$_.Status -eq 'Warning' -and
+                [string]$_.Name -notlike 'Adapter enumeration access*' -and
+                [string]$_.Name -notin $operationWarningNames
+            } |
+            ForEach-Object { [string]$_.Name }
+    )
+    foreach ($sample in @($failedSamples)) {
+        $errors.Add($sample)
+    }
     $registryValuesChecked = @(
         foreach ($adapter in @($inventory.Adapters)) {
             foreach ($definition in @(
@@ -798,11 +1136,18 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
     elseif (@($inventory.Adapters).Count -eq 0) {
         'Not executed: no accessible adapters'
     }
-    elseif ($errors.Count -gt 0) {
+    elseif ($failedResults.Count -gt 0) {
         'Completed with errors'
     }
     elseif ($registryOperationsAttempted.Count -eq 0 -and $ActionName -eq 'Default') {
         'Already default'
+    }
+    elseif (
+        $unsupportedResults.Count -gt 0 -or
+        $inaccessibleResults.Count -gt 0 -or
+        $verificationResult.Status -eq 'Warning'
+    ) {
+        'Completed with warnings'
     }
     else {
         'Completed'
@@ -816,15 +1161,34 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
         AdapterNamesTargeted              = $adapterNames
         InaccessibleAdapterTargets        = $inaccessibleTargets
         RegistryValuesChecked             = $registryValuesChecked
-        PropertiesAppliedOrDefaulted      = $registryOperationsCompleted.ToArray()
-        InaccessibleOrUnsupportedProperties = @(
-            $verificationResult.Checks |
-                Where-Object { $_.Status -eq 'Warning' } |
-                ForEach-Object { $_.Name }
-        )
+        PropertiesAppliedOrDefaulted      = @($changedResults | ForEach-Object { [string]$_.Description })
+        AlreadyCorrectProperties          = @($alreadyCorrectResults | ForEach-Object { [string]$_.Description })
+        UnsupportedOrAbsentProperties     = @($unsupportedSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)
+        InaccessibleProperties            = $inaccessibleSamples
+        FailedProperties                  = $failedSamples
+        AdapterCount                      = @($inventory.Adapters).Count
+        AttemptedCount                    = $registryOperationsAttempted.Count
+        ChangedCount                      = $changedResults.Count
+        AlreadyCorrectCount               = $alreadyCorrectResults.Count
+        UnsupportedOrAbsentCount          = $unsupportedResults.Count + $verificationWarningProperties.Count
+        InaccessibleCount                 = $inaccessibleResults.Count + @($inventory.InaccessibleTargets).Count
+        FailedCount                       = $failedResults.Count
+        InaccessibleOrUnsupportedProperties = @($unsupportedSamples + $inaccessibleSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)
+        Warnings                          = @($unsupportedSamples + $inaccessibleSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)
+        Errors                            = $errors.ToArray()
         RegistryOperationsAttempted       = $registryOperationsAttempted.ToArray()
-        RegistryOperationsCompleted       = $registryOperationsCompleted.ToArray()
+        RegistryOperationsCompleted       = @($changedResults | ForEach-Object { [string]$_.Description })
         RegistryOperationsSkipped         = $registryOperationsSkipped.ToArray()
+        RegistryOperationResultSummary    = [pscustomobject]@{
+            AdapterCount = @($inventory.Adapters).Count
+            Attempted = $registryOperationsAttempted.Count
+            Changed = $changedResults.Count
+            AlreadyCorrect = $alreadyCorrectResults.Count
+            UnsupportedOrAbsent = $unsupportedResults.Count + $verificationWarningProperties.Count
+            Inaccessible = $inaccessibleResults.Count + @($inventory.InaccessibleTargets).Count
+            Failed = $failedResults.Count
+            SampleLimit = $sampleLimit
+        }
         CompletedAt                       = $completedAt
     }
 
@@ -836,11 +1200,11 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
             -Data $data `
             -VerificationResult $verificationResult
     }
-    if ($errors.Count -gt 0) {
+    if ($failedResults.Count -gt 0) {
         return New-BoostLabNetworkAdapterPowerWakeResult `
             -Success $false `
             -Action $ActionName `
-            -Message ('Network adapter power and wake action completed with errors: {0}' -f ($errors -join '; ')) `
+            -Message ('Network adapter power and wake action completed with {0} failed registry operation(s). Sample: {1}' -f $failedResults.Count, ($failedSamples -join '; ')) `
             -Data $data `
             -VerificationResult $verificationResult
     }

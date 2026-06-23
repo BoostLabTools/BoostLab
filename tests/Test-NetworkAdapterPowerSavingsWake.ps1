@@ -168,6 +168,9 @@ foreach ($requiredText in @(
     'REG_DWORD'
     'REG_SZ'
     'function New-BoostLabNetworkAdapterRegistryOperations'
+    'function Test-BoostLabNetworkAdapterRegistryTarget'
+    'function Invoke-BoostLabNetworkAdapterRegistryOperation'
+    'function New-BoostLabNetworkAdapterRegistryOperationResult'
     'function Get-BoostLabNetworkAdapterReadOnlyDiscovery'
     'function Test-BoostLabNetworkAdapterPowerWakeState'
     'function Invoke-BoostLabNetworkAdapterPowerWakeAction'
@@ -177,6 +180,18 @@ foreach ($requiredText in @(
     'InaccessibleTargets'
     'AdapterEnumerationStatus'
     'PropertiesAppliedOrDefaulted'
+    'AlreadyCorrectProperties'
+    'UnsupportedOrAbsentProperties'
+    'InaccessibleProperties'
+    'FailedProperties'
+    'AdapterCount'
+    'AttemptedCount'
+    'ChangedCount'
+    'AlreadyCorrectCount'
+    'UnsupportedOrAbsentCount'
+    'InaccessibleCount'
+    'FailedCount'
+    'RegistryOperationResultSummary'
     'New-BoostLabVerificationResult'
     '-VerificationResult $verificationResult'
     '[bool]$Confirmed = $false'
@@ -207,6 +222,9 @@ foreach ($forbiddenModuleText in @(
     'Restart-Service'
     'Stop-Process'
     'Remove-AppxPackage'
+    'function Invoke-BoostLabNetworkAdapterRegistryCommand'
+    '$LASTEXITCODE'
+    'cmd.exe'
     'UsesTrustedInstaller = $true'
     'UsesSafeMode = $true'
     'Remove-Item '
@@ -555,9 +573,173 @@ try {
         $applyResult.Message -ne 'Network adapter power savings and wake disabled.' -or
         $applyResult.Data.CommandStatus -ne 'Completed' -or
         $applyResult.VerificationResult.Status -ne 'Passed' -or
+        [int]$applyResult.Data.AdapterCount -ne 1 -or
+        [int]$applyResult.Data.AttemptedCount -ne 15 -or
+        [int]$applyResult.Data.ChangedCount -ne 15 -or
+        [int]$applyResult.Data.AlreadyCorrectCount -ne 0 -or
+        [int]$applyResult.Data.FailedCount -ne 0 -or
         $applyCommands.Count -ne 15
     ) {
         throw 'Mocked Apply did not execute and verify the complete Ultimate sequence.'
+    }
+
+    $alreadyCorrectInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            AdapterName = [string]$Operation.AdapterName
+            AdapterKey = [string]$Operation.AdapterKey
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'AlreadyCorrect'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.AdapterName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Mock adapter property was already correct.'
+        }
+    }
+    $alreadyCorrectResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $applyReader $alreadyCorrectInvoker
+    if (
+        -not $alreadyCorrectResult.Success -or
+        $alreadyCorrectResult.VerificationResult.Status -ne 'Passed' -or
+        [int]$alreadyCorrectResult.Data.AlreadyCorrectCount -ne 15 -or
+        [int]$alreadyCorrectResult.Data.ChangedCount -ne 0
+    ) {
+        throw 'Already-correct adapter registry values were not counted separately.'
+    }
+
+    $unsupportedInvoker = {
+        param($CommandText, $Operation)
+        $status = if ([string]$Operation.Name -eq 'AdvancedEEE') { 'Unsupported' } else { 'Changed' }
+        [pscustomobject]@{
+            AdapterName = [string]$Operation.AdapterName
+            AdapterKey = [string]$Operation.AdapterKey
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = $status
+            Description = '{0} | {1}\{2}' -f [string]$Operation.AdapterName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = if ($status -eq 'Unsupported') { 'Mock driver does not expose this property.' } else { 'Mock adapter property changed.' }
+        }
+    }
+    $unsupportedResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $applyReader $unsupportedInvoker
+    if (
+        -not $unsupportedResult.Success -or
+        $unsupportedResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $unsupportedResult.VerificationResult.Status -ne 'Warning' -or
+        [int]$unsupportedResult.Data.UnsupportedOrAbsentCount -ne 1 -or
+        @($unsupportedResult.Data.UnsupportedOrAbsentProperties).Count -eq 0
+    ) {
+        throw 'Unsupported adapter properties were not reported as bounded warnings.'
+    }
+
+    $accessDeniedInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            AdapterName = [string]$Operation.AdapterName
+            AdapterKey = [string]$Operation.AdapterKey
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'Inaccessible'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.AdapterName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Requested registry access is not allowed.'
+        }
+    }
+    $accessDeniedResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $applyReader $accessDeniedInvoker
+    if (
+        -not $accessDeniedResult.Success -or
+        $accessDeniedResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $accessDeniedResult.VerificationResult.Status -ne 'Warning' -or
+        [int]$accessDeniedResult.Data.InaccessibleCount -ne 15 -or
+        [int]$accessDeniedResult.Data.FailedCount -ne 0 -or
+        @($accessDeniedResult.Data.InaccessibleProperties).Count -eq 0 -or
+        @($accessDeniedResult.Data.InaccessibleProperties).Count -gt 10
+    ) {
+        throw 'Access-denied adapter registry properties were not reported as bounded warnings.'
+    }
+
+    $nativeFailureInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            AdapterName = [string]$Operation.AdapterName
+            AdapterKey = [string]$Operation.AdapterKey
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'Failed'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.AdapterName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Mock native registry write failed.'
+        }
+    }
+    $nativeFailureResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $applyReader $nativeFailureInvoker
+    if (
+        $nativeFailureResult.Success -or
+        [int]$nativeFailureResult.Data.FailedCount -ne 15 -or
+        @($nativeFailureResult.Data.FailedProperties).Count -eq 0 -or
+        @($nativeFailureResult.Data.FailedProperties).Count -gt 10
+    ) {
+        throw 'Real adapter registry write failures were not bounded and reported with identity.'
+    }
+
+    $externalRegFailureInvoker = {
+        param($CommandText)
+        throw 'reg.exe returned exit code -1073741502.'
+    }
+    $externalRegFailureResult = & $networkModule {
+        param($InventoryReader, $Reader, $CommandInvoker)
+        Invoke-BoostLabNetworkAdapterPowerWakeAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -AdapterEnumerator $InventoryReader `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $CommandInvoker
+    } $inventoryReader $applyReader $externalRegFailureInvoker
+    if (
+        $externalRegFailureResult.Success -or
+        [int]$externalRegFailureResult.Data.FailedCount -ne 15 -or
+        @($externalRegFailureResult.Data.Errors).Count -gt 10 -or
+        ([regex]::Matches([string]$externalRegFailureResult.Message, '-1073741502')).Count -gt 10
+    ) {
+        throw 'External reg.exe failure diagnostics were not bounded and structured.'
     }
 
     $partialCommands = [System.Collections.Generic.List[string]]::new()
@@ -686,10 +868,24 @@ try {
             'InaccessibleAdapterTargets'
             'RegistryValuesChecked'
             'PropertiesAppliedOrDefaulted'
+            'AlreadyCorrectProperties'
+            'UnsupportedOrAbsentProperties'
+            'InaccessibleProperties'
+            'FailedProperties'
             'InaccessibleOrUnsupportedProperties'
+            'Warnings'
+            'Errors'
             'RegistryOperationsAttempted'
             'RegistryOperationsCompleted'
             'RegistryOperationsSkipped'
+            'AdapterCount'
+            'AttemptedCount'
+            'ChangedCount'
+            'AlreadyCorrectCount'
+            'UnsupportedOrAbsentCount'
+            'InaccessibleCount'
+            'FailedCount'
+            'RegistryOperationResultSummary'
             'CompletedAt'
         )) {
             if ($null -eq $result.Data.PSObject.Properties[$dataField]) {
