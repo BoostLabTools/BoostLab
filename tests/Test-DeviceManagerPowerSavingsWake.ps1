@@ -124,11 +124,17 @@ foreach ($requiredModuleText in @(
     'function Get-BoostLabDeviceManagerOperationBlueprint'
     'function Get-BoostLabDeviceManagerReadOnlyDiscovery'
     'function New-BoostLabDeviceManagerRegistryOperations'
+    'function Invoke-BoostLabDeviceManagerRegistryOperation'
+    'function New-BoostLabDeviceManagerRegistryOperationResult'
     'function Test-BoostLabDeviceManagerPowerWakeState'
     'function Invoke-BoostLabDeviceManagerPowerWakeAction'
     'reg delete '
     'StartsWith'
     'New-BoostLabVerificationResult'
+    'InaccessibleCount'
+    'AlreadyCorrectCount'
+    'FailedCount'
+    'RegistryOperationResultSummary'
     'NeedsExplicitConfirmation = $true'
     'CanModifyDrivers = $false'
 )) {
@@ -150,6 +156,8 @@ foreach ($forbiddenModuleText in @(
     'Set-Service'
     'Restart-Computer'
     'shutdown.exe'
+    'function Invoke-BoostLabDeviceManagerRegistryCommand'
+    '$LASTEXITCODE'
     'UsesTrustedInstaller = $true'
     'safeboot'
     'ToolModule.Placeholder.ps1'
@@ -466,9 +474,101 @@ try {
     if (
         $failedResult.Success -or
         $failedResult.Data.CommandStatus -ne 'Completed with errors' -or
-        @($failedResult.Data.Errors).Count -eq 0
+        [int]$failedResult.Data.FailedCount -ne 20 -or
+        @($failedResult.Data.Errors).Count -eq 0 -or
+        @($failedResult.Data.Errors).Count -gt 10
     ) {
-        throw 'Unexpected registry command errors were hidden or not structured.'
+        throw 'Unexpected registry command errors were hidden, not counted, or emitted as an unbounded wall.'
+    }
+
+    $accessDeniedInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            ClassName = [string]$Operation.ClassName
+            LeafName = [string]$Operation.LeafName
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'Inaccessible'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.ClassName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Requested registry access is not allowed.'
+        }
+    }
+    $accessDeniedResult = & $toolModule {
+        param($Enumerator, $Reader, $Invoker)
+        Invoke-BoostLabDeviceManagerPowerWakeAction `
+            -ActionName Apply `
+            -AdministratorChecker { $true } `
+            -DeviceEnumerator $Enumerator `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $Invoker
+    } $enumerator $reader $accessDeniedInvoker
+    if (
+        -not $accessDeniedResult.Success -or
+        $accessDeniedResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $accessDeniedResult.VerificationResult.Status -ne 'Warning' -or
+        [int]$accessDeniedResult.Data.InaccessibleCount -ne 20 -or
+        [int]$accessDeniedResult.Data.FailedCount -ne 0 -or
+        @($accessDeniedResult.Data.InaccessibleItems).Count -eq 0 -or
+        @($accessDeniedResult.Data.InaccessibleItems).Count -gt 10
+    ) {
+        throw 'Access-denied device registry targets were not reported as bounded warnings.'
+    }
+
+    $alreadyCorrectInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            ClassName = [string]$Operation.ClassName
+            LeafName = [string]$Operation.LeafName
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'AlreadyCorrect'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.ClassName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Mock value was already correct.'
+        }
+    }
+    $alreadyCorrectResult = & $toolModule {
+        param($Enumerator, $Reader, $Invoker)
+        Invoke-BoostLabDeviceManagerPowerWakeAction `
+            -ActionName Apply `
+            -AdministratorChecker { $true } `
+            -DeviceEnumerator $Enumerator `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $Invoker
+    } $enumerator $reader $alreadyCorrectInvoker
+    if (
+        -not $alreadyCorrectResult.Success -or
+        [int]$alreadyCorrectResult.Data.AlreadyCorrectCount -ne 20 -or
+        [int]$alreadyCorrectResult.Data.ChangedCount -ne 0
+    ) {
+        throw 'Already-correct device registry values were not counted separately from changed values.'
+    }
+
+    $externalRegFailureInvoker = {
+        param($CommandText)
+        throw 'reg.exe returned exit code -1073741502.'
+    }
+    $externalRegFailure = & $toolModule {
+        param($Enumerator, $Reader, $Invoker)
+        Invoke-BoostLabDeviceManagerPowerWakeAction `
+            -ActionName Apply `
+            -AdministratorChecker { $true } `
+            -DeviceEnumerator $Enumerator `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $Invoker
+    } $enumerator $reader $externalRegFailureInvoker
+    if (
+        $externalRegFailure.Success -or
+        [int]$externalRegFailure.Data.FailedCount -ne 20 -or
+        @($externalRegFailure.Data.Errors).Count -gt 10 -or
+        ([regex]::Matches([string]$externalRegFailure.Message, '-1073741502')).Count -gt 10
+    ) {
+        throw 'External reg.exe failure diagnostics were not bounded and structured.'
     }
 
     $maliciousInventory = [pscustomobject]@{

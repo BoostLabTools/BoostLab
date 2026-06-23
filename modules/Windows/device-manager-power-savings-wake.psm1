@@ -441,6 +441,258 @@ function Get-BoostLabDeviceManagerRegistryValue {
     }
 }
 
+function ConvertTo-BoostLabDeviceManagerExpectedRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation
+    )
+
+    switch ([string]$Operation.Type) {
+        'REG_DWORD' {
+            return [int]([string]$Operation.Data)
+        }
+        'REG_BINARY' {
+            $hex = [string]$Operation.Data
+            if (($hex.Length % 2) -ne 0) {
+                throw "Invalid REG_BINARY data for $([string]$Operation.Name): $hex"
+            }
+
+            $bytes = [byte[]]::new($hex.Length / 2)
+            for ($index = 0; $index -lt $bytes.Length; $index++) {
+                $bytes[$index] = [Convert]::ToByte($hex.Substring($index * 2, 2), 16)
+            }
+            return $bytes
+        }
+        default {
+            throw "Unsupported registry value type: $([string]$Operation.Type)"
+        }
+    }
+}
+
+function Test-BoostLabDeviceManagerRegistryValueMatches {
+    param(
+        [AllowNull()]
+        [object]$ActualValue,
+
+        [AllowNull()]
+        [object]$ExpectedValue
+    )
+
+    if ($ActualValue -is [byte[]] -or $ExpectedValue -is [byte[]]) {
+        $actualBytes = @($ActualValue)
+        $expectedBytes = @($ExpectedValue)
+        if ($actualBytes.Count -ne $expectedBytes.Count) {
+            return $false
+        }
+        for ($index = 0; $index -lt $actualBytes.Count; $index++) {
+            if ([byte]$actualBytes[$index] -ne [byte]$expectedBytes[$index]) {
+                return $false
+            }
+        }
+        return $true
+    }
+
+    return ([string]$ActualValue -eq [string]$ExpectedValue)
+}
+
+function Test-BoostLabDeviceManagerInaccessibleRegistryError {
+    param(
+        [AllowNull()]
+        [object]$Exception
+    )
+
+    $cursor = $Exception
+    while ($null -ne $cursor) {
+        if (
+            $cursor -is [UnauthorizedAccessException] -or
+            $cursor -is [System.Security.SecurityException]
+        ) {
+            return $true
+        }
+
+        $message = [string]$cursor.Message
+        if (
+            $message -match 'access is denied' -or
+            $message -match 'Requested registry access is not allowed' -or
+            $message -match 'UnauthorizedAccessException'
+        ) {
+            return $true
+        }
+
+        $cursor = $cursor.InnerException
+    }
+
+    return $false
+}
+
+function New-BoostLabDeviceManagerRegistryOperationResult {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Changed', 'AlreadyCorrect', 'Inaccessible', 'Failed')]
+        [string]$Status,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    $description = '{0} | {1}\{2}' -f `
+        [string]$Operation.ClassName, `
+        [string]$Operation.RegistryPath, `
+        [string]$Operation.Name
+
+    return [pscustomobject]@{
+        ClassName = [string]$Operation.ClassName
+        LeafName = [string]$Operation.LeafName
+        RegistryPath = [string]$Operation.RegistryPath
+        RegistrySubPath = [string]$Operation.RegistrySubPath
+        Name = [string]$Operation.Name
+        Type = [string]$Operation.Type
+        Data = [string]$Operation.Data
+        Status = $Status
+        Description = $description
+        Message = $Message
+    }
+}
+
+function Invoke-BoostLabDeviceManagerRegistryOperation {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [object]$Operation,
+
+        [scriptblock]$RegistryReader = {
+            param($RegistrySubPath, $Name)
+            Get-BoostLabDeviceManagerRegistryValue -RegistrySubPath $RegistrySubPath -Name $Name
+        }
+    )
+
+    if (-not (Test-BoostLabDeviceManagerRegistryTarget -Target $Operation)) {
+        return New-BoostLabDeviceManagerRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'Failed' `
+            -Message "Rejected out-of-scope device registry target: $([string]$Operation.RegistryPath)"
+    }
+
+    $existingState = $null
+    try {
+        $stateResults = @(& $RegistryReader ([string]$Operation.RegistrySubPath) ([string]$Operation.Name))
+        if ($stateResults.Count -gt 0) {
+            $existingState = $stateResults[0]
+        }
+    }
+    catch {
+        $existingState = [pscustomobject]@{
+            ReadSucceeded = $false
+            Exists = $false
+            Value = $null
+            DisplayValue = 'Unknown'
+            Message = $_.Exception.Message
+        }
+    }
+
+    $readSucceeded = (
+        $null -ne $existingState -and
+        $null -ne $existingState.PSObject.Properties['ReadSucceeded'] -and
+        [bool]$existingState.ReadSucceeded
+    )
+    $exists = (
+        $readSucceeded -and
+        $null -ne $existingState.PSObject.Properties['Exists'] -and
+        [bool]$existingState.Exists
+    )
+
+    if ($ActionName -eq 'Apply') {
+        $expectedValue = ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $Operation
+        if (
+            $exists -and
+            (Test-BoostLabDeviceManagerRegistryValueMatches -ActualValue $existingState.Value -ExpectedValue $expectedValue)
+        ) {
+            return New-BoostLabDeviceManagerRegistryOperationResult `
+                -Operation $Operation `
+                -Status 'AlreadyCorrect' `
+                -Message 'Device registry value was already source-correct.'
+        }
+    }
+    elseif ($readSucceeded -and -not $exists) {
+        return New-BoostLabDeviceManagerRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'AlreadyCorrect' `
+            -Message 'Device registry value was already absent.'
+    }
+
+    $localMachine = $null
+    $registryKey = $null
+    try {
+        $localMachine = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+            [Microsoft.Win32.RegistryHive]::LocalMachine,
+            [Microsoft.Win32.RegistryView]::Default
+        )
+        $registryKey = $localMachine.OpenSubKey([string]$Operation.RegistrySubPath, $true)
+        if ($null -eq $registryKey) {
+            $status = if ($ActionName -eq 'Default') { 'AlreadyCorrect' } else { 'Inaccessible' }
+            $message = if ($ActionName -eq 'Default') {
+                'Device registry key was absent before Default value removal.'
+            }
+            else {
+                'Device registry key was not available for write access.'
+            }
+            return New-BoostLabDeviceManagerRegistryOperationResult `
+                -Operation $Operation `
+                -Status $status `
+                -Message $message
+        }
+
+        if ($ActionName -eq 'Apply') {
+            $valueKind = switch ([string]$Operation.Type) {
+                'REG_DWORD' { [Microsoft.Win32.RegistryValueKind]::DWord }
+                'REG_BINARY' { [Microsoft.Win32.RegistryValueKind]::Binary }
+                default { throw "Unsupported registry value type: $([string]$Operation.Type)" }
+            }
+            $registryKey.SetValue(
+                [string]$Operation.Name,
+                (ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $Operation),
+                $valueKind
+            )
+            return New-BoostLabDeviceManagerRegistryOperationResult `
+                -Operation $Operation `
+                -Status 'Changed' `
+                -Message 'Device registry value was written with native registry access.'
+        }
+
+        $registryKey.DeleteValue([string]$Operation.Name, $false)
+        return New-BoostLabDeviceManagerRegistryOperationResult `
+            -Operation $Operation `
+            -Status 'Changed' `
+            -Message 'Device registry value was removed with native registry access.'
+    }
+    catch {
+        $status = if (Test-BoostLabDeviceManagerInaccessibleRegistryError -Exception $_.Exception) {
+            'Inaccessible'
+        }
+        else {
+            'Failed'
+        }
+        return New-BoostLabDeviceManagerRegistryOperationResult `
+            -Operation $Operation `
+            -Status $status `
+            -Message $_.Exception.Message
+    }
+    finally {
+        if ($null -ne $registryKey) {
+            $registryKey.Dispose()
+        }
+        if ($null -ne $localMachine) {
+            $localMachine.Dispose()
+        }
+    }
+}
+
 function New-BoostLabDeviceManagerRegistryOperations {
     param(
         [Parameter(Mandatory)]
@@ -512,7 +764,10 @@ function Test-BoostLabDeviceManagerPowerWakeState {
         [scriptblock]$RegistryReader = {
             param($RegistrySubPath, $Name)
             Get-BoostLabDeviceManagerRegistryValue -RegistrySubPath $RegistrySubPath -Name $Name
-        }
+        },
+
+        [AllowNull()]
+        [object[]]$RegistryOperationResults = @()
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
@@ -563,7 +818,78 @@ function Test-BoostLabDeviceManagerPowerWakeState {
                 -ActionName $ActionName `
                 -Inventory $inventory
         )
+        $operationResultMap = @{}
+        foreach ($operationResult in @($RegistryOperationResults)) {
+            if ($null -eq $operationResult) {
+                continue
+            }
+            $key = '{0}|{1}|{2}' -f `
+                [string]$operationResult.ClassName, `
+                [string]$operationResult.RegistrySubPath, `
+                [string]$operationResult.Name
+            $operationResultMap[$key.ToLowerInvariant()] = $operationResult
+        }
+
         foreach ($operation in $operations) {
+            $operationKey = ('{0}|{1}|{2}' -f `
+                [string]$operation.ClassName, `
+                [string]$operation.RegistrySubPath, `
+                [string]$operation.Name).ToLowerInvariant()
+            $operationResult = if ($operationResultMap.ContainsKey($operationKey)) {
+                $operationResultMap[$operationKey]
+            }
+            else {
+                $null
+            }
+
+            if (
+                $null -ne $operationResult -and
+                [string]$operationResult.Status -eq 'AlreadyCorrect'
+            ) {
+                $checks.Add(
+                    (New-BoostLabVerificationCheck `
+                        -Name ('{0} | {1}\{2}' -f `
+                            [string]$operation.ClassName, `
+                            [string]$operation.RegistryPath, `
+                            [string]$operation.Name) `
+                        -Expected $(if ($ActionName -eq 'Apply') {
+                            '{0} ({1})' -f [string]$operation.Data, [string]$operation.Type
+                        } else {
+                            'Absent'
+                        }) `
+                        -Actual $(if ($ActionName -eq 'Apply') {
+                            '{0} ({1})' -f [string]$operation.Data, [string]$operation.Type
+                        } else {
+                            'Absent'
+                        }) `
+                        -Status 'Passed' `
+                        -Message ([string]$operationResult.Message))
+                )
+                continue
+            }
+
+            if (
+                $null -ne $operationResult -and
+                [string]$operationResult.Status -in @('Inaccessible', 'Failed')
+            ) {
+                $checks.Add(
+                    (New-BoostLabVerificationCheck `
+                        -Name ('{0} | {1}\{2}' -f `
+                            [string]$operation.ClassName, `
+                            [string]$operation.RegistryPath, `
+                            [string]$operation.Name) `
+                        -Expected $(if ($ActionName -eq 'Apply') {
+                            '{0} ({1})' -f [string]$operation.Data, [string]$operation.Type
+                        } else {
+                            'Absent'
+                        }) `
+                        -Actual ([string]$operationResult.Status) `
+                        -Status $(if ([string]$operationResult.Status -eq 'Inaccessible') { 'Warning' } else { 'Failed' }) `
+                        -Message ([string]$operationResult.Message))
+                )
+                continue
+            }
+
             try {
                 $stateResults = @(& $RegistryReader ([string]$operation.RegistrySubPath) ([string]$operation.Name))
                 $state = if ($stateResults.Count -gt 0) { $stateResults[0] } else { $null }
@@ -702,34 +1028,6 @@ function Get-BoostLabToolState {
     }
 }
 
-function Invoke-BoostLabDeviceManagerRegistryCommand {
-    param(
-        [Parameter(Mandatory)]
-        [string]$CommandText
-    )
-
-    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
-        throw 'The Windows system directory is unavailable.'
-    }
-    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    if (-not (Test-Path -LiteralPath $commandProcessorPath -PathType Leaf)) {
-        throw 'cmd.exe was not found.'
-    }
-
-    $output = & $commandProcessorPath /c $CommandText 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        if ($CommandText.StartsWith('reg delete ', [StringComparison]::OrdinalIgnoreCase)) {
-            return
-        }
-
-        $detail = (@($output) -join ' ').Trim()
-        if ([string]::IsNullOrWhiteSpace($detail)) {
-            $detail = "reg.exe returned exit code $LASTEXITCODE."
-        }
-        throw $detail
-    }
-}
-
 function Invoke-BoostLabDeviceManagerPowerWakeAction {
     param(
         [Parameter(Mandatory)]
@@ -750,8 +1048,11 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
         },
 
         [scriptblock]$RegistryCommandInvoker = {
-            param($CommandText)
-            Invoke-BoostLabDeviceManagerRegistryCommand -CommandText $CommandText
+            param($CommandText, $Operation, $Action, $Reader)
+            Invoke-BoostLabDeviceManagerRegistryOperation `
+                -ActionName $Action `
+                -Operation $Operation `
+                -RegistryReader $Reader
         }
     )
 
@@ -775,7 +1076,7 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
     }
 
     $operationsAttempted = [System.Collections.Generic.List[string]]::new()
-    $operationsCompleted = [System.Collections.Generic.List[string]]::new()
+    $operationResults = [System.Collections.Generic.List[object]]::new()
     $operationsSkipped = [System.Collections.Generic.List[string]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
@@ -803,31 +1104,77 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
 
         $operationsAttempted.Add($description)
         try {
-            & $RegistryCommandInvoker ([string]$operation.Command) | Out-Null
-            $operationsCompleted.Add($description)
+            $invokerResults = @(& $RegistryCommandInvoker ([string]$operation.Command) $operation $ActionName $RegistryReader)
+            $operationResult = if (
+                $invokerResults.Count -gt 0 -and
+                $null -ne $invokerResults[0] -and
+                $null -ne $invokerResults[0].PSObject.Properties['Status']
+            ) {
+                $invokerResults[0]
+            }
+            else {
+                New-BoostLabDeviceManagerRegistryOperationResult `
+                    -Operation $operation `
+                    -Status 'Changed' `
+                    -Message 'Device registry command completed.'
+            }
+            $operationResults.Add($operationResult)
         }
         catch {
-            $errors.Add("$description failed: $($_.Exception.Message)")
+            $status = if (Test-BoostLabDeviceManagerInaccessibleRegistryError -Exception $_.Exception) {
+                'Inaccessible'
+            }
+            else {
+                'Failed'
+            }
+            $operationResults.Add(
+                (New-BoostLabDeviceManagerRegistryOperationResult `
+                    -Operation $operation `
+                    -Status $status `
+                    -Message $_.Exception.Message)
+            )
         }
     }
 
     $verificationResult = Test-BoostLabDeviceManagerPowerWakeState `
         -ActionName $ActionName `
         -DeviceInventory $inventory `
-        -RegistryReader $RegistryReader
+        -RegistryReader $RegistryReader `
+        -RegistryOperationResults $operationResults.ToArray()
+    $changedResults = @($operationResults | Where-Object { [string]$_.Status -eq 'Changed' })
+    $alreadyCorrectResults = @($operationResults | Where-Object { [string]$_.Status -eq 'AlreadyCorrect' })
+    $inaccessibleResults = @($operationResults | Where-Object { [string]$_.Status -eq 'Inaccessible' })
+    $failedResults = @($operationResults | Where-Object { [string]$_.Status -eq 'Failed' })
+    $sampleLimit = 10
+    $inaccessibleSamples = @(
+        $inaccessibleResults |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Description, [string]$_.Message }
+    )
+    $failedSamples = @(
+        $failedResults |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Description, [string]$_.Message }
+    )
+    foreach ($sample in $inaccessibleSamples) {
+        $warnings.Add($sample)
+    }
+    foreach ($sample in $failedSamples) {
+        $errors.Add($sample)
+    }
     $commandStatus = if (-not [bool]$inventory.Succeeded) {
         'Not executed: enumeration failed'
     }
     elseif (@($inventory.Targets).Count -eq 0) {
         'Not applicable: no matching targets'
     }
-    elseif ($errors.Count -gt 0) {
+    elseif ($failedResults.Count -gt 0) {
         'Completed with errors'
     }
     elseif ($operationsAttempted.Count -eq 0 -and $ActionName -eq 'Default') {
         'Already default'
     }
-    elseif ($warnings.Count -gt 0) {
+    elseif ($warnings.Count -gt 0 -or $inaccessibleResults.Count -gt 0) {
         'Completed with warnings'
     }
     else {
@@ -840,11 +1187,27 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
         DetectedDevicePowerWakeState = [string]$verificationResult.DetectedState.DevicePowerWake
         TargetedDeviceClasses = @($script:BoostLabDeviceClasses)
         RegistryPathsTargeted = @($inventory.Targets | ForEach-Object { $_.RegistryPath } | Sort-Object -Unique)
-        ValuesChanged = $operationsCompleted.ToArray()
+        ValuesChanged = @($changedResults | ForEach-Object { [string]$_.Description })
+        AlreadyCorrectItems = @($alreadyCorrectResults | ForEach-Object { [string]$_.Description })
+        InaccessibleItems = $inaccessibleSamples
+        FailedItems = $failedSamples
+        AttemptedCount = $operationsAttempted.Count
+        ChangedCount = $changedResults.Count
+        AlreadyCorrectCount = $alreadyCorrectResults.Count
+        InaccessibleCount = $inaccessibleResults.Count
+        FailedCount = $failedResults.Count
         SkippedItems = $operationsSkipped.ToArray()
         Warnings = $warnings.ToArray()
         Errors = $errors.ToArray()
         RegistryOperationsAttempted = $operationsAttempted.ToArray()
+        RegistryOperationResultSummary = [pscustomobject]@{
+            Attempted = $operationsAttempted.Count
+            Changed = $changedResults.Count
+            AlreadyCorrect = $alreadyCorrectResults.Count
+            Inaccessible = $inaccessibleResults.Count
+            Failed = $failedResults.Count
+            SampleLimit = $sampleLimit
+        }
         CompletedAt = Get-Date
     }
 
@@ -856,11 +1219,11 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
             -Data $data `
             -VerificationResult $verificationResult
     }
-    if ($errors.Count -gt 0) {
+    if ($failedResults.Count -gt 0) {
         return New-BoostLabDeviceManagerPowerWakeResult `
             -Success $false `
             -Action $ActionName `
-            -Message ('Device power savings and wake action completed with errors: {0}' -f ($errors -join '; ')) `
+            -Message ('Device power savings and wake action completed with {0} failed registry operation(s). Sample: {1}' -f $failedResults.Count, ($failedSamples -join '; ')) `
             -Data $data `
             -VerificationResult $verificationResult
     }
