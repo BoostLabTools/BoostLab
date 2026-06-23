@@ -99,6 +99,7 @@ foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     'Get-BoostLabControlPanelSettingsRunTrustedBlock'
     'Get-BoostLabControlPanelSettingsBranchScript'
+    'ConvertTo-BoostLabControlPanelSettingsRuntimeScript'
     'Invoke-BoostLabControlPanelSettingsScript'
     'ContainsExit'
     'SourceVerificationFailed'
@@ -232,6 +233,57 @@ try {
     Assert-BoostLabCondition (-not [bool]$sourceMismatchResult.Success) 'Source mismatch must block.'
     Assert-BoostLabCondition ([string]$sourceMismatchResult.Status -eq 'SourceVerificationFailed') 'Source mismatch must report SourceVerificationFailed.'
     Assert-BoostLabCondition ($runnerCalls.Count -eq 2) 'Source mismatch must not call the runner.'
+
+    $hostUiOnlyScript = @'
+Clear-Host
+Write-Host "Control Panel Settings: Optimize..."
+$script:ControlPanelSettingsHostUiShimMarker = 'Ran'
+'@
+    $hostUiRunnerResult = & $controlPanelModule {
+        param($ScriptText)
+        Invoke-BoostLabControlPanelSettingsScript -ScriptText $ScriptText -ActionName Apply -SourcePath 'mock-source.ps1'
+    } $hostUiOnlyScript
+    Assert-BoostLabCondition ([bool]$hostUiRunnerResult.Success) 'Host UI-only source script lines must not crash the Control Panel Settings runner.'
+    Assert-BoostLabCondition ([string]$hostUiRunnerResult.FailureKind -eq 'None') 'Host UI-only runner should not report a source operation failure.'
+    Assert-BoostLabCondition ([bool]$hostUiRunnerResult.HostUiShimmed) 'Host UI-only runner must report that host UI lines were shimmed.'
+    Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines).Count -eq 2) 'Host UI-only runner must remove Clear-Host and Write-Host lines.'
+    Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines | Where-Object { [string]$_.Text -eq 'Clear-Host' }).Count -eq 1) 'Host UI shim evidence must include Clear-Host.'
+    Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines | Where-Object { [string]$_.Text -like 'Write-Host*' }).Count -eq 1) 'Host UI shim evidence must include Write-Host.'
+
+    $realFailureRunnerResult = & $controlPanelModule {
+        Invoke-BoostLabControlPanelSettingsScript -ScriptText 'throw "Real registry failure."' -ActionName Apply -SourcePath 'mock-source.ps1'
+    }
+    Assert-BoostLabCondition (-not [bool]$realFailureRunnerResult.Success) 'Real source operation failure must still fail.'
+    Assert-BoostLabCondition ([string]$realFailureRunnerResult.FailureKind -eq 'SourceOperationFailure') 'Real source operation failure must be classified as SourceOperationFailure.'
+    Assert-BoostLabCondition ([string]$realFailureRunnerResult.FailureScope -eq 'SourceOperation') 'Real source operation failure must not be classified as host UI.'
+
+    $failedRunner = {
+        param([string]$ScriptText, [string]$ActionName)
+        [pscustomobject]@{
+            Success = $false
+            Message = 'Real registry failure.'
+            ExitCode = 1
+            RunnerKind = 'MockRunner'
+            RunnerCommand = 'mock command'
+            RunnerPath = 'mock-source.ps1'
+            FailureKind = 'SourceOperationFailure'
+            FailureScope = 'SourceOperation'
+            HostUiShimmed = $true
+            HostUiShimReason = 'mock host UI shim'
+            RemovedHostUiLines = @([pscustomobject]@{ SourceBranchLine = 1; Text = 'Clear-Host'; Reason = 'HostUiOnlyConsoleOperation' })
+        }
+    }
+    $failedRunnerResult = Invoke-ControlPanelTestBoostLabToolAction `
+        -ActionName Apply `
+        -Confirmed:$true `
+        -AdministratorChecker { $true } `
+        -ScriptRunner $failedRunner
+    Assert-BoostLabCondition (-not [bool]$failedRunnerResult.Success) 'Failed source runner result must fail the action.'
+    Assert-BoostLabCondition ([string]$failedRunnerResult.Status -eq 'Failed') 'Failed source runner result must return Failed.'
+    Assert-BoostLabCondition ([string]$failedRunnerResult.Data.RunnerFailureKind -eq 'SourceOperationFailure') 'Failed action must preserve runner failure kind.'
+    Assert-BoostLabCondition ([string]$failedRunnerResult.Data.RunnerFailureScope -eq 'SourceOperation') 'Failed action must preserve runner failure scope.'
+    Assert-BoostLabCondition ([bool]$failedRunnerResult.Data.RuntimeHostUiShimmed) 'Failed action must include host UI shim state in result data.'
+    Assert-BoostLabCondition (@($failedRunnerResult.Data.RuntimeHostUiShimEvidence).Count -eq 1) 'Failed action must include host UI shim evidence in result data.'
 }
 finally {
     Remove-Module -ModuleInfo $controlPanelModule -Force -ErrorAction SilentlyContinue

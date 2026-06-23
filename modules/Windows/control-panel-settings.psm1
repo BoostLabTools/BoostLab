@@ -265,6 +265,100 @@ function Get-BoostLabControlPanelSettingsSourceSummary {
     }
 }
 
+function Test-BoostLabControlPanelSettingsHostUiLine {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [string]$Line
+    )
+
+    $trimmed = ([string]$Line).Trim()
+    return (
+        $trimmed -eq 'Clear-Host' -or
+        $trimmed -match '^\$Host\.UI\.RawUI\.' -or
+        $trimmed -match '^\$Host\.PrivateData\.Progress' -or
+        $trimmed -match '^Write-Host(\s|$)'
+    )
+}
+
+function ConvertTo-BoostLabControlPanelSettingsRuntimeScript {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ScriptText
+    )
+
+    $runtimeLines = [System.Collections.Generic.List[string]]::new()
+    $removedLines = [System.Collections.Generic.List[object]]::new()
+    $lines = @(Get-BoostLabControlPanelSettingsSourceLines -SourceText $ScriptText)
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if (Test-BoostLabControlPanelSettingsHostUiLine -Line $line) {
+            $removedLines.Add([pscustomobject]@{
+                SourceBranchLine = $index + 1
+                Text             = $line.Trim()
+                Reason           = 'HostUiOnlyConsoleOperation'
+            })
+            continue
+        }
+
+        $runtimeLines.Add($line)
+    }
+
+    $prefix = @(
+        '$ProgressPreference = ''SilentlyContinue'''
+        '$InformationPreference = ''SilentlyContinue'''
+    )
+    [pscustomobject]@{
+        RuntimeScriptText = (($prefix + $runtimeLines.ToArray()) -join "`r`n").Trim()
+        RemovedHostUiLines = $removedLines.ToArray()
+        HostUiShimmed = ($removedLines.Count -gt 0)
+        HostUiShimReason = 'Source console UI lines are skipped under BoostLab GUI hosting to avoid RawUI/Clear-Host cursor pipe failures.'
+        OriginalLineCount = @($ScriptText -split "`r?`n").Count
+        RuntimeLineCount = @((($prefix + $runtimeLines.ToArray()) -join "`r`n") -split "`r?`n").Count
+    }
+}
+
+function Test-BoostLabControlPanelSettingsConsolePipeException {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    if ($null -eq $ErrorRecord) {
+        return $false
+    }
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    return (
+        $messageText -like '*CursorPosition*No process is on the other end of the pipe*' -or
+        $messageText -like '*No process is on the other end of the pipe*' -or
+        $messageText -like '*getting console output buffer information*' -or
+        $messageText -like '*0xE9*'
+    )
+}
+
 function Invoke-BoostLabControlPanelSettingsScript {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -273,23 +367,46 @@ function Invoke-BoostLabControlPanelSettingsScript {
         [string]$ScriptText,
 
         [Parameter(Mandatory)]
-        [string]$ActionName
+        [string]$ActionName,
+
+        [string]$SourcePath = ''
     )
 
+    $runtimeScript = ConvertTo-BoostLabControlPanelSettingsRuntimeScript -ScriptText $ScriptText
     try {
-        $scriptBlock = [scriptblock]::Create($ScriptText)
+        $scriptBlock = [scriptblock]::Create([string]$runtimeScript.RuntimeScriptText)
         & $scriptBlock
         return [pscustomobject]@{
             Success = $true
             Message = 'Source branch script completed.'
             ExitCode = 0
+            RunnerKind = 'InProcessSanitizedSourceBranch'
+            RunnerCommand = 'PowerShell scriptblock from verified source branch'
+            RunnerPath = $SourcePath
+            FailureKind = 'None'
+            FailureScope = 'None'
+            HostUiShimmed = [bool]$runtimeScript.HostUiShimmed
+            HostUiShimReason = [string]$runtimeScript.HostUiShimReason
+            RemovedHostUiLines = @($runtimeScript.RemovedHostUiLines)
+            RuntimeLineCount = [int]$runtimeScript.RuntimeLineCount
         }
     }
     catch {
+        $isConsolePipe = Test-BoostLabControlPanelSettingsConsolePipeException -ErrorRecord $_
         return [pscustomobject]@{
             Success = $false
             Message = $_.Exception.Message
             ExitCode = 1
+            RunnerKind = 'InProcessSanitizedSourceBranch'
+            RunnerCommand = 'PowerShell scriptblock from verified source branch'
+            RunnerPath = $SourcePath
+            FailureKind = if ($isConsolePipe) { 'HostUiConsolePipeFailure' } else { 'SourceOperationFailure' }
+            FailureScope = if ($isConsolePipe) { 'HostUi' } else { 'SourceOperation' }
+            ScriptStackTrace = [string]$_.ScriptStackTrace
+            HostUiShimmed = [bool]$runtimeScript.HostUiShimmed
+            HostUiShimReason = [string]$runtimeScript.HostUiShimReason
+            RemovedHostUiLines = @($runtimeScript.RemovedHostUiLines)
+            RuntimeLineCount = [int]$runtimeScript.RuntimeLineCount
         }
     }
 }
@@ -410,7 +527,7 @@ function Invoke-BoostLabToolAction {
 
         [scriptblock]$ScriptRunner = {
             param([string]$ScriptText, [string]$ActionName)
-            Invoke-BoostLabControlPanelSettingsScript -ScriptText $ScriptText -ActionName $ActionName
+            Invoke-BoostLabControlPanelSettingsScript -ScriptText $ScriptText -ActionName $ActionName -SourcePath (Get-BoostLabControlPanelSettingsSourcePath)
         }
     )
 
@@ -463,6 +580,15 @@ function Invoke-BoostLabToolAction {
             Summary = $summary
             RunnerMessage = [string]$runResult.Message
             RunnerExitCode = if ($runResult.PSObject.Properties['ExitCode']) { $runResult.ExitCode } else { $null }
+            RunnerKind = if ($runResult.PSObject.Properties['RunnerKind']) { [string]$runResult.RunnerKind } else { 'CustomScriptRunner' }
+            RunnerCommand = if ($runResult.PSObject.Properties['RunnerCommand']) { [string]$runResult.RunnerCommand } else { 'Custom script runner callback' }
+            RunnerPath = if ($runResult.PSObject.Properties['RunnerPath']) { [string]$runResult.RunnerPath } else { $sourceStatus.SourcePath }
+            RunnerFailureKind = if ($runResult.PSObject.Properties['FailureKind']) { [string]$runResult.FailureKind } else { if ($success) { 'None' } else { 'RunnerFailure' } }
+            RunnerFailureScope = if ($runResult.PSObject.Properties['FailureScope']) { [string]$runResult.FailureScope } else { if ($success) { 'None' } else { 'Unknown' } }
+            RunnerScriptStackTrace = if ($runResult.PSObject.Properties['ScriptStackTrace']) { [string]$runResult.ScriptStackTrace } else { '' }
+            RuntimeHostUiShimmed = if ($runResult.PSObject.Properties['HostUiShimmed']) { [bool]$runResult.HostUiShimmed } else { $false }
+            RuntimeHostUiShimReason = if ($runResult.PSObject.Properties['HostUiShimReason']) { [string]$runResult.HostUiShimReason } else { '' }
+            RuntimeHostUiShimEvidence = if ($runResult.PSObject.Properties['RemovedHostUiLines']) { @($runResult.RemovedHostUiLines) } else { @() }
             ChangesExecuted = $true
             RestoreAvailable = $false
             OpenAvailable = $false
