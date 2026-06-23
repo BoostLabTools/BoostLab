@@ -29,6 +29,7 @@ $script:BoostLabToolMetadata = [ordered]@{
 }
 $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabMitigationRegistryPath = 'HKLM:\SYSTEM\ControlSet001\Control\Session Manager\Memory Management'
+$script:BoostLabMitigationNativeRegistryPath = 'HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management'
 $script:BoostLabMitigationValueNames = @(
     'FeatureSettingsOverrideMask'
     'FeatureSettingsOverride'
@@ -80,6 +81,68 @@ function Get-BoostLabSpectrePropertyValue {
         return $DefaultValue
     }
     return $property.Value
+}
+
+function Get-BoostLabSpectreRegistryOperationPlan {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName
+    )
+
+    $commands = if ($ActionName -eq 'Apply') {
+        @($script:BoostLabApplyCommands)
+    }
+    else {
+        @($script:BoostLabDefaultCommands)
+    }
+
+    $operations = [System.Collections.Generic.List[object]]::new()
+    for ($index = 0; $index -lt $script:BoostLabMitigationValueNames.Count; $index++) {
+        $valueName = [string]$script:BoostLabMitigationValueNames[$index]
+        if ($ActionName -eq 'Apply') {
+            $arguments = @(
+                'add'
+                $script:BoostLabMitigationNativeRegistryPath
+                '/v'
+                $valueName
+                '/t'
+                'REG_DWORD'
+                '/d'
+                '3'
+                '/f'
+            )
+            $operationType = 'SetDword'
+            $expectedType = 'REG_DWORD'
+            $expectedData = 3
+        }
+        else {
+            $arguments = @(
+                'delete'
+                $script:BoostLabMitigationNativeRegistryPath
+                '/v'
+                $valueName
+                '/f'
+            )
+            $operationType = 'DeleteValue'
+            $expectedType = 'Absent'
+            $expectedData = 'Absent'
+        }
+
+        $operations.Add([pscustomobject]@{
+            Action = $ActionName
+            OperationType = $operationType
+            ValueName = $valueName
+            RegistryPath = $script:BoostLabMitigationRegistryPath
+            NativeRegistryPath = $script:BoostLabMitigationNativeRegistryPath
+            ExpectedType = $expectedType
+            ExpectedData = $expectedData
+            CommandText = [string]$commands[$index]
+            Arguments = [string[]]$arguments
+        })
+    }
+
+    return $operations.ToArray()
 }
 
 function New-BoostLabSpectreMeltdownResult {
@@ -215,20 +278,20 @@ function Test-BoostLabToolCompatibility {
         }
     )
 
-    $commandProcessorPath = if ([string]::IsNullOrWhiteSpace($SystemRoot)) {
+    $registryUtilityPath = if ([string]::IsNullOrWhiteSpace($SystemRoot)) {
         ''
     }
     else {
-        Join-Path $SystemRoot 'System32\cmd.exe'
+        Join-Path $SystemRoot 'System32\reg.exe'
     }
-    $commandProcessorAvailable = (
-        -not [string]::IsNullOrWhiteSpace($commandProcessorPath) -and
-        [bool](& $PathChecker $commandProcessorPath)
+    $registryUtilityAvailable = (
+        -not [string]::IsNullOrWhiteSpace($registryUtilityPath) -and
+        [bool](& $PathChecker $registryUtilityPath)
     )
     $supported = (
         $OperatingSystem -eq 'Windows_NT' -and
         $RegistryProviderAvailable -and
-        $commandProcessorAvailable
+        $registryUtilityAvailable
     )
 
     return [pscustomobject]@{
@@ -241,11 +304,11 @@ function Test-BoostLabToolCompatibility {
         elseif (-not $RegistryProviderAvailable) {
             'The PowerShell Registry provider is unavailable.'
         }
-        elseif (-not $commandProcessorAvailable) {
-            'The Windows command processor is unavailable.'
+        elseif (-not $registryUtilityAvailable) {
+            'The Windows registry command utility is unavailable.'
         }
         else {
-            'The required Windows registry and command processor support is available.'
+            'The required Windows registry provider and command utility support is available.'
         }
         Timestamp = Get-Date
     }
@@ -554,14 +617,56 @@ function Test-BoostLabSpectreMeltdownState {
 function Invoke-BoostLabSpectreRegistryCommand {
     param(
         [Parameter(Mandatory)]
-        [string]$CommandText
+        [object]$Operation
     )
 
-    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $output = & $commandProcessorPath /d /c $CommandText 2>&1
-    return [pscustomobject]@{
-        Success = ($LASTEXITCODE -eq 0)
-        Output = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    $arguments = @($Operation.Arguments | ForEach-Object { [string]$_ })
+    $commandText = [string]$Operation.CommandText
+    $valueName = [string]$Operation.ValueName
+    $registryPath = [string]$Operation.RegistryPath
+    $expectedType = [string]$Operation.ExpectedType
+    $expectedData = $Operation.ExpectedData
+    $registryUtilityPath = if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        'reg.exe'
+    }
+    else {
+        Join-Path $env:SystemRoot 'System32\reg.exe'
+    }
+
+    try {
+        if ($arguments.Count -eq 0) {
+            throw 'Registry command argument list is empty.'
+        }
+
+        $output = & $registryUtilityPath @arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        $outputText = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+        return [pscustomobject]@{
+            Success = ($exitCode -eq 0)
+            ExitCode = $exitCode
+            Output = $outputText
+            ErrorReason = if ($exitCode -eq 0) { '' } else { $outputText }
+            ValueName = $valueName
+            RegistryPath = $registryPath
+            ExpectedType = $expectedType
+            ExpectedData = $expectedData
+            CommandText = $commandText
+            Arguments = $arguments
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            ExitCode = $null
+            Output = $_.Exception.Message
+            ErrorReason = $_.Exception.Message
+            ValueName = $valueName
+            RegistryPath = $registryPath
+            ExpectedType = $expectedType
+            ExpectedData = $expectedData
+            CommandText = $commandText
+            Arguments = $arguments
+        }
     }
 }
 
@@ -578,8 +683,8 @@ function Invoke-BoostLabSpectreMeltdownAction {
         },
 
         [scriptblock]$RegistryInvoker = {
-            param($CommandText)
-            Invoke-BoostLabSpectreRegistryCommand -CommandText $CommandText
+            param($Operation)
+            Invoke-BoostLabSpectreRegistryCommand -Operation $Operation
         },
 
         [scriptblock]$RegistryReader = {
@@ -595,18 +700,14 @@ function Invoke-BoostLabSpectreMeltdownAction {
             -Message 'Administrator rights are required to change Spectre / Meltdown mitigation policy.'
     }
 
-    $commands = if ($ActionName -eq 'Apply') {
-        @($script:BoostLabApplyCommands)
-    }
-    else {
-        @($script:BoostLabDefaultCommands)
-    }
+    $operationsToRun = @(Get-BoostLabSpectreRegistryOperationPlan -ActionName $ActionName)
     $operations = [System.Collections.Generic.List[string]]::new()
+    $operationResults = [System.Collections.Generic.List[object]]::new()
     $alreadyDefault = [System.Collections.Generic.List[string]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
 
-    for ($index = 0; $index -lt $commands.Count; $index++) {
-        $valueName = [string]$script:BoostLabMitigationValueNames[$index]
+    foreach ($operation in $operationsToRun) {
+        $valueName = [string]$operation.ValueName
         if ($ActionName -eq 'Default') {
             $preStateResults = @(& $RegistryReader $script:BoostLabMitigationRegistryPath $valueName)
             $preState = if ($preStateResults.Count -gt 0) { $preStateResults[0] } else { $null }
@@ -620,18 +721,38 @@ function Invoke-BoostLabSpectreMeltdownAction {
             }
         }
 
-        $operations.Add($commands[$index])
+        $operations.Add([string]$operation.CommandText)
         try {
-            $commandResult = & $RegistryInvoker $commands[$index]
+            $commandResult = & $RegistryInvoker $operation
+            $commandOutput = [string](Get-BoostLabSpectrePropertyValue $commandResult 'Output' 'Unknown registry command failure')
+            $commandErrorReason = [string](Get-BoostLabSpectrePropertyValue $commandResult 'ErrorReason' $commandOutput)
+            $operationResults.Add([pscustomobject]@{
+                ValueName = $valueName
+                RegistryPath = [string]$operation.RegistryPath
+                ExpectedType = [string]$operation.ExpectedType
+                ExpectedData = $operation.ExpectedData
+                CommandText = [string]$operation.CommandText
+                Arguments = @($operation.Arguments)
+                Success = [bool](Get-BoostLabSpectrePropertyValue $commandResult 'Success' $false)
+                ExitCode = Get-BoostLabSpectrePropertyValue $commandResult 'ExitCode' $null
+                ErrorReason = $commandErrorReason
+            })
             if (-not [bool](Get-BoostLabSpectrePropertyValue $commandResult 'Success' $false)) {
-                $errors.Add(
-                    "{0} command failed: {1}" -f `
-                        $valueName, `
-                        (Get-BoostLabSpectrePropertyValue $commandResult 'Output' 'Unknown registry command failure')
-                )
+                $errors.Add("$valueName command failed: $commandErrorReason")
             }
         }
         catch {
+            $operationResults.Add([pscustomobject]@{
+                ValueName = $valueName
+                RegistryPath = [string]$operation.RegistryPath
+                ExpectedType = [string]$operation.ExpectedType
+                ExpectedData = $operation.ExpectedData
+                CommandText = [string]$operation.CommandText
+                Arguments = @($operation.Arguments)
+                Success = $false
+                ExitCode = $null
+                ErrorReason = $_.Exception.Message
+            })
             $errors.Add("$valueName command failed: $($_.Exception.Message)")
         }
     }
@@ -655,6 +776,7 @@ function Invoke-BoostLabSpectreMeltdownAction {
         DetectedState = $verificationResult.DetectedState
         RegistryPath = $script:BoostLabMitigationRegistryPath
         CommandsAttempted = $operations.ToArray()
+        OperationResults = $operationResults.ToArray()
         AlreadyDefaultValues = $alreadyDefault.ToArray()
         Errors = $errors.ToArray()
         SecurityImpact = if ($ActionName -eq 'Apply') {

@@ -154,6 +154,7 @@ if (
 
 foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
+    'function Get-BoostLabSpectreRegistryOperationPlan'
     'function Get-BoostLabSpectreMeltdownAnalyzeData'
     'function Test-BoostLabSpectreMeltdownState'
     'function New-BoostLabSpectreVerificationCheck'
@@ -234,6 +235,27 @@ try {
         throw 'Spectre / Meltdown Analyze did not return the expected structured security guidance.'
     }
 
+    $operationPlans = & $module {
+        [pscustomobject]@{
+            Apply = @(Get-BoostLabSpectreRegistryOperationPlan -ActionName 'Apply')
+            Default = @(Get-BoostLabSpectreRegistryOperationPlan -ActionName 'Default')
+        }
+    }
+    if (
+        @($operationPlans.Apply).Count -ne 2 -or
+        @($operationPlans.Default).Count -ne 2 -or
+        [string]$operationPlans.Apply[0].CommandText -ne $applyMaskCommand -or
+        [string]$operationPlans.Apply[1].CommandText -ne $applyOverrideCommand -or
+        [string]$operationPlans.Default[0].CommandText -ne $defaultMaskCommand -or
+        [string]$operationPlans.Default[1].CommandText -ne $defaultOverrideCommand -or
+        (@($operationPlans.Apply[0].Arguments) -join '|') -ne 'add|HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management|/v|FeatureSettingsOverrideMask|/t|REG_DWORD|/d|3|/f' -or
+        (@($operationPlans.Apply[1].Arguments) -join '|') -ne 'add|HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management|/v|FeatureSettingsOverride|/t|REG_DWORD|/d|3|/f' -or
+        (@($operationPlans.Default[0].Arguments) -join '|') -ne 'delete|HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management|/v|FeatureSettingsOverrideMask|/f' -or
+        (@($operationPlans.Default[1].Arguments) -join '|') -ne 'delete|HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Session Manager\Memory Management|/v|FeatureSettingsOverride|/f'
+    ) {
+        throw 'Spectre / Meltdown registry operation construction no longer matches the source-defined commands.'
+    }
+
     foreach ($actionName in @('Apply', 'Default')) {
         $cancelledResult = & $module {
             param($Action)
@@ -261,21 +283,24 @@ try {
         }
     }.GetNewClosure()
     $invoker = {
-        param($CommandText)
-        $invocations.Add($CommandText) | Out-Null
-        $valueName = if ($CommandText -match 'FeatureSettingsOverrideMask') {
-            'FeatureSettingsOverrideMask'
-        }
-        else {
-            'FeatureSettingsOverride'
-        }
-        if ($CommandText.StartsWith('reg add')) {
+        param($Operation)
+        $invocations.Add([string]$Operation.CommandText) | Out-Null
+        $valueName = [string]$Operation.ValueName
+        if ([string]$Operation.Action -eq 'Apply') {
             $registryState[$valueName] = 3
         }
         else {
             $registryState[$valueName] = $null
         }
-        [pscustomobject]@{ Success = $true; Output = '' }
+        [pscustomobject]@{
+            Success = $true
+            ExitCode = 0
+            Output = ''
+            ErrorReason = ''
+            ValueName = $valueName
+            CommandText = [string]$Operation.CommandText
+            Arguments = @($Operation.Arguments)
+        }
     }.GetNewClosure()
 
     $applyResult = & $module {
@@ -296,6 +321,95 @@ try {
         $invocations[1] -ne $applyOverrideCommand
     ) {
         throw 'Mocked Spectre / Meltdown Apply path did not preserve the approved behavior.'
+    }
+    if (
+        @($applyResult.Data.OperationResults).Count -ne 2 -or
+        [string]$applyResult.Data.OperationResults[0].ValueName -ne 'FeatureSettingsOverrideMask' -or
+        [string]$applyResult.Data.OperationResults[0].ExpectedType -ne 'REG_DWORD' -or
+        [int]$applyResult.Data.OperationResults[0].ExpectedData -ne 3 -or
+        [string]$applyResult.Data.OperationResults[0].CommandText -ne $applyMaskCommand
+    ) {
+        throw 'Spectre / Meltdown Apply result does not include source-defined operation details.'
+    }
+
+    $wrongRegistryState = @{
+        FeatureSettingsOverrideMask = 3
+        FeatureSettingsOverride = 2
+    }
+    $wrongReader = {
+        param($Path, $ValueName)
+        $value = $wrongRegistryState[$ValueName]
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists = ($null -ne $value)
+            Value = $value
+            DisplayValue = if ($null -eq $value) { 'Absent' } else { [string]$value }
+            Message = 'Mocked registry state.'
+        }
+    }.GetNewClosure()
+    $wrongVerification = & $module {
+        param($RegistryReader)
+        Test-BoostLabSpectreMeltdownState -ActionName 'Apply' -RegistryReader $RegistryReader
+    } $wrongReader
+    if (
+        $wrongVerification.Status -ne 'Failed' -or
+        [string]$wrongVerification.DetectedState.FeatureSettingsOverride -ne '2' -or
+        (@($wrongVerification.Checks | Where-Object { $_.Status -eq 'Failed' }).Count -ne 1)
+    ) {
+        throw 'Spectre / Meltdown Apply verification does not fail clearly for an incorrect mitigation value.'
+    }
+
+    $failingInvoker = {
+        param($Operation)
+        [pscustomobject]@{
+            Success = $false
+            ExitCode = 5
+            Output = 'Access is denied.'
+            ErrorReason = 'Access is denied.'
+            ValueName = [string]$Operation.ValueName
+            CommandText = [string]$Operation.CommandText
+            Arguments = @($Operation.Arguments)
+        }
+    }
+    $failingResult = & $module {
+        param($RegistryInvoker, $RegistryReader)
+        Invoke-BoostLabSpectreMeltdownAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -RegistryInvoker $RegistryInvoker `
+            -RegistryReader $RegistryReader
+    } $failingInvoker $reader
+    if (
+        $failingResult.Success -or
+        $failingResult.Data.CommandStatus -ne 'Failed' -or
+        (@($failingResult.Data.OperationResults).Count -ne 2) -or
+        [string]$failingResult.Data.OperationResults[0].ErrorReason -ne 'Access is denied.' -or
+        (@($failingResult.Data.Errors) -join ' ') -notmatch 'FeatureSettingsOverrideMask command failed: Access is denied.'
+    ) {
+        throw 'Spectre / Meltdown real registry command failures are not reported with value-level diagnostics.'
+    }
+
+    $formatFailureInvoker = {
+        param($Operation)
+        throw [System.FormatException]::new('Index (zero based) must be greater than or equal to zero and less than the size of the argument list.')
+    }
+    $formatFailureResult = & $module {
+        param($RegistryInvoker, $RegistryReader)
+        Invoke-BoostLabSpectreMeltdownAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -RegistryInvoker $RegistryInvoker `
+            -RegistryReader $RegistryReader
+    } $formatFailureInvoker $reader
+    if (
+        $formatFailureResult.Success -or
+        $formatFailureResult.Data.CommandStatus -ne 'Failed' -or
+        (@($formatFailureResult.Data.OperationResults).Count -ne 2) -or
+        [string]$formatFailureResult.Data.OperationResults[0].CommandText -ne $applyMaskCommand -or
+        [int]$formatFailureResult.Data.OperationResults[0].ExpectedData -ne 3 -or
+        (@($formatFailureResult.Data.Errors) -join ' ') -notmatch 'Index \(zero based\)'
+    ) {
+        throw 'Spectre / Meltdown formatting failures are not isolated as structured command failures.'
     }
 
     $invocations.Clear()
