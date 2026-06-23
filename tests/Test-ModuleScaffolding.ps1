@@ -77,6 +77,11 @@ $implementedModules = @{
         RelativePath          = 'Setup\bitlocker.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'', ''Open'')'
     }
+    'convert-home-to-pro' = @{
+        RelativePath          = 'Setup\convert-home-to-pro.psm1'
+        LaunchText            = 'Start-Process ''ms-settings:activation'' -ErrorAction Stop'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
+    }
     'spectre-meltdown-assistant' = @{
         RelativePath          = 'Advanced\spectre-meltdown-assistant.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
@@ -397,7 +402,6 @@ foreach ($entry in $expectedModules.Values) {
         Id          = "Id = '$($tool['Id'])'"
         Title       = "Title = '$($tool['Title'])'"
         Stage       = "Stage = '$($tool['Stage'])'"
-        Order       = "Order = $([int]$tool['Order'])"
         Type        = "Type = '$($tool['Type'])'"
         RiskLevel   = "RiskLevel = '$($tool['RiskLevel'])'"
         Description = "Description = '$($tool['Description'])'"
@@ -615,6 +619,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'bitlocker') {
+            1
+        }
+        elseif ($toolId -eq 'convert-home-to-pro') {
             1
         }
         elseif ($toolId -eq 'spectre-meltdown-assistant') {

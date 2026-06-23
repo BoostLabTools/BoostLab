@@ -35,14 +35,15 @@
             Order = 3
             Tools = @(
                 @{ Order = 1; ToolId = 'bitlocker'; DisplayName = 'BitLocker' }
-                @{ Order = 2; ToolId = 'memory-compression'; DisplayName = 'Memory Compression' }
-                @{ Order = 3; ToolId = 'date-language-region-time'; DisplayName = 'Date Language Region Time' }
-                @{ Order = 4; ToolId = 'startup-apps-settings'; DisplayName = 'Startup Apps (Settings)' }
-                @{ Order = 5; ToolId = 'startup-apps-task-manager'; DisplayName = 'Startup Apps (Task Manager)' }
-                @{ Order = 6; ToolId = 'background-apps'; DisplayName = 'Background Apps' }
-                @{ Order = 7; ToolId = 'edge-settings'; DisplayName = 'Edge Settings' }
-                @{ Order = 8; ToolId = 'store-settings'; DisplayName = 'Store Settings' }
-                @{ Order = 9; ToolId = 'updates-pause'; DisplayName = 'Updates Pause' }
+                @{ Order = 2; ToolId = 'convert-home-to-pro'; DisplayName = 'Convert Home To Pro' }
+                @{ Order = 3; ToolId = 'memory-compression'; DisplayName = 'Memory Compression' }
+                @{ Order = 4; ToolId = 'date-language-region-time'; DisplayName = 'Date Language Region Time' }
+                @{ Order = 5; ToolId = 'startup-apps-settings'; DisplayName = 'Startup Apps (Settings)' }
+                @{ Order = 6; ToolId = 'startup-apps-task-manager'; DisplayName = 'Startup Apps (Task Manager)' }
+                @{ Order = 7; ToolId = 'background-apps'; DisplayName = 'Background Apps' }
+                @{ Order = 8; ToolId = 'edge-settings'; DisplayName = 'Edge Settings' }
+                @{ Order = 9; ToolId = 'store-settings'; DisplayName = 'Store Settings' }
+                @{ Order = 10; ToolId = 'updates-pause'; DisplayName = 'Updates Pause' }
             )
         }
         @{

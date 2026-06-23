@@ -97,10 +97,22 @@
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
+                    Id          = 'convert-home-to-pro'
+                    Title       = 'Convert Home To Pro'
+                    Stage       = 'Setup'
+                    Order       = 2
+                    Type        = 'assistant'
+                    RiskLevel   = 'high'
+                    SourceType  = 'YazanProvidedForgottenScript'
+                    Description = 'Copy the Microsoft generic Windows Pro edition-conversion key and open the Windows Activation product-key flow; activation requires a valid Pro license.'
+                    Actions     = @('Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'memory-compression'
                     Title       = 'Memory Compression'
                     Stage       = 'Setup'
-                    Order       = 2
+                    Order       = 3
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Disable Windows memory compression using the approved recommendation or restore the default enabled state.'
@@ -111,7 +123,7 @@
                     Id          = 'date-language-region-time'
                     Title       = 'Date Language Region Time'
                     Stage       = 'Setup'
-                    Order       = 3
+                    Order       = 4
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the Windows Date & time settings page.'
@@ -122,7 +134,7 @@
                     Id          = 'startup-apps-settings'
                     Title       = 'Startup Apps (Settings)'
                     Stage       = 'Setup'
-                    Order       = 4
+                    Order       = 5
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the Windows Settings page for startup application management.'
@@ -133,7 +145,7 @@
                     Id          = 'startup-apps-task-manager'
                     Title       = 'Startup Apps (Task Manager)'
                     Stage       = 'Setup'
-                    Order       = 5
+                    Order       = 6
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open Task Manager for detailed startup application review.'
@@ -144,7 +156,7 @@
                     Id          = 'background-apps'
                     Title       = 'Background Apps'
                     Stage       = 'Setup'
-                    Order       = 6
+                    Order       = 7
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Disable background apps by machine policy or restore the approved default behavior.'
@@ -155,7 +167,7 @@
                     Id          = 'edge-settings'
                     Title       = 'Edge Settings'
                     Stage       = 'Setup'
-                    Order       = 7
+                    Order       = 8
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Apply the full source-defined Microsoft Edge optimization workflow or run the source-defined Default repair/reset workflow with explicit confirmation.'
@@ -166,7 +178,7 @@
                     Id          = 'store-settings'
                     Title       = 'Store Settings'
                     Stage       = 'Setup'
-                    Order       = 8
+                    Order       = 9
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Optimize Microsoft Store update and preference settings or restore the approved default behavior.'
@@ -177,7 +189,7 @@
                     Id          = 'updates-pause'
                     Title       = 'Updates Pause'
                     Stage       = 'Setup'
-                    Order       = 9
+                    Order       = 10
                     Type        = 'action'
                     RiskLevel   = 'low'
                     Description = 'Pause Windows Update for 365 days or restore the default unpaused registry state.'

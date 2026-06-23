@@ -4,12 +4,12 @@
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 53
-        RuntimeImplementedTools = 53
+        ActiveTools = 54
+        RuntimeImplementedTools = 54
         DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 36
+        UltimateParityImplemented = 37
         NearParityControlled = 15
         ControlledSubset = 2
         ManualHandoffOnly = 0
@@ -151,7 +151,7 @@
             DisplayName = 'Memory Compression'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 2
+            ToolOrder = 3
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -164,7 +164,7 @@
             DisplayName = 'Date Language Region Time'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 3
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -177,7 +177,7 @@
             DisplayName = 'Startup Apps (Settings)'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 4
+            ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -190,7 +190,7 @@
             DisplayName = 'Startup Apps (Task Manager)'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 5
+            ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -203,7 +203,7 @@
             DisplayName = 'Background Apps'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 6
+            ToolOrder = 7
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -216,7 +216,7 @@
             DisplayName = 'Edge Settings'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 7
+            ToolOrder = 8
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -231,7 +231,7 @@
             DisplayName = 'Store Settings'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 8
+            ToolOrder = 9
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -244,7 +244,7 @@
             DisplayName = 'Updates Pause'
             Stage = 'Setup'
             StageOrder = 3
-            ToolOrder = 9
+            ToolOrder = 10
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -266,6 +266,21 @@
             YazanAcceptedNearParity = $true
             FinalProgressStatus = 'DoneYazanAcceptedNearParity'
             NextParityAction = 'Skip; accepted near-parity.'
+        }
+        @{
+            ToolId = 'convert-home-to-pro'
+            DisplayName = 'Convert Home To Pro'
+            Stage = 'Setup'
+            StageOrder = 3
+            ToolOrder = 2
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            SourceType = 'YazanProvidedForgottenScript'
+            GapSummary = 'Yazan-provided forgotten script imported as source-extra; Apply preserves the generic Pro setup key clipboard copy plus Windows Activation/product-key UI flow, while documenting that activation requires a valid Windows Pro license.'
+            YazanFinalException = $false
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'No ordered Ultimate parity work required; source-extra behavior is implemented directly and ordered parity remains complete.'
         }
         @{
             ToolId = 'installers'

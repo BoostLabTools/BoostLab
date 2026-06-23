@@ -61,6 +61,7 @@ function Get-BoostLabCanonicalYazanOrder {
             Name = 'Setup'
             Tools = @(
                 @{ Id = 'bitlocker'; Title = 'BitLocker' }
+                @{ Id = 'convert-home-to-pro'; Title = 'Convert Home To Pro' }
                 @{ Id = 'memory-compression'; Title = 'Memory Compression' }
                 @{ Id = 'date-language-region-time'; Title = 'Date Language Region Time' }
                 @{ Id = 'startup-apps-settings'; Title = 'Startup Apps (Settings)' }

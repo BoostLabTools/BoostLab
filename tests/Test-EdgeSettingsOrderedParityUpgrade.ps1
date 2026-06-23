@@ -66,7 +66,7 @@ $nextTarget = Get-BoostLabNextOrderedParityTarget -ParityBaseline $parityBaselin
 $edgeRecord = @($parityBaseline.Tools | Where-Object { [string]$_.ToolId -eq 'edge-settings' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $edgeRecord) 'Edge Settings parity record is missing.'
 Assert-BoostLabCondition ([int]$edgeRecord.StageOrder -eq 3) 'Edge Settings must remain Setup stage order 3.'
-Assert-BoostLabCondition ([int]$edgeRecord.ToolOrder -eq 7) 'Edge Settings must remain Setup tool order 7.'
+Assert-BoostLabCondition ([int]$edgeRecord.ToolOrder -eq 8) 'Edge Settings must remain Setup tool order 8.'
 Assert-BoostLabCondition ([string]$edgeRecord.RuntimeStatus -eq 'RuntimeImplemented') 'Edge Settings must be runtime implemented after Phase 118.'
 Assert-BoostLabCondition ([string]$edgeRecord.ImplementationLevel -eq 'NearParityControlled') 'Edge Settings must be NearParityControlled after Phase 118.'
 Assert-BoostLabCondition ([string]$edgeRecord.FinalProgressStatus -eq 'DoneYazanAcceptedNearParity') 'Edge Settings must be accepted near parity after Phase 118.'
@@ -108,7 +108,7 @@ $stages = Import-PowerShellDataFile -LiteralPath $stagesPath
 $edgeTool = @($stages.Stages | ForEach-Object { $_.Tools } | Where-Object { [string]$_.Id -eq 'edge-settings' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $edgeTool) 'Edge Settings must remain in the active catalog.'
 Assert-BoostLabCondition ([string]$edgeTool.Stage -eq 'Setup') 'Edge Settings must remain in Setup.'
-Assert-BoostLabCondition ([int]$edgeTool.Order -eq 7) 'Edge Settings catalog order must remain canonical Setup order 7.'
+Assert-BoostLabCondition ([int]$edgeTool.Order -eq 8) 'Edge Settings catalog order must remain canonical Setup order 8.'
 Assert-BoostLabCondition ((@($edgeTool.Actions) -join ',') -eq 'Analyze,Apply,Default,Restore') 'Edge Settings catalog actions must match Phase 118.'
 
 $artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPath

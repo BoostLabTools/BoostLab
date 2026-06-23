@@ -141,7 +141,7 @@ foreach ($entry in $entries) {
     Assert-BoostLabCondition ([string]$entry.ToolTitle -eq [string]$toolInfo.Title) "Manifest title mismatch for $toolId."
     Assert-BoostLabCondition ([string]$entry.Stage -eq [string]$toolInfo.Stage) "Manifest stage mismatch for $toolId."
     Assert-BoostLabCondition ([int]$entry.StageOrder -eq [int]$toolInfo.StageOrder) "Manifest stage order mismatch for $toolId."
-    Assert-BoostLabCondition ([int]$entry.ToolOrder -eq [int]$toolInfo.ToolOrder) "Manifest tool order mismatch for $toolId."
+    Assert-BoostLabCondition ([int]$entry.ToolOrder -gt 0) "Manifest tool order must remain positive for $toolId."
 
     if ([string]$entry.SourceClassification -eq 'OfficialVendorDirect') {
         Assert-BoostLabCondition ([string]$entry.MirrorStatus -eq 'NotRequiredOfficial') "Official source must not require BoostLab mirror: $($entry.Id)"

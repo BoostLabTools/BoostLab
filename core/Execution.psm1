@@ -75,6 +75,10 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Setup\bitlocker.psm1'
         Actions = @('Analyze', 'Apply', 'Default', 'Restore', 'Open')
     }
+    'convert-home-to-pro' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Setup\convert-home-to-pro.psm1'
+        Actions = @('Apply')
+    }
     'installers' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Installers\installers.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')

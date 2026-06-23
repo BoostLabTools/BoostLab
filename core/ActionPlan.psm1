@@ -1047,6 +1047,14 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Do not treat source On, source Off, Apply, or Default as captured-state Restore.')
         $plannedChanges.Add('Perform no system-changing operation.')
     }
+    elseif ($toolId -eq 'convert-home-to-pro' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Verify the Yazan-provided source-extra script checksum using raw-or-canonical PowerShell text verification.')
+        $plannedChanges.Add('Show the source instructions: Disable Internet First; Enter: VK7JG-NPHTM-C97JM-9MPGT-3V66T (Or Paste From Clipboard).')
+        $plannedChanges.Add('Copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T to the clipboard.')
+        $plannedChanges.Add('Open ms-settings:activation.')
+        $plannedChanges.Add('Run SystemSettingsAdminFlows.exe EnterProductKey to show the Windows product-key entry flow.')
+        $plannedChanges.Add('Do not run changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot behavior.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Temporarily set SystemRestorePointCreationFrequency to 0.')
         $plannedChanges.Add('Enable System Restore on C:\ if it is disabled.')
@@ -1678,6 +1686,12 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without selected captured BitLocker state and an approved restore contract.')
         $sideEffects.Add('No BitLocker state, protector state, recovery-key state, external process, registry, or reboot operation occurs.')
     }
+    elseif ($toolId -eq 'convert-home-to-pro' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The generic Windows Pro setup key is copied to the clipboard for edition conversion only.')
+        $sideEffects.Add('Windows Activation settings and the Windows product-key entry UI are opened.')
+        $sideEffects.Add('The generic key does not activate Windows; a valid Windows Pro license is required for activation.')
+        $sideEffects.Add('BoostLab does not run activation bypass, KMS, crack, changepk, slmgr, DISM, registry, service, driver, download, installer, or reboot commands.')
+    }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('System Restore may be enabled on C:\ and remains enabled after the action.')
         $sideEffects.Add('The new restore point consumes space allocated to System Protection.')
@@ -2086,6 +2100,9 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Restore') {
         'BitLocker Restore requires a selected captured BitLocker state and an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
+    }
+    elseif ($toolId -eq 'convert-home-to-pro' -and $ActionName -eq 'Apply') {
+        'BoostLab will show the source instruction "Disable Internet First", copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T, open Activation settings, and open the Windows product-key entry flow. This is edition conversion preparation only; activation still requires a valid Windows Pro license or digital entitlement. No changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot command will run. Continue?'
     }
     elseif ($toolId -eq 'restore-point' -and $ActionName -eq 'Apply') {
         'BoostLab will enable System Restore on C:\ if needed and create a restore point named backup. No restart is required. Do you want to continue?'
