@@ -235,6 +235,11 @@ try {
     Assert-BoostLabCondition ([bool]$compat.Supported) 'Compatibility should pass when source checksum matches.'
     Assert-BoostLabCondition ([string]$compat.SourceChecksumStatus -eq 'Passed') 'Compatibility source checksum should pass.'
 
+    $sourceStatus = & $module { Get-BoostLabEdgeWebViewSourceStatus }
+    Assert-BoostLabCondition ([string]$sourceStatus.ChecksumStatus -eq 'Passed') 'Source status should accept raw or canonical Edge & WebView checksum verification.'
+    Assert-BoostLabCondition ([string]$sourceStatus.ExpectedCanonicalSha256 -eq '3AB92D76307B1CB4C6988DB2201631C14D3B91B32CFFA4F1177B3E1F4F0D7966') 'Edge & WebView canonical source SHA should remain configured.'
+    Assert-BoostLabCondition ([string]$sourceStatus.VerificationMode -in @('ExactRawSha256', 'CanonicalTextSha256')) 'Edge & WebView source verification should report a supported raw or canonical mode.'
+
     $applyPlan = & $module { Get-BoostLabEdgeWebViewOperationPlan -ActionName 'Apply' }
     Assert-BoostLabCondition ([string]$applyPlan.UltimateBranch -eq 'Edge & WebView: Uninstall (Recommended)') 'Apply should map to the source Uninstall branch.'
     Assert-BoostLabCondition ($applyPlan.OperationCount -ge 20) 'Apply operation plan should preserve the full high-risk source sequence.'
@@ -282,13 +287,43 @@ try {
     Assert-BoostLabCondition ([bool]$apply.Success) 'Mocked Apply should succeed.'
     Assert-BoostLabCondition ([string]$apply.Status -eq 'Completed') 'Apply status mismatch.'
     Assert-BoostLabCondition ([bool]$apply.ChangesExecuted) 'Apply should report changes executed after mocked source workflow.'
+    Assert-BoostLabCondition ($null -ne $apply.Plan) 'Apply result must expose the Edge & WebView plan contract at top level.'
+    Assert-BoostLabCondition ($null -ne $apply.Data.Plan) 'Apply result data must include the Edge & WebView workflow plan.'
     Assert-BoostLabCondition (@($apply.Data.ExecutedOperations).Count -eq [int]$apply.Data.Plan.OperationCount) 'Apply must execute every planned source operation.'
+    Assert-BoostLabCondition (@($apply.Data.OperationOutcomes).Count -eq [int]$apply.Data.Plan.OperationCount) 'Apply must report one operation outcome per planned source operation.'
     Assert-BoostLabCondition ('DeviceRegion' -in @($apply.Data.ContextKeys)) 'Apply should preserve DeviceRegion capture/restore context.'
+
+    $noisyExecutor = {
+        param($Operation, $Context)
+
+        [pscustomobject]@{
+            OperationId = [string]$Operation.Id
+            Diagnostic  = 'mock operation pipeline output'
+        }
+    }
+    $noisyApply = & $module { param($Executor) Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -OperationExecutor $Executor } $noisyExecutor
+    Assert-BoostLabCondition ([bool]$noisyApply.Success) 'Mocked Apply should succeed when operation helpers emit pipeline output.'
+    Assert-BoostLabCondition ($null -ne $noisyApply.Plan) 'Noisy Apply result must still expose the top-level plan contract.'
+    Assert-BoostLabCondition ($null -ne $noisyApply.Data.Plan) 'Noisy Apply result data must still be a workflow object with a Plan property.'
+    Assert-BoostLabCondition (@($noisyApply.Data.OperationOutcomes | Where-Object { $_.OutputCount -gt 0 }).Count -eq [int]$noisyApply.Data.Plan.OperationCount) 'Noisy operation output should be captured as operation diagnostics instead of replacing the workflow object.'
+    Assert-BoostLabCondition (-not ([string]$noisyApply.Message).Contains("The property 'Plan' cannot be found")) 'Noisy Apply must not fail with a missing Plan property.'
+
+    $failingExecutor = {
+        param($Operation, $Context)
+
+        throw 'Mock Edge & WebView operation failure'
+    }
+    $failedApply = & $module { param($Executor) Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -OperationExecutor $Executor } $failingExecutor
+    Assert-BoostLabCondition (-not [bool]$failedApply.Success) 'A real mocked operation failure must still fail.'
+    Assert-BoostLabCondition ([string]$failedApply.Status -eq 'Error') 'Operation failure should return Error status.'
+    Assert-BoostLabTextContains -Text ([string]$failedApply.Message) -Needle 'Mock Edge & WebView operation failure' -Description 'Operation failure result'
+    Assert-BoostLabCondition ($null -ne $failedApply.Plan) 'Failed Apply should still expose the planned operation contract for diagnostics.'
 
     $default = & $module { param($Executor) Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed $true -OperationExecutor $Executor } $mockExecutor
     Assert-BoostLabCondition ([bool]$default.Success) 'Mocked Default should succeed.'
     Assert-BoostLabCondition ([string]$default.Status -eq 'Completed') 'Default status mismatch.'
     Assert-BoostLabCondition ([bool]$default.ChangesExecuted) 'Default should report changes executed after mocked source workflow.'
+    Assert-BoostLabCondition ($null -ne $default.Plan) 'Default result must expose the Edge & WebView plan contract at top level.'
     Assert-BoostLabCondition (@($default.Data.ExecutedOperations).Count -eq [int]$default.Data.Plan.OperationCount) 'Default must execute every planned source operation.'
 
     $open = & $module { Invoke-BoostLabToolAction -ActionName 'Open' -Confirmed $true }

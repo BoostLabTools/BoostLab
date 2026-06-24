@@ -292,7 +292,10 @@ function New-BoostLabEdgeWebViewResult {
 
         [bool]$Cancelled = $false,
 
-        [bool]$ChangesExecuted = $false
+        [bool]$ChangesExecuted = $false,
+
+        [AllowNull()]
+        [object]$Plan = $null
     )
 
     [pscustomobject]@{
@@ -308,6 +311,7 @@ function New-BoostLabEdgeWebViewResult {
         Cancelled          = $Cancelled
         ChangesExecuted    = $ChangesExecuted
         Timestamp          = Get-Date
+        Plan               = $Plan
         Data               = $Data
         Warnings           = @($Warnings)
         Errors             = @($Errors)
@@ -509,19 +513,29 @@ function Invoke-BoostLabEdgeWebViewWorkflow {
     $plan = Get-BoostLabEdgeWebViewOperationPlan -ActionName $ActionName
     $context = @{}
     $executed = [System.Collections.Generic.List[object]]::new()
+    $outcomes = [System.Collections.Generic.List[object]]::new()
     foreach ($operation in @($plan.Operations)) {
+        $operationOutput = @()
         if ($OperationExecutor) {
-            & $OperationExecutor $operation $context
+            $operationOutput = @(& $OperationExecutor $operation $context)
         }
         else {
-            Invoke-BoostLabEdgeWebViewOperation -Operation $operation -Context $context
+            $operationOutput = @(Invoke-BoostLabEdgeWebViewOperation -Operation $operation -Context $context)
         }
         $executed.Add($operation)
+        $outcomes.Add([pscustomobject]@{
+            OperationId   = [string]$operation.Id
+            OperationKind = [string]$operation.Kind
+            Status        = 'Completed'
+            OutputCount   = @($operationOutput).Count
+            Output        = @($operationOutput)
+        })
     }
 
     [pscustomobject]@{
         Plan               = $plan
-        ExecutedOperations = @($executed)
+        ExecutedOperations = $executed.ToArray()
+        OperationOutcomes  = $outcomes.ToArray()
         ContextKeys        = @($context.Keys)
     }
 }
@@ -617,6 +631,7 @@ function Invoke-BoostLabToolAction {
             -VerificationStatus ([string]$plan.Source.ChecksumStatus) `
             -Message 'Edge & WebView blocked because source checksum verification failed or the source file is missing.' `
             -Data $plan `
+            -Plan $plan `
             -Errors @('Edge & WebView source checksum did not match the expected value or the source file is missing.')
     }
 
@@ -629,11 +644,15 @@ function Invoke-BoostLabToolAction {
             -VerificationStatus 'NotApplicable' `
             -Message 'Edge & WebView action cancelled before execution. No download, installer, process, file, registry, service, task, package, DISM, cleanup, or system-changing operation occurred.' `
             -Data $plan `
+            -Plan $plan `
             -Cancelled $true
     }
 
     try {
         $workflow = Invoke-BoostLabEdgeWebViewWorkflow -ActionName $canonicalActionName -OperationExecutor $OperationExecutor
+        if ($null -eq $workflow -or $null -eq $workflow.PSObject.Properties['Plan']) {
+            throw 'Edge & WebView workflow did not return the required Plan contract.'
+        }
         $expectedCount = [int]$workflow.Plan.OperationCount
         $actualCount = @($workflow.ExecutedOperations).Count
         if ($actualCount -ne $expectedCount) {
@@ -654,6 +673,7 @@ function Invoke-BoostLabToolAction {
             -VerificationStatus 'Passed' `
             -Message $message `
             -Data $workflow `
+            -Plan $workflow.Plan `
             -ChangesExecuted $true
     }
     catch {
@@ -665,6 +685,7 @@ function Invoke-BoostLabToolAction {
             -VerificationStatus 'Failed' `
             -Message ("Edge & WebView {0} failed: {1}" -f $canonicalActionName, $_.Exception.Message) `
             -Data $plan `
+            -Plan $plan `
             -Errors @($_.Exception.Message)
     }
 }
