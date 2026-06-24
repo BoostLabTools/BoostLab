@@ -291,6 +291,237 @@ try {
         Assert-BloatwareCondition ($storePlan.Operations.Type -contains $requiredType) "Install Store plan is missing operation type $requiredType."
     }
 
+    $expectedStoreHiveValues = @{
+        'HKLM:\Settings\LocalState|VideoAutoplay' = '00,96,9d,69,8d,cd,93,dc,01'
+        'HKLM:\Settings\LocalState|EnableAppInstallNotifications' = '00,36,d0,88,8e,cd,93,dc,01'
+        'HKLM:\Settings\LocalState\PersistentSettings|PersonalizationEnabled' = '00,0d,56,a1,8a,cd,93,dc,01'
+    }
+    $newStoreHiveState = {
+        param(
+            [string]$Path,
+            [string]$Name,
+            [bool]$Exists,
+            [string]$DisplayValue,
+            [string]$Message
+        )
+
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            KeyExists = $true
+            Exists = $Exists
+            Value = $DisplayValue
+            ValueType = if ($Exists) { 'REG_5F5E10B' } else { $null }
+            DisplayValue = if ($Exists) { $DisplayValue } else { 'Absent' }
+            Message = $Message
+            ReadMethod = 'Mock registry provider'
+        }
+    }
+
+    $regQueryOutput = @'
+HKEY_LOCAL_MACHINE\Settings\LocalState
+    VideoAutoplay    REG_5F5E10B    00 96 9d 69 8d cd
+        93 dc 01
+'@
+    $fallbackHiveState = & $module {
+        param($Output)
+        ConvertFrom-BoostLabBloatwareStoreRegQueryOutput `
+            -Output $Output `
+            -Path 'HKLM:\Settings\LocalState' `
+            -Name 'VideoAutoplay'
+    } $regQueryOutput
+    Assert-BloatwareCondition ([string]$fallbackHiveState.ReadMethod -eq 'reg query') 'Bloatware Store hive custom value reader must support reg query fallback.'
+    Assert-BloatwareCondition ([string]$fallbackHiveState.ValueType -eq 'REG_5F5E10B') 'Bloatware Store hive fallback must preserve the custom REG_5F5E10B type.'
+    Assert-BloatwareCondition ([string]$fallbackHiveState.DisplayValue -eq $expectedStoreHiveValues['HKLM:\Settings\LocalState|VideoAutoplay']) 'Bloatware Store hive fallback must normalize custom value bytes.'
+
+    $successfulHiveEvents = [System.Collections.Generic.List[string]]::new()
+    $successfulHiveCommandInvoker = {
+        param($CommandText)
+        $successfulHiveEvents.Add("COMMAND:$CommandText")
+        [pscustomobject]@{
+            ExitCode = 0
+            StandardOutput = 'The operation completed successfully.'
+            StandardError = ''
+        }
+    }.GetNewClosure()
+    $successfulHiveFileWriter = {
+        param($Path, $Content)
+        $successfulHiveEvents.Add("FILE:$Path")
+        if ($Content -notmatch 'hex\(5f5e10b\)' -or $Content -notmatch 'PersonalizationEnabled') {
+            throw 'Mock Bloatware Store settings registry payload did not preserve source custom values.'
+        }
+    }.GetNewClosure()
+    $successfulHivePathTester = {
+        param($Path)
+        $successfulHiveEvents.Add("PATH:$Path")
+        return $true
+    }.GetNewClosure()
+    $successfulHiveReader = {
+        param($Path, $Name)
+        $successfulHiveEvents.Add("READ:$Path|$Name")
+        $expected = $expectedStoreHiveValues["$Path|$Name"]
+        & $newStoreHiveState $Path $Name $true $expected 'Mock Store hive value detected before unload.'
+    }.GetNewClosure()
+    $successfulHiveDelay = {
+        param($Seconds)
+        $successfulHiveEvents.Add("DELAY:$Seconds")
+    }.GetNewClosure()
+    $successfulHiveImport = & $module {
+        param($CommandInvoker, $FileWriter, $PathTester, $Reader, $Delay)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\Settings\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryCommandInvoker $CommandInvoker `
+            -RegistryFileWriter $FileWriter `
+            -PathTester $PathTester `
+            -RegistryReader $Reader `
+            -DelayInvoker $Delay
+    } $successfulHiveCommandInvoker $successfulHiveFileWriter $successfulHivePathTester $successfulHiveReader $successfulHiveDelay
+    Assert-BloatwareCondition ([bool]$successfulHiveImport.Success) 'Bloatware StoreSettingsHiveImport must succeed when native reg commands return exit code 0 with success text.'
+    Assert-BloatwareCondition ([string]$successfulHiveImport.RegistryImportWriteEncoding -eq 'Unicode') 'Bloatware StoreSettingsHiveImport must write the .reg payload as Unicode.'
+    Assert-BloatwareCondition (@($successfulHiveImport.StoreHiveValuesCaptured).Count -eq 3) 'Bloatware StoreSettingsHiveImport must capture all source-defined Store hive values before unload.'
+    Assert-BloatwareCondition ([string]$successfulHiveImport.VerificationStatus -eq 'Passed') 'Bloatware StoreSettingsHiveImport verification status must pass when all custom values match.'
+    Assert-BloatwareCondition ([string]$successfulHiveImport.StoreReRegistrationRuntimeNote -like '*separate from settings.dat hive import verification*') 'Bloatware Store re-registration note must not masquerade as a hive import failure.'
+    $successfulHiveEventText = $successfulHiveEvents -join '|'
+    foreach ($requiredEventText in @(
+        'FILE:C:\Windows\Temp\windowsstore.reg'
+        'PATH:C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\Settings\settings.dat'
+        'COMMAND:reg load "HKLM\Settings" "C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\Settings\settings.dat"'
+        'COMMAND:reg import "C:\Windows\Temp\windowsstore.reg"'
+        'COMMAND:reg unload "HKLM\Settings"'
+    )) {
+        Assert-BloatwareCondition ($successfulHiveEventText.Contains($requiredEventText)) "Bloatware StoreSettingsHiveImport did not record: $requiredEventText"
+    }
+    $importEventIndex = $successfulHiveEventText.IndexOf('COMMAND:reg import "C:\Windows\Temp\windowsstore.reg"')
+    $unloadEventIndex = $successfulHiveEventText.IndexOf('COMMAND:reg unload "HKLM\Settings"')
+    foreach ($hiveValueRead in @(
+        'READ:HKLM:\Settings\LocalState|VideoAutoplay'
+        'READ:HKLM:\Settings\LocalState|EnableAppInstallNotifications'
+        'READ:HKLM:\Settings\LocalState\PersistentSettings|PersonalizationEnabled'
+    )) {
+        $readIndex = $successfulHiveEventText.IndexOf($hiveValueRead)
+        Assert-BloatwareCondition ($readIndex -gt $importEventIndex -and $readIndex -lt $unloadEventIndex) "Bloatware StoreSettingsHiveImport must read $hiveValueRead after import and before unload."
+    }
+
+    $missingSettingsDatEvents = [System.Collections.Generic.List[string]]::new()
+    $missingSettingsDatImport = & $module {
+        param($Events)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Missing\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { param($Path, $Content) $Events.Add("FILE:$Path") } `
+            -PathTester { param($Path) $Events.Add("PATH:$Path"); return $false } `
+            -RegistryCommandInvoker { throw 'Registry commands must not run when settings.dat is missing.' } `
+            -DelayInvoker { }
+    } $missingSettingsDatEvents
+    Assert-BloatwareCondition (-not [bool]$missingSettingsDatImport.Success) 'Bloatware StoreSettingsHiveImport must fail closed when settings.dat is missing.'
+    Assert-BloatwareCondition (($missingSettingsDatEvents.ToArray() -join '|') -eq 'FILE:C:\Windows\Temp\windowsstore.reg|PATH:C:\Missing\settings.dat') 'Bloatware StoreSettingsHiveImport must not load/import/unload when settings.dat is missing.'
+
+    $loadFailureEvents = [System.Collections.Generic.List[string]]::new()
+    $loadFailureImport = & $module {
+        param($Events)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Mock\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { } `
+            -PathTester { return $true } `
+            -RegistryCommandInvoker {
+                param($CommandText)
+                $Events.Add("COMMAND:$CommandText")
+                [pscustomobject]@{ ExitCode = 5; StandardOutput = ''; StandardError = '' }
+            } `
+            -DelayInvoker { }
+    } $loadFailureEvents
+    Assert-BloatwareCondition (-not [bool]$loadFailureImport.Success) 'Bloatware StoreSettingsHiveImport must fail closed when reg load fails.'
+    Assert-BloatwareCondition ([string]$loadFailureImport.Message -like '*LoadStoreSettingsHive returned exit code 5*') 'Bloatware StoreSettingsHiveImport must report a non-empty reg load diagnostic.'
+    Assert-BloatwareCondition (($loadFailureEvents.ToArray() -join '|') -eq 'COMMAND:reg load "HKLM\Settings" "C:\Mock\settings.dat"') 'Bloatware StoreSettingsHiveImport must not import or unload after a failed hive load.'
+
+    $missingValueEvents = [System.Collections.Generic.List[string]]::new()
+    $missingValueReader = {
+        param($Path, $Name)
+        $missingValueEvents.Add("READ:$Path|$Name")
+        if ($Name -eq 'EnableAppInstallNotifications') {
+            return (& $newStoreHiveState $Path $Name $false '' 'Mock value absent after import.')
+        }
+        & $newStoreHiveState $Path $Name $true $expectedStoreHiveValues["$Path|$Name"] 'Mock Store hive value detected.'
+    }.GetNewClosure()
+    $missingValueCommandInvoker = {
+        param($CommandText)
+        $missingValueEvents.Add("COMMAND:$CommandText")
+        [pscustomobject]@{ ExitCode = 0; StandardOutput = ''; StandardError = '' }
+    }.GetNewClosure()
+    $missingValueImport = & $module {
+        param($CommandInvoker, $Reader)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Mock\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { } `
+            -PathTester { return $true } `
+            -RegistryCommandInvoker $CommandInvoker `
+            -RegistryReader $Reader `
+            -DelayInvoker { }
+    } $missingValueCommandInvoker $missingValueReader
+    Assert-BloatwareCondition (-not [bool]$missingValueImport.Success) 'Bloatware StoreSettingsHiveImport must fail when a source-required Store hive value is absent.'
+    Assert-BloatwareCondition ([string]$missingValueImport.Message -like '*EnableAppInstallNotifications was absent*') 'Bloatware StoreSettingsHiveImport must identify the absent Store hive value.'
+    Assert-BloatwareCondition (($missingValueEvents.ToArray() -join '|').Contains('COMMAND:reg unload "HKLM\Settings"')) 'Bloatware StoreSettingsHiveImport must unload the hive after verification failure.'
+
+    $mismatchValueReader = {
+        param($Path, $Name)
+        if ($Name -eq 'PersonalizationEnabled') {
+            return (& $newStoreHiveState $Path $Name $true '00,00,00,00,00,00,00,00,00' 'Mock value mismatch.')
+        }
+        & $newStoreHiveState $Path $Name $true $expectedStoreHiveValues["$Path|$Name"] 'Mock Store hive value detected.'
+    }.GetNewClosure()
+    $mismatchValueImport = & $module {
+        param($Reader)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Mock\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { } `
+            -PathTester { return $true } `
+            -RegistryCommandInvoker { [pscustomobject]@{ ExitCode = 0; StandardOutput = ''; StandardError = '' } } `
+            -RegistryReader $Reader `
+            -DelayInvoker { }
+    } $mismatchValueReader
+    Assert-BloatwareCondition (-not [bool]$mismatchValueImport.Success) 'Bloatware StoreSettingsHiveImport must fail when a source-required Store hive value has wrong bytes.'
+    Assert-BloatwareCondition ([string]$mismatchValueImport.Message -like '*PersonalizationEnabled mismatch*') 'Bloatware StoreSettingsHiveImport must report expected and actual bytes for mismatched Store hive values.'
+
+    $unloadFailureReader = {
+        param($Path, $Name)
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            KeyExists = $true
+            Exists = $true
+            ValueType = 'REG_5F5E10B'
+            DisplayValue = $expectedStoreHiveValues["$Path|$Name"]
+            Message = 'Mock Store hive value detected.'
+        }
+    }.GetNewClosure()
+    $unloadFailureImport = & $module {
+        param($Reader)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Mock\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { } `
+            -PathTester { return $true } `
+            -RegistryCommandInvoker {
+                param($CommandText)
+                if ($CommandText -eq 'reg unload "HKLM\Settings"') {
+                    return [pscustomobject]@{ ExitCode = 6; StandardOutput = ''; StandardError = 'Mock unload failure.' }
+                }
+                [pscustomobject]@{ ExitCode = 0; StandardOutput = ''; StandardError = '' }
+            } `
+            -RegistryReader $Reader `
+            -DelayInvoker { }
+    } $unloadFailureReader
+    Assert-BloatwareCondition (-not [bool]$unloadFailureImport.Success) 'Bloatware StoreSettingsHiveImport must fail closed when hive unload fails.'
+    Assert-BloatwareCondition ([string]$unloadFailureImport.Message -like '*UnloadStoreSettingsHive failed*Mock unload failure*') 'Bloatware StoreSettingsHiveImport must report hive unload failure details.'
+
     $uwpPlan = Get-BoostLabBloatwareOperationPlan -Branch 'InstallAllUwpApps'
     Assert-BloatwareCondition ($uwpPlan.Operations.Type -contains 'AppxRegisterAll') 'Install all UWP apps plan must re-register all AppX packages.'
 

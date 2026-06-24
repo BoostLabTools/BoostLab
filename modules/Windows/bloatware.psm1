@@ -54,6 +54,23 @@ $script:BoostLabBranchTitles = [ordered]@{
     InstallRemoteDesktopConnection = 'Install: Remote Desktop Connection'
     InstallSnippingTool = 'Install: Snipping Tool'
 }
+$script:BoostLabBloatwareStoreHiveValues = @(
+    @{
+        Path = 'HKLM:\Settings\LocalState'
+        Name = 'VideoAutoplay'
+        Expected = '00,96,9d,69,8d,cd,93,dc,01'
+    }
+    @{
+        Path = 'HKLM:\Settings\LocalState'
+        Name = 'EnableAppInstallNotifications'
+        Expected = '00,36,d0,88,8e,cd,93,dc,01'
+    }
+    @{
+        Path = 'HKLM:\Settings\LocalState\PersistentSettings'
+        Name = 'PersonalizationEnabled'
+        Expected = '00,0d,56,a1,8a,cd,93,dc,01'
+    }
+)
 
 function Invoke-BoostLabBloatwareVerifiedArtifactDownload {
     param(
@@ -802,6 +819,467 @@ Windows Registry Editor Version 5.00
 '@
 }
 
+function Test-BoostLabBloatwareStoreByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    $text = if ($null -eq $Value) { '' } else { [string]$Value }
+    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+}
+
+function ConvertTo-BoostLabBloatwareRegExePath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ProviderPath
+    )
+
+    if ($ProviderPath -like 'HKLM:\*') {
+        return $ProviderPath -replace '^HKLM:\\', 'HKLM\'
+    }
+
+    return $ProviderPath
+}
+
+function ConvertFrom-BoostLabBloatwareStoreRegQueryOutput {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Output,
+
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $lines = @($Output -split "\r?\n")
+    $valueLineIndex = -1
+    $valueType = 'Unknown'
+    $dataParts = [System.Collections.Generic.List[string]]::new()
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ($line -match ('^\s*{0}\s+(?<Type>\S+)\s*(?<Data>.*)$' -f [regex]::Escape($Name))) {
+            $valueLineIndex = $index
+            $valueType = [string]$Matches.Type
+            if (-not [string]::IsNullOrWhiteSpace([string]$Matches.Data)) {
+                $dataParts.Add([string]$Matches.Data)
+            }
+            break
+        }
+    }
+
+    if ($valueLineIndex -lt 0) {
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            KeyExists     = $true
+            Exists        = $false
+            Value         = $null
+            ValueType     = $null
+            DisplayValue  = 'Absent'
+            Message       = 'reg query did not return the requested value.'
+            ReadMethod    = 'reg query'
+        }
+    }
+
+    for ($index = $valueLineIndex + 1; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        if ($line -match '^\s*HKEY_' -or $line -match '^\s*\S+\s+REG_\S+') {
+            break
+        }
+        $dataParts.Add($line.Trim())
+    }
+
+    $dataText = (@($dataParts.ToArray()) -join ' ').Trim()
+    $byteMatches = @([regex]::Matches($dataText, '(?i)\b[0-9a-f]{2}\b') | ForEach-Object { $_.Value.ToLowerInvariant() })
+    $displayValue = if ($byteMatches.Count -gt 0) {
+        $byteMatches -join ','
+    }
+    else {
+        $dataText
+    }
+
+    return [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $true
+        Value         = $dataText
+        ValueType     = $valueType
+        DisplayValue  = $displayValue
+        Message       = "Registry value detected by reg query at $Path."
+        ReadMethod    = 'reg query'
+    }
+}
+
+function ConvertTo-BoostLabBloatwareValueDisplay {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return 'Absent'
+    }
+    if ($Value -is [byte[]]) {
+        return (@($Value | ForEach-Object { $_.ToString('x2') }) -join ',')
+    }
+
+    return [string]$Value
+}
+
+function Get-BoostLabBloatwareStoreHiveRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [scriptblock]$RegistryReader = {
+            param($RequestedPath, $RequestedName)
+            if (-not (Test-Path -LiteralPath $RequestedPath -PathType Container)) {
+                return [pscustomobject]@{
+                    ReadSucceeded = $true
+                    KeyExists     = $false
+                    Exists        = $false
+                    Value         = $null
+                    DisplayValue  = 'Absent'
+                    Message       = 'Registry path is absent.'
+                }
+            }
+
+            $item = Get-ItemProperty -LiteralPath $RequestedPath -ErrorAction Stop
+            $property = $item.PSObject.Properties[$RequestedName]
+            if ($null -eq $property) {
+                return [pscustomobject]@{
+                    ReadSucceeded = $true
+                    KeyExists     = $true
+                    Exists        = $false
+                    Value         = $null
+                    DisplayValue  = 'Absent'
+                    Message       = 'Registry value is absent.'
+                }
+            }
+
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists     = $true
+                Exists        = $true
+                Value         = $property.Value
+                DisplayValue  = ConvertTo-BoostLabBloatwareValueDisplay -Value $property.Value
+                Message       = 'Registry value detected.'
+            }
+        },
+
+        [scriptblock]$RegistryCommandInvoker = {
+            param($CommandText)
+            Invoke-BoostLabBloatwareRegistryCommand -CommandText $CommandText
+        }
+    )
+
+    $providerState = $null
+    if ($null -ne $RegistryReader) {
+        $providerResults = @(& $RegistryReader $Path $Name)
+        if ($providerResults.Count -gt 0) {
+            $providerState = $providerResults[0]
+        }
+    }
+
+    if (
+        $null -ne $providerState -and
+        [bool]$providerState.ReadSucceeded -and
+        [bool]$providerState.Exists -and
+        (Test-BoostLabBloatwareStoreByteDisplay -Value $providerState.DisplayValue)
+    ) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider' -Force
+        return $providerState
+    }
+
+    $queryPath = ConvertTo-BoostLabBloatwareRegExePath -ProviderPath $Path
+    try {
+        $queryResult = Invoke-BoostLabBloatwareCheckedRegistryCommand `
+            -CommandText ('reg query "{0}" /v "{1}"' -f $queryPath, $Name) `
+            -OperationName "ReadStoreHiveValue:$Name" `
+            -RegistryCommandInvoker $RegistryCommandInvoker
+        $queryOutput = (@($queryResult.StandardOutput, $queryResult.StandardError) -join [Environment]::NewLine)
+        $queryState = ConvertFrom-BoostLabBloatwareStoreRegQueryOutput -Output $queryOutput -Path $Path -Name $Name
+        if ([bool]$queryState.Exists) {
+            return $queryState
+        }
+    }
+    catch {
+        if ($null -ne $providerState) {
+            $providerState | Add-Member -NotePropertyName 'FallbackMessage' -NotePropertyValue $_.Exception.Message -Force
+            $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider; reg query fallback failed' -Force
+            return $providerState
+        }
+
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            KeyExists     = $null
+            Exists        = $false
+            Value         = $null
+            DisplayValue  = 'Unknown'
+            Message       = $_.Exception.Message
+            ReadMethod    = 'reg query'
+        }
+    }
+
+    if ($null -ne $providerState) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider; reg query fallback' -Force
+        return $providerState
+    }
+
+    return [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $false
+        Value         = $null
+        DisplayValue  = 'Absent'
+        Message       = 'Store hive value was not found by PowerShell provider or reg query.'
+        ReadMethod    = 'PowerShell registry provider; reg query fallback'
+    }
+}
+
+function Invoke-BoostLabBloatwareRegistryCommand {
+    param(
+        [Parameter(Mandatory)]
+        [string]$CommandText,
+
+        [scriptblock]$ProcessRunner = $null
+    )
+
+    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        throw 'The Windows system directory is unavailable.'
+    }
+    $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
+    if (-not (Test-Path -LiteralPath $commandProcessorPath -PathType Leaf)) {
+        throw 'cmd.exe was not found.'
+    }
+
+    if ($null -ne $ProcessRunner) {
+        return (& $ProcessRunner $commandProcessorPath $CommandText)
+    }
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $commandProcessorPath
+    $startInfo.Arguments = "/d /s /c $CommandText"
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.CreateNoWindow = $true
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    [void]$process.Start()
+    $standardOutput = $process.StandardOutput.ReadToEnd()
+    $standardError = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+
+    [pscustomobject]@{
+        ExitCode       = [int]$process.ExitCode
+        StandardOutput = $standardOutput
+        StandardError  = $standardError
+    }
+}
+
+function Invoke-BoostLabBloatwareCheckedRegistryCommand {
+    param(
+        [Parameter(Mandatory)]
+        [string]$CommandText,
+
+        [Parameter(Mandatory)]
+        [string]$OperationName,
+
+        [scriptblock]$RegistryCommandInvoker = {
+            param($RequestedCommandText)
+            Invoke-BoostLabBloatwareRegistryCommand -CommandText $RequestedCommandText
+        }
+    )
+
+    try {
+        $results = @(& $RegistryCommandInvoker $CommandText)
+    }
+    catch {
+        throw "$OperationName failed: $($_.Exception.Message)"
+    }
+
+    $result = if ($results.Count -gt 0 -and $null -ne $results[0]) {
+        $results[0]
+    }
+    else {
+        [pscustomobject]@{
+            ExitCode       = 0
+            StandardOutput = ''
+            StandardError  = ''
+        }
+    }
+
+    $exitCodeProperty = $result.PSObject.Properties['ExitCode']
+    if ($null -eq $exitCodeProperty) {
+        return $result
+    }
+
+    $exitCode = [int]$exitCodeProperty.Value
+    if ($exitCode -ne 0) {
+        $standardError = if ($null -ne $result.PSObject.Properties['StandardError']) {
+            $result.PSObject.Properties['StandardError'].Value
+        }
+        else {
+            ''
+        }
+        $standardOutput = if ($null -ne $result.PSObject.Properties['StandardOutput']) {
+            $result.PSObject.Properties['StandardOutput'].Value
+        }
+        else {
+            ''
+        }
+        $detail = (@($standardError, $standardOutput) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ' '
+        $detail = $detail.Trim()
+        if ([string]::IsNullOrWhiteSpace($detail)) {
+            $detail = "$OperationName returned exit code $exitCode."
+        }
+
+        throw "$OperationName failed: $detail"
+    }
+
+    return $result
+}
+
+function Invoke-BoostLabBloatwareStoreSettingsHiveImport {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegFile,
+
+        [Parameter(Mandatory)]
+        [string]$SettingsDat,
+
+        [Parameter(Mandatory)]
+        [string]$RegContent,
+
+        [scriptblock]$RegistryFileWriter = {
+            param($Path, $Content)
+            Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop
+        },
+
+        [scriptblock]$PathTester = {
+            param($Path)
+            Test-Path -LiteralPath $Path -PathType Leaf
+        },
+
+        [scriptblock]$RegistryCommandInvoker = {
+            param($CommandText)
+            Invoke-BoostLabBloatwareRegistryCommand -CommandText $CommandText
+        },
+
+        [scriptblock]$RegistryReader = $null,
+
+        [scriptblock]$DelayInvoker = {
+            param($Seconds)
+            Start-Sleep -Seconds $Seconds
+        }
+    )
+
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $capturedStoreHiveStates = [System.Collections.Generic.List[object]]::new()
+    $commands = [System.Collections.Generic.List[string]]::new()
+    $hiveLoaded = $false
+
+    try {
+        & $RegistryFileWriter $RegFile $RegContent | Out-Null
+
+        if (-not [bool](& $PathTester $SettingsDat)) {
+            throw "Microsoft Store settings.dat was not found: $SettingsDat"
+        }
+
+        $loadCommand = 'reg load "HKLM\Settings" "{0}"' -f $SettingsDat
+        $commands.Add($loadCommand)
+        Invoke-BoostLabBloatwareCheckedRegistryCommand -CommandText $loadCommand -OperationName 'LoadStoreSettingsHive' -RegistryCommandInvoker $RegistryCommandInvoker | Out-Null
+        $hiveLoaded = $true
+
+        $importCommand = 'reg import "{0}"' -f $RegFile
+        $commands.Add($importCommand)
+        Invoke-BoostLabBloatwareCheckedRegistryCommand -CommandText $importCommand -OperationName 'ImportStoreSettingsRegistryPayload' -RegistryCommandInvoker $RegistryCommandInvoker | Out-Null
+
+        foreach ($definition in $script:BoostLabBloatwareStoreHiveValues) {
+            $state = Get-BoostLabBloatwareStoreHiveRegistryValue `
+                -Path ([string]$definition.Path) `
+                -Name ([string]$definition.Name) `
+                -RegistryReader $RegistryReader `
+                -RegistryCommandInvoker $RegistryCommandInvoker
+            $state | Add-Member -NotePropertyName 'Path' -NotePropertyValue ([string]$definition.Path) -Force
+            $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue ([string]$definition.Name) -Force
+            $state | Add-Member -NotePropertyName 'ExpectedBytes' -NotePropertyValue ([string]$definition.Expected) -Force
+            $state | Add-Member -NotePropertyName 'ActualBytes' -NotePropertyValue ([string]$state.DisplayValue) -Force
+            $state | Add-Member -NotePropertyName 'ValueExists' -NotePropertyValue ([bool]$state.Exists) -Force
+            if ($null -eq $state.PSObject.Properties['ValueType']) {
+                $state | Add-Member -NotePropertyName 'ValueType' -NotePropertyValue 'Unknown' -Force
+            }
+            $capturedStoreHiveStates.Add($state)
+
+            if (-not [bool]$state.ReadSucceeded) {
+                $errors.Add("$($definition.Name) could not be read before hive unload: $($state.Message)")
+                continue
+            }
+            if (-not [bool]$state.Exists) {
+                $errors.Add("$($definition.Name) was absent after Store settings.dat import.")
+                continue
+            }
+            if ([string]$state.DisplayValue -ne [string]$definition.Expected) {
+                $errors.Add("$($definition.Name) mismatch after Store settings.dat import. Expected $($definition.Expected), found $($state.DisplayValue).")
+            }
+        }
+    }
+    catch {
+        $errors.Add($_.Exception.Message)
+    }
+    finally {
+        if ($hiveLoaded) {
+            [gc]::Collect()
+            & $DelayInvoker 2 | Out-Null
+            try {
+                $unloadCommand = 'reg unload "HKLM\Settings"'
+                $commands.Add($unloadCommand)
+                Invoke-BoostLabBloatwareCheckedRegistryCommand -CommandText $unloadCommand -OperationName 'UnloadStoreSettingsHive' -RegistryCommandInvoker $RegistryCommandInvoker | Out-Null
+            }
+            catch {
+                $errors.Add($_.Exception.Message)
+            }
+        }
+    }
+
+    $success = ($errors.Count -eq 0)
+    $message = if ($success) {
+        'Store settings.dat hive payload imported and verified.'
+    }
+    else {
+        "Store settings.dat hive import failed: $($errors.ToArray() -join ' ')"
+    }
+
+    [pscustomobject]@{
+        Success                         = $success
+        Message                         = $message
+        VerificationStatus              = if ($success) { 'Passed' } else { 'Failed' }
+        RegFilePath                     = $RegFile
+        StoreHiveFilePath               = $SettingsDat
+        StoreHiveMountPath              = 'HKLM:\Settings'
+        RegistryImportWriteEncoding     = 'Unicode'
+        RegistryImportWriteMethod       = 'reg import .reg file with source-defined hex(5f5e10b) custom value types'
+        SourceEquivalentCommand         = 'Set-Content windowsstore.reg; reg load HKLM\Settings settings.dat; reg import windowsstore.reg; reg unload HKLM\Settings'
+        CommandsAttempted               = $commands.ToArray()
+        StoreHiveValuesCaptured         = $capturedStoreHiveStates.ToArray()
+        RequiredStoreHiveValues         = @($script:BoostLabBloatwareStoreHiveValues | ForEach-Object { "$($_.Path)\$($_.Name)" })
+        Errors                          = $errors.ToArray()
+        StoreReRegistrationRuntimeNote  = 'Microsoft Store AppX re-registration can require a Windows session refresh or restart before Store UI delivery fully settles; this note is separate from settings.dat hive import verification.'
+    }
+}
+
 function Get-BoostLabBloatwarePreflightOperations {
     [CmdletBinding()]
     [OutputType([object[]])]
@@ -1067,14 +1545,15 @@ function Invoke-BoostLabBloatwareRealOperation {
                 } 2>$null
             }
             'StoreSettingsHiveImport' {
-                Set-Content -Path ([string]$p.RegFile) -Value ([string]$p.RegContent) -Force
-                reg load 'HKLM\Settings' ([string]$p.SettingsDat) >$null 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    reg import ([string]$p.RegFile) >$null 2>&1
-                    [gc]::Collect()
-                    Start-Sleep -Seconds 2
-                    reg unload 'HKLM\Settings' >$null 2>&1
-                }
+                $hiveImportResult = Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+                    -RegFile ([string]$p.RegFile) `
+                    -SettingsDat ([string]$p.SettingsDat) `
+                    -RegContent ([string]$p.RegContent)
+                return New-BoostLabBloatwareOperationResult `
+                    -Operation $Operation `
+                    -Success ([bool]$hiveImportResult.Success) `
+                    -Message ([string]$hiveImportResult.Message) `
+                    -Data $hiveImportResult
             }
             'DisplayList' { }
             'DownloadFile' {
