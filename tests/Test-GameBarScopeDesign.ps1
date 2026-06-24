@@ -241,6 +241,107 @@ try {
     Assert-GameBarCondition ([string]$failedAppxWorkflow.CommandStatus -eq 'Failed') 'GameBar branch must report failed command status on real AppX failure.'
     Assert-GameBarCondition (($appxFailureSeen.ToArray() -join ',') -eq 'StopProcess,RemoveAppxWhereNameLike') 'GameBar branch must not continue after a real AppX operation failure.'
 
+    $gameInputUninstallEntries = @(
+        [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
+        [pscustomobject]@{ PSChildName = '{NULL-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NullDisplayName'; DisplayName = $null }
+        [pscustomobject]@{ PSChildName = '{EMPTY-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\EmptyDisplayName'; DisplayName = '' }
+        [pscustomobject]@{ PSChildName = '{OTHER-GUID}'; PSPath = 'HKLM:\Mock\Other'; DisplayName = 'Contoso Input Runtime' }
+        [pscustomobject]@{ PSChildName = '{GAMEINPUT-GUID}'; PSPath = 'HKLM:\Mock\GameInput'; DisplayName = 'Microsoft GameInput' }
+    )
+    $gameInputUninstallArguments = [System.Collections.Generic.List[string]]::new()
+    $gameInputUninstallResult = & $module {
+        param($Entries, $Arguments)
+        Invoke-BoostLabGameBarMsiUninstallByDisplayName `
+            -RegistryPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -ArgumentsTemplate '/x {0} /qn /norestart' `
+            -EntryEnumerator { param($Path) $Entries } `
+            -Uninstaller { param($Entry, $ArgumentList) $Arguments.Add($ArgumentList) }
+    } $gameInputUninstallEntries $gameInputUninstallArguments
+    Assert-GameBarCondition ([bool]$gameInputUninstallResult.Success) 'GameBar GameInput uninstall helper must succeed when only missing/no-match entries and one matching uninstall succeed.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.InspectedCount -eq 5) 'GameBar GameInput uninstall helper inspected count mismatch.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.MissingDisplayNameCount -eq 3) 'GameBar GameInput uninstall helper must count missing/null/empty DisplayName entries.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.NoMatchCount -eq 1) 'GameBar GameInput uninstall helper must count non-matching DisplayName entries.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.MatchedCount -eq 1) 'GameBar GameInput uninstall helper must count matching Microsoft GameInput entries.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.UninstallAttemptedCount -eq 1) 'GameBar GameInput uninstall helper must attempt uninstall only for matching entries.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.UninstallSucceededCount -eq 1) 'GameBar GameInput uninstall helper must count successful Microsoft GameInput uninstall.'
+    Assert-GameBarCondition (($gameInputUninstallArguments.ToArray() -join ',') -eq '/x {GAMEINPUT-GUID} /qn /norestart') 'GameBar GameInput uninstall helper must preserve the source msiexec argument template.'
+    Assert-GameBarCondition ([int]$gameInputUninstallResult.FailureCount -eq 0) 'GameBar GameInput uninstall helper must not fail on missing/no-match DisplayName entries.'
+    Assert-GameBarCondition (@($gameInputUninstallResult.MissingDisplayNameSamples).Count -gt 0) 'GameBar GameInput uninstall helper must include bounded missing DisplayName samples.'
+
+    $noGameInputUninstallResult = & $module {
+        Invoke-BoostLabGameBarMsiUninstallByDisplayName `
+            -RegistryPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -ArgumentsTemplate '/x {0} /qn /norestart' `
+            -EntryEnumerator {
+                @(
+                    [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
+                    [pscustomobject]@{ PSChildName = '{OTHER-GUID}'; PSPath = 'HKLM:\Mock\Other'; DisplayName = 'Contoso Input Runtime' }
+                )
+            } `
+            -Uninstaller { throw 'Uninstaller should not run when Microsoft GameInput is absent.' }
+    }
+    Assert-GameBarCondition ([bool]$noGameInputUninstallResult.Success) 'GameBar GameInput uninstall helper must continue when no Microsoft GameInput uninstall entry is present.'
+    Assert-GameBarCondition ([int]$noGameInputUninstallResult.MatchedCount -eq 0) 'GameBar GameInput uninstall helper must report zero matches when Microsoft GameInput is absent.'
+    Assert-GameBarCondition ([int]$noGameInputUninstallResult.UninstallAttemptedCount -eq 0) 'GameBar GameInput uninstall helper must not attempt uninstall when Microsoft GameInput is absent.'
+
+    $failingGameInputUninstallResult = & $module {
+        Invoke-BoostLabGameBarMsiUninstallByDisplayName `
+            -RegistryPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -ArgumentsTemplate '/x {0} /qn /norestart' `
+            -EntryEnumerator {
+                @([pscustomobject]@{ PSChildName = '{GAMEINPUT-GUID}'; PSPath = 'HKLM:\Mock\GameInput'; DisplayName = 'Microsoft GameInput' })
+            } `
+            -Uninstaller { throw 'Mock msiexec failure.' }
+    }
+    Assert-GameBarCondition (-not [bool]$failingGameInputUninstallResult.Success) 'GameBar GameInput uninstall helper must fail closed on real Microsoft GameInput uninstall failure.'
+    Assert-GameBarCondition ([int]$failingGameInputUninstallResult.FailureCount -eq 1) 'GameBar GameInput uninstall helper must count uninstall failures.'
+    Assert-GameBarCondition ([string]$failingGameInputUninstallResult.FailureEntries[0] -like '*Mock msiexec failure*') 'GameBar GameInput uninstall helper must include the msiexec failure reason.'
+
+    $gameInputContinueSeen = [System.Collections.Generic.List[string]]::new()
+    $gameInputContinueExecutor = {
+        param($Operation)
+        $gameInputContinueSeen.Add([string]$Operation.OperationType)
+        if ([string]$Operation.OperationType -eq 'RemoveAppxWhereNameLike') {
+            return $callableUiResult
+        }
+        if ([string]$Operation.OperationType -eq 'MsiUninstallByDisplayName') {
+            return $noGameInputUninstallResult
+        }
+
+        [pscustomobject]@{
+            Success       = $true
+            OperationType = [string]$Operation.OperationType
+            Description   = [string]$Operation.Description
+        }
+    }.GetNewClosure()
+    $gameInputContinueWorkflow = Invoke-BoostLabGameBarBranchWorkflow -Branch OffRecommended -OperationExecutor $gameInputContinueExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition ([bool]$gameInputContinueWorkflow.Success) 'GameBar branch must continue when GameInput uninstall finds only missing/no-match entries.'
+    Assert-GameBarCondition ('SetContent' -in @($gameInputContinueSeen)) 'GameBar branch must continue to gamebaroff.reg write after no-op GameInput uninstall.'
+    Assert-GameBarCondition ('TrustedInstallerCommand' -in @($gameInputContinueSeen)) 'GameBar branch must continue to the source TrustedInstaller command after no-op GameInput uninstall.'
+
+    $gameInputFailureSeen = [System.Collections.Generic.List[string]]::new()
+    $gameInputFailureExecutor = {
+        param($Operation)
+        $gameInputFailureSeen.Add([string]$Operation.OperationType)
+        if ([string]$Operation.OperationType -eq 'MsiUninstallByDisplayName') {
+            return $failingGameInputUninstallResult
+        }
+
+        [pscustomobject]@{
+            Success       = $true
+            OperationType = [string]$Operation.OperationType
+            Description   = [string]$Operation.Description
+        }
+    }.GetNewClosure()
+    $gameInputFailureWorkflow = Invoke-BoostLabGameBarBranchWorkflow -Branch OffRecommended -OperationExecutor $gameInputFailureExecutor -SkipEnvironmentChecks
+    Assert-GameBarCondition (-not [bool]$gameInputFailureWorkflow.Success) 'GameBar branch must fail closed when Microsoft GameInput uninstall fails.'
+    $gameInputFailedOperation = @($gameInputFailureWorkflow.Operations | Where-Object { [string]$_.OperationType -eq 'MsiUninstallByDisplayName' }) | Select-Object -First 1
+    Assert-GameBarCondition ($null -ne $gameInputFailedOperation -and -not [bool]$gameInputFailedOperation.Success) 'GameBar branch must identify MsiUninstallByDisplayName as the failed operation.'
+    Assert-GameBarCondition (-not ('SetContent' -in @($gameInputFailureSeen))) 'GameBar branch must not continue to registry import after real GameInput uninstall failure.'
+
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"GameDVR_Enabled"=dword:00000000')) 'GameBar Off registry payload is missing GameDVR_Enabled.'
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"AppCaptureEnabled"=dword:00000000')) 'GameBar Off registry payload is missing AppCaptureEnabled.'
     Assert-GameBarCondition ($offPlan.RegistryPayloads.OffRecommended.Contains('"UseNexusForGameBarEnabled"=dword:00000000')) 'GameBar Off registry payload is missing UseNexusForGameBarEnabled.'
