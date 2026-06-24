@@ -78,14 +78,60 @@ function New-BoostLabCopilotResult {
         [object]$Data = $null,
 
         [AllowNull()]
-        [object]$VerificationResult = $null
+        [object]$VerificationResult = $null,
+
+        [string]$Status = '',
+
+        [string]$CommandStatus = '',
+
+        [string]$VerificationStatus = ''
     )
+
+    $resolvedVerificationStatus = if (-not [string]::IsNullOrWhiteSpace($VerificationStatus)) {
+        $VerificationStatus
+    }
+    elseif ($null -ne $VerificationResult -and $null -ne $VerificationResult.PSObject.Properties['Status']) {
+        [string]$VerificationResult.Status
+    }
+    else {
+        'NotAvailable'
+    }
+    $resolvedStatus = if (-not [string]::IsNullOrWhiteSpace($Status)) {
+        $Status
+    }
+    elseif ($Cancelled) {
+        'Cancelled'
+    }
+    elseif ($Success -and $resolvedVerificationStatus -eq 'Warning') {
+        'Warning'
+    }
+    elseif ($Success) {
+        'Success'
+    }
+    else {
+        'Error'
+    }
+    $resolvedCommandStatus = if (-not [string]::IsNullOrWhiteSpace($CommandStatus)) {
+        $CommandStatus
+    }
+    elseif ($Success -and $resolvedVerificationStatus -eq 'Warning') {
+        'CompletedWithWarnings'
+    }
+    elseif ($Success) {
+        'Completed'
+    }
+    else {
+        'Failed'
+    }
 
     return [pscustomobject]@{
         Success            = $Success
         ToolId             = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle          = [string]$script:BoostLabToolMetadata['Title']
         Action             = $Action
+        Status             = $resolvedStatus
+        CommandStatus      = $resolvedCommandStatus
+        VerificationStatus = $resolvedVerificationStatus
         Message            = $Message
         RestartRequired    = $false
         Cancelled          = $Cancelled
@@ -546,25 +592,58 @@ function Get-BoostLabCopilotPackageMatches {
         [string]$Pattern
     )
 
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $currentUserPackages = @()
+    $allUsersPackages = @()
+    $provisionedPackages = @()
+
     try {
-        $packages = @(Get-AppxPackage -AllUsers | Where-Object { $_.Name -like $Pattern })
-        $packageRecords = @($packages | ForEach-Object { ConvertTo-BoostLabCopilotPackageRecord -Package $_ })
-        return [pscustomobject]@{
-            ReadSucceeded      = $true
-            Count              = $packageRecords.Count
-            DisplayValue       = [string]$packageRecords.Count
-            Message            = if ($packageRecords.Count -eq 0) { 'No matching AppX packages detected.' } else { "$($packageRecords.Count) matching AppX package(s) detected: $((@($packageRecords | ForEach-Object { if ($_.PackageFullName) { $_.PackageFullName } else { $_.Name } }) | Where-Object { $_ }) -join '; ')." }
-            Packages           = $packageRecords
-            ProvisionedPackages = @()
+        $currentUserPackages = @(Get-AppxPackage | Where-Object { $_.Name -like $Pattern })
+    }
+    catch {
+        $errors.Add("Current-user AppX query failed: $($_.Exception.Message)")
+    }
+
+    try {
+        $allUsersPackages = @(Get-AppxPackage -AllUsers | Where-Object { $_.Name -like $Pattern })
+    }
+    catch {
+        $errors.Add("All-users AppX query failed: $($_.Exception.Message)")
+    }
+
+    try {
+        if ($null -ne (Get-Command -Name 'Get-AppxProvisionedPackage' -ErrorAction SilentlyContinue)) {
+            $provisionedPackages = @(
+                Get-AppxProvisionedPackage -Online |
+                    Where-Object { $_.DisplayName -like $Pattern -or $_.PackageName -like $Pattern }
+            )
         }
     }
     catch {
-        return [pscustomobject]@{
-            ReadSucceeded = $false
-            Count         = $null
-            DisplayValue  = 'Unknown'
-            Message       = $_.Exception.Message
+        $errors.Add("Provisioned AppX query failed: $($_.Exception.Message)")
+    }
+
+    $currentUserRecords = @($currentUserPackages | ForEach-Object { ConvertTo-BoostLabCopilotPackageRecord -Package $_ })
+    $allUsersRecords = @($allUsersPackages | ForEach-Object { ConvertTo-BoostLabCopilotPackageRecord -Package $_ })
+    $readSucceeded = $errors.Count -eq 0
+
+    return [pscustomobject]@{
+        ReadSucceeded       = $readSucceeded
+        Count               = $allUsersRecords.Count
+        DisplayValue        = if ($readSucceeded) { [string]$allUsersRecords.Count } else { 'Unknown' }
+        Message             = if ($errors.Count -gt 0) {
+            'Copilot AppX state query completed with warning(s): {0}' -f ($errors -join '; ')
         }
+        elseif ($allUsersRecords.Count -eq 0) {
+            'No matching AppX packages detected.'
+        }
+        else {
+            "$($allUsersRecords.Count) all-users matching AppX package(s) detected: $((@($allUsersRecords | ForEach-Object { if ($_.PackageFullName) { $_.PackageFullName } else { $_.Name } }) | Where-Object { $_ }) -join '; ')."
+        }
+        Packages            = $allUsersRecords
+        AllUsersPackages    = $allUsersRecords
+        CurrentUserPackages = $currentUserRecords
+        ProvisionedPackages = @($provisionedPackages)
     }
 }
 
@@ -581,6 +660,8 @@ function ConvertTo-BoostLabCopilotPackageState {
             DisplayValue       = '0'
             Message            = 'No matching AppX packages detected.'
             Packages           = @()
+            AllUsersPackages    = @()
+            CurrentUserPackages = @()
             ProvisionedPackages = @()
         }
     }
@@ -599,6 +680,22 @@ function ConvertTo-BoostLabCopilotPackageState {
         $packageRecords = @($packages | ForEach-Object {
                 if ($null -ne $_) { ConvertTo-BoostLabCopilotPackageRecord -Package $_ }
             })
+        $currentUserRecords = if ($null -ne $State.PSObject.Properties['CurrentUserPackages']) {
+            @($State.CurrentUserPackages | ForEach-Object {
+                    if ($null -ne $_) { ConvertTo-BoostLabCopilotPackageRecord -Package $_ }
+                })
+        }
+        else {
+            @()
+        }
+        $allUsersRecords = if ($null -ne $State.PSObject.Properties['AllUsersPackages']) {
+            @($State.AllUsersPackages | ForEach-Object {
+                    if ($null -ne $_) { ConvertTo-BoostLabCopilotPackageRecord -Package $_ }
+                })
+        }
+        else {
+            $packageRecords
+        }
         $count = if ($null -ne $State.PSObject.Properties['Count'] -and $null -ne $State.Count) {
             [int]$State.Count
         }
@@ -611,6 +708,8 @@ function ConvertTo-BoostLabCopilotPackageState {
             DisplayValue       = if ($null -ne $State.PSObject.Properties['DisplayValue']) { [string]$State.DisplayValue } else { [string]$count }
             Message            = if ($null -ne $State.PSObject.Properties['Message']) { [string]$State.Message } elseif ($count -eq 0) { 'No matching AppX packages detected.' } else { "$count matching AppX package(s) detected." }
             Packages           = $packageRecords
+            AllUsersPackages    = $allUsersRecords
+            CurrentUserPackages = $currentUserRecords
             ProvisionedPackages = if ($null -ne $State.PSObject.Properties['ProvisionedPackages']) { @($State.ProvisionedPackages) } else { @() }
         }
     }
@@ -623,8 +722,289 @@ function ConvertTo-BoostLabCopilotPackageState {
         DisplayValue       = [string]$packageRecords.Count
         Message            = if ($packageRecords.Count -eq 0) { 'No matching AppX packages detected.' } else { "$($packageRecords.Count) matching AppX package(s) detected: $((@($packageRecords | ForEach-Object { if ($_.PackageFullName) { $_.PackageFullName } else { $_.Name } }) | Where-Object { $_ }) -join '; ')." }
         Packages           = $packageRecords
+        AllUsersPackages    = $packageRecords
+        CurrentUserPackages = @()
         ProvisionedPackages = @()
     }
+}
+
+function Get-BoostLabCopilotAppxRemovalOutcome {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $ErrorRecord) {
+        $messages.Add('')
+    }
+    elseif ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$ErrorRecord.FullyQualifiedErrorId)) {
+            $messages.Add([string]$ErrorRecord.FullyQualifiedErrorId)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    if (
+        $messageText -like '*0x80073CFA*' -or
+        $messageText -like '*0x80070032*' -or
+        $messageText -like '*part of Windows and cannot be uninstalled*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedProtectedSystemApp'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    if (
+        $messageText -like '*0x80073CF3*' -or
+        $messageText -like '*dependency*' -or
+        $messageText -like '*conflict validation*' -or
+        $messageText -like '*dependent package*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedDependencyFramework'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    [pscustomobject]@{
+        Outcome = 'FailedUnexpected'
+        IsFailure = $true
+        Reason = $messageText
+    }
+}
+
+function Test-BoostLabCopilotPackageRecordMatch {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [object]$Left,
+
+        [AllowNull()]
+        [object]$Right
+    )
+
+    if ($null -eq $Left -or $null -eq $Right) {
+        return $false
+    }
+
+    $leftRecord = ConvertTo-BoostLabCopilotPackageRecord -Package $Left
+    $rightRecord = ConvertTo-BoostLabCopilotPackageRecord -Package $Right
+    if (
+        -not [string]::IsNullOrWhiteSpace($leftRecord.PackageFullName) -and
+        -not [string]::IsNullOrWhiteSpace($rightRecord.PackageFullName)
+    ) {
+        return [string]$leftRecord.PackageFullName -eq [string]$rightRecord.PackageFullName
+    }
+
+    if (
+        -not [string]::IsNullOrWhiteSpace($leftRecord.PackageFamilyName) -and
+        -not [string]::IsNullOrWhiteSpace($rightRecord.PackageFamilyName)
+    ) {
+        return [string]$leftRecord.PackageFamilyName -eq [string]$rightRecord.PackageFamilyName
+    }
+
+    return (
+        -not [string]::IsNullOrWhiteSpace($leftRecord.Name) -and
+        [string]$leftRecord.Name -eq [string]$rightRecord.Name
+    )
+}
+
+function Invoke-BoostLabCopilotDefaultAppxRemove {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Package
+    )
+
+    $record = ConvertTo-BoostLabCopilotPackageRecord -Package $Package
+    if (-not [string]::IsNullOrWhiteSpace($record.PackageFullName)) {
+        try {
+            Remove-AppxPackage `
+                -Package ([string]$record.PackageFullName) `
+                -AllUsers `
+                -ErrorAction Stop `
+                -WarningAction SilentlyContinue `
+                -InformationAction SilentlyContinue | Out-Null
+            return
+        }
+        catch [System.Management.Automation.ParameterBindingException] {
+            $Package | Remove-AppxPackage -ErrorAction Stop -WarningAction SilentlyContinue -InformationAction SilentlyContinue | Out-Null
+            return
+        }
+    }
+
+    $Package | Remove-AppxPackage -ErrorAction Stop -WarningAction SilentlyContinue -InformationAction SilentlyContinue | Out-Null
+}
+
+function Invoke-BoostLabCopilotRemoveAppxPackages {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Pattern,
+
+        [AllowNull()]
+        [object]$PreRemovalState = $null,
+
+        [AllowNull()]
+        [scriptblock]$AppxRemover = $null
+    )
+
+    $preState = ConvertTo-BoostLabCopilotPackageState -State $PreRemovalState
+    $packages = @($preState.Packages)
+    $outcomes = [System.Collections.Generic.List[object]]::new()
+    $removed = [System.Collections.Generic.List[object]]::new()
+    $protectedSkipped = [System.Collections.Generic.List[object]]::new()
+    $dependencySkipped = [System.Collections.Generic.List[object]]::new()
+    $failed = [System.Collections.Generic.List[object]]::new()
+
+    if ($packages.Count -eq 0) {
+        $outcomes.Add([pscustomobject]@{
+            Outcome = 'AlreadyAbsent'
+            Package = $null
+            Reason = 'No installed AppX package matched the source *Copilot* pattern before removal.'
+        })
+    }
+
+    foreach ($package in $packages) {
+        $record = ConvertTo-BoostLabCopilotPackageRecord -Package $package
+        try {
+            if ($null -ne $AppxRemover) {
+                & $AppxRemover $package $Pattern | Out-Null
+            }
+            else {
+                Invoke-BoostLabCopilotDefaultAppxRemove -Package $package
+            }
+
+            $item = [pscustomobject]@{
+                Outcome = 'Removed'
+                Package = $record
+                Reason = 'Remove-AppxPackage completed for the source-matching Copilot package.'
+            }
+            $removed.Add($item)
+            $outcomes.Add($item)
+        }
+        catch {
+            $classification = Get-BoostLabCopilotAppxRemovalOutcome -ErrorRecord $_
+            $item = [pscustomobject]@{
+                Outcome = [string]$classification.Outcome
+                Package = $record
+                Reason = [string]$classification.Reason
+            }
+
+            if ([string]$classification.Outcome -eq 'SkippedProtectedSystemApp') {
+                $protectedSkipped.Add($item)
+                $outcomes.Add($item)
+                continue
+            }
+            if ([string]$classification.Outcome -eq 'SkippedDependencyFramework') {
+                $dependencySkipped.Add($item)
+                $outcomes.Add($item)
+                continue
+            }
+
+            $failed.Add($item)
+            $outcomes.Add($item)
+        }
+    }
+
+    $success = ($failed.Count -eq 0)
+    [pscustomobject]@{
+        Success = $success
+        Message = if ($success) {
+            "Processed $($packages.Count) source-matching Copilot AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); unexpected failures $($failed.Count)."
+        }
+        else {
+            "Failed to remove $($failed.Count) source-matching Copilot AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count)."
+        }
+        Pattern = $Pattern
+        PreRemovalPackages = $packages
+        RemovedPackages = $removed.ToArray()
+        ProtectedSystemAppSkippedPackages = $protectedSkipped.ToArray()
+        DependencyFrameworkSkippedPackages = $dependencySkipped.ToArray()
+        FailedPackages = $failed.ToArray()
+        PackageOutcomes = $outcomes.ToArray()
+    }
+}
+
+function Add-BoostLabCopilotRemainingPackageOutcomes {
+    [CmdletBinding()]
+    [OutputType([object[]])]
+    param(
+        [object[]]$RemovalOutcomes = @(),
+
+        [object[]]$RemainingPackages = @()
+    )
+
+    $combined = [System.Collections.Generic.List[object]]::new()
+    foreach ($outcome in @($RemovalOutcomes)) {
+        if ($null -ne $outcome) {
+            $combined.Add($outcome)
+        }
+    }
+
+    foreach ($remaining in @($RemainingPackages)) {
+        $isKnownSkip = @($combined | Where-Object {
+            [string]$_.Outcome -in @('SkippedProtectedSystemApp', 'SkippedDependencyFramework') -and
+            (Test-BoostLabCopilotPackageRecordMatch -Left $_.Package -Right $remaining)
+        }).Count -gt 0
+        $alreadyMarkedRemaining = @($combined | Where-Object {
+            [string]$_.Outcome -eq 'RemainingAfterSourceRemove' -and
+            (Test-BoostLabCopilotPackageRecordMatch -Left $_.Package -Right $remaining)
+        }).Count -gt 0
+
+        if (-not $isKnownSkip -and -not $alreadyMarkedRemaining) {
+            $combined.Add([pscustomobject]@{
+                Outcome = 'RemainingAfterSourceRemove'
+                Package = ConvertTo-BoostLabCopilotPackageRecord -Package $remaining
+                Reason = 'Package still exists after source-style AppX removal and has no known protected/dependency explanation.'
+            })
+        }
+    }
+
+    $combined.ToArray()
+}
+
+function Test-BoostLabCopilotRemainingPackagesExplained {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [object[]]$RemainingPackages = @(),
+
+        [object[]]$RemovalOutcomes = @()
+    )
+
+    foreach ($remaining in @($RemainingPackages)) {
+        $matched = @($RemovalOutcomes | Where-Object {
+            [string]$_.Outcome -in @('SkippedProtectedSystemApp', 'SkippedDependencyFramework') -and
+            (Test-BoostLabCopilotPackageRecordMatch -Left $_.Package -Right $remaining)
+        })
+        if ($matched.Count -eq 0) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 function Test-BoostLabCopilotState {
@@ -643,7 +1023,9 @@ function Test-BoostLabCopilotState {
         [scriptblock]$ProcessReader = $null,
 
         [AllowNull()]
-        [scriptblock]$AppxReader = $null
+        [scriptblock]$AppxReader = $null,
+
+        [object[]]$AppxRemovalOutcomes = @()
     )
 
     $readRegistry = if ($null -ne $RegistryReader) {
@@ -742,10 +1124,21 @@ function Test-BoostLabCopilotState {
             'Warning'
         }
         elseif ([int]$appxState.Count -gt 0) {
-            'Failed'
+            if (Test-BoostLabCopilotRemainingPackagesExplained -RemainingPackages @($appxState.Packages) -RemovalOutcomes @($AppxRemovalOutcomes)) {
+                'Warning'
+            }
+            else {
+                'Failed'
+            }
         }
         else {
             'Passed'
+        }
+        $appxMessage = if ($appxStatus -eq 'Warning' -and [int]$appxState.Count -gt 0) {
+            'Matching Copilot package(s) remain, but Windows reported the removal as protected/non-removable or dependency/framework blocked.'
+        }
+        else {
+            [string]$appxState.Message
         }
         $checks.Add(
             (New-BoostLabVerificationCheck `
@@ -753,7 +1146,7 @@ function Test-BoostLabCopilotState {
                 -Expected 'No *Copilot* packages' `
                 -Actual ([string]$appxState.DisplayValue) `
                 -Status $appxStatus `
-                -Message ([string]$appxState.Message))
+                -Message $appxMessage)
         )
     }
     else {
@@ -821,7 +1214,10 @@ function Test-BoostLabCopilotState {
         -DetectedState ([pscustomobject]@{
             Checks = @($checks | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Actual })
             RemainingAppxPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.Packages) } else { @() }
+            RemainingAllUsersCopilotPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.AllUsersPackages) } else { @() }
+            RemainingCurrentUserCopilotPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.CurrentUserPackages) } else { @() }
             RemainingProvisionedCopilotPackages = if ($ActionName -eq 'Apply' -and $null -ne $appxState) { @($appxState.ProvisionedPackages) } else { @() }
+            AppxRemovalOutcomes = if ($ActionName -eq 'Apply') { @($AppxRemovalOutcomes) } else { @() }
         }) `
         -Checks $checks.ToArray() `
         -Message $message
@@ -915,12 +1311,6 @@ function Invoke-BoostLabCopilotAction {
             Get-Process | Where-Object { $_.ProcessName -like $Pattern } | Stop-Process -Force -ErrorAction SilentlyContinue
         }
     }
-    $removeAppx = if ($null -ne $AppxRemover) {
-        $AppxRemover
-    }
-    else {
-        { param($Pattern) Get-AppXPackage -AllUsers | Where-Object { $_.Name -like $Pattern } | Remove-AppxPackage -ErrorAction SilentlyContinue }
-    }
     $registerAppx = if ($null -ne $AppxRegistrar) {
         $AppxRegistrar
     }
@@ -956,6 +1346,7 @@ function Invoke-BoostLabCopilotAction {
     $operations = @(Get-BoostLabCopilotOperations -ActionName $ActionName)
     $operationStatuses = [System.Collections.Generic.List[object]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
+    $appxRemovalResult = $null
     $preRemovalPackageState = if ($ActionName -eq 'Apply') {
         ConvertTo-BoostLabCopilotPackageState -State (& $readAppxSnapshot $script:BoostLabCopilotPackagePattern)
     }
@@ -974,7 +1365,13 @@ function Invoke-BoostLabCopilotAction {
                     & $stopWildcardProcess ([string]$operation.Pattern)
                 }
                 'RemoveAppxPackages' {
-                    & $removeAppx ([string]$operation.Pattern)
+                    $appxRemovalResult = Invoke-BoostLabCopilotRemoveAppxPackages `
+                        -Pattern ([string]$operation.Pattern) `
+                        -PreRemovalState $preRemovalPackageState `
+                        -AppxRemover $AppxRemover
+                    if (-not [bool]$appxRemovalResult.Success) {
+                        throw [string]$appxRemovalResult.Message
+                    }
                 }
                 'RegisterAppxPackages' {
                     & $registerAppx ([string]$operation.Pattern)
@@ -989,8 +1386,9 @@ function Invoke-BoostLabCopilotAction {
             $operationStatuses.Add([pscustomobject]@{
                     Id      = [string]$operation.Id
                     Kind    = [string]$operation.Kind
-                    Status  = 'Completed'
-                    Message = 'Operation completed.'
+                    Status  = if ([string]$operation.Kind -eq 'RemoveAppxPackages' -and $null -ne $appxRemovalResult -and (@($appxRemovalResult.ProtectedSystemAppSkippedPackages).Count -gt 0 -or @($appxRemovalResult.DependencyFrameworkSkippedPackages).Count -gt 0)) { 'CompletedWithWarnings' } else { 'Completed' }
+                    Message = if ([string]$operation.Kind -eq 'RemoveAppxPackages' -and $null -ne $appxRemovalResult) { [string]$appxRemovalResult.Message } else { 'Operation completed.' }
+                    Data    = if ([string]$operation.Kind -eq 'RemoveAppxPackages') { $appxRemovalResult } else { $null }
                 })
         }
         catch {
@@ -1005,20 +1403,53 @@ function Invoke-BoostLabCopilotAction {
         }
     }
 
+    $postRemovalPackageState = if ($ActionName -eq 'Apply') {
+        ConvertTo-BoostLabCopilotPackageState -State (& $readAppxSnapshot $script:BoostLabCopilotPackagePattern)
+    }
+    else {
+        $null
+    }
+    $appxRemovalOutcomes = if ($ActionName -eq 'Apply' -and $null -ne $appxRemovalResult) {
+        Add-BoostLabCopilotRemainingPackageOutcomes `
+            -RemovalOutcomes @($appxRemovalResult.PackageOutcomes) `
+            -RemainingPackages @($postRemovalPackageState.Packages)
+    }
+    elseif ($ActionName -eq 'Apply') {
+        Add-BoostLabCopilotRemainingPackageOutcomes `
+            -RemovalOutcomes @() `
+            -RemainingPackages @($postRemovalPackageState.Packages)
+    }
+    else {
+        @()
+    }
+    $verificationAppxReader = if ($ActionName -eq 'Apply') {
+        { param($Pattern) $null = $Pattern; $postRemovalPackageState }.GetNewClosure()
+    }
+    else {
+        $AppxReader
+    }
+
     $verificationResult = Test-BoostLabCopilotState `
         -ActionName $ActionName `
         -RegistryReader $RegistryReader `
         -RegistryKeyReader $RegistryKeyReader `
         -ProcessReader $ProcessReader `
-        -AppxReader $AppxReader
+        -AppxReader $verificationAppxReader `
+        -AppxRemovalOutcomes @($appxRemovalOutcomes)
     $remainingPackages = @($verificationResult.DetectedState.RemainingAppxPackages)
     $remainingProvisionedPackages = @($verificationResult.DetectedState.RemainingProvisionedCopilotPackages)
     $data = [pscustomobject]@{
         Operations                          = $operationStatuses.ToArray()
         PreRemovalCopilotPackages           = if ($null -ne $preRemovalPackageState) { @($preRemovalPackageState.Packages) } else { @() }
+        PreRemovalAllUsersCopilotPackages   = if ($null -ne $preRemovalPackageState) { @($preRemovalPackageState.AllUsersPackages) } else { @() }
+        PreRemovalCurrentUserCopilotPackages = if ($null -ne $preRemovalPackageState) { @($preRemovalPackageState.CurrentUserPackages) } else { @() }
         PostRemovalCopilotPackages          = $remainingPackages
+        PostRemovalAllUsersCopilotPackages  = if ($null -ne $postRemovalPackageState) { @($postRemovalPackageState.AllUsersPackages) } else { @() }
+        PostRemovalCurrentUserCopilotPackages = if ($null -ne $postRemovalPackageState) { @($postRemovalPackageState.CurrentUserPackages) } else { @() }
         RemainingCopilotPackages            = $remainingPackages
         RemainingProvisionedCopilotPackages = $remainingProvisionedPackages
+        AppxRemoval                         = $appxRemovalResult
+        AppxRemovalOutcomes                 = @($appxRemovalOutcomes)
         ProvisionedPackageScope             = 'NotApplicable: Ultimate Copilot source removes installed Get-AppxPackage -AllUsers matches only.'
         CompletedAt                         = Get-Date
     }
@@ -1045,6 +1476,18 @@ function Invoke-BoostLabCopilotAction {
             -Success $false `
             -Action $ActionName `
             -Message $failureMessage `
+            -Data $data `
+            -VerificationResult $verificationResult
+    }
+
+    if ($ActionName -eq 'Apply' -and [string]$verificationResult.Status -eq 'Warning' -and @($remainingPackages).Count -gt 0) {
+        return New-BoostLabCopilotResult `
+            -Success $true `
+            -Action $ActionName `
+            -Status 'Warning' `
+            -CommandStatus 'CompletedWithWarnings' `
+            -VerificationStatus 'Warning' `
+            -Message 'Copilot policy disabled successfully. Copilot package remains because Windows reported it as protected/non-removable or dependency/framework blocked.' `
             -Data $data `
             -VerificationResult $verificationResult
     }

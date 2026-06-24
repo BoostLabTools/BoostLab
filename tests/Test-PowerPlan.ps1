@@ -1009,7 +1009,7 @@ $protectedModules = [ordered]@{
     'Start Menu Layout' = @{ Path = 'Windows\StartMenuLayout.psm1'; Hash = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Theme Black' = @{ Path = 'Windows\ThemeBlack.psm1'; Hash = '29F3474D93061B01E3CF9F23EADA88E932E90E4984EBB39F7DB2BEB24732230F'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'GameBar' = @{ Path = 'Windows\game-bar.psm1'; Hash = '62B195F5D2FACF5C1060ED23704A46317392FD7488768FF43883AA6BE0062B33'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
-    'Copilot' = @{ Path = 'Windows\copilot.psm1'; Hash = '5F47E705E357F5E8B706D488A9D5D34EE742990B0F5E2BBB1EEABB8DADA6A7D6'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
+    'Copilot' = @{ Path = 'Windows\copilot.psm1'; Hash = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'GameMode' = @{ Path = 'Windows\game-mode.psm1'; Hash = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'; Required = '$script:BoostLabImplementedActions = @(''Open'')' }
 }
 foreach ($name in $protectedModules.Keys) {

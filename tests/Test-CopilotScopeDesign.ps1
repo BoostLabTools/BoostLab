@@ -141,7 +141,9 @@ foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     'Stop-Process -Name $Name -Force -ErrorAction SilentlyContinue'
     'Get-Process | Where-Object { $_.ProcessName -like $Pattern } | Stop-Process -Force -ErrorAction SilentlyContinue'
-    'Get-AppXPackage -AllUsers | Where-Object { $_.Name -like $Pattern } | Remove-AppxPackage -ErrorAction SilentlyContinue'
+    'Invoke-BoostLabCopilotRemoveAppxPackages'
+    'Remove-AppxPackage `'
+    '-AllUsers `'
     'Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"'
     'reg add "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d "1" /f'
     'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d "1" /f'
@@ -222,13 +224,13 @@ try {
 
     $namedStops = [System.Collections.Generic.List[string]]::new()
     $wildcardStops = [System.Collections.Generic.List[string]]::new()
-    $removedPatterns = [System.Collections.Generic.List[string]]::new()
+    $removedPackages = [System.Collections.Generic.List[string]]::new()
     $registeredPatterns = [System.Collections.Generic.List[string]]::new()
     $registryCommands = [System.Collections.Generic.List[string]]::new()
     $adminChecker = { $true }
     $namedStopper = { param($Name) $namedStops.Add([string]$Name) }
     $wildcardStopper = { param($Pattern) $wildcardStops.Add([string]$Pattern) }
-    $appxRemover = { param($Pattern) $removedPatterns.Add([string]$Pattern) }
+    $appxRemover = { param($Package, $Pattern) $null = $Pattern; $removedPackages.Add([string]$Package.PackageFullName) }
     $appxRegistrar = { param($Pattern) $registeredPatterns.Add([string]$Pattern) }
     $registryRunner = {
         param($CommandText, $Description)
@@ -269,16 +271,35 @@ try {
             Message       = 'Mocked no matching process.'
         }
     }
+    $applyPackage = [pscustomobject]@{
+        Name              = 'Microsoft.Copilot'
+        PackageFullName   = 'Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe'
+        PackageFamilyName = 'Microsoft.Copilot_8wekyb3d8bbwe'
+        InstallLocation   = 'C:\Program Files\WindowsApps\Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe'
+        User              = 'S-1-5-21-test'
+    }
     $applyAppxReader = {
         param($Pattern)
         $null = $Pattern
-        [pscustomobject]@{
-            ReadSucceeded = $true
-            Count         = 0
-            DisplayValue  = '0'
-            Message       = 'Mocked no matching AppX package.'
+        if ($removedPackages.Count -eq 0) {
+            [pscustomobject]@{
+                ReadSucceeded = $true
+                Count         = 1
+                DisplayValue  = '1'
+                Message       = 'Mocked pre-removal Copilot package.'
+                Packages      = @($applyPackage)
+            }
         }
-    }
+        else {
+            [pscustomobject]@{
+                ReadSucceeded = $true
+                Count         = 0
+                DisplayValue  = '0'
+                Message       = 'Mocked no matching AppX package.'
+                Packages      = @()
+            }
+        }
+    }.GetNewClosure()
     $defaultAppxReader = {
         param($Pattern)
         $null = $Pattern
@@ -318,11 +339,43 @@ try {
     Assert-CopilotCondition ([bool]$applyResult.Success) "Mocked Copilot Apply failed: $($applyResult.Message)"
     Assert-CopilotCondition ((@($namedStops) -join '|') -eq ($expectedProcessNames -join '|')) 'Mocked Apply did not route every named process stop through the adapter.'
     Assert-CopilotCondition ((@($wildcardStops) -join '|') -eq '*edge*') 'Mocked Apply did not route wildcard *edge* through the adapter.'
-    Assert-CopilotCondition ((@($removedPatterns) -join '|') -eq '*Copilot*') 'Mocked Apply did not route AppX removal through the adapter.'
+    Assert-CopilotCondition ((@($removedPackages) -join '|') -eq 'Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe') 'Mocked Apply did not route the source-matching Copilot package through the AppX remover.'
     Assert-CopilotCondition ((@($registryCommands) -join '|') -eq ($applyRegistryCommands -join '|')) 'Mocked Apply did not route exact registry commands through the adapter.'
     Assert-CopilotCondition ([string]$applyResult.VerificationResult.Status -eq 'Passed') 'Mocked Apply verification did not pass.'
-    Assert-CopilotCondition (@($applyResult.Data.PreRemovalCopilotPackages).Count -eq 0) 'Mocked Apply should report no pre-removal packages when reader reports none.'
+    Assert-CopilotCondition (@($applyResult.Data.PreRemovalCopilotPackages).Count -eq 1) 'Mocked Apply should report pre-removal Copilot packages.'
+    Assert-CopilotCondition (@($applyResult.Data.PreRemovalAllUsersCopilotPackages).Count -eq 1) 'Mocked Apply should report pre-removal all-users Copilot package state.'
     Assert-CopilotCondition (@($applyResult.Data.RemainingCopilotPackages).Count -eq 0) 'Mocked Apply should report no remaining packages when verification passes.'
+    Assert-CopilotCondition (@($applyResult.Data.PostRemovalAllUsersCopilotPackages).Count -eq 0) 'Mocked Apply should report post-removal all-users Copilot package state.'
+    Assert-CopilotCondition (($applyResult.Data.AppxRemovalOutcomes.Outcome -join ',') -eq 'Removed') 'Mocked Apply should report the Copilot package as removed.'
+
+    $noPackageRemover = { throw 'No AppX removal should be attempted when no matching package exists.' }
+    $noPackageApply = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $noPackageRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader { param($Pattern) $null = $Pattern; [pscustomobject]@{ ReadSucceeded = $true; Count = 0; DisplayValue = '0'; Message = 'Mocked no matching AppX package.'; Packages = @(); ProvisionedPackages = @() } }
+    Assert-CopilotCondition ([bool]$noPackageApply.Success) 'Copilot Apply should succeed when policies set and no Copilot package existed.'
+    Assert-CopilotCondition (($noPackageApply.Data.AppxRemovalOutcomes.Outcome -join ',') -eq 'AlreadyAbsent') 'No-package Apply should report AlreadyAbsent AppX outcome.'
 
     $nullProcessReader = {
         param($Name, $Pattern)
@@ -391,6 +444,13 @@ try {
             )
         }
     }
+    $remainingPackageRemoveCount = 0
+    $remainingPackageStatefulReader = {
+        param($Pattern)
+        $null = $Pattern
+        $remainingPackageRemoveCount++
+        & $remainingPackageReader $Pattern
+    }.GetNewClosure()
     $remainingPackageResult = & $copilotModule {
         param(
             $AdminChecker,
@@ -415,16 +475,176 @@ try {
             -RegistryKeyReader $AbsentKeyReader `
             -ProcessReader $ProcessReader `
             -AppxReader $AppxReader
-    } $adminChecker $namedStopper $wildcardStopper $appxRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $remainingPackageReader
+    } $adminChecker $namedStopper $wildcardStopper $appxRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $remainingPackageStatefulReader
     Assert-CopilotCondition (-not [bool]$remainingPackageResult.Success) 'Remaining Copilot package should keep Apply verification failed.'
     Assert-CopilotCondition ([string]$remainingPackageResult.Message -match 'Microsoft.Copilot_1.0.0.0_x64__8wekyb3d8bbwe') 'Remaining package identity must be present in result message.'
     Assert-CopilotCondition (@($remainingPackageResult.Data.RemainingCopilotPackages).Count -eq 1) 'Remaining package data must include the package record.'
+    Assert-CopilotCondition (@($remainingPackageResult.Data.PostRemovalAllUsersCopilotPackages).Count -eq 1) 'Remaining all-users Copilot package state must be reported.'
     Assert-CopilotCondition ([string]$remainingPackageResult.Data.RemainingCopilotPackages[0].PackageFamilyName -eq 'Microsoft.Copilot_8wekyb3d8bbwe') 'Remaining package data must include PackageFamilyName.'
     Assert-CopilotCondition ([string]$remainingPackageResult.Data.ProvisionedPackageScope -match 'NotApplicable') 'Provisioned package scope must remain source-bounded and explicit.'
+    Assert-CopilotCondition (($remainingPackageResult.Data.AppxRemovalOutcomes.Outcome -join ',') -match 'RemainingAfterSourceRemove') 'Unexplained remaining package must be marked RemainingAfterSourceRemove.'
+
+    $protectedReader = {
+        param($Pattern)
+        $null = $Pattern
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            Count         = 1
+            DisplayValue  = '1'
+            Message       = 'Mocked protected Copilot package remains.'
+            Packages      = @($applyPackage)
+            ProvisionedPackages = @()
+        }
+    }
+    $protectedRemover = {
+        param($Package, $Pattern)
+        $null = $Package
+        $null = $Pattern
+        throw 'Remove-AppxPackage failed with HRESULT 0x80073CFA, error 0x80070032: This app is part of Windows and cannot be uninstalled on a per-user basis.'
+    }
+    $protectedResult = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $protectedRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $protectedReader
+    Assert-CopilotCondition ([bool]$protectedResult.Success) 'Known protected Copilot package removal must return warning success, not hard failure.'
+    Assert-CopilotCondition ([string]$protectedResult.Status -eq 'Warning') 'Known protected Copilot package removal must report Warning status.'
+    Assert-CopilotCondition ([string]$protectedResult.VerificationResult.Status -eq 'Warning') 'Known protected Copilot package removal must produce warning verification.'
+    Assert-CopilotCondition ([string]$protectedResult.Message -match 'protected/non-removable') 'Known protected Copilot package result must explain protected/non-removable package.'
+    Assert-CopilotCondition (($protectedResult.Data.AppxRemovalOutcomes.Outcome -join ',') -eq 'SkippedProtectedSystemApp') 'Known protected Copilot package must be classified as SkippedProtectedSystemApp.'
+
+    $dependencyRemover = {
+        param($Package, $Pattern)
+        $null = $Package
+        $null = $Pattern
+        throw 'Remove-AppxPackage failed with HRESULT 0x80073CF3: package dependency/conflict validation failed because dependent packages remain installed.'
+    }
+    $dependencyResult = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $dependencyRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $protectedReader
+    Assert-CopilotCondition ([bool]$dependencyResult.Success) 'Known dependency/framework Copilot package removal must return warning success, not hard failure.'
+    Assert-CopilotCondition (($dependencyResult.Data.AppxRemovalOutcomes.Outcome -join ',') -eq 'SkippedDependencyFramework') 'Known dependency/framework Copilot package must be classified as SkippedDependencyFramework.'
+
+    $unexpectedRemover = {
+        param($Package, $Pattern)
+        $null = $Package
+        $null = $Pattern
+        throw 'Access is denied.'
+    }
+    $unexpectedResult = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $unexpectedRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $protectedReader
+    Assert-CopilotCondition (-not [bool]$unexpectedResult.Success) 'Unexpected Copilot AppX removal error must fail closed.'
+    Assert-CopilotCondition (($unexpectedResult.Data.AppxRemovalOutcomes.Outcome -join ',') -match 'FailedUnexpected') 'Unexpected Copilot AppX removal error must be classified FailedUnexpected.'
+
+    $provisionedReader = {
+        param($Pattern)
+        $null = $Pattern
+        [pscustomobject]@{
+            ReadSucceeded = $true
+            Count         = 0
+            DisplayValue  = '0'
+            Message       = 'Mocked no installed package, but provisioned package exists.'
+            Packages      = @()
+            ProvisionedPackages = @([pscustomobject]@{ DisplayName = 'Microsoft.Copilot'; PackageName = 'Microsoft.Copilot_1.0.0.0_neutral_~_8wekyb3d8bbwe' })
+        }
+    }
+    $provisionedResult = & $copilotModule {
+        param(
+            $AdminChecker,
+            $NamedProcessStopper,
+            $WildcardProcessStopper,
+            $AppxRemover,
+            $RegistryRunner,
+            $RegistryReader,
+            $AbsentKeyReader,
+            $ProcessReader,
+            $AppxReader
+        )
+
+        Invoke-BoostLabCopilotAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker $AdminChecker `
+            -NamedProcessStopper $NamedProcessStopper `
+            -WildcardProcessStopper $WildcardProcessStopper `
+            -AppxRemover $AppxRemover `
+            -RegistryCommandRunner $RegistryRunner `
+            -RegistryReader $RegistryReader `
+            -RegistryKeyReader $AbsentKeyReader `
+            -ProcessReader $ProcessReader `
+            -AppxReader $AppxReader
+    } $adminChecker $namedStopper $wildcardStopper $noPackageRemover $registryRunner $applyRegistryReader $absentKeyReader $processReader $provisionedReader
+    Assert-CopilotCondition ([bool]$provisionedResult.Success) 'Provisioned Copilot package reporting must not broaden source parity into provisioned removal.'
+    Assert-CopilotCondition (@($provisionedResult.Data.PostRemovalAllUsersCopilotPackages).Count -eq 0) 'Provisioned package reporting must still report installed all-users package state.'
+    Assert-CopilotCondition (@($provisionedResult.Data.RemainingProvisionedCopilotPackages).Count -eq 1) 'Provisioned Copilot package state must be reported.'
 
     $namedStops.Clear()
     $wildcardStops.Clear()
-    $removedPatterns.Clear()
+    $removedPackages.Clear()
     $registeredPatterns.Clear()
     $registryCommands.Clear()
     $defaultResult = & $copilotModule {
@@ -449,7 +669,7 @@ try {
     Assert-CopilotCondition ([bool]$defaultResult.Success) "Mocked Copilot Default failed: $($defaultResult.Message)"
     Assert-CopilotCondition ($namedStops.Count -eq 0) 'Default must not stop named processes.'
     Assert-CopilotCondition ($wildcardStops.Count -eq 0) 'Default must not stop wildcard processes.'
-    Assert-CopilotCondition ($removedPatterns.Count -eq 0) 'Default must not remove AppX packages.'
+    Assert-CopilotCondition ($removedPackages.Count -eq 0) 'Default must not remove AppX packages.'
     Assert-CopilotCondition ((@($registeredPatterns) -join '|') -eq '*Copilot*') 'Mocked Default did not route AppX re-registration through the adapter.'
     Assert-CopilotCondition ((@($registryCommands) -join '|') -eq ($defaultRegistryCommands -join '|')) 'Mocked Default did not route exact registry delete commands through the adapter.'
     Assert-CopilotCondition ([string]$defaultResult.VerificationResult.Status -eq 'Passed') 'Mocked Default verification did not pass.'
