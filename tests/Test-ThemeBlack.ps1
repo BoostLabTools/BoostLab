@@ -327,6 +327,57 @@ try {
     if ($applyVerification.Status -ne 'Passed' -or @($applyVerification.Checks).Count -ne 13) {
         throw 'Theme Black Apply verification did not pass all 13 states.'
     }
+    if (@($applyVerification.Checks | Where-Object { [bool]$_.NormalizedEquivalentApplied }).Count -ne 0) {
+        throw 'Theme Black exact DWM values must not be reported as normalized equivalents.'
+    }
+
+    $normalizedApplyState = [ordered]@{}
+    foreach ($key in $applyState.Keys) {
+        $normalizedApplyState[$key] = $applyState[$key]
+    }
+    $normalizedApplyState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0x00000000' 'Mock Windows-normalized DWM black value.'
+    $normalizedApplyState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc4000000' 'Mock Windows-normalized DWM black value.'
+    $normalizedApplyState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc4000000' 'Mock Windows-normalized DWM black value.'
+    $normalizedReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        return $normalizedApplyState[$key]
+    }.GetNewClosure()
+    $normalizedVerification = & $themeModule {
+        param($RegistryReader)
+        Test-BoostLabThemeBlackState -ActionName 'Apply' -RegistryReader $RegistryReader
+    } $normalizedReader
+    $normalizedChecks = @($normalizedVerification.Checks | Where-Object { [bool]$_.NormalizedEquivalentApplied })
+    if ($normalizedVerification.Status -ne 'Passed' -or $normalizedChecks.Count -ne 3) {
+        throw 'Theme Black Apply must accept only the three exact Windows-normalized black DWM equivalents.'
+    }
+    foreach ($check in $normalizedChecks) {
+        if (
+            [string]$check.Message -notmatch 'normalized' -or
+            [string]$check.Expected -notin @('0xff191919', '0xc4191919') -or
+            [string]$check.Actual -notin @('0x00000000', '0xc4000000')
+        ) {
+            throw 'Theme Black normalized DWM check does not include the expected narrow detail.'
+        }
+    }
+
+    $nonBlackApplyState = [ordered]@{}
+    foreach ($key in $applyState.Keys) {
+        $nonBlackApplyState[$key] = $applyState[$key]
+    }
+    $nonBlackApplyState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0xff202020' 'Mock non-black DWM mismatch.'
+    $nonBlackReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        return $nonBlackApplyState[$key]
+    }.GetNewClosure()
+    $nonBlackVerification = & $themeModule {
+        param($RegistryReader)
+        Test-BoostLabThemeBlackState -ActionName 'Apply' -RegistryReader $RegistryReader
+    } $nonBlackReader
+    if ($nonBlackVerification.Status -ne 'Failed') {
+        throw 'Theme Black Apply must still fail verification for non-black DWM mismatches.'
+    }
 
     $defaultState = [ordered]@{}
     foreach ($definition in $defaultDefinitions) {
@@ -417,6 +468,7 @@ try {
     } $fileWriter $registryImporter $mockApplyReader
     if (
         -not $applyResult.Success -or
+        [string]$applyResult.Status -ne 'Success' -or
         $applyResult.Message -ne 'Black theme applied.' -or
         $applyResult.Data.CommandStatus -ne 'Completed' -or
         $applyResult.Data.ThemeImportStatus -ne 'Completed' -or
@@ -433,6 +485,114 @@ try {
         -not $applyCapture.Content.Contains('"Background"="0 0 0"')
     ) {
         throw 'Theme Black Apply did not write the approved blacktheme.reg payload.'
+    }
+
+    $normalizedEvents = [System.Collections.Generic.List[string]]::new()
+    $mockNormalizedState = [ordered]@{}
+    $normalizedFileWriter = {
+        param($Path, $Content)
+        $normalizedEvents.Add("WRITE:$([IO.Path]::GetFileName($Path))")
+    }.GetNewClosure()
+    $normalizedRegistryImporter = {
+        param($Path)
+        $normalizedEvents.Add("IMPORT:$([IO.Path]::GetFileName($Path))")
+        foreach ($definition in $applyDefinitions) {
+            $key = '{0}|{1}' -f $definition.Path, $definition.Name
+            $mockNormalizedState[$key] = & $newRegistryState $true $true ([string]$definition.Expected) 'Mock imported state.'
+        }
+        $mockNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0x00000000' 'Mock Windows-normalized DWM black value.'
+        $mockNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc4000000' 'Mock Windows-normalized DWM black value.'
+        $mockNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc4000000' 'Mock Windows-normalized DWM black value.'
+    }.GetNewClosure()
+    $mockNormalizedReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        if ($mockNormalizedState.Contains($key)) {
+            return $mockNormalizedState[$key]
+        }
+
+        return (& $newRegistryState $true $false 'Absent' 'Mock state absent.')
+    }.GetNewClosure()
+    $normalizedResult = & $themeModule {
+        param($FileWriter, $RegistryImporter, $RegistryReader)
+        Invoke-BoostLabThemeBlackAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -FileWriter $FileWriter `
+            -RegistryImporter $RegistryImporter `
+            -RegistryReader $RegistryReader
+    } $normalizedFileWriter $normalizedRegistryImporter $mockNormalizedReader
+    if (
+        -not $normalizedResult.Success -or
+        [string]$normalizedResult.Status -ne 'Success' -or
+        $normalizedResult.VerificationResult.Status -ne 'Passed' -or
+        @($normalizedResult.Data.DwmNormalizationAccepted).Count -ne 3 -or
+        [string]$normalizedResult.Data.FinalStatusReason -ne 'PassedWithDwmNormalization' -or
+        [string]$normalizedResult.Message -notmatch 'normalized by Windows'
+    ) {
+        throw 'Theme Black Apply must report a successful normalized DWM black verification with clear result details.'
+    }
+
+    $verificationFailureEvents = [System.Collections.Generic.List[string]]::new()
+    $mockVerificationFailureState = [ordered]@{}
+    $verificationFailureFileWriter = {
+        param($Path, $Content)
+        $verificationFailureEvents.Add("WRITE:$([IO.Path]::GetFileName($Path))")
+    }.GetNewClosure()
+    $verificationFailureImporter = {
+        param($Path)
+        $verificationFailureEvents.Add("IMPORT:$([IO.Path]::GetFileName($Path))")
+        foreach ($definition in $applyDefinitions) {
+            $key = '{0}|{1}' -f $definition.Path, $definition.Name
+            $mockVerificationFailureState[$key] = & $newRegistryState $true $true ([string]$definition.Expected) 'Mock imported state.'
+        }
+        $mockVerificationFailureState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0xff202020' 'Mock non-black DWM mismatch.'
+    }.GetNewClosure()
+    $verificationFailureReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        if ($mockVerificationFailureState.Contains($key)) {
+            return $mockVerificationFailureState[$key]
+        }
+
+        return (& $newRegistryState $true $false 'Absent' 'Mock state absent.')
+    }.GetNewClosure()
+    $verificationFailureResult = & $themeModule {
+        param($FileWriter, $RegistryImporter, $RegistryReader)
+        Invoke-BoostLabThemeBlackAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -FileWriter $FileWriter `
+            -RegistryImporter $RegistryImporter `
+            -RegistryReader $RegistryReader
+    } $verificationFailureFileWriter $verificationFailureImporter $verificationFailureReader
+    if (
+        [bool]$verificationFailureResult.Success -or
+        [string]$verificationFailureResult.Status -ne 'Error' -or
+        [string]$verificationFailureResult.Data.CommandStatus -ne 'Completed' -or
+        [string]$verificationFailureResult.Data.VerificationStatus -ne 'Failed' -or
+        [string]$verificationFailureResult.Data.FinalStatusReason -ne 'VerificationFailed'
+    ) {
+        throw 'Theme Black Apply must not report top-level Success when import completed but verification truly failed.'
+    }
+
+    $importFailureResult = & $themeModule {
+        param($FileWriter, $RegistryReader)
+        Invoke-BoostLabThemeBlackAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -FileWriter $FileWriter `
+            -RegistryImporter { param($Path) throw 'Mock import failure.' } `
+            -RegistryReader $RegistryReader
+    } $fileWriter $applyReader
+    if (
+        [bool]$importFailureResult.Success -or
+        [string]$importFailureResult.Status -ne 'Error' -or
+        [string]$importFailureResult.Data.ThemeImportStatus -ne 'Failed' -or
+        [string]$importFailureResult.Data.FinalStatusReason -ne 'CommandError' -or
+        [string]$importFailureResult.Message -notmatch 'Mock import failure'
+    ) {
+        throw 'Theme Black Apply must fail closed when the registry import fails.'
     }
 
     $defaultEvents = [System.Collections.Generic.List[string]]::new()
@@ -472,6 +632,7 @@ try {
     } $defaultFileWriter $defaultRegistryImporter $mockDefaultReader
     if (
         -not $defaultResult.Success -or
+        [string]$defaultResult.Status -ne 'Success' -or
         $defaultResult.Message -ne 'Theme restored to default.' -or
         $defaultResult.Data.CommandStatus -ne 'Completed' -or
         $defaultResult.Data.ThemeImportStatus -ne 'Completed' -or
@@ -493,6 +654,7 @@ try {
     foreach ($result in @($applyResult, $defaultResult)) {
         foreach ($field in @(
             'Success'
+            'Status'
             'ToolId'
             'ToolTitle'
             'Action'
@@ -509,13 +671,16 @@ try {
         }
         foreach ($dataField in @(
             'CommandStatus'
+            'VerificationStatus'
             'ExpectedThemeState'
             'DetectedThemeState'
             'RegistryValuesChecked'
+            'DwmNormalizationAccepted'
             'RegistryFilePath'
             'RegistryFileStatus'
             'ThemeImportStatus'
             'UiRefreshStatus'
+            'FinalStatusReason'
             'CompletedAt'
         )) {
             if ($null -eq $result.Data.PSObject.Properties[$dataField]) {

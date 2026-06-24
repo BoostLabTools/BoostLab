@@ -43,6 +43,9 @@ function New-BoostLabThemeBlackResult {
         [Parameter(Mandatory)]
         [bool]$Success,
 
+        [AllowNull()]
+        [string]$Status = $null,
+
         [Parameter(Mandatory)]
         [string]$Action,
 
@@ -60,6 +63,18 @@ function New-BoostLabThemeBlackResult {
 
     return [pscustomobject]@{
         Success            = $Success
+        Status             = if (-not [string]::IsNullOrWhiteSpace($Status)) {
+            $Status
+        }
+        elseif ($Cancelled) {
+            'Cancelled'
+        }
+        elseif ($Success) {
+            'Success'
+        }
+        else {
+            'Error'
+        }
         ToolId             = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle          = [string]$script:BoostLabToolMetadata['Title']
         Action             = $Action
@@ -291,6 +306,38 @@ function ConvertTo-BoostLabThemeBlackDisplayValue {
     return [string]$Value
 }
 
+function Test-BoostLabThemeBlackDwmNormalizedEquivalent {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [pscustomobject]$Definition,
+
+        [Parameter(Mandatory)]
+        [string]$Actual
+    )
+
+    if ($ActionName -ne 'Apply') {
+        return $false
+    }
+    if ([string]$Definition.Path -ne [string]$script:BoostLabThemePaths['DesktopWindowManager']) {
+        return $false
+    }
+
+    $expected = ([string]$Definition.Expected).ToLowerInvariant()
+    $actualValue = ([string]$Actual).ToLowerInvariant()
+    $allowedPairs = @{
+        'AccentColor|0xff191919' = '0x00000000'
+        'ColorizationColor|0xc4191919' = '0xc4000000'
+        'ColorizationAfterglow|0xc4191919' = '0xc4000000'
+    }
+    $key = '{0}|{1}' -f [string]$Definition.Name, $expected
+
+    return ($allowedPairs.ContainsKey($key) -and [string]$allowedPairs[$key] -eq $actualValue)
+}
+
 function Get-BoostLabThemeBlackRegistryState {
     param(
         [Parameter(Mandatory)]
@@ -477,6 +524,14 @@ function Test-BoostLabThemeBlackState {
         else {
             'The registry state could not be read.'
         }
+        $normalizedEquivalentApplied = (
+            $readSucceeded -and
+            $exists -and
+            (Test-BoostLabThemeBlackDwmNormalizedEquivalent `
+                -ActionName $ActionName `
+                -Definition $definition `
+                -Actual $actual)
+        )
         $status = if (-not $readSucceeded) {
             'Warning'
         }
@@ -486,8 +541,14 @@ function Test-BoostLabThemeBlackState {
         elseif ($definition.ValueType -ne 'KeyAbsent' -and $exists -and $actual -eq $definition.Expected) {
             'Passed'
         }
+        elseif ($normalizedEquivalentApplied) {
+            'Passed'
+        }
         else {
             'Failed'
+        }
+        if ($normalizedEquivalentApplied) {
+            $stateMessage = '{0} Windows normalized the source-defined near-black DWM value to an equivalent black value; accepted for Theme Black verification.' -f $stateMessage
         }
         $checkName = if ($definition.ValueType -eq 'KeyAbsent') {
             [string]$definition.Path
@@ -496,14 +557,17 @@ function Test-BoostLabThemeBlackState {
             '{0}\{1}' -f $definition.Path, $definition.Name
         }
 
-        $checks.Add(
-            (New-BoostLabVerificationCheck `
-                -Name $checkName `
-                -Expected ([string]$definition.Expected) `
-                -Actual $actual `
-                -Status $status `
-                -Message $stateMessage)
-        )
+        $check = New-BoostLabVerificationCheck `
+            -Name $checkName `
+            -Expected ([string]$definition.Expected) `
+            -Actual $actual `
+            -Status $status `
+            -Message $stateMessage
+        $check | Add-Member -NotePropertyName 'NormalizedEquivalentApplied' -NotePropertyValue $normalizedEquivalentApplied -Force
+        if ($normalizedEquivalentApplied) {
+            $check | Add-Member -NotePropertyName 'NormalizationReason' -NotePropertyValue 'Windows DWM normalized source-defined near-black Theme Black value to equivalent black.' -Force
+        }
+        $checks.Add($check)
     }
 
     $overallStatus = if (@($checks | Where-Object { $_.Status -eq 'Failed' }).Count -gt 0) {
@@ -647,24 +711,59 @@ function Invoke-BoostLabThemeBlackAction {
         -RegistryReader $RegistryReader
     $expectedState = [string]$verificationResult.ExpectedState.Theme
     $detectedState = [string]$verificationResult.DetectedState.Theme
+    $verificationStatus = [string]$verificationResult.Status
+    $normalizedDwmChecks = @(
+        $verificationResult.Checks |
+            Where-Object {
+                $null -ne $_.PSObject.Properties['NormalizedEquivalentApplied'] -and
+                [bool]$_.NormalizedEquivalentApplied
+            } |
+            ForEach-Object {
+                [pscustomobject]@{
+                    Name     = [string]$_.Name
+                    Expected = [string]$_.Expected
+                    Actual   = [string]$_.Actual
+                    Reason   = [string]$_.NormalizationReason
+                }
+            }
+    )
     $completedAt = Get-Date
+    $finalStatusReason = if ($errors.Count -gt 0) {
+        'CommandError'
+    }
+    elseif ($verificationStatus -eq 'Failed') {
+        'VerificationFailed'
+    }
+    elseif ($verificationStatus -eq 'Warning') {
+        'VerificationWarning'
+    }
+    elseif ($normalizedDwmChecks.Count -gt 0) {
+        'PassedWithDwmNormalization'
+    }
+    else {
+        'CompletedVerified'
+    }
     $data = [pscustomobject]@{
         CommandStatus         = $commandStatus
+        VerificationStatus    = $verificationStatus
         ExpectedThemeState    = $expectedState
         DetectedThemeState    = $detectedState
         RegistryValuesChecked = @(
             $verificationResult.Checks | ForEach-Object { [string]$_.Name }
         )
+        DwmNormalizationAccepted = $normalizedDwmChecks
         RegistryFilePath      = $registryFilePath
         RegistryFileStatus    = $registryFileStatus
         ThemeImportStatus     = $themeImportStatus
         UiRefreshStatus       = 'Not required by the Ultimate source'
+        FinalStatusReason     = $finalStatusReason
         CompletedAt           = $completedAt
     }
 
     if ($errors.Count -gt 0) {
         return New-BoostLabThemeBlackResult `
             -Success $false `
+            -Status 'Error' `
             -Action $ActionName `
             -Message ("Theme Black action failed: {0}" -f ($errors -join '; ')) `
             -Data $data `
@@ -683,9 +782,24 @@ function Invoke-BoostLabThemeBlackAction {
     else {
         'Theme restored to default.'
     }
+    if ($normalizedDwmChecks.Count -gt 0) {
+        $message = "$message DWM color values were normalized by Windows to equivalent black values and accepted."
+    }
+
+    $success = $verificationStatus -ne 'Failed'
+    $status = if ($verificationStatus -eq 'Failed') {
+        'Error'
+    }
+    elseif ($verificationStatus -eq 'Warning') {
+        'Warning'
+    }
+    else {
+        'Success'
+    }
 
     return New-BoostLabThemeBlackResult `
-        -Success $true `
+        -Success $success `
+        -Status $status `
         -Action $ActionName `
         -Message $message `
         -Data $data `

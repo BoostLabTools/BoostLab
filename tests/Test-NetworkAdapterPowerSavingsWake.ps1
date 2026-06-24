@@ -996,7 +996,7 @@ $protectedModules = [ordered]@{
     }
     'Theme Black' = @{
         Path = Join-Path $modulesRoot 'Windows\ThemeBlack.psm1'
-        Hash = '29F3474D93061B01E3CF9F23EADA88E932E90E4984EBB39F7DB2BEB24732230F'
+        Hash = '76E606B73300CD8A5C729500DC1516166DB80C4D389ECF2094BB6E9376EEA60A'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'GameBar' = @{
