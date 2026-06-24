@@ -738,6 +738,74 @@ try {
         }
     }
 
+    $realWorldWarningNames = @(
+        'Intel graphics power plan'
+        'AMD power slider overlay'
+        'ATI PowerPlay'
+        'Switchable dynamic graphics'
+        'System cooling policy'
+        'Battery saver screen brightness'
+        'Battery saver threshold'
+    )
+    $realWorldWarningKeys = @{}
+    foreach ($definition in @($definitions | Where-Object { $_.Name -in $realWorldWarningNames })) {
+        $realWorldWarningKeys["$($definition.Subgroup)|$($definition.Setting)"] = $definition.Name
+    }
+    $realWorldWarningSettingReader = {
+        param($SchemeGuid, $SubgroupGuid, $SettingGuid)
+        $key = "$SubgroupGuid|$SettingGuid"
+        if ($realWorldWarningKeys.ContainsKey($key)) {
+            return [pscustomobject]@{
+                Succeeded = $true
+                Supported = $false
+                ACValue = $null
+                DCValue = $null
+                Message = 'powercfg output did not expose readable AC and DC indexes.'
+            }
+        }
+
+        return (& $applySettingReader $SchemeGuid $SubgroupGuid $SettingGuid)
+    }.GetNewClosure()
+    $summaryPowerInvoker = {
+        param($Arguments)
+        $isActiveDelete = $Arguments[0] -eq '/delete' -and $Arguments[1] -eq $boostLabGuid
+        return [pscustomobject]@{
+            Succeeded = -not $isActiveDelete
+            ExitCode = if ($isActiveDelete) { 1 } else { 0 }
+            Output = if ($isActiveDelete) { @('The active power scheme cannot be deleted.') } else { @() }
+            Message = if ($isActiveDelete) { 'The active power scheme cannot be deleted.' } else { 'Mock powercfg completed.' }
+        }
+    }.GetNewClosure()
+    $realWorldWarningResult = & $powerModule {
+        param($PowerInvoker, $RegistryInvoker, $InitialReader, $FinalReader, $SettingReader, $RegistryReader)
+        Invoke-BoostLabPowerPlanAction -ActionName 'Apply' -AdministratorChecker { return $true } -PowerCfgInvoker $PowerInvoker -RegistryInvoker $RegistryInvoker -PlanInventoryReader $InitialReader -VerificationPlanInventoryReader $FinalReader -PowerSettingReader $SettingReader -RegistryReader $RegistryReader -UiLauncher { }
+    } $summaryPowerInvoker $applyRegistryInvoker $initialInventory $applyFinalInventory $realWorldWarningSettingReader $applyRegistryReader
+    if (
+        -not $realWorldWarningResult.Success -or
+        $realWorldWarningResult.Status -ne 'Warning' -or
+        $realWorldWarningResult.VerificationResult.Status -ne 'Warning' -or
+        $realWorldWarningResult.Data.FinalStatusReason -ne 'ActivePlanVerifiedWithCompatibilityWarnings' -or
+        -not [bool]$realWorldWarningResult.Data.ActivePlanVerified -or
+        [int]$realWorldWarningResult.Data.HardwareSpecificUnsupportedSettingCount -ne 4 -or
+        [int]$realWorldWarningResult.Data.UnreadablePowerCfgIndexWarningCount -ne 3 -or
+        [int]$realWorldWarningResult.Data.UnexpectedFailureCount -ne 0 -or
+        [string]::IsNullOrWhiteSpace([string]$realWorldWarningResult.Data.ExpectedActiveSchemeDeleteWarning) -or
+        -not ([string]$realWorldWarningResult.Message).Contains('BoostLab Ultimate scheme is active')
+    ) {
+        throw 'Power Plan did not classify active-plan and hardware-specific warnings clearly.'
+    }
+    foreach ($expectedHardwareWarning in @('Intel graphics power plan', 'AMD power slider overlay', 'ATI PowerPlay', 'Switchable dynamic graphics')) {
+        if ($expectedHardwareWarning -notin @($realWorldWarningResult.Data.HardwareSpecificUnsupportedSettings)) {
+            throw "Power Plan hardware-specific warning summary is missing: $expectedHardwareWarning"
+        }
+    }
+    foreach ($expectedUnreadableWarning in @('System cooling policy', 'Battery saver screen brightness', 'Battery saver threshold')) {
+        $matchingWarning = @($realWorldWarningResult.Data.UnreadablePowerCfgIndexWarnings | Where-Object { [string]$_ -like "*$expectedUnreadableWarning*" })
+        if ($matchingWarning.Count -eq 0) {
+            throw "Power Plan unreadable-index warning summary is missing: $expectedUnreadableWarning"
+        }
+    }
+
     $unexpectedPowerInvoker = {
         param($Arguments)
         $isActiveDelete = $Arguments[0] -eq '/delete' -and $Arguments[1] -eq $boostLabGuid
@@ -843,6 +911,18 @@ try {
             throw "Power Plan incorrectly classified a fatal command failure as Warning: $($classificationCheck.Message)"
         }
     }
+    $activeDeleteDetail = & $powerModule {
+        param($BoostLabGuid)
+        Get-BoostLabPowerCfgCompatibilityWarningDetail -Arguments @('/delete', $BoostLabGuid) -Result ([pscustomobject]@{
+            Succeeded = $false
+            ExitCode = 1
+            Output = @('The active power scheme cannot be deleted.')
+            Message = 'The active power scheme cannot be deleted.'
+        }) -Description "Delete enumerated power scheme $BoostLabGuid"
+    } $boostLabGuid
+    if (-not [bool]$activeDeleteDetail.IsWarning -or [string]$activeDeleteDetail.Detail.Category -ne 'ActiveSchemeDeleteAttemptExpected') {
+        throw 'Power Plan did not classify active-scheme delete as expected/benign.'
+    }
 
     $defaultEvents = [System.Collections.Generic.List[string]]::new()
     $defaultPowerCommands = [System.Collections.Generic.List[string]]::new()
@@ -889,12 +969,25 @@ try {
         foreach ($field in @(
             'CommandStatus'
             'VerificationStatus'
+            'FinalStatusReason'
+            'ActivePlanVerified'
+            'PassedSettingCount'
+            'HardwareSpecificUnsupportedSettingCount'
+            'HardwareSpecificUnsupportedSettings'
+            'ExpectedActiveSchemeDeleteWarning'
+            'UnreadablePowerCfgIndexWarningCount'
+            'UnreadablePowerCfgIndexWarnings'
+            'OtherCompatibilityWarningCount'
+            'OtherCompatibilityWarnings'
+            'UnexpectedFailureCount'
+            'UnexpectedFailures'
             'ExpectedPowerPlanState'
             'DetectedPowerPlanState'
             'PowerPlanGuidsTargeted'
             'PowerCfgCommandsOrSettingsChecked'
             'RegistryValuesOrFilesChecked'
             'Warnings'
+            'WarningClassifications'
             'Errors'
             'PowerOptionsStatus'
             'CompletedAt'

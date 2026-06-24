@@ -22,6 +22,12 @@ $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabUltimateSchemeGuid = 'e9a42b02-d5df-448d-aa00-03f14749eb61'
 $script:BoostLabPowerSchemeGuid = '99999999-9999-9999-9999-999999999999'
 $script:BoostLabBalancedSchemeGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
+$script:BoostLabHardwareSpecificPowerSettingNames = @(
+    'Intel graphics power plan'
+    'AMD power slider overlay'
+    'ATI PowerPlay'
+    'Switchable dynamic graphics'
+)
 
 $script:BoostLabPowerSettingDefinitions = @(
     [pscustomobject]@{ Name = 'Turn off hard disk after'; Subgroup = '0012ee47-9041-4b5d-9b77-535fba8b1442'; Setting = '6738e2c4-e8a5-4a42-b16a-e040e769756e'; AC = '0x00000000'; DC = '0x00000000' }
@@ -153,17 +159,47 @@ function ConvertTo-BoostLabCommandResult {
     }
 }
 
-function Test-BoostLabPowerCfgCompatibilityWarning {
+function Get-BoostLabPowerSettingDefinitionByGuid {
+    param([Parameter(Mandatory)][string]$SettingGuid)
+
+    return @($script:BoostLabPowerSettingDefinitions |
+        Where-Object { [string]$_.Setting -eq $SettingGuid } |
+        Select-Object -First 1)
+}
+
+function New-BoostLabPowerWarningDetail {
+    param(
+        [Parameter(Mandatory)][string]$Category,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Description,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Message,
+        [AllowEmptyString()][string]$SettingName = '',
+        [string[]]$Arguments = @()
+    )
+
+    return [pscustomobject]@{
+        Category = $Category
+        Description = $Description
+        Message = $Message
+        SettingName = $SettingName
+        Arguments = @($Arguments)
+    }
+}
+
+function Get-BoostLabPowerCfgCompatibilityWarningDetail {
     param(
         [Parameter(Mandatory)]
         [string[]]$Arguments,
 
         [Parameter(Mandatory)]
-        [object]$Result
+        [object]$Result,
+
+        [AllowEmptyString()]
+        [string]$Description = ''
     )
 
+    $notWarning = [pscustomobject]@{ IsWarning = $false; Detail = $null }
     if ([bool]$Result.Succeeded -or $Arguments.Count -eq 0) {
-        return $false
+        return $notWarning
     }
 
     $commandName = ([string]$Arguments[0]).ToLowerInvariant()
@@ -179,7 +215,10 @@ function Test-BoostLabPowerCfgCompatibilityWarning {
         [string]$Arguments[2] -eq $script:BoostLabPowerSchemeGuid -and
         $diagnosticText -match '(?i)(scheme\s+could\s+not\s+be\s+duplicated\s+because\s+)?a?\s*power\s+scheme\s+with\s+the\s+specified\s+GUID\s+already\s+exists'
     ) {
-        return $true
+        return [pscustomobject]@{
+            IsWarning = $true
+            Detail = New-BoostLabPowerWarningDetail -Category 'ExistingTargetSchemeReuse' -Description $Description -Message ([string]$Result.Message) -Arguments $Arguments
+        }
     }
 
     if (
@@ -188,27 +227,162 @@ function Test-BoostLabPowerCfgCompatibilityWarning {
         [string]$Arguments[1] -eq $script:BoostLabPowerSchemeGuid -and
         $diagnosticText -match '(?i)\bactive\s+(power\s+scheme|plan)\s+cannot\s+be\s+deleted\b'
     ) {
-        return $true
+        return [pscustomobject]@{
+            IsWarning = $true
+            Detail = New-BoostLabPowerWarningDetail -Category 'ActiveSchemeDeleteAttemptExpected' -Description $Description -Message ([string]$Result.Message) -Arguments $Arguments
+        }
     }
 
     if ($commandName -notin @('/setacvalueindex', '/setdcvalueindex')) {
-        return $false
+        return $notWarning
     }
 
-    if ($diagnosticText -match '(?i)the\s+power\s+scheme,\s*subgroup\s+or\s+setting\s+specified\s+does\s+not\s+exist') {
-        return $true
-    }
-    if ($diagnosticText -match '(?i)\b(power\s+)?setting\b.*\b(unavailable|unsupported|not\s+supported|does\s+not\s+exist)\b') {
-        return $true
-    }
-    if ($diagnosticText -match '(?i)\b(unavailable|unsupported|not\s+supported)\b.*\b(power\s+)?setting\b') {
-        return $true
-    }
-    if ($diagnosticText -match '(?i)powercfg\s+output\s+did\s+not\s+expose\s+readable\s+AC\s+and\s+DC\s+indexes') {
-        return $true
+    $isUnsupportedSetting = (
+        $diagnosticText -match '(?i)the\s+power\s+scheme,\s*subgroup\s+or\s+setting\s+specified\s+does\s+not\s+exist' -or
+        $diagnosticText -match '(?i)\b(power\s+)?setting\b.*\b(unavailable|unsupported|not\s+supported|does\s+not\s+exist)\b' -or
+        $diagnosticText -match '(?i)\b(unavailable|unsupported|not\s+supported)\b.*\b(power\s+)?setting\b' -or
+        $diagnosticText -match '(?i)powercfg\s+output\s+did\s+not\s+expose\s+readable\s+AC\s+and\s+DC\s+indexes'
+    )
+    if (-not $isUnsupportedSetting) {
+        return $notWarning
     }
 
-    return $false
+    $settingName = ''
+    if ($Arguments.Count -gt 3) {
+        $definition = @(Get-BoostLabPowerSettingDefinitionByGuid -SettingGuid ([string]$Arguments[3]))
+        if ($definition.Count -gt 0) {
+            $settingName = [string]$definition[0].Name
+        }
+    }
+    $category = if ($settingName -in $script:BoostLabHardwareSpecificPowerSettingNames) {
+        'HardwareSpecificUnsupportedSetting'
+    }
+    else {
+        'UnsupportedPowerCfgSetting'
+    }
+
+    return [pscustomobject]@{
+        IsWarning = $true
+        Detail = New-BoostLabPowerWarningDetail -Category $category -Description $Description -Message ([string]$Result.Message) -SettingName $settingName -Arguments $Arguments
+    }
+}
+
+function Test-BoostLabPowerCfgCompatibilityWarning {
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$Arguments,
+
+        [Parameter(Mandatory)]
+        [object]$Result
+    )
+
+    $classification = Get-BoostLabPowerCfgCompatibilityWarningDetail -Arguments $Arguments -Result $Result
+    return [bool]$classification.IsWarning
+}
+
+function Get-BoostLabPowerSettingNameFromCheck {
+    param([Parameter(Mandatory)][object]$Check)
+
+    $name = [string]$Check.Name
+    if ($name -match '^Power setting \| (?<SettingName>.+?) \| ') {
+        return [string]$Matches.SettingName
+    }
+
+    return ''
+}
+
+function Get-BoostLabPowerPlanWarningSummary {
+    param(
+        [object[]]$CommandWarnings = @(),
+        [AllowNull()][object]$VerificationResult = $null,
+        [string[]]$Errors = @()
+    )
+
+    $checks = if ($null -ne $VerificationResult -and $null -ne $VerificationResult.PSObject.Properties['Checks']) {
+        @($VerificationResult.Checks)
+    }
+    else {
+        @()
+    }
+
+    $activeCheck = @($checks | Where-Object { [string]$_.Name -eq 'Active power plan GUID' } | Select-Object -First 1)
+    $activePlanVerified = $activeCheck.Count -gt 0 -and [string]$activeCheck[0].Status -eq 'Passed'
+    $powerSettingChecks = @($checks | Where-Object { [string]$_.Name -like 'Power setting | *' })
+    $passedSettingCount = @($powerSettingChecks | Where-Object { [string]$_.Status -eq 'Passed' }).Count
+
+    $hardwareNames = [System.Collections.Generic.List[string]]::new()
+    $unreadableWarnings = [System.Collections.Generic.List[string]]::new()
+    $otherWarnings = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($warning in @($CommandWarnings)) {
+        $category = [string]$warning.Category
+        $settingName = [string]$warning.SettingName
+        if ($category -eq 'HardwareSpecificUnsupportedSetting' -and -not [string]::IsNullOrWhiteSpace($settingName) -and $settingName -notin $hardwareNames) {
+            $hardwareNames.Add($settingName)
+        }
+        elseif ($category -notin @('ActiveSchemeDeleteAttemptExpected', 'ExistingTargetSchemeReuse')) {
+            $text = [string]$warning.Description
+            if ([string]::IsNullOrWhiteSpace($text)) { $text = [string]$warning.Message }
+            if (-not [string]::IsNullOrWhiteSpace($text)) { $otherWarnings.Add($text) }
+        }
+    }
+
+    foreach ($check in @($checks | Where-Object { [string]$_.Status -eq 'Warning' })) {
+        $settingName = Get-BoostLabPowerSettingNameFromCheck -Check $check
+        if ($settingName -in $script:BoostLabHardwareSpecificPowerSettingNames) {
+            if ($settingName -notin $hardwareNames) {
+                $hardwareNames.Add($settingName)
+            }
+            continue
+        }
+
+        if ([string]$check.Message -match '(?i)powercfg\s+output\s+did\s+not\s+expose\s+readable\s+AC\s+and\s+DC\s+indexes') {
+            $unreadableWarnings.Add([string]$check.Name)
+        }
+        else {
+            $otherWarnings.Add([string]$check.Name)
+        }
+    }
+
+    $activeDeleteWarning = @($CommandWarnings | Where-Object { [string]$_.Category -eq 'ActiveSchemeDeleteAttemptExpected' } | Select-Object -First 1)
+    $failedChecks = @($checks | Where-Object { [string]$_.Status -eq 'Failed' })
+    $unexpectedFailures = [System.Collections.Generic.List[string]]::new()
+    foreach ($errorText in @($Errors)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$errorText)) {
+            $unexpectedFailures.Add([string]$errorText)
+        }
+    }
+    foreach ($check in $failedChecks) {
+        $unexpectedFailures.Add(('{0}: {1}' -f [string]$check.Name, [string]$check.Message))
+    }
+
+    $finalStatusReason = if ($unexpectedFailures.Count -gt 0) {
+        'UnexpectedPowerCfgFailure'
+    }
+    elseif ($activePlanVerified -and ($hardwareNames.Count -gt 0 -or $unreadableWarnings.Count -gt 0 -or $otherWarnings.Count -gt 0 -or $activeDeleteWarning.Count -gt 0)) {
+        'ActivePlanVerifiedWithCompatibilityWarnings'
+    }
+    elseif ($hardwareNames.Count -gt 0 -or $unreadableWarnings.Count -gt 0 -or $otherWarnings.Count -gt 0 -or $activeDeleteWarning.Count -gt 0) {
+        'CompletedWithCompatibilityWarnings'
+    }
+    else {
+        'CompletedWithoutWarnings'
+    }
+
+    return [pscustomobject]@{
+        FinalStatusReason = $finalStatusReason
+        ActivePlanVerified = $activePlanVerified
+        PassedSettingCount = $passedSettingCount
+        HardwareSpecificUnsupportedSettingCount = $hardwareNames.Count
+        HardwareSpecificUnsupportedSettings = $hardwareNames.ToArray()
+        ExpectedActiveSchemeDeleteWarning = if ($activeDeleteWarning.Count -gt 0) { [string]$activeDeleteWarning[0].Description } else { '' }
+        UnreadablePowerCfgIndexWarningCount = $unreadableWarnings.Count
+        UnreadablePowerCfgIndexWarnings = $unreadableWarnings.ToArray()
+        OtherCompatibilityWarningCount = $otherWarnings.Count
+        OtherCompatibilityWarnings = $otherWarnings.ToArray()
+        UnexpectedFailureCount = $unexpectedFailures.Count
+        UnexpectedFailures = $unexpectedFailures.ToArray()
+    }
 }
 
 function Invoke-BoostLabPowerCfgCommand {
@@ -611,6 +785,7 @@ function Invoke-BoostLabPowerPlanAction {
     $attempted = [System.Collections.Generic.List[string]]::new()
     $completed = [System.Collections.Generic.List[string]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
+    $warningDetails = [System.Collections.Generic.List[object]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
     $targetedGuids = [System.Collections.Generic.List[string]]::new()
     $initialPlanGuids = @()
@@ -624,11 +799,15 @@ function Invoke-BoostLabPowerPlanAction {
         if ($result.Succeeded) {
             $completed.Add($Description)
         }
-        elseif (Test-BoostLabPowerCfgCompatibilityWarning -Arguments $Arguments -Result $result) {
-            $warnings.Add("${Description}: $($result.Message)")
-        }
         else {
-            $errors.Add("${Description}: $($result.Message)")
+            $warningClassification = Get-BoostLabPowerCfgCompatibilityWarningDetail -Arguments $Arguments -Result $result -Description $Description
+            if ([bool]$warningClassification.IsWarning) {
+                $warnings.Add("${Description}: $($result.Message)")
+                $warningDetails.Add($warningClassification.Detail)
+            }
+            else {
+                $errors.Add("${Description}: $($result.Message)")
+            }
         }
         return $result
     }
@@ -728,9 +907,22 @@ function Invoke-BoostLabPowerPlanAction {
         '/list active scheme'
     )
     $commandStatus = if ($errors.Count -gt 0) { 'Completed with errors' } elseif ($warnings.Count -gt 0) { 'Completed with warnings' } else { 'Completed' }
+    $warningSummary = Get-BoostLabPowerPlanWarningSummary -CommandWarnings $warningDetails.ToArray() -VerificationResult $verification -Errors $errors.ToArray()
     $data = [pscustomobject]@{
         CommandStatus = $commandStatus
         VerificationStatus = [string]$verification.Status
+        FinalStatusReason = [string]$warningSummary.FinalStatusReason
+        ActivePlanVerified = [bool]$warningSummary.ActivePlanVerified
+        PassedSettingCount = [int]$warningSummary.PassedSettingCount
+        HardwareSpecificUnsupportedSettingCount = [int]$warningSummary.HardwareSpecificUnsupportedSettingCount
+        HardwareSpecificUnsupportedSettings = @($warningSummary.HardwareSpecificUnsupportedSettings)
+        ExpectedActiveSchemeDeleteWarning = [string]$warningSummary.ExpectedActiveSchemeDeleteWarning
+        UnreadablePowerCfgIndexWarningCount = [int]$warningSummary.UnreadablePowerCfgIndexWarningCount
+        UnreadablePowerCfgIndexWarnings = @($warningSummary.UnreadablePowerCfgIndexWarnings)
+        OtherCompatibilityWarningCount = [int]$warningSummary.OtherCompatibilityWarningCount
+        OtherCompatibilityWarnings = @($warningSummary.OtherCompatibilityWarnings)
+        UnexpectedFailureCount = [int]$warningSummary.UnexpectedFailureCount
+        UnexpectedFailures = @($warningSummary.UnexpectedFailures)
         ExpectedPowerPlanState = [string]$verification.ExpectedState.PowerPlan
         DetectedPowerPlanState = [string]$verification.DetectedState.PowerPlan
         PowerPlanGuidsTargeted = $targetedGuids.ToArray()
@@ -739,6 +931,7 @@ function Invoke-BoostLabPowerPlanAction {
         CommandsAttempted = $attempted.ToArray()
         CommandsCompleted = $completed.ToArray()
         Warnings = $warnings.ToArray()
+        WarningClassifications = $warningDetails.ToArray()
         Errors = $errors.ToArray()
         PowerOptionsStatus = $uiStatus
         CompletedAt = $completedAt
@@ -751,7 +944,12 @@ function Invoke-BoostLabPowerPlanAction {
         return New-BoostLabPowerPlanResult -Success $false -Action $ActionName -Message 'Power Plan commands completed, but verification detected an unexpected state.' -Data $data -VerificationResult $verification
     }
     $message = if ($verification.Status -eq 'Warning' -or $warnings.Count -gt 0) {
-        'Power Plan commands completed with warnings; review unsupported settings and command details.'
+        if ([string]$warningSummary.FinalStatusReason -eq 'ActivePlanVerifiedWithCompatibilityWarnings' -and $ActionName -eq 'Apply') {
+            'Power Plan applied and the BoostLab Ultimate scheme is active; review expected hardware-specific or unreadable setting warnings.'
+        }
+        else {
+            'Power Plan commands completed with compatibility warnings; review unsupported settings and command details.'
+        }
     }
     elseif ($ActionName -eq 'Apply') {
         'Ultimate Power Plan applied.'
