@@ -210,9 +210,10 @@
                     Order       = 1
                     Type        = 'assistant'
                     RiskLevel   = 'high'
-                    Description = 'Selected-app installer queue. Installs only Yazan-retained Ultimate app choices in source order after confirmation; removed app choices are hidden and unavailable.'
+                    Description = 'Single-app installer workflow. Installs exactly one Yazan-retained Ultimate app choice per Apply after confirmation; removed app choices are hidden and unavailable.'
                     Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    SelectionMode = 'MultiSelect'
+                    SelectionMode = 'SingleSelect'
+                    SelectionLabel = 'Select exactly one app to install'
                     SelectionRequiredActions = @('Apply')
                     SelectionItems = @(
                         @{ Id = 'discord'; Title = 'Discord'; SourceMenuNumber = 2 }

@@ -96,8 +96,9 @@ $installersStage = @($config.Stages | Where-Object { [string]$_['Name'] -eq 'Ins
 $installersTool = @($installersStage.Tools | Where-Object { [string]$_['Id'] -eq 'installers' })[0]
 Assert-BoostLabCondition ($null -ne $installersTool) 'Installers tool metadata is missing.'
 Assert-BoostLabCondition ((@($installersTool.Actions) -join ',') -eq 'Analyze,Open,Apply,Default,Restore') 'Installers must expose canonical actions only.'
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must declare checkbox multi-select mode.'
-Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require selected app IDs.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must declare single-select mode.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require one app.'
+Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require one selected app ID.'
 
 $selectionItems = @($installersTool.SelectionItems)
 $expectedRetainedIds = @(
@@ -139,12 +140,14 @@ foreach ($falseCapability in @('CanReboot', 'CanModifyDrivers', 'CanModifySecuri
 $module = Import-Module -Name $modulePath -Force -PassThru -Scope Local
 try {
     $info = & $module { Get-BoostLabToolInfo }
-    Assert-BoostLabCondition ([string]$info.SelectionMode -eq 'MultiSelect') 'Module info must expose MultiSelect selection mode.'
+    Assert-BoostLabCondition ([string]$info.SelectionMode -eq 'SingleSelect') 'Module info must expose SingleSelect selection mode.'
+    Assert-BoostLabCondition ([string]$info.SelectionLabel -eq 'Select exactly one app to install') 'Module info selection label mismatch.'
     Assert-BoostLabCondition (@($info.SelectionItems).Count -eq 17) 'Module info must expose 17 retained selection items.'
 
     $analyze = & $module { Invoke-BoostLabToolAction -ActionName 'Analyze' }
     Assert-BoostLabCondition ([bool]$analyze.Success) 'Installers Analyze should succeed.'
-    Assert-BoostLabCondition ([string]$analyze.Data.Mode -eq 'SelectedAppSequentialQueue') 'Analyze mode mismatch.'
+    Assert-BoostLabCondition ([string]$analyze.Data.Mode -eq 'SingleSelectedAppInstall') 'Analyze mode mismatch.'
+    Assert-BoostLabCondition ([string]$analyze.Data.SelectionModel -eq 'SingleSelect') 'Analyze selection model mismatch.'
     Assert-BoostLabCondition ([int]$analyze.Data.RetainedAppCount -eq 17) 'Analyze retained app count mismatch.'
     Assert-BoostLabCondition ([int]$analyze.Data.RetainedArtifactCount -eq 18) 'Analyze retained artifact count mismatch.'
     Assert-BoostLabCondition ([bool]$analyze.Data.NoMutationOccurred) 'Analyze must be read-only.'
@@ -175,10 +178,10 @@ try {
         Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($commandText)) "$representative command descriptor is empty."
     }
 
-    $seen = [System.Collections.Generic.List[object]]::new()
+    $discordSeen = [System.Collections.Generic.List[object]]::new()
     $mockExecutor = {
         param($Operation, $App)
-        $seen.Add([pscustomobject]@{
+        $discordSeen.Add([pscustomobject]@{
             AppId = [string]$App.AppId
             Operation = [string]$Operation.Label
         })
@@ -189,24 +192,21 @@ try {
             AppId = [string]$App.AppId
         }
     }
-    $apply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('steam', 'discord', 'google-chrome') -OperationExecutor $args[0] -SkipEnvironmentChecks } $mockExecutor
-    Assert-BoostLabCondition ([bool]$apply.Success) 'Mocked Installers Apply should complete.'
-    Assert-BoostLabCondition ([bool]$apply.ChangesExecuted) 'Mocked Apply should report changes executed.'
-    Assert-BoostLabCondition (((@($apply.Data.Queue | ForEach-Object { [string]$_.AppId }) -join ',') -eq 'discord,google-chrome,steam')) 'Apply queue must follow source order, not selection order.'
+    $apply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord') -OperationExecutor $args[0] -SkipEnvironmentChecks } $mockExecutor
+    Assert-BoostLabCondition ([bool]$apply.Success) 'Mocked Installers Apply should complete for exactly one selected app.'
+    Assert-BoostLabCondition ([bool]$apply.ChangesExecuted) 'Mocked single-app Apply should report changes executed.'
+    Assert-BoostLabCondition ([string]$apply.Data.SelectedApp.AppId -eq 'discord') 'Apply should record Discord as the selected app.'
+    Assert-BoostLabCondition ([string]$apply.Data.CompletedApp.AppId -eq 'discord') 'Apply should record Discord as the completed app.'
+    Assert-BoostLabCondition ($null -eq $apply.Data.FailedApp) 'Successful single-app Apply must not report a failed app.'
+    Assert-BoostLabCondition (((@($apply.Data.OperationResults | ForEach-Object { [string]$_.AppId }) | Sort-Object -Unique) -join ',') -eq 'discord') 'Discord-only run must not execute other apps.'
+    Assert-BoostLabCondition (((@($apply.Data.Queue | ForEach-Object { [string]$_.AppId }) -join ',') -eq 'discord')) 'Legacy diagnostic queue must contain only the selected app.'
+    Assert-BoostLabCondition (@($apply.Data.RemainingApps).Count -eq 0) 'Single-app mode must not report remaining queued apps.'
     Assert-BoostLabCondition ([string]$apply.VerificationResult.Status -eq 'Passed') 'Apply verification should pass in mocked success path.'
 
-    $seenAppOrder = @($seen | ForEach-Object { [string]$_.AppId })
-    $firstSteamIndex = [Array]::IndexOf($seenAppOrder, 'steam')
-    $lastDiscordIndex = [Array]::LastIndexOf($seenAppOrder, 'discord')
-    $firstChromeIndex = [Array]::IndexOf($seenAppOrder, 'google-chrome')
-    $lastChromeIndex = [Array]::LastIndexOf($seenAppOrder, 'google-chrome')
-    Assert-BoostLabCondition ($lastDiscordIndex -lt $firstChromeIndex) 'Google Chrome must not start until Discord operations finish.'
-    Assert-BoostLabCondition ($lastChromeIndex -lt $firstSteamIndex) 'Steam must not start until Google Chrome operations finish.'
-
-    $sevenZipQueueSeen = [System.Collections.Generic.List[string]]::new()
-    $sevenZipQueueExecutor = {
+    $branchSelectionSeen = [System.Collections.Generic.List[string]]::new()
+    $branchSelectionExecutor = {
         param($Operation, $App)
-        $sevenZipQueueSeen.Add([string]$App.AppId)
+        $branchSelectionSeen.Add([string]$App.AppId)
         [pscustomobject]@{
             Success = $true
             Message = 'mock operation completed'
@@ -214,11 +214,16 @@ try {
             AppId = [string]$App.AppId
         }
     }
-    $sevenZipQueueApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip', 'brave', 'steam') -OperationExecutor $args[0] -SkipEnvironmentChecks } $sevenZipQueueExecutor
-    Assert-BoostLabCondition ([bool]$sevenZipQueueApply.Success) 'Mocked Installers Apply should continue past 7-Zip when verification succeeds.'
-    Assert-BoostLabCondition (((@($sevenZipQueueApply.Data.Queue | ForEach-Object { [string]$_.AppId }) -join ',') -eq 'discord,seven-zip,brave,steam')) 'Discord, 7-Zip, Brave, Steam queue must remain in retained source order.'
-    Assert-BoostLabCondition ('brave' -in @($sevenZipQueueSeen)) 'Brave should start after a successful 7-Zip app queue segment.'
-    Assert-BoostLabCondition ('steam' -in @($sevenZipQueueSeen)) 'Steam should start after a successful 7-Zip app queue segment.'
+    $branchSelectionApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -Branch 'seven-zip' -OperationExecutor $args[0] -SkipEnvironmentChecks } $branchSelectionExecutor
+    Assert-BoostLabCondition ([bool]$branchSelectionApply.Success) 'SingleSelect Branch option should run the selected Installers app.'
+    Assert-BoostLabCondition ([string]$branchSelectionApply.Data.SelectedApp.AppId -eq 'seven-zip') 'Branch-selected Installers Apply should select 7-Zip.'
+    Assert-BoostLabCondition (((@($branchSelectionSeen) | Sort-Object -Unique) -join ',') -eq 'seven-zip') 'Branch-selected Installers Apply must not execute unrelated apps.'
+
+    $multiSelection = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip') -OperationExecutor { throw 'side effects should not start for multi-select' } -SkipEnvironmentChecks }
+    Assert-BoostLabCondition (-not [bool]$multiSelection.Success) 'Selecting more than one installer app must fail closed.'
+    Assert-BoostLabCondition ([string]$multiSelection.Status -eq 'SelectionRequired') 'Multi-selection should be blocked as a selection precondition.'
+    Assert-BoostLabCondition (-not [bool]$multiSelection.ChangesExecuted) 'Multi-selection must execute no side effects.'
+    Assert-BoostLabContains -Text ([string]$multiSelection.Message) -Needle 'exactly one' -Description 'Installers multi-selection validation message'
 
     $activeSetupProbe = & $module {
         $removedKeys = [System.Collections.Generic.List[string]]::new()
@@ -366,9 +371,9 @@ try {
             Details = $details
         }
     }
-    $braveObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('brave', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $braveObsExecutor
-    Assert-BoostLabCondition ([bool]$braveObsApply.Success) 'Installers queue should continue after Brave Active Setup cleanup with missing default values.'
-    Assert-BoostLabCondition ('obs-studio' -in @($braveObsSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio should start after Brave cleanup succeeds.'
+    $braveObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('brave') -OperationExecutor $args[0] -SkipEnvironmentChecks } $braveObsExecutor
+    Assert-BoostLabCondition ([bool]$braveObsApply.Success) 'Installers should complete a Brave-only run after Active Setup cleanup with missing default values.'
+    Assert-BoostLabCondition (((@($braveObsSeen | ForEach-Object { ([string]$_).Split('|')[0] }) | Sort-Object -Unique) -join ',') -eq 'brave') 'Brave-only run must not execute another installer app.'
     $braveActiveSetupResult = @($braveObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'brave' -and [string]$_.Operation.Type -eq 'RemoveActiveSetupByDefaultMatch' })[0]
     Assert-BoostLabCondition ([int]$braveActiveSetupResult.Details.MissingDefaultCount -eq 1) 'Brave Active Setup result should report missing default values as non-fatal details.'
 
@@ -400,9 +405,9 @@ try {
             Details = $details
         }
     }
-    $epicObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicObsExecutor
-    Assert-BoostLabCondition ([bool]$epicObsApply.Success) 'Installers queue should continue after Epic Online Services cleanup when uninstall entries have no DisplayName but no real failure occurs.'
-    Assert-BoostLabCondition ('obs-studio' -in @($epicObsSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio should start after Epic Online Services cleanup succeeds.'
+    $epicObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicObsExecutor
+    Assert-BoostLabCondition ([bool]$epicObsApply.Success) 'Installers should complete an Epic Games-only run after Epic Online Services cleanup when uninstall entries have no DisplayName but no real failure occurs.'
+    Assert-BoostLabCondition (((@($epicObsSeen | ForEach-Object { ([string]$_).Split('|')[0] }) | Sort-Object -Unique) -join ',') -eq 'epic-games') 'Epic Games-only run must not execute another installer app.'
     $epicUninstallResult = @($epicObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'epic-games' -and [string]$_.Operation.Type -eq 'UninstallByDisplayName' })[0]
     Assert-BoostLabCondition ([int]$epicUninstallResult.Details.MissingDisplayNameCount -eq 2) 'Epic Online Services cleanup should report missing DisplayName entries as non-fatal details.'
     Assert-BoostLabCondition ([int]$epicUninstallResult.Details.UninstallAttemptedCount -eq 0) 'Epic Online Services cleanup should not attempt uninstall when no matching DisplayName exists.'
@@ -426,11 +431,11 @@ try {
             AppId = [string]$App.AppId
         }
     }
-    $epicFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicFailingExecutor
+    $epicFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicFailingExecutor
     Assert-BoostLabCondition (-not [bool]$epicFailedApply.Success) 'Epic Online Services real uninstall failure should fail closed.'
-    Assert-BoostLabCondition ([string]$epicFailedApply.Status -eq 'QueueStoppedAfterFailure') 'Epic Online Services failure status mismatch.'
+    Assert-BoostLabCondition ([string]$epicFailedApply.Status -eq 'SelectedAppFailed') 'Epic Online Services failure status mismatch.'
     Assert-BoostLabCondition ([string]$epicFailedApply.Data.FailedApp.AppId -eq 'epic-games') 'Failed app should be Epic Games.'
-    Assert-BoostLabCondition ('obs-studio' -notin @($epicFailureSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio must not start after a real Epic Online Services uninstall failure.'
+    Assert-BoostLabCondition (((@($epicFailureSeen | ForEach-Object { ([string]$_).Split('|')[0] }) | Sort-Object -Unique) -join ',') -eq 'epic-games') 'Epic Games failure path must not execute another installer app.'
 
     $sevenZipFailureSeen = [System.Collections.Generic.List[string]]::new()
     $sevenZipFailingExecutor = {
@@ -453,12 +458,11 @@ try {
             }
         }
     }
-    $sevenZipFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip', 'brave', 'steam') -OperationExecutor $args[0] -SkipEnvironmentChecks } $sevenZipFailingExecutor
+    $sevenZipFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('seven-zip') -OperationExecutor $args[0] -SkipEnvironmentChecks } $sevenZipFailingExecutor
     Assert-BoostLabCondition (-not [bool]$sevenZipFailedApply.Success) 'Mocked 7-Zip failure should fail closed.'
-    Assert-BoostLabCondition ([string]$sevenZipFailedApply.Status -eq 'QueueStoppedAfterFailure') '7-Zip failure status mismatch.'
+    Assert-BoostLabCondition ([string]$sevenZipFailedApply.Status -eq 'SelectedAppFailed') '7-Zip failure status mismatch.'
     Assert-BoostLabCondition ([string]$sevenZipFailedApply.Data.FailedApp.AppId -eq 'seven-zip') 'Failed app should be 7-Zip.'
-    Assert-BoostLabCondition ('brave' -notin @($sevenZipFailureSeen)) 'Brave must not start after a failed 7-Zip app queue segment.'
-    Assert-BoostLabCondition ('steam' -notin @($sevenZipFailureSeen)) 'Steam must not start after a failed 7-Zip app queue segment.'
+    Assert-BoostLabCondition (((@($sevenZipFailureSeen) | Sort-Object -Unique) -join ',') -eq 'seven-zip') '7-Zip failure path must not execute another installer app.'
 
     $failureSeen = [System.Collections.Generic.List[string]]::new()
     $failingExecutor = {
@@ -481,12 +485,12 @@ try {
             }
         }
     }
-    $failedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'google-chrome', 'steam') -OperationExecutor $args[0] -SkipEnvironmentChecks } $failingExecutor
+    $failedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('google-chrome') -OperationExecutor $args[0] -SkipEnvironmentChecks } $failingExecutor
     Assert-BoostLabCondition (-not [bool]$failedApply.Success) 'Mocked failed Apply should fail closed.'
-    Assert-BoostLabCondition ([string]$failedApply.Status -eq 'QueueStoppedAfterFailure') 'Failed Apply status mismatch.'
+    Assert-BoostLabCondition ([string]$failedApply.Status -eq 'SelectedAppFailed') 'Failed Apply status mismatch.'
     Assert-BoostLabCondition ([string]$failedApply.Data.FailedApp.AppId -eq 'google-chrome') 'Failed app should be Google Chrome.'
-    Assert-BoostLabCondition ('steam' -in @($failedApply.Data.RemainingApps | ForEach-Object { [string]$_.AppId })) 'Steam should remain not-started after Google Chrome failure.'
-    Assert-BoostLabCondition ('steam' -notin @($failureSeen)) 'Failure path must not start remaining apps.'
+    Assert-BoostLabCondition (@($failedApply.Data.RemainingApps).Count -eq 0) 'Single-app failure must not report queued remaining apps.'
+    Assert-BoostLabCondition (((@($failureSeen) | Sort-Object -Unique) -join ',') -eq 'google-chrome') 'Failure path must only start the selected app.'
 
     $invalid = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('nvidia-app') -OperationExecutor { throw 'should not execute' } -SkipEnvironmentChecks }
     Assert-BoostLabCondition (-not [bool]$invalid.Success) 'Removed app selection should fail closed.'
@@ -496,6 +500,7 @@ try {
     $selectionRequired = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @() -OperationExecutor { throw 'should not execute' } -SkipEnvironmentChecks }
     Assert-BoostLabCondition (-not [bool]$selectionRequired.Success) 'Apply without selection should not proceed.'
     Assert-BoostLabCondition ([string]$selectionRequired.Status -eq 'SelectionRequired') 'Apply without selection should request selection.'
+    Assert-BoostLabContains -Text ([string]$selectionRequired.Message) -Needle 'exactly one' -Description 'Installers zero-selection validation message'
 
     $default = & $module { Invoke-BoostLabToolAction -ActionName 'Default' -Confirmed $true }
     Assert-BoostLabCondition (-not [bool]$default.Success) 'Default must remain unavailable.'
@@ -513,13 +518,14 @@ finally {
 
 $actionPlanText = Get-Content -LiteralPath $actionPlanPath -Raw
 foreach ($needle in @(
-    'checkbox multi-select queue model',
-    'Run the selected retained Installers app queue one app at a time',
-    'Process selected apps sequentially in retained source order',
+    'single-app Apply model',
+    'Run exactly one selected retained Installers app',
+    'Run only the selected app; do not process a multi-app queue',
     'Removed app choices are hidden and cannot be selected'
 )) {
     Assert-BoostLabContains -Text $actionPlanText -Needle $needle -Description 'Installers Action Plan'
 }
+Assert-BoostLabCondition (-not $actionPlanText.Contains('checkbox multi-select queue model')) 'Installers Action Plan must not describe the old checkbox multi-select queue model.'
 
 $moduleText = Get-Content -LiteralPath $modulePath -Raw
 Assert-BoostLabContains -Text $moduleText -Needle 'Invoke-BoostLabOfficialVendorDownload' -Description 'Installers official source runtime verification'
@@ -536,11 +542,11 @@ Assert-BoostLabContains -Text $executionText -Needle '$actionCommand.Parameters.
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 foreach ($needle in @(
     'SelectionMode',
-    'System.Windows.Controls.CheckBox',
-    'SelectedAppIds',
+    'System.Windows.Controls.RadioButton',
+    '$options[''Branch'']',
     'Get-BoostLabToolCardActionOptions'
 )) {
-    Assert-BoostLabContains -Text $uiText -Needle $needle -Description 'Installers UI multi-select support'
+    Assert-BoostLabContains -Text $uiText -Needle $needle -Description 'Installers UI single-select support'
 }
 
 $artifactText = Get-Content -LiteralPath $artifactPath -Raw
@@ -594,7 +600,7 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 
 [pscustomobject]@{
-    TestName              = 'Installers ordered parity upgrade with Yazan multi-select scope'
+    TestName              = 'Installers single-app Apply contract'
     SourceHash            = $actualSourceHash
     RetainedAppCount      = 17
     RetainedArtifactCount = 18

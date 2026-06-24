@@ -127,7 +127,7 @@ Assert-BoostLabCondition ([string]$tool.SelectionLabel -eq 'Select exactly one G
 Assert-BoostLabCondition ((@($tool.SelectionItems | ForEach-Object { $_.Id }) -join ',') -eq 'NVIDIA,AMD,INTEL') 'Driver Install Latest branch selection items mismatch.'
 $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })[0]
 Assert-BoostLabCondition ($null -ne $installersTool) 'Installers tool is missing from runtime metadata.'
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep its checkbox multi-select model.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must use its single-app selection model.'
 
 Assert-BoostLabCondition ([int]$inventorySnapshot.ActiveTools -eq [int]$inventoryBaseline.ActiveTools) 'Active tool baseline changed unexpectedly.'
 Assert-BoostLabCondition ([int]$inventoryBaseline.ImplementedTools -eq [int]$inventorySnapshot.ImplementedTools) 'Runtime implemented tool baseline changed unexpectedly.'

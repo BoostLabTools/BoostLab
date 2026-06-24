@@ -344,7 +344,7 @@ foreach ($outOfScopeToolId in @(
 $driverInstallLatestTool = @($allTools | Where-Object { [string]$_.Id -eq 'driver-install-latest' })[0]
 $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })[0]
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest must keep single-select branch UI.'
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep multi-select queue UI.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must keep single-app selection UI.'
 
 $directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
 $visualCppTool = @($allTools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
@@ -383,8 +383,8 @@ foreach ($needle in @(
 }
 
 $installersText = Get-Content -LiteralPath $installersModulePath -Raw
-Assert-BoostLabTextContains -Text $installersText -Needle 'SelectedAppIds' -Description 'Installers selected queue behavior'
-Assert-BoostLabTextContains -Text $installersText -Needle "QueueOrder                   = 'Retained source menu order'" -Description 'Installers source-order queue behavior'
+Assert-BoostLabTextContains -Text $installersText -Needle 'SelectedAppIds' -Description 'Installers legacy selected-app option compatibility'
+Assert-BoostLabTextContains -Text $installersText -Needle "QueueOrder                   = 'Not applicable; exactly one retained app runs per Apply.'" -Description 'Installers single-app execution behavior'
 
 $driverCleanText = Get-Content -LiteralPath $driverCleanModulePath -Raw
 Assert-BoostLabTextContains -Text $driverCleanText -Needle 'SourceEquivalentDriverClean' -Description 'Driver Clean exact workflow mode'
@@ -432,7 +432,7 @@ foreach ($deletedPath in @(
     AsyncCompletionContract     = 'Captured helper scriptblocks + shared state cleanup'
     DuplicateClickPolicy        = 'Global single action in progress'
     DriverInstallLatestMode     = 'SourceEquivalentThreeBranchRuntime'
-    InstallersQueuePreserved    = $true
+    InstallersSingleAppModel    = $true
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true

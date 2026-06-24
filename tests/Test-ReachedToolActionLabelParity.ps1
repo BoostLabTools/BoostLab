@@ -249,10 +249,11 @@ Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionItems | ForEach-O
 Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Latest must still require one branch for Open and Apply.'
 
 $installersTool = $toolById['installers']
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must preserve checkbox multi-select behavior.'
-Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must still require selected apps.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection behavior.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
+Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must still require one selected app.'
 Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 17) 'Installers selected app list must remain unchanged.'
-Assert-BoostLabTextContains -Text $uiText -Needle 'System.Windows.Controls.CheckBox' -Description 'Installers checkbox multi-select UI'
+Assert-BoostLabTextContains -Text $uiText -Needle 'System.Windows.Controls.RadioButton' -Description 'Installers radio single-select UI'
 
 $updatesDriversBlockTool = $toolById['updates-drivers-block']
 Assert-BoostLabTextContains -Text ([string]$updatesDriversBlockTool.Description) -Needle 'USB media only' -Description 'Updates Drivers Block USB-only scope'

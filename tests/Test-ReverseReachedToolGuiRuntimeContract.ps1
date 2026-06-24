@@ -282,9 +282,10 @@ foreach ($branchTool in @($driverInstallLatestTool, $driverInstallDebloatSetting
 }
 Assert-BoostLabCondition ([string]$driverInstallDebloatSettingsTool.SelectionLabel -eq 'Select exactly one GPU branch for Open or Apply') 'Driver Install Debloat & Settings selection label must make the required branch obvious.'
 Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionLabel -eq 'Select exactly one GPU branch') 'Driver Install Latest selection label changed unexpectedly.'
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must preserve checkbox multi-select.'
-Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require selected app IDs.'
-Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 17) 'Installers selected app queue changed unexpectedly.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
+Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require one selected app ID.'
+Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 17) 'Installers selected app list changed unexpectedly.'
 Assert-BoostLabCondition (-not $driverCleanTool.Contains('SelectionMode')) 'Driver Clean must use Auto/Manual actions, not a branch selector.'
 Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean actions must remain Analyze/Open/Apply.'
 
@@ -467,12 +468,22 @@ $installerMock = {
     }
 }
 $installersSelected = Invoke-BoostLabRuntimeActionSimulation -ProjectRoot $ProjectRoot -ToolMetadata $installersTool -ActionName 'Apply' -ActionOptions @{
-    SelectedAppIds = @('discord', 'steam')
+    Branch = 'discord'
     OperationExecutor = $installerMock
     SkipEnvironmentChecks = $true
 }
-Assert-BoostLabCondition ([bool]$installersSelected.Result.Success) 'Installers Apply must receive selected app IDs through action options.'
-Assert-BoostLabCondition (((@($installersSelected.Result.Data.Queue | ForEach-Object { [string]$_.AppId }) -join '|') -eq 'discord|steam')) 'Installers queue must use selected app IDs in retained source order.'
+Assert-BoostLabCondition ([bool]$installersSelected.Result.Success) 'Installers Apply must receive the single selected app through action options.'
+Assert-BoostLabCondition ([string]$installersSelected.Result.Data.SelectedApp.AppId -eq 'discord') 'Installers selected app option propagation mismatch.'
+Assert-BoostLabCondition (((@($installersSelected.Result.Data.Queue | ForEach-Object { [string]$_.AppId }) -join '|') -eq 'discord')) 'Installers diagnostic queue must contain only the selected app.'
+
+$installersMultiSelected = Invoke-BoostLabRuntimeActionSimulation -ProjectRoot $ProjectRoot -ToolMetadata $installersTool -ActionName 'Apply' -ActionOptions @{
+    SelectedAppIds = @('discord', 'steam')
+    OperationExecutor = { throw 'side effects should not start for stale multi-select input' }
+    SkipEnvironmentChecks = $true
+}
+Assert-BoostLabCondition (-not [bool]$installersMultiSelected.Result.Success) 'Installers stale multi-select input must fail closed.'
+Assert-BoostLabCondition ([string]$installersMultiSelected.Result.Status -eq 'SelectionRequired') 'Installers stale multi-select status mismatch.'
+Assert-BoostLabCondition (-not [bool]$installersMultiSelected.Result.ChangesExecuted) 'Installers stale multi-select input must execute nothing.'
 
 foreach ($needle in @(
     'function Invoke-BoostLabToolCardActionAsync',

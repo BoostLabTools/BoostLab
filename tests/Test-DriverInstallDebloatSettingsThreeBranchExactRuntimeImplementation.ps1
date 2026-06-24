@@ -132,7 +132,7 @@ Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'Si
 Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Latest branch items must remain unchanged.'
 $installersStage = @($stages.Stages | Where-Object { [string]$_.Name -eq 'Installers' }) | Select-Object -First 1
 $installersTool = @($installersStage.Tools | Where-Object { [string]$_.Id -eq 'installers' }) | Select-Object -First 1
-Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'MultiSelect') 'Installers must keep checkbox multi-select behavior.'
+Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must use single-app selection behavior.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.RequiresAdmin) 'Apply requires Administrator.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.RequiresInternet) 'Apply requires internet.'
 Assert-BoostLabCondition ([bool]$tool.Capabilities.CanDownload) 'CanDownload must be true.'

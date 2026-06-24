@@ -14,7 +14,7 @@ $script:BoostLabToolMetadata = [ordered]@{
     Order = 1
     Type = 'assistant'
     RiskLevel = 'high'
-    Description = 'Selected-app installer queue. Installs only Yazan-retained Ultimate app choices in source order after confirmation; removed app choices are hidden and unavailable.'
+    Description = 'Single-app installer workflow. Installs exactly one Yazan-retained Ultimate app choice per Apply after confirmation; removed app choices are hidden and unavailable.'
     Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     Capabilities = [ordered]@{
         RequiresAdmin             = $true
@@ -491,10 +491,10 @@ function Get-BoostLabInstallersRiskWarnings {
 
     @(
         'Original Ultimate source requires Administrator and internet access.'
-        'Selected retained apps download vendor-defined artifacts and run source-defined installers/helpers.'
-        'Selected retained apps may write app configuration, browser policy, startup values, shortcuts, services, scheduled tasks, or cleanup targets exactly as described by their source-derived descriptors.'
+        'The selected retained app downloads vendor-defined artifacts and runs source-defined installers/helpers.'
+        'The selected retained app may write app configuration, browser policy, startup values, shortcuts, services, scheduled tasks, or cleanup targets exactly as described by its source-derived descriptor.'
         'Removed Yazan-excluded menu entries are hidden and unavailable.'
-        'The queue is sequential and stops on the first failed selected app by default.'
+        'Installers runs exactly one selected app per Apply. To install another app, run Installers again and select another app.'
     )
 }
 
@@ -510,8 +510,8 @@ function Get-BoostLabInstallersAnalysis {
     $artifactCount = @($catalog | ForEach-Object { $_.Artifacts }).Count
 
     [pscustomobject]@{
-        Mode                         = 'SelectedAppSequentialQueue'
-        AutoMode                     = 'YazanScopedSelectedAppQueue'
+        Mode                         = 'SingleSelectedAppInstall'
+        AutoMode                     = 'YazanScopedSingleSelectedApp'
         Source                       = $sourceStatus
         RemovedMenuMappingValid      = [bool]$mapping.IsValid
         RemovedMenuMappingErrors     = @($mapping.Errors)
@@ -520,14 +520,14 @@ function Get-BoostLabInstallersAnalysis {
         RetainedVisibleCatalog       = $catalog
         RetainedAppCount             = $catalog.Count
         RetainedArtifactCount        = $artifactCount
-        SelectionModel               = 'CheckboxMultiSelect'
-        QueueOrder                   = 'Retained source menu order'
+        SelectionModel               = 'SingleSelect'
+        QueueOrder                   = 'Not applicable; exactly one retained app runs per Apply.'
         SourceBehaviorSummary        = @(
             'Checks for Administrator rights and internet connectivity.'
             'Presents 23 app installer choices plus Exit.'
             'Downloads source-defined installer artifacts for the selected app.'
             'Runs source-defined installers/helpers with source-defined arguments.'
-            'Performs source-defined post-install configuration, policy, shortcut, service, task, startup, uninstall, and cleanup side effects for selected apps.'
+            'Performs source-defined post-install configuration, policy, shortcut, service, task, startup, uninstall, and cleanup side effects for the selected app.'
             'Does not define a safe global Default or captured-state Restore model for all installed apps and side effects.'
         )
         Warnings                     = @(Get-BoostLabInstallersRiskWarnings)
@@ -981,7 +981,7 @@ function Test-BoostLabInstallersRuntimePrerequisites {
     }
 }
 
-function Invoke-BoostLabInstallersSelectedQueue {
+function Invoke-BoostLabInstallersSelectedApp {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
@@ -1004,10 +1004,13 @@ function Invoke-BoostLabInstallersSelectedQueue {
         return [pscustomobject]@{
             Success = $false
             Status = 'InvalidSelection'
-            Message = 'One or more selected Installers app IDs are not retained or selectable.'
+            Message = 'The selected Installers app ID is not retained or selectable.'
+            SelectedApp = $null
+            CompletedApp = $null
+            FailedApp = $null
+            LegacyDiagnosticQueue = @()
             Queue = @()
             CompletedApps = @()
-            FailedApp = $null
             RemainingApps = @()
             OperationResults = @()
             Errors = @("Invalid selected app ids: $($invalidSelection -join ', ')")
@@ -1018,18 +1021,38 @@ function Invoke-BoostLabInstallersSelectedQueue {
         return [pscustomobject]@{
             Success = $false
             Status = 'SelectionRequired'
-            Message = 'Select one or more retained Installers apps before Apply.'
+            Message = 'Select exactly one retained Installers app before Apply.'
+            SelectedApp = $null
+            CompletedApp = $null
+            FailedApp = $null
+            LegacyDiagnosticQueue = @()
             Queue = @()
             CompletedApps = @()
-            FailedApp = $null
             RemainingApps = @()
             OperationResults = @()
-            Errors = @()
+            Errors = @('Exactly one retained Installers app must be selected before Apply.')
+            ChangesExecuted = $false
+        }
+    }
+    if ($normalizedSelection.Count -gt 1) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'SelectionRequired'
+            Message = 'Select exactly one retained Installers app before Apply; multiple app selection is not allowed.'
+            SelectedApp = $null
+            CompletedApp = $null
+            FailedApp = $null
+            LegacyDiagnosticQueue = @()
+            Queue = @()
+            CompletedApps = @()
+            RemainingApps = @()
+            OperationResults = @()
+            Errors = @("Multiple selected app ids are not allowed: $($normalizedSelection -join ', ')")
             ChangesExecuted = $false
         }
     }
 
-    $queue = @($catalog | Where-Object { [string]$_.AppId -in $normalizedSelection } | Sort-Object SourceMenuNumber)
+    $selectedApp = $catalogById[[string]$normalizedSelection[0]]
     if (-not $SkipEnvironmentChecks) {
         $prerequisites = Test-BoostLabInstallersRuntimePrerequisites
         if (-not [bool]$prerequisites.Passed) {
@@ -1037,10 +1060,13 @@ function Invoke-BoostLabInstallersSelectedQueue {
                 Success = $false
                 Status = 'PrerequisiteFailed'
                 Message = 'Installers Apply blocked before download or installer execution because runtime prerequisites failed.'
-                Queue = $queue
-                CompletedApps = @()
+                SelectedApp = $selectedApp
+                CompletedApp = $null
                 FailedApp = $null
-                RemainingApps = @($queue)
+                LegacyDiagnosticQueue = @($selectedApp)
+                Queue = @($selectedApp)
+                CompletedApps = @()
+                RemainingApps = @()
                 OperationResults = @()
                 Errors = @($prerequisites.Errors)
                 ChangesExecuted = $false
@@ -1055,46 +1081,47 @@ function Invoke-BoostLabInstallersSelectedQueue {
         { param($Operation, $App) Invoke-BoostLabInstallersOperation -Operation $Operation -App $App }
     }
 
-    $completed = [System.Collections.Generic.List[object]]::new()
     $operationResults = [System.Collections.Generic.List[object]]::new()
-    for ($appIndex = 0; $appIndex -lt $queue.Count; $appIndex++) {
-        $app = $queue[$appIndex]
-        foreach ($operation in @($app.Operations)) {
-            $operationResult = & $executor $operation $app
-            if ($null -eq $operationResult) {
-                $operationResult = [pscustomobject]@{
-                    Success = $false
-                    Message = 'Operation executor returned no result.'
-                    Operation = $operation
-                    AppId = [string]$app.AppId
-                }
-            }
-            $operationResults.Add($operationResult)
-            if (-not [bool]$operationResult.Success) {
-                return [pscustomobject]@{
-                    Success = $false
-                    Status = 'QueueStoppedAfterFailure'
-                    Message = "Installers queue stopped after failure in $($app.DisplayName): $($operationResult.Message)"
-                    Queue = $queue
-                    CompletedApps = $completed.ToArray()
-                    FailedApp = $app
-                    RemainingApps = @($queue | Select-Object -Skip ($appIndex + 1))
-                    OperationResults = $operationResults.ToArray()
-                    Errors = @([string]$operationResult.Message)
-                    ChangesExecuted = $operationResults.Count -gt 0
-                }
+    foreach ($operation in @($selectedApp.Operations)) {
+        $operationResult = & $executor $operation $selectedApp
+        if ($null -eq $operationResult) {
+            $operationResult = [pscustomobject]@{
+                Success = $false
+                Message = 'Operation executor returned no result.'
+                Operation = $operation
+                AppId = [string]$selectedApp.AppId
             }
         }
-        $completed.Add($app)
+        $operationResults.Add($operationResult)
+        if (-not [bool]$operationResult.Success) {
+            return [pscustomobject]@{
+                Success = $false
+                Status = 'SelectedAppFailed'
+                Message = "Installers selected app failed in $($selectedApp.DisplayName): $($operationResult.Message)"
+                SelectedApp = $selectedApp
+                CompletedApp = $null
+                FailedApp = $selectedApp
+                LegacyDiagnosticQueue = @($selectedApp)
+                Queue = @($selectedApp)
+                CompletedApps = @()
+                RemainingApps = @()
+                OperationResults = $operationResults.ToArray()
+                Errors = @([string]$operationResult.Message)
+                ChangesExecuted = $operationResults.Count -gt 0
+            }
+        }
     }
 
     [pscustomobject]@{
         Success = $true
         Status = 'Completed'
-        Message = 'Selected Installers app queue completed in retained source order.'
-        Queue = $queue
-        CompletedApps = $completed.ToArray()
+        Message = "Selected Installers app completed: $($selectedApp.DisplayName). To install another app, run Installers again and select another app."
+        SelectedApp = $selectedApp
+        CompletedApp = $selectedApp
         FailedApp = $null
+        LegacyDiagnosticQueue = @($selectedApp)
+        Queue = @($selectedApp)
+        CompletedApps = @($selectedApp)
         RemainingApps = @()
         OperationResults = $operationResults.ToArray()
         Errors = @()
@@ -1118,7 +1145,8 @@ function Get-BoostLabToolInfo {
         Actions                     = @($script:BoostLabToolMetadata['Actions'])
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
-        SelectionMode               = 'MultiSelect'
+        SelectionMode               = 'SingleSelect'
+        SelectionLabel              = 'Select exactly one app to install'
         SelectionRequiredActions    = @('Apply')
         SelectionItems              = @(Get-BoostLabInstallersCatalog | ForEach-Object {
             [pscustomobject]@{
@@ -1128,7 +1156,7 @@ function Get-BoostLabToolInfo {
             }
         })
         ConfirmationRequiredActions = @('Apply')
-        ConfirmationText            = 'Installers will download and run source-defined installers/helpers for selected retained apps one at a time. Removed Yazan-excluded apps are not available. Continue with the selected queue?'
+        ConfirmationText            = 'Installers will download and run the source-defined installers/helpers for the selected retained app only. To install another app, run Installers again and select another app. Removed Yazan-excluded apps are not available. Continue?'
     }
 }
 
@@ -1142,7 +1170,7 @@ function Test-BoostLabToolCompatibility {
         Supported            = $true
         ToolId               = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle            = [string]$script:BoostLabToolMetadata['Title']
-        Reason               = 'Installers selected-app queue is available for retained Yazan-approved app choices.'
+        Reason               = 'Installers single selected-app workflow is available for retained Yazan-approved app choices.'
         SourceChecksumStatus = [string]$sourceStatus.ChecksumStatus
         Timestamp            = Get-Date
     }
@@ -1156,7 +1184,7 @@ function Get-BoostLabToolState {
     [pscustomobject]@{
         ToolId          = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
-        Status          = 'SelectedAppSequentialQueue'
+        Status          = 'SingleSelectedAppInstall'
         LastAction      = $null
         LastResult      = $null
         RestartRequired = $false
@@ -1175,6 +1203,8 @@ function Invoke-BoostLabToolAction {
 
         [AllowEmptyCollection()]
         [string[]]$SelectedAppIds = @(),
+
+        [string]$Branch = '',
 
         [scriptblock]$OperationExecutor,
 
@@ -1199,7 +1229,7 @@ function Invoke-BoostLabToolAction {
         $success = $sourceOk -and $mappingOk
         $status = if ($success) { 'Analyzed' } elseif (-not $mappingOk) { 'NeedsYazanMenuNumberConfirmation' } else { 'SourceVerificationFailed' }
         $message = if ($success) {
-            'Installers analyzed. Retained app catalog is available for checkbox multi-select sequential Apply; Yazan-excluded source menu entries are hidden.'
+            'Installers analyzed. Retained app catalog is available for single-app Apply; Yazan-excluded source menu entries are hidden.'
         }
         elseif (-not $mappingOk) {
             'NeedsYazanMenuNumberConfirmation. Removed source menu numbers did not match Yazan-approved app names.'
@@ -1236,18 +1266,22 @@ function Invoke-BoostLabToolAction {
             return New-BoostLabInstallersResult -Success $false -Action 'Apply' -Status 'NeedsYazanMenuNumberConfirmation' -CommandStatus 'Blocked before execution' -VerificationStatus 'Failed' -Message 'NeedsYazanMenuNumberConfirmation. Removed source menu numbers did not match Yazan-approved app names.' -Data $analysis -Errors @($analysis.RemovedMenuMappingErrors)
         }
         if (-not $Confirmed) {
-            return New-BoostLabInstallersResult -Success $false -Action 'Apply' -Status 'Cancelled' -CommandStatus 'Cancelled before execution' -VerificationStatus 'NotApplicable' -Message 'Installers Apply cancelled before starting the selected app queue. No download, installer launch, package action, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurred.' -Cancelled $true
+            return New-BoostLabInstallersResult -Success $false -Action 'Apply' -Status 'Cancelled' -CommandStatus 'Cancelled before execution' -VerificationStatus 'NotApplicable' -Message 'Installers Apply cancelled before starting the selected app. No download, installer launch, package action, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurred.' -Cancelled $true
         }
 
-        $queueResult = Invoke-BoostLabInstallersSelectedQueue -SelectedAppIds $SelectedAppIds -OperationExecutor $OperationExecutor -SkipEnvironmentChecks:$SkipEnvironmentChecks
-        $verificationStatus = if ([bool]$queueResult.Success) { 'Passed' } elseif ([string]$queueResult.Status -eq 'SelectionRequired') { 'NotApplicable' } else { 'Failed' }
+        $effectiveSelectedAppIds = @($SelectedAppIds)
+        if ($effectiveSelectedAppIds.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($Branch)) {
+            $effectiveSelectedAppIds = @([string]$Branch)
+        }
+        $selectedAppResult = Invoke-BoostLabInstallersSelectedApp -SelectedAppIds $effectiveSelectedAppIds -OperationExecutor $OperationExecutor -SkipEnvironmentChecks:$SkipEnvironmentChecks
+        $verificationStatus = if ([bool]$selectedAppResult.Success) { 'Passed' } elseif ([string]$selectedAppResult.Status -eq 'SelectionRequired') { 'NotApplicable' } else { 'Failed' }
         $checks = @(
-            New-BoostLabVerificationCheck -Name 'Queue selection' -Expected 'One or more retained selectable apps' -Actual (($queueResult.Queue | ForEach-Object { $_.AppId }) -join ', ') -Status $(if (@($queueResult.Queue).Count -gt 0) { 'Passed' } else { 'NotApplicable' }) -Message 'Apply requires retained selected app IDs.'
-            New-BoostLabVerificationCheck -Name 'Sequential queue' -Expected 'No parallel execution' -Actual 'Operations executed one app at a time' -Status $(if ([string]$queueResult.Status -ne 'InvalidSelection') { 'Passed' } else { 'Failed' }) -Message 'Installers processes selected apps sequentially in retained source order.'
-            New-BoostLabVerificationCheck -Name 'Failure handling' -Expected 'Stop on first failed app' -Actual ([string]$queueResult.Status) -Status $(if ([string]$queueResult.Status -eq 'QueueStoppedAfterFailure') { 'Failed' } elseif ([bool]$queueResult.Success) { 'Passed' } else { 'NotApplicable' }) -Message 'If one selected app fails, remaining apps are not started.'
+            New-BoostLabVerificationCheck -Name 'Single app selection' -Expected 'Exactly one retained selectable app' -Actual (($selectedAppResult.Queue | ForEach-Object { $_.AppId }) -join ', ') -Status $(if (@($selectedAppResult.Queue).Count -eq 1) { 'Passed' } elseif ([string]$selectedAppResult.Status -eq 'SelectionRequired') { 'NotApplicable' } else { 'Failed' }) -Message 'Apply requires exactly one retained selected app ID.'
+            New-BoostLabVerificationCheck -Name 'No queue execution' -Expected 'One selected app only' -Actual ('{0} selected app(s)' -f @($selectedAppResult.Queue).Count) -Status $(if (@($selectedAppResult.Queue).Count -le 1 -and [string]$selectedAppResult.Status -ne 'InvalidSelection') { 'Passed' } else { 'Failed' }) -Message 'Installers runs one selected app per Apply; to install another app, run Installers again.'
+            New-BoostLabVerificationCheck -Name 'Failure handling' -Expected 'Selected app fails closed' -Actual ([string]$selectedAppResult.Status) -Status $(if ([string]$selectedAppResult.Status -eq 'SelectedAppFailed') { 'Failed' } elseif ([bool]$selectedAppResult.Success) { 'Passed' } else { 'NotApplicable' }) -Message 'If the selected app operation fails, that app run fails closed.'
         )
-        $verification = New-BoostLabInstallersVerification -Action 'Apply' -Status $verificationStatus -ExpectedState 'Selected retained app queue completes or fails closed.' -DetectedState $queueResult -Checks $checks -Message ([string]$queueResult.Message)
-        return New-BoostLabInstallersResult -Success ([bool]$queueResult.Success) -Action 'Apply' -Status ([string]$queueResult.Status) -CommandStatus $(if ([bool]$queueResult.Success) { 'Completed' } else { 'Stopped or blocked before completion' }) -VerificationStatus $verificationStatus -Message ([string]$queueResult.Message) -Data $queueResult -VerificationResult $verification -Errors @($queueResult.Errors) -ChangesExecuted ([bool]$queueResult.ChangesExecuted)
+        $verification = New-BoostLabInstallersVerification -Action 'Apply' -Status $verificationStatus -ExpectedState 'Exactly one selected retained app completes or fails closed.' -DetectedState $selectedAppResult -Checks $checks -Message ([string]$selectedAppResult.Message)
+        return New-BoostLabInstallersResult -Success ([bool]$selectedAppResult.Success) -Action 'Apply' -Status ([string]$selectedAppResult.Status) -CommandStatus $(if ([bool]$selectedAppResult.Success) { 'Completed' } else { 'Stopped or blocked before completion' }) -VerificationStatus $verificationStatus -Message ([string]$selectedAppResult.Message) -Data $selectedAppResult -VerificationResult $verification -Errors @($selectedAppResult.Errors) -ChangesExecuted ([bool]$selectedAppResult.ChangesExecuted)
     }
 
     if ($canonicalActionName -eq 'Default') {

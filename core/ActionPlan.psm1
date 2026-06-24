@@ -218,13 +218,13 @@ function New-BoostLabActionPlan {
         'Restore is unavailable because no selected captured driver/download/installer/session state restore contract exists.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
-        'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and checkbox multi-select queue model without running any installer workflow.'
+        'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and single-app Apply model without running any installer workflow.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Open') {
         'Show retained Installers catalog and selection guidance inside BoostLab only; no browser, external tool, download, installer, package action, file mutation, registry change, service change, task change, cleanup, reboot, or system mutation is opened or executed.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        'Run the selected retained Installers app queue one app at a time in source order after explicit confirmation.'
+        'Run exactly one selected retained Installers app after explicit confirmation; to install another app, run Installers again.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
         'Default is unavailable because the source does not define a safe global Installers default branch.'
@@ -602,11 +602,11 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Installers source checksum and implementation status.')
         $plannedChanges.Add('Report full source menu mapping, Yazan-excluded entries, retained visible catalog, retained app count, and retained artifact count.')
-        $plannedChanges.Add('Report checkbox multi-select and sequential queue behavior.')
+        $plannedChanges.Add('Report single-app selection behavior.')
         $plannedChanges.Add('Perform no download, browser/Explorer/Settings/Store/external process launch, installer execution, package action, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Show retained catalog and checkbox selection guidance inside BoostLab only.')
+        $plannedChanges.Add('Show retained catalog and single-app selection guidance inside BoostLab only.')
         $plannedChanges.Add('Do not open a browser, Explorer, Settings, Store, app installer, package manager, script, or external tool.')
         $plannedChanges.Add('Do not download app installers, archives, scripts, packages, or artifacts.')
         $plannedChanges.Add('Do not run installers, setup executables, package managers, Store actions, AppX actions, MSI packages, scripts, or helpers.')
@@ -615,11 +615,11 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Perform no system-changing operation.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Require checkbox selection of one or more retained Yazan-approved source apps.')
-        $plannedChanges.Add('Confirm the full selected queue once before starting.')
-        $plannedChanges.Add('Process selected apps sequentially in retained source order; do not download or run selected installers in parallel.')
-        $plannedChanges.Add('For each selected app, download only its source-defined artifact(s), run only its source-defined installer/helper command and arguments, and perform only its source-defined post-install side effects.')
-        $plannedChanges.Add('Stop the queue on the first failed selected app and report completed, failed, and remaining not-started apps.')
+        $plannedChanges.Add('Require selecting exactly one retained Yazan-approved source app.')
+        $plannedChanges.Add('Confirm the selected app before starting.')
+        $plannedChanges.Add('Run only the selected app; do not process a multi-app queue.')
+        $plannedChanges.Add('For the selected app, download only its source-defined artifact(s), run only its source-defined installer/helper command and arguments, and perform only its source-defined post-install side effects.')
+        $plannedChanges.Add('If the selected app fails, fail that app run closed. To install another app, run Installers again.')
         $plannedChanges.Add('Removed app choices are hidden and cannot be selected, planned, downloaded, or installed.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
@@ -1357,12 +1357,12 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Manual handoff instructions are prepared inside BoostLab only.')
+        $sideEffects.Add('Retained app catalog guidance is prepared inside BoostLab only.')
         $sideEffects.Add('No browser, Explorer, Settings, Store, external tool, app download, installer execution, package change, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurs.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Auto mode is blocked before execution.')
-        $sideEffects.Add('No approved Auto behavior, download, installer execution, package change, file mutation, registry/service/task/shortcut mutation, cleanup, reboot, or system mutation occurs.')
+        $sideEffects.Add('Apply runs exactly one selected retained app per invocation.')
+        $sideEffects.Add('The selected app may download source-defined artifacts, run source-defined installer/helper commands, and perform source-defined package, file, registry, service, task, shortcut, cleanup, or app configuration changes.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
         $sideEffects.Add('Default is blocked before execution.')
@@ -1853,7 +1853,7 @@ function New-BoostLabActionPlan {
         'BoostLab will prepare Installers manual handoff instructions only. It will not open a browser, Explorer, Settings, Store, app installer, package manager, script, or external tool; download artifacts; run installers; install, uninstall, repair, update, or configure apps; mutate files, registry, services, tasks, shortcuts, devices, drivers, sessions, or cleanup state; or reboot. Continue?'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Apply') {
-        'Installers Auto mode is blocked. BoostLab will not execute Auto behavior because per-app artifact provenance, installer descriptors, switch validation, exit-code handling, generated-file ownership, cleanup, side-effect scopes, rollback, and support approvals are missing. Continue only to record the blocked result?'
+        'BoostLab will install exactly one selected retained Installers app using its source-defined downloads, installer/helper command arguments, and post-install operations. To install another app, run Installers again and select another app. Continue?'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Default') {
         'Installers Default is unavailable. The source does not define a safe global Default branch, and Default is not Restore. Continue only to record the blocked Default result?'
