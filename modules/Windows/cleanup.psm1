@@ -191,26 +191,55 @@ function Invoke-BoostLabCleanupRemoveTarget {
         [object]$Target
     )
 
+    $startedAt = Get-Date
+    $removeErrors = @()
     try {
         if ([bool]$Target.UsesWildcard) {
-            Remove-Item -Path ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -Path ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue -ErrorVariable +removeErrors | Out-Null
         }
         elseif ([bool]$Target.Recurse) {
-            Remove-Item -LiteralPath ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -LiteralPath ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue -ErrorVariable +removeErrors | Out-Null
         }
         else {
-            Remove-Item -LiteralPath ([string]$Target.Path) -Force -ErrorAction SilentlyContinue | Out-Null
+            Remove-Item -LiteralPath ([string]$Target.Path) -Force -ErrorAction SilentlyContinue -ErrorVariable +removeErrors | Out-Null
         }
 
         return [pscustomobject]@{
-            Succeeded = $true
-            Message   = 'Remove-Item completed or the target was already absent.'
+            Succeeded   = $true
+            StartedAt   = $startedAt
+            CompletedAt = Get-Date
+            ErrorRecords = @(
+                foreach ($removeError in @($removeErrors)) {
+                    [pscustomobject]@{
+                        TargetObject          = [string]$removeError.TargetObject
+                        CategoryInfo          = [string]$removeError.CategoryInfo
+                        FullyQualifiedErrorId = [string]$removeError.FullyQualifiedErrorId
+                        Message               = [string]$removeError.Exception.Message
+                    }
+                }
+            )
+            Message     = if (@($removeErrors).Count -gt 0) {
+                'Remove-Item completed with suppressed non-terminating error(s), matching the Ultimate SilentlyContinue behavior.'
+            }
+            else {
+                'Remove-Item completed or the target was already absent.'
+            }
         }
     }
     catch {
         return [pscustomobject]@{
-            Succeeded = $false
-            Message   = $_.Exception.Message
+            Succeeded   = $false
+            StartedAt   = $startedAt
+            CompletedAt = Get-Date
+            ErrorRecords = @(
+                [pscustomobject]@{
+                    TargetObject          = [string]$Target.Path
+                    CategoryInfo          = ''
+                    FullyQualifiedErrorId = ''
+                    Message               = $_.Exception.Message
+                }
+            )
+            Message     = $_.Exception.Message
         }
     }
 }
@@ -226,20 +255,47 @@ function Get-BoostLabCleanupTargetState {
     try {
         if ([bool]$Target.UsesWildcard) {
             $items = @(Get-ChildItem -Path ([string]$Target.Path) -Force -ErrorAction SilentlyContinue)
+            $sampleItems = @(
+                $items |
+                    Select-Object -First 10 |
+                    ForEach-Object {
+                        [pscustomobject]@{
+                            Path             = [string]$_.FullName
+                            Name             = [string]$_.Name
+                            LastWriteTimeUtc = $_.LastWriteTimeUtc
+                            IsContainer      = [bool]$_.PSIsContainer
+                        }
+                    }
+            )
             return [pscustomobject]@{
                 ReadSucceeded = $true
                 Exists        = $items.Count -gt 0
                 ItemCount     = $items.Count
+                RemainingItems = $sampleItems
                 DisplayValue  = if ($items.Count -gt 0) { "$($items.Count) matching item(s)" } else { 'No matching items' }
                 Message       = 'Wildcard contents inspected.'
             }
         }
 
         $exists = Test-Path -LiteralPath ([string]$Target.Path)
+        $sampleItems = if ($exists) {
+            @(
+                [pscustomobject]@{
+                    Path             = [string]$Target.Path
+                    Name             = [IO.Path]::GetFileName([string]$Target.Path)
+                    LastWriteTimeUtc = $null
+                    IsContainer      = [bool]$Target.Recurse
+                }
+            )
+        }
+        else {
+            @()
+        }
         return [pscustomobject]@{
             ReadSucceeded = $true
             Exists        = $exists
             ItemCount     = if ($exists) { 1 } else { 0 }
+            RemainingItems = $sampleItems
             DisplayValue  = if ($exists) { 'Present' } else { 'Absent' }
             Message       = 'Target path inspected.'
         }
@@ -255,6 +311,175 @@ function Get-BoostLabCleanupTargetState {
     }
 }
 
+function Get-BoostLabCleanupPropertyValue {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [AllowNull()]
+        [object]$DefaultValue = $null
+    )
+
+    if ($null -eq $InputObject) {
+        return $DefaultValue
+    }
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $DefaultValue
+    }
+
+    return $property.Value
+}
+
+function Test-BoostLabCleanupVolatileWildcardTarget {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Target
+    )
+
+    return ([bool]$Target.UsesWildcard -and [string]$Target.Id -in @('UserTempContents', 'WindowsTempContents'))
+}
+
+function Get-BoostLabCleanupRemovalErrorText {
+    param(
+        [AllowNull()]
+        [object]$RemovalResult
+    )
+
+    @(
+        foreach ($errorRecord in @(
+            Get-BoostLabCleanupPropertyValue -InputObject $RemovalResult -Name 'ErrorRecords' -DefaultValue @()
+        )) {
+            if ($null -ne $errorRecord) {
+                [string](Get-BoostLabCleanupPropertyValue -InputObject $errorRecord -Name 'Message' -DefaultValue $errorRecord)
+            }
+        }
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+}
+
+function Get-BoostLabCleanupRemainingItemSamples {
+    param(
+        [AllowNull()]
+        [object]$State,
+
+        [int]$Maximum = 10
+    )
+
+    @(
+        @(Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'RemainingItems' -DefaultValue @()) |
+            Select-Object -First $Maximum |
+            ForEach-Object {
+                if ($null -eq $_) {
+                    return
+                }
+                [pscustomobject]@{
+                    Path             = [string](Get-BoostLabCleanupPropertyValue -InputObject $_ -Name 'Path' -DefaultValue $_)
+                    LastWriteTimeUtc = Get-BoostLabCleanupPropertyValue -InputObject $_ -Name 'LastWriteTimeUtc' -DefaultValue $null
+                    Classification   = ''
+                    Reason           = ''
+                }
+            }
+    )
+}
+
+function Get-BoostLabCleanupRemainingClassification {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Target,
+
+        [AllowNull()]
+        [object]$State,
+
+        [AllowNull()]
+        [object]$RemovalResult,
+
+        [AllowNull()]
+        [datetime]$CleanupStartTime = [datetime]::MinValue,
+
+        [AllowNull()]
+        [datetime]$CleanupEndTime = [datetime]::MinValue
+    )
+
+    $readSucceeded = $null -ne $State -and [bool](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'ReadSucceeded' -DefaultValue $false)
+    if (-not $readSucceeded) {
+        return [pscustomobject]@{
+            Classification = 'VerificationUnavailable'
+            Status         = 'Warning'
+            Reason         = if ($null -ne $State) { [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Message' -DefaultValue 'Target state was unavailable.') } else { 'Target state reader returned no result.' }
+        }
+    }
+
+    $exists = [bool](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Exists' -DefaultValue $false)
+    if (-not $exists) {
+        return [pscustomobject]@{
+            Classification = 'Removed'
+            Status         = 'Passed'
+            Reason         = 'Target is absent after cleanup.'
+        }
+    }
+
+    if (-not (Test-BoostLabCleanupVolatileWildcardTarget -Target $Target)) {
+        return [pscustomobject]@{
+            Classification = 'RemainingUnexpected'
+            Status         = 'Failed'
+            Reason         = 'Non-volatile source cleanup target still exists after cleanup.'
+        }
+    }
+
+    $explicitClassification = [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Classification' -DefaultValue '')
+    if ($explicitClassification -in @('RemainingLockedOrInUse', 'RemainingRecreatedAfterCleanup', 'RemainingAccessDenied', 'VerificationUnavailable')) {
+        return [pscustomobject]@{
+            Classification = $explicitClassification
+            Status         = 'Warning'
+            Reason         = [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Message' -DefaultValue "Volatile Temp leftovers classified as $explicitClassification.")
+        }
+    }
+    if ($explicitClassification -eq 'RemainingUnexpected') {
+        return [pscustomobject]@{
+            Classification = 'RemainingUnexpected'
+            Status         = 'Failed'
+            Reason         = [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Message' -DefaultValue 'Volatile Temp leftovers had no expected lock/recreation/access-denied evidence.')
+        }
+    }
+
+    $errorText = (Get-BoostLabCleanupRemovalErrorText -RemovalResult $RemovalResult) -join ' '
+    if ($errorText -match '(?i)access.*denied|unauthorized|permission') {
+        return [pscustomobject]@{
+            Classification = 'RemainingAccessDenied'
+            Status         = 'Warning'
+            Reason         = 'Remove-Item reported access-denied/permission evidence for this volatile Temp target.'
+        }
+    }
+    if ($errorText -match '(?i)being used|in use|cannot access.*because.*used|locked|sharing violation|process cannot access') {
+        return [pscustomobject]@{
+            Classification = 'RemainingLockedOrInUse'
+            Status         = 'Warning'
+            Reason         = 'Remove-Item reported locked/in-use evidence for this volatile Temp target.'
+        }
+    }
+
+    $samples = @(Get-BoostLabCleanupRemainingItemSamples -State $State)
+    foreach ($sample in $samples) {
+        $lastWrite = Get-BoostLabCleanupPropertyValue -InputObject $sample -Name 'LastWriteTimeUtc' -DefaultValue $null
+        if ($lastWrite -is [datetime] -and $CleanupStartTime -ne [datetime]::MinValue -and $lastWrite -ge $CleanupStartTime.ToUniversalTime()) {
+            return [pscustomobject]@{
+                Classification = 'RemainingRecreatedAfterCleanup'
+                Status         = 'Warning'
+                Reason         = 'Remaining volatile Temp sample was written during or after the cleanup window.'
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Classification = 'RemainingUnexpected'
+        Status         = 'Failed'
+        Reason         = 'Volatile Temp contents remained without lock, access-denied, or recreation evidence.'
+    }
+}
+
 function Test-BoostLabCleanupState {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -264,33 +489,50 @@ function Test-BoostLabCleanupState {
             param($Target)
             Get-BoostLabCleanupTargetState -Target $Target
         },
+        [object[]]$RemovalResults = @(),
+        [datetime]$CleanupStartTime = [datetime]::MinValue,
+        [datetime]$CleanupEndTime = [datetime]::MinValue,
         [string]$CleanMgrStatus = 'Not launched'
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
+    $removalLookup = @{}
+    foreach ($removalResult in @($RemovalResults)) {
+        if ($null -ne $removalResult) {
+            $targetId = [string](Get-BoostLabCleanupPropertyValue -InputObject $removalResult -Name 'TargetId' -DefaultValue '')
+            if (-not [string]::IsNullOrWhiteSpace($targetId)) {
+                $removalLookup[$targetId] = $removalResult
+            }
+        }
+    }
+
     foreach ($target in @($Targets)) {
         $raw = @(& $TargetStateReader $target)
         $state = if ($raw.Count -gt 0) { $raw[0] } else { $null }
-        $readable = $null -ne $state -and [bool]$state.ReadSucceeded
-        $exists = $readable -and [bool]$state.Exists
-        $status = if (-not $readable) {
-            'Warning'
-        }
-        elseif ($exists) {
-            'Failed'
-        }
-        else {
-            'Passed'
+        $classification = Get-BoostLabCleanupRemainingClassification `
+            -Target $target `
+            -State $state `
+            -RemovalResult $removalLookup[[string]$target.Id] `
+            -CleanupStartTime $CleanupStartTime `
+            -CleanupEndTime $CleanupEndTime
+        $samples = @(Get-BoostLabCleanupRemainingItemSamples -State $state)
+        foreach ($sample in $samples) {
+            $sample.Classification = [string]$classification.Classification
+            $sample.Reason = [string]$classification.Reason
         }
 
-        $checks.Add(
-            (New-BoostLabVerificationCheck `
-                -Name ("Cleanup target | {0}" -f $target.Id) `
-                -Expected 'Absent or no matching wildcard contents' `
-                -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) `
-                -Status $status `
-                -Message $(if ($null -ne $state) { [string]$state.Message } else { 'Target state reader returned no result.' }))
-        )
+        $check = New-BoostLabVerificationCheck `
+            -Name ("Cleanup target | {0}" -f $target.Id) `
+            -Expected 'Absent or no matching wildcard contents' `
+            -Actual $(if ($null -ne $state) { [string]$state.DisplayValue } else { 'Unknown' }) `
+            -Status ([string]$classification.Status) `
+            -Message ([string]$classification.Reason)
+        $check | Add-Member -NotePropertyName 'TargetId' -NotePropertyValue ([string]$target.Id) -Force
+        $check | Add-Member -NotePropertyName 'TargetType' -NotePropertyValue ([string]$target.TargetType) -Force
+        $check | Add-Member -NotePropertyName 'RemainingClassification' -NotePropertyValue ([string]$classification.Classification) -Force
+        $check | Add-Member -NotePropertyName 'RemainingItemCount' -NotePropertyValue $(if ($null -ne $state) { [int](Get-BoostLabCleanupPropertyValue -InputObject $state -Name 'ItemCount' -DefaultValue 0) } else { 0 }) -Force
+        $check | Add-Member -NotePropertyName 'RemainingSamples' -NotePropertyValue $samples -Force
+        $checks.Add($check)
     }
 
     $checks.Add(
@@ -457,16 +699,30 @@ function Invoke-BoostLabCleanupApply {
     }
 
     $targets = @(& $TargetProvider)
+    $cleanupStartTime = Get-Date
     $attempted = [System.Collections.Generic.List[string]]::new()
     $completed = [System.Collections.Generic.List[string]]::new()
+    $targetResults = [System.Collections.Generic.List[object]]::new()
     $warnings = [System.Collections.Generic.List[string]]::new()
     $errors = [System.Collections.Generic.List[string]]::new()
     foreach ($target in $targets) {
         $attempted.Add([string]$target.Id)
         $raw = @(& $TargetRemover $target)
         $result = if ($raw.Count -gt 0) { $raw[0] } else { $null }
-        if ($null -eq $result -or -not [bool]$result.Succeeded) {
-            $message = if ($null -ne $result) { [string]$result.Message } else { 'Target remover returned no result.' }
+        $targetResult = [pscustomobject]@{
+            TargetId     = [string]$target.Id
+            Path         = [string]$target.Path
+            TargetType   = [string]$target.TargetType
+            UsesWildcard = [bool]$target.UsesWildcard
+            Succeeded    = ($null -ne $result -and [bool](Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'Succeeded' -DefaultValue $false))
+            Message      = if ($null -ne $result) { [string](Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'Message' -DefaultValue '') } else { 'Target remover returned no result.' }
+            StartedAt    = if ($null -ne $result) { Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'StartedAt' -DefaultValue $null } else { $null }
+            CompletedAt  = if ($null -ne $result) { Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'CompletedAt' -DefaultValue $null } else { $null }
+            ErrorRecords = if ($null -ne $result) { @(Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'ErrorRecords' -DefaultValue @()) } else { @() }
+        }
+        $targetResults.Add($targetResult)
+        if ($null -eq $result -or -not [bool](Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'Succeeded' -DefaultValue $false)) {
+            $message = if ($null -ne $result) { [string](Get-BoostLabCleanupPropertyValue -InputObject $result -Name 'Message' -DefaultValue 'Target remover returned no result.') } else { 'Target remover returned no result.' }
             $errors.Add("$($target.Id): $message")
         }
         else {
@@ -484,19 +740,78 @@ function Invoke-BoostLabCleanupApply {
         $errors.Add("cleanmgr.exe: $($_.Exception.Message)")
     }
 
-    $verification = Test-BoostLabCleanupState -Targets $targets -TargetStateReader $TargetStateReader -CleanMgrStatus $cleanMgrStatus
+    $cleanupEndTime = Get-Date
+    $verification = Test-BoostLabCleanupState `
+        -Targets $targets `
+        -TargetStateReader $TargetStateReader `
+        -RemovalResults $targetResults.ToArray() `
+        -CleanupStartTime $cleanupStartTime `
+        -CleanupEndTime $cleanupEndTime `
+        -CleanMgrStatus $cleanMgrStatus
+    $remainingTargetChecks = @(
+        $verification.Checks |
+            Where-Object {
+                $null -ne $_.PSObject.Properties['TargetId'] -and
+                [string]$_.RemainingClassification -ne 'Removed'
+            }
+    )
+    $volatileRemainingChecks = @(
+        $remainingTargetChecks |
+            Where-Object {
+                [string]$_.TargetId -in @('UserTempContents', 'WindowsTempContents')
+            }
+    )
+    $remainingTempSamples = @(
+        $volatileRemainingChecks |
+            ForEach-Object { @($_.RemainingSamples) } |
+            Select-Object -First 10
+    )
+    $finalStatusReason = if ($errors.Count -gt 0) {
+        'CommandError'
+    }
+    elseif ([string]$verification.Status -eq 'Failed') {
+        'VerificationFailed'
+    }
+    elseif ($volatileRemainingChecks.Count -gt 0) {
+        'VolatileTempLeftovers'
+    }
+    elseif ([string]$verification.Status -eq 'Warning') {
+        'VerificationWarning'
+    }
+    else {
+        'CompletedVerified'
+    }
     $data = [pscustomobject]@{
         CommandStatus      = if ($errors.Count -gt 0) { 'Completed with errors' } elseif ($warnings.Count -gt 0) { 'Completed with warnings' } else { 'Completed' }
         VerificationStatus = [string]$verification.Status
         ChangesExecuted    = $attempted.Count -gt 0 -or $cleanMgrStatus -ne 'Not launched'
         SourceStatus       = $source
+        CleanupStartTime   = $cleanupStartTime
+        CleanupEndTime     = $cleanupEndTime
         CleanupTargets     = @($targets | ForEach-Object { [pscustomobject]@{ Id = $_.Id; SourceExpression = $_.SourceExpression; Path = $_.Path; TargetType = $_.TargetType } })
+        CleanupTargetResults = $targetResults.ToArray()
         TargetsAttempted   = $attempted.ToArray()
         TargetsRemoved     = $completed.ToArray()
+        RemainingTargetCount = $remainingTargetChecks.Count
+        RemainingTempItemCount = @($volatileRemainingChecks | ForEach-Object { [int]$_.RemainingItemCount } | Measure-Object -Sum).Sum
+        RemainingTempSamples = $remainingTempSamples
+        RemainingTargetClassifications = @(
+            $remainingTargetChecks |
+                ForEach-Object {
+                    [pscustomobject]@{
+                        TargetId       = [string]$_.TargetId
+                        Classification = [string]$_.RemainingClassification
+                        RemainingCount = [int]$_.RemainingItemCount
+                        Status         = [string]$_.Status
+                        Message        = [string]$_.Message
+                    }
+                }
+        )
         CleanMgrStatus     = $cleanMgrStatus
         Warnings           = $warnings.ToArray()
         Errors             = $errors.ToArray()
-        CompletedAt        = Get-Date
+        FinalStatusReason  = $finalStatusReason
+        CompletedAt        = $cleanupEndTime
     }
 
     if ($errors.Count -gt 0) {

@@ -107,6 +107,7 @@ foreach ($requiredModuleText in @(
     '$script:BoostLabExpectedSourceHash',
     'Get-BoostLabCleanupTargets',
     'Invoke-BoostLabCleanupRemoveTarget',
+    'Get-BoostLabCleanupRemainingClassification',
     'Test-BoostLabCleanupState',
     'Invoke-BoostLabCleanupApply',
     'Remove-Item -Path ([string]$Target.Path) -Recurse -Force -ErrorAction SilentlyContinue',
@@ -204,10 +205,51 @@ try {
     Assert-BoostLabCondition (@($applyResult.Data.TargetsAttempted).Count -eq 6) 'Cleanup did not attempt all six source targets.'
     Assert-BoostLabCondition (@($applyResult.Data.TargetsRemoved).Count -eq 6) 'Cleanup did not complete all six mocked target removals.'
     Assert-BoostLabCondition ([string]$applyResult.Data.CleanMgrStatus -eq 'Launched') 'Cleanup did not report cleanmgr launch.'
+    foreach ($dataField in @('CleanupStartTime', 'CleanupEndTime', 'CleanupTargetResults', 'RemainingTargetCount', 'RemainingTempItemCount', 'RemainingTempSamples', 'RemainingTargetClassifications', 'FinalStatusReason')) {
+        Assert-BoostLabCondition ($null -ne $applyResult.Data.PSObject.Properties[$dataField]) "Cleanup result data is missing field: $dataField"
+    }
+    Assert-BoostLabCondition ([string]$applyResult.Data.FinalStatusReason -eq 'CompletedVerified') 'Cleanup final status reason should be CompletedVerified when all targets are absent.'
     Assert-BoostLabCondition (@($events | Where-Object { $_ -like 'DELETE:*' }).Count -eq 6) 'Cleanup test did not route deletions through the mock remover.'
     Assert-BoostLabCondition (@($events | Where-Object { $_ -like 'VERIFY:*' }).Count -eq 6) 'Cleanup test did not route verification through the mock reader.'
     $sourceOperationEvents = @($events | Where-Object { $_ -like 'DELETE:*' -or $_ -eq 'OPEN:cleanmgr.exe' })
     Assert-BoostLabCondition ($sourceOperationEvents[$sourceOperationEvents.Count - 1] -eq 'OPEN:cleanmgr.exe') 'Cleanup command ordering changed; cleanmgr must be the final source operation.'
+
+    $newCleanupState = {
+        param(
+            [bool]$Exists,
+            [int]$ItemCount,
+            [string]$DisplayValue,
+            [string]$Message,
+            [object[]]$RemainingItems = @(),
+            [string]$Classification = ''
+        )
+
+        $state = [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists = $Exists
+            ItemCount = $ItemCount
+            RemainingItems = @($RemainingItems)
+            DisplayValue = $DisplayValue
+            Message = $Message
+        }
+        if (-not [string]::IsNullOrWhiteSpace($Classification)) {
+            $state | Add-Member -NotePropertyName 'Classification' -NotePropertyValue $Classification -Force
+        }
+        return $state
+    }
+    $newRemainingItem = {
+        param(
+            [string]$Path,
+            [datetime]$LastWriteTimeUtc
+        )
+
+        [pscustomobject]@{
+            Path = $Path
+            Name = [IO.Path]::GetFileName($Path)
+            LastWriteTimeUtc = $LastWriteTimeUtc
+            IsContainer = $false
+        }
+    }
 
     $remainingStateReader = {
         param($Target)
@@ -230,6 +272,139 @@ try {
     } $mockTargetProvider $mockTargetRemover $remainingStateReader $mockCleanMgr
     Assert-BoostLabCondition (-not [bool]$remainingResult.Success) 'Cleanup Apply should fail when a target remains.'
     Assert-BoostLabCondition ([string]$remainingResult.VerificationResult.Status -eq 'Failed') 'Cleanup remaining-target verification must fail.'
+    Assert-BoostLabCondition ([string]$remainingResult.Data.FinalStatusReason -eq 'VerificationFailed') 'Non-volatile leftover should remain a verification failure.'
+
+    $lockedTargetRemover = {
+        param($Target)
+        if ([string]$Target.Id -eq 'UserTempContents') {
+            return [pscustomobject]@{
+                Succeeded = $true
+                Message = 'Mock delete completed with source-suppressed locked file errors.'
+                ErrorRecords = @(
+                    [pscustomobject]@{
+                        TargetObject = 'C:\Users\BoostLabTest\AppData\Local\Temp\locked.tmp'
+                        Message = 'The process cannot access the file because it is being used by another process.'
+                    }
+                )
+            }
+        }
+
+        return [pscustomobject]@{ Succeeded = $true; Message = 'Mock delete completed.'; ErrorRecords = @() }
+    }.GetNewClosure()
+    $lockedStateReader = {
+        param($Target)
+        if ([string]$Target.Id -eq 'UserTempContents') {
+            return (& $newCleanupState $true 5 '5 matching item(s)' 'Mock locked temp leftovers.' @((& $newRemainingItem 'C:\Users\BoostLabTest\AppData\Local\Temp\locked.tmp' ([datetime]'2001-01-01T00:00:00Z'))) '')
+        }
+
+        return (& $newCleanupState $false 0 'Absent' 'Mock target absent.')
+    }.GetNewClosure()
+    $lockedResult = & $module {
+        param($TargetProvider, $TargetRemover, $StateReader, $CleanMgr)
+        Invoke-BoostLabCleanupApply `
+            -AdministratorChecker { return $true } `
+            -TargetProvider $TargetProvider `
+            -TargetRemover $TargetRemover `
+            -TargetStateReader $StateReader `
+            -CleanMgrLauncher $CleanMgr
+    } $mockTargetProvider $lockedTargetRemover $lockedStateReader $mockCleanMgr
+    Assert-BoostLabCondition ([bool]$lockedResult.Success) 'Cleanup should not hard-fail solely for locked volatile User Temp leftovers.'
+    Assert-BoostLabCondition ([string]$lockedResult.Status -eq 'Warning') 'Locked volatile temp leftovers should return Warning.'
+    Assert-BoostLabCondition ([string]$lockedResult.VerificationResult.Status -eq 'Warning') 'Locked volatile temp leftovers should be verification Warning.'
+    Assert-BoostLabCondition ([string]$lockedResult.Data.FinalStatusReason -eq 'VolatileTempLeftovers') 'Locked temp leftovers should set FinalStatusReason to VolatileTempLeftovers.'
+    Assert-BoostLabCondition ([int]$lockedResult.Data.RemainingTempItemCount -eq 5) 'Locked temp leftover count was not reported.'
+    Assert-BoostLabCondition ('RemainingLockedOrInUse' -in @($lockedResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Locked temp leftovers were not classified clearly.'
+
+    $recreatedStateReader = {
+        param($Target)
+        if ([string]$Target.Id -eq 'UserTempContents') {
+            return (& $newCleanupState $true 2 '2 matching item(s)' 'Mock recreated temp leftovers.' @((& $newRemainingItem 'C:\Users\BoostLabTest\AppData\Local\Temp\new.tmp' ([datetime]::UtcNow.AddMinutes(1)))) '')
+        }
+
+        return (& $newCleanupState $false 0 'Absent' 'Mock target absent.')
+    }.GetNewClosure()
+    $recreatedResult = & $module {
+        param($TargetProvider, $TargetRemover, $StateReader, $CleanMgr)
+        Invoke-BoostLabCleanupApply `
+            -AdministratorChecker { return $true } `
+            -TargetProvider $TargetProvider `
+            -TargetRemover $TargetRemover `
+            -TargetStateReader $StateReader `
+            -CleanMgrLauncher $CleanMgr
+    } $mockTargetProvider $mockTargetRemover $recreatedStateReader $mockCleanMgr
+    Assert-BoostLabCondition ([bool]$recreatedResult.Success) 'Cleanup should warn, not fail, when volatile temp contents were recreated after cleanup.'
+    Assert-BoostLabCondition ([string]$recreatedResult.Status -eq 'Warning') 'Recreated volatile temp leftovers should return Warning.'
+    Assert-BoostLabCondition ('RemainingRecreatedAfterCleanup' -in @($recreatedResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Recreated temp leftovers were not classified clearly.'
+
+    $windowsTempAccessDeniedRemover = {
+        param($Target)
+        if ([string]$Target.Id -eq 'WindowsTempContents') {
+            return [pscustomobject]@{
+                Succeeded = $true
+                Message = 'Mock delete completed with source-suppressed access denied errors.'
+                ErrorRecords = @(
+                    [pscustomobject]@{
+                        TargetObject = 'C:\Windows\Temp\protected.tmp'
+                        Message = 'Access to the path is denied.'
+                    }
+                )
+            }
+        }
+
+        return [pscustomobject]@{ Succeeded = $true; Message = 'Mock delete completed.'; ErrorRecords = @() }
+    }.GetNewClosure()
+    $windowsTempStateReader = {
+        param($Target)
+        if ([string]$Target.Id -eq 'WindowsTempContents') {
+            return (& $newCleanupState $true 3 '3 matching item(s)' 'Mock Windows Temp leftovers.' @((& $newRemainingItem 'C:\Windows\Temp\protected.tmp' ([datetime]'2001-01-01T00:00:00Z'))) '')
+        }
+
+        return (& $newCleanupState $false 0 'Absent' 'Mock target absent.')
+    }.GetNewClosure()
+    $windowsTempResult = & $module {
+        param($TargetProvider, $TargetRemover, $StateReader, $CleanMgr)
+        Invoke-BoostLabCleanupApply `
+            -AdministratorChecker { return $true } `
+            -TargetProvider $TargetProvider `
+            -TargetRemover $TargetRemover `
+            -TargetStateReader $StateReader `
+            -CleanMgrLauncher $CleanMgr
+    } $mockTargetProvider $windowsTempAccessDeniedRemover $windowsTempStateReader $mockCleanMgr
+    Assert-BoostLabCondition ([bool]$windowsTempResult.Success -and [string]$windowsTempResult.Status -eq 'Warning') 'Windows Temp access-denied leftovers should follow volatile warning policy.'
+    Assert-BoostLabCondition ('RemainingAccessDenied' -in @($windowsTempResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Windows Temp leftovers were not classified as access denied.'
+
+    $unexpectedTempStateReader = {
+        param($Target)
+        if ([string]$Target.Id -eq 'UserTempContents') {
+            return (& $newCleanupState $true 1 '1 matching item(s)' 'Mock unexplained temp leftover.' @((& $newRemainingItem 'C:\Users\BoostLabTest\AppData\Local\Temp\old.tmp' ([datetime]'2001-01-01T00:00:00Z'))) '')
+        }
+
+        return (& $newCleanupState $false 0 'Absent' 'Mock target absent.')
+    }.GetNewClosure()
+    $unexpectedTempResult = & $module {
+        param($TargetProvider, $TargetRemover, $StateReader, $CleanMgr)
+        Invoke-BoostLabCleanupApply `
+            -AdministratorChecker { return $true } `
+            -TargetProvider $TargetProvider `
+            -TargetRemover $TargetRemover `
+            -TargetStateReader $StateReader `
+            -CleanMgrLauncher $CleanMgr
+    } $mockTargetProvider $mockTargetRemover $unexpectedTempStateReader $mockCleanMgr
+    Assert-BoostLabCondition (-not [bool]$unexpectedTempResult.Success) 'Unexplained volatile temp leftovers should still fail closed.'
+    Assert-BoostLabCondition ([string]$unexpectedTempResult.VerificationResult.Status -eq 'Failed') 'Unexplained volatile temp leftovers should fail verification.'
+    Assert-BoostLabCondition ('RemainingUnexpected' -in @($unexpectedTempResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Unexplained temp leftovers were not classified as unexpected.'
+
+    $cleanMgrFailureResult = & $module {
+        param($TargetProvider, $TargetRemover, $StateReader)
+        Invoke-BoostLabCleanupApply `
+            -AdministratorChecker { return $true } `
+            -TargetProvider $TargetProvider `
+            -TargetRemover $TargetRemover `
+            -TargetStateReader $StateReader `
+            -CleanMgrLauncher { throw 'Mock cleanmgr launch failure.' }
+    } $mockTargetProvider $mockTargetRemover $mockStateReader
+    Assert-BoostLabCondition (-not [bool]$cleanMgrFailureResult.Success) 'Cleanup must fail if cleanmgr launch fails.'
+    Assert-BoostLabCondition ([string]$cleanMgrFailureResult.Data.CleanMgrStatus -match 'Launch failed') 'Cleanup must report cleanmgr launch failure.'
 
     $cancelled = & (Get-Command -Name 'Invoke-CleanupTestBoostLabToolAction' -Module $module.Name -ErrorAction Stop) -ActionName 'Apply' -Confirmed:$false
     Assert-BoostLabCondition (-not [bool]$cancelled.Success -and [bool]$cancelled.Cancelled) 'Cleanup Apply without confirmation must cancel.'
