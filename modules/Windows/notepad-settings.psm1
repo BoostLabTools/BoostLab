@@ -106,12 +106,14 @@ function Invoke-BoostLabNotepadRegistryCommand {
 
     $regPath = Join-Path $SystemRoot 'System32\reg.exe'
     $output = @(& $regPath $Operation @Arguments 2>&1)
-    $exitCode = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
+    $exitCode = if ($null -eq $LASTEXITCODE) { $null } else { [int]$LASTEXITCODE }
     return [pscustomobject]@{
-        Success = $exitCode -eq 0
+        Success = ($null -ne $exitCode -and $exitCode -eq 0)
         Operation = $Operation
         ExitCode = $exitCode
         Output = $output
+        StandardOutput = @($output)
+        StandardError = @()
     }
 }
 
@@ -253,33 +255,90 @@ function ConvertTo-BoostLabNotepadHiveOperation {
     )
 
     $exitCode = $null
-    $success = $false
-    $output = @()
+    $exitCodeCaptured = $false
+    $output = [System.Collections.Generic.List[string]]::new()
+    $standardOutput = [System.Collections.Generic.List[string]]::new()
+    $standardError = [System.Collections.Generic.List[string]]::new()
     if ($null -ne $Result) {
-        if ($null -ne $Result.PSObject.Properties['ExitCode']) {
-            $exitCode = [int]$Result.ExitCode
-        }
-        if ($null -ne $Result.PSObject.Properties['Success']) {
-            $success = [bool]$Result.Success
-        }
-        elseif ($null -ne $exitCode) {
-            $success = ($exitCode -eq 0)
+        $exitCodeProperty = $Result.PSObject.Properties['ExitCode']
+        if ($null -ne $exitCodeProperty -and $null -ne $exitCodeProperty.Value -and -not [string]::IsNullOrWhiteSpace([string]$exitCodeProperty.Value)) {
+            $parsedExitCode = 0
+            if ([int]::TryParse([string]$exitCodeProperty.Value, [ref]$parsedExitCode)) {
+                $exitCode = $parsedExitCode
+                $exitCodeCaptured = $true
+            }
         }
         if ($null -ne $Result.PSObject.Properties['Output']) {
-            $output = @($Result.Output)
+            foreach ($line in @($Result.Output)) {
+                if ($null -ne $line) {
+                    $output.Add([string]$line)
+                }
+            }
         }
-        elseif ($null -ne $Result.PSObject.Properties['StandardOutput'] -or $null -ne $Result.PSObject.Properties['StandardError']) {
-            $output = @(
-                if ($null -ne $Result.PSObject.Properties['StandardOutput']) { [string]$Result.StandardOutput }
-                if ($null -ne $Result.PSObject.Properties['StandardError']) { [string]$Result.StandardError }
-            ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+        if ($null -ne $Result.PSObject.Properties['StandardOutput']) {
+            foreach ($line in @($Result.StandardOutput)) {
+                if ($null -ne $line) {
+                    $standardOutput.Add([string]$line)
+                }
+            }
+        }
+        if ($null -ne $Result.PSObject.Properties['StandardError']) {
+            foreach ($line in @($Result.StandardError)) {
+                if ($null -ne $line) {
+                    $standardError.Add([string]$line)
+                }
+            }
+        }
+        if ($null -ne $Result.PSObject.Properties['NativeOutput']) {
+            foreach ($line in @($Result.NativeOutput)) {
+                if ($null -ne $line) {
+                    $output.Add([string]$line)
+                }
+            }
         }
     }
 
     if (-not [string]::IsNullOrWhiteSpace($ErrorMessage)) {
-        $output = @($output + $ErrorMessage)
+        $standardError.Add($ErrorMessage)
     }
-    $outputText = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+    $nativeLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in @($output.ToArray() + $standardOutput.ToArray() + $standardError.ToArray())) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$line)) {
+            $nativeLines.Add([string]$line)
+        }
+    }
+    $outputText = (@($nativeLines.ToArray()) | Select-Object -Unique) -join [Environment]::NewLine
+    $standardOutputText = (@($standardOutput.ToArray()) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($standardOutputText) -and $output.Count -gt 0) {
+        $standardOutputText = (@($output.ToArray()) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
+    }
+    $standardErrorText = (@($standardError.ToArray()) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
+    $success = ($exitCodeCaptured -and $exitCode -eq 0)
+    $failureKind = if ($success) {
+        ''
+    }
+    elseif (-not $exitCodeCaptured) {
+        'NativeExitCodeMissing'
+    }
+    elseif ($exitCode -ne 0) {
+        'NativeExitCodeNonZero'
+    }
+    else {
+        'NativeCommandFailed'
+    }
+    $message = if ($success) {
+        "$Stage completed."
+    }
+    elseif ($failureKind -eq 'NativeExitCodeMissing') {
+        $diagnosticOutput = if ([string]::IsNullOrWhiteSpace($outputText)) { 'No native output was captured.' } else { "Native output: $outputText" }
+        "$Stage failed because reg.exe did not return an exit code (NativeExitCodeMissing). $diagnosticOutput"
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($outputText)) {
+        $outputText
+    }
+    else {
+        "$Stage failed with exit code $exitCode."
+    }
 
     [pscustomobject]@{
         Stage = $Stage
@@ -288,9 +347,13 @@ function ConvertTo-BoostLabNotepadHiveOperation {
         Arguments = @($Arguments)
         CommandText = Get-BoostLabNotepadCommandText -Operation $Operation -Arguments @($Arguments)
         ExitCode = $exitCode
+        ExitCodeCaptured = $exitCodeCaptured
         Success = $success
+        StandardOutput = $standardOutputText
+        StandardError = $standardErrorText
         NativeOutput = $outputText
-        Message = if ($success) { "$Stage completed." } elseif (-not [string]::IsNullOrWhiteSpace($outputText)) { $outputText } else { "$Stage failed." }
+        FailureKind = $failureKind
+        Message = $message
     }
 }
 
@@ -616,10 +679,24 @@ function Invoke-BoostLabNotepadSettingsHiveImport {
     }
 
     $success = ($errors.Count -eq 0)
+    $missingExitCodeOperation = @($hiveOperations.ToArray() | Where-Object { [string]$_.FailureKind -eq 'NativeExitCodeMissing' }) | Select-Object -First 1
+    $failedImportOperation = @($hiveOperations.ToArray() | Where-Object { [string]$_.Stage -eq 'ImportNotepadSettingsPayload' -and -not [bool]$_.Success }) | Select-Object -First 1
+    $finalStatusReason = if ($success) {
+        'HiveImportVerified'
+    }
+    elseif ($null -ne $missingExitCodeOperation) {
+        'NativeExitCodeMissing'
+    }
+    elseif ($null -ne $failedImportOperation) {
+        'HiveImportFailed'
+    }
+    else {
+        'HiveImportVerificationFailed'
+    }
     [pscustomobject]@{
         Success = $success
         Message = if ($success) { 'Notepad settings.dat hive payload imported and verified.' } else { "Notepad settings.dat hive import failed: $($errors.ToArray() -join ' ')" }
-        FinalStatusReason = if ($success) { 'HiveImportVerified' } else { 'HiveImportVerificationFailed' }
+        FinalStatusReason = $finalStatusReason
         SettingsDatExists = $true
         HiveOperations = $hiveOperations.ToArray()
         RegistryValuesChecked = $registryStates.ToArray()

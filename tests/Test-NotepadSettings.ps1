@@ -98,6 +98,8 @@ foreach ($requiredText in @(
     'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
     'Invoke-BoostLabNotepadSettingsHiveImport'
     'FinalStatusReason'
+    'NativeExitCodeMissing'
+    'ExitCodeCaptured'
     'HiveOperations'
     'RegistryValuesChecked'
     '[bool]$Confirmed = $false'
@@ -259,6 +261,14 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         $applyEvents.Add("$Operation|$($Arguments -join '|')")
         [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
     }.GetNewClosure()
+    $applyReader = {
+        param($Name)
+        $applyEvents.Add("read|$Name")
+        [pscustomobject]@{
+            ReadSucceeded = $true; Exists = $true; Name = $Name
+            DisplayValue = [string]$expectedValues[$Name]; Message = 'Mock value detected.'
+        }
+    }.GetNewClosure()
     $applyResult = & $notepadModule {
         param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
         Invoke-BoostLabNotepadSettingsAction `
@@ -275,15 +285,20 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
             -HiveMountReader $HiveMountReader `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
             -SystemRoot 'C:\Windows'
-    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $applyCommand $registryReader $pathTesterPresent $hiveMountAbsent
+    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $applyCommand $applyReader $pathTesterPresent $hiveMountAbsent
     Assert-BoostLabCondition ([bool]$applyResult.Success) 'Mocked Notepad Settings Apply did not pass.'
     Assert-BoostLabCondition ([string]$applyResult.Message -eq 'Notepad settings Apply source sequence completed.') 'Apply message should describe source sequence completion.'
     Assert-BoostLabCondition ([string]$applyResult.VerificationResult.Status -eq 'Passed') 'Apply verification should pass for mocked values.'
     Assert-BoostLabCondition ([string]$applyResult.Data.CommandStatus -eq 'Completed') 'Apply command status should be completed.'
-    Assert-BoostLabCondition (($applyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat,import|C:\Windows\Temp\notepadsettings.reg,unload|HKLM\Settings') "Notepad Settings hive operation order changed: $($applyEvents -join ',')"
+    Assert-BoostLabCondition (($applyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat,import|C:\Windows\Temp\notepadsettings.reg,read|OpenFile,read|GhostFile,read|RewriteEnabled,unload|HKLM\Settings') "Notepad Settings hive operation/value-read order changed: $($applyEvents -join ',')"
     Assert-BoostLabCondition ([string]$applyResult.Data.FinalStatusReason -eq 'HiveImportVerified') 'Apply must report verified hive import as the final status reason.'
     Assert-BoostLabCondition ([string]$applyResult.Data.RegFileEncoding -eq 'Unicode') 'Apply must report Unicode .reg writing.'
     Assert-BoostLabCondition (@($applyResult.Data.RegistryValuesChecked).Count -eq 3) 'Apply must verify all three source-defined Notepad values before unload.'
+    Assert-BoostLabCondition (@($applyResult.Data.HiveOperations | Where-Object { [bool]$_.ExitCodeCaptured -and [int]$_.ExitCode -eq 0 }).Count -eq 3) 'Apply load/import/unload must all capture ExitCode 0.'
+    $applyImportOperation = @($applyResult.Data.HiveOperations | Where-Object { [string]$_.Stage -eq 'ImportNotepadSettingsPayload' }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $applyImportOperation) 'Apply must record ImportNotepadSettingsPayload.'
+    Assert-BoostLabCondition ([bool]$applyImportOperation.Success) 'Import with native success output and ExitCode 0 must pass.'
+    Assert-BoostLabCondition ([string]$applyImportOperation.StandardOutput -like '*operation completed successfully*') 'Import operation must preserve native success output as diagnostics.'
     Assert-BoostLabCondition ([string]$applyResult.Data.BackupStatus -match 'does not create a backup') 'Apply must not claim backup creation.'
 
     $accessDeniedEvents = [System.Collections.Generic.List[string]]::new()
@@ -397,7 +412,50 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
             -SystemRoot 'C:\Windows'
     } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $importFailureCommand $pathTesterPresent $hiveMountAbsent
     Assert-BoostLabCondition (-not [bool]$importFailureResult.Success) 'Import failure must fail closed.'
+    Assert-BoostLabCondition ([string]$importFailureResult.Data.FinalStatusReason -eq 'HiveImportFailed') 'Non-zero import exit code must identify HiveImportFailed.'
     Assert-BoostLabCondition (($importFailureEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Import failure must still unload the hive after successful load.'
+    $failedImportOperation = @($importFailureResult.Data.HiveOperations | Where-Object { [string]$_.Stage -eq 'ImportNotepadSettingsPayload' }) | Select-Object -First 1
+    Assert-BoostLabCondition ([int]$failedImportOperation.ExitCode -eq 2) 'Non-zero import failure must preserve the native exit code.'
+    Assert-BoostLabCondition ([string]$failedImportOperation.FailureKind -eq 'NativeExitCodeNonZero') 'Non-zero import failure must report NativeExitCodeNonZero.'
+    Assert-BoostLabCondition (@($importFailureResult.Data.RegistryValuesChecked).Count -eq 0) 'Failed import must not verify values before a successful import.'
+
+    $missingExitCodeEvents = [System.Collections.Generic.List[string]]::new()
+    $missingExitCodeCommand = {
+        param($Operation, $Arguments, $Root)
+        $missingExitCodeEvents.Add("$Operation|$($Arguments -join '|')")
+        if ($Operation -eq 'import') {
+            return [pscustomobject]@{ Success = $false; Operation = $Operation; Output = @('The operation completed successfully.') }
+        }
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
+    }.GetNewClosure()
+    $missingExitCodeResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader { param($Name) throw 'Registry read must not run when import exit code is missing.' } `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $missingExitCodeCommand $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$missingExitCodeResult.Success) 'Missing import exit code must fail closed.'
+    Assert-BoostLabCondition ([string]$missingExitCodeResult.Data.FinalStatusReason -eq 'NativeExitCodeMissing') 'Missing import exit code must report NativeExitCodeMissing.'
+    Assert-BoostLabCondition ([string]$missingExitCodeResult.Message -like '*NativeExitCodeMissing*') 'Missing import exit code message must identify the command-capture failure.'
+    Assert-BoostLabCondition (($missingExitCodeEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Missing import exit code must still unload the hive after successful load.'
+    $missingExitCodeImportOperation = @($missingExitCodeResult.Data.HiveOperations | Where-Object { [string]$_.Stage -eq 'ImportNotepadSettingsPayload' }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $missingExitCodeImportOperation) 'Missing exit-code run must record the import operation.'
+    Assert-BoostLabCondition (-not [bool]$missingExitCodeImportOperation.ExitCodeCaptured) 'Missing exit-code run must report ExitCodeCaptured false.'
+    Assert-BoostLabCondition ($null -eq $missingExitCodeImportOperation.ExitCode) 'Missing exit-code run must leave ExitCode null.'
+    Assert-BoostLabCondition ([string]$missingExitCodeImportOperation.FailureKind -eq 'NativeExitCodeMissing') 'Missing exit-code run must classify the operation as NativeExitCodeMissing.'
+    Assert-BoostLabCondition ([string]$missingExitCodeImportOperation.NativeOutput -like '*operation completed successfully*') 'Missing exit-code diagnostics must preserve native output without trusting it as success.'
+    Assert-BoostLabCondition (@($missingExitCodeResult.Data.RegistryValuesChecked).Count -eq 0) 'Missing import exit code must not verify values before a proven successful import.'
 
     $missingValueReader = {
         param($Name)
