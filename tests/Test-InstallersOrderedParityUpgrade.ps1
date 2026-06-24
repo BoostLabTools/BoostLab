@@ -220,6 +220,93 @@ try {
     Assert-BoostLabCondition ('brave' -in @($sevenZipQueueSeen)) 'Brave should start after a successful 7-Zip app queue segment.'
     Assert-BoostLabCondition ('steam' -in @($sevenZipQueueSeen)) 'Steam should start after a successful 7-Zip app queue segment.'
 
+    $activeSetupProbe = & $module {
+        $removedKeys = [System.Collections.Generic.List[string]]::new()
+        $successKeys = @(
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\ActiveSetup\BraveMatch'; Name = 'BraveMatch'; MockDefaultValue = 'Brave Browser' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\ActiveSetup\ChromeNoMatch'; Name = 'ChromeNoMatch'; MockDefaultValue = 'Chrome Browser' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\ActiveSetup\MissingDefault'; Name = 'MissingDefault' }
+        )
+        $failureKeys = @(
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\ActiveSetup\BraveRemoveFailure'; Name = 'BraveRemoveFailure'; MockDefaultValue = 'Brave Browser' }
+        )
+
+        $reader = {
+            param($Key)
+            if ($null -ne $Key.PSObject.Properties['MockDefaultValue']) {
+                return [string]$Key.MockDefaultValue
+            }
+            return $null
+        }
+        $remover = {
+            param($Key)
+            if ([string]$Key.PSPath -like '*RemoveFailure') {
+                throw 'Mock Active Setup removal failure.'
+            }
+            $removedKeys.Add([string]$Key.PSPath)
+        }.GetNewClosure()
+
+        $success = Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval `
+            -Path 'HKLM:\Mock\ActiveSetup' `
+            -Pattern '*Brave*' `
+            -KeyEnumerator { param($Path) $successKeys }.GetNewClosure() `
+            -DefaultValueReader $reader `
+            -KeyRemover $remover
+        $failure = Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval `
+            -Path 'HKLM:\Mock\ActiveSetup' `
+            -Pattern '*Brave*' `
+            -KeyEnumerator { param($Path) $failureKeys }.GetNewClosure() `
+            -DefaultValueReader $reader `
+            -KeyRemover $remover
+
+        [pscustomobject]@{
+            Success = $success
+            Failure = $failure
+            RemovedKeys = $removedKeys.ToArray()
+        }
+    }
+    Assert-BoostLabCondition ([bool]$activeSetupProbe.Success.Success) 'Active Setup cleanup should succeed when matching, non-matching, and missing-default keys are inspected.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Success.InspectedCount -eq 3) 'Active Setup cleanup inspected count mismatch.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Success.MatchedCount -eq 1) 'Active Setup cleanup should match only Brave default values.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Success.RemovedCount -eq 1) 'Active Setup cleanup should remove matching Brave key.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Success.NoMatchCount -eq 1) 'Active Setup cleanup should keep non-matching default values.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Success.MissingDefaultCount -eq 1) 'Active Setup cleanup should treat missing default values as no-match/absent.'
+    Assert-BoostLabCondition ('Registry::HKLM\Mock\ActiveSetup\BraveMatch' -in @($activeSetupProbe.RemovedKeys)) 'Active Setup cleanup did not remove the matching Brave key.'
+    Assert-BoostLabCondition (-not [bool]$activeSetupProbe.Failure.Success) 'Active Setup removal failure must fail closed.'
+    Assert-BoostLabCondition ([int]$activeSetupProbe.Failure.FailureCount -eq 1) 'Active Setup removal failure count mismatch.'
+    Assert-BoostLabContains -Text ((@($activeSetupProbe.Failure.Failures) -join '; ')) -Needle 'Mock Active Setup removal failure.' -Description 'Active Setup removal failure'
+
+    $braveObsSeen = [System.Collections.Generic.List[string]]::new()
+    $braveObsExecutor = {
+        param($Operation, $App)
+        $braveObsSeen.Add(('{0}|{1}' -f [string]$App.AppId, [string]$Operation.Type))
+        $details = $null
+        if ([string]$App.AppId -eq 'brave' -and [string]$Operation.Type -eq 'RemoveActiveSetupByDefaultMatch') {
+            $details = [pscustomobject]@{
+                Success = $true
+                InspectedCount = 1
+                MatchedCount = 0
+                RemovedCount = 0
+                MissingDefaultCount = 1
+                NoMatchCount = 0
+                FailureCount = 0
+                MissingDefaultKeys = @('Registry::HKLM\Mock\ActiveSetup\MissingDefault')
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Message = 'mock operation completed'
+            Operation = $Operation
+            AppId = [string]$App.AppId
+            Details = $details
+        }
+    }
+    $braveObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('brave', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $braveObsExecutor
+    Assert-BoostLabCondition ([bool]$braveObsApply.Success) 'Installers queue should continue after Brave Active Setup cleanup with missing default values.'
+    Assert-BoostLabCondition ('obs-studio' -in @($braveObsSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio should start after Brave cleanup succeeds.'
+    $braveActiveSetupResult = @($braveObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'brave' -and [string]$_.Operation.Type -eq 'RemoveActiveSetupByDefaultMatch' })[0]
+    Assert-BoostLabCondition ([int]$braveActiveSetupResult.Details.MissingDefaultCount -eq 1) 'Brave Active Setup result should report missing default values as non-fatal details.'
+
     $sevenZipFailureSeen = [System.Collections.Generic.List[string]]::new()
     $sevenZipFailingExecutor = {
         param($Operation, $App)

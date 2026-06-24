@@ -593,6 +593,108 @@ function Get-BoostLabInstallersOfficialArtifactIdForUrl {
     return [string]$map[$Url]
 }
 
+function Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Pattern,
+
+        [scriptblock]$KeyEnumerator = {
+            param([string]$TargetPath)
+            if (Test-Path -LiteralPath $TargetPath) {
+                Get-ChildItem -LiteralPath $TargetPath -ErrorAction Stop
+            }
+        },
+
+        [scriptblock]$DefaultValueReader = {
+            param([object]$Key)
+            $Key.GetValue('', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+        },
+
+        [scriptblock]$KeyRemover = {
+            param([object]$Key)
+            Remove-Item -LiteralPath ([string]$Key.PSPath) -Force -ErrorAction Stop
+        }
+    )
+
+    $inspected = [System.Collections.Generic.List[string]]::new()
+    $matched = [System.Collections.Generic.List[string]]::new()
+    $removed = [System.Collections.Generic.List[string]]::new()
+    $missingDefault = [System.Collections.Generic.List[string]]::new()
+    $noMatch = [System.Collections.Generic.List[string]]::new()
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    try {
+        $keys = @(& $KeyEnumerator $Path)
+    }
+    catch {
+        $failures.Add("Failed to enumerate Active Setup keys at $Path`: $($_.Exception.Message)")
+        $keys = @()
+    }
+
+    foreach ($key in @($keys)) {
+        $keyPath = if ($null -ne $key -and $null -ne $key.PSObject.Properties['PSPath']) {
+            [string]$key.PSPath
+        }
+        elseif ($null -ne $key -and $null -ne $key.PSObject.Properties['Name']) {
+            [string]$key.Name
+        }
+        else {
+            [string]$key
+        }
+        $inspected.Add($keyPath)
+
+        try {
+            $defaultValue = & $DefaultValueReader $key
+        }
+        catch {
+            $failures.Add("Failed to read Active Setup default value for $keyPath`: $($_.Exception.Message)")
+            continue
+        }
+
+        if ($null -eq $defaultValue) {
+            $missingDefault.Add($keyPath)
+            continue
+        }
+
+        if ([string]$defaultValue -notlike $Pattern) {
+            $noMatch.Add($keyPath)
+            continue
+        }
+
+        $matched.Add($keyPath)
+        try {
+            & $KeyRemover $key
+            $removed.Add($keyPath)
+        }
+        catch {
+            $failures.Add("Failed to remove Active Setup key $keyPath`: $($_.Exception.Message)")
+        }
+    }
+
+    [pscustomobject]@{
+        Success = ($failures.Count -eq 0)
+        Path = $Path
+        Pattern = $Pattern
+        InspectedCount = $inspected.Count
+        MatchedCount = $matched.Count
+        RemovedCount = $removed.Count
+        MissingDefaultCount = $missingDefault.Count
+        NoMatchCount = $noMatch.Count
+        FailureCount = $failures.Count
+        InspectedKeys = $inspected.ToArray()
+        MatchedKeys = $matched.ToArray()
+        RemovedKeys = $removed.ToArray()
+        MissingDefaultKeys = $missingDefault.ToArray()
+        NoMatchKeys = $noMatch.ToArray()
+        Failures = $failures.ToArray()
+    }
+}
+
 function Invoke-BoostLabInstallersOperation {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -602,6 +704,7 @@ function Invoke-BoostLabInstallersOperation {
     )
 
     $parameters = $Operation.Parameters
+    $operationDetails = $null
     try {
         switch ([string]$Operation.Type) {
             'Download' {
@@ -681,14 +784,11 @@ function Invoke-BoostLabInstallersOperation {
                 $shortcut.Save()
             }
             'RemoveActiveSetupByDefaultMatch' {
-                $path = [string]$parameters['Path']
-                if (Test-Path -LiteralPath $path) {
-                    Get-ChildItem -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
-                        $value = (Get-ItemProperty $_.PsPath -ErrorAction SilentlyContinue).'(default)'
-                        if ($value -like [string]$parameters['Pattern']) {
-                            Remove-Item $_.PsPath -Force -ErrorAction SilentlyContinue
-                        }
-                    }
+                $operationDetails = Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval `
+                    -Path ([string]$parameters['Path']) `
+                    -Pattern ([string]$parameters['Pattern'])
+                if (-not [bool]$operationDetails.Success) {
+                    throw "Active Setup cleanup failed: $($operationDetails.Failures -join '; ')"
                 }
             }
             'StopDeleteServicesByNameMatch' {
@@ -737,6 +837,7 @@ function Invoke-BoostLabInstallersOperation {
             Message = "Completed operation: $($Operation.Label)"
             Operation = $Operation
             AppId = [string]$App.AppId
+            Details = $operationDetails
         }
     }
     catch {
@@ -745,6 +846,7 @@ function Invoke-BoostLabInstallersOperation {
             Message = $_.Exception.Message
             Operation = $Operation
             AppId = [string]$App.AppId
+            Details = $operationDetails
         }
     }
 }
