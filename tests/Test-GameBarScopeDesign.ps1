@@ -183,6 +183,7 @@ try {
     Assert-GameBarCondition (@($mockAppxResult.MatchedPackages).Count -eq 2) 'GameBar AppX removal must match only Gaming/Xbox mock packages.'
     Assert-GameBarCondition (@($mockAppxResult.SkippedPackages).Count -eq 1) 'GameBar AppX removal must skip non-matching packages.'
     Assert-GameBarCondition (($removedGameBarPackages.ToArray() -join ',') -eq 'Microsoft.GamingApp_1,Microsoft.XboxGamingOverlay_1') 'GameBar AppX removal must remove matching packages one-by-one.'
+    Assert-GameBarCondition (($mockAppxResult.PackageOutcomes.Outcome -join ',') -eq 'Removed,Removed,SkippedExcluded') 'GameBar AppX removal must report removed and skipped outcome categories.'
 
     $pipeWarningResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
         -Patterns $gameBarAppxPatterns `
@@ -192,6 +193,25 @@ try {
     Assert-GameBarCondition (@($pipeWarningResult.ConsolePipeWarnings).Count -eq 1) 'GameBar AppX removal must report console/progress pipe warnings.'
     Assert-GameBarCondition (@($pipeWarningResult.FailedPackages).Count -eq 0) 'GameBar AppX removal must not classify console/progress pipe warnings as real package failures.'
 
+    $callableUiResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.XboxGameCallableUI'; PackageFullName = 'Microsoft.XboxGameCallableUI_1'; PackageFamilyName = 'Microsoft.XboxGameCallableUI_family'; User = 'S-1-6'; InstallLocation = 'C:\Windows\SystemApps\Microsoft.XboxGameCallableUI' }) } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073CFA, error 0x80070032: This app is part of Windows and cannot be uninstalled on a per-user basis.' }
+    Assert-GameBarCondition ([bool]$callableUiResult.Success) 'Microsoft.XboxGameCallableUI protected removal failure must be reported as a skip, not an error.'
+    Assert-GameBarCondition (@($callableUiResult.MatchedPackages).Count -eq 1) 'Microsoft.XboxGameCallableUI must still be recognized as a source-matching Xbox package.'
+    Assert-GameBarCondition (@($callableUiResult.RemovedPackages).Count -eq 0) 'Microsoft.XboxGameCallableUI must not be reported as removed when Windows protects it.'
+    Assert-GameBarCondition (@($callableUiResult.ProtectedSystemAppSkippedPackages).Count -eq 1) 'Microsoft.XboxGameCallableUI protected skip must be counted.'
+    Assert-GameBarCondition ([string]$callableUiResult.ProtectedSystemAppSkippedPackages[0].Package.PackageFullName -eq 'Microsoft.XboxGameCallableUI_1') 'Microsoft.XboxGameCallableUI protected skip must include PackageFullName.'
+    Assert-GameBarCondition ([string]$callableUiResult.ProtectedSystemAppSkippedPackages[0].Outcome -eq 'SkippedProtectedSystemApp') 'Microsoft.XboxGameCallableUI protected skip must use the SkippedProtectedSystemApp outcome.'
+
+    $dependencyGameBarResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
+        -Patterns $gameBarAppxPatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.XboxFramework'; PackageFullName = 'Microsoft.XboxFramework_1'; PackageFamilyName = 'Microsoft.XboxFramework_family'; User = 'S-1-7'; InstallLocation = 'C:\Windows\SystemApps\XboxFramework' }) } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073CF3: package dependency/conflict validation failed because dependent packages remain installed.' }
+    Assert-GameBarCondition ([bool]$dependencyGameBarResult.Success) 'GameBar dependency/framework AppX failures must be reported as skips, not hard errors.'
+    Assert-GameBarCondition (@($dependencyGameBarResult.DependencyFrameworkSkippedPackages).Count -eq 1) 'GameBar dependency/framework skip must be counted.'
+    Assert-GameBarCondition (@($dependencyGameBarResult.FailedPackages).Count -eq 0) 'GameBar dependency/framework skip must not be counted as an unexpected failure.'
+
     $realAppxFailureResult = Invoke-BoostLabGameBarRemoveAppxWhereNameLike `
         -Patterns $gameBarAppxPatterns `
         -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.XboxProtected'; PackageFullName = 'Microsoft.XboxProtected_1'; PackageFamilyName = 'Microsoft.XboxProtected_family'; User = 'S-1-5'; InstallLocation = 'C:\Mock\Protected' }) } `
@@ -200,6 +220,7 @@ try {
     Assert-GameBarCondition (@($realAppxFailureResult.FailedPackages).Count -eq 1) 'GameBar AppX removal must report real package failures.'
     Assert-GameBarCondition ([string]$realAppxFailureResult.FailedPackages[0].Package.PackageFullName -eq 'Microsoft.XboxProtected_1') 'GameBar AppX real failure must include PackageFullName.'
     Assert-GameBarCondition ([string]$realAppxFailureResult.FailedPackages[0].Package.PackageFamilyName -eq 'Microsoft.XboxProtected_family') 'GameBar AppX real failure must include PackageFamilyName.'
+    Assert-GameBarCondition ([string]$realAppxFailureResult.FailedPackages[0].Outcome -eq 'FailedUnexpected') 'Unexpected GameBar AppX removal failure must remain a hard FailedUnexpected outcome.'
 
     $appxFailureSeen = [System.Collections.Generic.List[string]]::new()
     $appxFailureExecutor = {

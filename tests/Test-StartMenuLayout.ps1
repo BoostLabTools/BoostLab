@@ -648,7 +648,7 @@ $unchangedModules = [ordered]@{
     }
     GameBar = @{
         Path = Join-Path $modulesRoot 'Windows\game-bar.psm1'
-        Hash = '41D3D215DCF011E7DE2F739E025570E4B201766E27B6C192F14934464188D6CE'
+        Hash = '62B195F5D2FACF5C1060ED23704A46317392FD7488768FF43883AA6BE0062B33'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     Copilot = @{

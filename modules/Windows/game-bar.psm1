@@ -429,6 +429,69 @@ function Test-BoostLabGameBarConsolePipeException {
     )
 }
 
+function Get-BoostLabGameBarAppxRemovalOutcome {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $ErrorRecord) {
+        $messages.Add('')
+    }
+    elseif ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$ErrorRecord.FullyQualifiedErrorId)) {
+            $messages.Add([string]$ErrorRecord.FullyQualifiedErrorId)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    if (
+        $messageText -like '*0x80073CFA*' -or
+        $messageText -like '*0x80070032*' -or
+        $messageText -like '*part of Windows and cannot be uninstalled*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedProtectedSystemApp'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    if (
+        $messageText -like '*0x80073CF3*' -or
+        $messageText -like '*dependency*' -or
+        $messageText -like '*conflict validation*' -or
+        $messageText -like '*dependent package*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedDependencyFramework'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    [pscustomobject]@{
+        Outcome = 'FailedUnexpected'
+        IsFailure = $true
+        Reason = $messageText
+    }
+}
+
 function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
     [CmdletBinding()]
     param(
@@ -456,8 +519,11 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
     $matched = [System.Collections.Generic.List[object]]::new()
     $removed = [System.Collections.Generic.List[object]]::new()
     $skipped = [System.Collections.Generic.List[object]]::new()
+    $protectedSkipped = [System.Collections.Generic.List[object]]::new()
+    $dependencySkipped = [System.Collections.Generic.List[object]]::new()
     $failed = [System.Collections.Generic.List[object]]::new()
     $pipeWarnings = [System.Collections.Generic.List[object]]::new()
+    $outcomes = [System.Collections.Generic.List[object]]::new()
     $allPackages = @()
 
     $previousProgressPreference = $ProgressPreference
@@ -484,6 +550,11 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
             $record = ConvertTo-BoostLabGameBarAppxPackageRecord -Package $package
             if (-not (Test-BoostLabGameBarAppxNameMatch -Name ([string]$record.Name) -Patterns $Patterns)) {
                 $skipped.Add($record)
+                $outcomes.Add([pscustomobject]@{
+                    Outcome = 'SkippedExcluded'
+                    Package = $record
+                    Reason = 'Package did not match the source-defined GameBar/Xbox removal patterns.'
+                })
                 continue
             }
 
@@ -491,6 +562,11 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
             try {
                 & $AppxRemover $package | Out-Null
                 $removed.Add($record)
+                $outcomes.Add([pscustomobject]@{
+                    Outcome = 'Removed'
+                    Package = $record
+                    Reason = 'Remove-AppxPackage completed.'
+                })
             }
             catch {
                 if (Test-BoostLabGameBarConsolePipeException -ErrorRecord $_) {
@@ -502,10 +578,26 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
                     continue
                 }
 
-                $failed.Add([pscustomobject]@{
+                $classification = Get-BoostLabGameBarAppxRemovalOutcome -ErrorRecord $_
+                $classifiedResult = [pscustomobject]@{
+                    Outcome = [string]$classification.Outcome
                     Package = $record
-                    Reason  = [string]$_.Exception.Message
-                })
+                    Reason  = [string]$classification.Reason
+                }
+
+                if ([string]$classification.Outcome -eq 'SkippedProtectedSystemApp') {
+                    $protectedSkipped.Add($classifiedResult)
+                    $outcomes.Add($classifiedResult)
+                    continue
+                }
+                if ([string]$classification.Outcome -eq 'SkippedDependencyFramework') {
+                    $dependencySkipped.Add($classifiedResult)
+                    $outcomes.Add($classifiedResult)
+                    continue
+                }
+
+                $failed.Add($classifiedResult)
+                $outcomes.Add($classifiedResult)
             }
         }
     }
@@ -515,10 +607,10 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
 
     $success = ($failed.Count -eq 0)
     $message = if ($success) {
-        "Processed $($matched.Count) matching GameBar/Xbox AppX package(s); skipped $($skipped.Count) non-matching package(s)."
+        "Processed $($matched.Count) matching GameBar/Xbox AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); non-matching skipped $($skipped.Count); unexpected failures $($failed.Count)."
     }
     else {
-        "Failed to remove $($failed.Count) matching GameBar/Xbox AppX package(s)."
+        "Failed to remove $($failed.Count) matching GameBar/Xbox AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); non-matching skipped $($skipped.Count)."
     }
 
     if ($pipeWarnings.Count -gt 0) {
@@ -535,7 +627,10 @@ function Invoke-BoostLabGameBarRemoveAppxWhereNameLike {
         MatchedPackages      = $matched.ToArray()
         RemovedPackages      = $removed.ToArray()
         SkippedPackages      = $skipped.ToArray()
+        ProtectedSystemAppSkippedPackages = $protectedSkipped.ToArray()
+        DependencyFrameworkSkippedPackages = $dependencySkipped.ToArray()
         FailedPackages       = $failed.ToArray()
+        PackageOutcomes      = $outcomes.ToArray()
         ConsolePipeWarnings  = $pipeWarnings.ToArray()
     }
 }

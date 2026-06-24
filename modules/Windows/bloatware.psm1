@@ -478,6 +478,70 @@ function Test-BoostLabBloatwareConsolePipeException {
     )
 }
 
+function Get-BoostLabBloatwareAppxRemovalOutcome {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    $messages = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $ErrorRecord) {
+        $messages.Add('')
+    }
+    elseif ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $messages.Add([string]$ErrorRecord.Exception.Message)
+        if ($null -ne $ErrorRecord.Exception.InnerException) {
+            $messages.Add([string]$ErrorRecord.Exception.InnerException.Message)
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$ErrorRecord.FullyQualifiedErrorId)) {
+            $messages.Add([string]$ErrorRecord.FullyQualifiedErrorId)
+        }
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $messages.Add([string]$ErrorRecord.Message)
+        if ($null -ne $ErrorRecord.InnerException) {
+            $messages.Add([string]$ErrorRecord.InnerException.Message)
+        }
+    }
+    else {
+        $messages.Add([string]$ErrorRecord)
+    }
+
+    $messageText = ($messages.ToArray() -join "`n")
+    if (
+        $messageText -like '*0x80073CFA*' -or
+        $messageText -like '*0x80070032*' -or
+        $messageText -like '*part of Windows and cannot be uninstalled*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedProtectedSystemApp'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    if (
+        $messageText -like '*0x80073CF3*' -or
+        $messageText -like '*dependency*' -or
+        $messageText -like '*conflict validation*' -or
+        $messageText -like '*dependent package*'
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedDependencyFramework'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
+    [pscustomobject]@{
+        Outcome = 'FailedUnexpected'
+        IsFailure = $true
+        Reason = $messageText
+    }
+}
+
 function Invoke-BoostLabBloatwareRemoveAppxExcept {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -506,8 +570,11 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
     $excluded = [System.Collections.Generic.List[object]]::new()
     $attempted = [System.Collections.Generic.List[object]]::new()
     $removed = [System.Collections.Generic.List[object]]::new()
+    $protectedSkipped = [System.Collections.Generic.List[object]]::new()
+    $dependencySkipped = [System.Collections.Generic.List[object]]::new()
     $failed = [System.Collections.Generic.List[object]]::new()
     $pipeWarnings = [System.Collections.Generic.List[object]]::new()
+    $outcomes = [System.Collections.Generic.List[object]]::new()
     $allPackages = @()
 
     $previousProgressPreference = $ProgressPreference
@@ -534,6 +601,11 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
             $record = ConvertTo-BoostLabBloatwareAppxPackageRecord -Package $package
             if (Test-BoostLabBloatwareAppxPackageExcluded -Name ([string]$record.Name) -ExcludeLike $ExcludeLike) {
                 $excluded.Add($record)
+                $outcomes.Add([pscustomobject]@{
+                    Outcome = 'SkippedExcluded'
+                    Package = $record
+                    Reason = 'Package matched the source-defined exclusion list.'
+                })
                 continue
             }
 
@@ -541,6 +613,11 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
             try {
                 & $AppxRemover $package | Out-Null
                 $removed.Add($record)
+                $outcomes.Add([pscustomobject]@{
+                    Outcome = 'Removed'
+                    Package = $record
+                    Reason = 'Remove-AppxPackage completed.'
+                })
             }
             catch {
                 if (Test-BoostLabBloatwareConsolePipeException -ErrorRecord $_) {
@@ -552,10 +629,26 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
                     continue
                 }
 
-                $failed.Add([pscustomobject]@{
+                $classification = Get-BoostLabBloatwareAppxRemovalOutcome -ErrorRecord $_
+                $classifiedResult = [pscustomobject]@{
+                    Outcome = [string]$classification.Outcome
                     Package = $record
-                    Reason = [string]$_.Exception.Message
-                })
+                    Reason = [string]$classification.Reason
+                }
+
+                if ([string]$classification.Outcome -eq 'SkippedProtectedSystemApp') {
+                    $protectedSkipped.Add($classifiedResult)
+                    $outcomes.Add($classifiedResult)
+                    continue
+                }
+                if ([string]$classification.Outcome -eq 'SkippedDependencyFramework') {
+                    $dependencySkipped.Add($classifiedResult)
+                    $outcomes.Add($classifiedResult)
+                    continue
+                }
+
+                $failed.Add($classifiedResult)
+                $outcomes.Add($classifiedResult)
             }
         }
     }
@@ -565,10 +658,10 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
 
     $success = ($failed.Count -eq 0)
     $message = if ($success) {
-        "Processed $($attempted.Count) non-excluded AppX package(s); $($excluded.Count) package(s) matched the source exclusion list."
+        "Processed $($attempted.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); excluded $($excluded.Count); unexpected failures $($failed.Count)."
     }
     else {
-        "Failed to remove $($failed.Count) non-excluded AppX package(s)."
+        "Failed to remove $($failed.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); excluded $($excluded.Count)."
     }
 
     if ($pipeWarnings.Count -gt 0) {
@@ -582,7 +675,10 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
         AttemptedPackages = $attempted.ToArray()
         RemovedPackages = $removed.ToArray()
         ExcludedPackages = $excluded.ToArray()
+        ProtectedSystemAppSkippedPackages = $protectedSkipped.ToArray()
+        DependencyFrameworkSkippedPackages = $dependencySkipped.ToArray()
         FailedPackages = $failed.ToArray()
+        PackageOutcomes = $outcomes.ToArray()
         ConsolePipeWarnings = $pipeWarnings.ToArray()
     }
 }

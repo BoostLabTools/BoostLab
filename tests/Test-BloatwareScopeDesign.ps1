@@ -177,6 +177,15 @@ try {
     Assert-BloatwareCondition (@($mockRemoveResult.ExcludedPackages).Count -eq 1) 'RemoveAppxExcept must preserve excluded package patterns.'
     Assert-BloatwareCondition (@($mockRemoveResult.AttemptedPackages).Count -eq 2) 'RemoveAppxExcept must attempt each non-excluded package individually.'
     Assert-BloatwareCondition (($removedPackages.ToArray() -join ',') -eq 'Contoso.Bloatware_1,Fabrikam.Noise_1') 'RemoveAppxExcept must remove mock packages one-by-one without touching excluded packages.'
+    Assert-BloatwareCondition (($mockRemoveResult.PackageOutcomes.Outcome -join ',') -eq 'SkippedExcluded,Removed,Removed') 'RemoveAppxExcept must report excluded and removed outcome categories.'
+
+    $nvidiaControlPanelResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'NVIDIACorp.NVIDIAControlPanel'; PackageFullName = 'NVIDIACorp.NVIDIAControlPanel_1'; PackageFamilyName = 'NVIDIACorp.NVIDIAControlPanel_family'; User = 'S-1-6'; InstallLocation = 'C:\Mock\NvidiaControlPanel' }) } `
+        -AppxRemover { throw 'NVIDIA Control Panel must remain excluded and must not be removed.' }
+    Assert-BloatwareCondition ([bool]$nvidiaControlPanelResult.Success) 'NVIDIA Control Panel must remain protected by the source exclusion list.'
+    Assert-BloatwareCondition (@($nvidiaControlPanelResult.ExcludedPackages).Count -eq 1) 'NVIDIA Control Panel must be reported as excluded.'
+    Assert-BloatwareCondition (@($nvidiaControlPanelResult.AttemptedPackages).Count -eq 0) 'NVIDIA Control Panel exclusion must prevent removal attempts.'
 
     $pipeWarningResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
         -ExcludeLike $excludePatterns `
@@ -186,6 +195,24 @@ try {
     Assert-BloatwareCondition (@($pipeWarningResult.ConsolePipeWarnings).Count -eq 1) 'RemoveAppxExcept must report console/progress pipe warnings in result data.'
     Assert-BloatwareCondition (@($pipeWarningResult.FailedPackages).Count -eq 0) 'RemoveAppxExcept must not classify console/progress pipe warnings as real package failures.'
 
+    $protectedSystemAppResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.Windows.SystemApp'; PackageFullName = 'Microsoft.Windows.SystemApp_1'; PackageFamilyName = 'Microsoft.Windows.SystemApp_family'; User = 'S-1-7'; InstallLocation = 'C:\Windows\SystemApps\SystemApp' }) } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073CFA, error 0x80070032: This app is part of Windows and cannot be uninstalled on a per-user basis.' }
+    Assert-BloatwareCondition ([bool]$protectedSystemAppResult.Success) 'Protected Windows SystemApp AppX failures must be reported as skips, not hard errors.'
+    Assert-BloatwareCondition (@($protectedSystemAppResult.ProtectedSystemAppSkippedPackages).Count -eq 1) 'Protected Windows SystemApp skip must be counted.'
+    Assert-BloatwareCondition (@($protectedSystemAppResult.FailedPackages).Count -eq 0) 'Protected Windows SystemApp skip must not be counted as an unexpected failure.'
+    Assert-BloatwareCondition ([string]$protectedSystemAppResult.ProtectedSystemAppSkippedPackages[0].Outcome -eq 'SkippedProtectedSystemApp') 'Protected Windows SystemApp skip must use the SkippedProtectedSystemApp outcome.'
+
+    $dependencyFrameworkResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Microsoft.Framework.Dependency'; PackageFullName = 'Microsoft.Framework.Dependency_1'; PackageFamilyName = 'Microsoft.Framework.Dependency_family'; User = 'S-1-8'; InstallLocation = 'C:\Windows\SystemApps\Framework' }) } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073CF3: package dependency/conflict validation failed because dependent packages remain installed.' }
+    Assert-BloatwareCondition ([bool]$dependencyFrameworkResult.Success) 'Dependency/framework AppX failures must be reported as skips, not hard errors.'
+    Assert-BloatwareCondition (@($dependencyFrameworkResult.DependencyFrameworkSkippedPackages).Count -eq 1) 'Dependency/framework skip must be counted.'
+    Assert-BloatwareCondition (@($dependencyFrameworkResult.FailedPackages).Count -eq 0) 'Dependency/framework skip must not be counted as an unexpected failure.'
+    Assert-BloatwareCondition ([string]$dependencyFrameworkResult.DependencyFrameworkSkippedPackages[0].Outcome -eq 'SkippedDependencyFramework') 'Dependency/framework skip must use the SkippedDependencyFramework outcome.'
+
     $realFailureResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
         -ExcludeLike $excludePatterns `
         -AppxGetter { @([pscustomobject]@{ Name = 'Contoso.Protected'; PackageFullName = 'Contoso.Protected_1'; PackageFamilyName = 'Contoso.Protected_family'; User = 'S-1-5'; InstallLocation = 'C:\Mock\Protected' }) } `
@@ -194,6 +221,7 @@ try {
     Assert-BloatwareCondition (@($realFailureResult.FailedPackages).Count -eq 1) 'RemoveAppxExcept must report real failed package removals.'
     Assert-BloatwareCondition ([string]$realFailureResult.FailedPackages[0].Package.PackageFullName -eq 'Contoso.Protected_1') 'RemoveAppxExcept real failure must include PackageFullName.'
     Assert-BloatwareCondition ([string]$realFailureResult.FailedPackages[0].Package.PackageFamilyName -eq 'Contoso.Protected_family') 'RemoveAppxExcept real failure must include PackageFamilyName.'
+    Assert-BloatwareCondition ([string]$realFailureResult.FailedPackages[0].Outcome -eq 'FailedUnexpected') 'Unexpected AppX removal failure must remain a hard FailedUnexpected outcome.'
 
     $stopAfterFailureSeen = [System.Collections.Generic.List[string]]::new()
     $stopAfterFailureExecutor = {
