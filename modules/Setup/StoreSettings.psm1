@@ -71,6 +71,9 @@ function New-BoostLabStoreSettingsResult {
         [Parameter(Mandatory)]
         [bool]$Success,
 
+        [AllowNull()]
+        [string]$Status = $null,
+
         [Parameter(Mandatory)]
         [string]$Action,
 
@@ -88,6 +91,18 @@ function New-BoostLabStoreSettingsResult {
 
     return [pscustomobject]@{
         Success            = $Success
+        Status             = if (-not [string]::IsNullOrWhiteSpace($Status)) {
+            $Status
+        }
+        elseif ($Cancelled) {
+            'Cancelled'
+        }
+        elseif ($Success) {
+            'Success'
+        }
+        else {
+            'Error'
+        }
         ToolId             = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle          = [string]$script:BoostLabToolMetadata['Title']
         Action             = $Action
@@ -246,6 +261,144 @@ function Get-BoostLabStoreRegistryValue {
             DisplayValue  = 'Unknown'
             Message       = $_.Exception.Message
         }
+    }
+}
+
+function ConvertTo-BoostLabStoreRegExePath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ProviderPath
+    )
+
+    if ($ProviderPath -like 'HKLM:\*') {
+        return $ProviderPath -replace '^HKLM:\\', 'HKLM\'
+    }
+
+    return $ProviderPath
+}
+
+function ConvertFrom-BoostLabStoreRegQueryOutput {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Output,
+
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $valueLine = @(
+        ($Output -split "\r?\n") |
+            Where-Object { [string]$_ -match ('^\s*{0}\s+' -f [regex]::Escape($Name)) } |
+            Select-Object -First 1
+    )
+    if ($valueLine.Count -eq 0) {
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            KeyExists     = $true
+            Exists        = $false
+            Value         = $null
+            ValueType     = $null
+            DisplayValue  = 'Absent'
+            Message       = 'reg query did not return the requested value.'
+            ReadMethod    = 'reg query'
+        }
+    }
+
+    $parts = [regex]::Split(([string]$valueLine[0]).Trim(), '\s{2,}')
+    $valueType = if ($parts.Count -ge 2) { [string]$parts[1] } else { 'Unknown' }
+    $dataText = if ($parts.Count -ge 3) { [string]$parts[2] } else { '' }
+    $displayValue = if ($dataText -match '^[0-9A-Fa-f,\s]+$') {
+        @(
+            ($dataText -replace ',', ' ' -split '\s+') |
+                Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+                ForEach-Object { ([string]$_).ToLowerInvariant() }
+        ) -join ','
+    }
+    else {
+        $dataText
+    }
+
+    return [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $true
+        Value         = $dataText
+        ValueType     = $valueType
+        DisplayValue  = $displayValue
+        Message       = "Registry value detected by reg query at $Path."
+        ReadMethod    = 'reg query'
+    }
+}
+
+function Get-BoostLabStoreHiveRegistryValue {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [scriptblock]$RegistryReader,
+
+        [scriptblock]$RegistryCommandInvoker
+    )
+
+    $providerState = $null
+    if ($null -ne $RegistryReader) {
+        $providerResults = @(& $RegistryReader $Path $Name)
+        if ($providerResults.Count -gt 0) {
+            $providerState = $providerResults[0]
+        }
+    }
+
+    if ($null -ne $providerState -and [bool]$providerState.ReadSucceeded -and [bool]$providerState.Exists) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider' -Force
+        return $providerState
+    }
+
+    $queryPath = ConvertTo-BoostLabStoreRegExePath -ProviderPath $Path
+    try {
+        $queryResult = & $RegistryCommandInvoker ('reg query "{0}" /v "{1}"' -f $queryPath, $Name)
+        $queryOutput = (@($queryResult.StandardOutput, $queryResult.StandardError) -join [Environment]::NewLine)
+        $queryState = ConvertFrom-BoostLabStoreRegQueryOutput -Output $queryOutput -Path $Path -Name $Name
+        if ([bool]$queryState.Exists) {
+            return $queryState
+        }
+    }
+    catch {
+        if ($null -ne $providerState) {
+            $providerState | Add-Member -NotePropertyName 'FallbackMessage' -NotePropertyValue $_.Exception.Message -Force
+            $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider; reg query fallback failed' -Force
+            return $providerState
+        }
+
+        return [pscustomobject]@{
+            ReadSucceeded = $false
+            KeyExists     = $null
+            Exists        = $false
+            Value         = $null
+            DisplayValue  = 'Unknown'
+            Message       = $_.Exception.Message
+            ReadMethod    = 'reg query'
+        }
+    }
+
+    if ($null -ne $providerState) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider; reg query fallback' -Force
+        return $providerState
+    }
+
+    return [pscustomobject]@{
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $false
+        Value         = $null
+        DisplayValue  = 'Absent'
+        Message       = 'Store hive value was not found by PowerShell provider or reg query.'
+        ReadMethod    = 'PowerShell registry provider; reg query fallback'
     }
 }
 
@@ -724,22 +877,11 @@ function Invoke-BoostLabStoreSettingsAction {
                 & $RegistryCommandInvoker ('reg import "{0}"' -f $registryFilePath) | Out-Null
 
                 foreach ($definition in $script:BoostLabStoreHiveValues) {
-                    $stateResults = @(& $RegistryReader $definition.Path $definition.Name)
-                    $state = if ($stateResults.Count -gt 0) {
-                        $stateResults[0]
-                    }
-                    else {
-                        $null
-                    }
-                    if ($null -eq $state) {
-                        $state = [pscustomobject]@{
-                            ReadSucceeded = $false
-                            Exists = $false
-                            Value = $null
-                            DisplayValue = 'Unknown'
-                            Message = 'Store hive reader returned no result.'
-                        }
-                    }
+                    $state = Get-BoostLabStoreHiveRegistryValue `
+                        -Path $definition.Path `
+                        -Name $definition.Name `
+                        -RegistryReader $RegistryReader `
+                        -RegistryCommandInvoker $RegistryCommandInvoker
                     $state | Add-Member -NotePropertyName 'Path' -NotePropertyValue $definition.Path -Force
                     $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue $definition.Name -Force
                     $capturedStoreHiveStates.Add($state)
@@ -831,20 +973,42 @@ function Invoke-BoostLabStoreSettingsAction {
     $detectedState = [string]$verificationResult.DetectedState.StoreSettings
     $registryValuesChecked = @($verificationResult.Checks | ForEach-Object { [string]$_.Name })
     $completedAt = Get-Date
+    $verificationStatus = [string]$verificationResult.Status
+    $finalStatusReason = if ($errors.Count -gt 0) {
+        'CommandError'
+    }
+    elseif ($verificationStatus -eq 'Failed') {
+        'VerificationFailed'
+    }
+    elseif ($verificationStatus -eq 'Warning' -or $warnings.Count -gt 0) {
+        'CompletedWithWarnings'
+    }
+    else {
+        'CompletedVerified'
+    }
     $data = [pscustomobject]@{
         CommandStatus             = $commandStatus
+        VerificationStatus        = $verificationStatus
         ExpectedStoreSettingsState = $expectedState
         DetectedStoreSettingsState = $detectedState
         RegistryValuesChecked     = $registryValuesChecked
+        RegistryMutationsAttempted = @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate\AutoDownload'
+            @($script:BoostLabStoreHiveValues | ForEach-Object { "$($_.Path)\$($_.Name)" })
+        )
+        StoreHiveValuesCaptured   = @($capturedStoreHiveStates.ToArray())
         ProcessActions            = $processActions.ToArray()
         StoreUiActions            = $storeUiActions.ToArray() -join [Environment]::NewLine
         Warnings                  = $warnings.ToArray()
+        Errors                    = $errors.ToArray()
+        FinalStatusReason         = $finalStatusReason
         CompletedAt               = $completedAt
     }
 
     if ($errors.Count -gt 0) {
         return New-BoostLabStoreSettingsResult `
             -Success $false `
+            -Status 'Error' `
             -Action $ActionName `
             -Message ("Store Settings action completed with errors: {0}" -f ($errors -join '; ')) `
             -Data $data `
@@ -867,8 +1031,20 @@ function Invoke-BoostLabStoreSettingsAction {
         $message = "$message Warning: $($warnings -join '; ')"
     }
 
+    $success = $verificationStatus -ne 'Failed'
+    $status = if ($verificationStatus -eq 'Failed') {
+        'Error'
+    }
+    elseif ($verificationStatus -eq 'Warning' -or $warnings.Count -gt 0) {
+        'Warning'
+    }
+    else {
+        'Success'
+    }
+
     return New-BoostLabStoreSettingsResult `
-        -Success $true `
+        -Success $success `
+        -Status $status `
         -Action $ActionName `
         -Message $message `
         -Data $data `

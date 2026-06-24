@@ -124,6 +124,7 @@ foreach ($requiredText in @(
     'ProcessRunner'
     'reg load "HKLM\Settings"'
     'reg import'
+    'reg query "{0}" /v "{1}"'
     'reg unload "HKLM\Settings"'
     'VideoAutoplay'
     'EnableAppInstallNotifications'
@@ -313,6 +314,69 @@ try {
     } $autoDownloadReader $capturedHiveStates
     if ($applyPassed.Status -ne 'Passed' -or @($applyPassed.Checks).Count -ne 4) {
         throw 'Store Settings Apply verification did not pass with all expected values.'
+    }
+
+    $regQueryFallbackState = & $storeModule {
+        param($ExpectedValue)
+        $providerReader = {
+            return [pscustomobject]@{
+                ReadSucceeded = $true
+                KeyExists     = $true
+                Exists        = $false
+                Value         = $null
+                DisplayValue  = 'Absent'
+                Message       = 'PowerShell provider did not expose the Store custom value type.'
+            }
+        }
+        $queryInvoker = {
+            return [pscustomobject]@{
+                ExitCode       = 0
+                StandardOutput = @'
+HKEY_LOCAL_MACHINE\Settings\LocalState
+    VideoAutoplay    REG_BINARY    00 96 9d 69 8d cd 93 dc 01
+'@
+                StandardError  = ''
+            }
+        }
+
+        Get-BoostLabStoreHiveRegistryValue `
+            -Path 'HKLM:\Settings\LocalState' `
+            -Name 'VideoAutoplay' `
+            -RegistryReader $providerReader `
+            -RegistryCommandInvoker $queryInvoker
+    } $expectedHiveValues['HKLM:\Settings\LocalState|VideoAutoplay']
+    if (
+        -not [bool]$regQueryFallbackState.Exists -or
+        [string]$regQueryFallbackState.DisplayValue -ne $expectedHiveValues['HKLM:\Settings\LocalState|VideoAutoplay'] -or
+        [string]$regQueryFallbackState.ReadMethod -ne 'reg query'
+    ) {
+        throw 'Store Settings hive verification must fall back to reg query for source-defined Store custom value types.'
+    }
+
+    $capturedAbsentState = @(
+        foreach ($key in $expectedHiveValues.Keys) {
+            $parts = $key -split '\|', 2
+            [pscustomobject]@{
+                Path          = $parts[0]
+                Name          = $parts[1]
+                ReadSucceeded = $true
+                KeyExists     = $true
+                Exists        = $false
+                Value         = $null
+                DisplayValue  = 'Absent'
+                Message       = 'Mock source-required Store hive value absent.'
+            }
+        }
+    )
+    $applyMissingHiveValues = & $storeModule {
+        param($RegistryReader, $CapturedStoreHiveStates)
+        Test-BoostLabStoreSettingsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -CapturedStoreHiveStates $CapturedStoreHiveStates
+    } $autoDownloadReader $capturedAbsentState
+    if ($applyMissingHiveValues.Status -ne 'Failed') {
+        throw "Store Settings Apply must fail verification when source-required Store hive values are absent, found $($applyMissingHiveValues.Status)."
     }
 
     $capturedMissingState = @($capturedHiveStates)
@@ -531,12 +595,64 @@ try {
     } $respawnCommandInvoker $respawnStoreLauncher $respawnDelay $respawnFileWriter $respawnPathTester $respawnRegistryReader $respawnProcessStopper
     if (
         -not $respawnApply.Success -or
+        [string]$respawnApply.Status -ne 'Warning' -or
         $respawnApply.Data.CommandStatus -ne 'Completed' -or
         $respawnApply.VerificationResult.Status -ne 'Passed' -or
         -not ([string]$respawnApply.Message).Contains('Warning: Store process stop was best-effort') -or
         @($respawnApply.Data.Warnings | Where-Object { [string]$_ -like '*remained running after the stop request*' }).Count -lt 2
     ) {
         throw 'Store Settings Apply must treat Store process respawn/remaining-running state as a warning when registry and hive operations succeed.'
+    }
+
+    $verificationFailureEvents = [System.Collections.Generic.List[string]]::new()
+    $verificationFailureCommandInvoker = {
+        param($CommandText)
+        $verificationFailureEvents.Add("COMMAND:$CommandText")
+        if ($CommandText -like 'reg query*') {
+            return [pscustomobject]@{
+                ExitCode       = 0
+                StandardOutput = ''
+                StandardError  = ''
+            }
+        }
+
+        return [pscustomobject]@{
+            ExitCode       = 0
+            StandardOutput = ''
+            StandardError  = ''
+        }
+    }.GetNewClosure()
+    $verificationFailureReader = {
+        param($Path, $Name)
+        if ($Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate') {
+            return (& $newRegistryValueState $true $true 2 '2' 'Mock AutoDownload detected.')
+        }
+
+        return (& $newRegistryValueState $true $false $null 'Absent' 'Mock source-required Store hive value absent.')
+    }.GetNewClosure()
+    $verificationFailedApply = & $storeModule {
+        param($CommandInvoker, $StoreLauncher, $Delay, $FileWriter, $PathTester, $RegistryReader, $ProcessStopper)
+        Invoke-BoostLabStoreSettingsAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -RegistryCommandInvoker $CommandInvoker `
+            -StoreLauncher $StoreLauncher `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $FileWriter `
+            -PathTester $PathTester `
+            -RegistryReader $RegistryReader `
+            -ProcessStopper $ProcessStopper `
+            -SystemRoot 'C:\Windows' `
+            -LocalAppData 'C:\Users\Tester\AppData\Local'
+    } $verificationFailureCommandInvoker $applyStoreLauncher $applyDelay $applyFileWriter $applyPathTester $verificationFailureReader $processStopper
+    if (
+        [bool]$verificationFailedApply.Success -or
+        [string]$verificationFailedApply.Status -ne 'Error' -or
+        [string]$verificationFailedApply.Data.VerificationStatus -ne 'Failed' -or
+        [string]$verificationFailedApply.Data.FinalStatusReason -ne 'VerificationFailed' -or
+        -not ([string]$verificationFailedApply.Message).Contains('verification detected an unexpected state')
+    ) {
+        throw 'Store Settings Apply must not report top-level Success when command execution completed but verification failed.'
     }
 
     $failingApplyEvents = [System.Collections.Generic.List[string]]::new()
@@ -672,6 +788,7 @@ try {
     foreach ($result in @($applyResult, $defaultResult, $alreadyDefaultResult)) {
         foreach ($field in @(
             'Success'
+            'Status'
             'ToolId'
             'ToolTitle'
             'Action'
@@ -688,11 +805,15 @@ try {
         }
         foreach ($dataField in @(
             'CommandStatus'
+            'VerificationStatus'
             'ExpectedStoreSettingsState'
             'DetectedStoreSettingsState'
             'RegistryValuesChecked'
+            'RegistryMutationsAttempted'
+            'StoreHiveValuesCaptured'
             'ProcessActions'
             'StoreUiActions'
+            'FinalStatusReason'
             'CompletedAt'
         )) {
             if ($null -eq $result.Data.PSObject.Properties[$dataField]) {
