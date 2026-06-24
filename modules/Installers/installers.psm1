@@ -695,6 +695,115 @@ function Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval {
     }
 }
 
+function Invoke-BoostLabInstallersDisplayNameUninstall {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$RegistryPath,
+
+        [Parameter(Mandatory)]
+        [string]$DisplayNameLike,
+
+        [Parameter(Mandatory)]
+        [string]$Arguments,
+
+        [scriptblock]$EntryEnumerator = {
+            param([string]$TargetPath)
+            Get-ItemProperty -Path $TargetPath -ErrorAction Stop
+        },
+
+        [scriptblock]$Uninstaller = {
+            param([object]$Entry, [string]$ArgumentList)
+            Start-Process -FilePath 'msiexec.exe' -ArgumentList $ArgumentList -Wait -NoNewWindow -ErrorAction Stop
+        }
+    )
+
+    $inspected = [System.Collections.Generic.List[string]]::new()
+    $matched = [System.Collections.Generic.List[string]]::new()
+    $missingDisplayName = [System.Collections.Generic.List[string]]::new()
+    $noMatch = [System.Collections.Generic.List[string]]::new()
+    $uninstallSucceeded = [System.Collections.Generic.List[string]]::new()
+    $failures = [System.Collections.Generic.List[string]]::new()
+    $uninstallAttempted = 0
+
+    try {
+        $entries = @(& $EntryEnumerator $RegistryPath)
+    }
+    catch {
+        $failures.Add("Failed to enumerate uninstall registry entries at $RegistryPath`: $($_.Exception.Message)")
+        $entries = @()
+    }
+
+    foreach ($entry in @($entries)) {
+        $entryPath = if ($null -ne $entry -and $null -ne $entry.PSObject.Properties['PSPath']) {
+            [string]$entry.PSPath
+        }
+        elseif ($null -ne $entry -and $null -ne $entry.PSObject.Properties['Name']) {
+            [string]$entry.Name
+        }
+        elseif ($null -ne $entry -and $null -ne $entry.PSObject.Properties['PSChildName']) {
+            [string]$entry.PSChildName
+        }
+        else {
+            [string]$entry
+        }
+        $inspected.Add($entryPath)
+
+        $displayNameProperty = if ($null -ne $entry) { $entry.PSObject.Properties['DisplayName'] } else { $null }
+        if ($null -eq $displayNameProperty -or [string]::IsNullOrWhiteSpace([string]$displayNameProperty.Value)) {
+            $missingDisplayName.Add($entryPath)
+            continue
+        }
+
+        $displayName = [string]$displayNameProperty.Value
+        if ($displayName -notlike $DisplayNameLike) {
+            $noMatch.Add("$entryPath [$displayName]")
+            continue
+        }
+
+        $matched.Add("$entryPath [$displayName]")
+        $childNameProperty = $entry.PSObject.Properties['PSChildName']
+        if ($null -eq $childNameProperty -or [string]::IsNullOrWhiteSpace([string]$childNameProperty.Value)) {
+            $failures.Add("Matched uninstall entry $entryPath [$displayName] did not expose PSChildName for the source-defined uninstall command.")
+            continue
+        }
+
+        $uninstallAttempted++
+        $argumentList = [string]::Format($Arguments, [string]$childNameProperty.Value)
+        try {
+            & $Uninstaller $entry $argumentList
+            $uninstallSucceeded.Add("$entryPath [$displayName]")
+        }
+        catch {
+            $failures.Add("Failed to uninstall $entryPath [$displayName]: $($_.Exception.Message)")
+        }
+    }
+
+    [pscustomobject]@{
+        Success = ($failures.Count -eq 0)
+        RegistryPath = $RegistryPath
+        DisplayNameLike = $DisplayNameLike
+        InspectedCount = $inspected.Count
+        MissingDisplayNameCount = $missingDisplayName.Count
+        NoMatchCount = $noMatch.Count
+        MatchedCount = $matched.Count
+        UninstallAttemptedCount = $uninstallAttempted
+        UninstallSucceededCount = $uninstallSucceeded.Count
+        FailureCount = $failures.Count
+        InspectedEntries = $inspected.ToArray()
+        MissingDisplayNameEntries = $missingDisplayName.ToArray()
+        NoMatchEntries = $noMatch.ToArray()
+        MatchedEntries = $matched.ToArray()
+        UninstallSucceededEntries = $uninstallSucceeded.ToArray()
+        FailureEntries = $failures.ToArray()
+        MissingDisplayNameSamples = @($missingDisplayName.ToArray() | Select-Object -First 10)
+        NoMatchSamples = @($noMatch.ToArray() | Select-Object -First 10)
+        MatchedSamples = @($matched.ToArray() | Select-Object -First 10)
+        FailureSamples = @($failures.ToArray() | Select-Object -First 10)
+    }
+}
+
 function Invoke-BoostLabInstallersOperation {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -804,11 +913,12 @@ function Invoke-BoostLabInstallersOperation {
                 Get-ScheduledTask | Where-Object { $_.TaskName -match [string]$parameters['Pattern'] } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue
             }
             'UninstallByDisplayName' {
-                $entry = Get-ItemProperty ([string]$parameters['RegistryPath']) -ErrorAction SilentlyContinue |
-                    Where-Object { $_.DisplayName -like [string]$parameters['DisplayNameLike'] } |
-                    Select-Object -First 1
-                if ($null -ne $entry) {
-                    Start-Process -FilePath 'msiexec.exe' -ArgumentList ([string]::Format([string]$parameters['Arguments'], [string]$entry.PSChildName)) -Wait -NoNewWindow -ErrorAction Stop
+                $operationDetails = Invoke-BoostLabInstallersDisplayNameUninstall `
+                    -RegistryPath ([string]$parameters['RegistryPath']) `
+                    -DisplayNameLike ([string]$parameters['DisplayNameLike']) `
+                    -Arguments ([string]$parameters['Arguments'])
+                if (-not [bool]$operationDetails.Success) {
+                    throw "Display-name uninstall failed: $($operationDetails.FailureEntries -join '; ')"
                 }
             }
             'Sleep' {

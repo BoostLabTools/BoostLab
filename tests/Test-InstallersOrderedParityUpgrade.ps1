@@ -276,6 +276,71 @@ try {
     Assert-BoostLabCondition ([int]$activeSetupProbe.Failure.FailureCount -eq 1) 'Active Setup removal failure count mismatch.'
     Assert-BoostLabContains -Text ((@($activeSetupProbe.Failure.Failures) -join '; ')) -Needle 'Mock Active Setup removal failure.' -Description 'Active Setup removal failure'
 
+    $displayNameUninstallProbe = & $module {
+        $uninstallArguments = [System.Collections.Generic.List[string]]::new()
+        $mixedEntries = @(
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\NoDisplayName'; PSChildName = '{NO-DISPLAY}' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\NullDisplayName'; PSChildName = '{NULL-DISPLAY}'; DisplayName = $null }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\EmptyDisplayName'; PSChildName = '{EMPTY-DISPLAY}'; DisplayName = '' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\EpicLauncher'; PSChildName = '{EPIC-LAUNCHER}'; DisplayName = 'Epic Games Launcher' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\EpicOnlineServices'; PSChildName = '{EPIC-ONLINE-SERVICES}'; DisplayName = 'Epic Online Services' }
+        )
+        $noMatchEntries = @(
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\NoDisplayName'; PSChildName = '{NO-DISPLAY}' }
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\EpicLauncher'; PSChildName = '{EPIC-LAUNCHER}'; DisplayName = 'Epic Games Launcher' }
+        )
+        $failureEntries = @(
+            [pscustomobject]@{ PSPath = 'Registry::HKLM\Mock\Uninstall\EpicOnlineServices'; PSChildName = '{EPIC-ONLINE-SERVICES}'; DisplayName = 'Epic Online Services' }
+        )
+        $uninstaller = {
+            param($Entry, $ArgumentList)
+            $uninstallArguments.Add([string]$ArgumentList)
+        }.GetNewClosure()
+        $failingUninstaller = {
+            param($Entry, $ArgumentList)
+            throw 'Mock Epic Online Services uninstall failure.'
+        }
+
+        $success = Invoke-BoostLabInstallersDisplayNameUninstall `
+            -RegistryPath 'HKLM:\Mock\Uninstall\*' `
+            -DisplayNameLike '*Epic Online Services*' `
+            -Arguments '/x {0} /qn' `
+            -EntryEnumerator { param($Path) $mixedEntries }.GetNewClosure() `
+            -Uninstaller $uninstaller
+        $noMatch = Invoke-BoostLabInstallersDisplayNameUninstall `
+            -RegistryPath 'HKLM:\Mock\Uninstall\*' `
+            -DisplayNameLike '*Epic Online Services*' `
+            -Arguments '/x {0} /qn' `
+            -EntryEnumerator { param($Path) $noMatchEntries }.GetNewClosure() `
+            -Uninstaller $uninstaller
+        $failure = Invoke-BoostLabInstallersDisplayNameUninstall `
+            -RegistryPath 'HKLM:\Mock\Uninstall\*' `
+            -DisplayNameLike '*Epic Online Services*' `
+            -Arguments '/x {0} /qn' `
+            -EntryEnumerator { param($Path) $failureEntries }.GetNewClosure() `
+            -Uninstaller $failingUninstaller
+
+        [pscustomobject]@{
+            Success = $success
+            NoMatch = $noMatch
+            Failure = $failure
+            UninstallArguments = $uninstallArguments.ToArray()
+        }
+    }
+    Assert-BoostLabCondition ([bool]$displayNameUninstallProbe.Success.Success) 'Display-name uninstall should succeed with missing, null, empty, non-matching, and one matching entry.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.InspectedCount -eq 5) 'Display-name uninstall inspected count mismatch.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.MissingDisplayNameCount -eq 3) 'Missing/null/empty DisplayName entries should be counted as missing display names.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.NoMatchCount -eq 1) 'Non-matching DisplayName entries should be counted as no-match.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.MatchedCount -eq 1) 'Epic Online Services should be the only display-name match.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.UninstallAttemptedCount -eq 1) 'One matching uninstall should be attempted.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Success.UninstallSucceededCount -eq 1) 'One matching uninstall should succeed.'
+    Assert-BoostLabCondition ('/x {EPIC-ONLINE-SERVICES} /qn' -in @($displayNameUninstallProbe.UninstallArguments)) 'Epic Online Services uninstall arguments should use the matched PSChildName.'
+    Assert-BoostLabCondition ([bool]$displayNameUninstallProbe.NoMatch.Success) 'No matching uninstall entries should be a no-op success, not a crash.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.NoMatch.UninstallAttemptedCount -eq 0) 'No-match display-name cleanup must not attempt an uninstall.'
+    Assert-BoostLabCondition (-not [bool]$displayNameUninstallProbe.Failure.Success) 'Matching display-name uninstall failure must fail closed.'
+    Assert-BoostLabCondition ([int]$displayNameUninstallProbe.Failure.FailureCount -eq 1) 'Display-name uninstall failure count mismatch.'
+    Assert-BoostLabContains -Text ((@($displayNameUninstallProbe.Failure.FailureEntries) -join '; ')) -Needle 'Mock Epic Online Services uninstall failure.' -Description 'Display-name uninstall failure'
+
     $braveObsSeen = [System.Collections.Generic.List[string]]::new()
     $braveObsExecutor = {
         param($Operation, $App)
@@ -306,6 +371,66 @@ try {
     Assert-BoostLabCondition ('obs-studio' -in @($braveObsSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio should start after Brave cleanup succeeds.'
     $braveActiveSetupResult = @($braveObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'brave' -and [string]$_.Operation.Type -eq 'RemoveActiveSetupByDefaultMatch' })[0]
     Assert-BoostLabCondition ([int]$braveActiveSetupResult.Details.MissingDefaultCount -eq 1) 'Brave Active Setup result should report missing default values as non-fatal details.'
+
+    $epicObsSeen = [System.Collections.Generic.List[string]]::new()
+    $epicObsExecutor = {
+        param($Operation, $App)
+        $epicObsSeen.Add(('{0}|{1}' -f [string]$App.AppId, [string]$Operation.Type))
+        $details = $null
+        if ([string]$App.AppId -eq 'epic-games' -and [string]$Operation.Type -eq 'UninstallByDisplayName') {
+            $details = [pscustomobject]@{
+                Success = $true
+                RegistryPath = 'HKLM:\Mock\Uninstall\*'
+                DisplayNameLike = '*Epic Online Services*'
+                InspectedCount = 3
+                MissingDisplayNameCount = 2
+                NoMatchCount = 1
+                MatchedCount = 0
+                UninstallAttemptedCount = 0
+                UninstallSucceededCount = 0
+                FailureCount = 0
+                MissingDisplayNameSamples = @('Registry::HKLM\Mock\Uninstall\NoDisplayName', 'Registry::HKLM\Mock\Uninstall\EmptyDisplayName')
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Message = 'mock operation completed'
+            Operation = $Operation
+            AppId = [string]$App.AppId
+            Details = $details
+        }
+    }
+    $epicObsApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicObsExecutor
+    Assert-BoostLabCondition ([bool]$epicObsApply.Success) 'Installers queue should continue after Epic Online Services cleanup when uninstall entries have no DisplayName but no real failure occurs.'
+    Assert-BoostLabCondition ('obs-studio' -in @($epicObsSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio should start after Epic Online Services cleanup succeeds.'
+    $epicUninstallResult = @($epicObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'epic-games' -and [string]$_.Operation.Type -eq 'UninstallByDisplayName' })[0]
+    Assert-BoostLabCondition ([int]$epicUninstallResult.Details.MissingDisplayNameCount -eq 2) 'Epic Online Services cleanup should report missing DisplayName entries as non-fatal details.'
+    Assert-BoostLabCondition ([int]$epicUninstallResult.Details.UninstallAttemptedCount -eq 0) 'Epic Online Services cleanup should not attempt uninstall when no matching DisplayName exists.'
+
+    $epicFailureSeen = [System.Collections.Generic.List[string]]::new()
+    $epicFailingExecutor = {
+        param($Operation, $App)
+        $epicFailureSeen.Add(('{0}|{1}' -f [string]$App.AppId, [string]$Operation.Type))
+        if ([string]$App.AppId -eq 'epic-games' -and [string]$Operation.Type -eq 'UninstallByDisplayName') {
+            return [pscustomobject]@{
+                Success = $false
+                Message = 'mock Epic Online Services uninstall failure'
+                Operation = $Operation
+                AppId = [string]$App.AppId
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Message = 'mock operation completed'
+            Operation = $Operation
+            AppId = [string]$App.AppId
+        }
+    }
+    $epicFailedApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games', 'obs-studio') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicFailingExecutor
+    Assert-BoostLabCondition (-not [bool]$epicFailedApply.Success) 'Epic Online Services real uninstall failure should fail closed.'
+    Assert-BoostLabCondition ([string]$epicFailedApply.Status -eq 'QueueStoppedAfterFailure') 'Epic Online Services failure status mismatch.'
+    Assert-BoostLabCondition ([string]$epicFailedApply.Data.FailedApp.AppId -eq 'epic-games') 'Failed app should be Epic Games.'
+    Assert-BoostLabCondition ('obs-studio' -notin @($epicFailureSeen | ForEach-Object { ([string]$_).Split('|')[0] })) 'OBS Studio must not start after a real Epic Online Services uninstall failure.'
 
     $sevenZipFailureSeen = [System.Collections.Generic.List[string]]::new()
     $sevenZipFailingExecutor = {
