@@ -410,6 +410,7 @@ function ConvertTo-BoostLabBloatwareAppxPackageRecord {
             PackageFamilyName = ''
             User              = ''
             InstallLocation   = ''
+            IsFramework       = $false
         }
     }
 
@@ -419,6 +420,7 @@ function ConvertTo-BoostLabBloatwareAppxPackageRecord {
         PackageFamilyName = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'PackageFamilyName')
         User              = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'User')
         InstallLocation   = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'InstallLocation')
+        IsFramework       = [bool](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'IsFramework')
     }
 }
 
@@ -478,12 +480,51 @@ function Test-BoostLabBloatwareConsolePipeException {
     )
 }
 
+function Test-BoostLabBloatwareInUseFrameworkRuntimePackage {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [object]$Package
+    )
+
+    if ($null -eq $Package) {
+        return $false
+    }
+
+    $name = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'Name')
+    $fullName = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'PackageFullName')
+    $familyName = [string](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'PackageFamilyName')
+    $isFramework = [bool](Get-BoostLabBloatwareObjectProperty -InputObject $Package -Name 'IsFramework')
+    if ($isFramework) {
+        return $true
+    }
+
+    $identity = @($name, $fullName, $familyName) -join "`n"
+    foreach ($pattern in @(
+        'Microsoft.WindowsAppRuntime.*'
+        'MicrosoftCorporationII.WinAppRuntime.*'
+        'Microsoft.VCLibs.*'
+        'Microsoft.UI.Xaml.*'
+        'Microsoft.NET.Native.*'
+    )) {
+        if ($identity -like "*$pattern*") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-BoostLabBloatwareAppxRemovalOutcome {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
         [AllowNull()]
-        [object]$ErrorRecord
+        [object]$ErrorRecord,
+
+        [AllowNull()]
+        [object]$Package = $null
     )
 
     $messages = [System.Collections.Generic.List[string]]::new()
@@ -510,6 +551,22 @@ function Get-BoostLabBloatwareAppxRemovalOutcome {
     }
 
     $messageText = ($messages.ToArray() -join "`n")
+    if (
+        (
+            $messageText -like '*0x80073D02*' -or
+            $messageText -like '*resources*currently in use*' -or
+            $messageText -like '*package*currently in use*' -or
+            $messageText -like '*package*is in use*'
+        ) -and
+        (Test-BoostLabBloatwareInUseFrameworkRuntimePackage -Package $Package)
+    ) {
+        return [pscustomobject]@{
+            Outcome = 'SkippedInUseFrameworkRuntime'
+            IsFailure = $false
+            Reason = $messageText
+        }
+    }
+
     if (
         $messageText -like '*0x80073CFA*' -or
         $messageText -like '*0x80070032*' -or
@@ -572,6 +629,7 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
     $removed = [System.Collections.Generic.List[object]]::new()
     $protectedSkipped = [System.Collections.Generic.List[object]]::new()
     $dependencySkipped = [System.Collections.Generic.List[object]]::new()
+    $inUseFrameworkRuntimeSkipped = [System.Collections.Generic.List[object]]::new()
     $failed = [System.Collections.Generic.List[object]]::new()
     $pipeWarnings = [System.Collections.Generic.List[object]]::new()
     $outcomes = [System.Collections.Generic.List[object]]::new()
@@ -629,7 +687,7 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
                     continue
                 }
 
-                $classification = Get-BoostLabBloatwareAppxRemovalOutcome -ErrorRecord $_
+                $classification = Get-BoostLabBloatwareAppxRemovalOutcome -ErrorRecord $_ -Package $record
                 $classifiedResult = [pscustomobject]@{
                     Outcome = [string]$classification.Outcome
                     Package = $record
@@ -646,6 +704,11 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
                     $outcomes.Add($classifiedResult)
                     continue
                 }
+                if ([string]$classification.Outcome -eq 'SkippedInUseFrameworkRuntime') {
+                    $inUseFrameworkRuntimeSkipped.Add($classifiedResult)
+                    $outcomes.Add($classifiedResult)
+                    continue
+                }
 
                 $failed.Add($classifiedResult)
                 $outcomes.Add($classifiedResult)
@@ -658,10 +721,10 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
 
     $success = ($failed.Count -eq 0)
     $message = if ($success) {
-        "Processed $($attempted.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); excluded $($excluded.Count); unexpected failures $($failed.Count)."
+        "Processed $($attempted.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); in-use framework/runtime skipped $($inUseFrameworkRuntimeSkipped.Count); excluded $($excluded.Count); unexpected failures $($failed.Count)."
     }
     else {
-        "Failed to remove $($failed.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); excluded $($excluded.Count)."
+        "Failed to remove $($failed.Count) non-excluded AppX package(s); removed $($removed.Count); protected system skipped $($protectedSkipped.Count); dependency/framework skipped $($dependencySkipped.Count); in-use framework/runtime skipped $($inUseFrameworkRuntimeSkipped.Count); excluded $($excluded.Count)."
     }
 
     if ($pipeWarnings.Count -gt 0) {
@@ -677,7 +740,14 @@ function Invoke-BoostLabBloatwareRemoveAppxExcept {
         ExcludedPackages = $excluded.ToArray()
         ProtectedSystemAppSkippedPackages = $protectedSkipped.ToArray()
         DependencyFrameworkSkippedPackages = $dependencySkipped.ToArray()
+        InUseFrameworkRuntimeSkippedPackages = $inUseFrameworkRuntimeSkipped.ToArray()
         FailedPackages = $failed.ToArray()
+        RemovedCount = $removed.Count
+        ExcludedCount = $excluded.Count
+        ProtectedSystemSkippedCount = $protectedSkipped.Count
+        DependencyFrameworkSkippedCount = $dependencySkipped.Count
+        InUseFrameworkRuntimeSkippedCount = $inUseFrameworkRuntimeSkipped.Count
+        UnexpectedFailureCount = $failed.Count
         PackageOutcomes = $outcomes.ToArray()
         ConsolePipeWarnings = $pipeWarnings.ToArray()
     }

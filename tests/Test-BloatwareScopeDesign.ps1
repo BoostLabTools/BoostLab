@@ -213,6 +213,30 @@ try {
     Assert-BloatwareCondition (@($dependencyFrameworkResult.FailedPackages).Count -eq 0) 'Dependency/framework skip must not be counted as an unexpected failure.'
     Assert-BloatwareCondition ([string]$dependencyFrameworkResult.DependencyFrameworkSkippedPackages[0].Outcome -eq 'SkippedDependencyFramework') 'Dependency/framework skip must use the SkippedDependencyFramework outcome.'
 
+    $windowsAppRuntimeInUseResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter {
+            @(
+                [pscustomobject]@{ Name = 'Microsoft.WindowsAppRuntime.1.8'; PackageFullName = 'Microsoft.WindowsAppRuntime.1.8_8000.879.2017.0_x86__8wekyb3d8bbwe'; PackageFamilyName = 'Microsoft.WindowsAppRuntime.1.8_8wekyb3d8bbwe'; User = 'S-1-9'; InstallLocation = 'C:\Program Files\WindowsApps\Microsoft.WindowsAppRuntime.1.8_x86'; IsFramework = $true }
+                [pscustomobject]@{ Name = 'Microsoft.WindowsAppRuntime.1.8'; PackageFullName = 'Microsoft.WindowsAppRuntime.1.8_8000.879.2017.0_x64__8wekyb3d8bbwe'; PackageFamilyName = 'Microsoft.WindowsAppRuntime.1.8_8wekyb3d8bbwe'; User = 'S-1-10'; InstallLocation = 'C:\Program Files\WindowsApps\Microsoft.WindowsAppRuntime.1.8_x64'; IsFramework = $true }
+            )
+        } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073D02: The package could not be installed because resources it modifies are currently in use. The request cannot be processed because package Microsoft.WindowsAppRuntime.1.8 is in use.' }
+    Assert-BloatwareCondition ([bool]$windowsAppRuntimeInUseResult.Success) 'WindowsAppRuntime in-use framework/runtime failures must be reported as skips, not hard errors.'
+    Assert-BloatwareCondition (@($windowsAppRuntimeInUseResult.InUseFrameworkRuntimeSkippedPackages).Count -eq 2) 'WindowsAppRuntime x86/x64 in-use skips must be counted.'
+    Assert-BloatwareCondition ([int]$windowsAppRuntimeInUseResult.InUseFrameworkRuntimeSkippedCount -eq 2) 'WindowsAppRuntime in-use skipped count mismatch.'
+    Assert-BloatwareCondition (@($windowsAppRuntimeInUseResult.FailedPackages).Count -eq 0) 'WindowsAppRuntime in-use framework/runtime skips must not be counted as unexpected failures.'
+    Assert-BloatwareCondition (($windowsAppRuntimeInUseResult.InUseFrameworkRuntimeSkippedPackages.Outcome -join ',') -eq 'SkippedInUseFrameworkRuntime,SkippedInUseFrameworkRuntime') 'WindowsAppRuntime in-use skips must use the SkippedInUseFrameworkRuntime outcome.'
+    Assert-BloatwareCondition ([string]$windowsAppRuntimeInUseResult.Message -like '*in-use framework/runtime skipped 2*') 'WindowsAppRuntime in-use result message must include the in-use framework/runtime count.'
+
+    $ordinaryInUseFailureResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
+        -ExcludeLike $excludePatterns `
+        -AppxGetter { @([pscustomobject]@{ Name = 'Contoso.ConsumerApp'; PackageFullName = 'Contoso.ConsumerApp_1'; PackageFamilyName = 'Contoso.ConsumerApp_family'; User = 'S-1-11'; InstallLocation = 'C:\Mock\ConsumerApp'; IsFramework = $false }) } `
+        -AppxRemover { throw 'Remove-AppxPackage failed with HRESULT 0x80073D02: The package could not be installed because resources it modifies are currently in use.' }
+    Assert-BloatwareCondition (-not [bool]$ordinaryInUseFailureResult.Success) 'Ordinary consumer AppX in-use failures must remain fail-closed.'
+    Assert-BloatwareCondition (@($ordinaryInUseFailureResult.FailedPackages).Count -eq 1) 'Ordinary consumer AppX in-use failure must be counted as an unexpected failure.'
+    Assert-BloatwareCondition ([string]$ordinaryInUseFailureResult.FailedPackages[0].Outcome -eq 'FailedUnexpected') 'Ordinary consumer AppX in-use failure must remain FailedUnexpected.'
+
     $realFailureResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
         -ExcludeLike $excludePatterns `
         -AppxGetter { @([pscustomobject]@{ Name = 'Contoso.Protected'; PackageFullName = 'Contoso.Protected_1'; PackageFamilyName = 'Contoso.Protected_family'; User = 'S-1-5'; InstallLocation = 'C:\Mock\Protected' }) } `
@@ -242,6 +266,25 @@ try {
     Assert-BloatwareCondition (-not [bool]$failedRemoveAppxWorkflow.Success) 'Bloatware branch must stop on a real RemoveAppxExcept failure.'
     Assert-BloatwareCondition ([string]$failedRemoveAppxWorkflow.FailedOperation.Type -eq 'RemoveAppxExcept') 'Bloatware branch must identify RemoveAppxExcept as the failed operation.'
     Assert-BloatwareCondition (($stopAfterFailureSeen.ToArray() -join ',') -eq 'RegistryCommand,RemoveAppxExcept') 'Bloatware branch must not continue after a real RemoveAppxExcept failure.'
+
+    $continueAfterInUseSeen = [System.Collections.Generic.List[string]]::new()
+    $continueAfterInUseExecutor = {
+        param($Operation, $Branch, $Plan)
+        $continueAfterInUseSeen.Add([string]$Operation.Type)
+        [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Branch = [string]$Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Message = if ([string]$Operation.Type -eq 'RemoveAppxExcept') { [string]$windowsAppRuntimeInUseResult.Message } else { 'Mocked operation completed.' }
+            Data = if ([string]$Operation.Type -eq 'RemoveAppxExcept') { $windowsAppRuntimeInUseResult } else { [pscustomobject]@{ PlanBranch = [string]$Plan.Branch } }
+        }
+    }.GetNewClosure()
+    $continueAfterInUseWorkflow = Invoke-BoostLabBloatwareBranchWorkflow -Branch 'RemoveAllBloatware' -SkipEnvironmentChecks $true -OperationExecutor $continueAfterInUseExecutor
+    Assert-BloatwareCondition ([bool]$continueAfterInUseWorkflow.Success) 'Bloatware branch must continue when RemoveAppxExcept only skipped known Windows protected/dependency/in-use framework runtime packages.'
+    Assert-BloatwareCondition ('RemoveWindowsCapabilityExcept' -in @($continueAfterInUseSeen)) 'Bloatware branch must not stop after only in-use framework/runtime AppX skips.'
 
     $storePlan = Get-BoostLabBloatwareOperationPlan -Branch 'InstallStore'
     foreach ($requiredType in @('AppxRegisterLike', 'StartProcess', 'StopProcesses', 'RegistryCommand', 'StoreSettingsHiveImport')) {
