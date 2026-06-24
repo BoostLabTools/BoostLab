@@ -461,7 +461,7 @@ function ConvertTo-BoostLabDeviceManagerExpectedRegistryValue {
             for ($index = 0; $index -lt $bytes.Length; $index++) {
                 $bytes[$index] = [Convert]::ToByte($hex.Substring($index * 2, 2), 16)
             }
-            return $bytes
+            return ,$bytes
         }
         default {
             throw "Unsupported registry value type: $([string]$Operation.Type)"
@@ -654,11 +654,8 @@ function Invoke-BoostLabDeviceManagerRegistryOperation {
                 'REG_BINARY' { [Microsoft.Win32.RegistryValueKind]::Binary }
                 default { throw "Unsupported registry value type: $([string]$Operation.Type)" }
             }
-            $registryKey.SetValue(
-                [string]$Operation.Name,
-                (ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $Operation),
-                $valueKind
-            )
+            $valueData = ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $Operation
+            $registryKey.SetValue([string]$Operation.Name, $valueData, $valueKind)
             return New-BoostLabDeviceManagerRegistryOperationResult `
                 -Operation $Operation `
                 -Status 'Changed' `
@@ -895,7 +892,13 @@ function Test-BoostLabDeviceManagerPowerWakeState {
                 $state = if ($stateResults.Count -gt 0) { $stateResults[0] } else { $null }
             }
             catch {
-                $state = $null
+                $state = [pscustomobject]@{
+                    ReadSucceeded = $false
+                    Exists = $false
+                    Value = $null
+                    DisplayValue = 'Unknown'
+                    Message = "Device power value could not be read: $($_.Exception.Message)"
+                }
             }
 
             $readSucceeded = (
@@ -1146,6 +1149,18 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
     $inaccessibleResults = @($operationResults | Where-Object { [string]$_.Status -eq 'Inaccessible' })
     $failedResults = @($operationResults | Where-Object { [string]$_.Status -eq 'Failed' })
     $sampleLimit = 10
+    $verificationWarnings = @($verificationResult.Checks | Where-Object { [string]$_.Status -eq 'Warning' })
+    $verificationAccessWarnings = @(
+        $verificationWarnings |
+            Where-Object {
+                [string]$_.Message -match 'access is denied|Requested registry access is not allowed|UnauthorizedAccessException'
+            }
+    )
+    $verificationWarningSamples = @(
+        $verificationWarnings |
+            Select-Object -First $sampleLimit |
+            ForEach-Object { '{0}: {1}' -f [string]$_.Name, [string]$_.Message }
+    )
     $inaccessibleSamples = @(
         $inaccessibleResults |
             Select-Object -First $sampleLimit |
@@ -1174,7 +1189,7 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
     elseif ($operationsAttempted.Count -eq 0 -and $ActionName -eq 'Default') {
         'Already default'
     }
-    elseif ($warnings.Count -gt 0 -or $inaccessibleResults.Count -gt 0) {
+    elseif ($warnings.Count -gt 0 -or $inaccessibleResults.Count -gt 0 -or $verificationWarnings.Count -gt 0) {
         'Completed with warnings'
     }
     else {
@@ -1191,9 +1206,14 @@ function Invoke-BoostLabDeviceManagerPowerWakeAction {
         AlreadyCorrectItems = @($alreadyCorrectResults | ForEach-Object { [string]$_.Description })
         InaccessibleItems = $inaccessibleSamples
         FailedItems = $failedSamples
+        VerificationWarningItems = $verificationWarningSamples
         AttemptedCount = $operationsAttempted.Count
         ChangedCount = $changedResults.Count
         AlreadyCorrectCount = $alreadyCorrectResults.Count
+        OperationInaccessibleCount = $inaccessibleResults.Count
+        VerificationWarningCount = $verificationWarnings.Count
+        VerificationAccessWarningCount = $verificationAccessWarnings.Count
+        EnumerationWarningCount = @($inventory.Warnings).Count
         InaccessibleCount = $inaccessibleResults.Count
         FailedCount = $failedResults.Count
         SkippedItems = $operationsSkipped.ToArray()

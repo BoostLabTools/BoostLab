@@ -255,6 +255,52 @@ try {
         throw 'Default operation order or source spelling behavior changed.'
     }
 
+    $typeConversionProbe = & $toolModule {
+        param($Blueprint)
+
+        $binaryOperation = @(
+            $Blueprint |
+                Where-Object {
+                    [string]$_.ClassName -eq 'ACPI' -and
+                    [string]$_.Name -eq 'SeleactiveSuspendEnabled'
+                }
+        )[0]
+        $dwordOperation = @(
+            $Blueprint |
+                Where-Object {
+                    [string]$_.ClassName -eq 'USB' -and
+                    [string]$_.Name -eq 'WaitWakeEnabled'
+                }
+        )[0]
+
+        $binaryValue = ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $binaryOperation
+        $dwordValue = ConvertTo-BoostLabDeviceManagerExpectedRegistryValue -Operation $dwordOperation
+
+        [pscustomobject]@{
+            BinaryName = [string]$binaryOperation.Name
+            BinaryType = [string]$binaryOperation.Type
+            BinaryIsByteArray = ($binaryValue -is [byte[]])
+            BinaryLength = if ($binaryValue -is [byte[]]) { $binaryValue.Length } else { -1 }
+            BinaryFirstByte = if ($binaryValue -is [byte[]] -and $binaryValue.Length -gt 0) { [int]$binaryValue[0] } else { -1 }
+            DWordName = [string]$dwordOperation.Name
+            DWordType = [string]$dwordOperation.Type
+            DWordIsInt = ($dwordValue -is [int])
+            DWordValue = [int]$dwordValue
+        }
+    } $applyBlueprint
+    if (
+        [string]$typeConversionProbe.BinaryName -ne 'SeleactiveSuspendEnabled' -or
+        [string]$typeConversionProbe.BinaryType -ne 'REG_BINARY' -or
+        -not [bool]$typeConversionProbe.BinaryIsByteArray -or
+        [int]$typeConversionProbe.BinaryLength -ne 1 -or
+        [int]$typeConversionProbe.BinaryFirstByte -ne 0 -or
+        [string]$typeConversionProbe.DWordType -ne 'REG_DWORD' -or
+        -not [bool]$typeConversionProbe.DWordIsInt -or
+        [int]$typeConversionProbe.DWordValue -ne 0
+    ) {
+        throw 'Device Manager registry value conversion does not provide .NET-compatible REG_BINARY/REG_DWORD values.'
+    }
+
     $targets = @(
         foreach ($className in $deviceClasses) {
             foreach ($leafName in @('Device Parameters', 'WDF')) {
@@ -516,6 +562,12 @@ try {
     ) {
         throw 'Access-denied device registry targets were not reported as bounded warnings.'
     }
+    if (
+        [int]$accessDeniedResult.Data.OperationInaccessibleCount -ne 20 -or
+        [int]$accessDeniedResult.Data.EnumerationWarningCount -ne 0
+    ) {
+        throw 'Access-denied summary fields do not consistently identify operation-level inaccessible targets.'
+    }
 
     $alreadyCorrectInvoker = {
         param($CommandText, $Operation)
@@ -569,6 +621,45 @@ try {
         ([regex]::Matches([string]$externalRegFailure.Message, '-1073741502')).Count -gt 10
     ) {
         throw 'External reg.exe failure diagnostics were not bounded and structured.'
+    }
+
+    $verificationAccessDeniedReader = {
+        param($RegistrySubPath, $Name)
+        throw [UnauthorizedAccessException]::new('Requested registry access is not allowed.')
+    }
+    $verificationWarningInvoker = {
+        param($CommandText, $Operation)
+        [pscustomobject]@{
+            ClassName = [string]$Operation.ClassName
+            LeafName = [string]$Operation.LeafName
+            RegistryPath = [string]$Operation.RegistryPath
+            RegistrySubPath = [string]$Operation.RegistrySubPath
+            Name = [string]$Operation.Name
+            Type = [string]$Operation.Type
+            Data = [string]$Operation.Data
+            Status = 'Changed'
+            Description = '{0} | {1}\{2}' -f [string]$Operation.ClassName, [string]$Operation.RegistryPath, [string]$Operation.Name
+            Message = 'Mock write completed.'
+        }
+    }
+    $verificationWarningResult = & $toolModule {
+        param($Enumerator, $Reader, $Invoker)
+        Invoke-BoostLabDeviceManagerPowerWakeAction `
+            -ActionName Apply `
+            -AdministratorChecker { $true } `
+            -DeviceEnumerator $Enumerator `
+            -RegistryReader $Reader `
+            -RegistryCommandInvoker $Invoker
+    } $enumerator $verificationAccessDeniedReader $verificationWarningInvoker
+    if (
+        -not $verificationWarningResult.Success -or
+        $verificationWarningResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        [int]$verificationWarningResult.Data.OperationInaccessibleCount -ne 0 -or
+        [int]$verificationWarningResult.Data.InaccessibleCount -ne 0 -or
+        [int]$verificationWarningResult.Data.VerificationAccessWarningCount -ne 20 -or
+        @($verificationWarningResult.Data.VerificationWarningItems).Count -eq 0
+    ) {
+        throw 'Verification access warnings were not separated from operation-level inaccessible write counts.'
     }
 
     $maliciousInventory = [pscustomobject]@{
