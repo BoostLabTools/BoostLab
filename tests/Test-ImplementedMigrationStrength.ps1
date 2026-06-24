@@ -405,7 +405,8 @@ foreach ($toolName in $implementedTools.Keys) {
                 '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
                 '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
                 'Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction SilentlyContinue'
-                'if ($null -ne $loadResult -and [bool]$loadResult.Success)'
+                'Invoke-BoostLabNotepadSettingsHiveImport'
+                'RegistryValuesChecked'
                 'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
                 'Invoke-BoostLabNotepadRegistryCommand'
             )) {

@@ -94,9 +94,12 @@ foreach ($requiredText in @(
     '"GhostFile"=hex(5f5e10b):00,42,60,f1,5a,d1,84,db,01'
     '"RewriteEnabled"=hex(5f5e10b):00,12,4a,7f,5f,d1,84,db,01'
     'Stop-Process -Name $script:BoostLabNotepadProcessName -Force -ErrorAction SilentlyContinue'
-    'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
+    'Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop'
     'Remove-Item -LiteralPath $Path -Force -ErrorAction Stop'
-    'if ($null -ne $loadResult -and [bool]$loadResult.Success)'
+    'Invoke-BoostLabNotepadSettingsHiveImport'
+    'FinalStatusReason'
+    'HiveOperations'
+    'RegistryValuesChecked'
     '[bool]$Confirmed = $false'
     'New-BoostLabVerificationResult'
 )) {
@@ -188,14 +191,44 @@ try {
     Assert-BoostLabCondition (-not [bool]$compatibility.SettingsDatExists) 'Mock compatibility should report missing settings.dat.'
     Assert-BoostLabCondition ([string]$compatibility.Reason -match 'Ultimate still attempts') 'Compatibility reason should explain exact source behavior for missing settings.dat.'
 
-    $missingApplyEvents = [System.Collections.Generic.List[string]]::new()
-    $missingApplyCommand = {
-        param($Operation, $Arguments, $Root)
-        $missingApplyEvents.Add("$Operation|$($Arguments -join '|')")
-        [pscustomobject]@{ Success = $false; Operation = $Operation; ExitCode = 1 }
+    $notepadSettingsDatPath = 'C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat'
+    $notepadRegFilePath = 'C:\Windows\Temp\notepadsettings.reg'
+    $hiveMountAbsent = { [pscustomobject]@{ Exists = $false; CanUnload = $true; Message = 'No mock HKLM:\Settings mount.' } }
+    $pathTesterPresent = { param($Path, $PathType) return ($Path -eq $notepadSettingsDatPath) }
+    $pathTesterMissing = { param($Path, $PathType) return $false }
+    $registryWriter = {
+        param($Path, $Content)
+        if ($Path -ne $notepadRegFilePath) {
+            throw "Unexpected registry file path: $Path"
+        }
+        if ($Content -notmatch 'RewriteEnabled') {
+            throw 'Missing source payload.'
+        }
+    }
+    $registryReader = {
+        param($Name)
+        [pscustomobject]@{
+            ReadSucceeded = $true; Exists = $true; Name = $Name
+            DisplayValue = [string]$expectedValues[$Name]; Message = 'Mock value detected.'
+        }
     }.GetNewClosure()
+
+    $regQueryOutput = @'
+HKEY_LOCAL_MACHINE\Settings\LocalState
+    GhostFile    REG_5F5E10B    00 42 60 f1 5a d1
+        84 db 01
+'@
+    $regQueryState = & $notepadModule {
+        param($Output)
+        ConvertFrom-BoostLabNotepadRegQueryOutput -Output $Output -Name 'GhostFile'
+    } $regQueryOutput
+    Assert-BoostLabCondition ([string]$regQueryState.ReadMethod -eq 'reg query') 'Notepad Settings reg query fallback must report reg query as the read method.'
+    Assert-BoostLabCondition ([string]$regQueryState.ValueType -eq 'REG_5F5E10B') 'Notepad Settings reg query fallback must preserve custom value type.'
+    Assert-BoostLabCondition ([string]$regQueryState.DisplayValue -eq $expectedValues['GhostFile']) 'Notepad Settings reg query fallback must normalize custom value bytes.'
+
+    $missingApplyEvents = [System.Collections.Generic.List[string]]::new()
     $missingApplyResult = & $notepadModule {
-        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand)
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $PathTester, $HiveMountReader, $Events)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Apply' `
             -Confirmed:$true `
@@ -204,26 +237,30 @@ try {
             -ProcessStopper $ProcessStopper `
             -DelayInvoker $Delay `
             -RegistryFileWriter $RegistryWriter `
-            -RegistryCommandInvoker $RegistryCommand `
-            -RegistryReader { param($Name) throw 'Registry read must not run when reg load fails.' } `
+            -RegistryCommandInvoker { param($Operation, $Arguments, $Root) $Events.Add("$Operation|$($Arguments -join '|')"); throw 'Registry commands must not run when settings.dat is missing.' } `
+            -RegistryReader { param($Name) throw 'Registry read must not run when settings.dat is missing.' } `
             -FileRemover { param($Path) throw 'Delete must not run during Apply.' } `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
             -SystemRoot 'C:\Windows'
-    } (& $newFileState $false $null 'File absent.') $processStopper $delay $registryWriter $missingApplyCommand
-    Assert-BoostLabCondition ([bool]$missingApplyResult.Success) 'Missing settings.dat Apply must complete the source sequence rather than return NotApplicable.'
-    Assert-BoostLabCondition ([string]$missingApplyResult.Status -ne 'NotApplicable') 'Missing settings.dat Apply must not return NotApplicable.'
-    Assert-BoostLabCondition ([string]$missingApplyResult.Data.CommandStatus -eq 'Completed') 'Missing settings.dat Apply should report completed source sequence.'
-    Assert-BoostLabCondition ([bool]$missingApplyResult.Data.ChangesExecuted) 'Missing settings.dat Apply should report that the source command sequence was executed.'
-    Assert-BoostLabCondition (($missingApplyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat') "Missing settings.dat Apply must attempt only source reg load before skipping import. Events: $($missingApplyEvents -join ',')"
+    } (& $newFileState $false $null 'File absent.') $processStopper $delay $registryWriter $pathTesterMissing $hiveMountAbsent $missingApplyEvents
+    Assert-BoostLabCondition (-not [bool]$missingApplyResult.Success) 'Missing settings.dat Apply must fail closed.'
+    Assert-BoostLabCondition ([string]$missingApplyResult.Status -eq 'Failed') 'Missing settings.dat Apply must report Failed.'
+    Assert-BoostLabCondition ([string]$missingApplyResult.Data.CommandStatus -eq 'Failed') 'Missing settings.dat Apply command status must fail.'
+    Assert-BoostLabCondition (-not [bool]$missingApplyResult.Data.SettingsDatExists) 'Missing settings.dat Apply must report SettingsDatExists false.'
+    Assert-BoostLabCondition ([string]$missingApplyResult.Data.FinalStatusReason -eq 'SettingsDatMissing') 'Missing settings.dat Apply must report SettingsDatMissing.'
+    Assert-BoostLabCondition (@($missingApplyResult.Data.HiveOperations).Count -eq 0) 'Missing settings.dat Apply must not run reg load/import/unload.'
+    Assert-BoostLabCondition ($missingApplyEvents.Count -eq 0) 'Missing settings.dat Apply must not invoke registry commands.'
 
     $applyEvents = [System.Collections.Generic.List[string]]::new()
     $applyCommand = {
         param($Operation, $Arguments, $Root)
         $applyEvents.Add("$Operation|$($Arguments -join '|')")
-        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0 }
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
     }.GetNewClosure()
     $applyResult = & $notepadModule {
-        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader)
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
         Invoke-BoostLabNotepadSettingsAction `
             -ActionName 'Apply' `
             -Confirmed:$true `
@@ -234,15 +271,187 @@ try {
             -RegistryFileWriter $RegistryWriter `
             -RegistryCommandInvoker $RegistryCommand `
             -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
             -LocalAppData 'C:\Users\Tester\AppData\Local' `
             -SystemRoot 'C:\Windows'
-    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $applyCommand $registryReader
+    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $applyCommand $registryReader $pathTesterPresent $hiveMountAbsent
     Assert-BoostLabCondition ([bool]$applyResult.Success) 'Mocked Notepad Settings Apply did not pass.'
     Assert-BoostLabCondition ([string]$applyResult.Message -eq 'Notepad settings Apply source sequence completed.') 'Apply message should describe source sequence completion.'
     Assert-BoostLabCondition ([string]$applyResult.VerificationResult.Status -eq 'Passed') 'Apply verification should pass for mocked values.'
     Assert-BoostLabCondition ([string]$applyResult.Data.CommandStatus -eq 'Completed') 'Apply command status should be completed.'
     Assert-BoostLabCondition (($applyEvents -join ',') -eq 'load|HKLM\Settings|C:\Users\Tester\AppData\Local\Packages\Microsoft.WindowsNotepad_8wekyb3d8bbwe\Settings\settings.dat,import|C:\Windows\Temp\notepadsettings.reg,unload|HKLM\Settings') "Notepad Settings hive operation order changed: $($applyEvents -join ',')"
+    Assert-BoostLabCondition ([string]$applyResult.Data.FinalStatusReason -eq 'HiveImportVerified') 'Apply must report verified hive import as the final status reason.'
+    Assert-BoostLabCondition ([string]$applyResult.Data.RegFileEncoding -eq 'Unicode') 'Apply must report Unicode .reg writing.'
+    Assert-BoostLabCondition (@($applyResult.Data.RegistryValuesChecked).Count -eq 3) 'Apply must verify all three source-defined Notepad values before unload.'
     Assert-BoostLabCondition ([string]$applyResult.Data.BackupStatus -match 'does not create a backup') 'Apply must not claim backup creation.'
+
+    $accessDeniedEvents = [System.Collections.Generic.List[string]]::new()
+    $accessDeniedProcessActions = [System.Collections.Generic.List[string]]::new()
+    $accessDeniedStopper = {
+        $accessDeniedProcessActions.Add('Stop-Notepad')
+        [pscustomobject]@{ Success = $true; Status = 'StopRequested'; Message = 'Stop-Process Notepad was invoked with SilentlyContinue, matching Ultimate.' }
+    }.GetNewClosure()
+    $accessDeniedCommand = {
+        param($Operation, $Arguments, $Root)
+        $accessDeniedEvents.Add("$Operation|$($Arguments -join '|')")
+        [pscustomobject]@{ Success = $false; Operation = $Operation; ExitCode = 5; Output = @('ERROR: Access is denied.') }
+    }.GetNewClosure()
+    $accessDeniedResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader { param($Name) throw 'Registry read must not run when hive load fails.' } `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $accessDeniedStopper $delay $registryWriter $accessDeniedCommand $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$accessDeniedResult.Success) 'Access denied reg load must fail closed.'
+    Assert-BoostLabCondition ([string]$accessDeniedResult.Data.FinalStatusReason -eq 'HiveLoadFailed') 'Access denied reg load must identify HiveLoadFailed.'
+    Assert-BoostLabCondition (@($accessDeniedResult.Data.HiveOperations | Where-Object { [string]$_.Stage -eq 'LoadSettingsHive' }).Count -eq 2) 'Access denied reg load must retry only once after stopping Notepad again.'
+    Assert-BoostLabCondition (($accessDeniedEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,load|HKLM\Settings|$notepadSettingsDatPath") 'Access denied retry must not import or unload when load never succeeds.'
+    Assert-BoostLabCondition (@($accessDeniedProcessActions).Count -eq 2) 'Access denied retry must invoke the Notepad stop path once before Apply and once before retry.'
+    Assert-BoostLabCondition ([string]$accessDeniedResult.Message -like '*Access is denied*') 'Access denied result must preserve native output.'
+
+    $staleMountEvents = [System.Collections.Generic.List[string]]::new()
+    $staleMountCommand = {
+        param($Operation, $Arguments, $Root)
+        $staleMountEvents.Add("$Operation|$($Arguments -join '|')")
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
+    }.GetNewClosure()
+    $staleMountResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader { [pscustomobject]@{ Exists = $true; CanUnload = $true; Message = 'Mock stale BoostLab mount.' } } `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $staleMountCommand $registryReader $pathTesterPresent
+    Assert-BoostLabCondition ([bool]$staleMountResult.Success) 'Unloadable stale HKLM:\Settings mount should be cleaned before Notepad import.'
+    Assert-BoostLabCondition (($staleMountEvents.ToArray() -join ',') -eq "unload|HKLM\Settings,load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Stale mount cleanup must unload before loading the Notepad hive.'
+    Assert-BoostLabCondition (@($staleMountResult.Data.Warnings | Where-Object { [string]$_ -like '*Pre-existing HKLM:\Settings mount*' }).Count -eq 1) 'Stale mount cleanup must be reported as a warning/detail.'
+
+    $blockedMountEvents = [System.Collections.Generic.List[string]]::new()
+    $blockedMountResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $PathTester)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader { param($Name) throw 'Registry read must not run when stale hive blocks import.' } `
+            -PathTester $PathTester `
+            -HiveMountReader { [pscustomobject]@{ Exists = $true; CanUnload = $false; Message = 'Mock non-owned mount.' } } `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter { param($Operation, $Arguments, $Root) $blockedMountEvents.Add("$Operation|$($Arguments -join '|')") } $pathTesterPresent
+    Assert-BoostLabCondition (-not [bool]$blockedMountResult.Success) 'Non-unloadable HKLM:\Settings mount must fail closed before import.'
+    Assert-BoostLabCondition ([string]$blockedMountResult.Data.FinalStatusReason -eq 'ExistingHiveMountBlocked') 'Blocked stale mount must report ExistingHiveMountBlocked.'
+    Assert-BoostLabCondition ($blockedMountEvents.Count -eq 0) 'Blocked stale mount must not run registry commands.'
+
+    $importFailureEvents = [System.Collections.Generic.List[string]]::new()
+    $importFailureCommand = {
+        param($Operation, $Arguments, $Root)
+        $importFailureEvents.Add("$Operation|$($Arguments -join '|')")
+        if ($Operation -eq 'import') {
+            return [pscustomobject]@{ Success = $false; Operation = $Operation; ExitCode = 2; Output = @('Mock import failure.') }
+        }
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
+    }.GetNewClosure()
+    $importFailureResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader { param($Name) throw 'Registry read must not run when import fails.' } `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $importFailureCommand $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$importFailureResult.Success) 'Import failure must fail closed.'
+    Assert-BoostLabCondition (($importFailureEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Import failure must still unload the hive after successful load.'
+
+    $missingValueReader = {
+        param($Name)
+        if ($Name -eq 'GhostFile') {
+            return [pscustomobject]@{ ReadSucceeded = $true; Exists = $false; Name = $Name; DisplayValue = 'Absent'; Message = 'Mock missing GhostFile.' }
+        }
+        [pscustomobject]@{ ReadSucceeded = $true; Exists = $true; Name = $Name; DisplayValue = [string]$expectedValues[$Name]; Message = 'Mock value detected.' }
+    }.GetNewClosure()
+    $missingValueResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $applyCommand $missingValueReader $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$missingValueResult.Success) 'Missing source-required Notepad registry value must fail closed.'
+    Assert-BoostLabCondition ([string]$missingValueResult.Message -like '*GhostFile was absent*') 'Missing value failure must name the absent Notepad value.'
+
+    $mismatchValueReader = {
+        param($Name)
+        if ($Name -eq 'RewriteEnabled') {
+            return [pscustomobject]@{ ReadSucceeded = $true; Exists = $true; Name = $Name; DisplayValue = '00,00,00,00,00,00,00,00,00'; Message = 'Mock mismatched RewriteEnabled.' }
+        }
+        [pscustomobject]@{ ReadSucceeded = $true; Exists = $true; Name = $Name; DisplayValue = [string]$expectedValues[$Name]; Message = 'Mock value detected.' }
+    }.GetNewClosure()
+    $mismatchValueResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $applyCommand $mismatchValueReader $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$mismatchValueResult.Success) 'Mismatched source-required Notepad registry value must fail closed.'
+    Assert-BoostLabCondition ([string]$mismatchValueResult.Message -like '*RewriteEnabled mismatch*') 'Mismatched value failure must include the value name.'
 
     $removedPaths = [System.Collections.Generic.List[string]]::new()
     $fileRemover = {

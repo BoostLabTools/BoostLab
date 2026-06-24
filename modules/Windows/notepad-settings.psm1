@@ -33,6 +33,9 @@ $script:BoostLabNotepadExpectedValues = @(
     [pscustomobject]@{ Name = 'GhostFile'; Expected = '00,42,60,f1,5a,d1,84,db,01' }
     [pscustomobject]@{ Name = 'RewriteEnabled'; Expected = '00,12,4a,7f,5f,d1,84,db,01' }
 )
+$script:BoostLabNotepadHiveMountPath = 'HKLM:\Settings'
+$script:BoostLabNotepadHiveRegPath = 'HKLM\Settings'
+$script:BoostLabNotepadHiveLocalStatePath = 'HKLM:\Settings\LocalState'
 
 function Test-BoostLabAdministrator {
     try {
@@ -96,7 +99,7 @@ function Stop-BoostLabNotepadProcess {
 
 function Invoke-BoostLabNotepadRegistryCommand {
     param(
-        [Parameter(Mandatory)][ValidateSet('load', 'import', 'unload')][string]$Operation,
+        [Parameter(Mandatory)][ValidateSet('load', 'import', 'unload', 'query')][string]$Operation,
         [Parameter(Mandatory)][string[]]$Arguments,
         [string]$SystemRoot = $env:SystemRoot
     )
@@ -147,6 +150,481 @@ function Get-BoostLabNotepadRegistryValue {
             ReadSucceeded = $false; Exists = $false; Name = $Name
             DisplayValue = 'Unknown'; Message = $_.Exception.Message
         }
+    }
+}
+
+function Test-BoostLabNotepadByteDisplay {
+    param([AllowNull()][object]$Value)
+
+    $text = if ($null -eq $Value) { '' } else { [string]$Value }
+    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+}
+
+function ConvertFrom-BoostLabNotepadRegQueryOutput {
+    param(
+        [Parameter(Mandatory)][string]$Output,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    $lines = @($Output -split "\r?\n")
+    $valueLineIndex = -1
+    $valueType = 'Unknown'
+    $dataParts = [System.Collections.Generic.List[string]]::new()
+
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ($line -match ('^\s*{0}\s+(?<Type>\S+)\s*(?<Data>.*)$' -f [regex]::Escape($Name))) {
+            $valueLineIndex = $index
+            $valueType = [string]$Matches.Type
+            if (-not [string]::IsNullOrWhiteSpace([string]$Matches.Data)) {
+                $dataParts.Add([string]$Matches.Data)
+            }
+            break
+        }
+    }
+
+    if ($valueLineIndex -lt 0) {
+        return [pscustomobject]@{
+            ReadSucceeded = $true
+            Exists = $false
+            Name = $Name
+            ValueType = $null
+            DisplayValue = 'Absent'
+            Message = 'reg query did not return the requested value.'
+            ReadMethod = 'reg query'
+        }
+    }
+
+    for ($index = $valueLineIndex + 1; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        if ($line -match '^\s*HKEY_' -or $line -match '^\s*\S+\s+REG_\S+') {
+            break
+        }
+        $dataParts.Add($line.Trim())
+    }
+
+    $dataText = (@($dataParts.ToArray()) -join ' ').Trim()
+    $byteMatches = @([regex]::Matches($dataText, '(?i)\b[0-9a-f]{2}\b') | ForEach-Object { $_.Value.ToLowerInvariant() })
+    $displayValue = if ($byteMatches.Count -gt 0) {
+        $byteMatches -join ','
+    }
+    else {
+        $dataText
+    }
+
+    [pscustomobject]@{
+        ReadSucceeded = $true
+        Exists = $true
+        Name = $Name
+        ValueType = $valueType
+        DisplayValue = $displayValue
+        Message = 'Registry value detected by reg query at HKLM:\Settings\LocalState.'
+        ReadMethod = 'reg query'
+    }
+}
+
+function Get-BoostLabNotepadCommandText {
+    param(
+        [Parameter(Mandatory)][string]$Operation,
+        [Parameter(Mandatory)][string[]]$Arguments
+    )
+
+    $quoted = @($Arguments | ForEach-Object {
+        if ([string]$_ -match '\s') {
+            '"{0}"' -f [string]$_
+        }
+        else {
+            [string]$_
+        }
+    })
+    "reg $Operation $($quoted -join ' ')".Trim()
+}
+
+function ConvertTo-BoostLabNotepadHiveOperation {
+    param(
+        [Parameter(Mandatory)][string]$Stage,
+        [Parameter(Mandatory)][string]$Operation,
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [AllowNull()][object]$Result = $null,
+        [AllowNull()][string]$ErrorMessage = ''
+    )
+
+    $exitCode = $null
+    $success = $false
+    $output = @()
+    if ($null -ne $Result) {
+        if ($null -ne $Result.PSObject.Properties['ExitCode']) {
+            $exitCode = [int]$Result.ExitCode
+        }
+        if ($null -ne $Result.PSObject.Properties['Success']) {
+            $success = [bool]$Result.Success
+        }
+        elseif ($null -ne $exitCode) {
+            $success = ($exitCode -eq 0)
+        }
+        if ($null -ne $Result.PSObject.Properties['Output']) {
+            $output = @($Result.Output)
+        }
+        elseif ($null -ne $Result.PSObject.Properties['StandardOutput'] -or $null -ne $Result.PSObject.Properties['StandardError']) {
+            $output = @(
+                if ($null -ne $Result.PSObject.Properties['StandardOutput']) { [string]$Result.StandardOutput }
+                if ($null -ne $Result.PSObject.Properties['StandardError']) { [string]$Result.StandardError }
+            ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ErrorMessage)) {
+        $output = @($output + $ErrorMessage)
+    }
+    $outputText = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
+
+    [pscustomobject]@{
+        Stage = $Stage
+        Executable = 'reg.exe'
+        Operation = $Operation
+        Arguments = @($Arguments)
+        CommandText = Get-BoostLabNotepadCommandText -Operation $Operation -Arguments @($Arguments)
+        ExitCode = $exitCode
+        Success = $success
+        NativeOutput = $outputText
+        Message = if ($success) { "$Stage completed." } elseif (-not [string]::IsNullOrWhiteSpace($outputText)) { $outputText } else { "$Stage failed." }
+    }
+}
+
+function Invoke-BoostLabNotepadCheckedRegistryCommand {
+    param(
+        [Parameter(Mandatory)][string]$Stage,
+        [Parameter(Mandatory)][string]$Operation,
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [Parameter(Mandatory)][string]$SystemRoot,
+        [scriptblock]$RegistryCommandInvoker
+    )
+
+    try {
+        $result = & $RegistryCommandInvoker $Operation @($Arguments) $SystemRoot
+        ConvertTo-BoostLabNotepadHiveOperation -Stage $Stage -Operation $Operation -Arguments @($Arguments) -Result $result
+    }
+    catch {
+        ConvertTo-BoostLabNotepadHiveOperation -Stage $Stage -Operation $Operation -Arguments @($Arguments) -ErrorMessage $_.Exception.Message
+    }
+}
+
+function Test-BoostLabNotepadAccessDeniedOutput {
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) {
+        return $false
+    }
+    return ([string]$Value) -match '(?i)access\s+is\s+denied|0x5|denied'
+}
+
+function Get-BoostLabNotepadMountedHiveState {
+    param(
+        [scriptblock]$HiveMountReader = {
+            [pscustomobject]@{
+                Exists = Test-Path -LiteralPath $script:BoostLabNotepadHiveMountPath -PathType Container
+                CanUnload = $true
+                Message = 'HKLM:\Settings mount state detected.'
+            }
+        }
+    )
+
+    try {
+        $results = @(& $HiveMountReader)
+        if ($results.Count -eq 0 -or $null -eq $results[0]) {
+            throw 'Hive mount reader returned no result.'
+        }
+        $state = $results[0]
+        if ($null -eq $state.PSObject.Properties['Exists']) {
+            $state | Add-Member -NotePropertyName 'Exists' -NotePropertyValue $false -Force
+        }
+        if ($null -eq $state.PSObject.Properties['CanUnload']) {
+            $state | Add-Member -NotePropertyName 'CanUnload' -NotePropertyValue $true -Force
+        }
+        if ($null -eq $state.PSObject.Properties['Message']) {
+            $state | Add-Member -NotePropertyName 'Message' -NotePropertyValue 'HKLM:\Settings mount state detected.' -Force
+        }
+        return $state
+    }
+    catch {
+        [pscustomobject]@{
+            Exists = $false
+            CanUnload = $false
+            Message = $_.Exception.Message
+        }
+    }
+}
+
+function Get-BoostLabNotepadHiveRegistryValue {
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [scriptblock]$RegistryReader,
+        [scriptblock]$RegistryCommandInvoker,
+        [string]$SystemRoot
+    )
+
+    $providerState = $null
+    if ($null -ne $RegistryReader) {
+        $providerResults = @(& $RegistryReader $Name)
+        if ($providerResults.Count -gt 0) {
+            $providerState = $providerResults[0]
+        }
+    }
+
+    if (
+        $null -ne $providerState -and
+        [bool]$providerState.ReadSucceeded -and
+        [bool]$providerState.Exists -and
+        (Test-BoostLabNotepadByteDisplay -Value $providerState.DisplayValue)
+    ) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider' -Force
+        return $providerState
+    }
+
+    $queryOperation = Invoke-BoostLabNotepadCheckedRegistryCommand `
+        -Stage "QueryValue:$Name" `
+        -Operation 'query' `
+        -Arguments @('HKLM\Settings\LocalState', '/v', $Name) `
+        -SystemRoot $SystemRoot `
+        -RegistryCommandInvoker $RegistryCommandInvoker
+    if ([bool]$queryOperation.Success) {
+        $queryState = ConvertFrom-BoostLabNotepadRegQueryOutput -Output ([string]$queryOperation.NativeOutput) -Name $Name
+        if ([bool]$queryState.Exists) {
+            return $queryState
+        }
+    }
+
+    if ($null -ne $providerState) {
+        $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider; reg query fallback' -Force
+        if (-not [bool]$queryOperation.Success) {
+            $providerState | Add-Member -NotePropertyName 'FallbackMessage' -NotePropertyValue ([string]$queryOperation.Message) -Force
+        }
+        return $providerState
+    }
+
+    [pscustomobject]@{
+        ReadSucceeded = [bool]$queryOperation.Success
+        Exists = $false
+        Name = $Name
+        DisplayValue = if ([bool]$queryOperation.Success) { 'Absent' } else { 'Unknown' }
+        Message = if ([bool]$queryOperation.Success) { 'Registry value is absent.' } else { [string]$queryOperation.Message }
+        ReadMethod = 'reg query'
+    }
+}
+
+function Invoke-BoostLabNotepadSettingsHiveImport {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$SettingsDatPath,
+        [Parameter(Mandatory)][string]$RegistryFilePath,
+        [Parameter(Mandatory)][string]$RegistryFileContent,
+        [Parameter(Mandatory)][string]$SystemRoot,
+        [scriptblock]$RegistryFileWriter,
+        [scriptblock]$PathTester,
+        [scriptblock]$RegistryCommandInvoker,
+        [scriptblock]$RegistryReader,
+        [scriptblock]$HiveMountReader,
+        [scriptblock]$ProcessStopper,
+        [scriptblock]$DelayInvoker,
+        [int]$AccessDeniedRetryCount = 1
+    )
+
+    $errors = [System.Collections.Generic.List[string]]::new()
+    $warnings = [System.Collections.Generic.List[string]]::new()
+    $hiveOperations = [System.Collections.Generic.List[object]]::new()
+    $registryStates = [System.Collections.Generic.List[object]]::new()
+    $hiveLoaded = $false
+    $settingsDatExists = [bool](& $PathTester $SettingsDatPath 'Leaf')
+
+    try {
+        & $RegistryFileWriter $RegistryFilePath $RegistryFileContent | Out-Null
+    }
+    catch {
+        $errors.Add("WriteRegFile failed: $($_.Exception.Message)")
+    }
+    if ($errors.Count -gt 0) {
+        return [pscustomobject]@{
+            Success = $false
+            Message = "Notepad settings.dat hive import failed before hive load: $($errors.ToArray() -join ' ')"
+            FinalStatusReason = 'RegFileWriteFailed'
+            SettingsDatExists = $settingsDatExists
+            HiveOperations = $hiveOperations.ToArray()
+            RegistryValuesChecked = $registryStates.ToArray()
+            Errors = $errors.ToArray()
+            Warnings = $warnings.ToArray()
+        }
+    }
+
+    if (-not $settingsDatExists) {
+        $errors.Add("Microsoft Notepad settings.dat was not found: $SettingsDatPath")
+        return [pscustomobject]@{
+            Success = $false
+            Message = 'Notepad settings.dat hive import failed: settings.dat is missing.'
+            FinalStatusReason = 'SettingsDatMissing'
+            SettingsDatExists = $false
+            HiveOperations = $hiveOperations.ToArray()
+            RegistryValuesChecked = $registryStates.ToArray()
+            Errors = $errors.ToArray()
+            Warnings = $warnings.ToArray()
+        }
+    }
+
+    $mountedState = Get-BoostLabNotepadMountedHiveState -HiveMountReader $HiveMountReader
+    if ([bool]$mountedState.Exists) {
+        if (-not [bool]$mountedState.CanUnload) {
+            $errors.Add("HKLM:\Settings is already mounted and cannot be safely unloaded before Notepad import: $($mountedState.Message)")
+            return [pscustomobject]@{
+                Success = $false
+                Message = 'Notepad settings.dat hive import failed: HKLM:\Settings is already mounted.'
+                FinalStatusReason = 'ExistingHiveMountBlocked'
+                SettingsDatExists = $true
+                HiveOperations = $hiveOperations.ToArray()
+                RegistryValuesChecked = $registryStates.ToArray()
+                Errors = $errors.ToArray()
+                Warnings = $warnings.ToArray()
+            }
+        }
+
+        $staleUnload = Invoke-BoostLabNotepadCheckedRegistryCommand `
+            -Stage 'PreExistingHiveUnload' `
+            -Operation 'unload' `
+            -Arguments @($script:BoostLabNotepadHiveRegPath) `
+            -SystemRoot $SystemRoot `
+            -RegistryCommandInvoker $RegistryCommandInvoker
+        $hiveOperations.Add($staleUnload)
+        if (-not [bool]$staleUnload.Success) {
+            $errors.Add("PreExistingHiveUnload failed: $($staleUnload.Message)")
+            return [pscustomobject]@{
+                Success = $false
+                Message = 'Notepad settings.dat hive import failed: pre-existing HKLM:\Settings could not be unloaded.'
+                FinalStatusReason = 'ExistingHiveUnloadFailed'
+                SettingsDatExists = $true
+                HiveOperations = $hiveOperations.ToArray()
+                RegistryValuesChecked = $registryStates.ToArray()
+                Errors = $errors.ToArray()
+                Warnings = $warnings.ToArray()
+            }
+        }
+        $warnings.Add('Pre-existing HKLM:\Settings mount was unloaded before Notepad settings.dat import.')
+    }
+
+    try {
+        for ($attempt = 0; $attempt -le $AccessDeniedRetryCount; $attempt++) {
+            $loadOperation = Invoke-BoostLabNotepadCheckedRegistryCommand `
+                -Stage 'LoadSettingsHive' `
+                -Operation 'load' `
+                -Arguments @($script:BoostLabNotepadHiveRegPath, $SettingsDatPath) `
+                -SystemRoot $SystemRoot `
+                -RegistryCommandInvoker $RegistryCommandInvoker
+            $loadOperation | Add-Member -NotePropertyName 'Attempt' -NotePropertyValue ($attempt + 1) -Force
+            $hiveOperations.Add($loadOperation)
+            if ([bool]$loadOperation.Success) {
+                $hiveLoaded = $true
+                break
+            }
+
+            if ($attempt -lt $AccessDeniedRetryCount -and (Test-BoostLabNotepadAccessDeniedOutput -Value $loadOperation.NativeOutput)) {
+                $warnings.Add('reg load returned access denied; Notepad stop/delay retry was attempted.')
+                & $ProcessStopper | Out-Null
+                & $DelayInvoker 2
+                continue
+            }
+
+            $errors.Add("LoadSettingsHive failed: $($loadOperation.Message)")
+            $loadFailureMessage = "Notepad settings.dat hive import failed during reg load: $($errors.ToArray() -join ' ')"
+            return [pscustomobject]@{
+                Success = $false
+                Message = $loadFailureMessage
+                FinalStatusReason = 'HiveLoadFailed'
+                SettingsDatExists = $true
+                HiveOperations = $hiveOperations.ToArray()
+                RegistryValuesChecked = $registryStates.ToArray()
+                Errors = $errors.ToArray()
+                Warnings = $warnings.ToArray()
+            }
+        }
+
+        if (-not $hiveLoaded) {
+            $errors.Add('LoadSettingsHive did not mount HKLM:\Settings.')
+            $loadFailureMessage = "Notepad settings.dat hive import failed during reg load: $($errors.ToArray() -join ' ')"
+            return [pscustomobject]@{
+                Success = $false
+                Message = $loadFailureMessage
+                FinalStatusReason = 'HiveLoadFailed'
+                SettingsDatExists = $true
+                HiveOperations = $hiveOperations.ToArray()
+                RegistryValuesChecked = $registryStates.ToArray()
+                Errors = $errors.ToArray()
+                Warnings = $warnings.ToArray()
+            }
+        }
+
+        $importOperation = Invoke-BoostLabNotepadCheckedRegistryCommand `
+            -Stage 'ImportNotepadSettingsPayload' `
+            -Operation 'import' `
+            -Arguments @($RegistryFilePath) `
+            -SystemRoot $SystemRoot `
+            -RegistryCommandInvoker $RegistryCommandInvoker
+        $hiveOperations.Add($importOperation)
+        if (-not [bool]$importOperation.Success) {
+            $errors.Add("ImportNotepadSettingsPayload failed: $($importOperation.Message)")
+        }
+        else {
+            foreach ($definition in $script:BoostLabNotepadExpectedValues) {
+                $state = Get-BoostLabNotepadHiveRegistryValue `
+                    -Name ([string]$definition.Name) `
+                    -RegistryReader $RegistryReader `
+                    -RegistryCommandInvoker $RegistryCommandInvoker `
+                    -SystemRoot $SystemRoot
+                $state | Add-Member -NotePropertyName 'Expected' -NotePropertyValue ([string]$definition.Expected) -Force
+                $state | Add-Member -NotePropertyName 'Actual' -NotePropertyValue ([string]$state.DisplayValue) -Force
+                $registryStates.Add($state)
+
+                if (-not [bool]$state.ReadSucceeded) {
+                    $errors.Add("$($definition.Name) could not be read before hive unload: $($state.Message)")
+                    continue
+                }
+                if (-not [bool]$state.Exists) {
+                    $errors.Add("$($definition.Name) was absent after Notepad settings import.")
+                    continue
+                }
+                if ([string]$state.DisplayValue -ne [string]$definition.Expected) {
+                    $errors.Add("$($definition.Name) mismatch after Notepad settings import. Expected $($definition.Expected), found $($state.DisplayValue).")
+                }
+            }
+        }
+    }
+    finally {
+        if ($hiveLoaded) {
+            [gc]::Collect()
+            & $DelayInvoker 2
+            $unloadOperation = Invoke-BoostLabNotepadCheckedRegistryCommand `
+                -Stage 'UnloadSettingsHive' `
+                -Operation 'unload' `
+                -Arguments @($script:BoostLabNotepadHiveRegPath) `
+                -SystemRoot $SystemRoot `
+                -RegistryCommandInvoker $RegistryCommandInvoker
+            $hiveOperations.Add($unloadOperation)
+            if (-not [bool]$unloadOperation.Success) {
+                $errors.Add("UnloadSettingsHive failed: $($unloadOperation.Message)")
+            }
+        }
+    }
+
+    $success = ($errors.Count -eq 0)
+    [pscustomobject]@{
+        Success = $success
+        Message = if ($success) { 'Notepad settings.dat hive payload imported and verified.' } else { "Notepad settings.dat hive import failed: $($errors.ToArray() -join ' ')" }
+        FinalStatusReason = if ($success) { 'HiveImportVerified' } else { 'HiveImportVerificationFailed' }
+        SettingsDatExists = $true
+        HiveOperations = $hiveOperations.ToArray()
+        RegistryValuesChecked = $registryStates.ToArray()
+        Errors = $errors.ToArray()
+        Warnings = $warnings.ToArray()
     }
 }
 
@@ -224,27 +702,31 @@ function New-BoostLabNotepadFailureVerification {
 
 function New-BoostLabNotepadApplyVerification {
     param(
-        [Parameter(Mandatory)][object]$LoadResult,
-        [object[]]$RegistryStates = @(),
+        [Parameter(Mandatory)][object]$HiveImportResult,
         [Parameter(Mandatory)][object]$FileState
     )
 
     $checks = [System.Collections.Generic.List[object]]::new()
-    $loadSucceeded = $null -ne $LoadResult -and [bool]$LoadResult.Success
     $checks.Add((New-BoostLabVerificationCheck `
-        -Name 'reg load HKLM\Settings' `
-        -Expected 'Exit code 0 imports source-defined values; non-zero skips import per Ultimate source.' `
-        -Actual $(if ($null -eq $LoadResult) { 'No load result' } else { "ExitCode=$($LoadResult.ExitCode)" }) `
-        -Status $(if ($loadSucceeded) { 'Passed' } else { 'Warning' }) `
-        -Message $(if ($loadSucceeded) { 'Notepad settings.dat was mounted.' } else { 'reg load did not succeed; Ultimate skips import and exits after the load attempt.' })))
+        -Name 'settings.dat exists before Apply' `
+        -Expected 'Present' `
+        -Actual $(if ([bool]$HiveImportResult.SettingsDatExists) { 'Present' } else { 'Absent' }) `
+        -Status $(if ([bool]$HiveImportResult.SettingsDatExists) { 'Passed' } else { 'Failed' }) `
+        -Message $(if ([bool]$HiveImportResult.SettingsDatExists) { 'settings.dat was present before hive load.' } else { 'settings.dat was missing before hive load.' })))
+
+    foreach ($operation in @($HiveImportResult.HiveOperations)) {
+        $checks.Add((New-BoostLabVerificationCheck `
+            -Name "Hive operation | $($operation.Stage)" `
+            -Expected 'Exit code 0' `
+            -Actual $(if ($null -eq $operation.ExitCode) { 'No exit code' } else { "ExitCode=$($operation.ExitCode)" }) `
+            -Status $(if ([bool]$operation.Success) { 'Passed' } else { 'Failed' }) `
+            -Message ([string]$operation.Message)))
+    }
 
     foreach ($definition in $script:BoostLabNotepadExpectedValues) {
-        $state = @($RegistryStates | Where-Object { $_.Name -eq $definition.Name }) | Select-Object -First 1
-        $status = if (-not $loadSucceeded) {
-            'Warning'
-        }
-        elseif ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
-            'Warning'
+        $state = @($HiveImportResult.RegistryValuesChecked | Where-Object { $_.Name -eq $definition.Name }) | Select-Object -First 1
+        $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
+            'Failed'
         }
         elseif (-not [bool]$state.Exists -or [string]$state.DisplayValue -ne [string]$definition.Expected) {
             'Failed'
@@ -252,8 +734,8 @@ function New-BoostLabNotepadApplyVerification {
         else {
             'Passed'
         }
-        $actual = if ($null -eq $state) { if ($loadSucceeded) { 'Unknown' } else { 'Not checked because hive load failed.' } } else { [string]$state.DisplayValue }
-        $message = if ($null -eq $state) { if ($loadSucceeded) { 'Registry value was not captured.' } else { 'Source import was skipped because reg load failed.' } } else { [string]$state.Message }
+        $actual = if ($null -eq $state) { 'Not checked' } else { [string]$state.DisplayValue }
+        $message = if ($null -eq $state) { 'Registry value was not captured before hive unload.' } else { [string]$state.Message }
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Notepad LocalState | $($definition.Name)" `
             -Expected ([string]$definition.Expected) `
@@ -270,16 +752,16 @@ function New-BoostLabNotepadApplyVerification {
         -Message ([string]$FileState.Message)))
 
     $statuses = @($checks | ForEach-Object { $_.Status })
-    $overall = if ('Failed' -in $statuses) { 'Failed' } elseif ('Warning' -in $statuses) { 'Warning' } else { 'Passed' }
+    $overall = if ('Failed' -in $statuses -or -not [bool]$HiveImportResult.Success) { 'Failed' } elseif ('Warning' -in $statuses) { 'Warning' } else { 'Passed' }
     New-BoostLabVerificationResult `
         -ToolId 'notepad-settings' `
         -ToolTitle 'Notepad Settings' `
         -Action 'Apply' `
         -Status $overall `
-        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'Ultimate Apply sequence executed' }) `
+        -ExpectedState ([pscustomobject]@{ NotepadSettings = 'Source-defined Notepad settings imported, verified, and hive unloaded' }) `
         -DetectedState ([pscustomobject]@{ NotepadSettings = "$(@($checks | Where-Object Status -eq 'Passed').Count) passed, $(@($checks | Where-Object Status -eq 'Warning').Count) warning, $(@($checks | Where-Object Status -eq 'Failed').Count) failed" }) `
         -Checks $checks.ToArray() `
-        -Message $(if ($overall -eq 'Passed') { 'Notepad settings verified.' } elseif ($overall -eq 'Warning') { 'Notepad Apply matched the source control flow, but import verification was unavailable or skipped.' } else { 'Notepad settings verification failed.' })
+        -Message $(if ($overall -eq 'Passed') { 'Notepad settings verified.' } elseif ($overall -eq 'Warning') { 'Notepad settings imported, but verification included warnings.' } else { 'Notepad settings verification failed.' })
 }
 
 function New-BoostLabNotepadDefaultVerification {
@@ -418,10 +900,12 @@ function Invoke-BoostLabNotepadSettingsAction {
         [scriptblock]$ProcessStopper = { Stop-BoostLabNotepadProcess },
         [scriptblock]$DelayInvoker = { param($Seconds) Start-Sleep -Seconds $Seconds },
         [scriptblock]$FileStateReader = { param($Path) Get-BoostLabNotepadFileState -Path $Path },
-        [scriptblock]$RegistryFileWriter = { param($Path, $Content) Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop },
+        [scriptblock]$RegistryFileWriter = { param($Path, $Content) Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop },
         [scriptblock]$RegistryCommandInvoker = { param($Operation, $Arguments, $Root) Invoke-BoostLabNotepadRegistryCommand -Operation $Operation -Arguments $Arguments -SystemRoot $Root },
         [scriptblock]$RegistryReader = { param($Name) Get-BoostLabNotepadRegistryValue -Name $Name },
         [scriptblock]$FileRemover = { param($Path) Invoke-BoostLabNotepadFileRemoval -Path $Path },
+        [scriptblock]$PathTester = { param($Path, $PathType) Test-Path -LiteralPath $Path -PathType $PathType },
+        [scriptblock]$HiveMountReader = { Get-BoostLabNotepadMountedHiveState },
         [string]$LocalAppData = $env:LocalAppData,
         [string]$SystemRoot = $env:SystemRoot
     )
@@ -445,62 +929,50 @@ function Invoke-BoostLabNotepadSettingsAction {
         & $DelayInvoker 2
 
         if ($ActionName -eq 'Apply') {
-            & $RegistryFileWriter $paths.RegistryFilePath $script:BoostLabNotepadRegistryFileContent
-            $registryStates = @()
-            $hiveOperations = [System.Collections.Generic.List[string]]::new()
-            $loadResult = & $RegistryCommandInvoker 'load' @('HKLM\Settings', $paths.SettingsDatPath) $SystemRoot
-            $hiveOperations.Add("reg load HKLM\Settings exited with code $($loadResult.ExitCode).")
-            if ($null -ne $loadResult -and [bool]$loadResult.Success) {
-                & $RegistryCommandInvoker 'import' @($paths.RegistryFilePath) $SystemRoot | Out-Null
-                $hiveOperations.Add('reg import notepadsettings.reg was invoked.')
-                $registryStates = @(
-                    foreach ($definition in $script:BoostLabNotepadExpectedValues) {
-                        $state = & $RegistryReader $definition.Name
-                        if ($null -eq $state) {
-                            [pscustomobject]@{
-                                ReadSucceeded = $false; Exists = $false; Name = $definition.Name
-                                DisplayValue = 'Unknown'; Message = 'Registry reader returned no result.'
-                            }
-                        }
-                        else {
-                            $state
-                        }
-                    }
-                )
-                [gc]::Collect()
-                & $DelayInvoker 2
-                & $RegistryCommandInvoker 'unload' @('HKLM\Settings') $SystemRoot | Out-Null
-                $hiveOperations.Add('reg unload HKLM\Settings was invoked.')
-            }
-
+            $hiveImportResult = Invoke-BoostLabNotepadSettingsHiveImport `
+                -SettingsDatPath $paths.SettingsDatPath `
+                -RegistryFilePath $paths.RegistryFilePath `
+                -RegistryFileContent $script:BoostLabNotepadRegistryFileContent `
+                -SystemRoot $SystemRoot `
+                -RegistryFileWriter $RegistryFileWriter `
+                -PathTester $PathTester `
+                -RegistryCommandInvoker $RegistryCommandInvoker `
+                -RegistryReader $RegistryReader `
+                -HiveMountReader $HiveMountReader `
+                -ProcessStopper $ProcessStopper `
+                -DelayInvoker $DelayInvoker
             $detectedFileState = & $FileStateReader $paths.SettingsDatPath
             $verificationResult = New-BoostLabNotepadApplyVerification `
-                -LoadResult $loadResult `
-                -RegistryStates @($registryStates) `
+                -HiveImportResult $hiveImportResult `
                 -FileState $detectedFileState
-            $success = $verificationResult.Status -ne 'Failed'
-            $message = if ($success) { 'Notepad settings Apply source sequence completed.' } else { 'Notepad settings Apply source sequence completed, but verification failed.' }
+            $success = [bool]$hiveImportResult.Success -and $verificationResult.Status -ne 'Failed'
+            $message = if ($success) { 'Notepad settings Apply source sequence completed.' } else { [string]$hiveImportResult.Message }
             $data = [pscustomobject]@{
-                CommandStatus = if ($success) { 'Completed' } else { 'Completed with verification failure' }
+                CommandStatus = if ($success) { 'Completed' } else { 'Failed' }
                 VerificationStatus = $verificationResult.Status
-                ExpectedNotepadSettingsState = 'Ultimate Apply writes source-defined OpenFile, GhostFile, and RewriteEnabled values when reg load succeeds'
+                ExpectedNotepadSettingsState = 'Ultimate Apply writes source-defined OpenFile, GhostFile, and RewriteEnabled values through the mounted settings.dat hive'
                 DetectedNotepadSettingsState = $verificationResult.DetectedState.NotepadSettings
                 SettingsDatPath = $paths.SettingsDatPath
                 NotepadPackageDirectoryPath = $paths.PackageDirectoryPath
-                SettingsDatExists = [bool]$detectedFileState.Exists
+                SettingsDatExists = [bool]$hiveImportResult.SettingsDatExists
+                RegFilePath = $paths.RegistryFilePath
+                RegFileEncoding = 'Unicode'
+                RegistryImportWriteMethod = 'Set-Content source-compatible .reg payload, then reg import'
                 ChangesExecuted = $true
                 BackupStatus = 'Not used; Ultimate source does not create a backup.'
                 BackupPath = ''
                 OriginalSha256 = $null
                 DetectedSha256 = $detectedFileState.Sha256
                 ProcessActions = @([string]$processResult.Message)
-                HiveOperations = $hiveOperations.ToArray()
-                RegistryValuesChecked = @($registryStates | ForEach-Object { "$($_.Name): $($_.DisplayValue)" })
-                FileDisposition = 'settings.dat was targeted through the source-defined mounted hive sequence.'
-                Warnings = @()
+                HiveOperations = @($hiveImportResult.HiveOperations)
+                RegistryValuesChecked = @($hiveImportResult.RegistryValuesChecked)
+                FileDisposition = if ($success) { 'settings.dat was targeted through the source-defined mounted hive sequence and verified before unload.' } else { 'Operation failed before a verified Notepad settings.dat state could be established.' }
+                FinalStatusReason = [string]$hiveImportResult.FinalStatusReason
+                Warnings = @($hiveImportResult.Warnings)
+                Errors = @($hiveImportResult.Errors)
                 CompletedAt = Get-Date
             }
-            return New-BoostLabNotepadResult -Success $success -Action $ActionName -Message $message -Data $data -VerificationResult $verificationResult
+            return New-BoostLabNotepadResult -Success $success -Action $ActionName -Status $(if ($success) { 'Passed' } else { 'Failed' }) -Message $message -Data $data -VerificationResult $verificationResult
         }
 
         $removeResult = & $FileRemover $paths.SettingsDatPath
