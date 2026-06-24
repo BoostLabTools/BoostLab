@@ -4,6 +4,8 @@ $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabExpectedSourceHash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B'
 $script:BoostLabExpectedCanonicalSourceHash = 'F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83'
 $script:BoostLabSourceRelativePath = 'source-ultimate\6 Windows\15 Control Panel Settings.ps1'
+$script:BoostLabControlPanelSettingsRunnerEvents = $null
+$script:BoostLabControlPanelSettingsStartProcessInvoker = $null
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'control-panel-settings'; Title = 'Control Panel Settings'; Stage = 'Windows'; Order = 15
@@ -308,8 +310,22 @@ function ConvertTo-BoostLabControlPanelSettingsRuntimeScript {
     }
 
     $prefix = @(
+        '$ErrorActionPreference = ''Continue'''
         '$ProgressPreference = ''SilentlyContinue'''
         '$InformationPreference = ''SilentlyContinue'''
+        'function Start-Process {'
+        '    [CmdletBinding()]'
+        '    param('
+        '        [Parameter(Position = 0)]'
+        '        [string]$FilePath,'
+        '        [string[]]$ArgumentList = @(),'
+        '        [switch]$Wait,'
+        '        [System.Diagnostics.ProcessWindowStyle]$WindowStyle,'
+        '        [string]$Verb,'
+        '        [switch]$PassThru'
+        '    )'
+        '    Invoke-BoostLabControlPanelSettingsSourceStartProcess @PSBoundParameters'
+        '}'
     )
     [pscustomobject]@{
         RuntimeScriptText = (($prefix + $runtimeLines.ToArray()) -join "`r`n").Trim()
@@ -359,6 +375,141 @@ function Test-BoostLabControlPanelSettingsConsolePipeException {
     )
 }
 
+function Test-BoostLabControlPanelSettingsBenignNativeStatusPollution {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [AllowNull()]
+        [object]$ErrorRecord
+    )
+
+    if ($null -eq $ErrorRecord) {
+        return $false
+    }
+
+    $exceptions = [System.Collections.Generic.List[object]]::new()
+    if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $exceptions.Add($ErrorRecord.Exception)
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $exceptions.Add($ErrorRecord)
+    }
+
+    for ($index = 0; $index -lt $exceptions.Count; $index++) {
+        $exception = $exceptions[$index]
+        if ($null -eq $exception) {
+            continue
+        }
+
+        $message = ([string]$exception.Message).Trim()
+        $normalizedMessage = $message.TrimEnd('.')
+        $nativeErrorCode = $null
+        if ($exception.PSObject.Properties['NativeErrorCode']) {
+            $nativeErrorCode = $exception.NativeErrorCode
+        }
+
+        if (
+            $normalizedMessage -eq 'The operation completed successfully' -and
+            ($null -eq $nativeErrorCode -or [int]$nativeErrorCode -eq 0)
+        ) {
+            return $true
+        }
+
+        if ($null -ne $exception.InnerException) {
+            $exceptions.Add($exception.InnerException)
+        }
+    }
+
+    return $false
+}
+
+function Add-BoostLabControlPanelSettingsRunnerEvent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Kind,
+
+        [Parameter(Mandatory)]
+        [string]$Command,
+
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [hashtable]$Parameters = @{}
+    )
+
+    if ($null -eq $script:BoostLabControlPanelSettingsRunnerEvents) {
+        $script:BoostLabControlPanelSettingsRunnerEvents = [System.Collections.Generic.List[object]]::new()
+    }
+
+    $script:BoostLabControlPanelSettingsRunnerEvents.Add([pscustomobject]@{
+        Kind             = $Kind
+        Command          = $Command
+        Message          = $Message
+        Parameters       = [pscustomobject]$Parameters
+        NormalizedStatus = 'Warning'
+    })
+}
+
+function Invoke-BoostLabControlPanelSettingsSourceStartProcess {
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [string]$FilePath,
+
+        [string[]]$ArgumentList = @(),
+
+        [switch]$Wait,
+
+        [System.Diagnostics.ProcessWindowStyle]$WindowStyle,
+
+        [string]$Verb,
+
+        [switch]$PassThru
+    )
+
+    $parameters = @{}
+    if (-not [string]::IsNullOrWhiteSpace($FilePath)) {
+        $parameters['FilePath'] = $FilePath
+    }
+    if (@($ArgumentList).Count -gt 0) {
+        $parameters['ArgumentList'] = @($ArgumentList)
+    }
+    if ($Wait) {
+        $parameters['Wait'] = $true
+    }
+    if ($PSBoundParameters.ContainsKey('WindowStyle')) {
+        $parameters['WindowStyle'] = $WindowStyle
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Verb)) {
+        $parameters['Verb'] = $Verb
+    }
+    if ($PassThru) {
+        $parameters['PassThru'] = $true
+    }
+
+    try {
+        if ($null -ne $script:BoostLabControlPanelSettingsStartProcessInvoker) {
+            & $script:BoostLabControlPanelSettingsStartProcessInvoker $parameters
+        }
+        else {
+            Microsoft.PowerShell.Management\Start-Process @parameters
+        }
+    }
+    catch {
+        if (Test-BoostLabControlPanelSettingsBenignNativeStatusPollution -ErrorRecord $_) {
+            Add-BoostLabControlPanelSettingsRunnerEvent `
+                -Kind 'BenignNativeStatusPollution' `
+                -Command 'Start-Process' `
+                -Message $_.Exception.Message `
+                -Parameters $parameters
+            return
+        }
+
+        throw
+    }
+}
+
 function Invoke-BoostLabControlPanelSettingsScript {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -373,27 +524,35 @@ function Invoke-BoostLabControlPanelSettingsScript {
     )
 
     $runtimeScript = ConvertTo-BoostLabControlPanelSettingsRuntimeScript -ScriptText $ScriptText
+    $script:BoostLabControlPanelSettingsRunnerEvents = [System.Collections.Generic.List[object]]::new()
+    $result = $null
     try {
         $scriptBlock = [scriptblock]::Create([string]$runtimeScript.RuntimeScriptText)
         & $scriptBlock
-        return [pscustomobject]@{
+        $nativeStatusEvents = @($script:BoostLabControlPanelSettingsRunnerEvents)
+        $result = [pscustomobject]@{
             Success = $true
-            Message = 'Source branch script completed.'
+            Message = if ($nativeStatusEvents.Count -gt 0) { 'Source branch script completed with runner warning(s).' } else { 'Source branch script completed.' }
             ExitCode = 0
             RunnerKind = 'InProcessSanitizedSourceBranch'
             RunnerCommand = 'PowerShell scriptblock from verified source branch'
             RunnerPath = $SourcePath
             FailureKind = 'None'
             FailureScope = 'None'
+            RunnerNormalizedStatus = if ($nativeStatusEvents.Count -gt 0) { 'CompletedWithBenignNativeStatusWarning' } else { 'Completed' }
+            RunnerWarnings = @($nativeStatusEvents | ForEach-Object { $_.Message })
+            NativeStatusEvents = $nativeStatusEvents
             HostUiShimmed = [bool]$runtimeScript.HostUiShimmed
             HostUiShimReason = [string]$runtimeScript.HostUiShimReason
             RemovedHostUiLines = @($runtimeScript.RemovedHostUiLines)
             RuntimeLineCount = [int]$runtimeScript.RuntimeLineCount
+            RuntimeErrorActionPreference = 'Continue'
         }
     }
     catch {
         $isConsolePipe = Test-BoostLabControlPanelSettingsConsolePipeException -ErrorRecord $_
-        return [pscustomobject]@{
+        $nativeStatusEvents = @($script:BoostLabControlPanelSettingsRunnerEvents)
+        $result = [pscustomobject]@{
             Success = $false
             Message = $_.Exception.Message
             ExitCode = 1
@@ -402,13 +561,22 @@ function Invoke-BoostLabControlPanelSettingsScript {
             RunnerPath = $SourcePath
             FailureKind = if ($isConsolePipe) { 'HostUiConsolePipeFailure' } else { 'SourceOperationFailure' }
             FailureScope = if ($isConsolePipe) { 'HostUi' } else { 'SourceOperation' }
+            RunnerNormalizedStatus = 'Failed'
+            RunnerWarnings = @($nativeStatusEvents | ForEach-Object { $_.Message })
+            NativeStatusEvents = $nativeStatusEvents
             ScriptStackTrace = [string]$_.ScriptStackTrace
             HostUiShimmed = [bool]$runtimeScript.HostUiShimmed
             HostUiShimReason = [string]$runtimeScript.HostUiShimReason
             RemovedHostUiLines = @($runtimeScript.RemovedHostUiLines)
             RuntimeLineCount = [int]$runtimeScript.RuntimeLineCount
+            RuntimeErrorActionPreference = 'Continue'
         }
     }
+    finally {
+        $script:BoostLabControlPanelSettingsRunnerEvents = $null
+    }
+
+    return $result
 }
 
 function New-BoostLabControlPanelSettingsResult {
@@ -572,6 +740,12 @@ function Invoke-BoostLabToolAction {
             SourcePath = $sourceStatus.SourcePath
             ExpectedSha256 = $sourceStatus.ExpectedSha256
             DetectedSha256 = $sourceStatus.DetectedSha256
+            ExpectedCanonicalSha256 = $sourceStatus.ExpectedCanonicalSha256
+            DetectedCanonicalSha256 = $sourceStatus.DetectedCanonicalSha256
+            SourceChecksumStatus = $sourceStatus.ChecksumStatus
+            RawChecksumStatus = $sourceStatus.RawChecksumStatus
+            CanonicalChecksumStatus = $sourceStatus.CanonicalChecksumStatus
+            SourceVerificationMode = $sourceStatus.VerificationMode
             SourceMenuBranch = $branch.SourceMenuBranch
             ScriptLineCount = $branch.ScriptLineCount
             ContainsRunTrusted = $branch.ContainsRunTrusted
@@ -585,6 +759,10 @@ function Invoke-BoostLabToolAction {
             RunnerPath = if ($runResult.PSObject.Properties['RunnerPath']) { [string]$runResult.RunnerPath } else { $sourceStatus.SourcePath }
             RunnerFailureKind = if ($runResult.PSObject.Properties['FailureKind']) { [string]$runResult.FailureKind } else { if ($success) { 'None' } else { 'RunnerFailure' } }
             RunnerFailureScope = if ($runResult.PSObject.Properties['FailureScope']) { [string]$runResult.FailureScope } else { if ($success) { 'None' } else { 'Unknown' } }
+            RunnerNormalizedStatus = if ($runResult.PSObject.Properties['RunnerNormalizedStatus']) { [string]$runResult.RunnerNormalizedStatus } else { if ($success) { 'Completed' } else { 'Failed' } }
+            RunnerWarnings = if ($runResult.PSObject.Properties['RunnerWarnings']) { @($runResult.RunnerWarnings) } else { @() }
+            RunnerNativeStatusEvents = if ($runResult.PSObject.Properties['NativeStatusEvents']) { @($runResult.NativeStatusEvents) } else { @() }
+            RuntimeErrorActionPreference = if ($runResult.PSObject.Properties['RuntimeErrorActionPreference']) { [string]$runResult.RuntimeErrorActionPreference } else { '' }
             RunnerScriptStackTrace = if ($runResult.PSObject.Properties['ScriptStackTrace']) { [string]$runResult.ScriptStackTrace } else { '' }
             RuntimeHostUiShimmed = if ($runResult.PSObject.Properties['HostUiShimmed']) { [bool]$runResult.HostUiShimmed } else { $false }
             RuntimeHostUiShimReason = if ($runResult.PSObject.Properties['HostUiShimReason']) { [string]$runResult.HostUiShimReason } else { '' }

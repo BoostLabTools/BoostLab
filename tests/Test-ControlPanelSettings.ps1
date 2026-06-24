@@ -100,6 +100,8 @@ foreach ($requiredModuleText in @(
     'Get-BoostLabControlPanelSettingsRunTrustedBlock'
     'Get-BoostLabControlPanelSettingsBranchScript'
     'ConvertTo-BoostLabControlPanelSettingsRuntimeScript'
+    'Invoke-BoostLabControlPanelSettingsSourceStartProcess'
+    'BenignNativeStatusPollution'
     'Invoke-BoostLabControlPanelSettingsScript'
     'ContainsExit'
     'SourceVerificationFailed'
@@ -249,6 +251,49 @@ $script:ControlPanelSettingsHostUiShimMarker = 'Ran'
     Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines).Count -eq 2) 'Host UI-only runner must remove Clear-Host and Write-Host lines.'
     Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines | Where-Object { [string]$_.Text -eq 'Clear-Host' }).Count -eq 1) 'Host UI shim evidence must include Clear-Host.'
     Assert-BoostLabCondition (@($hostUiRunnerResult.RemovedHostUiLines | Where-Object { [string]$_.Text -like 'Write-Host*' }).Count -eq 1) 'Host UI shim evidence must include Write-Host.'
+    Assert-BoostLabCondition ([string]$hostUiRunnerResult.RuntimeErrorActionPreference -eq 'Continue') 'Runtime script should restore source-like non-terminating error handling.'
+
+    $benignNativeStatusScript = @'
+Start-Process -Wait "regedit.exe" -ArgumentList "/S `"mock.reg`"" -WindowStyle Hidden
+$script:ControlPanelSettingsBenignStatusContinuation = 'Ran'
+'@
+    $benignNativeStatusResult = & $controlPanelModule {
+        param($ScriptText)
+
+        $script:BoostLabControlPanelSettingsStartProcessInvoker = {
+            param([hashtable]$Parameters)
+            throw [System.ComponentModel.Win32Exception]::new(0)
+        }
+        try {
+            Invoke-BoostLabControlPanelSettingsScript -ScriptText $ScriptText -ActionName Apply -SourcePath 'mock-source.ps1'
+        }
+        finally {
+            $script:BoostLabControlPanelSettingsStartProcessInvoker = $null
+        }
+    } $benignNativeStatusScript
+    Assert-BoostLabCondition ([bool]$benignNativeStatusResult.Success) 'Benign Win32 success-status pollution must not hard-fail after the source script continues.'
+    Assert-BoostLabCondition ([string]$benignNativeStatusResult.RunnerNormalizedStatus -eq 'CompletedWithBenignNativeStatusWarning') 'Benign native status pollution must be explicitly normalized.'
+    Assert-BoostLabCondition (@($benignNativeStatusResult.NativeStatusEvents).Count -eq 1) 'Benign native status pollution must be recorded in runner details.'
+    Assert-BoostLabCondition ([string]$benignNativeStatusResult.NativeStatusEvents[0].Kind -eq 'BenignNativeStatusPollution') 'Native status event kind mismatch.'
+    Assert-BoostLabCondition ([string]$benignNativeStatusResult.NativeStatusEvents[0].Parameters.FilePath -eq 'regedit.exe') 'Native status event must include Start-Process file path.'
+
+    $realStartProcessFailureResult = & $controlPanelModule {
+        param($ScriptText)
+
+        $script:BoostLabControlPanelSettingsStartProcessInvoker = {
+            param([hashtable]$Parameters)
+            throw [System.InvalidOperationException]::new('Real regedit launch failure.')
+        }
+        try {
+            Invoke-BoostLabControlPanelSettingsScript -ScriptText $ScriptText -ActionName Apply -SourcePath 'mock-source.ps1'
+        }
+        finally {
+            $script:BoostLabControlPanelSettingsStartProcessInvoker = $null
+        }
+    } $benignNativeStatusScript
+    Assert-BoostLabCondition (-not [bool]$realStartProcessFailureResult.Success) 'Real Start-Process failures must still fail closed.'
+    Assert-BoostLabCondition ([string]$realStartProcessFailureResult.FailureKind -eq 'SourceOperationFailure') 'Real Start-Process failure must remain SourceOperationFailure.'
+    Assert-BoostLabCondition (([string]$realStartProcessFailureResult.Message).Contains('Real regedit launch failure.')) 'Real Start-Process failure must preserve the real error message.'
 
     $realFailureRunnerResult = & $controlPanelModule {
         Invoke-BoostLabControlPanelSettingsScript -ScriptText 'throw "Real registry failure."' -ActionName Apply -SourcePath 'mock-source.ps1'
@@ -284,6 +329,43 @@ $script:ControlPanelSettingsHostUiShimMarker = 'Ran'
     Assert-BoostLabCondition ([string]$failedRunnerResult.Data.RunnerFailureScope -eq 'SourceOperation') 'Failed action must preserve runner failure scope.'
     Assert-BoostLabCondition ([bool]$failedRunnerResult.Data.RuntimeHostUiShimmed) 'Failed action must include host UI shim state in result data.'
     Assert-BoostLabCondition (@($failedRunnerResult.Data.RuntimeHostUiShimEvidence).Count -eq 1) 'Failed action must include host UI shim evidence in result data.'
+
+    $normalizedRunner = {
+        param([string]$ScriptText, [string]$ActionName)
+        [pscustomobject]@{
+            Success = $true
+            Message = 'Source branch script completed with runner warning(s).'
+            ExitCode = 0
+            RunnerKind = 'MockRunner'
+            RunnerCommand = 'mock command'
+            RunnerPath = 'mock-source.ps1'
+            FailureKind = 'None'
+            FailureScope = 'None'
+            RunnerNormalizedStatus = 'CompletedWithBenignNativeStatusWarning'
+            RunnerWarnings = @('The operation completed successfully.')
+            NativeStatusEvents = @([pscustomobject]@{
+                Kind = 'BenignNativeStatusPollution'
+                Command = 'Start-Process'
+                Message = 'The operation completed successfully.'
+                Parameters = [pscustomobject]@{ FilePath = 'regedit.exe' }
+                NormalizedStatus = 'Warning'
+            })
+            HostUiShimmed = $true
+            HostUiShimReason = 'mock host UI shim'
+            RemovedHostUiLines = @([pscustomobject]@{ SourceBranchLine = 1; Text = 'Clear-Host'; Reason = 'HostUiOnlyConsoleOperation' })
+            RuntimeErrorActionPreference = 'Continue'
+        }
+    }
+    $normalizedRunnerResult = Invoke-ControlPanelTestBoostLabToolAction `
+        -ActionName Apply `
+        -Confirmed:$true `
+        -AdministratorChecker { $true } `
+        -ScriptRunner $normalizedRunner
+    Assert-BoostLabCondition ([bool]$normalizedRunnerResult.Success) 'Normalized benign native status runner result must succeed.'
+    Assert-BoostLabCondition ([string]$normalizedRunnerResult.Data.RunnerNormalizedStatus -eq 'CompletedWithBenignNativeStatusWarning') 'Action result must preserve normalized runner status.'
+    Assert-BoostLabCondition (@($normalizedRunnerResult.Data.RunnerNativeStatusEvents).Count -eq 1) 'Action result must preserve native status event details.'
+    Assert-BoostLabCondition ([string]$normalizedRunnerResult.Data.RawChecksumStatus -in @('Passed', 'Failed')) 'Action result must include raw checksum status.'
+    Assert-BoostLabCondition ([string]$normalizedRunnerResult.Data.CanonicalChecksumStatus -in @('Passed', 'Failed', 'NotConfigured', 'Unavailable')) 'Action result must include canonical checksum status.'
 }
 finally {
     Remove-Module -ModuleInfo $controlPanelModule -Force -ErrorAction SilentlyContinue
