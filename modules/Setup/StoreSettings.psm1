@@ -205,8 +205,123 @@ function Test-BoostLabStoreByteDisplay {
         [object]$Value
     )
 
-    $text = if ($null -eq $Value) { '' } else { [string]$Value }
-    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+    return [bool](ConvertTo-BoostLabStoreNormalizedByteDisplay -Value $Value).Success
+}
+
+function ConvertTo-BoostLabStoreNormalizedByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = ''
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is null.'
+        }
+    }
+
+    if ($Value -is [byte[]]) {
+        $bytes = @($Value | ForEach-Object { $_.ToString('x2') })
+        return [pscustomobject]@{
+            Success = $true
+            Raw = (@($bytes) -join ',')
+            Normalized = (@($bytes) -join ',')
+            Bytes = @($bytes)
+            Message = 'Byte value came from a byte array.'
+        }
+    }
+
+    $raw = ([string]$Value).Trim()
+    $compact = $raw -replace '[\s,]', ''
+    if ([string]::IsNullOrWhiteSpace($compact)) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is empty after removing separators.'
+        }
+    }
+    if ($compact -notmatch '^(?i)[0-9a-f]+$' -or ($compact.Length % 2) -ne 0) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is not valid even-length hexadecimal data.'
+        }
+    }
+
+    $bytes = for ($index = 0; $index -lt $compact.Length; $index += 2) {
+        $compact.Substring($index, 2).ToLowerInvariant()
+    }
+    return [pscustomobject]@{
+        Success = $true
+        Raw = $raw
+        Normalized = (@($bytes) -join ',')
+        Bytes = @($bytes)
+        Message = 'Byte value was normalized from text.'
+    }
+}
+
+function Compare-BoostLabStoreByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Expected,
+
+        [AllowNull()]
+        [object]$Actual
+    )
+
+    $expectedBytes = ConvertTo-BoostLabStoreNormalizedByteDisplay -Value $Expected
+    $actualBytes = ConvertTo-BoostLabStoreNormalizedByteDisplay -Value $Actual
+    $succeeded = [bool]$expectedBytes.Success -and [bool]$actualBytes.Success -and ([string]$expectedBytes.Normalized -eq [string]$actualBytes.Normalized)
+    $message = if (-not [bool]$expectedBytes.Success) {
+        "Expected bytes could not be parsed: $($expectedBytes.Message)"
+    }
+    elseif (-not [bool]$actualBytes.Success) {
+        "Actual bytes could not be parsed: $($actualBytes.Message)"
+    }
+    elseif ($succeeded) {
+        'Expected and actual bytes match after normalization.'
+    }
+    else {
+        'Expected and actual bytes differ after normalization.'
+    }
+
+    return [pscustomobject]@{
+        ExpectedBytesRaw = [string]$Expected
+        ActualBytesRaw = [string]$Actual
+        ExpectedBytesNormalized = [string]$expectedBytes.Normalized
+        ActualBytesNormalized = [string]$actualBytes.Normalized
+        ByteComparisonSucceeded = $succeeded
+        ExpectedBytesParsed = [bool]$expectedBytes.Success
+        ActualBytesParsed = [bool]$actualBytes.Success
+        Message = $message
+    }
+}
+
+function Add-BoostLabStoreByteComparisonDetails {
+    param(
+        [Parameter(Mandatory)]
+        [object]$State,
+
+        [Parameter(Mandatory)]
+        [string]$Expected
+    )
+
+    $comparison = Compare-BoostLabStoreByteDisplay -Expected $Expected -Actual ([string]$State.DisplayValue)
+    $State | Add-Member -NotePropertyName 'ExpectedBytesRaw' -NotePropertyValue ([string]$comparison.ExpectedBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesRaw' -NotePropertyValue ([string]$comparison.ActualBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ExpectedBytesNormalized' -NotePropertyValue ([string]$comparison.ExpectedBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesNormalized' -NotePropertyValue ([string]$comparison.ActualBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonSucceeded' -NotePropertyValue ([bool]$comparison.ByteComparisonSucceeded) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonMessage' -NotePropertyValue ([string]$comparison.Message) -Force
+    return $comparison
 }
 
 function Get-BoostLabStoreRegistryValue {
@@ -518,11 +633,25 @@ function New-BoostLabStoreVerificationCheck {
         [object]$State
     )
 
+    $byteComparison = Compare-BoostLabStoreByteDisplay -Expected $Expected -Actual ([string]$State.DisplayValue)
+    $usesByteComparison = [bool]$byteComparison.ExpectedBytesParsed
+    if ($usesByteComparison) {
+        $State | Add-Member -NotePropertyName 'ExpectedBytesRaw' -NotePropertyValue ([string]$byteComparison.ExpectedBytesRaw) -Force
+        $State | Add-Member -NotePropertyName 'ActualBytesRaw' -NotePropertyValue ([string]$byteComparison.ActualBytesRaw) -Force
+        $State | Add-Member -NotePropertyName 'ExpectedBytesNormalized' -NotePropertyValue ([string]$byteComparison.ExpectedBytesNormalized) -Force
+        $State | Add-Member -NotePropertyName 'ActualBytesNormalized' -NotePropertyValue ([string]$byteComparison.ActualBytesNormalized) -Force
+        $State | Add-Member -NotePropertyName 'ByteComparisonSucceeded' -NotePropertyValue ([bool]$byteComparison.ByteComparisonSucceeded) -Force
+        $State | Add-Member -NotePropertyName 'ByteComparisonMessage' -NotePropertyValue ([string]$byteComparison.Message) -Force
+    }
+
     $status = if (-not [bool]$State.ReadSucceeded) {
         'Warning'
     }
     elseif (-not [bool]$State.Exists) {
         'Failed'
+    }
+    elseif ($usesByteComparison) {
+        if ([bool]$byteComparison.ByteComparisonSucceeded) { 'Passed' } else { 'Failed' }
     }
     elseif ([string]$State.DisplayValue -eq $Expected) {
         'Passed'
@@ -536,7 +665,7 @@ function New-BoostLabStoreVerificationCheck {
         -Expected $Expected `
         -Actual ([string]$State.DisplayValue) `
         -Status $status `
-        -Message ([string]$State.Message)
+        -Message $(if ($usesByteComparison -and $status -ne 'Warning') { "$($State.Message) $($byteComparison.Message)" } else { [string]$State.Message })
 }
 
 function Test-BoostLabStoreSettingsState {
@@ -918,6 +1047,7 @@ function Invoke-BoostLabStoreSettingsAction {
                     $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue $definition.Name -Force
                     $state | Add-Member -NotePropertyName 'ExpectedBytes' -NotePropertyValue ([string]$definition.Expected) -Force
                     $state | Add-Member -NotePropertyName 'ActualBytes' -NotePropertyValue ([string]$state.DisplayValue) -Force
+                    Add-BoostLabStoreByteComparisonDetails -State $state -Expected ([string]$definition.Expected) | Out-Null
                     $state | Add-Member -NotePropertyName 'ValueExists' -NotePropertyValue ([bool]$state.Exists) -Force
                     if ($null -eq $state.PSObject.Properties['ValueType']) {
                         $state | Add-Member -NotePropertyName 'ValueType' -NotePropertyValue 'Unknown' -Force

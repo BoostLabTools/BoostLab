@@ -130,6 +130,8 @@ foreach ($requiredText in @(
     'EnableAppInstallNotifications'
     'PersonalizationEnabled'
     'function Test-BoostLabStoreByteDisplay'
+    'function ConvertTo-BoostLabStoreNormalizedByteDisplay'
+    'ByteComparisonSucceeded'
     'function Test-BoostLabStoreSettingsState'
     'New-BoostLabVerificationResult'
     '-VerificationResult $verificationResult'
@@ -315,6 +317,77 @@ try {
     } $autoDownloadReader $capturedHiveStates
     if ($applyPassed.Status -ne 'Passed' -or @($applyPassed.Checks).Count -ne 4) {
         throw 'Store Settings Apply verification did not pass with all expected values.'
+    }
+
+    $contiguousComparison = & $storeModule {
+        Compare-BoostLabStoreByteDisplay `
+            -Expected '00,96,9d,69,8d,cd,93,dc,01' `
+            -Actual '00969D698DCD93DC01'
+    }
+    if (-not [bool]$contiguousComparison.ByteComparisonSucceeded) {
+        throw 'Store Settings byte comparison must pass comma-separated expected bytes against contiguous uppercase actual bytes.'
+    }
+    $spacedComparison = & $storeModule {
+        Compare-BoostLabStoreByteDisplay `
+            -Expected '00969D698DCD93DC01' `
+            -Actual '00 96 9D 69 8D CD 93 DC 01'
+    }
+    if (-not [bool]$spacedComparison.ByteComparisonSucceeded) {
+        throw 'Store Settings byte comparison must pass contiguous expected bytes against spaced actual bytes.'
+    }
+
+    $capturedContiguousHiveStates = @(
+        foreach ($key in $expectedHiveValues.Keys) {
+            $parts = $key -split '\|', 2
+            $actualBytes = ([string]$expectedHiveValues[$key] -replace ',', '').ToUpperInvariant()
+            $state = & $newRegistryValueState $true $true $actualBytes $actualBytes 'Mock Store hive value detected as contiguous reg query bytes.'
+            $state | Add-Member -NotePropertyName 'Path' -NotePropertyValue $parts[0] -Force
+            $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue $parts[1] -Force
+            $state | Add-Member -NotePropertyName 'ValueType' -NotePropertyValue 'REG_NONE' -Force
+            $state
+        }
+    )
+    $applyContiguousBytes = & $storeModule {
+        param($RegistryReader, $CapturedStoreHiveStates)
+        Test-BoostLabStoreSettingsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -CapturedStoreHiveStates $CapturedStoreHiveStates
+    } $autoDownloadReader $capturedContiguousHiveStates
+    if ($applyContiguousBytes.Status -ne 'Passed') {
+        throw "Store Settings Apply must pass when Store hive bytes match after normalization, found $($applyContiguousBytes.Status)."
+    }
+    foreach ($state in @($capturedContiguousHiveStates)) {
+        if (
+            -not [bool]$state.ByteComparisonSucceeded -or
+            [string]$state.ExpectedBytesNormalized -ne [string]$state.ActualBytesNormalized -or
+            [string]$state.ValueType -ne 'REG_NONE'
+        ) {
+            throw 'Store Settings captured hive details must include normalized byte comparison data and preserve ValueType.'
+        }
+    }
+
+    $capturedMalformedState = @($capturedHiveStates)
+    $capturedMalformedState[0] = [pscustomobject]@{
+        Path          = 'HKLM:\Settings\LocalState'
+        Name          = 'VideoAutoplay'
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $true
+        Value         = '00,zz'
+        DisplayValue  = '00,zz'
+        ValueType     = 'REG_NONE'
+        Message       = 'Mock malformed Store hive bytes.'
+    }
+    $applyMalformedHiveValue = & $storeModule {
+        param($RegistryReader, $CapturedStoreHiveStates)
+        Test-BoostLabStoreSettingsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -CapturedStoreHiveStates $CapturedStoreHiveStates
+    } $autoDownloadReader $capturedMalformedState
+    if ($applyMalformedHiveValue.Status -ne 'Failed' -or [bool]$capturedMalformedState[0].ByteComparisonSucceeded) {
+        throw 'Store Settings Apply must fail closed when actual Store hive bytes are malformed.'
     }
 
     $regQueryFallbackState = & $storeModule {
@@ -641,7 +714,8 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         }
 
         $expected = $expectedHiveValues["$Path|$Name"]
-        return (& $newRegistryValueState $true $true $expected $expected 'Mock Store hive value detected.')
+        $actual = ([string]$expected -replace ',', '').ToUpperInvariant()
+        return (& $newRegistryValueState $true $true $actual $actual 'Mock Store hive value detected as contiguous reg query bytes.')
     }.GetNewClosure()
     $respawnProcessStopper = {
         $respawnEvents.Add('PROCESSES')
@@ -671,6 +745,11 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         @($respawnApply.Data.Warnings | Where-Object { [string]$_ -like '*remained running after the stop request*' }).Count -lt 2
     ) {
         throw 'Store Settings Apply must treat Store process respawn/remaining-running state as a warning when registry and hive operations succeed.'
+    }
+    foreach ($state in @($respawnApply.Data.StoreHiveValuesCaptured)) {
+        if (-not [bool]$state.ByteComparisonSucceeded) {
+            throw 'Store Settings warning-only process stop path must still report successful normalized byte comparisons.'
+        }
     }
 
     $verificationFailureEvents = [System.Collections.Generic.List[string]]::new()

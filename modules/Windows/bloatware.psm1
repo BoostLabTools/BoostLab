@@ -825,8 +825,123 @@ function Test-BoostLabBloatwareStoreByteDisplay {
         [object]$Value
     )
 
-    $text = if ($null -eq $Value) { '' } else { [string]$Value }
-    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+    return [bool](ConvertTo-BoostLabBloatwareStoreNormalizedByteDisplay -Value $Value).Success
+}
+
+function ConvertTo-BoostLabBloatwareStoreNormalizedByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = ''
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is null.'
+        }
+    }
+
+    if ($Value -is [byte[]]) {
+        $bytes = @($Value | ForEach-Object { $_.ToString('x2') })
+        return [pscustomobject]@{
+            Success = $true
+            Raw = (@($bytes) -join ',')
+            Normalized = (@($bytes) -join ',')
+            Bytes = @($bytes)
+            Message = 'Byte value came from a byte array.'
+        }
+    }
+
+    $raw = ([string]$Value).Trim()
+    $compact = $raw -replace '[\s,]', ''
+    if ([string]::IsNullOrWhiteSpace($compact)) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is empty after removing separators.'
+        }
+    }
+    if ($compact -notmatch '^(?i)[0-9a-f]+$' -or ($compact.Length % 2) -ne 0) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is not valid even-length hexadecimal data.'
+        }
+    }
+
+    $bytes = for ($index = 0; $index -lt $compact.Length; $index += 2) {
+        $compact.Substring($index, 2).ToLowerInvariant()
+    }
+    return [pscustomobject]@{
+        Success = $true
+        Raw = $raw
+        Normalized = (@($bytes) -join ',')
+        Bytes = @($bytes)
+        Message = 'Byte value was normalized from text.'
+    }
+}
+
+function Compare-BoostLabBloatwareStoreByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Expected,
+
+        [AllowNull()]
+        [object]$Actual
+    )
+
+    $expectedBytes = ConvertTo-BoostLabBloatwareStoreNormalizedByteDisplay -Value $Expected
+    $actualBytes = ConvertTo-BoostLabBloatwareStoreNormalizedByteDisplay -Value $Actual
+    $succeeded = [bool]$expectedBytes.Success -and [bool]$actualBytes.Success -and ([string]$expectedBytes.Normalized -eq [string]$actualBytes.Normalized)
+    $message = if (-not [bool]$expectedBytes.Success) {
+        "Expected bytes could not be parsed: $($expectedBytes.Message)"
+    }
+    elseif (-not [bool]$actualBytes.Success) {
+        "Actual bytes could not be parsed: $($actualBytes.Message)"
+    }
+    elseif ($succeeded) {
+        'Expected and actual bytes match after normalization.'
+    }
+    else {
+        'Expected and actual bytes differ after normalization.'
+    }
+
+    return [pscustomobject]@{
+        ExpectedBytesRaw = [string]$Expected
+        ActualBytesRaw = [string]$Actual
+        ExpectedBytesNormalized = [string]$expectedBytes.Normalized
+        ActualBytesNormalized = [string]$actualBytes.Normalized
+        ByteComparisonSucceeded = $succeeded
+        ExpectedBytesParsed = [bool]$expectedBytes.Success
+        ActualBytesParsed = [bool]$actualBytes.Success
+        Message = $message
+    }
+}
+
+function Add-BoostLabBloatwareStoreByteComparisonDetails {
+    param(
+        [Parameter(Mandatory)]
+        [object]$State,
+
+        [Parameter(Mandatory)]
+        [string]$Expected
+    )
+
+    $comparison = Compare-BoostLabBloatwareStoreByteDisplay -Expected $Expected -Actual ([string]$State.DisplayValue)
+    $State | Add-Member -NotePropertyName 'ExpectedBytesRaw' -NotePropertyValue ([string]$comparison.ExpectedBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesRaw' -NotePropertyValue ([string]$comparison.ActualBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ExpectedBytesNormalized' -NotePropertyValue ([string]$comparison.ExpectedBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesNormalized' -NotePropertyValue ([string]$comparison.ActualBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonSucceeded' -NotePropertyValue ([bool]$comparison.ByteComparisonSucceeded) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonMessage' -NotePropertyValue ([string]$comparison.Message) -Force
+    return $comparison
 }
 
 function ConvertTo-BoostLabBloatwareRegExePath {
@@ -1217,6 +1332,7 @@ function Invoke-BoostLabBloatwareStoreSettingsHiveImport {
             $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue ([string]$definition.Name) -Force
             $state | Add-Member -NotePropertyName 'ExpectedBytes' -NotePropertyValue ([string]$definition.Expected) -Force
             $state | Add-Member -NotePropertyName 'ActualBytes' -NotePropertyValue ([string]$state.DisplayValue) -Force
+            $byteComparison = Add-BoostLabBloatwareStoreByteComparisonDetails -State $state -Expected ([string]$definition.Expected)
             $state | Add-Member -NotePropertyName 'ValueExists' -NotePropertyValue ([bool]$state.Exists) -Force
             if ($null -eq $state.PSObject.Properties['ValueType']) {
                 $state | Add-Member -NotePropertyName 'ValueType' -NotePropertyValue 'Unknown' -Force
@@ -1231,8 +1347,8 @@ function Invoke-BoostLabBloatwareStoreSettingsHiveImport {
                 $errors.Add("$($definition.Name) was absent after Store settings.dat import.")
                 continue
             }
-            if ([string]$state.DisplayValue -ne [string]$definition.Expected) {
-                $errors.Add("$($definition.Name) mismatch after Store settings.dat import. Expected $($definition.Expected), found $($state.DisplayValue).")
+            if (-not [bool]$byteComparison.ByteComparisonSucceeded) {
+                $errors.Add("$($definition.Name) mismatch after Store settings.dat import. Expected $($definition.Expected), found $($state.DisplayValue). $($byteComparison.Message)")
             }
         }
     }

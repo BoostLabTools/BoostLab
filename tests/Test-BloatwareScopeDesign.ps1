@@ -332,6 +332,12 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     Assert-BloatwareCondition ([string]$fallbackHiveState.ReadMethod -eq 'reg query') 'Bloatware Store hive custom value reader must support reg query fallback.'
     Assert-BloatwareCondition ([string]$fallbackHiveState.ValueType -eq 'REG_5F5E10B') 'Bloatware Store hive fallback must preserve the custom REG_5F5E10B type.'
     Assert-BloatwareCondition ([string]$fallbackHiveState.DisplayValue -eq $expectedStoreHiveValues['HKLM:\Settings\LocalState|VideoAutoplay']) 'Bloatware Store hive fallback must normalize custom value bytes.'
+    $bloatwareContiguousComparison = & $module {
+        Compare-BoostLabBloatwareStoreByteDisplay `
+            -Expected '00,96,9d,69,8d,cd,93,dc,01' `
+            -Actual '00969D698DCD93DC01'
+    }
+    Assert-BloatwareCondition ([bool]$bloatwareContiguousComparison.ByteComparisonSucceeded) 'Bloatware Store hive byte comparison must pass contiguous uppercase reg query bytes.'
 
     $successfulHiveEvents = [System.Collections.Generic.List[string]]::new()
     $successfulHiveCommandInvoker = {
@@ -359,7 +365,8 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         param($Path, $Name)
         $successfulHiveEvents.Add("READ:$Path|$Name")
         $expected = $expectedStoreHiveValues["$Path|$Name"]
-        & $newStoreHiveState $Path $Name $true $expected 'Mock Store hive value detected before unload.'
+        $actual = ([string]$expected -replace ',', '').ToUpperInvariant()
+        & $newStoreHiveState $Path $Name $true $actual 'Mock Store hive value detected before unload as contiguous bytes.'
     }.GetNewClosure()
     $successfulHiveDelay = {
         param($Seconds)
@@ -381,6 +388,10 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     Assert-BloatwareCondition ([string]$successfulHiveImport.RegistryImportWriteEncoding -eq 'Unicode') 'Bloatware StoreSettingsHiveImport must write the .reg payload as Unicode.'
     Assert-BloatwareCondition (@($successfulHiveImport.StoreHiveValuesCaptured).Count -eq 3) 'Bloatware StoreSettingsHiveImport must capture all source-defined Store hive values before unload.'
     Assert-BloatwareCondition ([string]$successfulHiveImport.VerificationStatus -eq 'Passed') 'Bloatware StoreSettingsHiveImport verification status must pass when all custom values match.'
+    foreach ($state in @($successfulHiveImport.StoreHiveValuesCaptured)) {
+        Assert-BloatwareCondition ([bool]$state.ByteComparisonSucceeded) 'Bloatware StoreSettingsHiveImport must mark byte-equivalent Store hive values as matching.'
+        Assert-BloatwareCondition ([string]$state.ExpectedBytesNormalized -eq [string]$state.ActualBytesNormalized) 'Bloatware StoreSettingsHiveImport must report matching normalized byte data.'
+    }
     Assert-BloatwareCondition ([string]$successfulHiveImport.StoreReRegistrationRuntimeNote -like '*separate from settings.dat hive import verification*') 'Bloatware Store re-registration note must not masquerade as a hive import failure.'
     $successfulHiveEventText = $successfulHiveEvents -join '|'
     foreach ($requiredEventText in @(
@@ -489,6 +500,28 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     } $mismatchValueReader
     Assert-BloatwareCondition (-not [bool]$mismatchValueImport.Success) 'Bloatware StoreSettingsHiveImport must fail when a source-required Store hive value has wrong bytes.'
     Assert-BloatwareCondition ([string]$mismatchValueImport.Message -like '*PersonalizationEnabled mismatch*') 'Bloatware StoreSettingsHiveImport must report expected and actual bytes for mismatched Store hive values.'
+
+    $malformedValueReader = {
+        param($Path, $Name)
+        if ($Name -eq 'VideoAutoplay') {
+            return (& $newStoreHiveState $Path $Name $true '00,zz' 'Mock malformed Store hive bytes.')
+        }
+        & $newStoreHiveState $Path $Name $true $expectedStoreHiveValues["$Path|$Name"] 'Mock Store hive value detected.'
+    }.GetNewClosure()
+    $malformedValueImport = & $module {
+        param($Reader)
+        Invoke-BoostLabBloatwareStoreSettingsHiveImport `
+            -RegFile 'C:\Windows\Temp\windowsstore.reg' `
+            -SettingsDat 'C:\Mock\settings.dat' `
+            -RegContent (Get-BoostLabBloatwareWindowsStoreRegContent) `
+            -RegistryFileWriter { } `
+            -PathTester { return $true } `
+            -RegistryCommandInvoker { [pscustomobject]@{ ExitCode = 0; StandardOutput = ''; StandardError = '' } } `
+            -RegistryReader $Reader `
+            -DelayInvoker { }
+    } $malformedValueReader
+    Assert-BloatwareCondition (-not [bool]$malformedValueImport.Success) 'Bloatware StoreSettingsHiveImport must fail closed when Store hive bytes are malformed.'
+    Assert-BloatwareCondition ([string]$malformedValueImport.Message -like '*Actual bytes could not be parsed*') 'Bloatware StoreSettingsHiveImport must report malformed byte diagnostics.'
 
     $unloadFailureReader = {
         param($Path, $Name)
