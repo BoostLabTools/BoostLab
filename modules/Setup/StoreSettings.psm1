@@ -199,6 +199,16 @@ function ConvertTo-BoostLabStoreValueDisplay {
     return [string]$Value
 }
 
+function Test-BoostLabStoreByteDisplay {
+    param(
+        [AllowNull()]
+        [object]$Value
+    )
+
+    $text = if ($null -eq $Value) { '' } else { [string]$Value }
+    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+}
+
 function Get-BoostLabStoreRegistryValue {
     param(
         [Parameter(Mandatory)]
@@ -289,12 +299,23 @@ function ConvertFrom-BoostLabStoreRegQueryOutput {
         [string]$Name
     )
 
-    $valueLine = @(
-        ($Output -split "\r?\n") |
-            Where-Object { [string]$_ -match ('^\s*{0}\s+' -f [regex]::Escape($Name)) } |
-            Select-Object -First 1
-    )
-    if ($valueLine.Count -eq 0) {
+    $lines = @($Output -split "\r?\n")
+    $valueLineIndex = -1
+    $valueType = 'Unknown'
+    $dataParts = [System.Collections.Generic.List[string]]::new()
+    for ($index = 0; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ($line -match ('^\s*{0}\s+(?<Type>\S+)\s*(?<Data>.*)$' -f [regex]::Escape($Name))) {
+            $valueLineIndex = $index
+            $valueType = [string]$Matches.Type
+            if (-not [string]::IsNullOrWhiteSpace([string]$Matches.Data)) {
+                $dataParts.Add([string]$Matches.Data)
+            }
+            break
+        }
+    }
+
+    if ($valueLineIndex -lt 0) {
         return [pscustomobject]@{
             ReadSucceeded = $true
             KeyExists     = $true
@@ -307,15 +328,21 @@ function ConvertFrom-BoostLabStoreRegQueryOutput {
         }
     }
 
-    $parts = [regex]::Split(([string]$valueLine[0]).Trim(), '\s{2,}')
-    $valueType = if ($parts.Count -ge 2) { [string]$parts[1] } else { 'Unknown' }
-    $dataText = if ($parts.Count -ge 3) { [string]$parts[2] } else { '' }
-    $displayValue = if ($dataText -match '^[0-9A-Fa-f,\s]+$') {
-        @(
-            ($dataText -replace ',', ' ' -split '\s+') |
-                Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
-                ForEach-Object { ([string]$_).ToLowerInvariant() }
-        ) -join ','
+    for ($index = $valueLineIndex + 1; $index -lt $lines.Count; $index++) {
+        $line = [string]$lines[$index]
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+        if ($line -match '^\s*HKEY_' -or $line -match '^\s*\S+\s+REG_\S+') {
+            break
+        }
+        $dataParts.Add($line.Trim())
+    }
+
+    $dataText = (@($dataParts.ToArray()) -join ' ').Trim()
+    $byteMatches = @([regex]::Matches($dataText, '(?i)\b[0-9a-f]{2}\b') | ForEach-Object { $_.Value.ToLowerInvariant() })
+    $displayValue = if ($byteMatches.Count -gt 0) {
+        $byteMatches -join ','
     }
     else {
         $dataText
@@ -354,7 +381,12 @@ function Get-BoostLabStoreHiveRegistryValue {
         }
     }
 
-    if ($null -ne $providerState -and [bool]$providerState.ReadSucceeded -and [bool]$providerState.Exists) {
+    if (
+        $null -ne $providerState -and
+        [bool]$providerState.ReadSucceeded -and
+        [bool]$providerState.Exists -and
+        (Test-BoostLabStoreByteDisplay -Value $providerState.DisplayValue)
+    ) {
         $providerState | Add-Member -NotePropertyName 'ReadMethod' -NotePropertyValue 'PowerShell registry provider' -Force
         return $providerState
     }
@@ -569,10 +601,10 @@ function Test-BoostLabStoreSettingsState {
             }
             else {
                 [pscustomobject]@{
-                    ReadSucceeded = $false
+                    ReadSucceeded = $true
                     Exists        = $false
                     Value         = $null
-                    DisplayValue  = 'Unknown'
+                    DisplayValue  = 'Absent'
                     Message       = 'The Store settings hive value was not captured before unload.'
                 }
             }
@@ -807,7 +839,7 @@ function Invoke-BoostLabStoreSettingsAction {
 
         [scriptblock]$RegistryFileWriter = {
             param($Path, $Content)
-            Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop
+            Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop
         },
 
         [scriptblock]$PathTester = {
@@ -884,6 +916,12 @@ function Invoke-BoostLabStoreSettingsAction {
                         -RegistryCommandInvoker $RegistryCommandInvoker
                     $state | Add-Member -NotePropertyName 'Path' -NotePropertyValue $definition.Path -Force
                     $state | Add-Member -NotePropertyName 'Name' -NotePropertyValue $definition.Name -Force
+                    $state | Add-Member -NotePropertyName 'ExpectedBytes' -NotePropertyValue ([string]$definition.Expected) -Force
+                    $state | Add-Member -NotePropertyName 'ActualBytes' -NotePropertyValue ([string]$state.DisplayValue) -Force
+                    $state | Add-Member -NotePropertyName 'ValueExists' -NotePropertyValue ([bool]$state.Exists) -Force
+                    if ($null -eq $state.PSObject.Properties['ValueType']) {
+                        $state | Add-Member -NotePropertyName 'ValueType' -NotePropertyValue 'Unknown' -Force
+                    }
                     $capturedStoreHiveStates.Add($state)
                 }
             }
@@ -992,6 +1030,10 @@ function Invoke-BoostLabStoreSettingsAction {
         ExpectedStoreSettingsState = $expectedState
         DetectedStoreSettingsState = $detectedState
         RegistryValuesChecked     = $registryValuesChecked
+        StoreHiveMountPath        = 'HKLM:\Settings'
+        StoreHiveFilePath         = $settingsDatPath
+        RegistryImportFilePath    = $registryFilePath
+        RegistryImportWriteMethod = 'reg import .reg file with source-defined hex(5f5e10b) custom value types'
         RegistryMutationsAttempted = @(
             'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate\AutoDownload'
             @($script:BoostLabStoreHiveValues | ForEach-Object { "$($_.Path)\$($_.Name)" })

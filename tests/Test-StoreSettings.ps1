@@ -119,7 +119,7 @@ foreach ($requiredText in @(
     $defaultDeleteCommand
     'Start-Process "ms-windows-store:settings" -ErrorAction Stop'
     'Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction Stop'
-    'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
+    'Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop'
     'RedirectStandardError = $true'
     'ProcessRunner'
     'reg load "HKLM\Settings"'
@@ -129,6 +129,7 @@ foreach ($requiredText in @(
     'VideoAutoplay'
     'EnableAppInstallNotifications'
     'PersonalizationEnabled'
+    'function Test-BoostLabStoreByteDisplay'
     'function Test-BoostLabStoreSettingsState'
     'New-BoostLabVerificationResult'
     '-VerificationResult $verificationResult'
@@ -322,10 +323,10 @@ try {
             return [pscustomobject]@{
                 ReadSucceeded = $true
                 KeyExists     = $true
-                Exists        = $false
-                Value         = $null
-                DisplayValue  = 'Absent'
-                Message       = 'PowerShell provider did not expose the Store custom value type.'
+                Exists        = $true
+                Value         = 'Not available'
+                DisplayValue  = 'Not available'
+                Message       = 'PowerShell provider exposed the Store custom value type without readable bytes.'
             }
         }
         $queryInvoker = {
@@ -333,7 +334,8 @@ try {
                 ExitCode       = 0
                 StandardOutput = @'
 HKEY_LOCAL_MACHINE\Settings\LocalState
-    VideoAutoplay    REG_BINARY    00 96 9d 69 8d cd 93 dc 01
+    VideoAutoplay    REG_5F5E10B    00 96 9d 69 8d cd
+        93 dc 01
 '@
                 StandardError  = ''
             }
@@ -348,6 +350,7 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     if (
         -not [bool]$regQueryFallbackState.Exists -or
         [string]$regQueryFallbackState.DisplayValue -ne $expectedHiveValues['HKLM:\Settings\LocalState|VideoAutoplay'] -or
+        [string]$regQueryFallbackState.ValueType -ne 'REG_5F5E10B' -or
         [string]$regQueryFallbackState.ReadMethod -ne 'reg query'
     ) {
         throw 'Store Settings hive verification must fall back to reg query for source-defined Store custom value types.'
@@ -377,6 +380,60 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     } $autoDownloadReader $capturedAbsentState
     if ($applyMissingHiveValues.Status -ne 'Failed') {
         throw "Store Settings Apply must fail verification when source-required Store hive values are absent, found $($applyMissingHiveValues.Status)."
+    }
+
+    $capturedMismatchedState = @($capturedHiveStates)
+    $capturedMismatchedState[1] = [pscustomobject]@{
+        Path          = 'HKLM:\Settings\LocalState'
+        Name          = 'EnableAppInstallNotifications'
+        ReadSucceeded = $true
+        KeyExists     = $true
+        Exists        = $true
+        Value         = '00,00,00,00,00,00,00,00,00'
+        DisplayValue  = '00,00,00,00,00,00,00,00,00'
+        ValueType     = 'REG_5F5E10B'
+        Message       = 'Mock Store hive value bytes differ.'
+    }
+    $applyMismatchedHiveValue = & $storeModule {
+        param($RegistryReader, $CapturedStoreHiveStates)
+        Test-BoostLabStoreSettingsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -CapturedStoreHiveStates $CapturedStoreHiveStates
+    } $autoDownloadReader $capturedMismatchedState
+    if ($applyMismatchedHiveValue.Status -ne 'Failed') {
+        throw 'Store Settings Apply must fail when a source-required Store hive value exists with mismatched bytes.'
+    }
+
+    $capturedWrongHivePathState = @(
+        foreach ($state in @($capturedHiveStates)) {
+            if ([string]$state.Name -eq 'PersonalizationEnabled') {
+                [pscustomobject]@{
+                    Path          = 'HKLM:\WrongSettings\LocalState\PersistentSettings'
+                    Name          = [string]$state.Name
+                    ReadSucceeded = $true
+                    KeyExists     = $true
+                    Exists        = $true
+                    Value         = [string]$state.Value
+                    DisplayValue  = [string]$state.DisplayValue
+                    ValueType     = 'REG_5F5E10B'
+                    Message       = 'Mock Store hive value captured from the wrong hive path.'
+                }
+            }
+            else {
+                $state
+            }
+        }
+    )
+    $applyWrongHivePath = & $storeModule {
+        param($RegistryReader, $CapturedStoreHiveStates)
+        Test-BoostLabStoreSettingsState `
+            -ActionName 'Apply' `
+            -RegistryReader $RegistryReader `
+            -CapturedStoreHiveStates $CapturedStoreHiveStates
+    } $autoDownloadReader $capturedWrongHivePathState
+    if ($applyWrongHivePath.Status -ne 'Failed') {
+        throw 'Store Settings Apply must fail when a source-required Store hive value was captured from the wrong hive path.'
     }
 
     $capturedMissingState = @($capturedHiveStates)
@@ -507,9 +564,21 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         -not $applyResult.Success -or
         $applyResult.Message -ne 'Store settings optimized.' -or
         $applyResult.VerificationResult.Status -ne 'Passed' -or
-        $applyResult.Data.CommandStatus -ne 'Completed'
+        $applyResult.Data.CommandStatus -ne 'Completed' -or
+        [string]$applyResult.Data.StoreHiveMountPath -ne 'HKLM:\Settings' -or
+        [string]$applyResult.Data.RegistryImportWriteMethod -notmatch 'hex\(5f5e10b\)'
     ) {
         throw 'Mocked Store Settings Apply did not return the expected structured result.'
+    }
+    foreach ($capturedState in @($applyResult.Data.StoreHiveValuesCaptured)) {
+        if (
+            $null -eq $capturedState.PSObject.Properties['ExpectedBytes'] -or
+            $null -eq $capturedState.PSObject.Properties['ActualBytes'] -or
+            $null -eq $capturedState.PSObject.Properties['ReadMethod'] -or
+            $null -eq $capturedState.PSObject.Properties['ValueType']
+        ) {
+            throw 'Store Settings captured hive state must include expected/actual bytes, value type, and read method.'
+        }
     }
     $applyEventText = $applyEvents -join '|'
     foreach ($requiredEventText in @(
@@ -809,6 +878,10 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
             'ExpectedStoreSettingsState'
             'DetectedStoreSettingsState'
             'RegistryValuesChecked'
+            'StoreHiveMountPath'
+            'StoreHiveFilePath'
+            'RegistryImportFilePath'
+            'RegistryImportWriteMethod'
             'RegistryMutationsAttempted'
             'StoreHiveValuesCaptured'
             'ProcessActions'

@@ -1719,7 +1719,7 @@ foreach ($entry in $expectedModules.Values) {
                 'Start-Process "ms-windows-store:settings" -ErrorAction Stop'
                 'Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction Stop'
                 'Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue'
-                'Set-Content -LiteralPath $Path -Value $Content -Force -ErrorAction Stop'
+                'Set-Content -LiteralPath $Path -Value $Content -Encoding Unicode -Force -ErrorAction Stop'
                 'reg load "HKLM\Settings"'
                 'reg import'
                 'reg unload "HKLM\Settings"'
