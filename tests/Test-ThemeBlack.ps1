@@ -138,11 +138,15 @@ foreach ($requiredText in @(
     '"regedit.exe"'
     '-ArgumentList "/S `"$Path`""'
     'function Test-BoostLabThemeBlackState'
+    'function Invoke-BoostLabThemeBlackDwmReassertion'
     'New-BoostLabVerificationResult'
     '-VerificationResult $verificationResult'
     '[bool]$Confirmed = $false'
     'Black theme applied.'
     'Theme restored to default.'
+    'DwmNormalizationRejected'
+    'DwmReassertionAttempted'
+    'DwmColorizationNonBlackAfterReassertion'
 )) {
     if (-not $moduleSource.Contains($requiredText)) {
         throw "Theme Black module is missing: $requiredText"
@@ -366,6 +370,8 @@ try {
         $nonBlackApplyState[$key] = $applyState[$key]
     }
     $nonBlackApplyState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0xff202020' 'Mock non-black DWM mismatch.'
+    $nonBlackApplyState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+    $nonBlackApplyState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
     $nonBlackReader = {
         param($Path, $Name, $ValueType)
         $key = '{0}|{1}' -f $Path, $Name
@@ -377,6 +383,10 @@ try {
     } $nonBlackReader
     if ($nonBlackVerification.Status -ne 'Failed') {
         throw 'Theme Black Apply must still fail verification for non-black DWM mismatches.'
+    }
+    $nonBlackNormalized = @($nonBlackVerification.Checks | Where-Object { [bool]$_.NormalizedEquivalentApplied })
+    if ($nonBlackNormalized.Count -ne 0) {
+        throw 'Theme Black must not accept non-black DWM accent remnants as normalized black.'
     }
 
     $defaultState = [ordered]@{}
@@ -533,6 +543,136 @@ try {
         throw 'Theme Black Apply must report a successful normalized DWM black verification with clear result details.'
     }
 
+    $reassertExactEvents = [System.Collections.Generic.List[string]]::new()
+    $mockReassertExactState = [ordered]@{}
+    $reassertExactFileWriter = {
+        param($Path, $Content)
+        $reassertExactEvents.Add("WRITE:$([IO.Path]::GetFileName($Path))")
+    }.GetNewClosure()
+    $reassertExactImporter = {
+        param($Path)
+        $reassertExactEvents.Add("IMPORT:$([IO.Path]::GetFileName($Path))")
+        foreach ($definition in $applyDefinitions) {
+            $key = '{0}|{1}' -f $definition.Path, $definition.Name
+            $mockReassertExactState[$key] = & $newRegistryState $true $true ([string]$definition.Expected) 'Mock imported state.'
+        }
+        $mockReassertExactState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0x00000000' 'Mock accepted DWM black normalization.'
+        $mockReassertExactState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+        $mockReassertExactState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+    }.GetNewClosure()
+    $reassertExactReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        if ($mockReassertExactState.Contains($key)) {
+            return $mockReassertExactState[$key]
+        }
+
+        return (& $newRegistryState $true $false 'Absent' 'Mock state absent.')
+    }.GetNewClosure()
+    $reassertExactWriter = {
+        param($Path, $Name, $ValueType, $Value, $ExpectedDisplay)
+        if ($ValueType -ne 'DWord') {
+            throw "Unexpected value type for mocked DWM reassertion: $ValueType"
+        }
+
+        $reassertExactEvents.Add("REASSERT:$Name=$ExpectedDisplay")
+        $key = '{0}|{1}' -f $Path, $Name
+        $mockReassertExactState[$key] = & $newRegistryState $true $true ([string]$ExpectedDisplay) 'Mock source DWM value reasserted.'
+    }.GetNewClosure()
+    $reassertExactResult = & $themeModule {
+        param($FileWriter, $RegistryImporter, $RegistryReader, $RegistryValueWriter)
+        Invoke-BoostLabThemeBlackAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -FileWriter $FileWriter `
+            -RegistryImporter $RegistryImporter `
+            -RegistryReader $RegistryReader `
+            -RegistryValueWriter $RegistryValueWriter
+    } $reassertExactFileWriter $reassertExactImporter $reassertExactReader $reassertExactWriter
+    if (
+        -not $reassertExactResult.Success -or
+        [string]$reassertExactResult.Status -ne 'Success' -or
+        [string]$reassertExactResult.VerificationResult.Status -ne 'Passed' -or
+        -not [bool]$reassertExactResult.Data.DwmReassertionAttempted -or
+        @($reassertExactResult.Data.DwmReassertionResults).Count -ne 3 -or
+        @($reassertExactResult.Data.DwmNormalizationRejected).Count -ne 0 -or
+        [string]$reassertExactResult.Data.FinalStatusReason -ne 'CompletedVerified'
+    ) {
+        throw 'Theme Black Apply must reassert source-defined DWM black values and succeed when they verify exactly.'
+    }
+    $colorizationExactReassertion = @($reassertExactResult.Data.DwmReassertionResults | Where-Object { [string]$_.Name -eq 'ColorizationColor' }) | Select-Object -First 1
+    if (
+        $null -eq $colorizationExactReassertion -or
+        [string]$colorizationExactReassertion.ActualBeforeReassertion -ne '0xc40078d4' -or
+        [string]$colorizationExactReassertion.ActualAfterReassertion -ne '0xc4191919'
+    ) {
+        throw 'Theme Black DWM reassertion details must preserve before/after ColorizationColor evidence.'
+    }
+
+    $reassertNormalizedEvents = [System.Collections.Generic.List[string]]::new()
+    $mockReassertNormalizedState = [ordered]@{}
+    $reassertNormalizedFileWriter = {
+        param($Path, $Content)
+        $reassertNormalizedEvents.Add("WRITE:$([IO.Path]::GetFileName($Path))")
+    }.GetNewClosure()
+    $reassertNormalizedImporter = {
+        param($Path)
+        $reassertNormalizedEvents.Add("IMPORT:$([IO.Path]::GetFileName($Path))")
+        foreach ($definition in $applyDefinitions) {
+            $key = '{0}|{1}' -f $definition.Path, $definition.Name
+            $mockReassertNormalizedState[$key] = & $newRegistryState $true $true ([string]$definition.Expected) 'Mock imported state.'
+        }
+        $mockReassertNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0x00000000' 'Mock accepted DWM black normalization.'
+        $mockReassertNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+        $mockReassertNormalizedState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+    }.GetNewClosure()
+    $reassertNormalizedReader = {
+        param($Path, $Name, $ValueType)
+        $key = '{0}|{1}' -f $Path, $Name
+        if ($mockReassertNormalizedState.Contains($key)) {
+            return $mockReassertNormalizedState[$key]
+        }
+
+        return (& $newRegistryState $true $false 'Absent' 'Mock state absent.')
+    }.GetNewClosure()
+    $reassertNormalizedWriter = {
+        param($Path, $Name, $ValueType, $Value, $ExpectedDisplay)
+        if ($ValueType -ne 'DWord') {
+            throw "Unexpected value type for mocked DWM reassertion: $ValueType"
+        }
+
+        $reassertNormalizedEvents.Add("REASSERT:$Name=$ExpectedDisplay")
+        $actualDisplay = if ($Name -eq 'AccentColor') {
+            '0x00000000'
+        }
+        else {
+            '0xc4000000'
+        }
+        $key = '{0}|{1}' -f $Path, $Name
+        $mockReassertNormalizedState[$key] = & $newRegistryState $true $true $actualDisplay 'Mock Windows-normalized DWM black value after reassertion.'
+    }.GetNewClosure()
+    $reassertNormalizedResult = & $themeModule {
+        param($FileWriter, $RegistryImporter, $RegistryReader, $RegistryValueWriter)
+        Invoke-BoostLabThemeBlackAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -FileWriter $FileWriter `
+            -RegistryImporter $RegistryImporter `
+            -RegistryReader $RegistryReader `
+            -RegistryValueWriter $RegistryValueWriter
+    } $reassertNormalizedFileWriter $reassertNormalizedImporter $reassertNormalizedReader $reassertNormalizedWriter
+    if (
+        -not $reassertNormalizedResult.Success -or
+        [string]$reassertNormalizedResult.Status -ne 'Success' -or
+        [string]$reassertNormalizedResult.VerificationResult.Status -ne 'Passed' -or
+        -not [bool]$reassertNormalizedResult.Data.DwmReassertionAttempted -or
+        @($reassertNormalizedResult.Data.DwmNormalizationAccepted).Count -ne 3 -or
+        @($reassertNormalizedResult.Data.DwmNormalizationRejected).Count -ne 0 -or
+        [string]$reassertNormalizedResult.Data.FinalStatusReason -ne 'PassedWithDwmNormalization'
+    ) {
+        throw 'Theme Black Apply must pass when source DWM reassertion is normalized to true black equivalents.'
+    }
+
     $verificationFailureEvents = [System.Collections.Generic.List[string]]::new()
     $mockVerificationFailureState = [ordered]@{}
     $verificationFailureFileWriter = {
@@ -546,7 +686,9 @@ try {
             $key = '{0}|{1}' -f $definition.Path, $definition.Name
             $mockVerificationFailureState[$key] = & $newRegistryState $true $true ([string]$definition.Expected) 'Mock imported state.'
         }
-        $mockVerificationFailureState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0xff202020' 'Mock non-black DWM mismatch.'
+        $mockVerificationFailureState['HKCU:\Software\Microsoft\Windows\DWM|AccentColor'] = & $newRegistryState $true $true '0x00000000' 'Mock accepted DWM black normalization.'
+        $mockVerificationFailureState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationColor'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
+        $mockVerificationFailureState['HKCU:\Software\Microsoft\Windows\DWM|ColorizationAfterglow'] = & $newRegistryState $true $true '0xc40078d4' 'Mock non-black Windows accent remnant.'
     }.GetNewClosure()
     $verificationFailureReader = {
         param($Path, $Name, $ValueType)
@@ -557,23 +699,34 @@ try {
 
         return (& $newRegistryState $true $false 'Absent' 'Mock state absent.')
     }.GetNewClosure()
+    $verificationFailureWriter = {
+        param($Path, $Name, $ValueType, $Value, $ExpectedDisplay)
+        $verificationFailureEvents.Add("REASSERT:$Name=$ExpectedDisplay")
+        # Simulate Windows leaving ColorizationColor/Afterglow on non-black accent remnants after reassertion.
+    }.GetNewClosure()
     $verificationFailureResult = & $themeModule {
-        param($FileWriter, $RegistryImporter, $RegistryReader)
+        param($FileWriter, $RegistryImporter, $RegistryReader, $RegistryValueWriter)
         Invoke-BoostLabThemeBlackAction `
             -ActionName 'Apply' `
             -AdministratorChecker { return $true } `
             -FileWriter $FileWriter `
             -RegistryImporter $RegistryImporter `
-            -RegistryReader $RegistryReader
-    } $verificationFailureFileWriter $verificationFailureImporter $verificationFailureReader
+            -RegistryReader $RegistryReader `
+            -RegistryValueWriter $RegistryValueWriter
+    } $verificationFailureFileWriter $verificationFailureImporter $verificationFailureReader $verificationFailureWriter
     if (
         [bool]$verificationFailureResult.Success -or
         [string]$verificationFailureResult.Status -ne 'Error' -or
         [string]$verificationFailureResult.Data.CommandStatus -ne 'Completed' -or
         [string]$verificationFailureResult.Data.VerificationStatus -ne 'Failed' -or
-        [string]$verificationFailureResult.Data.FinalStatusReason -ne 'VerificationFailed'
+        [string]$verificationFailureResult.Data.FinalStatusReason -ne 'DwmColorizationNonBlackAfterReassertion' -or
+        -not [bool]$verificationFailureResult.Data.DwmReassertionAttempted -or
+        @($verificationFailureResult.Data.DwmNormalizationAccepted).Count -ne 1 -or
+        @($verificationFailureResult.Data.DwmNormalizationRejected).Count -ne 2 -or
+        [string]$verificationFailureResult.Message -match 'DWM color values were normalized by Windows to equivalent black values and accepted' -or
+        [string]$verificationFailureResult.Message -notmatch 'Rejected non-black DWM value'
     ) {
-        throw 'Theme Black Apply must not report top-level Success when import completed but verification truly failed.'
+        throw 'Theme Black Apply must report rejected non-black DWM remnants after reassertion without misleading normalization text.'
     }
 
     $importFailureResult = & $themeModule {
@@ -676,6 +829,9 @@ try {
             'DetectedThemeState'
             'RegistryValuesChecked'
             'DwmNormalizationAccepted'
+            'DwmNormalizationRejected'
+            'DwmReassertionAttempted'
+            'DwmReassertionResults'
             'RegistryFilePath'
             'RegistryFileStatus'
             'ThemeImportStatus'

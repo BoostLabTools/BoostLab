@@ -338,6 +338,116 @@ function Test-BoostLabThemeBlackDwmNormalizedEquivalent {
     return ($allowedPairs.ContainsKey($key) -and [string]$allowedPairs[$key] -eq $actualValue)
 }
 
+function ConvertFrom-BoostLabThemeBlackDWordText {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Value
+    )
+
+    $text = $Value.Trim().ToLowerInvariant()
+    if ($text.StartsWith('0x')) {
+        $text = $text.Substring(2)
+    }
+    $unsignedValue = [Convert]::ToUInt32($text, 16)
+    return [BitConverter]::ToInt32([BitConverter]::GetBytes($unsignedValue), 0)
+}
+
+function Get-BoostLabThemeBlackDwmApplyDefinitions {
+    @(
+        Get-BoostLabThemeBlackDefinitions -ActionName 'Apply' |
+            Where-Object {
+                [string]$_.Path -eq [string]$script:BoostLabThemePaths['DesktopWindowManager'] -and
+                [string]$_.Name -in @('AccentColor', 'ColorizationColor', 'ColorizationAfterglow')
+            }
+    )
+}
+
+function Get-BoostLabThemeBlackCheckByDefinition {
+    param(
+        [Parameter(Mandatory)]
+        [object]$VerificationResult,
+
+        [Parameter(Mandatory)]
+        [pscustomobject]$Definition
+    )
+
+    $checkName = '{0}\{1}' -f [string]$Definition.Path, [string]$Definition.Name
+    @($VerificationResult.Checks | Where-Object { [string]$_.Name -eq $checkName }) | Select-Object -First 1
+}
+
+function Get-BoostLabThemeBlackDwmNormalizationDetails {
+    param(
+        [Parameter(Mandatory)]
+        [object]$VerificationResult
+    )
+
+    foreach ($definition in @(Get-BoostLabThemeBlackDwmApplyDefinitions)) {
+        $check = Get-BoostLabThemeBlackCheckByDefinition -VerificationResult $VerificationResult -Definition $definition
+        if ($null -eq $check) {
+            continue
+        }
+
+        $normalized = (
+            $null -ne $check.PSObject.Properties['NormalizedEquivalentApplied'] -and
+            [bool]$check.NormalizedEquivalentApplied
+        )
+        $status = [string]$check.Status
+        $decision = if ($normalized) {
+            'AcceptedBlackNormalization'
+        }
+        elseif ($status -eq 'Passed') {
+            'ExactSourceValue'
+        }
+        elseif ($status -eq 'Failed') {
+            'RejectedNonBlackOrMismatched'
+        }
+        else {
+            'UnreadableOrWarning'
+        }
+
+        [pscustomobject]@{
+            Path = [string]$definition.Path
+            Name = [string]$definition.Name
+            Expected = [string]$definition.Expected
+            Actual = [string]$check.Actual
+            Status = $status
+            NormalizedEquivalentApplied = $normalized
+            NormalizationDecision = $decision
+            Reason = if ($normalized -and $null -ne $check.PSObject.Properties['NormalizationReason']) { [string]$check.NormalizationReason } else { [string]$check.Message }
+        }
+    }
+}
+
+function Invoke-BoostLabThemeBlackDwmReassertion {
+    param(
+        [Parameter(Mandatory)]
+        [scriptblock]$RegistryValueWriter
+    )
+
+    foreach ($definition in @(Get-BoostLabThemeBlackDwmApplyDefinitions)) {
+        try {
+            $value = ConvertFrom-BoostLabThemeBlackDWordText -Value ([string]$definition.Expected)
+            & $RegistryValueWriter ([string]$definition.Path) ([string]$definition.Name) ([string]$definition.ValueType) $value ([string]$definition.Expected) | Out-Null
+            [pscustomobject]@{
+                Path = [string]$definition.Path
+                Name = [string]$definition.Name
+                Expected = [string]$definition.Expected
+                Status = 'Reasserted'
+                Message = 'Source-defined Theme Black DWM value was reasserted after non-black verification.'
+            }
+        }
+        catch {
+            [pscustomobject]@{
+                Path = [string]$definition.Path
+                Name = [string]$definition.Name
+                Expected = [string]$definition.Expected
+                Status = 'Failed'
+                Message = $_.Exception.Message
+            }
+        }
+    }
+}
+
 function Get-BoostLabThemeBlackRegistryState {
     param(
         [Parameter(Mandatory)]
@@ -648,6 +758,28 @@ function Invoke-BoostLabThemeBlackAction {
                 ValueType = $ValueType
             }
             Get-BoostLabThemeBlackRegistryState -Definition $definition
+        },
+
+        [scriptblock]$RegistryValueWriter = {
+            param($Path, $Name, $ValueType, $Value, $ExpectedDisplay)
+            if ($ValueType -ne 'DWord') {
+                throw "Theme Black DWM reassertion supports only DWord values; got $ValueType."
+            }
+            if ($Path -notlike 'HKCU:\*') {
+                throw "Theme Black DWM reassertion is scoped to HKCU only; got $Path."
+            }
+
+            $subKeyPath = $Path -replace '^HKCU:\\', ''
+            $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($subKeyPath)
+            if ($null -eq $key) {
+                throw "Unable to open registry key for DWM reassertion: $Path"
+            }
+            try {
+                $key.SetValue($Name, [int]$Value, [Microsoft.Win32.RegistryValueKind]::DWord)
+            }
+            finally {
+                $key.Close()
+            }
         }
     )
 
@@ -709,27 +841,71 @@ function Invoke-BoostLabThemeBlackAction {
     $verificationResult = Test-BoostLabThemeBlackState `
         -ActionName $ActionName `
         -RegistryReader $RegistryReader
+    $initialDwmDetails = @(
+        if ($ActionName -eq 'Apply') {
+            Get-BoostLabThemeBlackDwmNormalizationDetails -VerificationResult $verificationResult
+        }
+    )
+    $initialDwmRejected = @($initialDwmDetails | Where-Object { [string]$_.NormalizationDecision -eq 'RejectedNonBlackOrMismatched' })
+    $dwmReassertionAttempted = $false
+    $dwmReassertionResults = @()
+
+    if ($ActionName -eq 'Apply' -and $errors.Count -eq 0 -and $themeImportStatus -eq 'Completed' -and $initialDwmRejected.Count -gt 0) {
+        $dwmReassertionAttempted = $true
+        $dwmReassertionResults = @(Invoke-BoostLabThemeBlackDwmReassertion -RegistryValueWriter $RegistryValueWriter)
+        $failedReassertions = @($dwmReassertionResults | Where-Object { [string]$_.Status -eq 'Failed' })
+        if ($failedReassertions.Count -gt 0) {
+            $errors.Add("Theme Black DWM reassertion failed: $(@($failedReassertions | ForEach-Object { "$($_.Name): $($_.Message)" }) -join '; ')")
+        }
+        else {
+            $verificationResult = Test-BoostLabThemeBlackState `
+                -ActionName $ActionName `
+                -RegistryReader $RegistryReader
+        }
+    }
     $expectedState = [string]$verificationResult.ExpectedState.Theme
     $detectedState = [string]$verificationResult.DetectedState.Theme
     $verificationStatus = [string]$verificationResult.Status
+    $finalDwmDetails = @(
+        if ($ActionName -eq 'Apply') {
+            Get-BoostLabThemeBlackDwmNormalizationDetails -VerificationResult $verificationResult
+        }
+    )
+    $finalDwmRejected = @($finalDwmDetails | Where-Object { [string]$_.NormalizationDecision -eq 'RejectedNonBlackOrMismatched' })
     $normalizedDwmChecks = @(
-        $verificationResult.Checks |
-            Where-Object {
-                $null -ne $_.PSObject.Properties['NormalizedEquivalentApplied'] -and
-                [bool]$_.NormalizedEquivalentApplied
-            } |
+        $finalDwmDetails |
+            Where-Object { [bool]$_.NormalizedEquivalentApplied } |
             ForEach-Object {
                 [pscustomobject]@{
-                    Name     = [string]$_.Name
+                    Name     = "$($_.Path)\$($_.Name)"
                     Expected = [string]$_.Expected
                     Actual   = [string]$_.Actual
-                    Reason   = [string]$_.NormalizationReason
+                    Reason   = [string]$_.Reason
                 }
             }
+    )
+    $reassertionDetails = @(
+        foreach ($result in @($dwmReassertionResults)) {
+            $before = @($initialDwmDetails | Where-Object { [string]$_.Name -eq [string]$result.Name }) | Select-Object -First 1
+            $after = @($finalDwmDetails | Where-Object { [string]$_.Name -eq [string]$result.Name }) | Select-Object -First 1
+            [pscustomobject]@{
+                Path = [string]$result.Path
+                Name = [string]$result.Name
+                Expected = [string]$result.Expected
+                ActualBeforeReassertion = if ($null -eq $before) { 'Unknown' } else { [string]$before.Actual }
+                ActualAfterReassertion = if ($null -eq $after) { 'Unknown' } else { [string]$after.Actual }
+                Status = [string]$result.Status
+                Message = [string]$result.Message
+                FinalNormalizationDecision = if ($null -eq $after) { 'Unknown' } else { [string]$after.NormalizationDecision }
+            }
+        }
     )
     $completedAt = Get-Date
     $finalStatusReason = if ($errors.Count -gt 0) {
         'CommandError'
+    }
+    elseif ($dwmReassertionAttempted -and $finalDwmRejected.Count -gt 0) {
+        'DwmColorizationNonBlackAfterReassertion'
     }
     elseif ($verificationStatus -eq 'Failed') {
         'VerificationFailed'
@@ -752,6 +928,18 @@ function Invoke-BoostLabThemeBlackAction {
             $verificationResult.Checks | ForEach-Object { [string]$_.Name }
         )
         DwmNormalizationAccepted = $normalizedDwmChecks
+        DwmNormalizationRejected = @(
+            $finalDwmRejected | ForEach-Object {
+                [pscustomobject]@{
+                    Name = "$($_.Path)\$($_.Name)"
+                    Expected = [string]$_.Expected
+                    Actual = [string]$_.Actual
+                    Reason = [string]$_.Reason
+                }
+            }
+        )
+        DwmReassertionAttempted = $dwmReassertionAttempted
+        DwmReassertionResults = $reassertionDetails
         RegistryFilePath      = $registryFilePath
         RegistryFileStatus    = $registryFileStatus
         ThemeImportStatus     = $themeImportStatus
@@ -783,7 +971,11 @@ function Invoke-BoostLabThemeBlackAction {
         'Theme restored to default.'
     }
     if ($normalizedDwmChecks.Count -gt 0) {
-        $message = "$message DWM color values were normalized by Windows to equivalent black values and accepted."
+        $noun = if ($normalizedDwmChecks.Count -eq 1) { 'value was' } else { 'values were' }
+        $message = "$message $($normalizedDwmChecks.Count) DWM color $noun normalized by Windows to equivalent black and accepted."
+    }
+    if ($finalDwmRejected.Count -gt 0) {
+        $message = "$message Rejected non-black DWM value(s): $(@($finalDwmRejected | ForEach-Object { "$($_.Name)=$($_.Actual)" }) -join ', ')."
     }
 
     $success = $verificationStatus -ne 'Failed'

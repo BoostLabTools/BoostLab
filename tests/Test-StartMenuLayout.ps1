@@ -638,7 +638,7 @@ foreach ($requiredText in @(
 $unchangedModules = [ordered]@{
     ThemeBlack = @{
         Path = Join-Path $modulesRoot 'Windows\ThemeBlack.psm1'
-        Hash = '76E606B73300CD8A5C729500DC1516166DB80C4D389ECF2094BB6E9376EEA60A'
+        Hash = 'A3234AC0D27818C1F36DB9A9940726C6C346649B5B33A92B49452593F2FB5C2F'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     GameMode = @{
