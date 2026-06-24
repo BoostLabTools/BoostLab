@@ -149,6 +149,10 @@ foreach ($requiredModuleText in @(
     'defenderdefault.ps1'
     '*defenderoptimize'
     '*defenderdefault'
+    'Set-BoostLabDefenderRunOnceValue'
+    'ExpectedRunOnceData'
+    'SourceRunOnceCommandExecuted'
+    '/d /c '
     'SupportsRestore = $false'
     'SupportsDefault = $true'
     'UsesTrustedInstaller = $true'
@@ -168,6 +172,7 @@ foreach ($forbiddenModuleText in @(
     'Start-BitsTransfer'
     'msiexec'
     'Start-Process'
+    '[scriptblock]::Create($CommandText)'
 )) {
     if ($moduleSource.Contains($forbiddenModuleText)) {
         throw "Defender Optimize Assistant module contains stale or unrelated behavior: $forbiddenModuleText"
@@ -302,6 +307,7 @@ try {
         }
     )) {
         $fileWrites = @{}
+        $runOnceInstalls = [System.Collections.Generic.List[object]]::new()
         $commandCalls = [System.Collections.Generic.List[string]]::new()
         $sleepCalls = [System.Collections.Generic.List[int]]::new()
         $restartCalls = [System.Collections.Generic.List[string]]::new()
@@ -315,6 +321,27 @@ try {
             param($CommandText)
             $commandCalls.Add([string]$CommandText)
             [pscustomobject]@{ Success = $true; Output = ''; CommandText = $CommandText }
+        }.GetNewClosure()
+        $runOnceInstaller = {
+            param($KeyPath, $ValueName, $ValueData, $SourceCommandText)
+            $record = [pscustomobject]@{
+                KeyPath = [string]$KeyPath
+                ValueName = [string]$ValueName
+                ValueData = [string]$ValueData
+                SourceCommandText = [string]$SourceCommandText
+            }
+            $runOnceInstalls.Add($record)
+            [pscustomobject]@{
+                Success = $true
+                Output = 'Mocked RunOnce value was installed and verified.'
+                KeyPath = [string]$KeyPath
+                ValueName = [string]$ValueName
+                ExpectedValueData = [string]$ValueData
+                ActualValueData = [string]$ValueData
+                Method = 'MockRegistryApi'
+                SourceCommandText = [string]$SourceCommandText
+                SourceCommandExecuted = $false
+            }
         }.GetNewClosure()
         $sleepInvoker = {
             param($Seconds)
@@ -333,6 +360,7 @@ try {
             -SystemRoot 'C:\Windows' `
             -FileWriter $fileWriter `
             -CommandInvoker $commandInvoker `
+            -RunOnceInstaller $runOnceInstaller `
             -SleepInvoker $sleepInvoker `
             -RestartInvoker $restartInvoker
 
@@ -346,11 +374,26 @@ try {
         if (-not $payload.Contains('Run-Trusted') -or -not $payload.Contains('bcdedit /deletevalue {current} safeboot') -or -not $payload.Contains('shutdown -r -t 00')) {
             throw "Defender Optimize Assistant $($case.Action) generated script payload is missing required Safe Mode/TrustedInstaller behavior."
         }
-        if ($commandCalls.Count -ne 9) {
-            throw "Defender Optimize Assistant $($case.Action) should issue 9 normal-boot commands including RunOnce; saw $($commandCalls.Count)."
+        if ($runOnceInstalls.Count -ne 1) {
+            throw "Defender Optimize Assistant $($case.Action) did not create exactly one mocked RunOnce value."
         }
-        if (-not (@($commandCalls | Where-Object { $_ -like "*$($case.RunOnce)*" }).Count -eq 1)) {
-            throw "Defender Optimize Assistant $($case.Action) did not create the expected RunOnce value."
+        $runOnceInstall = $runOnceInstalls[0]
+        $expectedRunOnceData = 'powershell.exe -nop -ep bypass -WindowStyle Maximized -f {0}' -f $case.ScriptPath
+        if (
+            [string]$runOnceInstall.KeyPath -ne 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -or
+            [string]$runOnceInstall.ValueName -ne [string]$case.RunOnce -or
+            [string]$runOnceInstall.ValueData -ne $expectedRunOnceData
+        ) {
+            throw "Defender Optimize Assistant $($case.Action) RunOnce value name or data is incorrect."
+        }
+        if (-not ([string]$runOnceInstall.SourceCommandText).Contains('>nul 2>&1')) {
+            throw "Defender Optimize Assistant $($case.Action) must preserve the source-derived RunOnce command text for reporting."
+        }
+        if (@($commandCalls | Where-Object { $_ -like '*RunOnce*' -or $_ -like "*$($case.RunOnce)*" }).Count -ne 0) {
+            throw "Defender Optimize Assistant $($case.Action) must not execute the source RunOnce command text through the command invoker."
+        }
+        if ($commandCalls.Count -ne 8) {
+            throw "Defender Optimize Assistant $($case.Action) should issue 8 normal-boot commands after native RunOnce staging; saw $($commandCalls.Count)."
         }
         if (-not (@($commandCalls | Where-Object { $_ -like "*$($case.EdgeCommand)*" }).Count -eq 1)) {
             throw "Defender Optimize Assistant $($case.Action) did not set the expected normal-boot Edge SmartScreen command."
@@ -367,12 +410,78 @@ try {
         }
         if (
             [string]$result.Data.SourceBranchLabel -ne [string]$case.Label -or
+            [string]$result.Data.ExpectedRunOnceData -ne $expectedRunOnceData -or
+            [string]$result.Data.ActualRunOnceData -ne $expectedRunOnceData -or
+            [string]$result.Data.RunOnceInstallMethod -ne 'MockRegistryApi' -or
+            [bool]$result.Data.SourceRunOnceCommandExecuted -or
             [int]$result.Data.GeneratedSecurityCommandCount -le 30 -or
             @($result.Data.Downloads).Count -ne 0 -or
             @($result.Data.ExternalArtifacts).Count -ne 0
         ) {
             throw "Defender Optimize Assistant $($case.Action) result data did not report the expected source workflow."
         }
+    }
+
+    $failureFileWrites = @{}
+    $failureCommandCalls = [System.Collections.Generic.List[string]]::new()
+    $failureSleepCalls = [System.Collections.Generic.List[int]]::new()
+    $failureRestartCalls = [System.Collections.Generic.List[string]]::new()
+    $failureFileWriter = {
+        param($Path, $Content)
+        $failureFileWrites[$Path] = $Content
+        [pscustomobject]@{ Success = $true; Output = '' }
+    }.GetNewClosure()
+    $failureCommandInvoker = {
+        param($CommandText)
+        $failureCommandCalls.Add([string]$CommandText)
+        [pscustomobject]@{ Success = $true; Output = ''; CommandText = $CommandText }
+    }.GetNewClosure()
+    $failingRunOnceInstaller = {
+        param($KeyPath, $ValueName, $ValueData, $SourceCommandText)
+        [pscustomobject]@{
+            Success = $false
+            Output = 'Mocked RunOnce install failure without FileStream/NUL device redirection.'
+            KeyPath = [string]$KeyPath
+            ValueName = [string]$ValueName
+            ExpectedValueData = [string]$ValueData
+            ActualValueData = ''
+            Method = 'MockRegistryApi'
+            SourceCommandText = [string]$SourceCommandText
+            SourceCommandExecuted = $false
+        }
+    }
+    $failureSleepInvoker = {
+        param($Seconds)
+        $failureSleepCalls.Add([int]$Seconds)
+        [pscustomobject]@{ Success = $true; Output = '' }
+    }.GetNewClosure()
+    $failureRestartInvoker = {
+        $failureRestartCalls.Add('shutdown -r -t 00')
+        [pscustomobject]@{ Success = $true; Output = '' }
+    }.GetNewClosure()
+    $runOnceFailure = & (Get-Command -Name 'Invoke-DefenderTestBoostLabToolAction' -Module $module.Name -ErrorAction Stop) `
+        -ActionName 'Apply' `
+        -Confirmed:$true `
+        -AdministratorChecker { $true } `
+        -SystemRoot 'C:\Windows' `
+        -FileWriter $failureFileWriter `
+        -CommandInvoker $failureCommandInvoker `
+        -RunOnceInstaller $failingRunOnceInstaller `
+        -SleepInvoker $failureSleepInvoker `
+        -RestartInvoker $failureRestartInvoker
+    if ([bool]$runOnceFailure.Success -or [string]$runOnceFailure.Message -notmatch 'RunOnce install failure') {
+        throw 'Defender Optimize Assistant must fail clearly when RunOnce staging fails.'
+    }
+    if (
+        -not $failureFileWrites.ContainsKey('C:\Windows\Temp\defenderoptimize.ps1') -or
+        $failureCommandCalls.Count -ne 0 -or
+        $failureSleepCalls.Count -ne 0 -or
+        $failureRestartCalls.Count -ne 0
+    ) {
+        throw 'Defender Optimize Assistant must stop before normal-boot commands, safeboot, sleep, or restart when RunOnce staging fails.'
+    }
+    if ([bool]$runOnceFailure.Data.SourceRunOnceCommandExecuted) {
+        throw 'Defender Optimize Assistant must not execute the source RunOnce redirection command when native staging fails.'
     }
 }
 finally {

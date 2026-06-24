@@ -256,7 +256,9 @@ function Get-BoostLabDefenderBranchDefinition {
         GeneratedScriptPayload = $scriptPayload
         GeneratedSecurityCommands = $securityCommands
         GeneratedSecurityCommandCount = @($securityCommands).Count
+        RunOnceKeyPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
         RunOnceValueName = "*$fileStem"
+        RunOnceData = 'powershell.exe -nop -ep bypass -WindowStyle Maximized -f {0}' -f $scriptPath
         RunOnceCommand = 'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" /v "*{0}" /t REG_SZ /d "powershell.exe -nop -ep bypass -WindowStyle Maximized -f {1}" /f >nul 2>&1' -f $fileStem, $scriptPath
         NormalBootCommands = $normalBootCommands.ToArray()
         ScheduledTasks = $script:BoostLabDefenderScheduledTasks
@@ -346,19 +348,132 @@ function Invoke-BoostLabDefenderCommand {
     )
 
     try {
-        $scriptBlock = [scriptblock]::Create($CommandText)
-        $output = & $scriptBlock 2>&1
+        $commandProcessor = if (-not [string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+            Join-Path $env:SystemRoot 'System32\cmd.exe'
+        }
+        else {
+            'cmd.exe'
+        }
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $commandProcessor
+        $startInfo.Arguments = '/d /c ' + $CommandText
+        $startInfo.UseShellExecute = $false
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $startInfo.CreateNoWindow = $true
+
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        $null = $process.Start()
+        $standardOutput = $process.StandardOutput.ReadToEnd()
+        $standardError = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        $exitCode = [int]$process.ExitCode
+        $process.Dispose()
+
+        $output = (@($standardError, $standardOutput) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
         [pscustomobject]@{
-            Success = $true
-            Output = @($output) -join [Environment]::NewLine
+            Success = $exitCode -eq 0
+            Output = if ($exitCode -eq 0) {
+                $output
+            }
+            elseif ([string]::IsNullOrWhiteSpace($output)) {
+                "cmd.exe exited with code $exitCode."
+            }
+            else {
+                $output
+            }
+            ExitCode = $exitCode
             CommandText = $CommandText
+            Runner = "$commandProcessor /d /c"
         }
     }
     catch {
         [pscustomobject]@{
             Success = $false
             Output = $_.Exception.Message
+            ExitCode = $null
             CommandText = $CommandText
+            Runner = 'cmd.exe /d /c'
+        }
+    }
+}
+
+function Set-BoostLabDefenderRunOnceValue {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$KeyPath,
+
+        [Parameter(Mandatory)]
+        [string]$ValueName,
+
+        [Parameter(Mandatory)]
+        [string]$ValueData,
+
+        [Parameter(Mandatory)]
+        [string]$SourceCommandText
+    )
+
+    $subKeyPath = 'SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+    try {
+        $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
+            [Microsoft.Win32.RegistryHive]::LocalMachine,
+            [Microsoft.Win32.RegistryView]::Default
+        )
+        $key = $null
+        try {
+            $key = $baseKey.CreateSubKey($subKeyPath)
+            if ($null -eq $key) {
+                throw 'Unable to open or create the RunOnce registry key.'
+            }
+
+            $key.SetValue($ValueName, $ValueData, [Microsoft.Win32.RegistryValueKind]::String)
+            $actualValue = [string]$key.GetValue(
+                $ValueName,
+                $null,
+                [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames
+            )
+        }
+        finally {
+            if ($null -ne $key) {
+                $key.Dispose()
+            }
+            if ($null -ne $baseKey) {
+                $baseKey.Dispose()
+            }
+        }
+
+        $matches = [string]$actualValue -eq [string]$ValueData
+        return [pscustomobject]@{
+            Success = $matches
+            Output = if ($matches) {
+                'RunOnce value was installed and verified.'
+            }
+            else {
+                "RunOnce value data mismatch. Expected '$ValueData'; detected '$actualValue'."
+            }
+            KeyPath = $KeyPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            ActualValueData = $actualValue
+            Method = 'RegistryApi'
+            SourceCommandText = $SourceCommandText
+            SourceCommandExecuted = $false
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            Output = $_.Exception.Message
+            KeyPath = $KeyPath
+            ValueName = $ValueName
+            ExpectedValueData = $ValueData
+            ActualValueData = $null
+            Method = 'RegistryApi'
+            SourceCommandText = $SourceCommandText
+            SourceCommandExecuted = $false
         }
     }
 }
@@ -382,6 +497,15 @@ function Invoke-BoostLabDefenderOptimizeAction {
         [scriptblock]$CommandInvoker = {
             param($CommandText)
             Invoke-BoostLabDefenderCommand -CommandText $CommandText
+        },
+
+        [scriptblock]$RunOnceInstaller = {
+            param($KeyPath, $ValueName, $ValueData, $SourceCommandText)
+            Set-BoostLabDefenderRunOnceValue `
+                -KeyPath $KeyPath `
+                -ValueName $ValueName `
+                -ValueData $ValueData `
+                -SourceCommandText $SourceCommandText
         },
 
         [scriptblock]$SleepInvoker = {
@@ -427,7 +551,14 @@ function Invoke-BoostLabDefenderOptimizeAction {
     })
     $steps.Add([pscustomobject]@{
         Name = 'InstallRunOnce'
-        Invoke = { & $CommandInvoker $branch.RunOnceCommand }
+        CommandText = $branch.RunOnceCommand
+        Invoke = {
+            & $RunOnceInstaller `
+                $branch.RunOnceKeyPath `
+                $branch.RunOnceValueName `
+                $branch.RunOnceData `
+                $branch.RunOnceCommand
+        }.GetNewClosure()
     })
     foreach ($command in @($branch.NormalBootCommands)) {
         $commandText = [string]$command
@@ -474,13 +605,20 @@ function Invoke-BoostLabDefenderOptimizeAction {
         }
     }
 
+    $runOnceOperation = @($operations | Where-Object { [string]$_.Step -eq 'InstallRunOnce' }) | Select-Object -Last 1
+    $runOnceResult = if ($null -ne $runOnceOperation) { $runOnceOperation.Result } else { $null }
     $data = [pscustomobject]@{
         SourcePath = $sourceInfo.SourcePath
         SourceSha256 = $sourceInfo.ActualSha256
         SourceBranchLabel = $branch.SourceLabel
         GeneratedScriptPath = $branch.GeneratedScriptPath
         GeneratedScriptFileName = $branch.GeneratedScriptFileName
+        RunOnceKeyPath = $branch.RunOnceKeyPath
         RunOnceValueName = $branch.RunOnceValueName
+        ExpectedRunOnceData = $branch.RunOnceData
+        ActualRunOnceData = if ($null -ne $runOnceResult) { Get-BoostLabDefenderPropertyValue -InputObject $runOnceResult -Name 'ActualValueData' -DefaultValue $null } else { $null }
+        RunOnceInstallMethod = if ($null -ne $runOnceResult) { Get-BoostLabDefenderPropertyValue -InputObject $runOnceResult -Name 'Method' -DefaultValue 'Unknown' } else { 'NotAttempted' }
+        SourceRunOnceCommandExecuted = if ($null -ne $runOnceResult) { [bool](Get-BoostLabDefenderPropertyValue -InputObject $runOnceResult -Name 'SourceCommandExecuted' -DefaultValue $false) } else { $false }
         RunOnceCommand = $branch.RunOnceCommand
         NormalBootCommands = $branch.NormalBootCommands
         NormalBootCommandCount = @($branch.NormalBootCommands).Count
@@ -633,6 +771,15 @@ function Invoke-BoostLabToolAction {
             Invoke-BoostLabDefenderCommand -CommandText $CommandText
         },
 
+        [scriptblock]$RunOnceInstaller = {
+            param($KeyPath, $ValueName, $ValueData, $SourceCommandText)
+            Set-BoostLabDefenderRunOnceValue `
+                -KeyPath $KeyPath `
+                -ValueName $ValueName `
+                -ValueData $ValueData `
+                -SourceCommandText $SourceCommandText
+        },
+
         [scriptblock]$SleepInvoker = {
             param($Seconds)
             Start-Sleep -Seconds $Seconds
@@ -677,6 +824,7 @@ function Invoke-BoostLabToolAction {
         -AdministratorChecker $AdministratorChecker `
         -FileWriter $FileWriter `
         -CommandInvoker $CommandInvoker `
+        -RunOnceInstaller $RunOnceInstaller `
         -SleepInvoker $SleepInvoker `
         -RestartInvoker $RestartInvoker `
         -SystemRoot $SystemRoot `
