@@ -150,10 +150,94 @@ try {
         Assert-BloatwareCondition (($removePlan.Operations.Type -contains $requiredType) -or ($removePlan.Operations.Type -join ',' -like "*$requiredType*")) "Remove all bloatware plan is missing operation type $requiredType."
     }
     Assert-BloatwareCondition (-not ($removePlan.Operations.Type -join ',' -like '*Provisioned*')) 'Bloatware must not invent provisioned package removal absent from the source.'
+    Assert-BloatwareCondition ((Get-Content -Raw -LiteralPath $modulePath).Contains('Invoke-BoostLabBloatwareMsiUninstallByDisplayName')) 'Bloatware must route MSI DisplayName uninstall through the StrictMode-safe helper.'
     $removeAppxOperation = @($removePlan.Operations | Where-Object { [string]$_.Type -eq 'RemoveAppxExcept' }) | Select-Object -First 1
     Assert-BloatwareCondition ($null -ne $removeAppxOperation) 'Remove all bloatware plan must include RemoveAppxExcept.'
     $excludePatterns = @($removeAppxOperation.Parameters.ExcludeLike)
     Assert-BloatwareCondition (($excludePatterns -join ',') -eq '*CBS*,*Microsoft.AV1VideoExtension*,*Microsoft.AVCEncoderVideoExtension*,*Microsoft.HEIFImageExtension*,*Microsoft.HEVCVideoExtension*,*Microsoft.MPEG2VideoExtension*,*Microsoft.Paint*,*Microsoft.RawImageExtension*,*Microsoft.SecHealthUI*,*Microsoft.VP9VideoExtensions*,*Microsoft.WebMediaExtensions*,*Microsoft.WebpImageExtension*,*Microsoft.Windows.Photos*,*Microsoft.Windows.ShellExperienceHost*,*Microsoft.Windows.StartMenuExperienceHost*,*Microsoft.WindowsNotepad*,*NVIDIACorp.NVIDIAControlPanel*,*windows.immersivecontrolpanel*') 'RemoveAppxExcept exclusion patterns must preserve the Ultimate source list exactly.'
+
+    $gameInputMsiEntries = @(
+        [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
+        [pscustomobject]@{ PSChildName = '{NULL-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NullDisplayName'; DisplayName = $null }
+        [pscustomobject]@{ PSChildName = '{EMPTY-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\EmptyDisplayName'; DisplayName = '' }
+        [pscustomobject]@{ PSChildName = '{OTHER-GUID}'; PSPath = 'HKLM:\Mock\Other'; DisplayName = 'Contoso Input Runtime' }
+        [pscustomobject]@{ PSChildName = '{GAMEINPUT-GUID}'; PSPath = 'HKLM:\Mock\GameInput'; DisplayName = 'Microsoft GameInput' }
+    )
+    $gameInputMsiArguments = [System.Collections.Generic.List[string]]::new()
+    $gameInputMsiResult = & $module {
+        param($Entries, $Arguments)
+        $entryEnumerator = { param($Path) $Entries }.GetNewClosure()
+        $uninstaller = { param($Entry, $ArgumentList) $Arguments.Add($ArgumentList) }.GetNewClosure()
+        Invoke-BoostLabBloatwareMsiUninstallByDisplayName `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -EntryEnumerator $entryEnumerator `
+            -Uninstaller $uninstaller
+    } $gameInputMsiEntries $gameInputMsiArguments
+    Assert-BloatwareCondition ([bool]$gameInputMsiResult.Success) 'Bloatware MSI uninstall helper must succeed when missing/no-match entries exist and the matching uninstall succeeds.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.ScannedUninstallEntryCount -eq 5) 'Bloatware MSI uninstall helper scanned count mismatch.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.MissingDisplayNameEntryCount -eq 3) 'Bloatware MSI uninstall helper must count missing/null/empty DisplayName entries as non-match.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.NoMatchCount -eq 1) 'Bloatware MSI uninstall helper must count non-matching DisplayName entries.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.MatchingEntryCount -eq 1) 'Bloatware MSI uninstall helper must count matching DisplayName entries.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.UninstallAttemptedCount -eq 1) 'Bloatware MSI uninstall helper must attempt uninstall only for matching entries.'
+    Assert-BloatwareCondition (($gameInputMsiArguments.ToArray() -join ',') -eq '/x {GAMEINPUT-GUID} /qn /norestart') 'Bloatware Microsoft GameInput uninstall must preserve the approved msiexec argument flow.'
+    Assert-BloatwareCondition (($gameInputMsiResult.ProductCodesAttempted -join ',') -eq '{GAMEINPUT-GUID}') 'Bloatware MSI uninstall helper must report attempted product codes.'
+    Assert-BloatwareCondition (($gameInputMsiResult.UninstallCommandsAttempted -join ',') -eq 'msiexec.exe /x {GAMEINPUT-GUID} /qn /norestart') 'Bloatware MSI uninstall helper must report attempted msiexec command text.'
+    Assert-BloatwareCondition (($gameInputMsiResult.MatchedDisplayNames -join ',') -eq 'Microsoft GameInput') 'Bloatware MSI uninstall helper must report matched display names.'
+    Assert-BloatwareCondition ([int]$gameInputMsiResult.FailureCount -eq 0) 'Bloatware MSI uninstall helper must not fail on missing/no-match DisplayName entries.'
+    Assert-BloatwareCondition (@($gameInputMsiResult.MissingDisplayNameSamples).Count -gt 0) 'Bloatware MSI uninstall helper must include bounded missing DisplayName samples.'
+
+    foreach ($msiCase in @(
+        @{ DisplayNameLike = '*Update for x64-based Windows Systems*'; DisplayName = 'Update for x64-based Windows Systems'; ProductCode = '{WINDOWS-UPDATE-X64-GUID}' }
+        @{ DisplayNameLike = '*Microsoft Update Health Tools*'; DisplayName = 'Microsoft Update Health Tools'; ProductCode = '{UPDATE-HEALTH-TOOLS-GUID}' }
+    )) {
+        $caseArguments = [System.Collections.Generic.List[string]]::new()
+        $caseResult = & $module {
+            param($Case, $Arguments)
+            $entryEnumerator = {
+                @([pscustomobject]@{
+                    PSChildName = [string]$Case.ProductCode
+                    PSPath = "HKLM:\Mock\$($Case.ProductCode)"
+                    DisplayName = [string]$Case.DisplayName
+                })
+            }.GetNewClosure()
+            $uninstaller = { param($Entry, $ArgumentList) $Arguments.Add($ArgumentList) }.GetNewClosure()
+            Invoke-BoostLabBloatwareMsiUninstallByDisplayName `
+                -DisplayNameLike ([string]$Case.DisplayNameLike) `
+                -EntryEnumerator $entryEnumerator `
+                -Uninstaller $uninstaller
+        } $msiCase $caseArguments
+        Assert-BloatwareCondition ([bool]$caseResult.Success) "Bloatware MSI uninstall helper must succeed for $($msiCase.DisplayName)."
+        Assert-BloatwareCondition ([int]$caseResult.MatchingEntryCount -eq 1) "Bloatware MSI uninstall helper must match $($msiCase.DisplayName)."
+        Assert-BloatwareCondition (($caseArguments.ToArray() -join ',') -eq "/x $($msiCase.ProductCode) /qn /norestart") "Bloatware MSI uninstall helper must use the approved msiexec flow for $($msiCase.DisplayName)."
+    }
+
+    $noMatchMsiResult = & $module {
+        Invoke-BoostLabBloatwareMsiUninstallByDisplayName `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -EntryEnumerator {
+                @(
+                    [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
+                    [pscustomobject]@{ PSChildName = '{OTHER-GUID}'; PSPath = 'HKLM:\Mock\Other'; DisplayName = 'Contoso Input Runtime' }
+                )
+            } `
+            -Uninstaller { throw 'Uninstaller should not run when no DisplayName matches.' }
+    }
+    Assert-BloatwareCondition ([bool]$noMatchMsiResult.Success) 'Bloatware MSI uninstall helper must treat no matching DisplayName as completed/no-op.'
+    Assert-BloatwareCondition ([int]$noMatchMsiResult.MatchingEntryCount -eq 0) 'Bloatware MSI uninstall no-match result should report zero matches.'
+    Assert-BloatwareCondition ([int]$noMatchMsiResult.UninstallAttemptedCount -eq 0) 'Bloatware MSI uninstall no-match result must not attempt msiexec.'
+    Assert-BloatwareCondition ([string]$noMatchMsiResult.FinalOutcomeReason -eq 'CompletedOrNoMatch') 'Bloatware MSI uninstall no-match result must report completed/no-match outcome.'
+
+    $failingMsiResult = & $module {
+        Invoke-BoostLabBloatwareMsiUninstallByDisplayName `
+            -DisplayNameLike '*Microsoft GameInput*' `
+            -EntryEnumerator {
+                @([pscustomobject]@{ PSChildName = '{GAMEINPUT-GUID}'; PSPath = 'HKLM:\Mock\GameInput'; DisplayName = 'Microsoft GameInput' })
+            } `
+            -Uninstaller { throw 'Mock msiexec failure.' }
+    }
+    Assert-BloatwareCondition (-not [bool]$failingMsiResult.Success) 'Bloatware MSI uninstall helper must fail closed when matched msiexec uninstall fails.'
+    Assert-BloatwareCondition ([int]$failingMsiResult.FailureCount -eq 1) 'Bloatware MSI uninstall helper must count matched uninstall failures.'
+    Assert-BloatwareCondition ([string]$failingMsiResult.FailureEntries[0] -like '*Mock msiexec failure*') 'Bloatware MSI uninstall helper must include the msiexec failure reason.'
 
     $emptyRemoveResult = Invoke-BoostLabBloatwareRemoveAppxExcept `
         -ExcludeLike $excludePatterns `
