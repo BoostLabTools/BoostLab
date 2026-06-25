@@ -81,6 +81,12 @@ foreach ($requiredText in @(
     '[bool]$Confirmed = $false'
     'Memory compression disabled.'
     'Memory compression restored to default.'
+    'MemoryCompressionVerifiedAfterDelayedConvergence'
+    'DelayedVerificationAttempted'
+    'DelayedVerificationSucceeded'
+    'DelayedVerificationAttemptCount'
+    'Waiting for Memory Compression state to update'
+    'Write-Progress -Activity'
     '$missingCommands = @('
     '$stateResults = @(& $StateReader)'
     '$mmaAgentResults = @(& $MMAgentReader)'
@@ -385,6 +391,61 @@ try {
         throw 'Memory Compression delayed verification success must require one bounded reassertion and return Warning, not Error.'
     }
 
+    $delayedConvergenceCalls = [System.Collections.Generic.List[string]]::new()
+    $delayedConvergenceProgress = [System.Collections.Generic.List[object]]::new()
+    $delayedConvergenceReadCount = 0
+    $delayedConvergenceResult = & $memoryModule {
+        param($CommandResolver, $Calls, $ProgressEvents, [ref]$ReadCount)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker {
+                param($RequestedAction)
+                $Calls.Add([string]$RequestedAction)
+            }.GetNewClosure() `
+            -StateReader {
+                $ReadCount.Value++
+                $detected = $ReadCount.Value -lt 4
+                [pscustomobject]@{
+                    ReadSucceeded     = $true
+                    MemoryCompression = $detected
+                    DisplayValue      = [string]$detected
+                    Message           = 'Mock delayed-convergence Get-MMAgent result.'
+                }
+            }.GetNewClosure() `
+            -DelayInvoker { param($Milliseconds) } `
+            -ProgressReporter {
+                param($Activity, $StatusDescription, $PercentComplete)
+                $ProgressEvents.Add([pscustomobject]@{
+                    Activity        = [string]$Activity
+                    Status          = [string]$StatusDescription
+                    PercentComplete = [int]$PercentComplete
+                })
+            }.GetNewClosure() `
+            -VerificationRetryDelayMilliseconds 1 `
+            -DelayedVerificationTimeoutMilliseconds 3 `
+            -DelayedVerificationIntervalMilliseconds 1
+    } $scalarCommandResolver $delayedConvergenceCalls $delayedConvergenceProgress ([ref]$delayedConvergenceReadCount)
+    if (
+        -not [bool]$delayedConvergenceResult.Success -or
+        [string]$delayedConvergenceResult.Status -ne 'Warning' -or
+        [string]$delayedConvergenceResult.Data.CommandStatus -ne 'Completed' -or
+        [string]$delayedConvergenceResult.Data.VerificationStatus -ne 'Passed' -or
+        [string]$delayedConvergenceResult.Data.FinalStatusReason -ne 'MemoryCompressionVerifiedAfterDelayedConvergence' -or
+        -not [bool]$delayedConvergenceResult.Data.DelayedVerificationAttempted -or
+        -not [bool]$delayedConvergenceResult.Data.DelayedVerificationSucceeded -or
+        [int]$delayedConvergenceResult.Data.DelayedVerificationAttemptCount -ne 2 -or
+        [int]$delayedConvergenceResult.Data.CommandAttemptCount -ne 2 -or
+        [int]$delayedConvergenceReadCount -ne 4 -or
+        $delayedConvergenceCalls.Count -ne 2 -or
+        $delayedConvergenceProgress.Count -ne 2 -or
+        [string]$delayedConvergenceProgress[0].Activity -ne 'Waiting for Memory Compression state to update' -or
+        [string]$delayedConvergenceProgress[0].Status -notmatch 'Verification attempt'
+    ) {
+        throw 'Memory Compression delayed convergence must wait, re-check, emit progress, and return Warning with passed verification.'
+    }
+
     $mismatchCalls = [System.Collections.Generic.List[string]]::new()
     $mismatchResult = & $memoryModule {
         param($CommandResolver, $Calls)
@@ -405,6 +466,7 @@ try {
                 }
             } `
             -DelayInvoker { param($Milliseconds) } `
+            -ProgressReporter { param($Activity, $StatusDescription, $PercentComplete) } `
             -VerificationRetryDelayMilliseconds 1
     } $scalarCommandResolver $mismatchCalls
     if (
@@ -415,6 +477,9 @@ try {
         [string]$mismatchResult.Data.FinalStatusReason -ne 'MemoryCompressionVerificationMismatch' -or
         [bool]$mismatchResult.Data.ExpectedMemoryCompression -ne $false -or
         [bool]$mismatchResult.Data.DetectedMemoryCompression -ne $true -or
+        -not [bool]$mismatchResult.Data.DelayedVerificationAttempted -or
+        [bool]$mismatchResult.Data.DelayedVerificationSucceeded -or
+        -not [bool]$mismatchResult.Data.DelayedVerificationExhausted -or
         $mismatchCalls.Count -ne 2
     ) {
         throw 'Memory Compression verification mismatch must fail the final result and must not serialize as Success.'
@@ -479,6 +544,7 @@ try {
                 }
             } `
             -DelayInvoker { param($Milliseconds) } `
+            -ProgressReporter { param($Activity, $StatusDescription, $PercentComplete) } `
             -VerificationRetryDelayMilliseconds 1
     } $scalarCommandResolver
     if (
@@ -487,6 +553,42 @@ try {
         [string]$defaultMismatchResult.Data.FinalStatusReason -ne 'MemoryCompressionVerificationMismatch'
     ) {
         throw 'Memory Compression Default verification mismatch must follow the same final-status contract.'
+    }
+
+    $defaultDelayedReadCount = 0
+    $defaultDelayedResult = & $memoryModule {
+        param($CommandResolver, [ref]$ReadCount)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Default' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker { param($RequestedAction) } `
+            -StateReader {
+                $ReadCount.Value++
+                $detected = $ReadCount.Value -ge 4
+                [pscustomobject]@{
+                    ReadSucceeded     = $true
+                    MemoryCompression = $detected
+                    DisplayValue      = [string]$detected
+                    Message           = 'Mock Default delayed-convergence Get-MMAgent result.'
+                }
+            }.GetNewClosure() `
+            -DelayInvoker { param($Milliseconds) } `
+            -ProgressReporter { param($Activity, $StatusDescription, $PercentComplete) } `
+            -VerificationRetryDelayMilliseconds 1 `
+            -DelayedVerificationTimeoutMilliseconds 3 `
+            -DelayedVerificationIntervalMilliseconds 1
+    } $scalarCommandResolver ([ref]$defaultDelayedReadCount)
+    if (
+        -not [bool]$defaultDelayedResult.Success -or
+        [string]$defaultDelayedResult.Status -ne 'Warning' -or
+        [string]$defaultDelayedResult.Data.FinalStatusReason -ne 'MemoryCompressionVerifiedAfterDelayedConvergence' -or
+        [bool]$defaultDelayedResult.Data.ExpectedMemoryCompression -ne $true -or
+        [bool]$defaultDelayedResult.Data.DetectedMemoryCompression -ne $true -or
+        [int]$defaultDelayedResult.Data.DelayedVerificationAttemptCount -ne 2 -or
+        [int]$defaultDelayedReadCount -ne 4
+    ) {
+        throw 'Memory Compression Default delayed convergence must use the same bounded verification policy.'
     }
 
     if ($mockedActionResults.Count -ne 2) {
@@ -563,7 +665,8 @@ try {
             $plan.CanReboot -or
             $plan.RequiresInternet -or
             $plan.ConfirmationMessage -notmatch [regex]::Escape($expectedCommand) -or
-            $plan.ConfirmationMessage -notmatch 'No restart is required'
+            $plan.ConfirmationMessage -notmatch 'wait and re-check' -or
+            $plan.ConfirmationMessage -notmatch 'No restart is performed'
         ) {
             throw "Memory Compression $actionName action plan is incorrect."
         }

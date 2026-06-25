@@ -876,11 +876,13 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Run Disable-MMAgent -MemoryCompression.')
-        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
+        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent, then briefly wait and re-check if Windows still reports the old state.')
+        $plannedChanges.Add('Do not restart the computer; delayed verification only observes whether Windows converges to the requested state.')
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
         $plannedChanges.Add('Run Enable-MMAgent -MemoryCompression.')
-        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent.')
+        $plannedChanges.Add('Read the resulting MemoryCompression state with Get-MMAgent, then briefly wait and re-check if Windows still reports the old state.')
+        $plannedChanges.Add('Do not restart the computer; delayed verification only observes whether Windows converges to the requested state.')
     }
     elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Set AppPrivacy LetAppsRunInBackground to 2 (Force deny).')
@@ -1721,10 +1723,10 @@ function New-BoostLabActionPlan {
         'BoostLab will run the approved source-equivalent Copilot Default branch: re-register AppX packages matching *Copilot* and delete the HKCU/HKLM WindowsCopilot policy keys. Default is not Restore. No download, installer, service, task, driver, file cleanup, or reboot is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Apply') {
-        'BoostLab will run Disable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
+        'BoostLab will run Disable-MMAgent -MemoryCompression and verify the result with Get-MMAgent. If Windows briefly reports the old state, BoostLab may wait and re-check before failing. No restart is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'memory-compression' -and $ActionName -eq 'Default') {
-        'BoostLab will run Enable-MMAgent -MemoryCompression and verify the result. No restart is required. Do you want to continue?'
+        'BoostLab will run Enable-MMAgent -MemoryCompression and verify the result with Get-MMAgent. If Windows briefly reports the old state, BoostLab may wait and re-check before failing. No restart is performed. Do you want to continue?'
     }
     elseif ($toolId -eq 'background-apps' -and $ActionName -eq 'Apply') {
         'BoostLab will set LetAppsRunInBackground to 2 (Force deny), open Background Apps Settings, and verify the policy. No restart is required. Do you want to continue?'

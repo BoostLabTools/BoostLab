@@ -404,7 +404,22 @@ function Invoke-BoostLabMemoryCompressionAction {
             Start-Sleep -Milliseconds $Milliseconds
         },
 
-        [int]$VerificationRetryDelayMilliseconds = 500
+        [scriptblock]$ProgressReporter = {
+            param(
+                [string]$Activity,
+                [string]$StatusDescription,
+                [int]$PercentComplete
+            )
+
+            Write-Progress -Activity $Activity -Status $StatusDescription -PercentComplete $PercentComplete
+            Write-Information -MessageData "$Activity - $StatusDescription" -InformationAction Continue
+        },
+
+        [int]$VerificationRetryDelayMilliseconds = 500,
+
+        [int]$DelayedVerificationTimeoutMilliseconds = 90000,
+
+        [int]$DelayedVerificationIntervalMilliseconds = 5000
     )
 
     function New-MemoryCompressionAttemptRecord {
@@ -466,6 +481,12 @@ function Invoke-BoostLabMemoryCompressionAction {
     $reassertionAttempted = $false
     $reassertionFailed = $false
     $reassertionFailureMessage = ''
+    $reassertionVerifiedExpected = $false
+    $delayedVerificationAttempted = $false
+    $delayedVerificationSucceeded = $false
+    $delayedVerificationReadUnavailable = $false
+    $delayedVerificationAttemptCount = 0
+    $delayedVerificationExhausted = $false
     $verificationResult = Test-BoostLabMemoryCompressionState `
         -ActionName $ActionName `
         -StateReader $StateReader
@@ -482,6 +503,7 @@ function Invoke-BoostLabMemoryCompressionAction {
                 -StateReader $StateReader
             $verificationAttempts.Add((New-MemoryCompressionAttemptRecord -Attempt 2 -Phase 'AfterReassertion' -Verification $retryVerification))
             $verificationResult = $retryVerification
+            $reassertionVerifiedExpected = $retryVerification.Status -eq 'Passed'
         }
         catch {
             $reassertionFailed = $true
@@ -489,11 +511,57 @@ function Invoke-BoostLabMemoryCompressionAction {
         }
     }
 
+    if (-not $reassertionFailed -and $verificationResult.Status -eq 'Failed') {
+        $resolvedDelayedVerificationIntervalMilliseconds = [Math]::Max(1, $DelayedVerificationIntervalMilliseconds)
+        $maximumDelayedAttempts = if ($DelayedVerificationTimeoutMilliseconds -le 0) {
+            0
+        }
+        else {
+            [Math]::Max(1, [int][Math]::Ceiling($DelayedVerificationTimeoutMilliseconds / [double]$resolvedDelayedVerificationIntervalMilliseconds))
+        }
+
+        if ($maximumDelayedAttempts -gt 0) {
+            $delayedVerificationAttempted = $true
+            for ($delayedAttemptIndex = 1; $delayedAttemptIndex -le $maximumDelayedAttempts; $delayedAttemptIndex++) {
+                & $DelayInvoker $resolvedDelayedVerificationIntervalMilliseconds
+
+                $attemptNumber = $verificationAttempts.Count + 1
+                $percentComplete = [Math]::Min(99, [Math]::Max(1, [int](($delayedAttemptIndex / [double]$maximumDelayedAttempts) * 100)))
+                try {
+                    & $ProgressReporter `
+                        'Waiting for Memory Compression state to update' `
+                        "Verification attempt $attemptNumber" `
+                        $percentComplete
+                }
+                catch {
+                    # Progress is advisory; verification remains authoritative.
+                }
+
+                $delayedVerificationAttemptCount++
+                $delayedVerification = Test-BoostLabMemoryCompressionState `
+                    -ActionName $ActionName `
+                    -StateReader $StateReader
+                $verificationAttempts.Add((New-MemoryCompressionAttemptRecord -Attempt $attemptNumber -Phase "DelayedVerification$delayedAttemptIndex" -Verification $delayedVerification))
+                $verificationResult = $delayedVerification
+
+                if ($delayedVerification.Status -eq 'Passed') {
+                    $delayedVerificationSucceeded = $true
+                    break
+                }
+                if ($delayedVerification.Status -eq 'Warning') {
+                    $delayedVerificationReadUnavailable = $true
+                    break
+                }
+            }
+            $delayedVerificationExhausted = (-not $delayedVerificationSucceeded -and -not $delayedVerificationReadUnavailable)
+        }
+    }
+
     $detected = Get-BoostLabMemoryCompressionPropertyValue `
         -InputObject $verificationResult.DetectedState `
         -Name 'MemoryCompression' `
         -DefaultValue 'Unknown'
-    $recoveredByReassertion = ($reassertionAttempted -and -not $reassertionFailed -and $verificationResult.Status -eq 'Passed')
+    $recoveredByReassertion = ($reassertionAttempted -and -not $reassertionFailed -and $reassertionVerifiedExpected -and -not $delayedVerificationSucceeded)
     if ($reassertionFailed) {
         $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
             -ActionName $ActionName `
@@ -512,6 +580,15 @@ function Invoke-BoostLabMemoryCompressionAction {
             -CheckMessage 'Get-MMAgent did not return a verified MemoryCompression state.' `
             -Message 'Memory Compression verification was unavailable after the source command completed.'
     }
+    elseif ($delayedVerificationSucceeded) {
+        $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
+            -ActionName $ActionName `
+            -Expected $expected `
+            -Actual $detected `
+            -Status 'Passed' `
+            -CheckMessage 'MemoryCompression matched the expected state during bounded delayed verification polling.' `
+            -Message 'Memory Compression matched the expected state after delayed verification convergence.'
+    }
     elseif ($recoveredByReassertion) {
         $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
             -ActionName $ActionName `
@@ -522,10 +599,19 @@ function Invoke-BoostLabMemoryCompressionAction {
             -Message 'Memory Compression matched the expected state after one bounded reassertion.'
     }
 
+    $detected = Get-BoostLabMemoryCompressionPropertyValue `
+        -InputObject $verificationResult.DetectedState `
+        -Name 'MemoryCompression' `
+        -DefaultValue 'Unknown'
     $verificationStatus = [string]$verificationResult.Status
     $success = $verificationStatus -ne 'Failed'
     $finalStatusReason = if ($verificationStatus -eq 'Passed') {
-        'MemoryCompressionVerified'
+        if ($delayedVerificationSucceeded) {
+            'MemoryCompressionVerifiedAfterDelayedConvergence'
+        }
+        else {
+            'MemoryCompressionVerified'
+        }
     }
     elseif ($recoveredByReassertion) {
         'MemoryCompressionVerifiedAfterReassertion'
@@ -533,30 +619,42 @@ function Invoke-BoostLabMemoryCompressionAction {
     elseif ($reassertionFailed) {
         'MemoryCompressionReassertionFailed'
     }
-    elseif ($verificationAttempts[0].Status -eq 'Warning') {
+    elseif ($verificationAttempts[0].Status -eq 'Warning' -or $delayedVerificationReadUnavailable) {
         'MemoryCompressionVerificationUnavailable'
     }
     else {
         'MemoryCompressionVerificationMismatch'
     }
     $data = [pscustomobject]@{
-        CommandStatus              = if ($success -and $verificationStatus -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }
-        VerificationStatus         = $verificationStatus
-        FinalStatusReason          = $finalStatusReason
-        ExpectedMemoryCompression = $expected
-        DetectedMemoryCompression = $detected
-        CommandAttemptCount        = $commandAttemptCount
-        ReassertionAttempted       = $reassertionAttempted
-        ReassertionFailure         = $reassertionFailed
-        ReassertionFailureMessage  = $reassertionFailureMessage
-        VerificationAttempts       = $verificationAttempts.ToArray()
-        CompletedAt                = $completedAt
+        CommandStatus                         = if ($success -and $verificationStatus -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }
+        VerificationStatus                    = $verificationStatus
+        FinalStatusReason                     = $finalStatusReason
+        ExpectedMemoryCompression            = $expected
+        DetectedMemoryCompression            = $detected
+        CommandAttemptCount                   = $commandAttemptCount
+        ReassertionAttempted                  = $reassertionAttempted
+        ReassertionFailure                    = $reassertionFailed
+        ReassertionFailureMessage             = $reassertionFailureMessage
+        DelayedVerificationAttempted          = $delayedVerificationAttempted
+        DelayedVerificationSucceeded          = $delayedVerificationSucceeded
+        DelayedVerificationAttemptCount       = $delayedVerificationAttemptCount
+        DelayedVerificationTimeoutMilliseconds = $DelayedVerificationTimeoutMilliseconds
+        DelayedVerificationIntervalMilliseconds = $DelayedVerificationIntervalMilliseconds
+        DelayedVerificationExhausted          = $delayedVerificationExhausted
+        VerificationAttempts                  = $verificationAttempts.ToArray()
+        CompletedAt                           = $completedAt
     }
     $message = if ($recoveredByReassertion) {
         'Memory Compression command completed; initial verification remained unexpected, but one bounded reassertion reached the expected state.'
     }
+    elseif ($delayedVerificationSucceeded) {
+        'Memory Compression command completed; verification reached the expected state after bounded delayed polling.'
+    }
     elseif ($verificationStatus -eq 'Failed' -and $finalStatusReason -eq 'MemoryCompressionVerificationUnavailable') {
         'Memory Compression command completed, but verification was unavailable.'
+    }
+    elseif ($verificationStatus -eq 'Failed' -and $delayedVerificationExhausted) {
+        'Memory Compression command completed, but delayed verification polling exhausted before the expected state appeared.'
     }
     elseif ($verificationStatus -eq 'Failed') {
         'Memory Compression command completed, but verification detected an unexpected state.'
@@ -571,7 +669,7 @@ function Invoke-BoostLabMemoryCompressionAction {
     return New-BoostLabMemoryCompressionResult `
         -Success $success `
         -Action $ActionName `
-        -Status $(if (-not $success) { 'Failed' } elseif ($verificationStatus -eq 'Warning') { 'Warning' } else { 'Passed' }) `
+        -Status $(if (-not $success) { 'Failed' } elseif ($verificationStatus -eq 'Warning' -or $recoveredByReassertion -or $delayedVerificationSucceeded) { 'Warning' } else { 'Passed' }) `
         -Message $message `
         -Data $data `
         -VerificationResult $verificationResult
