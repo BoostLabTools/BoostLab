@@ -41,6 +41,8 @@ $script:BoostLabExpectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE695
 $script:BoostLabExpectedCanonicalSourceHash = '00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3'
 $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'
 $script:BoostLabApprovedBranches = @('NVIDIA', 'AMD', 'INTEL')
+$script:BoostLabNvidiaControlPanelShellTarget = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+$script:BoostLabRefreshRateConfirmationPrompt = 'Have you adjusted the refresh rate and are you ready to restart?'
 
 function Invoke-BoostLabDriverInstallDebloatSettingsVerifiedArtifactDownload {
     param(
@@ -641,10 +643,14 @@ function Add-BoostLabDriverInstallDebloatSettingsSharedPostBranchOperations {
         [string]$Branch
     )
 
-    Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'StartProcess' 'Open Windows display settings' 'Start-Process "ms-settings:display"' ([ordered]@{ FilePath = 'ms-settings:display'; ContinueOnError = $true })
-    Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'StartProcess' 'Open NVIDIA Control Panel AppX shell target' 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel' ([ordered]@{ FilePath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'; ContinueOnError = $true })
-    Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'StartProcess' 'Open Windows Sound Control Panel' 'Start-Process mmsys.cpl' ([ordered]@{ FilePath = 'mmsys.cpl' })
-    Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'UserPause' 'Wait for user to set sound, resolution, refresh rate, and primary display' 'Pause'
+    if ($Branch -eq 'NVIDIA') {
+        Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'OpenNvidiaControlPanelForRefreshRate' 'Open NVIDIA Control Panel for refresh-rate adjustment' ('Start-Process {0}' -f $script:BoostLabNvidiaControlPanelShellTarget) ([ordered]@{
+            FilePath = $script:BoostLabNvidiaControlPanelShellTarget
+        })
+        Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'VendorUI' 'RefreshRateRestartConfirmation' 'Wait for refresh-rate confirmation before restart' ('BoostLab UI confirmation: {0}' -f $script:BoostLabRefreshRateConfirmationPrompt) ([ordered]@{
+            Prompt = $script:BoostLabRefreshRateConfirmationPrompt
+        })
+    }
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'Registry' 'DynamicMonitorRegAdd' 'Disable automatically manage color for apps' 'reg add "$regPath" /v "AutoColorManagementEnabled" /t REG_DWORD /d "0" /f' ([ordered]@{ ValueName = 'AutoColorManagementEnabled'; Type = 'REG_DWORD'; Data = '0' })
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'Registry' 'DynamicPnpMsiMode' 'Enable MSI mode for all display devices' 'reg add "HKLM\SYSTEM\ControlSet001\Enum\$instanceID\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f' ([ordered]@{ ValueName = 'MSISupported'; Type = 'REG_DWORD'; Data = '1' })
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $Branch 'Registry' 'DynamicNotifyIconPromotion' 'Show all hidden taskbar icons' 'Set-ItemProperty -Path "registry::$setreg" -Name "IsPromoted" -Value 1 -Force' ([ordered]@{ ValueName = 'IsPromoted'; Data = 1 })
@@ -838,6 +844,100 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     -Message "Downloaded artifact from verified BoostLab mirror to $($p['Destination'])." `
                     -Data ([pscustomobject]@{ ArtifactId = [string]$download.ArtifactId; SourceUrl = [string]$download.SourceUrl })
             }
+            'OpenNvidiaControlPanelForRefreshRate' {
+                $filePath = [string]$p['FilePath']
+                $data = [ordered]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $false
+                    NvidiaControlPanelOpenCommand   = "Start-Process $filePath"
+                    NvidiaControlPanelOpenPath      = $filePath
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser          = $false
+                    RestartTriggered                = $false
+                    FinalStatusReason               = ''
+                    Error                           = ''
+                }
+
+                try {
+                    Start-Process -FilePath $filePath -ErrorAction Stop
+                    $data['NvidiaControlPanelOpenSucceeded'] = $true
+                    $data['FinalStatusReason'] = 'NVIDIA Control Panel opened for refresh-rate adjustment.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $true `
+                        -Message 'NVIDIA Control Panel opened for refresh-rate adjustment.' `
+                        -Data ([pscustomobject]$data)
+                }
+                catch {
+                    $data['Error'] = $_.Exception.Message
+                    $data['FinalStatusReason'] = 'NVIDIA Control Panel could not be opened; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message "NVIDIA Control Panel could not be opened: $($_.Exception.Message)" `
+                        -Data ([pscustomobject]$data)
+                }
+            }
+            'RefreshRateRestartConfirmation' {
+                $prompt = [string]$p['Prompt']
+                if ([string]::IsNullOrWhiteSpace($prompt)) {
+                    $prompt = $script:BoostLabRefreshRateConfirmationPrompt
+                }
+
+                $data = [ordered]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $true
+                    NvidiaControlPanelOpenCommand   = "Start-Process $script:BoostLabNvidiaControlPanelShellTarget"
+                    NvidiaControlPanelOpenPath      = $script:BoostLabNvidiaControlPanelShellTarget
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser          = $false
+                    RestartTriggered                = $false
+                    FinalStatusReason               = ''
+                    Prompt                          = $prompt
+                    ConfirmationCallbackUsed        = $false
+                    ConfirmationError               = ''
+                }
+
+                $callback = if ($Context.Contains('RefreshRateConfirmationCallback')) {
+                    $Context['RefreshRateConfirmationCallback']
+                }
+                else {
+                    $null
+                }
+
+                if ($null -ne $callback -and $callback -is [scriptblock]) {
+                    $data['ConfirmationCallbackUsed'] = $true
+                    try {
+                        $confirmed = [bool](& $callback -Prompt $prompt -Branch ([string]$Operation.Branch) -Operation $Operation)
+                        $data['RestartConfirmedByUser'] = $confirmed
+                    }
+                    catch {
+                        $data['ConfirmationError'] = $_.Exception.Message
+                        $data['FinalStatusReason'] = 'Refresh-rate confirmation callback failed; restart was not triggered.'
+                        return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                            -Operation $Operation `
+                            -Success $false `
+                            -Message "Refresh-rate confirmation failed: $($_.Exception.Message)" `
+                            -Data ([pscustomobject]$data)
+                    }
+                }
+
+                if (-not [bool]$data['RestartConfirmedByUser']) {
+                    $data['FinalStatusReason'] = 'Refresh-rate restart confirmation was not granted; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message 'Refresh-rate restart confirmation was not granted. Restart was not triggered.' `
+                        -Data ([pscustomobject]$data)
+                }
+
+                $data['FinalStatusReason'] = 'User confirmed refresh-rate adjustment is complete and restart may continue.'
+                return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                    -Operation $Operation `
+                    -Success $true `
+                    -Message 'User confirmed refresh-rate adjustment is complete; continuing to restart path.' `
+                    -Data ([pscustomobject]$data)
+            }
             'StartProcess' {
                 $startParams = @{
                     FilePath = [string]$p['FilePath']
@@ -1013,7 +1113,7 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
             }
             'ShutdownRestart' {
                 shutdown -r -t 00
-                return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $true -Message 'Restart command submitted.'
+                return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $true -Message 'Restart command submitted.' -Data ([pscustomobject]@{ RestartTriggered = $true; RestartCommand = 'shutdown -r -t 00' })
             }
             default {
                 return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $false -Message "Unsupported operation type '$($Operation.Type)'."
@@ -1022,6 +1122,62 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
     }
     catch {
         return New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $Operation -Success $false -Message $_.Exception.Message
+    }
+}
+
+function Get-BoostLabDriverInstallDebloatSettingsResultDataValue {
+    param(
+        [AllowNull()]
+        [object]$Data,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [AllowNull()]
+        [object]$DefaultValue = $null
+    )
+
+    if ($null -ne $Data -and $null -ne $Data.PSObject.Properties[$Name]) {
+        return $Data.$Name
+    }
+
+    return $DefaultValue
+}
+
+function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Branch,
+
+        [Parameter(Mandatory)]
+        [object[]]$OperationResults,
+
+        [Parameter(Mandatory)]
+        [string]$FinalStatusReason
+    )
+
+    $nvidiaOpenResult = @($OperationResults | Where-Object { [string]$_.Type -eq 'OpenNvidiaControlPanelForRefreshRate' }) | Select-Object -Last 1
+    $confirmationResult = @($OperationResults | Where-Object { [string]$_.Type -eq 'RefreshRateRestartConfirmation' }) | Select-Object -Last 1
+    $restartResult = @($OperationResults | Where-Object { [string]$_.Type -eq 'ShutdownRestart' -and [bool]$_.Success }) | Select-Object -Last 1
+
+    $nvidiaOpenData = if ($null -ne $nvidiaOpenResult) { $nvidiaOpenResult.Data } else { $null }
+    $confirmationData = if ($null -ne $confirmationResult) { $confirmationResult.Data } else { $null }
+
+    $nvidiaOpenAttempted = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $nvidiaOpenData -Name 'NvidiaControlPanelOpenAttempted' -DefaultValue $false)
+    $nvidiaOpenSucceeded = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $nvidiaOpenData -Name 'NvidiaControlPanelOpenSucceeded' -DefaultValue $false)
+    $confirmationSucceeded = $null -ne $confirmationResult -and [bool]$confirmationResult.Success
+    $restartConfirmed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'RestartConfirmedByUser' -DefaultValue $confirmationSucceeded)
+    $restartTriggered = $null -ne $restartResult
+
+    [pscustomobject]@{
+        NvidiaControlPanelOpenAttempted = $nvidiaOpenAttempted
+        NvidiaControlPanelOpenSucceeded = $nvidiaOpenSucceeded
+        NvidiaControlPanelOpenCommand   = if ($nvidiaOpenAttempted) { "Start-Process $script:BoostLabNvidiaControlPanelShellTarget" } else { '' }
+        NvidiaControlPanelOpenPath      = if ($nvidiaOpenAttempted) { $script:BoostLabNvidiaControlPanelShellTarget } else { '' }
+        RefreshRateConfirmationRequired = ($Branch -eq 'NVIDIA')
+        RestartConfirmedByUser          = $restartConfirmed
+        RestartTriggered                = $restartTriggered
+        FinalStatusReason               = $FinalStatusReason
     }
 }
 
@@ -1037,6 +1193,8 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
 
         [scriptblock]$OperationExecutor = $null,
 
+        [scriptblock]$RefreshRateConfirmationCallback = $null,
+
         [bool]$SkipEnvironmentChecks = $false
     )
 
@@ -1044,6 +1202,7 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
     $context = [ordered]@{
         Branch = $Branch
         InstallFile = $InstallFile
+        RefreshRateConfirmationCallback = $RefreshRateConfirmationCallback
     }
     $operationResults = [System.Collections.Generic.List[object]]::new()
     $changesStarted = $false
@@ -1077,6 +1236,39 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
         }
 
         if (-not [bool]$result.Success) {
+            if ([string]$resolvedOperation.Type -in @('OpenNvidiaControlPanelForRefreshRate', 'RefreshRateRestartConfirmation')) {
+                $finalStatusReason = if ($null -ne $result.Data -and $null -ne $result.Data.PSObject.Properties['FinalStatusReason']) {
+                    [string]$result.Data.FinalStatusReason
+                }
+                else {
+                    [string]$result.Message
+                }
+                $diagnostics = New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics `
+                    -Branch $Branch `
+                    -OperationResults $operationResults.ToArray() `
+                    -FinalStatusReason $finalStatusReason
+
+                return [pscustomobject]@{
+                    Success                            = $true
+                    Warning                            = $true
+                    Status                             = if ([string]$resolvedOperation.Type -eq 'OpenNvidiaControlPanelForRefreshRate') { 'NvidiaControlPanelOpenFailed' } else { 'PendingRefreshRateRestartConfirmation' }
+                    Branch                             = $Branch
+                    Plan                               = $plan
+                    OperationResults                   = $operationResults.ToArray()
+                    FailedOperation                    = $resolvedOperation
+                    ChangesStarted                     = $changesStarted
+                    Message                            = $finalStatusReason
+                    NvidiaControlPanelOpenAttempted    = [bool]$diagnostics.NvidiaControlPanelOpenAttempted
+                    NvidiaControlPanelOpenSucceeded    = [bool]$diagnostics.NvidiaControlPanelOpenSucceeded
+                    NvidiaControlPanelOpenCommand      = [string]$diagnostics.NvidiaControlPanelOpenCommand
+                    NvidiaControlPanelOpenPath         = [string]$diagnostics.NvidiaControlPanelOpenPath
+                    RefreshRateConfirmationRequired    = [bool]$diagnostics.RefreshRateConfirmationRequired
+                    RestartConfirmedByUser             = [bool]$diagnostics.RestartConfirmedByUser
+                    RestartTriggered                   = [bool]$diagnostics.RestartTriggered
+                    FinalStatusReason                  = [string]$diagnostics.FinalStatusReason
+                }
+            }
+
             return [pscustomobject]@{
                 Success = $false
                 Branch = $Branch
@@ -1089,14 +1281,36 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
         }
     }
 
+    $successFinalStatusReason = if ($Branch -eq 'NVIDIA') {
+        'Workflow completed and restart command submitted after refresh-rate confirmation.'
+    }
+    else {
+        'Workflow completed and restart command submitted.'
+    }
+
+    $successDiagnostics = New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics `
+        -Branch $Branch `
+        -OperationResults $operationResults.ToArray() `
+        -FinalStatusReason $successFinalStatusReason
+
     [pscustomobject]@{
-        Success = $true
-        Branch = $Branch
-        Plan = $plan
-        OperationResults = $operationResults.ToArray()
-        FailedOperation = $null
-        ChangesStarted = $changesStarted
-        Message = "Driver Install Debloat & Settings $Branch workflow completed."
+        Success                            = $true
+        Warning                            = $false
+        Status                             = 'Completed'
+        Branch                             = $Branch
+        Plan                               = $plan
+        OperationResults                   = $operationResults.ToArray()
+        FailedOperation                    = $null
+        ChangesStarted                     = $changesStarted
+        Message                            = "Driver Install Debloat & Settings $Branch workflow completed."
+        NvidiaControlPanelOpenAttempted    = [bool]$successDiagnostics.NvidiaControlPanelOpenAttempted
+        NvidiaControlPanelOpenSucceeded    = [bool]$successDiagnostics.NvidiaControlPanelOpenSucceeded
+        NvidiaControlPanelOpenCommand      = [string]$successDiagnostics.NvidiaControlPanelOpenCommand
+        NvidiaControlPanelOpenPath         = [string]$successDiagnostics.NvidiaControlPanelOpenPath
+        RefreshRateConfirmationRequired    = [bool]$successDiagnostics.RefreshRateConfirmationRequired
+        RestartConfirmedByUser             = [bool]$successDiagnostics.RestartConfirmedByUser
+        RestartTriggered                   = [bool]$successDiagnostics.RestartTriggered
+        FinalStatusReason                  = [string]$successDiagnostics.FinalStatusReason
     }
 }
 
@@ -1113,9 +1327,9 @@ function Get-BoostLabDriverInstallDebloatSettingsAnalysis {
         Source                          = $sourceStatus
         SourceBehaviorSummary           = @(
             'Preserves admin and internet checks.'
-            'Preserves the NVIDIA branch: NVIDIA driver page, user-selected installer, 7-Zip extraction, source-defined NVIDIA component deletion, silent setup.exe install, NVIDIA Control Panel winget install, Winget source AppX removal, NVIDIA registry/profile settings, Profile Inspector .nip import, shared UI launches, MSI mode, hidden icon setting, monitor color registry, and restart.'
-            'Preserves the AMD branch: AMD driver page, user-selected installer, 7-Zip extraction, XML/JSON edits, ATISetup install, AMD startup/task/service/driver/process/file cleanup, AMD registry settings, Radeon Software open/stop flow, shared UI launches, MSI mode, hidden icon setting, monitor color registry, and restart.'
-            'Preserves the INTEL branch: Intel driver page, user-selected installer, 7-Zip extraction, Installer.exe --noExtras install, Intel Graphics Software install, Intel startup/service/driver/process/file cleanup, Intel registry settings, shared UI launches, MSI mode, hidden icon setting, monitor color registry, and restart.'
+            'Preserves the NVIDIA branch: NVIDIA driver page, user-selected installer, 7-Zip extraction, source-defined NVIDIA component deletion, silent setup.exe install, NVIDIA Control Panel winget install, Winget source AppX removal, NVIDIA registry/profile settings, Profile Inspector .nip import, NVIDIA Control Panel refresh-rate checkpoint, MSI mode, hidden icon setting, monitor color registry, and restart only after explicit confirmation.'
+            'Preserves the AMD branch: AMD driver page, user-selected installer, 7-Zip extraction, XML/JSON edits, ATISetup install, AMD startup/task/service/driver/process/file cleanup, AMD registry settings, Radeon Software open/stop flow, MSI mode, hidden icon setting, monitor color registry, and restart.'
+            'Preserves the INTEL branch: Intel driver page, user-selected installer, 7-Zip extraction, Installer.exe --noExtras install, Intel Graphics Software install, Intel startup/service/driver/process/file cleanup, Intel registry settings, MSI mode, hidden icon setting, monitor color registry, and restart.'
         )
         SupportedScope                  = 'NVIDIA/AMD/INTEL source-equivalent branch runtime approved for this tool only.'
         ApprovedSourceBranches          = @($script:BoostLabApprovedBranches)
@@ -1167,7 +1381,7 @@ function Get-BoostLabToolInfo {
         Capabilities                = $script:BoostLabToolMetadata['Capabilities']
         ImplementedActions          = @($script:BoostLabImplementedActions)
         ConfirmationRequiredActions = @('Open', 'Apply')
-        ConfirmationText            = 'Driver Install Debloat & Settings executes source-equivalent NVIDIA/AMD/INTEL driver install/debloat behavior for the selected branch only after confirmation. It can download tools, open vendor pages, run installers, delete driver components, modify registry/profile/package/service/task/process state, open UI, and restart. Continue only if this exact branch operation is intended.'
+        ConfirmationText            = 'Driver Install Debloat & Settings executes source-equivalent NVIDIA/AMD/INTEL driver install/debloat behavior for the selected branch only after confirmation. It can download tools, open vendor pages, run installers, delete driver components, modify registry/profile/package/service/task/process state, open NVIDIA Control Panel for the NVIDIA refresh-rate checkpoint, and restart only after the required confirmation. Continue only if this exact branch operation is intended.'
     }
 }
 
@@ -1219,6 +1433,8 @@ function Invoke-BoostLabToolAction {
         [string]$InstallFile = '',
 
         [scriptblock]$OperationExecutor = $null,
+
+        [scriptblock]$RefreshRateConfirmationCallback = $null,
 
         [bool]$SkipEnvironmentChecks = $false
     )
@@ -1355,7 +1571,22 @@ function Invoke-BoostLabToolAction {
             -Branch $normalizedBranch `
             -InstallFile $InstallFile `
             -OperationExecutor $OperationExecutor `
+            -RefreshRateConfirmationCallback $RefreshRateConfirmationCallback `
             -SkipEnvironmentChecks:$SkipEnvironmentChecks
+
+        if ([bool]$workflow.Warning) {
+            return New-BoostLabDriverInstallDebloatSettingsResult `
+                -Success $true `
+                -Action 'Apply' `
+                -Status 'Warning' `
+                -CommandStatus ([string]$workflow.Status) `
+                -VerificationStatus 'Warning' `
+                -Message ([string]$workflow.Message) `
+                -Data $workflow `
+                -Warnings @([string]$workflow.Message) `
+                -ChangesExecuted ([bool]$workflow.ChangesStarted) `
+                -RestartRequired $true
+        }
 
         if (-not [bool]$workflow.Success) {
             return New-BoostLabDriverInstallDebloatSettingsResult `
@@ -1377,7 +1608,7 @@ function Invoke-BoostLabToolAction {
             -Status ("{0}WorkflowCompleted" -f $normalizedBranch) `
             -CommandStatus 'Completed' `
             -VerificationStatus 'Passed' `
-            -Message "Driver Install Debloat & Settings $normalizedBranch source-equivalent workflow completed. Restart/session behavior is source-defined and represented by the operation plan." `
+            -Message "Driver Install Debloat & Settings $normalizedBranch source-equivalent workflow completed. Restart/session behavior followed the operation plan." `
             -Data $workflow `
             -ChangesExecuted $true `
             -RestartRequired $true

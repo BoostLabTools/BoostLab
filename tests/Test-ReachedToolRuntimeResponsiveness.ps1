@@ -197,6 +197,7 @@ $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $installersModulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
 $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
+$driverInstallDebloatSettingsModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
 $edgeSettingsModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.psm1'
 $bitLockerModulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
 $directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
@@ -208,6 +209,7 @@ foreach ($path in @(
     $configPath
     $installersModulePath
     $driverCleanModulePath
+    $driverInstallDebloatSettingsModulePath
     $edgeSettingsModulePath
     $bitLockerModulePath
     $directXModulePath
@@ -259,6 +261,12 @@ foreach ($needle in @(
     'Initialize-BoostLabState | Out-Null'
     'Complete-BoostLabToolCardAction -Context $Context -Result $result'
     'Show-BoostLabActionPlanConfirmation -ActionPlan $actionPlan'
+    'function Show-BoostLabRefreshRateRestartConfirmationDialog'
+    'function New-BoostLabRefreshRateRestartConfirmationCallback'
+    'Have you adjusted the refresh rate and are you ready to restart?'
+    '$operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)'
+    '$operationHandle.Wait()'
+    "RefreshRateConfirmationCallback"
     'Invoke-BoostLabToolAction `'
     '-RiskConfirmed'
     '$script:BoostLabActionInProgress'
@@ -370,6 +378,13 @@ Assert-BoostLabTextContains -Text $installersText -Needle "QueueOrder           
 $driverCleanText = Get-Content -LiteralPath $driverCleanModulePath -Raw
 Assert-BoostLabTextContains -Text $driverCleanText -Needle 'SourceEquivalentDriverClean' -Description 'Driver Clean exact workflow mode'
 Assert-BoostLabTextContains -Text $driverCleanText -Needle 'RunOnce' -Description 'Driver Clean RunOnce mapping'
+
+$driverInstallDebloatSettingsText = Get-Content -LiteralPath $driverInstallDebloatSettingsModulePath -Raw
+Assert-BoostLabTextContains -Text $driverInstallDebloatSettingsText -Needle 'OpenNvidiaControlPanelForRefreshRate' -Description 'Driver Install Debloat & Settings NVIDIA Control Panel checkpoint'
+Assert-BoostLabTextContains -Text $driverInstallDebloatSettingsText -Needle 'RefreshRateRestartConfirmation' -Description 'Driver Install Debloat & Settings refresh-rate confirmation gate'
+Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('ms-settings:display')) 'Driver Install Debloat & Settings must not launch Windows Display Settings from the refresh-rate gate.'
+Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('mmsys.cpl')) 'Driver Install Debloat & Settings must not launch Windows Sound Settings from the refresh-rate gate.'
+Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('Read-Host')) 'Driver Install Debloat & Settings must not use raw console confirmation prompts.'
 
 $edgeSettingsText = Get-Content -LiteralPath $edgeSettingsModulePath -Raw
 Assert-BoostLabTextContains -Text $edgeSettingsText -Needle 'SourceEquivalent' -Description 'Edge Settings source-equivalent behavior'

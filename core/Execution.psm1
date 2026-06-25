@@ -900,6 +900,24 @@ function Invoke-BoostLabToolAction {
                     }
                 } | Out-Null
         }
+        elseif ($moduleStatus -eq 'Warning') {
+            Write-BoostLabWarning `
+                -Message ('[{0}] [{1}] {2}' -f $toolTitle, $ActionName, [string]$moduleResult.Message) `
+                -Source 'Execution' `
+                -EventId 'ToolAction.CompletedWithWarnings' `
+                -Data @{
+                    ToolId             = $toolId
+                    Stage              = [string]$ToolMetadata['Stage']
+                    Module             = [System.IO.Path]::GetFileName([string]$implementedModuleDefinition['Path'])
+                    RiskLevel          = $riskLevel
+                    VerificationStatus = if ($null -ne $verificationResult) {
+                        [string]$verificationResult.Status
+                    }
+                    else {
+                        'Warning'
+                    }
+                } | Out-Null
+        }
         elseif ([bool]$moduleResult.Success) {
             if ($ActionName -eq 'Analyze' -and $null -ne $moduleResult.PSObject.Properties['Data']) {
                 $analysis = $moduleResult.Data
@@ -1006,6 +1024,9 @@ function Invoke-BoostLabToolAction {
         }
         elseif ([bool]$moduleResult.Success -and $ActionName -eq 'Open') {
             'Launched'
+        }
+        elseif ($moduleStatus -eq 'Warning') {
+            'Completed with warnings'
         }
         elseif ([bool]$moduleResult.Success) {
             'Completed'

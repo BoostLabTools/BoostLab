@@ -579,7 +579,7 @@ foreach ($entry in $expectedModules.Values) {
             3
         }
         elseif ($toolId -eq 'driver-install-debloat-settings') {
-            4
+            5
         }
         elseif ($toolId -eq 'nvidia-app-install') {
             1

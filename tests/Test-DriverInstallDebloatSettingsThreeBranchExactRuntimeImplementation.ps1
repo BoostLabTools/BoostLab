@@ -84,10 +84,16 @@ $parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $orderPath = Join-Path $ProjectRoot 'config\UltimateParityExecutionOrder.psd1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $allowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
+$actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 
-foreach ($path in @($modulePath, $sourcePath, $stagesPath, $parityPath, $orderPath, $artifactPath, $allowlistPath)) {
+foreach ($path in @($modulePath, $sourcePath, $stagesPath, $parityPath, $orderPath, $artifactPath, $allowlistPath, $actionPlanPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file is missing: $path"
 }
+
+$moduleText = Get-Content -LiteralPath $modulePath -Raw
+Assert-BoostLabCondition (-not $moduleText.Contains('ms-settings:display')) 'Driver Install Debloat & Settings module must not open Windows Display Settings at the refresh-rate checkpoint.'
+Assert-BoostLabCondition (-not $moduleText.Contains('mmsys.cpl')) 'Driver Install Debloat & Settings module must not open Windows Sound Settings at the refresh-rate checkpoint.'
+Assert-BoostLabCondition (-not $moduleText.Contains('Read-Host')) 'Driver Install Debloat & Settings must not introduce raw console prompts.'
 
 $expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
@@ -145,6 +151,19 @@ Assert-BoostLabCondition ([bool]$tool.Capabilities.CanReboot) 'CanReboot must be
 Assert-BoostLabCondition (-not [bool]$tool.Capabilities.SupportsDefault) 'SupportsDefault must remain false.'
 Assert-BoostLabCondition (-not [bool]$tool.Capabilities.SupportsRestore) 'SupportsRestore must remain false.'
 
+Import-Module -Name $actionPlanPath -Force -ErrorAction Stop
+$applyActionPlan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName 'Apply'
+$applyActionPlanText = @(
+    [string]$applyActionPlan.Summary
+    @($applyActionPlan.PlannedChanges) -join [Environment]::NewLine
+    @($applyActionPlan.SideEffects) -join [Environment]::NewLine
+    [string]$applyActionPlan.ConfirmationMessage
+) -join [Environment]::NewLine
+Assert-BoostLabTextContains -Text $applyActionPlanText -Needle 'open NVIDIA Control Panel for refresh-rate adjustment' -Description 'Driver Install Debloat & Settings ActionPlan refresh-rate instruction'
+Assert-BoostLabTextContains -Text $applyActionPlanText -Needle 'waits for explicit confirmation' -Description 'Driver Install Debloat & Settings ActionPlan restart gate'
+Assert-BoostLabTextContains -Text $applyActionPlanText -Needle 'no automatic restart happens before that confirmation' -Description 'Driver Install Debloat & Settings ActionPlan no immediate restart text'
+Assert-BoostLabCondition (-not ($applyActionPlanText -match 'Display Settings|Sound Settings|display/sound')) 'Driver Install Debloat & Settings ActionPlan must not mention opening Display or Sound settings.'
+
 $module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
 try {
     $analysis = Invoke-BoostLabToolAction -ActionName 'Analyze'
@@ -176,12 +195,22 @@ try {
         foreach ($requiredType in @('RequireAdministrator', 'RequireInternet', 'DownloadFile', 'SelectInstaller', 'ExternalCommand', 'StartProcess', 'ShutdownRestart')) {
             Assert-BoostLabCondition (@($plan.Operations | Where-Object { [string]$_.Type -eq $requiredType }).Count -gt 0) "$branch plan missing operation type $requiredType."
         }
-        foreach ($requiredShared in @('Open Windows display settings', 'Open Windows Sound Control Panel', 'Disable automatically manage color for apps', 'Enable MSI mode for all display devices', 'Show all hidden taskbar icons', 'Restart the PC immediately')) {
+        foreach ($requiredShared in @('Disable automatically manage color for apps', 'Enable MSI mode for all display devices', 'Show all hidden taskbar icons', 'Restart the PC immediately')) {
             Assert-BoostLabCondition (@($plan.Operations | Where-Object { [string]$_.Label -eq $requiredShared }).Count -gt 0) "$branch plan missing shared operation: $requiredShared"
         }
+        Assert-BoostLabCondition (@($plan.Operations | Where-Object { [string]$_.SourceCommand -match 'ms-settings:display|mmsys\.cpl' -or [string]$_.Label -match 'display settings|Sound Control Panel' }).Count -eq 0) "$branch plan must not open Windows Display Settings or Sound Settings."
     }
 
     $nvidiaPlan = Get-BoostLabDriverInstallDebloatSettingsOperationPlan -Branch 'NVIDIA'
+    $nvidiaControlPanelOpen = Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'OpenNvidiaControlPanelForRefreshRate' -LabelNeedle 'refresh-rate'
+    $refreshConfirmation = Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'RefreshRateRestartConfirmation' -LabelNeedle 'refresh-rate confirmation'
+    $restartOperation = Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'ShutdownRestart' -LabelNeedle 'Restart'
+    Assert-BoostLabCondition ($null -ne $nvidiaControlPanelOpen) 'NVIDIA plan must open NVIDIA Control Panel for refresh-rate adjustment.'
+    Assert-BoostLabCondition ($null -ne $refreshConfirmation) 'NVIDIA plan must require refresh-rate restart confirmation.'
+    Assert-BoostLabCondition ([string]$nvidiaControlPanelOpen.Parameters.FilePath -eq 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel') 'NVIDIA Control Panel open target mismatch.'
+    Assert-BoostLabCondition ([string]$refreshConfirmation.Parameters.Prompt -eq 'Have you adjusted the refresh rate and are you ready to restart?') 'Refresh-rate confirmation prompt mismatch.'
+    Assert-BoostLabCondition ([int]$nvidiaControlPanelOpen.Order -lt [int]$refreshConfirmation.Order) 'NVIDIA Control Panel must open before the confirmation prompt.'
+    Assert-BoostLabCondition ([int]$refreshConfirmation.Order -lt [int]$restartOperation.Order) 'Refresh-rate confirmation must happen before restart.'
     Assert-BoostLabCondition ($null -ne (Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'RemoveItem' -LabelNeedle 'Display.Nview')) 'NVIDIA plan must remove Display.Nview.'
     Assert-BoostLabCondition ($null -ne (Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'StartProcess' -LabelNeedle 'Install NVIDIA driver silently')) 'NVIDIA plan must run setup.exe.'
     Assert-BoostLabCondition ($null -ne (Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'StartProcess' -LabelNeedle 'NVIDIA Control Panel')) 'NVIDIA plan must install NVIDIA Control Panel through winget.'
@@ -262,7 +291,129 @@ try {
         Assert-BoostLabCondition (@($apply.Data.OperationResults).Count -eq [int]$apply.Data.Plan.OperationCount) "$branch operation results must match plan count."
         Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsMockedOperations | Where-Object { [string]$_.Branch -ne $branch }).Count -eq 0) "$branch Apply must not run other branch operations."
         Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsMockedOperations | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 1) "$branch Apply must represent exactly one restart operation."
+        if ($branch -eq 'NVIDIA') {
+            Assert-BoostLabCondition ([bool]$apply.Data.RefreshRateConfirmationRequired) 'NVIDIA Apply must report refresh-rate confirmation required.'
+            Assert-BoostLabCondition ([bool]$apply.Data.RestartConfirmedByUser) 'NVIDIA Apply must report restart confirmation when the confirmation operation succeeds.'
+            Assert-BoostLabCondition ([bool]$apply.Data.RestartTriggered) 'NVIDIA Apply must report restart triggered after confirmation.'
+        }
     }
+
+    $script:DriverInstallDebloatSettingsDeclineOps = [System.Collections.Generic.List[object]]::new()
+    $declineExecutor = {
+        param($Operation, $SelectedBranch, $Context)
+        $script:DriverInstallDebloatSettingsDeclineOps.Add($Operation)
+        if ([string]$Operation.Type -eq 'RefreshRateRestartConfirmation') {
+            return [pscustomobject]@{
+                Success = $false
+                Order = [int]$Operation.Order
+                Branch = [string]$Operation.Branch
+                Category = [string]$Operation.Category
+                Type = [string]$Operation.Type
+                Label = [string]$Operation.Label
+                SourceCommand = [string]$Operation.SourceCommand
+                Message = 'Refresh-rate restart confirmation was not granted. Restart was not triggered.'
+                Data = [pscustomobject]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $true
+                    NvidiaControlPanelOpenCommand = 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    NvidiaControlPanelOpenPath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser = $false
+                    RestartTriggered = $false
+                    FinalStatusReason = 'Refresh-rate restart confirmation was not granted; restart was not triggered.'
+                }
+                Timestamp = Get-Date
+            }
+        }
+
+        return [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Branch = [string]$Operation.Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            SourceCommand = [string]$Operation.SourceCommand
+            Message = 'Mocked operation before refresh-rate confirmation.'
+            Data = if ([string]$Operation.Type -eq 'SelectInstaller') {
+                [pscustomobject]@{ SelectedInstaller = 'C:\BoostLabMock\NVIDIA-driver.exe' }
+            }
+            elseif ([string]$Operation.Type -eq 'OpenNvidiaControlPanelForRefreshRate') {
+                [pscustomobject]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $true
+                    NvidiaControlPanelOpenCommand = 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    NvidiaControlPanelOpenPath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser = $false
+                    RestartTriggered = $false
+                    FinalStatusReason = 'NVIDIA Control Panel opened for refresh-rate adjustment.'
+                }
+            }
+            else {
+                $null
+            }
+            Timestamp = Get-Date
+        }
+    }
+    $declinedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -Branch 'NVIDIA' -InstallFile 'C:\BoostLabMock\NVIDIA-driver.exe' -SkipEnvironmentChecks:$true -OperationExecutor $declineExecutor
+    Assert-BoostLabCondition ([bool]$declinedApply.Success) 'Declined refresh-rate confirmation should return a warning result, not a hard driver failure.'
+    Assert-BoostLabCondition ([string]$declinedApply.Status -eq 'Warning') 'Declined refresh-rate confirmation status must be Warning.'
+    Assert-BoostLabCondition ([string]$declinedApply.CommandStatus -eq 'PendingRefreshRateRestartConfirmation') 'Declined refresh-rate confirmation command status mismatch.'
+    Assert-BoostLabCondition ([bool]$declinedApply.RestartRequired) 'Declined refresh-rate confirmation must keep restart required.'
+    Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartConfirmedByUser) 'Declined refresh-rate confirmation must report RestartConfirmedByUser false.'
+    Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartTriggered) 'Declined refresh-rate confirmation must not trigger restart.'
+    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsDeclineOps | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 0) 'Restart operation must not run before refresh-rate confirmation.'
+
+    $script:DriverInstallDebloatSettingsOpenFailOps = [System.Collections.Generic.List[object]]::new()
+    $openFailureExecutor = {
+        param($Operation, $SelectedBranch, $Context)
+        $script:DriverInstallDebloatSettingsOpenFailOps.Add($Operation)
+        if ([string]$Operation.Type -eq 'OpenNvidiaControlPanelForRefreshRate') {
+            return [pscustomobject]@{
+                Success = $false
+                Order = [int]$Operation.Order
+                Branch = [string]$Operation.Branch
+                Category = [string]$Operation.Category
+                Type = [string]$Operation.Type
+                Label = [string]$Operation.Label
+                SourceCommand = [string]$Operation.SourceCommand
+                Message = 'NVIDIA Control Panel could not be opened: mocked missing AppX target.'
+                Data = [pscustomobject]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $false
+                    NvidiaControlPanelOpenCommand = 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    NvidiaControlPanelOpenPath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser = $false
+                    RestartTriggered = $false
+                    FinalStatusReason = 'NVIDIA Control Panel could not be opened; restart was not triggered.'
+                }
+                Timestamp = Get-Date
+            }
+        }
+
+        return [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Branch = [string]$Operation.Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            SourceCommand = [string]$Operation.SourceCommand
+            Message = 'Mocked operation before NVIDIA Control Panel launch.'
+            Data = if ([string]$Operation.Type -eq 'SelectInstaller') { [pscustomobject]@{ SelectedInstaller = 'C:\BoostLabMock\NVIDIA-driver.exe' } } else { $null }
+            Timestamp = Get-Date
+        }
+    }
+    $openFailedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -Branch 'NVIDIA' -InstallFile 'C:\BoostLabMock\NVIDIA-driver.exe' -SkipEnvironmentChecks:$true -OperationExecutor $openFailureExecutor
+    Assert-BoostLabCondition ([bool]$openFailedApply.Success) 'NVIDIA Control Panel launch failure should return a warning result and stop before restart.'
+    Assert-BoostLabCondition ([string]$openFailedApply.Status -eq 'Warning') 'NVIDIA Control Panel launch failure status must be Warning.'
+    Assert-BoostLabCondition ([string]$openFailedApply.CommandStatus -eq 'NvidiaControlPanelOpenFailed') 'NVIDIA Control Panel launch failure command status mismatch.'
+    Assert-BoostLabCondition ([bool]$openFailedApply.Data.NvidiaControlPanelOpenAttempted) 'NVIDIA Control Panel launch failure must report attempted open.'
+    Assert-BoostLabCondition (-not [bool]$openFailedApply.Data.NvidiaControlPanelOpenSucceeded) 'NVIDIA Control Panel launch failure must report open did not succeed.'
+    Assert-BoostLabCondition (-not [bool]$openFailedApply.Data.RestartTriggered) 'NVIDIA Control Panel launch failure must not trigger restart.'
+    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsOpenFailOps | Where-Object { [string]$_.Type -in @('RefreshRateRestartConfirmation', 'ShutdownRestart') }).Count -eq 0) 'NVIDIA Control Panel launch failure must stop before confirmation and restart.'
 
     $script:DriverInstallDebloatSettingsSelectedBranchOps = [System.Collections.Generic.List[object]]::new()
     $selectedBranchExecutor = {
