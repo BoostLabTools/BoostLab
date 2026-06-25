@@ -1,5 +1,11 @@
 Set-StrictMode -Version Latest
 
+$projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$environmentModulePath = Join-Path $projectRoot 'core\Environment.psm1'
+if (-not (Get-Command -Name 'Resolve-BoostLabWindowsEditionCapability' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $environmentModulePath -Scope Local -Force -ErrorAction Stop
+}
+
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'bitlocker'
     Title = 'BitLocker'
@@ -37,7 +43,6 @@ function Get-BoostLabBitLockerSourcePath {
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
@@ -47,7 +52,6 @@ function Get-BoostLabBitLockerSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabBitLockerSourcePath
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
     if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
         Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
@@ -143,6 +147,54 @@ function Get-BoostLabBitLockerBlockers {
         'DefaultUnavailable'
         'RestoreUnavailableWithoutCapturedBitLockerState'
     )
+}
+
+function Get-BoostLabBitLockerEditionAvailability {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
+    )
+
+    try {
+        $editionResults = @(& $EditionCapabilityReader)
+        $editionCapability = if ($editionResults.Count -gt 0) { $editionResults[0] } else { Resolve-BoostLabWindowsEditionCapability -WindowsVersion ([pscustomobject]@{}) }
+    }
+    catch {
+        $editionCapability = [pscustomobject]@{
+            DetectionStatus = 'Unknown'
+            CurrentEdition = 'Unknown'
+            DetectedWindowsEdition = 'Unknown'
+            EditionFamily = 'Unknown'
+            EditionCapability = 'Unknown'
+            SupportsBitLocker = $false
+            AvailabilityReason = "Windows edition detection failed: $($_.Exception.Message)"
+        }
+    }
+
+    Get-BoostLabEditionAwareToolAvailability -ToolId 'bitlocker' -EditionCapability $editionCapability
+}
+
+function New-BoostLabBitLockerEditionGuardData {
+    param(
+        [Parameter(Mandatory)]
+        [object]$EditionAvailability
+    )
+
+    [pscustomobject]@{
+        DetectedWindowsEdition = [string]$EditionAvailability.DetectedWindowsEdition
+        CurrentEdition         = [string]$EditionAvailability.CurrentEdition
+        EditionFamily          = [string]$EditionAvailability.EditionFamily
+        EditionCapability      = [string]$EditionAvailability.EditionCapability
+        AvailabilityReason     = [string]$EditionAvailability.AvailabilityReason
+        RequiredEdition        = [string]$EditionAvailability.RequiredEdition
+        RuntimeGuardResult     = [string]$EditionAvailability.RuntimeGuardResult
+        ChangesExecuted        = $false
+        BitLockerMutation      = $false
+        ControlPanelLaunch     = $false
+        ManageBdeStatus        = $false
+        RecoveryKeysCollected  = $false
+    }
 }
 
 function Get-BoostLabBitLockerRiskWarnings {
@@ -525,10 +577,13 @@ function Get-BoostLabBitLockerAnalysis {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [scriptblock]$VolumeReader
+        [scriptblock]$VolumeReader,
+
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
     )
 
     $source = Get-BoostLabBitLockerSourceStatus
+    $editionAvailability = Get-BoostLabBitLockerEditionAvailability -EditionCapabilityReader $EditionCapabilityReader
     $volumeSnapshot = Get-BoostLabBitLockerVolumeSnapshot -VolumeReader $VolumeReader
     $blockers = @(Get-BoostLabBitLockerBlockers)
     $offTargetVolumes = @(Get-BoostLabBitLockerSourceOffTargetVolumes -VolumeSnapshot $volumeSnapshot)
@@ -540,6 +595,12 @@ function Get-BoostLabBitLockerAnalysis {
         DefaultStatus = 'DefaultUnavailable'
         RestoreStatus = 'RestoreUnavailable'
         Source = $source
+        EditionAvailability = $editionAvailability
+        DetectedWindowsEdition = [string]$editionAvailability.DetectedWindowsEdition
+        EditionFamily = [string]$editionAvailability.EditionFamily
+        EditionCapability = [string]$editionAvailability.EditionCapability
+        AvailabilityReason = [string]$editionAvailability.AvailabilityReason
+        RequiredEdition = [string]$editionAvailability.RequiredEdition
         SourceBehavior = Get-BoostLabBitLockerSourceBehavior
         VolumeDiscovery = $volumeSnapshot
         SourceOffTargetMountPoints = @(
@@ -552,8 +613,8 @@ function Get-BoostLabBitLockerAnalysis {
         SourceOnStatusOperationPlan = New-BoostLabBitLockerOperationPlan -Branch 'OnStatus'
         Blockers = @($blockers)
         Warnings = @(Get-BoostLabBitLockerRiskWarnings)
-        ApplyAvailable = $true
-        OpenAvailable = $true
+        ApplyAvailable = [bool]$editionAvailability.IsRunnable
+        OpenAvailable = [bool]$editionAvailability.IsRunnable
         DefaultAvailable = $false
         RestoreAvailable = $false
         NoMutationOccurred = $true
@@ -567,13 +628,16 @@ function New-BoostLabBitLockerStatusPlan {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [scriptblock]$VolumeReader
+        [scriptblock]$VolumeReader,
+
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
     )
 
-    $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+    $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
     [pscustomobject]@{
         PlanType = 'SourceEquivalentOnStatus'
         SourceChecksumStatus = [string]$analysis.Source.ChecksumStatus
+        EditionAvailability = $analysis.EditionAvailability
         Instructions = @(
             'Open the BitLocker Drive Encryption Control Panel.'
             'Run manage-bde -status.'
@@ -669,7 +733,9 @@ function Invoke-BoostLabToolAction {
 
         [scriptblock]$ControlPanelLauncher,
 
-        [scriptblock]$ManageBdeStatusExecutor
+        [scriptblock]$ManageBdeStatusExecutor,
+
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
     )
 
     $canonicalActionName = switch ($ActionName) {
@@ -690,7 +756,7 @@ function Invoke-BoostLabToolAction {
     }
 
     if ($canonicalActionName -eq 'Analyze') {
-        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
         $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
         $verificationStatus = if (-not $sourceOk) {
             [string]$analysis.Source.ChecksumStatus
@@ -711,7 +777,20 @@ function Invoke-BoostLabToolAction {
             -Message $(if ($sourceOk) { 'BitLocker analyzed read-only. Apply maps to the source Off branch, Open maps to the source On/status branch, and Default/Restore remain unavailable.' } else { 'BitLocker source checksum verification failed or source mirror is missing.' }) `
             -Data $analysis `
             -Warnings @() `
-            -Errors $(if ($sourceOk) { @() } else { @('BitLocker source mirror checksum did not match the expected value or the source mirror is missing.') })
+                -Errors $(if ($sourceOk) { @() } else { @('BitLocker source mirror checksum did not match the expected value or the source mirror is missing.') })
+    }
+
+    $editionAvailability = Get-BoostLabBitLockerEditionAvailability -EditionCapabilityReader $EditionCapabilityReader
+    if ($canonicalActionName -in @('Open', 'Apply') -and -not [bool]$editionAvailability.IsRunnable) {
+        return New-BoostLabBitLockerResult `
+            -Success $false `
+            -Action $canonicalActionName `
+            -Status 'NotApplicable' `
+            -CommandStatus 'Blocked before execution' `
+            -VerificationStatus 'NotApplicable' `
+            -Message 'BitLocker is unavailable on this Windows edition. BitLocker requires Windows Pro or higher; no BitLocker command, Control Panel launch, manage-bde status command, recovery-key operation, encryption change, or security mutation occurred.' `
+            -Data (New-BoostLabBitLockerEditionGuardData -EditionAvailability $editionAvailability) `
+            -Errors @([string]$editionAvailability.RuntimeGuardResult)
     }
 
     if ($canonicalActionName -eq 'Open') {
@@ -726,7 +805,7 @@ function Invoke-BoostLabToolAction {
                 -Cancelled $true
         }
 
-        $plan = New-BoostLabBitLockerStatusPlan -VolumeReader $VolumeReader
+        $plan = New-BoostLabBitLockerStatusPlan -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
         $sourceOk = [string]$plan.SourceChecksumStatus -eq 'Passed'
         if (-not $sourceOk) {
             return New-BoostLabBitLockerResult `
@@ -780,7 +859,7 @@ function Invoke-BoostLabToolAction {
                 -Cancelled $true
         }
 
-        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
         $sourceOk = [string]$analysis.Source.ChecksumStatus -eq 'Passed'
         if (-not $sourceOk) {
             return New-BoostLabBitLockerResult `
@@ -856,7 +935,7 @@ function Invoke-BoostLabToolAction {
     }
 
     if ($canonicalActionName -eq 'Default') {
-        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+        $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
         return New-BoostLabBitLockerResult `
             -Success $false `
             -Action 'Default' `
@@ -867,7 +946,7 @@ function Invoke-BoostLabToolAction {
             -Data $analysis
     }
 
-    $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader
+    $analysis = Get-BoostLabBitLockerAnalysis -VolumeReader $VolumeReader -EditionCapabilityReader $EditionCapabilityReader
     return New-BoostLabBitLockerResult `
         -Success $false `
         -Action 'Restore' `

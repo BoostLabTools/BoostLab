@@ -114,6 +114,268 @@ function Get-BoostLabWindowsEdition {
     return [string](Get-BoostLabWindowsVersion).Edition
 }
 
+function Get-BoostLabObjectPropertyValue {
+    param(
+        [AllowNull()]
+        [object]$InputObject,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [AllowNull()]
+        [object]$Default = $null
+    )
+
+    if ($null -eq $InputObject) {
+        return $Default
+    }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        if ($InputObject.Contains($Name)) {
+            return $InputObject[$Name]
+        }
+        return $Default
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $Default
+    }
+
+    return $property.Value
+}
+
+function Resolve-BoostLabWindowsEditionCapability {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [AllowNull()]
+        [object]$WindowsVersion = $null,
+
+        [scriptblock]$WindowsVersionReader = { Get-BoostLabWindowsVersion }
+    )
+
+    $version = $WindowsVersion
+    $detectionStatus = 'Detected'
+    $detectionMessage = 'Windows edition detected.'
+    if ($null -eq $version) {
+        try {
+            $results = @(& $WindowsVersionReader)
+            if ($results.Count -gt 0) {
+                $version = $results[0]
+            }
+            else {
+                $detectionStatus = 'Unknown'
+                $detectionMessage = 'Windows edition reader returned no result.'
+            }
+        }
+        catch {
+            $detectionStatus = 'Unknown'
+            $detectionMessage = "Windows edition detection failed: $($_.Exception.Message)"
+        }
+    }
+
+    $edition = [string](Get-BoostLabObjectPropertyValue -InputObject $version -Name 'Edition' -Default '')
+    $productName = [string](Get-BoostLabObjectPropertyValue -InputObject $version -Name 'ProductName' -Default '')
+    if ([string]::IsNullOrWhiteSpace($edition) -and $version -is [string]) {
+        $edition = [string]$version
+    }
+    $editionText = $edition.Trim()
+    $productText = $productName.Trim()
+    $normalizedEdition = ($editionText -replace '[^A-Za-z0-9]', '').ToLowerInvariant()
+    $normalizedProduct = ($productText -replace '[^A-Za-z0-9]', '').ToLowerInvariant()
+
+    $homeEditions = @(
+        'core',
+        'coren',
+        'coresinglelanguage',
+        'corecountryspecific',
+        'home',
+        'homen',
+        'homesinglelanguage',
+        'homecountryspecific'
+    )
+    $proOrHigherEditions = @(
+        'professional',
+        'professionaln',
+        'professionalworkstation',
+        'professionalworkstationn',
+        'professionaleducation',
+        'professionaleducationn',
+        'enterprise',
+        'enterprisen',
+        'enterprises',
+        'enterprisesn',
+        'education',
+        'educationn'
+    )
+
+    $isHomeOrCore = $normalizedEdition -in $homeEditions
+    $isProOrHigher = $normalizedEdition -in $proOrHigherEditions
+    if (-not $isHomeOrCore -and -not $isProOrHigher -and -not [string]::IsNullOrWhiteSpace($normalizedProduct)) {
+        $isHomeOrCore = (
+            $normalizedProduct -match 'windows(10|11)?home' -and
+            $normalizedProduct -notmatch 'pro|professional|enterprise|education|workstation'
+        )
+        $isProOrHigher = (
+            $normalizedProduct -match 'professional|pro|enterprise|education|workstation'
+        )
+    }
+
+    $editionFamily = if ($isHomeOrCore) {
+        'HomeCore'
+    }
+    elseif ($isProOrHigher) {
+        'ProOrHigher'
+    }
+    else {
+        'Unknown'
+    }
+    $editionCapability = if ($isHomeOrCore) {
+        'HomeCore'
+    }
+    elseif ($isProOrHigher) {
+        'BitLockerCapable'
+    }
+    else {
+        'Unknown'
+    }
+    $currentEdition = if (-not [string]::IsNullOrWhiteSpace($editionText)) {
+        $editionText
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($productText)) {
+        $productText
+    }
+    else {
+        'Unknown'
+    }
+
+    if ($editionFamily -eq 'Unknown') {
+        $detectionStatus = 'Unknown'
+        if ($detectionMessage -eq 'Windows edition detected.') {
+            $detectionMessage = 'Windows edition is unknown or not classified for BoostLab edition-dependent Setup tools.'
+        }
+    }
+
+    [pscustomobject]@{
+        DetectionStatus             = $detectionStatus
+        DetectionMessage            = $detectionMessage
+        ProductName                 = $productText
+        Edition                     = $editionText
+        CurrentEdition              = $currentEdition
+        DetectedWindowsEdition      = $currentEdition
+        NormalizedEdition           = $normalizedEdition
+        EditionFamily               = $editionFamily
+        EditionCapability           = $editionCapability
+        IsHomeOrCore                = $isHomeOrCore
+        IsProOrHigher               = $isProOrHigher
+        SupportsBitLocker           = $isProOrHigher
+        BitLockerSupported          = $isProOrHigher
+        SupportsConvertHomeToPro    = $isHomeOrCore
+        ConvertHomeToProApplicable  = $isHomeOrCore
+        AvailabilityReason          = if ($isHomeOrCore) {
+            'Windows Home/Core edition detected; Convert Home To Pro is applicable and BitLocker requires Pro or higher.'
+        }
+        elseif ($isProOrHigher) {
+            'Windows Pro or higher edition detected; BitLocker is applicable and Convert Home To Pro is no longer applicable.'
+        }
+        else {
+            $detectionMessage
+        }
+        RequiredForBitLocker        = 'Windows Pro or higher'
+        RequiredForConvertHomeToPro = 'Windows Home/Core'
+        DetectedAt                  = Get-Date
+    }
+}
+
+function Get-BoostLabEditionAwareToolAvailability {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ToolId,
+
+        [AllowNull()]
+        [object]$EditionCapability = $null,
+
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
+    )
+
+    $capability = $EditionCapability
+    if ($null -eq $capability) {
+        try {
+            $results = @(& $EditionCapabilityReader)
+            if ($results.Count -gt 0) {
+                $capability = $results[0]
+            }
+        }
+        catch {
+            $capability = [pscustomobject]@{
+                DetectionStatus = 'Unknown'
+                CurrentEdition = 'Unknown'
+                DetectedWindowsEdition = 'Unknown'
+                EditionFamily = 'Unknown'
+                EditionCapability = 'Unknown'
+                SupportsBitLocker = $false
+                SupportsConvertHomeToPro = $false
+                AvailabilityReason = "Windows edition detection failed: $($_.Exception.Message)"
+            }
+        }
+    }
+    if ($null -eq $capability) {
+        $capability = Resolve-BoostLabWindowsEditionCapability -WindowsVersion ([pscustomobject]@{})
+    }
+
+    $toolKey = $ToolId.ToLowerInvariant()
+    $isBitLocker = $toolKey -eq 'bitlocker'
+    $isConvert = $toolKey -eq 'convert-home-to-pro'
+    $available = if ($isBitLocker) {
+        [bool](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'SupportsBitLocker' -Default $false)
+    }
+    elseif ($isConvert) {
+        [bool](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'SupportsConvertHomeToPro' -Default $false)
+    }
+    else {
+        $true
+    }
+
+    $runtimeGuardResult = if ($isBitLocker -and -not $available) {
+        if ([string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'EditionFamily' -Default 'Unknown') -eq 'Unknown') { 'EditionUnknown' } else { 'BitLockerRequiresProOrHigher' }
+    }
+    elseif ($isConvert -and -not $available) {
+        if ([string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'EditionFamily' -Default 'Unknown') -eq 'Unknown') { 'EditionUnknown' } else { 'AlreadyProOrHigher' }
+    }
+    else {
+        'Available'
+    }
+
+    [pscustomobject]@{
+        ToolId                  = $ToolId
+        IsEditionDependent     = ($isBitLocker -or $isConvert)
+        IsAvailable            = $available
+        IsRunnable             = $available
+        AvailabilityStatus      = if ($available) { 'Available' } else { 'Unavailable' }
+        AvailabilityReason      = if ($available) {
+            [string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'AvailabilityReason' -Default 'Tool is available for the detected Windows edition.')
+        }
+        elseif ($isBitLocker) {
+            'BitLocker unavailable on Windows Home/Core or unknown edition. BitLocker requires Windows Pro or higher.'
+        }
+        elseif ($isConvert) {
+            'Convert Home To Pro unavailable because this Windows edition is already Pro or higher, or the edition is unknown.'
+        }
+        else {
+            'Tool availability is not edition-dependent.'
+        }
+        RuntimeGuardResult      = $runtimeGuardResult
+        RequiredEdition         = if ($isBitLocker) { 'Windows Pro or higher' } elseif ($isConvert) { 'Windows Home/Core' } else { '' }
+        CurrentEdition          = [string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'CurrentEdition' -Default 'Unknown')
+        DetectedWindowsEdition  = [string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'DetectedWindowsEdition' -Default 'Unknown')
+        EditionFamily           = [string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'EditionFamily' -Default 'Unknown')
+        EditionCapability       = [string](Get-BoostLabObjectPropertyValue -InputObject $capability -Name 'EditionCapability' -Default 'Unknown')
+        EditionDetection        = $capability
+    }
+}
+
 function Get-BoostLabPowerShellVersion {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -230,6 +492,8 @@ Export-ModuleMember -Function @(
     'Test-BoostLabInternet'
     'Get-BoostLabWindowsVersion'
     'Get-BoostLabWindowsEdition'
+    'Resolve-BoostLabWindowsEditionCapability'
+    'Get-BoostLabEditionAwareToolAvailability'
     'Get-BoostLabPowerShellVersion'
     'Get-BoostLabSystemArchitecture'
     'Get-BoostLabPendingRebootStatus'

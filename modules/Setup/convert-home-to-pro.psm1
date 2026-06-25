@@ -5,6 +5,10 @@ $verificationModulePath = Join-Path $projectRoot 'core\Verification.psm1'
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name $verificationModulePath -Scope Local -Force -ErrorAction Stop
 }
+$environmentModulePath = Join-Path $projectRoot 'core\Environment.psm1'
+if (-not (Get-Command -Name 'Resolve-BoostLabWindowsEditionCapability' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $environmentModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'convert-home-to-pro'; Title = 'Convert Home To Pro'; Stage = 'Setup'; Order = 2
@@ -86,6 +90,32 @@ function Get-BoostLabConvertHomeToProSystemSettingsAdminFlowsPath {
     return Join-Path $env:windir 'System32\SystemSettingsAdminFlows.exe'
 }
 
+function Get-BoostLabConvertHomeToProEditionAvailability {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
+    )
+
+    try {
+        $editionResults = @(& $EditionCapabilityReader)
+        $editionCapability = if ($editionResults.Count -gt 0) { $editionResults[0] } else { Resolve-BoostLabWindowsEditionCapability -WindowsVersion ([pscustomobject]@{}) }
+    }
+    catch {
+        $editionCapability = [pscustomobject]@{
+            DetectionStatus = 'Unknown'
+            CurrentEdition = 'Unknown'
+            DetectedWindowsEdition = 'Unknown'
+            EditionFamily = 'Unknown'
+            EditionCapability = 'Unknown'
+            SupportsConvertHomeToPro = $false
+            AvailabilityReason = "Windows edition detection failed: $($_.Exception.Message)"
+        }
+    }
+
+    Get-BoostLabEditionAwareToolAvailability -ToolId 'convert-home-to-pro' -EditionCapability $editionCapability
+}
+
 function Get-BoostLabToolInfo {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -133,6 +163,7 @@ function Test-BoostLabToolCompatibility {
     )
     $flowPath = Get-BoostLabConvertHomeToProSystemSettingsAdminFlowsPath
     $flowExists = [bool](& $FileExists $flowPath)
+    $editionAvailability = Get-BoostLabConvertHomeToProEditionAvailability
     $supported = $OperatingSystem -eq 'Windows_NT' -and $missingCommands.Count -eq 0 -and $flowExists
 
     [pscustomobject]@{
@@ -141,6 +172,10 @@ function Test-BoostLabToolCompatibility {
         ToolTitle       = [string]$script:BoostLabToolMetadata['Title']
         MissingCommands = $missingCommands
         ProductKeyFlow  = $flowPath
+        EditionAvailability = $editionAvailability
+        DetectedWindowsEdition = [string]$editionAvailability.DetectedWindowsEdition
+        EditionFamily = [string]$editionAvailability.EditionFamily
+        EditionCapability = [string]$editionAvailability.EditionCapability
         Reason          = if ($OperatingSystem -ne 'Windows_NT') {
             'Convert Home To Pro requires Windows.'
         }
@@ -409,8 +444,15 @@ function Invoke-BoostLabConvertHomeToProApply {
                 CommandStatus = 'Completed'
                 Message       = ('Convert Home To Pro source instructions prepared for Latest Result: {0}; {1}.' -f @($Dialog.SourceInstructions)[0], @($Dialog.SourceInstructions)[1])
             }
-        }
+        },
+
+        [AllowNull()]
+        [object]$EditionAvailability = $null
     )
+
+    if ($null -eq $EditionAvailability) {
+        $EditionAvailability = Get-BoostLabConvertHomeToProEditionAvailability
+    }
 
     $sourceStatus = Get-BoostLabConvertHomeToProSourceStatus
     if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
@@ -479,6 +521,13 @@ function Invoke-BoostLabConvertHomeToProApply {
         -Errors @($failed | ForEach-Object { [string]$_.Message }) `
         -Data ([pscustomobject]@{
             Source                  = $sourceStatus
+            DetectedWindowsEdition  = [string]$EditionAvailability.DetectedWindowsEdition
+            CurrentEdition          = [string]$EditionAvailability.CurrentEdition
+            EditionFamily           = [string]$EditionAvailability.EditionFamily
+            EditionCapability       = [string]$EditionAvailability.EditionCapability
+            AvailabilityReason      = [string]$EditionAvailability.AvailabilityReason
+            RequiredEdition         = [string]$EditionAvailability.RequiredEdition
+            RuntimeGuardResult      = [string]$EditionAvailability.RuntimeGuardResult
             SourceBehavior          = Get-BoostLabConvertHomeToProSourceBehavior
             UserDialog              = $keyDialog
             GenericProSetupKey      = $script:BoostLabGenericProEditionKey
@@ -510,7 +559,9 @@ function Invoke-BoostLabToolAction {
 
         [scriptblock]$ProductKeyFlowLauncher,
 
-        [scriptblock]$DialogPresenter
+        [scriptblock]$DialogPresenter,
+
+        [scriptblock]$EditionCapabilityReader = { Resolve-BoostLabWindowsEditionCapability }
     )
 
     if ($ActionName -notin @($script:BoostLabImplementedActions)) {
@@ -522,6 +573,44 @@ function Invoke-BoostLabToolAction {
             -VerificationStatus 'NotApplicable' `
             -Message 'Unsupported action. Convert Home To Pro exposes only Apply.' `
             -Errors @("Unsupported Convert Home To Pro action: $ActionName")
+    }
+
+    $editionAvailability = Get-BoostLabConvertHomeToProEditionAvailability -EditionCapabilityReader $EditionCapabilityReader
+    if (-not [bool]$editionAvailability.IsRunnable) {
+        $runtimeGuardResult = [string]$editionAvailability.RuntimeGuardResult
+        $isAlreadyPro = $runtimeGuardResult -eq 'AlreadyProOrHigher'
+        $message = if ($isAlreadyPro) {
+            'Convert Home To Pro is not applicable because this Windows edition is already Pro or higher. No clipboard, Activation settings, product-key, edition-change, activation, or external command flow occurred.'
+        }
+        else {
+            'Convert Home To Pro is unavailable because BoostLab could not confirm this is a Windows Home/Core edition. No clipboard, Activation settings, product-key, edition-change, activation, or external command flow occurred.'
+        }
+
+        return New-BoostLabConvertHomeToProResult `
+            -Success:$isAlreadyPro `
+            -Action 'Apply' `
+            -Status 'NotApplicable' `
+            -CommandStatus 'Blocked before execution' `
+            -VerificationStatus 'NotApplicable' `
+            -Message $message `
+            -Warnings $(if ($isAlreadyPro) { @('AlreadyProOrHigher') } else { @() }) `
+            -Errors $(if ($isAlreadyPro) { @() } else { @('EditionUnknown') }) `
+            -Data ([pscustomobject]@{
+                DetectedWindowsEdition   = [string]$editionAvailability.DetectedWindowsEdition
+                CurrentEdition           = [string]$editionAvailability.CurrentEdition
+                EditionFamily            = [string]$editionAvailability.EditionFamily
+                EditionCapability        = [string]$editionAvailability.EditionCapability
+                AvailabilityReason       = [string]$editionAvailability.AvailabilityReason
+                RequiredEdition          = [string]$editionAvailability.RequiredEdition
+                RuntimeGuardResult       = $runtimeGuardResult
+                ChangesExecuted          = $false
+                DialogAttempted          = $false
+                ClipboardAttempted       = $false
+                SettingsOpenAttempted    = $false
+                ProductKeyFlowAttempted  = $false
+                RequiresValidProLicense  = $true
+                NoActivationBypass       = $true
+            })
     }
     if (-not $Confirmed) {
         return New-BoostLabConvertHomeToProResult `
@@ -557,6 +646,7 @@ function Invoke-BoostLabToolAction {
     if ($PSBoundParameters.ContainsKey('DialogPresenter')) {
         $applyParameters['DialogPresenter'] = $DialogPresenter
     }
+    $applyParameters['EditionAvailability'] = $editionAvailability
 
     return Invoke-BoostLabConvertHomeToProApply @applyParameters
 }

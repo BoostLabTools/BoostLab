@@ -412,13 +412,13 @@ function New-BoostLabActionPlan {
         'Delete each source-discovered SCSI and NVME Disk registry key exactly as the Ultimate Default branch does.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
-        'Analyze BitLocker volume state read-only and preview the source-equivalent Off and On/status behavior without changing encryption state.'
+        'Analyze BitLocker volume state read-only and preview the source-equivalent Off and On/status behavior without changing encryption state; BitLocker runtime actions require Windows Pro or higher.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        'Run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status without enabling BitLocker automatically.'
+        'Run the source-equivalent BitLocker On/status branch on Windows Pro or higher: open BitLocker Drive Encryption Control Panel and run manage-bde -status without enabling BitLocker automatically.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        'Run the source-equivalent BitLocker Off branch: disable BitLocker only on source-matched volumes, then open BitLocker status UI and run manage-bde -status.'
+        'Run the source-equivalent BitLocker Off branch on Windows Pro or higher: disable BitLocker only on source-matched volumes, then open BitLocker status UI and run manage-bde -status.'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         'Block Default because the source On branch is UI/status-only and does not define a safe default mutation.'
@@ -804,6 +804,7 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum.')
+        $plannedChanges.Add('Detect the Windows edition; BitLocker runtime actions require Windows Pro or higher.')
         $plannedChanges.Add('Query BitLocker volume state read-only when Get-BitLockerVolume is available.')
         $plannedChanges.Add('Report matched volumes for the source Off branch without disabling, decrypting, suspending, resuming, enabling, or removing protectors.')
         $plannedChanges.Add('Preview that Apply maps to the source Off branch and Open maps to the source On/status branch.')
@@ -811,6 +812,7 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum before any status action.')
+        $plannedChanges.Add('Block before launch unless the detected Windows edition is Pro or higher.')
         $plannedChanges.Add('Open BitLocker Drive Encryption Control Panel with control.exe /name microsoft.bitlockerdriveencryption.')
         $plannedChanges.Add('Run manage-bde -status for source-equivalent status output.')
         $plannedChanges.Add('Do not enable BitLocker automatically; the Ultimate On branch is UI/status-only.')
@@ -818,6 +820,7 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum before any mutation.')
+        $plannedChanges.Add('Block before mutation unless the detected Windows edition is Pro or higher.')
         $plannedChanges.Add('Query Get-BitLockerVolume and filter volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted.')
         $plannedChanges.Add('Run Disable-BitLocker -MountPoint <mount> -ErrorAction SilentlyContinue only for the filtered target MountPoints.')
         $plannedChanges.Add('Open BitLocker Drive Encryption Control Panel after the disable requests.')
@@ -842,6 +845,7 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T to the clipboard.')
         $plannedChanges.Add('Open ms-settings:activation.')
         $plannedChanges.Add('Run SystemSettingsAdminFlows.exe EnterProductKey to show the Windows product-key entry flow.')
+        $plannedChanges.Add('Windows may request a restart after edition conversion; BoostLab does not auto-resume or auto-run BitLocker after restart.')
         $plannedChanges.Add('Do not run changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot behavior.')
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
@@ -1326,12 +1330,14 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
         $sideEffects.Add('BitLocker Drive Encryption Control Panel is opened.')
         $sideEffects.Add('manage-bde -status is run for status output.')
+        $sideEffects.Add('The action is blocked unless Windows Pro or higher is detected.')
         $sideEffects.Add('No automatic BitLocker enable, disable, protector, recovery-key, registry, or reboot state change occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Disable-BitLocker is invoked only for source-matched protected or not fully decrypted MountPoints.')
         $sideEffects.Add('Matched volumes may begin decryption or protection disable behavior after confirmation.')
         $sideEffects.Add('BitLocker Drive Encryption Control Panel is opened and manage-bde -status is run after the disable requests.')
+        $sideEffects.Add('The action is blocked unless Windows Pro or higher is detected.')
         $sideEffects.Add('Recovery keys are not collected, displayed, or stored; no automatic enable, protector add/remove, registry, or reboot operation occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
@@ -1346,6 +1352,7 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('The generic Windows Pro setup key is copied to the clipboard for edition conversion only.')
         $sideEffects.Add('Windows Activation settings and the Windows product-key entry UI are opened.')
         $sideEffects.Add('The generic key does not activate Windows; a valid Windows Pro license is required for activation.')
+        $sideEffects.Add('Windows may request a restart after edition conversion; BoostLab does not auto-resume or auto-run BitLocker after restart.')
         $sideEffects.Add('BoostLab does not run activation bypass, KMS, crack, changepk, slmgr, DISM, registry, service, driver, download, installer, or reboot commands.')
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
@@ -1671,10 +1678,10 @@ function New-BoostLabActionPlan {
         'Updates Drivers Block Restore requires a selected captured USB setupcomplete.cmd file rollback record from this tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
-        'BoostLab will run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status. It will not enable BitLocker automatically, collect recovery keys, change protectors, or reboot. Continue?'
+        'BoostLab will run the source-equivalent BitLocker On/status branch only if Windows Pro or higher is detected: open BitLocker Drive Encryption Control Panel and run manage-bde -status. It will not enable BitLocker automatically, collect recovery keys, change protectors, or reboot. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Apply') {
-        'BoostLab will run the source-equivalent BitLocker Off branch. It will query BitLocker volumes, call Disable-BitLocker only for volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted, then open BitLocker Control Panel and run manage-bde -status. This may decrypt or disable protection on matched volumes. Recovery keys are not collected or stored. Continue?'
+        'BoostLab will run the source-equivalent BitLocker Off branch only if Windows Pro or higher is detected. It will query BitLocker volumes, call Disable-BitLocker only for volumes where ProtectionStatus is On or VolumeStatus is not FullyDecrypted, then open BitLocker Control Panel and run manage-bde -status. This may decrypt or disable protection on matched volumes. Recovery keys are not collected or stored. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Default') {
         'BitLocker Default is unavailable. The source On branch opens UI/status only and does not define a safe default mutation. Default is not Restore. Continue only to record the blocked result?'
@@ -1683,7 +1690,7 @@ function New-BoostLabActionPlan {
         'BitLocker Restore requires a selected captured BitLocker state and an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
     elseif ($toolId -eq 'convert-home-to-pro' -and $ActionName -eq 'Apply') {
-        'BoostLab will show the source instruction "Disable Internet First", copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T, open Activation settings, and open the Windows product-key entry flow. This is edition conversion preparation only; activation still requires a valid Windows Pro license or digital entitlement. No changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot command will run. Continue?'
+        'BoostLab will show the source instruction "Disable Internet First", copy the Microsoft generic Windows Pro setup key VK7JG-NPHTM-C97JM-9MPGT-3V66T, open Activation settings, and open the Windows product-key entry flow only on Windows Home/Core. This is edition conversion preparation only; activation still requires a valid Windows Pro license or digital entitlement. Windows may request a restart after edition conversion; BoostLab will not auto-resume or auto-run BitLocker. No changepk, slmgr, DISM, KMS, crack, activation bypass, download, installer, registry, service, driver, or reboot command will run. Continue?'
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         'BoostLab will disable Widgets by machine policy and close Widgets processes if they are running. No restart is required. Do you want to continue?'

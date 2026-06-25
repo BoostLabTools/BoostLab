@@ -199,6 +199,26 @@ try {
     Assert-BoostLabCondition ([string]$sourceStatus.ChecksumStatus -eq 'Passed') 'Convert Home To Pro source verification must pass.'
     Assert-BoostLabCondition ([string]$sourceStatus.SourceType -eq 'YazanProvidedForgottenScript') 'Convert Home To Pro source status must report source-extra type.'
 
+    $homeEditionReader = {
+        [pscustomobject]@{
+            DetectionStatus             = 'Passed'
+            ProductName                 = 'Windows 11 Home'
+            Edition                     = 'Core'
+            CurrentEdition              = 'Core'
+            DetectedWindowsEdition      = 'Core'
+            NormalizedEdition           = 'core'
+            EditionFamily               = 'HomeCore'
+            EditionCapability           = 'HomeCore'
+            IsHomeOrCore                = $true
+            IsProOrHigher               = $false
+            SupportsBitLocker           = $false
+            BitLockerSupported          = $false
+            SupportsConvertHomeToPro    = $true
+            ConvertHomeToProApplicable  = $true
+            AvailabilityReason          = 'Mock Windows Home/Core edition detected for Convert Home To Pro validation.'
+        }
+    }
+
     $events = [System.Collections.ArrayList]::new()
     $clipboardWriter = {
         param($Value)
@@ -223,6 +243,7 @@ try {
         -ActionName 'Apply' `
         -Confirmed:$false `
         -AdministratorDetector { $true } `
+        -EditionCapabilityReader $homeEditionReader `
         -ClipboardWriter $clipboardWriter `
         -SettingsLauncher $settingsLauncher `
         -ProductKeyFlowLauncher $productKeyFlowLauncher `
@@ -235,6 +256,7 @@ try {
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorDetector { $false } `
+        -EditionCapabilityReader $homeEditionReader `
         -ClipboardWriter $clipboardWriter `
         -SettingsLauncher $settingsLauncher `
         -ProductKeyFlowLauncher $productKeyFlowLauncher `
@@ -247,6 +269,7 @@ try {
         -ActionName 'Apply' `
         -Confirmed:$true `
         -AdministratorDetector { $true } `
+        -EditionCapabilityReader $homeEditionReader `
         -ClipboardWriter $clipboardWriter `
         -SettingsLauncher $settingsLauncher `
         -ProductKeyFlowLauncher $productKeyFlowLauncher `

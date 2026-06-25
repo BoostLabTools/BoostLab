@@ -2430,6 +2430,102 @@ function Show-BoostLabActionPlanConfirmation {
     return $dialog.ShowDialog() -eq $true
 }
 
+function Copy-BoostLabToolMetadata {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Tool
+    )
+
+    $copy = @{}
+    foreach ($key in $Tool.Keys) {
+        $copy[$key] = $Tool[$key]
+    }
+    return $copy
+}
+
+function Get-BoostLabEditionAwareStageTools {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Stage,
+
+        [AllowNull()]
+        [object]$EditionCapability = $null
+    )
+
+    $tools = @($Stage['Tools'] | Sort-Object { [int]$_['Order'] })
+    if ([string]$Stage['Name'] -ne 'Setup') {
+        return $tools
+    }
+
+    $capability = $EditionCapability
+    if ($null -eq $capability) {
+        if (Get-Command -Name 'Resolve-BoostLabWindowsEditionCapability' -ErrorAction SilentlyContinue) {
+            $capability = Resolve-BoostLabWindowsEditionCapability
+        }
+        else {
+            $capability = [pscustomobject]@{
+                DetectionStatus = 'Unknown'
+                CurrentEdition = 'Unknown'
+                DetectedWindowsEdition = 'Unknown'
+                EditionFamily = 'Unknown'
+                EditionCapability = 'Unknown'
+                SupportsBitLocker = $false
+                SupportsConvertHomeToPro = $false
+                AvailabilityReason = 'Windows edition detection helper is unavailable.'
+            }
+        }
+    }
+
+    @(
+        foreach ($tool in $tools) {
+            $toolId = [string]$tool['Id']
+            if ($toolId -notin @('bitlocker', 'convert-home-to-pro')) {
+                $tool
+                continue
+            }
+
+            $availability = if (Get-Command -Name 'Get-BoostLabEditionAwareToolAvailability' -ErrorAction SilentlyContinue) {
+                Get-BoostLabEditionAwareToolAvailability -ToolId $toolId -EditionCapability $capability
+            }
+            else {
+                [pscustomobject]@{
+                    IsAvailable = $false
+                    IsRunnable = $false
+                    AvailabilityStatus = 'Unavailable'
+                    AvailabilityReason = 'Windows edition detection helper is unavailable.'
+                    RuntimeGuardResult = 'EditionUnknown'
+                    RequiredEdition = if ($toolId -eq 'bitlocker') { 'Windows Pro or higher' } else { 'Windows Home/Core' }
+                    CurrentEdition = 'Unknown'
+                    DetectedWindowsEdition = 'Unknown'
+                    EditionFamily = 'Unknown'
+                    EditionCapability = 'Unknown'
+                }
+            }
+
+            if ([bool]$availability.IsAvailable) {
+                $copy = Copy-BoostLabToolMetadata -Tool $tool
+                $copy['AvailabilityStatus'] = 'Available'
+                $copy['AvailabilityReason'] = [string]$availability.AvailabilityReason
+                $copy['DetectedWindowsEdition'] = [string]$availability.DetectedWindowsEdition
+                $copy['EditionFamily'] = [string]$availability.EditionFamily
+                $copy
+                continue
+            }
+
+            if ([string]$availability.EditionFamily -eq 'Unknown') {
+                $copy = Copy-BoostLabToolMetadata -Tool $tool
+                $copy['AvailabilityStatus'] = 'Unavailable'
+                $copy['AvailabilityReason'] = [string]$availability.AvailabilityReason
+                $copy['RuntimeGuardResult'] = [string]$availability.RuntimeGuardResult
+                $copy['RequiredEdition'] = [string]$availability.RequiredEdition
+                $copy['DetectedWindowsEdition'] = [string]$availability.DetectedWindowsEdition
+                $copy['EditionFamily'] = [string]$availability.EditionFamily
+                $copy
+            }
+        }
+    )
+}
+
 function New-BoostLabToolCard {
     param(
         [Parameter(Mandatory)]
@@ -2441,6 +2537,9 @@ function New-BoostLabToolCard {
     $stageName = [string]$Tool['Stage']
     $toolType = ([string]$Tool['Type']).ToLowerInvariant()
     $riskLevel = ([string]$Tool['RiskLevel']).ToLowerInvariant()
+    $availabilityStatus = if ($Tool.Contains('AvailabilityStatus')) { [string]$Tool['AvailabilityStatus'] } else { 'Available' }
+    $availabilityReason = if ($Tool.Contains('AvailabilityReason')) { [string]$Tool['AvailabilityReason'] } else { '' }
+    $toolUnavailable = $availabilityStatus -eq 'Unavailable'
 
     $card = [System.Windows.Controls.Border]::new()
     $card.Width = 304
@@ -2560,6 +2659,17 @@ function New-BoostLabToolCard {
     $description.TextWrapping = [System.Windows.TextWrapping]::Wrap
     $description.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
     $contentPanel.Children.Add($description) | Out-Null
+
+    if ($toolUnavailable) {
+        $availabilityText = [System.Windows.Controls.TextBlock]::new()
+        $availabilityText.Text = "Unavailable: $availabilityReason"
+        $availabilityText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A')
+        $availabilityText.FontSize = 11
+        $availabilityText.LineHeight = 16
+        $availabilityText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+        $availabilityText.Margin = [System.Windows.Thickness]::new(0, 8, 0, 0)
+        $contentPanel.Children.Add($availabilityText) | Out-Null
+    }
 
     $selectionMode = if ($Tool.Contains('SelectionMode')) {
         [string]$Tool['SelectionMode']
@@ -2687,7 +2797,7 @@ function New-BoostLabToolCard {
     $statusContainer.CornerRadius = [System.Windows.CornerRadius]::new(6)
 
     $status = [System.Windows.Controls.TextBlock]::new()
-    $status.Text = 'Status: Not implemented'
+    $status.Text = if ($toolUnavailable) { "Status: Unavailable - $availabilityReason" } else { 'Status: Not implemented' }
     $status.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A')
     $status.FontSize = 11
     $status.FontWeight = [System.Windows.FontWeights]::SemiBold
@@ -2704,6 +2814,10 @@ function New-BoostLabToolCard {
         $actionDisplayLabel = Get-BoostLabToolActionDisplayLabel -ToolMetadata $Tool -ActionName $actionName
         $actionButton = [System.Windows.Controls.Button]::new()
         $actionButton.Content = $actionDisplayLabel
+        if ($toolUnavailable) {
+            $actionButton.IsEnabled = $false
+            $actionButton.ToolTip = $availabilityReason
+        }
         if ($toolId -eq 'driver-install-debloat-settings' -and $actionName -in @('Open', 'Apply')) {
             $actionButton.ToolTip = 'Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically.'
         }
@@ -2775,7 +2889,7 @@ function Show-BoostLabStage {
 
     Set-BoostLabStateValue -Name 'CurrentStage' -Value $StageName
 
-    $tools = @($stage['Tools'] | Sort-Object { [int]$_['Order'] })
+    $tools = @(Get-BoostLabEditionAwareStageTools -Stage $stage)
     $toolCountText = if ($tools.Count -eq 1) {
         '1 TOOL'
     }
