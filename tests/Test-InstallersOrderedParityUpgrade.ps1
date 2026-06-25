@@ -68,6 +68,7 @@ Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Installers
 
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw
 $expectedRemovedMenu = [ordered]@{
+    9 = 'Escape From Tarkov'
     11 = 'Frame View'
     12 = 'GOG launcher'
     15 = 'Notepad ++'
@@ -109,7 +110,6 @@ $expectedRetainedIds = @(
     'brave'
     'electronic-arts'
     'epic-games'
-    'escape-from-tarkov'
     'firefox'
     'google-chrome'
     'league-of-legends'
@@ -120,9 +120,9 @@ $expectedRetainedIds = @(
     'ubisoft-connect'
     'valorant'
 )
-Assert-BoostLabCondition ($selectionItems.Count -eq 17) "Expected 17 retained visible selection items, found $($selectionItems.Count)."
+Assert-BoostLabCondition ($selectionItems.Count -eq 16) "Expected 16 retained visible selection items after Tarkov removal, found $($selectionItems.Count)."
 Assert-BoostLabCondition (((@($selectionItems | ForEach-Object { [string]$_['Id'] }) -join ',') -eq ($expectedRetainedIds -join ','))) 'Retained Installers selection order must match source order after Yazan exclusions.'
-foreach ($removedId in @('frame-view', 'gog-launcher', 'notepad-plus-plus', 'nvidia-app', 'onboard-memory-manager', 'pot-player')) {
+foreach ($removedId in @('escape-from-tarkov', 'frame-view', 'gog-launcher', 'notepad-plus-plus', 'nvidia-app', 'onboard-memory-manager', 'pot-player')) {
     Assert-BoostLabCondition ($removedId -notin @($selectionItems | ForEach-Object { [string]$_['Id'] })) "Removed app must not be selectable: $removedId"
 }
 foreach ($retainedId in @('google-chrome', 'obs-studio', 'rockstar-games')) {
@@ -142,20 +142,22 @@ try {
     $info = & $module { Get-BoostLabToolInfo }
     Assert-BoostLabCondition ([string]$info.SelectionMode -eq 'SingleSelect') 'Module info must expose SingleSelect selection mode.'
     Assert-BoostLabCondition ([string]$info.SelectionLabel -eq 'Select exactly one app to install') 'Module info selection label mismatch.'
-    Assert-BoostLabCondition (@($info.SelectionItems).Count -eq 17) 'Module info must expose 17 retained selection items.'
+    Assert-BoostLabCondition (@($info.SelectionItems).Count -eq 16) 'Module info must expose 16 retained selection items after Tarkov removal.'
 
     $analyze = & $module { Invoke-BoostLabToolAction -ActionName 'Analyze' }
     Assert-BoostLabCondition ([bool]$analyze.Success) 'Installers Analyze should succeed.'
     Assert-BoostLabCondition ([string]$analyze.Data.Mode -eq 'SingleSelectedAppInstall') 'Analyze mode mismatch.'
     Assert-BoostLabCondition ([string]$analyze.Data.SelectionModel -eq 'SingleSelect') 'Analyze selection model mismatch.'
-    Assert-BoostLabCondition ([int]$analyze.Data.RetainedAppCount -eq 17) 'Analyze retained app count mismatch.'
-    Assert-BoostLabCondition ([int]$analyze.Data.RetainedArtifactCount -eq 18) 'Analyze retained artifact count mismatch.'
+    Assert-BoostLabCondition ([int]$analyze.Data.RetainedAppCount -eq 16) 'Analyze retained app count mismatch after Tarkov removal.'
+    Assert-BoostLabCondition ([int]$analyze.Data.RetainedArtifactCount -eq 17) 'Analyze retained artifact count mismatch after Tarkov removal.'
     Assert-BoostLabCondition ([bool]$analyze.Data.NoMutationOccurred) 'Analyze must be read-only.'
     Assert-BoostLabCondition ([bool]$analyze.Data.RemovedMenuMappingValid) 'Removed menu mapping must be valid.'
 
     $catalog = @(& $module { Get-BoostLabInstallersCatalog })
-    Assert-BoostLabCondition ($catalog.Count -eq 17) 'Module catalog must include every retained app and no removed apps.'
+    Assert-BoostLabCondition ($catalog.Count -eq 16) 'Module catalog must include every retained app and no removed apps after Tarkov removal.'
     Assert-BoostLabCondition (((@($catalog | ForEach-Object { [string]$_.AppId }) -join ',') -eq ($expectedRetainedIds -join ','))) 'Module catalog source order mismatch.'
+    Assert-BoostLabCondition ('escape-from-tarkov' -notin @($catalog | ForEach-Object { [string]$_.AppId })) 'Escape From Tarkov must not remain in the retained Installers catalog.'
+    Assert-BoostLabCondition (@($catalog | ForEach-Object { $_.Artifacts } | Where-Object { [string]$_.Url -like '*escapefromtarkov*' }).Count -eq 0) 'Escape From Tarkov download URL must not remain in retained Installers artifacts.'
     foreach ($app in $catalog) {
         Assert-BoostLabCondition (@($app.Artifacts).Count -ge 1) "Retained app missing artifact descriptor: $($app.AppId)"
         Assert-BoostLabCondition (@($app.InstallerCommands).Count -ge 1) "Retained app missing installer/helper descriptor: $($app.AppId)"
@@ -492,7 +494,7 @@ try {
     Assert-BoostLabCondition (@($failedApply.Data.RemainingApps).Count -eq 0) 'Single-app failure must not report queued remaining apps.'
     Assert-BoostLabCondition (((@($failureSeen) | Sort-Object -Unique) -join ',') -eq 'google-chrome') 'Failure path must only start the selected app.'
 
-    $invalid = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('nvidia-app') -OperationExecutor { throw 'should not execute' } -SkipEnvironmentChecks }
+    $invalid = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('escape-from-tarkov') -OperationExecutor { throw 'should not execute' } -SkipEnvironmentChecks }
     Assert-BoostLabCondition (-not [bool]$invalid.Success) 'Removed app selection should fail closed.'
     Assert-BoostLabCondition ([string]$invalid.Status -eq 'InvalidSelection') 'Removed app selection should be invalid.'
     Assert-BoostLabCondition (-not [bool]$invalid.ChangesExecuted) 'Removed app selection must execute no changes.'
@@ -602,8 +604,8 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
 [pscustomobject]@{
     TestName              = 'Installers single-app Apply contract'
     SourceHash            = $actualSourceHash
-    RetainedAppCount      = 17
-    RetainedArtifactCount = 18
+    RetainedAppCount      = 16
+    RetainedArtifactCount = 17
     ImplementationLevel   = [string]$installersRecord['ImplementationLevel']
     FinalProgressStatus   = [string]$installersRecord['FinalProgressStatus']
     NextOrderedTarget     = [string]$nextTarget['ToolId']

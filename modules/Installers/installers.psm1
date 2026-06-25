@@ -41,6 +41,7 @@ $script:BoostLabExpectedCanonicalSourceHash = '268C1EFE627FADDA17892223D4C35E484
 $script:BoostLabSourceRelativePath = 'source-ultimate/4 Installers/1 Installers.ps1'
 
 $script:BoostLabInstallersRemovedMenuEntries = @(
+    [pscustomobject]@{ SourceMenuNumber = 9; AppId = 'escape-from-tarkov'; DisplayName = 'Escape From Tarkov' }
     [pscustomobject]@{ SourceMenuNumber = 11; AppId = 'frame-view'; DisplayName = 'Frame View' }
     [pscustomobject]@{ SourceMenuNumber = 12; AppId = 'gog-launcher'; DisplayName = 'GOG launcher' }
     [pscustomobject]@{ SourceMenuNumber = 15; AppId = 'notepad-plus-plus'; DisplayName = 'Notepad ++' }
@@ -130,7 +131,7 @@ function Get-BoostLabInstallersFullSourceMenu {
         [pscustomobject]@{ SourceMenuNumber = 6; AppId = 'brave'; DisplayName = 'Brave'; RemovedByYazan = $false; Visible = $true; Selectable = $true }
         [pscustomobject]@{ SourceMenuNumber = 7; AppId = 'electronic-arts'; DisplayName = 'Electronic Arts'; RemovedByYazan = $false; Visible = $true; Selectable = $true }
         [pscustomobject]@{ SourceMenuNumber = 8; AppId = 'epic-games'; DisplayName = 'Epic Games'; RemovedByYazan = $false; Visible = $true; Selectable = $true }
-        [pscustomobject]@{ SourceMenuNumber = 9; AppId = 'escape-from-tarkov'; DisplayName = 'Escape From Tarkov'; RemovedByYazan = $false; Visible = $true; Selectable = $true }
+        [pscustomobject]@{ SourceMenuNumber = 9; AppId = 'escape-from-tarkov'; DisplayName = 'Escape From Tarkov'; RemovedByYazan = $true; Visible = $false; Selectable = $false }
         [pscustomobject]@{ SourceMenuNumber = 10; AppId = 'firefox'; DisplayName = 'Firefox'; RemovedByYazan = $false; Visible = $true; Selectable = $true }
         [pscustomobject]@{ SourceMenuNumber = 11; AppId = 'frame-view'; DisplayName = 'Frame View'; RemovedByYazan = $true; Visible = $false; Selectable = $false }
         [pscustomobject]@{ SourceMenuNumber = 12; AppId = 'gog-launcher'; DisplayName = 'GOG launcher'; RemovedByYazan = $true; Visible = $false; Selectable = $false }
@@ -237,18 +238,6 @@ function Get-BoostLabInstallersCatalog {
             New-BoostLabInstallersOperation -Type 'UninstallByDisplayName' -Label 'Uninstall Epic Online Services' -Parameters @{ RegistryPath = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; DisplayNameLike = '*Epic Online Services*'; Arguments = '/x {0} /qn' }
             New-BoostLabInstallersOperation -Type 'RemoveRegistryValue' -Label 'Remove Epic Games startup value' -Parameters @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'; Name = 'EpicGamesLauncher'; IgnoreMissing = $true }
         ) -SideEffectFamilies @('Download', 'InstallerLaunch', 'ExternalAppLaunch', 'Uninstall', 'StartupRegistryCleanup')
-
-        New-BoostLabInstallersAppDescriptor -SourceMenuNumber 9 -AppId 'escape-from-tarkov' -DisplayName 'Escape From Tarkov' -Artifacts @(
-            New-BoostLabInstallersArtifact -Url 'https://prod.escapefromtarkov.com/launcher/download' -DestinationPath '$env:SystemRoot\Temp\Escape From Tarkov.exe'
-        ) -InstallerCommands @(
-            New-BoostLabInstallersCommand -FilePath '$env:SystemRoot\Temp\Escape From Tarkov.exe' -Arguments '/VERYSILENT /NORESTART' -Wait $true
-        ) -Operations @(
-            New-BoostLabInstallersOperation -Type 'Download' -Label 'Download Escape From Tarkov installer' -Parameters @{ Url = 'https://prod.escapefromtarkov.com/launcher/download'; DestinationPath = '$env:SystemRoot\Temp\Escape From Tarkov.exe' }
-            New-BoostLabInstallersOperation -Type 'StartProcess' -Label 'Install Escape From Tarkov launcher silently' -Parameters @{ FilePath = '$env:SystemRoot\Temp\Escape From Tarkov.exe'; Arguments = '/VERYSILENT /NORESTART'; Wait = $true }
-            New-BoostLabInstallersOperation -Type 'CreateShortcut' -Label 'Create Battlestate desktop shortcut' -Parameters @{ Path = '$Desktop\Battlestate Games Launcher.lnk'; TargetPath = '$env:SystemDrive\Battlestate Games\BsgLauncher\BsgLauncher.exe'; WorkingDirectory = '$env:SystemDrive\Battlestate Games\BsgLauncher' }
-            New-BoostLabInstallersOperation -Type 'MoveItem' -Label 'Move Battlestate Start Menu shortcut' -Parameters @{ Path = '$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Battlestate Games\Battlestate Games Launcher.lnk'; Destination = '$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Battlestate Games Launcher.lnk'; IgnoreMissing = $true }
-            New-BoostLabInstallersOperation -Type 'RemoveItem' -Label 'Remove Battlestate Start Menu folder' -Parameters @{ Path = '$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Battlestate Games'; Recurse = $true; IgnoreMissing = $true }
-        ) -SideEffectFamilies @('Download', 'InstallerLaunch', 'Shortcut', 'FileMove', 'Cleanup')
 
         New-BoostLabInstallersAppDescriptor -SourceMenuNumber 10 -AppId 'firefox' -DisplayName 'Firefox' -Artifacts @(
             New-BoostLabInstallersArtifact -Url 'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US' -DestinationPath '$env:SystemRoot\Temp\Firefox.exe'
@@ -404,6 +393,7 @@ function Test-BoostLabInstallersRemovedMenuMapping {
     param()
 
     $expected = @{
+        9 = 'Escape From Tarkov'
         11 = 'Frame View'
         12 = 'GOG launcher'
         15 = 'Notepad ++'
@@ -573,7 +563,6 @@ function Get-BoostLabInstallersOfficialArtifactIdForUrl {
         'https://brave-browser-downloads.s3.brave.com/latest/brave_installer-x64.exe' = 'installers-brave'
         'https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe' = 'installers-electronic-arts'
         'https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi' = 'installers-epic-games'
-        'https://prod.escapefromtarkov.com/launcher/download' = 'installers-escape-from-tarkov'
         'https://download.mozilla.org/?product=firefox-latest-ssl&os=win64&lang=en-US' = 'installers-firefox'
         'https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi' = 'installers-ublock-origin-xpi'
         'https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi' = 'installers-google-chrome'
@@ -1239,7 +1228,7 @@ function Invoke-BoostLabToolAction {
         }
         $checks = @(
             New-BoostLabVerificationCheck -Name 'Source checksum' -Expected $script:BoostLabExpectedSourceHash -Actual ([string]$analysis.Source.DetectedSha256) -Status $(if ($sourceOk) { 'Passed' } else { 'Failed' }) -Message 'Installers source checksum must match the approved Ultimate source.'
-            New-BoostLabVerificationCheck -Name 'Removed menu mapping' -Expected '11 Frame View; 12 GOG launcher; 15 Notepad ++; 16 Nvidia App; 18 Onboard Memory Manager; 19 Pot Player' -Actual (($analysis.YazanRemovedAppMenuEntries | ForEach-Object { '{0} {1}' -f $_.SourceMenuNumber, $_.DisplayName }) -join '; ') -Status $(if ($mappingOk) { 'Passed' } else { 'Failed' }) -Message 'Yazan removed menu entries must match the source exactly.'
+            New-BoostLabVerificationCheck -Name 'Removed menu mapping' -Expected '9 Escape From Tarkov; 11 Frame View; 12 GOG launcher; 15 Notepad ++; 16 Nvidia App; 18 Onboard Memory Manager; 19 Pot Player' -Actual (($analysis.YazanRemovedAppMenuEntries | ForEach-Object { '{0} {1}' -f $_.SourceMenuNumber, $_.DisplayName }) -join '; ') -Status $(if ($mappingOk) { 'Passed' } else { 'Failed' }) -Message 'Yazan removed menu entries must match the source exactly.'
             New-BoostLabVerificationCheck -Name 'Analyze mutation' -Expected 'No mutation' -Actual 'No mutation' -Status 'Passed' -Message 'Analyze is read-only.'
         )
         $verification = New-BoostLabInstallersVerification -Action 'Analyze' -Status $(if ($success) { 'Passed' } else { 'Failed' }) -ExpectedState 'Verified source identity, removed mapping, and retained catalog.' -DetectedState $analysis -Checks $checks -Message $message

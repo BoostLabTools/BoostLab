@@ -5,9 +5,9 @@
 This document records the Installers source scope and the Phase 119 selected-app
 implementation boundary.
 
-Phase 119 supersedes the Phase 105 manual-handoff-only boundary for retained
-apps. BoostLab now implements a Yazan-scoped checkbox multi-select queue for
-retained source app choices only. It does not approve any global artifact
+Phase 172C supersedes the Phase 119 multi-select boundary for retained apps.
+BoostLab now implements a Yazan-scoped single-app Apply flow for retained
+source app choices only. It does not approve any global artifact
 provenance entry, production allowlist entry, removed app, Default, Restore, or
 parallel installer workflow.
 
@@ -70,8 +70,9 @@ download.
 
 ## Current Decision
 
-Installers is implemented as a Yazan-scoped selected-app sequential queue in
-Phase 119.
+Installers is implemented as a Yazan-scoped single-app Apply flow as of
+Phase 172C, with Escape From Tarkov removed from active product scope in
+Phase 173B.
 
 No production download/installer/executable/registry/file/service/task/shortcut/config/uninstall/reboot scopes
 are approved as reusable/global allowlists in this phase. The implemented
@@ -79,14 +80,16 @@ Installers module contains source-derived retained-app descriptors and executes
 only selected retained app operations after explicit confirmation.
 
 Yazan excluded exactly these source menu entries from the visible/selectable
-catalog: 11 Frame View, 12 GOG launcher, 15 Notepad ++, 16 Nvidia App, 18
-Onboard Memory Manager, and 19 Pot Player. Google Chrome, OBS Studio, and
-Rockstar Games remain retained. Because these omissions are intentional, the
-parity record uses `YazanFinalException` rather than `ParityImplemented`.
+catalog: 9 Escape From Tarkov, 11 Frame View, 12 GOG launcher, 15 Notepad ++,
+16 Nvidia App, 18 Onboard Memory Manager, and 19 Pot Player. Google Chrome,
+OBS Studio, and Rockstar Games remain retained. Because these omissions are
+intentional, the parity record uses `YazanFinalException` rather than
+`ParityImplemented`.
 
 Retained selected apps preserve source-defined URLs, destinations,
 installer/helper commands, arguments, and post-install operation families in
-source order. The queue stops on the first failed selected app by default.
+source order. Apply runs exactly one selected app per invocation; to install
+another retained app, the user runs Installers again and selects that app.
 
 Migration record: `docs/migrations/installers.md`.
 

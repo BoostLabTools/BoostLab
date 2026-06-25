@@ -111,8 +111,11 @@ try {
 
     $officialPolicy = Get-BoostLabOfficialVendorDirectRuntimePolicy
     $officialRuntimeSources = @(Get-BoostLabOfficialVendorDirectRuntimeSources)
-    if ([int]$officialPolicy.ApprovedCount -ne 19 -or $officialRuntimeSources.Count -ne 19) {
-        $errors.Add("Phase 173A must approve exactly 19 active OfficialVendorDirect runtime sources after retiring Driver Install Latest and adding the NVIDIA App page shortcut; found $($officialRuntimeSources.Count).")
+    if ([int]$officialPolicy.ApprovedCount -ne 18 -or $officialRuntimeSources.Count -ne 18) {
+        $errors.Add("Phase 173B must leave exactly 18 active OfficialVendorDirect runtime sources after removing Escape From Tarkov; found $($officialRuntimeSources.Count).")
+    }
+    if (@($officialRuntimeSources | Where-Object { [string]$_.Id -eq 'installers-escape-from-tarkov' }).Count -ne 0) {
+        $errors.Add('Escape From Tarkov must not remain in OfficialVendorDirect runtime sources.')
     }
     $officialKindCounts = @{}
     foreach ($group in @($officialRuntimeSources | Group-Object SourceKind)) {
@@ -120,7 +123,7 @@ try {
     }
     $expectedOfficialKindCounts = @{
         StaticOfficialInstaller = 3
-        FloatingOfficialInstaller = 14
+        FloatingOfficialInstaller = 13
         OfficialVendorLookupPage = 1
         OfficialVendorApi = 0
         BrowserExtensionOfficialSource = 1

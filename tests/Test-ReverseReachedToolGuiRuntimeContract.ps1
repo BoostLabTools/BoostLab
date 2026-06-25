@@ -283,7 +283,7 @@ Assert-BoostLabCondition (-not $nvidiaAppTool.Contains('SelectionMode')) 'NVIDIA
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
 Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require one selected app ID.'
-Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 17) 'Installers selected app list changed unexpectedly.'
+Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 16) 'Installers selected app list must reflect the Tarkov removal only.'
 Assert-BoostLabCondition (-not $driverCleanTool.Contains('SelectionMode')) 'Driver Clean must use Auto/Manual actions, not a branch selector.'
 Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean actions must remain Analyze/Open/Apply.'
 

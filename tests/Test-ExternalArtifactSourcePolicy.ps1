@@ -309,19 +309,21 @@ $officialPolicyEntries = @($officialPolicy.Entries)
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
 $availableMirrorEntries = @($entries | Where-Object { $_.ContainsKey('VerifiedBoostLabMirrorAvailable') -and $_.VerifiedBoostLabMirrorAvailable -eq $true })
 $provenanceOnlyLinkedEntries = @($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceOnlyApproved') -and $_.ArtifactProvenanceOnlyApproved -eq $true })
-Assert-BoostLabCondition ($officialEntries.Count -eq 19) 'Expected exactly 19 active official vendor/project sources after Phase 173A Graphics simplification.'
-Assert-BoostLabCondition ([int]$officialPolicy.ApprovedCount -eq 19) 'OfficialVendorDirect policy approved count mismatch.'
-Assert-BoostLabCondition ($officialPolicyEntries.Count -eq 19) 'OfficialVendorDirect policy entry count mismatch.'
+Assert-BoostLabCondition ($officialEntries.Count -eq 18) 'Expected exactly 18 active official vendor/project sources after Phase 173B Tarkov removal.'
+Assert-BoostLabCondition ([int]$officialPolicy.ApprovedCount -eq 18) 'OfficialVendorDirect policy approved count mismatch after Tarkov removal.'
+Assert-BoostLabCondition ($officialPolicyEntries.Count -eq 18) 'OfficialVendorDirect policy entry count mismatch after Tarkov removal.'
 $officialEntryIds = @($officialEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
 $officialPolicyIds = @($officialPolicyEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
 Assert-BoostLabCondition (($officialEntryIds -join '|') -eq ($officialPolicyIds -join '|')) 'OfficialVendorDirect policy entries must map one-to-one to OfficialVendorDirect manifest entries.'
+Assert-BoostLabCondition ('installers-escape-from-tarkov' -notin $officialEntryIds) 'Escape From Tarkov must not remain in active external artifact source entries.'
+Assert-BoostLabCondition ('installers-escape-from-tarkov' -notin $officialPolicyIds) 'Escape From Tarkov must not remain in OfficialVendorDirect runtime policy entries.'
 $officialKindCounts = @{}
 foreach ($group in @($officialPolicyEntries | ForEach-Object { [string]$_['OfficialSourceKind'] } | Group-Object)) {
     $officialKindCounts[[string]$group.Name] = [int]$group.Count
 }
 $expectedOfficialKindCounts = @{
     StaticOfficialInstaller = 3
-    FloatingOfficialInstaller = 14
+    FloatingOfficialInstaller = 13
     OfficialVendorLookupPage = 1
     OfficialVendorApi = 0
     BrowserExtensionOfficialSource = 1

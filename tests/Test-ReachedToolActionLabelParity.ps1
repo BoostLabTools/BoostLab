@@ -217,7 +217,7 @@ $installersTool = $toolById['installers']
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection behavior.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
 Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must still require one selected app.'
-Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 17) 'Installers selected app list must remain unchanged.'
+Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 16) 'Installers selected app list must reflect the Tarkov removal only.'
 Assert-BoostLabTextContains -Text $uiText -Needle 'System.Windows.Controls.RadioButton' -Description 'Installers radio single-select UI'
 
 $updatesDriversBlockTool = $toolById['updates-drivers-block']

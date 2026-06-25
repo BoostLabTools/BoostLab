@@ -30,7 +30,7 @@
     OfficialVendorDirectRuntimePolicy = @{
         SchemaVersion = '1.0'
         Phase = '164I'
-        ApprovedCount = 19
+        ApprovedCount = 18
         RequiredScheme = 'https'
         AllowedSourceKinds = @(
             'StaticOfficialInstaller'
@@ -155,23 +155,6 @@
                 OfficialHostAllowlist = @('launcher-public-service-prod06.ol.epicgames.com')
                 ExpectedFileName = 'Epic Games.msi'
                 ExpectedExtension = '.msi'
-                DownloadExecutionApproved = $true
-                ResolvedDownloadExecutionApproved = $false
-                LookupExecutionApproved = $false
-                InstallerExecutionApproved = $true
-                ProductionAllowlistApproved = $true
-                RuntimeSourceSelectionApproved = $true
-                RequiresVerifiedLocalPath = $true
-                NoUrlExecution = $true
-                SignatureVerificationRequired = $true
-                ExpectedSignatureStatus = 'Valid'
-            }
-            @{
-                Id = 'installers-escape-from-tarkov'
-                OfficialSourceKind = 'FloatingOfficialInstaller'
-                OfficialHostAllowlist = @('prod.escapefromtarkov.com')
-                ExpectedFileName = 'Escape From Tarkov.exe'
-                ExpectedExtension = '.exe'
                 DownloadExecutionApproved = $true
                 ResolvedDownloadExecutionApproved = $false
                 LookupExecutionApproved = $false
@@ -628,23 +611,6 @@
             MirrorStatus = 'NotRequiredOfficial'
             OperationKind = 'DownloadArtifact'
             Notes = 'Retained Installers app source; Epic Games official launcher API remains direct.'
-        }
-        @{
-            Id = 'installers-escape-from-tarkov'
-            ToolId = 'installers'
-            ToolTitle = 'Installers'
-            Stage = 'Installers'
-            StageOrder = 4
-            ToolOrder = 1
-            CanonicalOrder = 'Installers 1'
-            SourceScriptPath = 'source-ultimate/4 Installers/1 Installers.ps1'
-            OriginalDownloadUrl = 'https://prod.escapefromtarkov.com/launcher/download'
-            SourceClassification = 'OfficialVendorDirect'
-            IntendedBoostLabMirrorUrl = $null
-            ExpectedSha256 = $null
-            MirrorStatus = 'NotRequiredOfficial'
-            OperationKind = 'DownloadArtifact'
-            Notes = 'Retained Installers app source; official Escape From Tarkov launcher endpoint remains direct.'
         }
         @{
             Id = 'installers-firefox'

@@ -223,7 +223,6 @@
                         @{ Id = 'brave'; Title = 'Brave'; SourceMenuNumber = 6 }
                         @{ Id = 'electronic-arts'; Title = 'Electronic Arts'; SourceMenuNumber = 7 }
                         @{ Id = 'epic-games'; Title = 'Epic Games'; SourceMenuNumber = 8 }
-                        @{ Id = 'escape-from-tarkov'; Title = 'Escape From Tarkov'; SourceMenuNumber = 9 }
                         @{ Id = 'firefox'; Title = 'Firefox'; SourceMenuNumber = 10 }
                         @{ Id = 'google-chrome'; Title = 'Google Chrome'; SourceMenuNumber = 13 }
                         @{ Id = 'league-of-legends'; Title = 'League Of Legends'; SourceMenuNumber = 14 }

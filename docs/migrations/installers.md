@@ -6,8 +6,8 @@
 - Module: `modules/Installers/installers.psm1`
 - Source script path: `source-ultimate/4 Installers/1 Installers.ps1`
 - Source SHA-256: `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67`
-- Migration status: Controlled selected-app sequential queue with Yazan final app-list exception
-- Yazan approval status: Approved for Phase 119 retained-app multi-select queue; Yazan excluded source menu entries 11, 12, 15, 16, 18, and 19
+- Migration status: Controlled single-app install flow with Yazan final app-list exception
+- Yazan approval status: Approved for Phase 172C single-app flow; Yazan excluded source menu entries 9, 11, 12, 15, 16, 18, and 19
 
 ## Original Ultimate Behavior
 
@@ -28,14 +28,15 @@ selected cleanup.
 
 BoostLab implements:
 
-- `Analyze`: read-only source/checksum/status analysis, full source menu mapping, Yazan-excluded app mapping, retained visible app catalog, retained app count, retained artifact count, and queue model reporting.
+- `Analyze`: read-only source/checksum/status analysis, full source menu mapping, Yazan-excluded app mapping, retained visible app catalog, retained app count, retained artifact count, and single-app model reporting.
 - `Open`: retained catalog and selection guidance prepared inside BoostLab only.
-- `Apply`: selected retained app IDs are processed one app at a time in retained source order after explicit confirmation. Each selected retained app downloads only its source-defined artifact(s), runs only its source-defined installer/helper command and arguments, and performs only its source-defined post-install side effects.
+- `Apply`: exactly one selected retained app ID is processed per Apply after explicit confirmation. The selected retained app downloads only its source-defined artifact(s), runs only its source-defined installer/helper command and arguments, and performs only its source-defined post-install side effects.
 - `Default`: blocked with `DefaultUnavailable`.
 - `Restore`: blocked with `RestoreUnavailable`.
 
 Removed Yazan-excluded source menu entries are not visible, selectable, downloadable, installable, or plannable:
 
+- 9 Escape From Tarkov
 - 11 Frame View
 - 12 GOG launcher
 - 15 Notepad ++
@@ -49,13 +50,13 @@ Google Chrome, OBS Studio, and Rockstar Games remain retained and selectable.
 
 For retained apps, BoostLab preserves the source-defined URLs, destination
 paths, installer/helper commands, arguments, and post-install operation
-families in a data-driven catalog. The queue is sequential and stops on the
-first failed selected app by default, reporting completed, failed, and remaining
-not-started apps.
+families in a data-driven catalog. Apply runs exactly one selected app per
+invocation; to install another retained app, the user runs Installers again and
+selects that app.
 
 ## Intentional Deviations
 
-Yazan intentionally removed six source menu entries from BoostLab's visible
+Yazan intentionally removed seven source menu entries from BoostLab's visible
 Installers catalog. This is recorded as `YazanFinalException` rather than full
 parity. Default and Restore remain unavailable because the source does not
 define one safe global Default branch and BoostLab does not have a captured-state
@@ -74,7 +75,7 @@ the retained source app defines those operations.
 The original Ultimate source requires Administrator rights. BoostLab preserves
 that requirement for the selected-app Apply path. Analyze and Open remain
 read-only/no-mutation paths, but the tool metadata declares the full Apply
-capability surface because the card exposes one implemented selected-app queue.
+capability surface because the card exposes one implemented selected-app flow.
 
 ## Capabilities
 
@@ -96,12 +97,12 @@ capability surface because the card exposes one implemented selected-app queue.
 
 ## Risk Level
 
-High. The source is a multi-application installer workflow with many external
-artifacts and per-app side effects.
+High. The source is an installer workflow with many external artifacts and
+per-app side effects.
 
 ## Confirmation Requirements
 
-Apply requires explicit Action Plan confirmation for the selected queue before
+Apply requires explicit Action Plan confirmation for the selected app before
 downloads, installer/helper execution, or source-defined side effects begin.
 
 ## Default And Restore
@@ -122,9 +123,9 @@ installer restart/session effects before approval.
 - Verify Analyze is read-only.
 - Verify Open opens no browser or external tool and downloads, runs, mutates,
   installs, uninstalls, repairs, or cleans up nothing.
-- Verify Apply accepts multiple retained selected app IDs.
-- Verify selected retained apps are executed sequentially in source order.
-- Verify failure stops the queue and reports completed, failed, and remaining apps.
+- Verify Apply requires exactly one retained selected app ID.
+- Verify the selected retained app is the only app executed.
+- Verify selected-app failure reports that app and does not involve later apps.
 - Verify removed Yazan-excluded apps are not visible or selectable.
 - Verify retained apps include Google Chrome, OBS Studio, and Rockstar Games.
 - Verify Default and Restore are unavailable and separate.
