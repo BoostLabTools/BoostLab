@@ -245,6 +245,15 @@ function Get-BoostLabNotepadCommandText {
     "reg $Operation $($quoted -join ' ')".Trim()
 }
 
+function Test-BoostLabNotepadNativeSuccessOutput {
+    param([AllowNull()][string]$NativeOutput)
+
+    if ([string]::IsNullOrWhiteSpace($NativeOutput)) {
+        return $false
+    }
+    return ($NativeOutput -match '(?i)\bthe operation completed successfully\.?\b')
+}
+
 function ConvertTo-BoostLabNotepadHiveOperation {
     param(
         [Parameter(Mandatory)][string]$Stage,
@@ -313,9 +322,18 @@ function ConvertTo-BoostLabNotepadHiveOperation {
         $standardOutputText = (@($output.ToArray()) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
     }
     $standardErrorText = (@($standardError.ToArray()) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join [Environment]::NewLine
-    $success = ($exitCodeCaptured -and $exitCode -eq 0)
-    $failureKind = if ($success) {
+    $exitCodeSuccess = ($exitCodeCaptured -and $exitCode -eq 0)
+    $recoverableMissingExitCode = (
+        -not $exitCodeCaptured -and
+        $Stage -eq 'ImportNotepadSettingsPayload' -and
+        (Test-BoostLabNotepadNativeSuccessOutput -NativeOutput $outputText)
+    )
+    $success = ($exitCodeSuccess -or $recoverableMissingExitCode)
+    $failureKind = if ($exitCodeSuccess) {
         ''
+    }
+    elseif ($recoverableMissingExitCode) {
+        'NativeExitCodeMissingWithSuccessOutput'
     }
     elseif (-not $exitCodeCaptured) {
         'NativeExitCodeMissing'
@@ -326,8 +344,11 @@ function ConvertTo-BoostLabNotepadHiveOperation {
     else {
         'NativeCommandFailed'
     }
-    $message = if ($success) {
+    $message = if ($exitCodeSuccess) {
         "$Stage completed."
+    }
+    elseif ($recoverableMissingExitCode) {
+        "$Stage did not return a native exit code, but reg.exe output indicated success; mounted hive values must verify before the import is accepted."
     }
     elseif ($failureKind -eq 'NativeExitCodeMissing') {
         $diagnosticOutput = if ([string]::IsNullOrWhiteSpace($outputText)) { 'No native output was captured.' } else { "Native output: $outputText" }
@@ -354,6 +375,9 @@ function ConvertTo-BoostLabNotepadHiveOperation {
         NativeOutput = $outputText
         FailureKind = $failureKind
         Message = $message
+        RecoveryAttempted = $recoverableMissingExitCode
+        RecoveryReason = if ($recoverableMissingExitCode) { 'NativeExitCodeMissingWithSuccessOutput' } else { '' }
+        RequiresPostImportVerification = $recoverableMissingExitCode
     }
 }
 
@@ -633,6 +657,9 @@ function Invoke-BoostLabNotepadSettingsHiveImport {
             -SystemRoot $SystemRoot `
             -RegistryCommandInvoker $RegistryCommandInvoker
         $hiveOperations.Add($importOperation)
+        if ([bool]$importOperation.RecoveryAttempted) {
+            $warnings.Add('ImportNotepadSettingsPayload returned no native exit code but reported successful native output; mounted hive verification was required before accepting the import.')
+        }
         if (-not [bool]$importOperation.Success) {
             $errors.Add("ImportNotepadSettingsPayload failed: $($importOperation.Message)")
         }
@@ -680,9 +707,10 @@ function Invoke-BoostLabNotepadSettingsHiveImport {
 
     $success = ($errors.Count -eq 0)
     $missingExitCodeOperation = @($hiveOperations.ToArray() | Where-Object { [string]$_.FailureKind -eq 'NativeExitCodeMissing' }) | Select-Object -First 1
+    $recoverableExitCodeOperation = @($hiveOperations.ToArray() | Where-Object { [string]$_.FailureKind -eq 'NativeExitCodeMissingWithSuccessOutput' }) | Select-Object -First 1
     $failedImportOperation = @($hiveOperations.ToArray() | Where-Object { [string]$_.Stage -eq 'ImportNotepadSettingsPayload' -and -not [bool]$_.Success }) | Select-Object -First 1
     $finalStatusReason = if ($success) {
-        'HiveImportVerified'
+        if ($null -ne $recoverableExitCodeOperation) { 'NativeExitCodeMissingRecoveredByVerification' } else { 'HiveImportVerified' }
     }
     elseif ($null -ne $missingExitCodeOperation) {
         'NativeExitCodeMissing'
@@ -695,13 +723,23 @@ function Invoke-BoostLabNotepadSettingsHiveImport {
     }
     [pscustomobject]@{
         Success = $success
-        Message = if ($success) { 'Notepad settings.dat hive payload imported and verified.' } else { "Notepad settings.dat hive import failed: $($errors.ToArray() -join ' ')" }
+        Message = if ($success -and $null -ne $recoverableExitCodeOperation) {
+            'Notepad settings.dat hive payload import had a missing native exit code, but mounted hive verification passed.'
+        }
+        elseif ($success) {
+            'Notepad settings.dat hive payload imported and verified.'
+        }
+        else {
+            "Notepad settings.dat hive import failed: $($errors.ToArray() -join ' ')"
+        }
         FinalStatusReason = $finalStatusReason
         SettingsDatExists = $true
         HiveOperations = $hiveOperations.ToArray()
         RegistryValuesChecked = $registryStates.ToArray()
         Errors = $errors.ToArray()
         Warnings = $warnings.ToArray()
+        RecoveryAttempted = ($null -ne $recoverableExitCodeOperation)
+        RecoveryReason = if ($null -ne $recoverableExitCodeOperation) { 'NativeExitCodeMissingWithSuccessOutput' } else { '' }
     }
 }
 
@@ -792,11 +830,12 @@ function New-BoostLabNotepadApplyVerification {
         -Message $(if ([bool]$HiveImportResult.SettingsDatExists) { 'settings.dat was present before hive load.' } else { 'settings.dat was missing before hive load.' })))
 
     foreach ($operation in @($HiveImportResult.HiveOperations)) {
+        $operationRecovered = [bool]$operation.RecoveryAttempted
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Hive operation | $($operation.Stage)" `
-            -Expected 'Exit code 0' `
+            -Expected $(if ($operationRecovered) { 'Exit code 0 or mounted hive verification recovery' } else { 'Exit code 0' }) `
             -Actual $(if ($null -eq $operation.ExitCode) { 'No exit code' } else { "ExitCode=$($operation.ExitCode)" }) `
-            -Status $(if ([bool]$operation.Success) { 'Passed' } else { 'Failed' }) `
+            -Status $(if (-not [bool]$operation.Success) { 'Failed' } elseif ($operationRecovered) { 'Warning' } else { 'Passed' }) `
             -Message ([string]$operation.Message)))
     }
 
@@ -1023,9 +1062,22 @@ function Invoke-BoostLabNotepadSettingsAction {
                 -HiveImportResult $hiveImportResult `
                 -FileState $detectedFileState
             $success = [bool]$hiveImportResult.Success -and $verificationResult.Status -ne 'Failed'
-            $message = if ($success) { 'Notepad settings Apply source sequence completed.' } else { [string]$hiveImportResult.Message }
+            $completedWithWarnings = ($success -and ($verificationResult.Status -eq 'Warning' -or @($hiveImportResult.Warnings).Count -gt 0))
+            $message = if ($success -and $completedWithWarnings) {
+                'Notepad settings Apply source sequence completed with warnings; mounted hive verification passed.'
+            }
+            elseif ($success) {
+                'Notepad settings Apply source sequence completed.'
+            }
+            else {
+                [string]$hiveImportResult.Message
+            }
+            $recoveryAttemptedProperty = $hiveImportResult.PSObject.Properties['RecoveryAttempted']
+            $recoveryReasonProperty = $hiveImportResult.PSObject.Properties['RecoveryReason']
+            $recoveryAttempted = ($null -ne $recoveryAttemptedProperty -and [bool]$recoveryAttemptedProperty.Value)
+            $recoveryReason = if ($null -ne $recoveryReasonProperty) { [string]$recoveryReasonProperty.Value } else { '' }
             $data = [pscustomobject]@{
-                CommandStatus = if ($success) { 'Completed' } else { 'Failed' }
+                CommandStatus = if (-not $success) { 'Failed' } elseif ($completedWithWarnings) { 'Completed with warnings' } else { 'Completed' }
                 VerificationStatus = $verificationResult.Status
                 ExpectedNotepadSettingsState = 'Ultimate Apply writes source-defined OpenFile, GhostFile, and RewriteEnabled values through the mounted settings.dat hive'
                 DetectedNotepadSettingsState = $verificationResult.DetectedState.NotepadSettings
@@ -1047,9 +1099,11 @@ function Invoke-BoostLabNotepadSettingsAction {
                 FinalStatusReason = [string]$hiveImportResult.FinalStatusReason
                 Warnings = @($hiveImportResult.Warnings)
                 Errors = @($hiveImportResult.Errors)
+                RecoveryAttempted = $recoveryAttempted
+                RecoveryReason = $recoveryReason
                 CompletedAt = Get-Date
             }
-            return New-BoostLabNotepadResult -Success $success -Action $ActionName -Status $(if ($success) { 'Passed' } else { 'Failed' }) -Message $message -Data $data -VerificationResult $verificationResult
+            return New-BoostLabNotepadResult -Success $success -Action $ActionName -Status $(if (-not $success) { 'Failed' } elseif ($completedWithWarnings) { 'Warning' } else { 'Passed' }) -Message $message -Data $data -VerificationResult $verificationResult
         }
 
         $removeResult = & $FileRemover $paths.SettingsDatPath
