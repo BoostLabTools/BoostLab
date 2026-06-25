@@ -1556,6 +1556,107 @@ function New-BoostLabBloatwareOperationResult {
     }
 }
 
+function Test-BoostLabBloatwareLegacySnippingToolUninstallOperation {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$Operation
+    )
+
+    if ([string]$Operation.Branch -ne 'RemoveAllBloatware') {
+        return $false
+    }
+    if ([string]$Operation.Type -ne 'StartProcess') {
+        return $false
+    }
+    if ([string]$Operation.Label -ne 'Uninstall legacy Snipping Tool') {
+        return $false
+    }
+
+    $parameters = $Operation.Parameters
+    $filePath = if ($parameters.Contains('FilePath')) { [string]$parameters.FilePath } else { '' }
+    $argumentList = if ($parameters.Contains('ArgumentList')) { [string]$parameters.ArgumentList } else { '' }
+    return (
+        [System.IO.Path]::GetFileName($filePath) -eq 'SnippingTool.exe' -and
+        [string]$argumentList -eq '/Uninstall'
+    )
+}
+
+function Invoke-BoostLabBloatwareStartProcessOperation {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$Operation,
+
+        [scriptblock]$PathTester = {
+            param([string]$Path)
+            Test-Path -LiteralPath $Path -PathType Leaf
+        },
+
+        [scriptblock]$ProcessStarter = {
+            param([string]$FilePath, [string]$ArgumentList)
+            $startArgs = @{
+                FilePath = $FilePath
+                ErrorAction = 'Stop'
+            }
+            if (-not [string]::IsNullOrWhiteSpace($ArgumentList)) {
+                $startArgs['ArgumentList'] = $ArgumentList
+            }
+            Start-Process @startArgs
+        }
+    )
+
+    $parameters = $Operation.Parameters
+    $filePath = if ($parameters.Contains('FilePath')) { [string]$parameters.FilePath } else { '' }
+    $argumentList = if ($parameters.Contains('ArgumentList')) { [string]$parameters.ArgumentList } else { '' }
+
+    if (Test-BoostLabBloatwareLegacySnippingToolUninstallOperation -Operation $Operation) {
+        $exists = [bool](& $PathTester $filePath)
+        if (-not $exists) {
+            $details = [pscustomobject]@{
+                Outcome     = 'SkippedMissingLegacySnippingTool'
+                CheckedPath = $filePath
+                Exists      = $false
+                ArgumentList = $argumentList
+                Message     = 'Legacy Snipping Tool executable was not present; uninstall step skipped.'
+                ModernWindowsExpectedAbsence = $true
+            }
+            return New-BoostLabBloatwareOperationResult `
+                -Operation $Operation `
+                -Success $true `
+                -Message 'Legacy Snipping Tool executable was not present; uninstall step skipped.' `
+                -Data $details
+        }
+    }
+
+    try {
+        & $ProcessStarter $filePath $argumentList | Out-Null
+        return New-BoostLabBloatwareOperationResult `
+            -Operation $Operation `
+            -Success $true `
+            -Message 'Operation completed.' `
+            -Data ([pscustomobject]@{
+                Outcome      = 'Started'
+                FilePath     = $filePath
+                ArgumentList = $argumentList
+            })
+    }
+    catch {
+        return New-BoostLabBloatwareOperationResult `
+            -Operation $Operation `
+            -Success $false `
+            -Message $_.Exception.Message `
+            -Data ([pscustomobject]@{
+                Outcome      = 'StartProcessFailed'
+                FilePath     = $filePath
+                ArgumentList = $argumentList
+                Error        = $_.Exception.Message
+            })
+    }
+}
+
 function Invoke-BoostLabBloatwareMsiUninstallByDisplayName {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -1763,10 +1864,7 @@ function Invoke-BoostLabBloatwareRealOperation {
             'UnregisterScheduledTasksLike' { Get-ScheduledTask | Where-Object { $_.TaskName -match [string]$p.TaskNameMatch } | Unregister-ScheduledTask -Confirm:$false }
             'UnregisterScheduledTaskName' { Unregister-ScheduledTask -TaskName ([string]$p.TaskName) -Confirm:$false -ErrorAction SilentlyContinue | Out-Null }
             'StartProcess' {
-                $args = @{}
-                $args['FilePath'] = [string]$p.FilePath
-                if ($p.Contains('ArgumentList')) { $args['ArgumentList'] = [string]$p.ArgumentList }
-                Start-Process @args
+                return Invoke-BoostLabBloatwareStartProcessOperation -Operation $Operation
             }
             'StopProcessWindow' {
                 $running = $true

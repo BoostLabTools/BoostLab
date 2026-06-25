@@ -155,6 +155,63 @@ try {
     Assert-BloatwareCondition ($null -ne $removeAppxOperation) 'Remove all bloatware plan must include RemoveAppxExcept.'
     $excludePatterns = @($removeAppxOperation.Parameters.ExcludeLike)
     Assert-BloatwareCondition (($excludePatterns -join ',') -eq '*CBS*,*Microsoft.AV1VideoExtension*,*Microsoft.AVCEncoderVideoExtension*,*Microsoft.HEIFImageExtension*,*Microsoft.HEVCVideoExtension*,*Microsoft.MPEG2VideoExtension*,*Microsoft.Paint*,*Microsoft.RawImageExtension*,*Microsoft.SecHealthUI*,*Microsoft.VP9VideoExtensions*,*Microsoft.WebMediaExtensions*,*Microsoft.WebpImageExtension*,*Microsoft.Windows.Photos*,*Microsoft.Windows.ShellExperienceHost*,*Microsoft.Windows.StartMenuExperienceHost*,*Microsoft.WindowsNotepad*,*NVIDIACorp.NVIDIAControlPanel*,*windows.immersivecontrolpanel*') 'RemoveAppxExcept exclusion patterns must preserve the Ultimate source list exactly.'
+    $snippingUninstallOperation = @($removePlan.Operations | Where-Object { [string]$_.Label -eq 'Uninstall legacy Snipping Tool' }) | Select-Object -First 1
+    $snippingCloseWindowOperation = @($removePlan.Operations | Where-Object { [string]$_.Label -eq 'Close Snipping Tool uninstall window' }) | Select-Object -First 1
+    Assert-BloatwareCondition ($null -ne $snippingUninstallOperation) 'RemoveAllBloatware plan must preserve the legacy Snipping Tool uninstall operation.'
+    Assert-BloatwareCondition ($null -ne $snippingCloseWindowOperation) 'RemoveAllBloatware plan must preserve the Snipping Tool close-window operation.'
+    Assert-BloatwareCondition ([int]$snippingCloseWindowOperation.Order -eq ([int]$snippingUninstallOperation.Order + 1)) 'Snipping Tool close-window operation must remain immediately after the uninstall operation.'
+    Assert-BloatwareCondition ([string]$snippingUninstallOperation.Type -eq 'StartProcess') 'Legacy Snipping Tool uninstall must remain a source-equivalent StartProcess operation.'
+    Assert-BloatwareCondition ([string]$snippingUninstallOperation.Parameters.FilePath -like '*\System32\SnippingTool.exe') 'Legacy Snipping Tool uninstall path must remain System32\SnippingTool.exe.'
+    Assert-BloatwareCondition ([string]$snippingUninstallOperation.Parameters.ArgumentList -eq '/Uninstall') 'Legacy Snipping Tool uninstall argument must remain /Uninstall.'
+
+    $snippingStartProcessProbe = & $module {
+        param($Operation)
+
+        $started = [System.Collections.Generic.List[string]]::new()
+        $existsResult = Invoke-BoostLabBloatwareStartProcessOperation `
+            -Operation $Operation `
+            -PathTester { param($Path) $true } `
+            -ProcessStarter {
+                param($FilePath, $ArgumentList)
+                $started.Add("$FilePath|$ArgumentList")
+            }.GetNewClosure()
+
+        $missingStartAttempts = [System.Collections.Generic.List[string]]::new()
+        $missingResult = Invoke-BoostLabBloatwareStartProcessOperation `
+            -Operation $Operation `
+            -PathTester { param($Path) $false } `
+            -ProcessStarter {
+                param($FilePath, $ArgumentList)
+                $missingStartAttempts.Add("$FilePath|$ArgumentList")
+            }.GetNewClosure()
+
+        $failureResult = Invoke-BoostLabBloatwareStartProcessOperation `
+            -Operation $Operation `
+            -PathTester { param($Path) $true } `
+            -ProcessStarter {
+                param($FilePath, $ArgumentList)
+                throw 'Mock Snipping Tool launch failure.'
+            }
+
+        [pscustomobject]@{
+            ExistsResult = $existsResult
+            Started = $started.ToArray()
+            MissingResult = $missingResult
+            MissingStartAttemptCount = $missingStartAttempts.Count
+            FailureResult = $failureResult
+        }
+    } $snippingUninstallOperation
+    Assert-BloatwareCondition ([bool]$snippingStartProcessProbe.ExistsResult.Success) 'Existing legacy Snipping Tool executable should run the source-defined StartProcess operation.'
+    Assert-BloatwareCondition (($snippingStartProcessProbe.Started -join ',') -like '*SnippingTool.exe|/Uninstall') 'Existing legacy Snipping Tool executable must launch with /Uninstall.'
+    Assert-BloatwareCondition ([bool]$snippingStartProcessProbe.MissingResult.Success) 'Missing legacy Snipping Tool executable should be an expected skip, not a failure.'
+    Assert-BloatwareCondition ([string]$snippingStartProcessProbe.MissingResult.Data.Outcome -eq 'SkippedMissingLegacySnippingTool') 'Missing legacy Snipping Tool outcome mismatch.'
+    Assert-BloatwareCondition ([string]$snippingStartProcessProbe.MissingResult.Data.CheckedPath -like '*\System32\SnippingTool.exe') 'Missing legacy Snipping Tool diagnostic must include checked path.'
+    Assert-BloatwareCondition (-not [bool]$snippingStartProcessProbe.MissingResult.Data.Exists) 'Missing legacy Snipping Tool diagnostic must report Exists=false.'
+    Assert-BloatwareCondition ([int]$snippingStartProcessProbe.MissingStartAttemptCount -eq 0) 'Missing legacy Snipping Tool must not call StartProcess.'
+    Assert-BloatwareCondition ([string]$snippingStartProcessProbe.MissingResult.Message -eq 'Legacy Snipping Tool executable was not present; uninstall step skipped.') 'Missing legacy Snipping Tool diagnostic message mismatch.'
+    Assert-BloatwareCondition (-not [bool]$snippingStartProcessProbe.FailureResult.Success) 'Existing legacy Snipping Tool launch failures must still fail closed.'
+    Assert-BloatwareCondition ([string]$snippingStartProcessProbe.FailureResult.Data.Outcome -eq 'StartProcessFailed') 'Legacy Snipping Tool non-missing launch failure must report StartProcessFailed.'
+    Assert-BloatwareCondition ([string]$snippingStartProcessProbe.FailureResult.Message -like '*Mock Snipping Tool launch failure*') 'Legacy Snipping Tool launch failure must preserve the real error.'
 
     $gameInputMsiEntries = @(
         [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
@@ -369,6 +426,39 @@ try {
     $continueAfterInUseWorkflow = Invoke-BoostLabBloatwareBranchWorkflow -Branch 'RemoveAllBloatware' -SkipEnvironmentChecks $true -OperationExecutor $continueAfterInUseExecutor
     Assert-BloatwareCondition ([bool]$continueAfterInUseWorkflow.Success) 'Bloatware branch must continue when RemoveAppxExcept only skipped known Windows protected/dependency/in-use framework runtime packages.'
     Assert-BloatwareCondition ('RemoveWindowsCapabilityExcept' -in @($continueAfterInUseSeen)) 'Bloatware branch must not stop after only in-use framework/runtime AppX skips.'
+
+    $continueAfterMissingSnippingSeen = [System.Collections.Generic.List[string]]::new()
+    $continueAfterMissingSnippingExecutor = {
+        param($Operation, $Branch, $Plan)
+        $continueAfterMissingSnippingSeen.Add([string]$Operation.Label)
+        if ([string]$Operation.Label -eq 'Uninstall legacy Snipping Tool') {
+            return & $module {
+                param($SnippingOperation)
+                Invoke-BoostLabBloatwareStartProcessOperation `
+                    -Operation $SnippingOperation `
+                    -PathTester { param($Path) $false } `
+                    -ProcessStarter { throw 'StartProcess must not run for a missing legacy Snipping Tool executable.' }
+            } $Operation
+        }
+
+        [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Branch = [string]$Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Message = 'Mocked operation completed.'
+            Data = [pscustomobject]@{ PlanBranch = [string]$Plan.Branch }
+        }
+    }.GetNewClosure()
+    $continueAfterMissingSnippingWorkflow = Invoke-BoostLabBloatwareBranchWorkflow -Branch 'RemoveAllBloatware' -SkipEnvironmentChecks $true -OperationExecutor $continueAfterMissingSnippingExecutor
+    Assert-BloatwareCondition ([bool]$continueAfterMissingSnippingWorkflow.Success) 'Bloatware RemoveAllBloatware must not fail solely because legacy SnippingTool.exe is absent.'
+    $missingSnippingWorkflowResult = @($continueAfterMissingSnippingWorkflow.OperationResults | Where-Object { [string]$_.Label -eq 'Uninstall legacy Snipping Tool' }) | Select-Object -First 1
+    Assert-BloatwareCondition ($null -ne $missingSnippingWorkflowResult) 'Bloatware missing Snipping Tool workflow result must include the uninstall operation.'
+    Assert-BloatwareCondition ([string]$missingSnippingWorkflowResult.Data.Outcome -eq 'SkippedMissingLegacySnippingTool') 'Bloatware missing Snipping Tool workflow result must preserve the expected skip diagnostic.'
+    Assert-BloatwareCondition ('Close Snipping Tool uninstall window' -in @($continueAfterMissingSnippingSeen)) 'Bloatware branch must continue to the Snipping Tool close-window operation after the missing executable skip.'
+    Assert-BloatwareCondition ('Uninstall Windows 10 Update for x64-based systems' -in @($continueAfterMissingSnippingSeen)) 'Bloatware branch must continue to later operations after the missing legacy Snipping Tool skip.'
 
     $storePlan = Get-BoostLabBloatwareOperationPlan -Branch 'InstallStore'
     foreach ($requiredType in @('AppxRegisterLike', 'StartProcess', 'StopProcesses', 'RegistryCommand', 'StoreSettingsHiveImport')) {
