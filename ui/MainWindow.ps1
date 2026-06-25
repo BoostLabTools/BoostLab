@@ -2513,7 +2513,7 @@ function Show-BoostLabRefreshRateRestartConfirmationDialog {
         return [bool]$dialog.Tag
     }
     catch {
-        return $false
+        throw "Refresh-rate confirmation dialog failed: $($_.Exception.Message)"
     }
 }
 
@@ -2544,16 +2544,64 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
             $Prompt
         }
 
+        $showDialog = {
+            if ($null -eq $dialogCommand -or $dialogCommand -isnot [scriptblock]) {
+                return [pscustomobject]@{
+                    Succeeded = $false
+                    Confirmed = $false
+                    Error     = 'Refresh-rate confirmation dialog command was unavailable.'
+                }
+            }
+
+            try {
+                $dialogValues = @($dialogCommand.Invoke($promptText))
+                $confirmed = if ($dialogValues.Count -gt 0) {
+                    [bool]$dialogValues[0]
+                }
+                else {
+                    $false
+                }
+
+                return [pscustomobject]@{
+                    Succeeded = $true
+                    Confirmed = $confirmed
+                    Error     = ''
+                }
+            }
+            catch {
+                return [pscustomobject]@{
+                    Succeeded = $false
+                    Confirmed = $false
+                    Error     = $_.Exception.Message
+                }
+            }
+        }.GetNewClosure()
+
+        $dialogResult = $null
         if ($dispatcher.CheckAccess()) {
-            return [bool](& $dialogCommand -Prompt $promptText)
+            $dialogResultValues = @($showDialog.Invoke())
+            $dialogResult = if ($dialogResultValues.Count -gt 0) { $dialogResultValues[0] } else { $null }
+        }
+        else {
+            $operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)
+            $operationHandle.Wait()
+            $dialogResult = $operationHandle.Result
         }
 
-        $showDialog = {
-            & $dialogCommand -Prompt $promptText
-        }.GetNewClosure()
-        $operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)
-        $operationHandle.Wait()
-        return [bool]$operationHandle.Result
+        if ($null -eq $dialogResult) {
+            throw 'Refresh-rate confirmation dialog returned no result.'
+        }
+        if ($null -ne $dialogResult.PSObject.Properties['Succeeded'] -and -not [bool]$dialogResult.Succeeded) {
+            $dialogError = if ($null -ne $dialogResult.PSObject.Properties['Error']) {
+                [string]$dialogResult.Error
+            }
+            else {
+                'Unknown refresh-rate confirmation dialog failure.'
+            }
+            throw $dialogError
+        }
+
+        return [bool]$dialogResult.Confirmed
     }.GetNewClosure()
 }
 

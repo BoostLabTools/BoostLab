@@ -264,6 +264,9 @@ foreach ($needle in @(
     'function Show-BoostLabRefreshRateRestartConfirmationDialog'
     'function New-BoostLabRefreshRateRestartConfirmationCallback'
     'Have you adjusted the refresh rate and are you ready to restart?'
+    'Refresh-rate confirmation dialog command was unavailable.'
+    '$dialogCommand.Invoke($promptText)'
+    'Succeeded = $false'
     '$operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)'
     '$operationHandle.Wait()'
     "RefreshRateConfirmationCallback"
@@ -385,6 +388,7 @@ Assert-BoostLabTextContains -Text $driverInstallDebloatSettingsText -Needle 'Ref
 Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('ms-settings:display')) 'Driver Install Debloat & Settings must not launch Windows Display Settings from the refresh-rate gate.'
 Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('mmsys.cpl')) 'Driver Install Debloat & Settings must not launch Windows Sound Settings from the refresh-rate gate.'
 Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('Read-Host')) 'Driver Install Debloat & Settings must not use raw console confirmation prompts.'
+Assert-BoostLabCondition (-not $uiText.Contains('& $dialogCommand')) 'Refresh-rate confirmation UI must not invoke a captured dialog command with an unvalidated call operator.'
 
 $edgeSettingsText = Get-Content -LiteralPath $edgeSettingsModulePath -Raw
 Assert-BoostLabTextContains -Text $edgeSettingsText -Needle 'SourceEquivalent' -Description 'Edge Settings source-equivalent behavior'

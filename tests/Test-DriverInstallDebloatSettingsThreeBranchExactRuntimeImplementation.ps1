@@ -94,6 +94,8 @@ $moduleText = Get-Content -LiteralPath $modulePath -Raw
 Assert-BoostLabCondition (-not $moduleText.Contains('ms-settings:display')) 'Driver Install Debloat & Settings module must not open Windows Display Settings at the refresh-rate checkpoint.'
 Assert-BoostLabCondition (-not $moduleText.Contains('mmsys.cpl')) 'Driver Install Debloat & Settings module must not open Windows Sound Settings at the refresh-rate checkpoint.'
 Assert-BoostLabCondition (-not $moduleText.Contains('Read-Host')) 'Driver Install Debloat & Settings must not introduce raw console prompts.'
+Assert-BoostLabTextContains -Text $moduleText -Needle 'ConfirmationCallbackAvailable' -Description 'Driver Install Debloat & Settings confirmation callback diagnostics'
+Assert-BoostLabTextContains -Text $moduleText -Needle 'ConfirmationFailureKind' -Description 'Driver Install Debloat & Settings confirmation failure classification'
 
 $expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
@@ -183,6 +185,68 @@ try {
     Assert-BoostLabCondition ([string]$info.SelectionMode -eq 'SingleSelect') 'Module info must expose SingleSelect branch mode.'
     Assert-BoostLabCondition ((@($info.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Module info selection-required actions mismatch.'
     Assert-BoostLabCondition ((@($info.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Module info branch selection items mismatch.'
+
+    $invokeRefreshRateConfirmationOperation = {
+        param($Callback)
+
+        & $module {
+            param($CallbackValue)
+
+            $plan = Get-BoostLabDriverInstallDebloatSettingsOperationPlan `
+                -Branch 'NVIDIA' `
+                -InstallFile 'C:\BoostLabMock\NVIDIA-driver.exe'
+            $confirmationOperation = @(
+                $plan.Operations |
+                    Where-Object { [string]$_.Type -eq 'RefreshRateRestartConfirmation' }
+            ) | Select-Object -First 1
+            if ($null -eq $confirmationOperation) {
+                throw 'NVIDIA refresh-rate confirmation operation was not found.'
+            }
+
+            $context = [ordered]@{
+                Branch                          = 'NVIDIA'
+                InstallFile                     = 'C:\BoostLabMock\NVIDIA-driver.exe'
+                RefreshRateConfirmationCallback = $CallbackValue
+            }
+
+            Invoke-BoostLabDriverInstallDebloatSettingsRealOperation `
+                -Operation $confirmationOperation `
+                -Context $context
+        } $Callback
+    }
+
+    $confirmedRefreshRate = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        return (
+            [string]$Prompt -eq 'Have you adjusted the refresh rate and are you ready to restart?' -and
+            [string]$Branch -eq 'NVIDIA' -and
+            [string]$Operation.Type -eq 'RefreshRateRestartConfirmation'
+        )
+    }
+    Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Success) 'Valid refresh-rate confirmation callback should allow restart continuation.'
+    Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.ConfirmationCallbackAvailable) 'Valid refresh-rate confirmation callback must be reported available.'
+    Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.ConfirmationCallbackUsed) 'Valid refresh-rate confirmation callback must be used.'
+    Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.RestartConfirmedByUser) 'Valid refresh-rate confirmation callback must set RestartConfirmedByUser.'
+
+    $missingCallbackConfirmation = & $invokeRefreshRateConfirmationOperation $null
+    Assert-BoostLabCondition (-not [bool]$missingCallbackConfirmation.Success) 'Missing refresh-rate confirmation callback must not allow restart continuation.'
+    Assert-BoostLabCondition (-not [bool]$missingCallbackConfirmation.Data.RestartTriggered) 'Missing refresh-rate confirmation callback must not trigger restart.'
+    Assert-BoostLabCondition ([string]$missingCallbackConfirmation.Data.ConfirmationFailureKind -eq 'MissingCallback') 'Missing refresh-rate confirmation callback must be classified.'
+
+    $invalidCallbackConfirmation = & $invokeRefreshRateConfirmationOperation ([pscustomobject]@{ NotACallback = $true })
+    Assert-BoostLabCondition (-not [bool]$invalidCallbackConfirmation.Success) 'Invalid refresh-rate confirmation callback must not allow restart continuation.'
+    Assert-BoostLabCondition (-not [bool]$invalidCallbackConfirmation.Data.RestartTriggered) 'Invalid refresh-rate confirmation callback must not trigger restart.'
+    Assert-BoostLabCondition ([string]$invalidCallbackConfirmation.Data.ConfirmationFailureKind -eq 'InvalidCallback') 'Invalid refresh-rate confirmation callback must be classified.'
+
+    $ampersandCrashText = "The expression after '&' in a pipeline element produced an object that was not valid."
+    $crashingCallbackConfirmation = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        throw $ampersandCrashText
+    }
+    Assert-BoostLabCondition (-not [bool]$crashingCallbackConfirmation.Success) 'Crashing refresh-rate confirmation callback must not allow restart continuation.'
+    Assert-BoostLabCondition (-not [bool]$crashingCallbackConfirmation.Data.RestartTriggered) 'Crashing refresh-rate confirmation callback must not trigger restart.'
+    Assert-BoostLabCondition ([string]$crashingCallbackConfirmation.Data.ConfirmationFailureKind -eq 'CallbackError') 'Crashing refresh-rate confirmation callback must be classified.'
+    Assert-BoostLabTextContains -Text ([string]$crashingCallbackConfirmation.Data.ConfirmationError) -Needle "expression after '&'" -Description 'Refresh-rate confirmation callback crash diagnostic'
 
     foreach ($branch in @('NVIDIA', 'AMD', 'INTEL')) {
         $plan = Get-BoostLabDriverInstallDebloatSettingsOperationPlan -Branch $branch

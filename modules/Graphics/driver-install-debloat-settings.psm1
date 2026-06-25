@@ -894,7 +894,9 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     RestartTriggered                = $false
                     FinalStatusReason               = ''
                     Prompt                          = $prompt
+                    ConfirmationCallbackAvailable   = $false
                     ConfirmationCallbackUsed        = $false
+                    ConfirmationFailureKind         = ''
                     ConfirmationError               = ''
                 }
 
@@ -905,21 +907,43 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     $null
                 }
 
-                if ($null -ne $callback -and $callback -is [scriptblock]) {
-                    $data['ConfirmationCallbackUsed'] = $true
-                    try {
-                        $confirmed = [bool](& $callback -Prompt $prompt -Branch ([string]$Operation.Branch) -Operation $Operation)
-                        $data['RestartConfirmedByUser'] = $confirmed
-                    }
-                    catch {
-                        $data['ConfirmationError'] = $_.Exception.Message
-                        $data['FinalStatusReason'] = 'Refresh-rate confirmation callback failed; restart was not triggered.'
-                        return New-BoostLabDriverInstallDebloatSettingsOperationResult `
-                            -Operation $Operation `
-                            -Success $false `
-                            -Message "Refresh-rate confirmation failed: $($_.Exception.Message)" `
-                            -Data ([pscustomobject]$data)
-                    }
+                if ($null -eq $callback) {
+                    $data['ConfirmationFailureKind'] = 'MissingCallback'
+                    $data['ConfirmationError'] = 'Refresh-rate confirmation callback was not provided.'
+                    $data['FinalStatusReason'] = 'Refresh-rate confirmation callback was unavailable; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message 'Refresh-rate confirmation callback was unavailable. Restart was not triggered.' `
+                        -Data ([pscustomobject]$data)
+                }
+
+                $data['ConfirmationCallbackAvailable'] = $true
+                if ($callback -isnot [scriptblock]) {
+                    $data['ConfirmationFailureKind'] = 'InvalidCallback'
+                    $data['ConfirmationError'] = 'Refresh-rate confirmation callback was not a valid scriptblock.'
+                    $data['FinalStatusReason'] = 'Refresh-rate confirmation callback was invalid; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message 'Refresh-rate confirmation callback was invalid. Restart was not triggered.' `
+                        -Data ([pscustomobject]$data)
+                }
+
+                $data['ConfirmationCallbackUsed'] = $true
+                try {
+                    $confirmed = [bool](& $callback -Prompt $prompt -Branch ([string]$Operation.Branch) -Operation $Operation)
+                    $data['RestartConfirmedByUser'] = $confirmed
+                }
+                catch {
+                    $data['ConfirmationFailureKind'] = 'CallbackError'
+                    $data['ConfirmationError'] = $_.Exception.Message
+                    $data['FinalStatusReason'] = 'Refresh-rate confirmation callback failed; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message "Refresh-rate confirmation failed: $($_.Exception.Message)" `
+                        -Data ([pscustomobject]$data)
                 }
 
                 if (-not [bool]$data['RestartConfirmedByUser']) {
