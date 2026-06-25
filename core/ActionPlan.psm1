@@ -396,6 +396,9 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Default') {
         'Run the exact source-defined Control Panel Settings Default branch after checksum verification.'
     }
+    elseif ($toolId -eq 'input-language-hotkey' -and $ActionName -eq 'Apply') {
+        'Set the current user Windows input language switching hotkey to Left Alt + Shift and keep keyboard-layout switching Not Assigned.'
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'Disable the approved network adapter power-saving and wake values across detected adapter class keys.'
     }
@@ -974,6 +977,13 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('The source branch may stop services/processes, change TrustedInstaller service binPath temporarily, import broad registry payloads, change scheduled tasks and powercfg values, and write/delete source-defined settings files.')
         $plannedChanges.Add('Do not expose Restore or Open because the Ultimate source defines only Optimize and Default branches.')
     }
+    elseif ($toolId -eq 'input-language-hotkey' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Set HKCU:\Keyboard Layout\Toggle Hotkey to REG_SZ 1 for Left Alt + Shift input-language switching.')
+        $plannedChanges.Add('Set HKCU:\Keyboard Layout\Toggle Language Hotkey to REG_SZ 1 for Left Alt + Shift input-language switching.')
+        $plannedChanges.Add('Set HKCU:\Keyboard Layout\Toggle Layout Hotkey to REG_SZ 3 so keyboard-layout switching remains Not Assigned.')
+        $plannedChanges.Add('Verify all three current-user registry values after writing them.')
+        $plannedChanges.Add('Do not open Text Services, Input Languages, Control Panel, Settings, or any replacement window; no UI automation, SendKeys, HKLM mutation, service change, package change, reboot, Default, Restore, or Open action is added.')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $plannedChanges.Add('Enumerate numeric network adapter class keys under the source ControlSet001 class GUID.')
         $plannedChanges.Add('Set the 14 source-defined PnPCapabilities, energy-saving, and wake values in Ultimate execution order.')
@@ -1466,6 +1476,11 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('TrustedInstaller is used by the source helper for protected CapabilityAccessManager database cleanup.')
         $sideEffects.Add('No Restore action is exposed; Default is the separate source-defined Default branch, not captured-state restore.')
     }
+    elseif ($toolId -eq 'input-language-hotkey' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('Only the current user HKCU:\Keyboard Layout\Toggle values Hotkey, Language Hotkey, and Layout Hotkey are changed.')
+        $sideEffects.Add('No legacy Text Services dialog, Control Panel page, Settings page, browser, or replacement window is opened.')
+        $sideEffects.Add('No HKLM, language list, culture, IME, service, package, file, driver, security, Default, Restore, or reboot behavior is performed.')
+    }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         $sideEffects.Add('Detected network adapters may use more power and will not wake from the source-defined wake events.')
         $sideEffects.Add('No adapter is disabled and no driver is installed, removed, replaced, or updated.')
@@ -1763,6 +1778,9 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'control-panel-settings' -and $ActionName -eq 'Default') {
         'BoostLab will run the exact Control Panel Settings Default branch after source checksum verification. This broad source branch can change registry, services, TrustedInstaller state, scheduled tasks, power settings, app-action state, processes, and source-defined files. Default is not Restore. Do you want to continue?'
+    }
+    elseif ($toolId -eq 'input-language-hotkey' -and $ActionName -eq 'Apply') {
+        'BoostLab will set only the current-user keyboard layout toggle values so input language switching uses Left Alt + Shift and keyboard-layout switching is Not Assigned, then verify those values. It will not open Text Services, Input Languages, Control Panel, Settings, or any replacement window; no UI automation, HKLM change, service/package/file/driver change, Default, Restore, or reboot runs. Do you want to continue?'
     }
     elseif ($toolId -eq 'network-adapter-power-savings-wake' -and $ActionName -eq 'Apply') {
         'BoostLab will set the 14 approved power-saving and wake values on every detected network adapter class key and verify each value. No adapter will be disabled and no restart is required. Do you want to continue?'

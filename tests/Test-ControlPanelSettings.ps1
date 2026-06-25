@@ -415,7 +415,9 @@ Assert-BoostLabCondition ([string]$deviceManagerRecord.FinalProgressStatus -eq '
 $windowsOrder = @($executionOrder.Stages | Where-Object { [string]$_.Name -eq 'Windows' })[0]
 $controlOrder = @($windowsOrder.Tools | Where-Object { [string]$_.ToolId -eq 'control-panel-settings' })[0]
 $sourceOrderNext = @($windowsOrder.Tools | Where-Object { [int]$_.Order -eq ([int]$controlOrder.Order + 1) })[0]
-Assert-BoostLabCondition ([string]$sourceOrderNext.ToolId -eq 'sound') 'Sound must remain the next source-order tool after Control Panel Settings.'
+Assert-BoostLabCondition ([string]$sourceOrderNext.ToolId -eq 'input-language-hotkey') 'Input Language Hotkey must be the next Windows-stage tool after Control Panel Settings.'
+$soundOrder = @($windowsOrder.Tools | Where-Object { [string]$_.ToolId -eq 'sound' })[0]
+Assert-BoostLabCondition ([int]$soundOrder.Order -eq ([int]$sourceOrderNext.Order + 1)) 'Sound must remain immediately after Input Language Hotkey.'
 
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 Assert-BoostLabCondition ([int]$inventoryAssertion.Snapshot.ActiveTools -eq [int]$inventoryAssertion.Baseline.ActiveTools) 'Active tool count mismatch.'

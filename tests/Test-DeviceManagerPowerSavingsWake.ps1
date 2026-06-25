@@ -42,17 +42,20 @@ $tools = @($configuration['Stages'] | ForEach-Object { @($_['Tools']) })
 $tool = $tools |
     Where-Object { $_['Id'] -eq 'device-manager-power-savings-wake' } |
     Select-Object -First 1
+$soundTool = $tools |
+    Where-Object { $_['Id'] -eq 'sound' } |
+    Select-Object -First 1
 if ($null -eq $tool) {
     throw 'Device Manager Power Savings & Wake metadata is missing.'
 }
 if (
     [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 17 -or
+    [int]$tool['Order'] -ne ([int]$soundTool['Order'] + 1) -or
     [string]$tool['Type'] -ne 'action' -or
     [string]$tool['RiskLevel'] -ne 'medium' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'
 ) {
-    throw 'Device Manager Power Savings & Wake metadata does not match Phase 26.'
+    throw 'Device Manager Power Savings & Wake metadata does not match the current Windows stage order.'
 }
 
 $trueCapabilities = @(

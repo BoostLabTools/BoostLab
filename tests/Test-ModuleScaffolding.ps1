@@ -222,6 +222,10 @@ $implementedModules = @{
         RelativePath          = 'Windows\control-panel-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
+    'input-language-hotkey' = @{
+        RelativePath          = 'Windows\input-language-hotkey.psm1'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'')'
+    }
     'start-menu-taskbar' = @{
         RelativePath          = 'Windows\start-menu-taskbar.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
@@ -632,6 +636,9 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'control-panel-settings') {
+            0
+        }
+        elseif ($toolId -eq 'input-language-hotkey') {
             0
         }
         elseif ($toolId -eq 'start-menu-taskbar') {

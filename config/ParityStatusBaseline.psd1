@@ -4,12 +4,12 @@
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 46
-        RuntimeImplementedTools = 46
+        ActiveTools = 47
+        RuntimeImplementedTools = 47
         DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 34
+        UltimateParityImplemented = 35
         NearParityControlled = 10
         ControlledSubset = 2
         ManualHandoffOnly = 0
@@ -616,11 +616,25 @@
             NextParityAction = 'DoneParity'
         }
         @{
+            ToolId = 'input-language-hotkey'
+            DisplayName = 'Input Language Hotkey'
+            Stage = 'Windows'
+            StageOrder = 6
+            ToolOrder = 16
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            GapSummary = 'Yazan-approved BoostLab-specific current-user input language hotkey tool is implemented exactly: HKCU Keyboard Layout Toggle Hotkey and Language Hotkey REG_SZ 1, Layout Hotkey REG_SZ 3, and verification only. No legacy dialog, Control Panel, Settings, or replacement window is opened. This is not sourced from source-ultimate.'
+            YazanFinalException = $false
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'DoneParity'
+        }
+        @{
             ToolId = 'sound'
             DisplayName = 'Sound'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 16
+            ToolOrder = 17
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -633,7 +647,7 @@
             DisplayName = 'Device Manager Power Savings & Wake'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 17
+            ToolOrder = 18
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -647,7 +661,7 @@
             DisplayName = 'Network Adapter Power Savings & Wake'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 18
+            ToolOrder = 19
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -661,7 +675,7 @@
             DisplayName = 'Write Cache Buffer Flushing'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 19
+            ToolOrder = 20
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -675,7 +689,7 @@
             DisplayName = 'Power Plan'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 20
+            ToolOrder = 21
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
@@ -689,7 +703,7 @@
             DisplayName = 'Cleanup'
             Stage = 'Windows'
             StageOrder = 6
-            ToolOrder = 21
+            ToolOrder = 22
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'

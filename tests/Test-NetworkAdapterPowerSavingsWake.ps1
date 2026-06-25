@@ -62,12 +62,15 @@ $tools = @($configuration['Stages'] | ForEach-Object { @($_['Tools']) })
 $tool = $tools |
     Where-Object { $_['Id'] -eq 'network-adapter-power-savings-wake' } |
     Select-Object -First 1
+$deviceManagerTool = $tools |
+    Where-Object { $_['Id'] -eq 'device-manager-power-savings-wake' } |
+    Select-Object -First 1
 if ($null -eq $tool) {
     throw 'Network Adapter Power Savings & Wake metadata is missing.'
 }
 if (
     [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 18 -or
+    [int]$tool['Order'] -ne ([int]$deviceManagerTool['Order'] + 1) -or
     [string]$tool['Type'] -ne 'action' -or
     [string]$tool['RiskLevel'] -ne 'medium' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'

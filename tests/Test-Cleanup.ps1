@@ -90,9 +90,12 @@ foreach ($forbiddenSourceText in @(
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($config.Stages | ForEach-Object { @($_.Tools) })
 $tool = @($tools | Where-Object { [string]$_.Id -eq 'cleanup' }) | Select-Object -First 1
+$powerPlanTool = @($tools | Where-Object { [string]$_.Id -eq 'power-plan' }) | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $tool) 'Cleanup stage metadata is missing.'
 Assert-BoostLabCondition ([string]$tool.Stage -eq 'Windows') 'Cleanup must remain in Windows stage.'
-Assert-BoostLabCondition ([int]$tool.Order -eq 21) 'Cleanup order changed.'
+Assert-BoostLabCondition ([int]$tool.Order -eq ([int]$powerPlanTool.Order + 1)) 'Cleanup must remain immediately after Power Plan.'
+$maxWindowsOrder = @($tools | Where-Object { [string]$_.Stage -eq 'Windows' } | ForEach-Object { [int]$_.Order } | Sort-Object -Descending | Select-Object -First 1)[0]
+Assert-BoostLabCondition ([int]$tool.Order -eq [int]$maxWindowsOrder) 'Cleanup must remain the final Windows-stage tool.'
 Assert-BoostLabCondition ([string]$tool.Type -eq 'action') 'Cleanup must remain an action tool.'
 Assert-BoostLabCondition ([string]$tool.RiskLevel -eq 'high') 'Cleanup must be high risk.'
 Assert-BoostLabCondition ((@($tool.Actions) -join ',') -eq 'Apply') 'Cleanup must expose only source-defined Apply.'

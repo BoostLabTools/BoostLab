@@ -107,6 +107,7 @@ function Get-BoostLabCanonicalYazanOrder {
                 @{ Id = 'edge-webview'; Title = 'Edge & WebView' }
                 @{ Id = 'notepad-settings'; Title = 'Notepad Settings' }
                 @{ Id = 'control-panel-settings'; Title = 'Control Panel Settings' }
+                @{ Id = 'input-language-hotkey'; Title = 'Input Language Hotkey' }
                 @{ Id = 'sound'; Title = 'Sound' }
                 @{ Id = 'device-manager-power-savings-wake'; Title = 'Device Manager Power Savings & Wake' }
                 @{ Id = 'network-adapter-power-savings-wake'; Title = 'Network Adapter Power Savings & Wake' }
@@ -197,8 +198,10 @@ Assert-BoostLabCondition ([int]$inventorySnapshot.DeferredPlaceholders -eq [int]
 Assert-BoostLabCondition ([int]$inventorySnapshot.SourcePromotedMirrorFiles -eq 7) 'Source-promoted mirror count must remain unchanged.'
 
 $windowsStage = @($stages.Stages | Where-Object { $_.Name -eq 'Windows' })[0]
+$inputLanguageHotkeyTool = @($windowsStage.Tools | Where-Object { $_.Id -eq 'input-language-hotkey' })[0]
 $devicePowerTool = @($windowsStage.Tools | Where-Object { $_.Id -eq 'device-manager-power-savings-wake' })[0]
-Assert-BoostLabCondition ([int]$devicePowerTool.Order -eq 17) 'Windows active order must be compressed around deleted Loudness EQ.'
+Assert-BoostLabCondition ([int]$inputLanguageHotkeyTool.Order -eq 16) 'Input Language Hotkey must sit immediately after Control Panel Settings in Windows order.'
+Assert-BoostLabCondition ([int]$devicePowerTool.Order -eq 18) 'Windows active order must keep downstream tools after Input Language Hotkey.'
 Assert-BoostLabCondition (@($windowsStage.Tools | Where-Object { $_.Title -eq 'Loudness EQ' -or $_.Id -eq 'loudness-eq' }).Count -eq 0) 'Loudness EQ must not return to Windows order.'
 
 $advancedStage = @($stages.Stages | Where-Object { $_.Name -eq 'Advanced' })[0]

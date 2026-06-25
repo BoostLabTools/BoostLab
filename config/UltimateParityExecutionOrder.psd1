@@ -84,12 +84,13 @@
                 @{ Order = 13; ToolId = 'edge-webview'; DisplayName = 'Edge & WebView' }
                 @{ Order = 14; ToolId = 'notepad-settings'; DisplayName = 'Notepad Settings' }
                 @{ Order = 15; ToolId = 'control-panel-settings'; DisplayName = 'Control Panel Settings' }
-                @{ Order = 16; ToolId = 'sound'; DisplayName = 'Sound' }
-                @{ Order = 17; ToolId = 'device-manager-power-savings-wake'; DisplayName = 'Device Manager Power Savings & Wake' }
-                @{ Order = 18; ToolId = 'network-adapter-power-savings-wake'; DisplayName = 'Network Adapter Power Savings & Wake' }
-                @{ Order = 19; ToolId = 'write-cache-buffer-flushing'; DisplayName = 'Write Cache Buffer Flushing' }
-                @{ Order = 20; ToolId = 'power-plan'; DisplayName = 'Power Plan' }
-                @{ Order = 21; ToolId = 'cleanup'; DisplayName = 'Cleanup' }
+                @{ Order = 16; ToolId = 'input-language-hotkey'; DisplayName = 'Input Language Hotkey' }
+                @{ Order = 17; ToolId = 'sound'; DisplayName = 'Sound' }
+                @{ Order = 18; ToolId = 'device-manager-power-savings-wake'; DisplayName = 'Device Manager Power Savings & Wake' }
+                @{ Order = 19; ToolId = 'network-adapter-power-savings-wake'; DisplayName = 'Network Adapter Power Savings & Wake' }
+                @{ Order = 20; ToolId = 'write-cache-buffer-flushing'; DisplayName = 'Write Cache Buffer Flushing' }
+                @{ Order = 21; ToolId = 'power-plan'; DisplayName = 'Power Plan' }
+                @{ Order = 22; ToolId = 'cleanup'; DisplayName = 'Cleanup' }
             )
         }
         @{

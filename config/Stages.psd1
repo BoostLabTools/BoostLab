@@ -502,10 +502,22 @@
                     Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $true; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $true; CanDeleteFiles = $true; UsesTrustedInstaller = $true; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
+                    Id          = 'input-language-hotkey'
+                    Title       = 'Input Language Hotkey'
+                    Stage       = 'Windows'
+                    Order       = 16
+                    Type        = 'action'
+                    RiskLevel   = 'low'
+                    SourceType  = 'BoostLabSpecificUserApproved'
+                    Description = 'Set the current user input language switching hotkey to Left Alt + Shift while keeping keyboard-layout switching Not Assigned.'
+                    Actions     = @('Apply')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                }
+                @{
                     Id          = 'sound'
                     Title       = 'Sound'
                     Stage       = 'Windows'
-                    Order       = 16
+                    Order       = 17
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open Windows sound settings for device and output configuration.'
@@ -516,7 +528,7 @@
                     Id          = 'device-manager-power-savings-wake'
                     Title       = 'Device Manager Power Savings & Wake'
                     Stage       = 'Windows'
-                    Order       = 17
+                    Order       = 18
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Disable source-approved device power-saving and wake values or restore the Ultimate default value removals.'
@@ -527,7 +539,7 @@
                     Id          = 'network-adapter-power-savings-wake'
                     Title       = 'Network Adapter Power Savings & Wake'
                     Stage       = 'Windows'
-                    Order       = 18
+                    Order       = 19
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Disable approved network adapter power-saving and wake values or restore their default absent state.'
@@ -538,7 +550,7 @@
                     Id          = 'write-cache-buffer-flushing'
                     Title       = 'Write Cache Buffer Flushing'
                     Stage       = 'Windows'
-                    Order       = 19
+                    Order       = 20
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Analyze, apply, or default the approved storage write-cache buffer flushing registry behavior.'
@@ -549,7 +561,7 @@
                     Id          = 'power-plan'
                     Title       = 'Power Plan'
                     Stage       = 'Windows'
-                    Order       = 20
+                    Order       = 21
                     Type        = 'action'
                     RiskLevel   = 'medium'
                     Description = 'Apply the approved Ultimate power configuration or restore Windows default power schemes.'
@@ -560,7 +572,7 @@
                     Id          = 'cleanup'
                     Title       = 'Cleanup'
                     Stage       = 'Windows'
-                    Order       = 21
+                    Order       = 22
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Run the exact Ultimate cleanup branch after explicit confirmation.'

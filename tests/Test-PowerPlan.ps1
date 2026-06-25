@@ -49,12 +49,13 @@ $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
 $tools = @($configuration['Stages'] | ForEach-Object { @($_['Tools']) })
 $tool = $tools | Where-Object { $_['Id'] -eq 'power-plan' } | Select-Object -First 1
+$writeCacheTool = $tools | Where-Object { $_['Id'] -eq 'write-cache-buffer-flushing' } | Select-Object -First 1
 if ($null -eq $tool) {
     throw 'Power Plan metadata is missing.'
 }
 if (
     [string]$tool['Stage'] -ne 'Windows' -or
-    [int]$tool['Order'] -ne 20 -or
+    [int]$tool['Order'] -ne ([int]$writeCacheTool['Order'] + 1) -or
     [string]$tool['Type'] -ne 'action' -or
     [string]$tool['RiskLevel'] -ne 'medium' -or
     (@($tool['Actions']) -join ',') -ne 'Apply,Default'
