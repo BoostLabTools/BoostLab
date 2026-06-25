@@ -108,7 +108,7 @@ $graphicsStage = @($config.Stages | Where-Object { $_.Name -eq 'Graphics' })[0]
 $directXTool = @($graphicsStage.Tools | Where-Object { $_.Id -eq 'directx' })[0]
 Assert-BoostLabCondition ($null -ne $directXTool) 'DirectX is missing from Graphics stage.'
 Assert-BoostLabCondition ([string]$directXTool.Title -eq 'DirectX') 'DirectX title mismatch.'
-Assert-BoostLabCondition ([int]$directXTool.Order -eq 8) 'DirectX must remain Graphics order 8.'
+Assert-BoostLabCondition ([int]$directXTool.Order -eq 4) 'DirectX must remain immediately after the NVIDIA App shortcut at Graphics order 4.'
 Assert-BoostLabCondition ([string]$directXTool.Type -eq 'action') 'DirectX must be an action tool after Phase 129.'
 Assert-BoostLabCondition ((@($directXTool.Actions) -join '|') -eq 'Analyze|Apply') 'DirectX must expose only Analyze and Apply.'
 Assert-BoostLabTextContains -Text ([string]$directXTool.Description) -Needle 'Source-equivalent controlled runtime' -Description 'DirectX description'

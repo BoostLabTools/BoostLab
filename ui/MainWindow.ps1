@@ -598,10 +598,9 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
-    if ($toolId -eq 'driver-install-latest') {
+    if ($toolId -eq 'nvidia-app-download') {
         switch ($ActionName) {
-            'Open' { return 'Open Intel Driver Page' }
-            'Apply' { return 'Apply Source Workflow' }
+            'Open' { return 'Open NVIDIA App Page' }
         }
     }
 
@@ -612,38 +611,10 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
-    if ($toolId -eq 'nvidia-settings') {
-        switch ($ActionName) {
-            'Apply' { return 'On (Recommended)' }
-            'Default' { return 'Default' }
-        }
-    }
-
     if ($toolId -eq 'start-menu-taskbar') {
         switch ($ActionName) {
             'Apply' { return 'Clean (Recommended)' }
             'Default' { return 'Default' }
-        }
-    }
-
-    if ($toolId -eq 'hdcp') {
-        switch ($ActionName) {
-            'Apply' { return 'Off (Recommended)' }
-            'Default' { return 'Default' }
-        }
-    }
-
-    if ($toolId -eq 'p0-state') {
-        switch ($ActionName) {
-            'Apply' { return 'On (Recommended)' }
-            'Default' { return 'Default' }
-        }
-    }
-
-    if ($toolId -eq 'msi-mode') {
-        switch ($ActionName) {
-            'Apply' { return 'On (Recommended)' }
-            'Off' { return 'Off' }
         }
     }
 
@@ -1725,11 +1696,6 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'installers'
         'driver-clean'
         'driver-install-debloat-settings'
-        'driver-install-latest'
-        'nvidia-settings'
-        'hdcp'
-        'p0-state'
-        'msi-mode'
         'directx'
         'visual-cpp'
     )
@@ -2669,10 +2635,7 @@ function New-BoostLabToolCard {
         $actionDisplayLabel = Get-BoostLabToolActionDisplayLabel -ToolMetadata $Tool -ActionName $actionName
         $actionButton = [System.Windows.Controls.Button]::new()
         $actionButton.Content = $actionDisplayLabel
-        if ($toolId -eq 'driver-install-latest' -and $actionName -eq 'Open') {
-            $actionButton.ToolTip = 'Only the INTEL branch has a source-defined standalone Open page. NVIDIA and AMD run through Apply Source Workflow.'
-        }
-        elseif ($toolId -eq 'driver-install-debloat-settings' -and $actionName -in @('Open', 'Apply')) {
+        if ($toolId -eq 'driver-install-debloat-settings' -and $actionName -in @('Open', 'Apply')) {
             $actionButton.ToolTip = 'Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically.'
         }
         $actionButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left

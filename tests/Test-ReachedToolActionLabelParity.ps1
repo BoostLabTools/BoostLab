@@ -112,11 +112,7 @@ $reachedToolsForward = @(
     'installers',
     'driver-clean',
     'driver-install-debloat-settings',
-    'driver-install-latest',
-    'nvidia-settings',
-    'hdcp',
-    'p0-state',
-    'msi-mode',
+    'nvidia-app-download',
     'directx',
     'visual-cpp'
 )
@@ -127,6 +123,9 @@ Assert-BoostLabCondition (($reachedToolsReverse[0] -eq 'visual-cpp') -and ($reac
 foreach ($toolId in $reachedToolsForward) {
     Assert-BoostLabCondition ($toolById.ContainsKey($toolId)) "Reached tool missing from active catalog: $toolId"
 }
+foreach ($retiredToolId in @('driver-install-latest', 'nvidia-settings', 'hdcp', 'p0-state', 'msi-mode')) {
+    Assert-BoostLabCondition (-not $toolById.ContainsKey($retiredToolId)) "Retired NVIDIA tool remained in active catalog: $retiredToolId"
+}
 foreach ($outOfScope in @('graphics-configuration-center')) {
     Assert-BoostLabCondition ($reachedToolsForward -notcontains $outOfScope) "Out-of-scope tool was included in reached label audit scope: $outOfScope"
 }
@@ -134,7 +133,7 @@ foreach ($outOfScope in @('graphics-configuration-center')) {
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 Assert-BoostLabTextContains -Text $uiText -Needle 'function Get-BoostLabToolActionDisplayLabel' -Description 'UI action display label helper'
 
-$sourceAlignedActionLabelBlock = Get-BoostLabTextBetween -Text $uiText -Start '$sourceAlignedActionLabels = @{' -End 'if ($toolId -eq ''driver-install-latest'')'
+$sourceAlignedActionLabelBlock = Get-BoostLabTextBetween -Text $uiText -Start '$sourceAlignedActionLabels = @{' -End 'if ($toolId -eq ''nvidia-app-download'')'
 $expectedSourceAlignedLabels = @(
     @{ ToolId = 'memory-compression'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Enable'") }
     @{ ToolId = 'background-apps'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
@@ -164,46 +163,17 @@ foreach ($expected in $expectedSourceAlignedLabels) {
     }
 }
 
-$driverInstallLatestBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''driver-install-latest'')' -End 'if ($toolId -eq ''driver-clean'')'
-Assert-BoostLabTextContains -Text $driverInstallLatestBlock -Needle "'Open' { return 'Open Intel Driver Page' }" -Description 'Driver Install Latest Open label'
-Assert-BoostLabTextContains -Text $driverInstallLatestBlock -Needle "'Apply' { return 'Apply Source Workflow' }" -Description 'Driver Install Latest Apply label'
-Assert-BoostLabCondition (-not $driverInstallLatestBlock.Contains('Manual Handoff')) 'Driver Install Latest must not show Manual Handoff.'
-Assert-BoostLabCondition (-not $driverInstallLatestBlock.Contains('Apply Auto')) 'Driver Install Latest must not show Apply Auto.'
+$nvidiaAppBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''nvidia-app-download'')' -End 'if ($toolId -eq ''driver-clean'')'
+Assert-BoostLabTextContains -Text $nvidiaAppBlock -Needle "'Open' { return 'Open NVIDIA App Page' }" -Description 'NVIDIA App shortcut Open label'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Manual Handoff')) 'NVIDIA App shortcut must not show Manual Handoff.'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Apply Auto')) 'NVIDIA App shortcut must not show Apply Auto.'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains("'Apply'")) 'NVIDIA App shortcut must not expose Apply.'
 
-$driverCleanBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''driver-clean'')' -End 'if ($toolId -eq ''nvidia-settings'')'
+$driverCleanBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''driver-clean'')' -End 'if ($toolId -eq ''start-menu-taskbar'')'
 Assert-BoostLabTextContains -Text $driverCleanBlock -Needle "'Open' { return 'Manual' }" -Description 'Driver Clean Manual visible label'
 Assert-BoostLabTextContains -Text $driverCleanBlock -Needle "'Apply' { return 'Auto' }" -Description 'Driver Clean Auto visible label'
 Assert-BoostLabCondition (-not $driverCleanBlock.Contains('Manual Handoff')) 'Driver Clean must not show Manual Handoff after source-equivalent implementation.'
 Assert-BoostLabCondition (-not $driverCleanBlock.Contains('Apply Auto')) 'Driver Clean must not show Apply Auto after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share Nvidia Settings display-label mapping.'
-
-$nvidiaSettingsBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''nvidia-settings'')' -End 'if ($toolId -eq ''hdcp'')'
-Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'Nvidia Settings On visible label'
-Assert-BoostLabTextContains -Text $nvidiaSettingsBlock -Needle "'Default' { return 'Default' }" -Description 'Nvidia Settings Default visible label'
-Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Manual Handoff')) 'Nvidia Settings must not show Manual Handoff after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains('Apply Auto')) 'Nvidia Settings must not show Apply Auto after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $nvidiaSettingsBlock.Contains("'Open'")) 'Nvidia Settings must not expose a fake Open label.'
-
-$hdcpBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''hdcp'')' -End 'if ($toolId -eq ''p0-state'')'
-Assert-BoostLabTextContains -Text $hdcpBlock -Needle "'Apply' { return 'Off (Recommended)' }" -Description 'HDCP Off visible label'
-Assert-BoostLabTextContains -Text $hdcpBlock -Needle "'Default' { return 'Default' }" -Description 'HDCP Default visible label'
-Assert-BoostLabCondition (-not $hdcpBlock.Contains('Manual Handoff')) 'HDCP must not show Manual Handoff after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $hdcpBlock.Contains('Apply Auto')) 'HDCP must not show Apply Auto after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $hdcpBlock.Contains("'Open'")) 'HDCP must not expose a fake Open label.'
-
-$p0StateBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''p0-state'')' -End 'if ($toolId -eq ''msi-mode'')'
-Assert-BoostLabTextContains -Text $p0StateBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'P0 State On visible label'
-Assert-BoostLabTextContains -Text $p0StateBlock -Needle "'Default' { return 'Default' }" -Description 'P0 State Default visible label'
-Assert-BoostLabCondition (-not $p0StateBlock.Contains('Manual Handoff')) 'P0 State must not show Manual Handoff after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $p0StateBlock.Contains('Apply Auto')) 'P0 State must not show Apply Auto after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $p0StateBlock.Contains("'Open'")) 'P0 State must not expose a fake Open label.'
-
-$msiModeBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''msi-mode'')' -End 'if ($toolId -eq ''directx'')'
-Assert-BoostLabTextContains -Text $msiModeBlock -Needle "'Apply' { return 'On (Recommended)' }" -Description 'Msi Mode On visible label'
-Assert-BoostLabTextContains -Text $msiModeBlock -Needle "'Off' { return 'Off' }" -Description 'Msi Mode Off visible label'
-Assert-BoostLabCondition (-not $msiModeBlock.Contains('Manual Handoff')) 'Msi Mode must not show Manual Handoff after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $msiModeBlock.Contains('Apply Auto')) 'Msi Mode must not show Apply Auto after source-equivalent implementation.'
-Assert-BoostLabCondition (-not $msiModeBlock.Contains("'Open'")) 'Msi Mode must not expose a fake Open label.'
 
 $directXBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''directx'')' -End 'if ($toolId -eq ''visual-cpp'')'
 Assert-BoostLabTextContains -Text $directXBlock -Needle "'Apply' { return 'Install DirectX' }" -Description 'DirectX Install visible label'
@@ -242,11 +212,6 @@ $driverInstallDebloatSettingsTool = $toolById['driver-install-debloat-settings']
 Assert-BoostLabCondition ([string]$driverInstallDebloatSettingsTool.SelectionMode -eq 'SingleSelect') 'Driver Install Debloat & Settings must expose a single-select branch UI.'
 Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings branch labels must remain NVIDIA, AMD, INTEL.'
 Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Debloat & Settings must require one branch for Open and Apply.'
-
-$driverInstallLatestTool = $toolById['driver-install-latest']
-Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest must keep single-select branch UI.'
-Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Latest branch labels must remain NVIDIA, AMD, INTEL.'
-Assert-BoostLabCondition ((@($driverInstallLatestTool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Latest must still require one branch for Open and Apply.'
 
 $installersTool = $toolById['installers']
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection behavior.'
@@ -290,7 +255,7 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     ReachedToolCount = $reachedToolsForward.Count
     DriverCleanVisibleLabels = @('Manual', 'Auto')
     DriverCleanRouting = 'Open maps to Ultimate Manual; Apply maps to Ultimate Auto'
-    DriverInstallLatestLabels = @('Open Intel Driver Page', 'Apply Source Workflow')
+    NvidiaAppShortcutLabels = @('Open NVIDIA App Page')
     InstallersSelectionMode = [string]$installersTool.SelectionMode
     VisualCppVisibleLabels = @('Install Visual C++')
     Message = 'Reached-tool action labels preserve source-truthful UI wording without changing runtime behavior.'

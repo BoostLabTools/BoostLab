@@ -559,7 +559,7 @@ function Get-BoostLabBitLockerAnalysis {
         NoMutationOccurred = $true
         NoRecoveryKeysCollectedDisplayedOrPersisted = $true
         NoAutomaticEnableBitLocker = $true
-        PathBRelationship = 'BitLocker remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
+        GraphicsWorkflowRelationship = 'BitLocker remains separate from the Graphics workflow.'
     }
 }
 

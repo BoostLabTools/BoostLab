@@ -498,7 +498,7 @@ function Get-BoostLabDriverCleanAnalysis {
         NoDownloadOccurred = $true
         NoExternalProcessStarted = $true
         Warnings = @(Get-BoostLabDriverCleanRiskWarnings)
-        PathBRelationship = 'Driver Clean remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
+        GraphicsWorkflowRelationship = 'Driver Clean remains separate from Driver Install Debloat & Settings and the optional NVIDIA App download shortcut.'
     }
 }
 

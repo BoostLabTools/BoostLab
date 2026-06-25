@@ -1,21 +1,21 @@
-@{
+﻿@{
     SchemaVersion = 1
     Purpose = 'Phase 107 Ordered Ultimate Parity Execution Reset'
     DesignSystemReady = $false
 
     Counts = @{
-        ActiveTools = 50
-        RuntimeImplementedTools = 50
+        ActiveTools = 46
+        RuntimeImplementedTools = 46
         DeferredPlaceholders = 0
         SourcePromotedMirrorFiles = 7
         RemainingSourcePromotedIntakeCandidates = 0
-        UltimateParityImplemented = 33
-        NearParityControlled = 15
+        UltimateParityImplemented = 34
+        NearParityControlled = 10
         ControlledSubset = 2
         ManualHandoffOnly = 0
         SecurityAssistantOnly = 0
         DeferredForParityWork = 0
-        RefusedOrDeletedOutsideActiveCatalog = 25
+        RefusedOrDeletedOutsideActiveCatalog = 30
     }
 
     CurrentOrderedParityTarget = $null
@@ -59,6 +59,11 @@
         'Spectre / Meltdown Assistant'
         'MMAgent Assistant'
         'Services Optimizer'
+        'Driver Install Latest'
+        'Nvidia Settings'
+        'HDCP'
+        'P0 State'
+        'Msi Mode'
     )
 
     Tools = @(
@@ -317,81 +322,6 @@
             NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
-            ToolId = 'driver-install-latest'
-            DisplayName = 'Driver Install Latest'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 3
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Driver Install Latest behavior.'
-            YazanFinalException = $false
-            YazanAcceptedNearParity = $true
-            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Skip; accepted near-parity.'
-        }
-        @{
-            ToolId = 'nvidia-settings'
-            DisplayName = 'Nvidia Settings'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 4
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Nvidia Settings On (Recommended) and Default behavior, including 7-Zip prelude, NVIDIA registry/profile operations, Profile Inspector .nip import, and Control Panel launch.'
-            YazanFinalException = $false
-            YazanAcceptedNearParity = $true
-            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Skip; accepted near-parity.'
-        }
-        @{
-            ToolId = 'hdcp'
-            DisplayName = 'HDCP'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 5
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent HDCP Off (Recommended) and Default behavior: every non-Configuration display-class subkey is written and read back.'
-            YazanFinalException = $false
-            YazanAcceptedNearParity = $true
-            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Skip; accepted near-parity.'
-        }
-        @{
-            ToolId = 'p0-state'
-            DisplayName = 'P0 State'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 6
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Yazan-approved BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent P0 State On (Recommended) and Default behavior: every non-Configuration display-class subkey is written and read back.'
-            YazanFinalException = $false
-            YazanAcceptedNearParity = $true
-            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Skip; accepted near-parity.'
-        }
-        @{
-            ToolId = 'msi-mode'
-            DisplayName = 'Msi Mode'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 7
-            RuntimeStatus = 'RuntimeImplemented'
-            ImplementationLevel = 'NearParityControlled'
-            UltimateParity = 'Partial'
-            GapSummary = 'Yazan-accepted BoostLab GUI confirmation/test-safe mechanics around exact source-equivalent Msi Mode On and Off behavior for every display device returned by Get-PnpDevice -Class Display.'
-            YazanFinalException = $false
-            YazanAcceptedNearParity = $true
-            FinalProgressStatus = 'DoneYazanAcceptedNearParity'
-            NextParityAction = 'Skip; accepted near-parity.'
-        }
-        @{
             ToolId = 'driver-install-debloat-settings'
             DisplayName = 'Driver Install Debloat & Settings'
             Stage = 'Graphics'
@@ -409,11 +339,26 @@
             NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
+            ToolId = 'nvidia-app-download'
+            DisplayName = 'Install NVIDIA App'
+            Stage = 'Graphics'
+            StageOrder = 5
+            ToolOrder = 3
+            RuntimeStatus = 'RuntimeImplemented'
+            ImplementationLevel = 'ParityImplemented'
+            UltimateParity = 'Yes'
+            SourceType = 'BoostLabProductShortcut'
+            GapSummary = 'Phase 173A BoostLab workflow shortcut. Open-only official NVIDIA App webpage launcher; it does not download, install, or mutate system state.'
+            YazanFinalException = $false
+            FinalProgressStatus = 'DoneParity'
+            NextParityAction = 'No ordered Ultimate parity work required; this is an approved BoostLab product shortcut replacing retired standalone NVIDIA Path B tools.'
+        }
+        @{
             ToolId = 'directx'
             DisplayName = 'DirectX'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 8
+            ToolOrder = 4
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -428,7 +373,7 @@
             DisplayName = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
+            ToolOrder = 5
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'NearParityControlled'
             UltimateParity = 'Partial'
@@ -443,7 +388,7 @@
             DisplayName = 'Graphics Configuration Center'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 10
+            ToolOrder = 6
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'

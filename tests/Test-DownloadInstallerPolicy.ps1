@@ -98,8 +98,8 @@ try {
         $errors.Add('Phase 35 must not approve real artifacts in the production manifest.')
     }
     $externalRuntimeArtifacts = @(Get-BoostLabExternalRuntimeArtifactDefinitions)
-    if ($externalRuntimeArtifacts.Count -ne 28) {
-        $errors.Add("Phase 164H must expose exactly 28 verified runtime mirror artifact definitions; found $($externalRuntimeArtifacts.Count).")
+    if ($externalRuntimeArtifacts.Count -ne 26) {
+        $errors.Add("Phase 173A must expose exactly 26 active verified runtime mirror artifact definitions after retiring Nvidia Settings; found $($externalRuntimeArtifacts.Count).")
     }
     $approvedMirrorSource = Get-BoostLabApprovedArtifactRuntimeSource -ArtifactId 'directx-runtime-package'
     if (
@@ -111,8 +111,8 @@ try {
 
     $officialPolicy = Get-BoostLabOfficialVendorDirectRuntimePolicy
     $officialRuntimeSources = @(Get-BoostLabOfficialVendorDirectRuntimeSources)
-    if ([int]$officialPolicy.ApprovedCount -ne 22 -or $officialRuntimeSources.Count -ne 22) {
-        $errors.Add("Phase 164I must approve exactly 22 OfficialVendorDirect runtime sources; found $($officialRuntimeSources.Count).")
+    if ([int]$officialPolicy.ApprovedCount -ne 19 -or $officialRuntimeSources.Count -ne 19) {
+        $errors.Add("Phase 173A must approve exactly 19 active OfficialVendorDirect runtime sources after retiring Driver Install Latest and adding the NVIDIA App page shortcut; found $($officialRuntimeSources.Count).")
     }
     $officialKindCounts = @{}
     foreach ($group in @($officialRuntimeSources | Group-Object SourceKind)) {
@@ -120,9 +120,9 @@ try {
     }
     $expectedOfficialKindCounts = @{
         StaticOfficialInstaller = 3
-        FloatingOfficialInstaller = 15
-        OfficialVendorLookupPage = 2
-        OfficialVendorApi = 1
+        FloatingOfficialInstaller = 14
+        OfficialVendorLookupPage = 1
+        OfficialVendorApi = 0
         BrowserExtensionOfficialSource = 1
     }
     foreach ($kind in $expectedOfficialKindCounts.Keys) {
@@ -155,37 +155,14 @@ try {
     if ($badSchemeOfficial.Allowed -or (@($badSchemeOfficial.Errors) -join ' ') -notmatch 'HTTPS') {
         $errors.Add('Official source with a non-HTTPS scheme was not blocked.')
     }
-    $nvidiaLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-nvidia-lookup' `
+    $nvidiaAppLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'nvidia-app-download-page' `
         -Purpose Lookup
-    $nvidiaLookupDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-nvidia-lookup' `
+    $nvidiaAppDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'nvidia-app-download-page' `
         -Purpose Download
-    if (-not $nvidiaLookup.Allowed -or $nvidiaLookupDownload.Allowed) {
-        $errors.Add('NVIDIA lookup API must be lookup-approved but not executable/download-approved.')
-    }
-    $nvidiaTemplateWithoutResolvedUrl = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
-        -Purpose Download
-    $nvidiaResolvedDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
-        -Purpose Download `
-        -SourceUrl 'https://international.download.nvidia.com/Windows/555.85/555.85-desktop-win10-win11-64bit-international-dch-whql.exe'
-    $nvidiaBadResolvedDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-nvidia-driver-template' `
-        -Purpose Download `
-        -SourceUrl 'https://international.download.nvidia.com/Windows/555.85/555.85-not-approved.exe'
-    if ($nvidiaTemplateWithoutResolvedUrl.Allowed -or -not $nvidiaResolvedDownload.Allowed -or $nvidiaBadResolvedDownload.Allowed) {
-        $errors.Add('NVIDIA driver template must require a resolved, pattern-approved official download URL.')
-    }
-    $intelLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-intel-driver-page' `
-        -Purpose Lookup
-    $intelDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'driver-install-latest-intel-driver-page' `
-        -Purpose Download
-    if (-not $intelLookup.Allowed -or $intelDownload.Allowed) {
-        $errors.Add('INTEL official driver page must be lookup-approved but not executable/download-approved.')
+    if (-not $nvidiaAppLookup.Allowed -or $nvidiaAppDownload.Allowed) {
+        $errors.Add('NVIDIA App shortcut must be lookup-approved but not executable/download-approved.')
     }
 
     $blockedOfficialManifest = Get-BoostLabExternalArtifactSourceManifest

@@ -133,7 +133,17 @@ foreach ($entry in $entries) {
     Assert-BoostLabCondition ($allowedClassifications -contains [string]$entry.SourceClassification) "Invalid source classification for $($entry.Id)."
     Assert-BoostLabCondition ($allowedMirrorStatuses -contains [string]$entry.MirrorStatus) "Invalid mirror status for $($entry.Id)."
     Assert-BoostLabCondition ([string]$entry.OriginalDownloadUrl -match '^https://') "Manifest URL must be HTTPS for $($entry.Id)."
-    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "Source script path missing for $($entry.Id)."
+    $isBoostLabProductShortcut = (
+        [string]$entry.ToolId -eq 'nvidia-app-download' -and
+        [string]$entry.OperationKind -eq 'VendorPage' -and
+        [string]$entry.SourceClassification -eq 'OfficialVendorDirect'
+    )
+    if ($isBoostLabProductShortcut) {
+        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "BoostLab-owned shortcut must not pretend to have an Ultimate source script: $($entry.Id)."
+    }
+    else {
+        Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "Source script path missing for $($entry.Id)."
+    }
 
     $toolId = [string]$entry.ToolId
     Assert-BoostLabCondition ($stageToolIndex.ContainsKey($toolId)) "Manifest references unknown tool id: $toolId"
@@ -188,11 +198,7 @@ $expectedReachedToolIds = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
-    'driver-install-latest'
-    'nvidia-settings'
-    'hdcp'
-    'p0-state'
-    'msi-mode'
+    'nvidia-app-download'
     'directx'
     'visual-cpp'
     'bloatware'
@@ -208,8 +214,6 @@ $toolsWithRuntimeExternalDownloads = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
-    'driver-install-latest'
-    'nvidia-settings'
     'directx'
     'visual-cpp'
     'bloatware'
@@ -225,10 +229,11 @@ foreach ($toolId in $noRuntimeArtifactTools) {
     Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.ToolId -eq $toolId }).Count -eq 0) "Tool marked as no-runtime-artifact has manifest entries: $toolId"
 }
 
-$nvidiaSettingsEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'nvidia-settings' })
-Assert-BoostLabCondition ($nvidiaSettingsEntries.Count -eq 2) 'Nvidia Settings must classify exactly 7-Zip and Profile Inspector source artifacts.'
-Assert-BoostLabCondition (@($nvidiaSettingsEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*7zip.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 1) 'Nvidia Settings 7-Zip artifact classification mismatch.'
-Assert-BoostLabCondition (@($nvidiaSettingsEntries | Where-Object { [string]$_.OriginalDownloadUrl -like '*inspector.exe' -and [string]$_.SourceClassification -eq 'UltimateAuthorHostedArtifact' -and [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 1) 'Nvidia Settings inspector artifact classification mismatch.'
+$nvidiaAppEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'nvidia-app-download' })
+Assert-BoostLabCondition ($nvidiaAppEntries.Count -eq 1) 'NVIDIA App shortcut must classify exactly one official page source.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].OriginalDownloadUrl -eq 'https://www.nvidia.com/en-us/software/nvidia-app/') 'NVIDIA App shortcut URL classification mismatch.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].SourceClassification -eq 'OfficialVendorDirect') 'NVIDIA App shortcut must be OfficialVendorDirect.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].MirrorStatus -eq 'NotRequiredOfficial') 'NVIDIA App shortcut must not require a BoostLab mirror.'
 
 $directXEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'directx' })
 Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'DirectX must classify exactly 7-Zip and DirectX runtime source artifacts.'
@@ -304,9 +309,9 @@ $officialPolicyEntries = @($officialPolicy.Entries)
 $needsMirrorEntries = @($entries | Where-Object { [string]$_.MirrorStatus -eq 'NeedsBoostLabMirror' })
 $availableMirrorEntries = @($entries | Where-Object { $_.ContainsKey('VerifiedBoostLabMirrorAvailable') -and $_.VerifiedBoostLabMirrorAvailable -eq $true })
 $provenanceOnlyLinkedEntries = @($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceOnlyApproved') -and $_.ArtifactProvenanceOnlyApproved -eq $true })
-Assert-BoostLabCondition ($officialEntries.Count -eq 22) 'Expected exactly 22 official vendor/project sources after Phase 164I closure.'
-Assert-BoostLabCondition ([int]$officialPolicy.ApprovedCount -eq 22) 'OfficialVendorDirect policy approved count mismatch.'
-Assert-BoostLabCondition ($officialPolicyEntries.Count -eq 22) 'OfficialVendorDirect policy entry count mismatch.'
+Assert-BoostLabCondition ($officialEntries.Count -eq 19) 'Expected exactly 19 active official vendor/project sources after Phase 173A Graphics simplification.'
+Assert-BoostLabCondition ([int]$officialPolicy.ApprovedCount -eq 19) 'OfficialVendorDirect policy approved count mismatch.'
+Assert-BoostLabCondition ($officialPolicyEntries.Count -eq 19) 'OfficialVendorDirect policy entry count mismatch.'
 $officialEntryIds = @($officialEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
 $officialPolicyIds = @($officialPolicyEntries | ForEach-Object { [string]$_.Id } | Sort-Object)
 Assert-BoostLabCondition (($officialEntryIds -join '|') -eq ($officialPolicyIds -join '|')) 'OfficialVendorDirect policy entries must map one-to-one to OfficialVendorDirect manifest entries.'
@@ -316,9 +321,9 @@ foreach ($group in @($officialPolicyEntries | ForEach-Object { [string]$_['Offic
 }
 $expectedOfficialKindCounts = @{
     StaticOfficialInstaller = 3
-    FloatingOfficialInstaller = 15
-    OfficialVendorLookupPage = 2
-    OfficialVendorApi = 1
+    FloatingOfficialInstaller = 14
+    OfficialVendorLookupPage = 1
+    OfficialVendorApi = 0
     BrowserExtensionOfficialSource = 1
 }
 foreach ($kind in $expectedOfficialKindCounts.Keys) {
@@ -361,12 +366,12 @@ foreach ($policyEntry in @($officialPolicyEntries | Where-Object { [string]$_['I
     Assert-BoostLabCondition ($policyEntry['UnsignedOfficialArtifactApproved'] -ne $true) "Unexpected unsigned approval flag outside Installers 7-Zip: $($policyEntry['Id'])"
 }
 Assert-BoostLabCondition ($needsMirrorEntries.Count -eq 0) 'Author-hosted artifacts should no longer require mirror governance after Phase 164H runtime approval.'
-Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 28) 'Expected all 28 author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 164F.'
-Assert-BoostLabCondition ($provenanceOnlyLinkedEntries.Count -eq 28) 'Expected all 28 verified mirror entries to link to Phase 164G provenance-only approvals.'
-Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 28) 'Exactly 28 verified mirror artifacts must be available for runtime source selection.'
-Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceApproved') -and $_.ArtifactProvenanceApproved -eq $true }).Count -eq 28) 'Exactly 28 verified mirror artifacts must have artifact provenance approved for runtime gating.'
-Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('ProductionAllowlistApproved') -and $_.ProductionAllowlistApproved -eq $true }).Count -eq 28) 'Exactly 28 verified mirror artifacts must have production allowlist approval.'
-Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('RuntimeSourceSelectionApproved') -and $_.RuntimeSourceSelectionApproved -eq $true }).Count -eq 28) 'Exactly 28 verified mirror artifacts must have runtime source-selection approval.'
+Assert-BoostLabCondition ($availableMirrorEntries.Count -eq 26) 'Expected all 26 active author-hosted artifacts to record verified public BoostLab mirror evidence after Phase 173A retired Nvidia Settings.'
+Assert-BoostLabCondition ($provenanceOnlyLinkedEntries.Count -eq 26) 'Expected all 26 active verified mirror entries to link to provenance-only approvals.'
+Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.MirrorStatus -eq 'BoostLabMirrorAvailable' }).Count -eq 26) 'Exactly 26 active verified mirror artifacts must be available for runtime source selection.'
+Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('ArtifactProvenanceApproved') -and $_.ArtifactProvenanceApproved -eq $true }).Count -eq 26) 'Exactly 26 active verified mirror artifacts must have artifact provenance approved for runtime gating.'
+Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('ProductionAllowlistApproved') -and $_.ProductionAllowlistApproved -eq $true }).Count -eq 26) 'Exactly 26 active verified mirror artifacts must have production allowlist approval.'
+Assert-BoostLabCondition (@($entries | Where-Object { $_.ContainsKey('RuntimeSourceSelectionApproved') -and $_.RuntimeSourceSelectionApproved -eq $true }).Count -eq 26) 'Exactly 26 active verified mirror artifacts must have runtime source-selection approval.'
 Assert-BoostLabCondition (@($officialEntries | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.ExpectedSha256) }).Count -eq 0) 'Official vendor direct entries must not receive Phase 164B SHA evidence.'
 
 $phase164BEvidenceIds = @(
@@ -376,8 +381,6 @@ $phase164BEvidenceIds = @(
     'driver-clean-seven-zip'
     'driver-install-debloat-settings-inspector'
     'driver-install-debloat-settings-seven-zip'
-    'nvidia-settings-inspector'
-    'nvidia-settings-seven-zip'
     'directx-runtime-package'
     'directx-seven-zip'
     'visual-cpp-vcredist2005-x64'
@@ -406,8 +409,6 @@ $phase164BMirrorCandidates = @{
     'driver-clean-seven-zip' = 'mirrors/driver-clean/7zip.exe'
     'driver-install-debloat-settings-inspector' = 'mirrors/driver-install-debloat-settings/inspector.exe'
     'driver-install-debloat-settings-seven-zip' = 'mirrors/driver-install-debloat-settings/7zip.exe'
-    'nvidia-settings-inspector' = 'mirrors/nvidia-settings/inspector.exe'
-    'nvidia-settings-seven-zip' = 'mirrors/nvidia-settings/7zip.exe'
     'directx-runtime-package' = 'mirrors/directx/directx.exe'
     'directx-seven-zip' = 'mirrors/directx/7zip.exe'
     'visual-cpp-vcredist2005-x64' = 'mirrors/visual-cpp/vcredist2005_x64.exe'
@@ -430,10 +431,10 @@ $phase164BMirrorCandidates = @{
     'edge-webview-edge-webview' = 'mirrors/edge-webview/edgewebview.exe'
 }
 $phase164BEvidenceEntries = @($entries | Where-Object { $phase164BEvidenceIds -contains [string]$_.Id })
-Assert-BoostLabCondition ($phase164BEvidenceEntries.Count -eq 28) 'Phase 164B SHA evidence entry count mismatch.'
+Assert-BoostLabCondition ($phase164BEvidenceEntries.Count -eq 26) 'Active Phase 164B SHA evidence entry count mismatch after Phase 173A retired Nvidia Settings.'
 $provenanceOnlyApprovals = @($artifactProvenance.ProvenanceOnlyApprovals)
 Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Runtime artifact allowlist must remain empty; Phase 164G approvals are provenance-only.'
-Assert-BoostLabCondition ($provenanceOnlyApprovals.Count -eq 28) 'Phase 164G provenance-only approval count mismatch.'
+Assert-BoostLabCondition ($provenanceOnlyApprovals.Count -eq 26) 'Active Phase 164G provenance-only approval count mismatch after Phase 173A retired Nvidia Settings.'
 $provenanceOnlyApprovalByArtifactId = @{}
 foreach ($approval in $provenanceOnlyApprovals) {
     $artifactId = [string]$approval.ArtifactId
@@ -500,8 +501,7 @@ foreach ($entry in $phase164BEvidenceEntries) {
 
 $expectedDuplicateGroups = @(
     @('edge-settings-edge-exe', 'edge-webview-edge-exe')
-    @('driver-clean-seven-zip', 'driver-install-debloat-settings-seven-zip', 'nvidia-settings-seven-zip', 'directx-seven-zip')
-    @('driver-install-debloat-settings-inspector', 'nvidia-settings-inspector')
+    @('driver-clean-seven-zip', 'driver-install-debloat-settings-seven-zip', 'directx-seven-zip')
     @('game-bar-edge-webview', 'edge-webview-edge-webview')
 )
 foreach ($group in $expectedDuplicateGroups) {
@@ -521,8 +521,7 @@ $sourceTextByTool = @{
     'installers' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Installers\installers.psm1') -Raw
     'driver-clean' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1') -Raw
     'driver-install-debloat-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1') -Raw
-    'driver-install-latest' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-latest.psm1') -Raw
-    'nvidia-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\_intake-promoted\Ultimate\5 Graphics\4 Nvidia Settings.ps1') -Raw
+    'nvidia-app-download' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\nvidia-app-download.psm1') -Raw
     'directx' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\directx.psm1') -Raw
     'visual-cpp' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1') -Raw
     'bloatware' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\bloatware.psm1') -Raw
@@ -536,17 +535,12 @@ foreach ($entry in $entries) {
 
     $text = [string]$sourceTextByTool[$toolId]
     $url = [string]$entry.OriginalDownloadUrl
-    if ([string]$entry.Id -eq 'driver-install-latest-nvidia-driver-template') {
-        Assert-BoostLabContains -Text $text -Needle 'https://international.download.nvidia.com/Windows/{0}/{0}-desktop-{1}-{2}-international-dch-whql.exe' -Description 'Driver Install Latest NVIDIA dynamic download template'
+    if ($toolId -eq 'visual-cpp') {
+        Assert-BoostLabContains -Text $text -Needle 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main' -Description "Original URL base retained for $($entry.Id)"
+        Assert-BoostLabContains -Text $text -Needle ([IO.Path]::GetFileName($url)) -Description "Original URL package retained for $($entry.Id)"
     }
     else {
-        if ($toolId -eq 'visual-cpp') {
-            Assert-BoostLabContains -Text $text -Needle 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main' -Description "Original URL base retained for $($entry.Id)"
-            Assert-BoostLabContains -Text $text -Needle ([IO.Path]::GetFileName($url)) -Description "Original URL package retained for $($entry.Id)"
-        }
-        else {
-            Assert-BoostLabContains -Text $text -Needle $url -Description "Original URL retained for $($entry.Id)"
-        }
+        Assert-BoostLabContains -Text $text -Needle $url -Description "Original URL retained for $($entry.Id)"
     }
 
     if ([string]$entry.MirrorStatus -ne 'BoostLabMirrorAvailable') {
@@ -574,7 +568,7 @@ foreach ($needle in @(
 }
 
 Assert-BoostLabCondition (@($artifactProvenance.Artifacts).Count -eq 0) 'Runtime artifact allowlist must remain empty; no artifact execution approval was added.'
-Assert-BoostLabCondition (@($artifactProvenance.ProvenanceOnlyApprovals).Count -eq 28) 'Phase 164G provenance-only approvals must remain exactly scoped to 28 verified mirror entries.'
+Assert-BoostLabCondition (@($artifactProvenance.ProvenanceOnlyApprovals).Count -eq 26) 'Provenance-only approvals must remain exactly scoped to 26 active verified mirror entries after Phase 173A.'
 if (Test-Path -LiteralPath $allowlistPath -PathType Leaf) {
     $allowlistText = Get-Content -LiteralPath $allowlistPath -Raw
     Assert-BoostLabCondition (-not $allowlistText.Contains('BoostLabMirrorAvailable')) 'Production allowlist must not approve external artifact mirrors.'
@@ -618,5 +612,5 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     BinaryFilesAdded = $binaryFiles.Count
     RuntimeUrlsChanged = $true
     SourceUltimateUnchanged = $true
-    Message = 'External artifact source policy manifest is parseable, reached-tool coverage is scoped, and exactly 28 verified BoostLab mirror artifacts are approved for runtime source selection.'
+    Message = 'External artifact source policy manifest is parseable, reached-tool coverage is scoped, and exactly 26 active verified BoostLab mirror artifacts are approved for runtime source selection.'
 }

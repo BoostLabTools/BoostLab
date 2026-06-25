@@ -124,13 +124,14 @@ $implementedModules = @{
         RelativePath          = 'Graphics\driver-clean.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'')'
     }
-    'driver-install-latest' = @{
-        RelativePath          = 'Graphics\driver-install-latest.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
-    }
     'driver-install-debloat-settings' = @{
         RelativePath          = 'Graphics\driver-install-debloat-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
+    }
+    'nvidia-app-download' = @{
+        RelativePath          = 'Graphics\nvidia-app-download.psm1'
+        LaunchText            = 'https://www.nvidia.com/en-us/software/nvidia-app/'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
     }
     'directx' = @{
         RelativePath          = 'Graphics\directx.psm1'
@@ -139,22 +140,6 @@ $implementedModules = @{
     'visual-cpp' = @{
         RelativePath          = 'Graphics\visual-cpp.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
-    }
-    'nvidia-settings' = @{
-        RelativePath          = 'Graphics\nvidia-settings.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
-    'hdcp' = @{
-        RelativePath          = 'Graphics\hdcp.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
-    'p0-state' = @{
-        RelativePath          = 'Graphics\p0-state.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    }
-    'msi-mode' = @{
-        RelativePath          = 'Graphics\msi-mode.psm1'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Off'')'
     }
     'graphics-configuration-center' = @{
         RelativePath          = 'Graphics\GraphicsConfigurationCenter.psm1'
@@ -442,18 +427,6 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'write-cache-buffer-flushing' -and
             $commandName -eq 'New-ItemProperty'
         )
-        $approvedHdcpCommand = (
-            $toolId -eq 'hdcp' -and
-            $commandName -eq 'New-ItemProperty'
-        )
-        $approvedP0StateCommand = (
-            $toolId -eq 'p0-state' -and
-            $commandName -eq 'New-ItemProperty'
-        )
-        $approvedMsiModeCommand = (
-            $toolId -eq 'msi-mode' -and
-            $commandName -in @('New-Item', 'New-ItemProperty')
-        )
         $approvedUpdatesDriversBlockCommand = (
             $toolId -eq 'updates-drivers-block' -and
             $commandName -in @('New-ItemProperty', 'Remove-ItemProperty')
@@ -478,17 +451,9 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'driver-clean' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
         )
-        $approvedDriverInstallLatestCommand = (
-            $toolId -eq 'driver-install-latest' -and
-            $commandName -eq 'Invoke-WebRequest'
-        )
         $approvedDriverInstallDebloatSettingsCommand = (
             $toolId -eq 'driver-install-debloat-settings' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
-        )
-        $approvedNvidiaSettingsCommand = (
-            $toolId -eq 'nvidia-settings' -and
-            $commandName -in @('Invoke-WebRequest', 'New-ItemProperty', 'Remove-ItemProperty', 'Remove-Item', 'Set-Content')
         )
         $approvedDirectXCommand = (
             $toolId -eq 'directx' -and
@@ -536,18 +501,13 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedNotepadSettingsCommand -and
             -not $approvedUnattendedCommand -and
             -not $approvedWriteCacheCommand -and
-            -not $approvedHdcpCommand -and
-            -not $approvedP0StateCommand -and
-            -not $approvedMsiModeCommand -and
             -not $approvedUpdatesDriversBlockCommand -and
             -not $approvedReinstallCommand -and
             -not $approvedEdgeSettingsCommand -and
             -not $approvedEdgeWebViewCommand -and
             -not $approvedInstallersCommand -and
             -not $approvedDriverCleanCommand -and
-            -not $approvedDriverInstallLatestCommand -and
             -not $approvedDriverInstallDebloatSettingsCommand -and
-            -not $approvedNvidiaSettingsCommand -and
             -not $approvedDirectXCommand -and
             -not $approvedVisualCppCommand -and
             -not $approvedBloatwareCommand -and
@@ -606,14 +566,14 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-clean') {
             1
         }
-        elseif ($toolId -eq 'driver-install-latest') {
-            1
-        }
         elseif ($toolId -eq 'installers') {
             2
         }
         elseif ($toolId -eq 'driver-install-debloat-settings') {
             4
+        }
+        elseif ($toolId -eq 'nvidia-app-download') {
+            1
         }
         elseif ($toolId -eq 'directx') {
             3
@@ -632,55 +592,6 @@ foreach ($entry in $expectedModules.Values) {
         }
         elseif ($toolId -eq 'reinstall') {
             1
-        }
-        elseif ($toolId -eq 'nvidia-settings') {
-            1
-        }
-        elseif ($toolId -eq 'nvidia-settings') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '903F2C1E9965795E3B5C60ABD123A1B4F364A33F783BFFC681FBCB37BCE9E6D5'
-                '$script:BoostLabSevenZipUrl'
-                '$script:BoostLabInspectorUrl'
-                'Get-BoostLabNvidiaSettingsSourceNipPayloads'
-                'NvCplPhysxAuto'
-                'NvDevToolsVisible'
-                'RmProfilingAdminOnly'
-                'StartOnLogin'
-                'EnableGR535'
-                'OpenUnavailable'
-                'RestoreUnavailable'
-                'On (Recommended)'
-                'source defines On and Default branches, not captured-state Restore'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing Nvidia Settings source-equivalent behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'ManualHandoffOnly'
-                'Manual Handoff'
-                'Apply Auto'
-                'AutoBlockedUntilArtifactApproval'
-                'RestoreSupported = $true'
-                'UsesTrustedInstaller = $true'
-                'UsesSafeMode = $true'
-                'Restart-Computer'
-                'Stop-Computer'
-                'bcdedit'
-                'Set-Service'
-                'Stop-Service'
-                'Restart-Service'
-                'Remove-AppxPackage'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated or stale Nvidia Settings behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'hdcp') {
-            0
         }
         elseif ($toolId -eq 'theme-black') {
             1
@@ -704,12 +615,6 @@ foreach ($entry in $expectedModules.Values) {
             0
         }
         elseif ($toolId -eq 'write-cache-buffer-flushing') {
-            0
-        }
-        elseif ($toolId -eq 'p0-state') {
-            0
-        }
-        elseif ($toolId -eq 'msi-mode') {
             0
         }
         elseif ($toolId -eq 'updates-drivers-block') {
@@ -1164,158 +1069,6 @@ foreach ($entry in $expectedModules.Values) {
             )) {
                 if ($source.Contains($forbiddenText)) {
                     $errors.Add("$modulePath contains unrelated Network Adapter Power Savings & Wake behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'hdcp') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '5C350D28F795D678051E6088F34968DF8D90B3D9024F558C5FAFB2899D1A906A'
-                'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-                'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-                'RMHdcpKeyglobZero'
-                'New-BoostLabRegistryStateCapture'
-                'Set-BoostLabRollbackMutationState'
-                'SourceSkipRule = ''*Configuration*'''
-                'SourceKeyNames'
-                'SkippedTargets'
-                'Off (Recommended)'
-                'SupportsDefault = $true'
-                'SupportsRestore = $false'
-                'CanModifyDrivers = $false'
-                'function Test-BoostLabHdcpState'
-                'No Restore action is source-defined or exposed for HDCP'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing HDCP controlled registry behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'reg delete'
-                'Remove-ItemProperty'
-                'Remove-Item -LiteralPath'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Set-Service'
-                'Stop-Service'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'Start-Process'
-                'UsesTrustedInstaller = $true'
-                'UsesSafeMode = $true'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated or unsafe HDCP behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'p0-state') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '382DFEC45B5C8F1D00388CFEFF38187517188EC0139DA751B42DEB1BEA4358EC'
-                'source-ultimate/_intake-promoted/Ultimate/5 Graphics/6 P0 State.ps1'
-                'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-                'Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
-                'DisableDynamicPstate'
-                'New-BoostLabRegistryStateCapture'
-                'Set-BoostLabRollbackMutationState'
-                'SourceKeyNames'
-                'SkippedTargets'
-                'SourceSkipRule = ''*Configuration*'''
-                'No Restore action is source-defined or exposed for P0 State'
-                'SupportsDefault = $true'
-                'SupportsRestore = $false'
-                'CanModifyDrivers = $false'
-                'function Test-BoostLabP0StateState'
-                'Default is source-defined DWORD 0 and is not Restore'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing P0 State controlled registry behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'NeedsNvidiaTargeting'
-                'EligibleTargets'
-                'ExcludedTargets'
-                'AmbiguousTargets'
-                'VEN_10DE'
-                'Microsoft/RDP/non-NVIDIA'
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')'
-                'reg delete'
-                'Remove-ItemProperty'
-                'Remove-Item -LiteralPath'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Set-Service'
-                'Stop-Service'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Start-BitsTransfer'
-                'Start-Process'
-                'UsesTrustedInstaller = $true'
-                'UsesSafeMode = $true'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated or unsafe P0 State behavior: $forbiddenText")
-                }
-            }
-        }
-        elseif ($toolId -eq 'msi-mode') {
-            foreach ($requiredText in @(
-                '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Off'')'
-                '94F5A99232333985F6855C9000BD94FA1067D9152885AF84FBECB6E0C1807BF7'
-                'Get-PnpDevice -Class Display'
-                'HKLM:\SYSTEM\ControlSet001\Enum'
-                'Device Parameters\Interrupt Management\MessageSignaledInterruptProperties'
-                'MSISupported'
-                '$script:BoostLabMsiModeSourceOnRecommendedValue = 1'
-                '$script:BoostLabMsiModeSourceOffValue = 0'
-                'New-BoostLabRegistryStateCapture'
-                'Set-BoostLabRollbackMutationState'
-                'SupportsDefault = $false'
-                'SupportsRestore = $false'
-                'CanModifyDrivers = $false'
-                'function Test-BoostLabMsiModeState'
-                'Off as a separate visible option'
-            )) {
-                if (-not $source.Contains($requiredText)) {
-                    $errors.Add("$modulePath is missing Msi Mode controlled registry behavior: $requiredText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'NeedsNvidiaTargeting'
-                'EligibleTargets'
-                'ExcludedTargets'
-                'AmbiguousTargets'
-                'VEN_10DE'
-                'NvidiaTarget'
-                '$script:BoostLabMsiModeDefaultValue'
-                'Invoke-BoostLabMsiModeRestore'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath retained source-undefined Msi Mode filtering/default/restore behavior: $forbiddenText")
-                }
-            }
-
-            foreach ($forbiddenText in @(
-                'Start-Process'
-                'Invoke-WebRequest'
-                'Invoke-RestMethod'
-                'Restart-Computer'
-                'Stop-Computer'
-                'Set-Service'
-                'Stop-Service'
-                'bcdedit'
-                'reg add'
-                'reg delete'
-                'Remove-ItemProperty'
-            )) {
-                if ($source.Contains($forbiddenText)) {
-                    $errors.Add("$modulePath contains unrelated or unsafe Msi Mode behavior: $forbiddenText")
                 }
             }
         }

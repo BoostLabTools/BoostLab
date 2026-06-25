@@ -173,10 +173,9 @@ function New-BoostLabActionPlan {
         $null -ne $productScope -and
         -not [bool]$productScope.Supported
     )
-    $isNvidiaSettingsReadOnlyAnalyze = ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze')
     $isDirectXReadOnlyAnalyze = ($toolId -eq 'directx' -and $ActionName -eq 'Analyze')
     $isVisualCppReadOnlyAnalyze = ($toolId -eq 'visual-cpp' -and $ActionName -eq 'Analyze')
-    $isReadOnlyAnalyzePrivilegeOverride = ($isNvidiaSettingsReadOnlyAnalyze -or $isDirectXReadOnlyAnalyze -or $isVisualCppReadOnlyAnalyze)
+    $isReadOnlyAnalyzePrivilegeOverride = ($isDirectXReadOnlyAnalyze -or $isVisualCppReadOnlyAnalyze)
     $needsConfirmation = Test-BoostLabPlanNeedsConfirmation `
         -RiskLevel $riskLevel `
         -Capabilities $capabilities `
@@ -202,20 +201,8 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Run the source-equivalent Driver Clean Auto branch after confirmation: prepare 7-Zip/DDU, create the automatic DDU RunOnce flow, enable Safe Mode, and restart.'
     }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
-        'Read the Driver Install Latest source mirror and report the source-equivalent NVIDIA, AMD, and INTEL latest-driver branch plans without executing them.'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        'Open the INTEL source-defined Driver Install Latest page only after selecting the INTEL branch; NVIDIA and AMD Open are unavailable and run no operation.'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        'Run the selected source-equivalent Driver Install Latest NVIDIA, AMD, or INTEL branch after explicit confirmation.'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
-        'Default is unavailable because the Driver Install Latest source defines no Default branch.'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
-        'Restore is unavailable because no selected captured driver/download/installer/session state restore contract exists.'
+    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
+        'Open the official NVIDIA App webpage in the default browser. BoostLab does not download, install, or change system settings from this shortcut.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and single-app Apply model without running any installer workflow.'
@@ -333,42 +320,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
         'Restore only from a valid selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.'
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
-        'Read the Nvidia Settings source mirror and report the source-equivalent On (Recommended) and Default operation plans without changing settings.'
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        'Run the source-defined Nvidia Settings On (Recommended) branch after explicit confirmation: common 7-Zip prelude, NVIDIA registry/profile operations, Profile Inspector .nip import, and NVIDIA Control Panel launch.'
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
-        'Run the source-defined Nvidia Settings Default branch after explicit confirmation: common 7-Zip prelude, NVIDIA registry/profile default operations, Profile Inspector default .nip import, and NVIDIA Control Panel launch. Default is not Restore.'
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
-        'Read the HDCP source mirror and report source-defined display-class registry scope, non-Configuration target discovery, and readback state without changing the system.'
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Apply') {
-        'Run the source-defined HDCP Off (Recommended) branch after confirmation: set RMHdcpKeyglobZero DWORD 1 on every non-Configuration display-class subkey and read the values back.'
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Default') {
-        'Run the source-defined HDCP Default branch after confirmation: set RMHdcpKeyglobZero DWORD 0 on every non-Configuration display-class subkey and read the values back. Default is not Restore.'
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
-        'Read the P0 State source mirror and report source-defined display-class registry scope, non-Configuration target discovery, Apply availability, and Default availability without changing the system.'
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
-        'Run the source-defined P0 State On (Recommended) branch after confirmation: set DisableDynamicPstate DWORD 1 on every non-Configuration display-class subkey and read the values back.'
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
-        'Run the source-defined P0 State Default branch after confirmation: set DisableDynamicPstate DWORD 0 on every non-Configuration display-class subkey and read the values back. Default is not Restore.'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Analyze') {
-        'Read the Msi Mode source mirror and report the source-defined Get-PnpDevice -Class Display target scope, On availability, Off availability, and current MSISupported readbacks without changing the system.'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        'Run the source-defined Msi Mode On (Recommended) branch after confirmation: set MSISupported DWORD 1 for every display device returned by Get-PnpDevice -Class Display after source checksum validation and pre-change registry state capture.'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
-        'Run the source-defined Msi Mode Off branch after confirmation: set MSISupported DWORD 0 for every display device returned by Get-PnpDevice -Class Display after source checksum validation and pre-change registry state capture. Off is not Default or Restore.'
     }
     elseif ($toolId -eq 'widgets' -and $ActionName -eq 'Apply') {
         'Disable Windows Widgets and remove Widgets from the taskbar using the approved policies.'
@@ -562,42 +513,10 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Create the source-defined ddu.ps1 script and RunOnce entry, enable bcdedit Safe Mode minimal, wait five seconds, and restart.')
         $plannedChanges.Add('After restart, the RunOnce script deletes Safe Mode and launches DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the Driver Install Latest source mirror checksum and implementation status.')
-        $plannedChanges.Add('Report the source Administrator and internet checks.')
-        $plannedChanges.Add('Report the NVIDIA branch: guidance, NVIDIA lookup API, dynamic latest driver URL construction, download to %SystemRoot%\Temp\nvidiadriver.exe, and installer launch.')
-        $plannedChanges.Add('Report the AMD branch: AMD support page scrape, minimal setup web-installer link discovery, spoofed browser headers, download to %SystemRoot%\Temp\amddriver.exe, and installer launch.')
-        $plannedChanges.Add('Report the INTEL branch: Intel Windows 11 graphics driver search page launch.')
-        $plannedChanges.Add('Report Path B step 1 of 5 while keeping Driver Install Latest separate from Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
-        $plannedChanges.Add('Perform no vendor query, download, installer launch, browser/page launch, external process, file mutation, driver mutation, reboot, or session change.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Require selecting exactly one source branch.')
-        $plannedChanges.Add('For INTEL, open only the source-defined Intel Windows 11 graphics driver search page.')
-        $plannedChanges.Add('For NVIDIA and AMD, report Open unavailable because those source branches perform their workflow through Apply, not a standalone browser/page action.')
-        $plannedChanges.Add('Do not download a driver installer from Open.')
-        $plannedChanges.Add('Do not execute a driver installer from Open.')
-        $plannedChanges.Add('Do not modify registry, drivers, services, files, sessions, or reboot state from Open.')
-        $plannedChanges.Add('Keep Path B steps separate: Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Require explicit confirmation and exactly one selected source branch: NVIDIA, AMD, or INTEL.')
-        $plannedChanges.Add('Run the source Administrator and internet checks.')
-        $plannedChanges.Add('For NVIDIA, query the source NVIDIA latest-driver API, build the dynamic source NVIDIA installer URL, download to %SystemRoot%\Temp\nvidiadriver.exe, and launch that installer.')
-        $plannedChanges.Add('For AMD, scrape the source AMD support page for the minimal setup web installer, download it with the source browser-spoof headers to %SystemRoot%\Temp\amddriver.exe, and launch that installer.')
-        $plannedChanges.Add('For INTEL, open the source-defined Intel Windows 11 graphics driver search page.')
-        $plannedChanges.Add('Log every operation, source command mapping, target URL, and target path returned by the selected branch workflow.')
-        $plannedChanges.Add('Do not run Nvidia Settings, HDCP, P0 State, Msi Mode, Driver Clean, or Driver Install Debloat & Settings from this tool.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Block Default because the source has no Default branch.')
-        $plannedChanges.Add('Do not treat Default as Restore.')
-        $plannedChanges.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
-        $plannedChanges.Add('Block Restore because no selected captured driver/download/installer/session state exists for this tool.')
-        $plannedChanges.Add('Do not invent rollback for vendor driver installers.')
-        $plannedChanges.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
+    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
+        $plannedChanges.Add('Open only https://www.nvidia.com/en-us/software/nvidia-app/ in the default browser.')
+        $plannedChanges.Add('Do not download, install, run a driver installer, mutate registry, services, drivers, packages, scheduled tasks, files, security settings, or reboot state.')
+        $plannedChanges.Add('Keep Driver Clean and Driver Install Debloat & Settings as the main NVIDIA workflow path; this shortcut is optional for users who want NVIDIA App.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Installers source checksum and implementation status.')
@@ -684,7 +603,7 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Driver Install Debloat & Settings source checksum and implementation status.')
         $plannedChanges.Add('Report source behavior summary, Phase 122 NVIDIA/AMD/INTEL branch-scope decision, and exact branch operation plans.')
-        $plannedChanges.Add('Keep Driver Install Debloat & Settings separate from Driver Clean and NVIDIA Path B.')
+        $plannedChanges.Add('Keep Driver Install Debloat & Settings separate from Driver Clean and the retired standalone NVIDIA tools.')
         $plannedChanges.Add('Perform no download, browser/external process launch, installer execution, file cleanup, profile import, package action, registry/service/driver mutation, reboot, or session change.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
@@ -872,109 +791,6 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('If a valid selected record is provided, restore only the exact captured prior USB file state from that selected record.')
         $plannedChanges.Add('Fail closed when no selected captured USB file state is available; no file or registry mutation is planned without selected captured state.')
         $plannedChanges.Add('Do not treat Restore as Unblock or Default.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Read the Nvidia Settings source mirror checksum and implementation status.')
-        $plannedChanges.Add('Report the source-defined common 7-Zip prelude, On (Recommended) branch, Default branch, exact .nip payload source, Profile Inspector import request, and NVIDIA Control Panel launch request.')
-        $plannedChanges.Add('Report Path B step 2 of 5 while keeping Nvidia Settings separate from Driver Install Latest, Hdcp, P0 State, and Msi Mode.')
-        $plannedChanges.Add('Perform no 7-Zip download/install, Profile Inspector download/execution, .nip write/import, NVIDIA Control Panel launch, external process start, registry/profile mutation, or system mutation.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Verify the Nvidia Settings source mirror checksum before any operation.')
-        $plannedChanges.Add('Require explicit Action Plan confirmation, Administrator elevation, and internet connectivity.')
-        $plannedChanges.Add('Run the source-defined common prelude: download 7zip.exe to %SystemRoot%\Temp, install it silently, write HKCU 7-Zip options, move the 7-Zip File Manager shortcut, and remove the 7-Zip Start Menu folder.')
-        $plannedChanges.Add('Run the source-defined On (Recommended) branch: unblock NVIDIA Drs files; set NvCplPhysxAuto, NvDevToolsVisible, RmProfilingAdminOnly, NvTray StartOnLogin, and EnableGR535 values; download Profile Inspector; write the exact source On inspector.nip payload; import it silently; then open NVIDIA Control Panel.')
-        $plannedChanges.Add('Do not run Hdcp, P0 State, Msi Mode, Driver Install Latest, or Driver Install Debloat & Settings behavior.')
-        $plannedChanges.Add('Do not reboot, use Safe Mode, use TrustedInstaller, create RunOnce, modify services, or modify drivers.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Verify the Nvidia Settings source mirror checksum before any operation.')
-        $plannedChanges.Add('Require explicit Action Plan confirmation, Administrator elevation, and internet connectivity.')
-        $plannedChanges.Add('Run the source-defined common prelude: download 7zip.exe to %SystemRoot%\Temp, install it silently, write HKCU 7-Zip options, move the 7-Zip File Manager shortcut, and remove the 7-Zip Start Menu folder.')
-        $plannedChanges.Add('Run the source-defined Default branch: unblock NVIDIA Drs files; delete NvCplPhysxAuto, NvDevToolsVisible, dynamic-display RmProfilingAdminOnly, NVTweak RmProfilingAdminOnly, and NvTray; set EnableGR535 to DWORD 1 on all three source paths; download Profile Inspector; write the exact source Default inspector.nip payload; import it silently; then open NVIDIA Control Panel.')
-        $plannedChanges.Add('Default is source-defined behavior, not captured-state Restore.')
-        $plannedChanges.Add('Do not reboot, use Safe Mode, use TrustedInstaller, create RunOnce, modify services, or modify drivers.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Verify the HDCP source mirror checksum.')
-        $plannedChanges.Add('Report Path B step 3 of 5 while keeping Driver Install Latest, Nvidia Settings, Hdcp, P0 State, and Msi Mode separate.')
-        $plannedChanges.Add('Discover the source display-class registry target shape read-only using immediate subkey .Name values.')
-        $plannedChanges.Add('Report non-Configuration source targets and Configuration-skipped targets without applying GPU vendor filtering.')
-        $plannedChanges.Add('Report the exact source value RMHdcpKeyglobZero as REG_DWORD 1 for Apply and REG_DWORD 0 for Default.')
-        $plannedChanges.Add('Perform no registry capture, registry write, external process, download, reboot, driver change, or profile mutation.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Verify the approved HDCP source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
-        $plannedChanges.Add('Do not apply GPU vendor filtering; the Ultimate source writes every non-Configuration display-class subkey returned by the source query.')
-        $plannedChanges.Add('Block before capture or write if no source-included target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for RMHdcpKeyglobZero on every source-included target before writing.')
-        $plannedChanges.Add('Set RMHdcpKeyglobZero as REG_DWORD 1 on every captured source-included target.')
-        $plannedChanges.Add('Read back RMHdcpKeyglobZero after Apply and record post-mutation state for rollback evidence.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Verify the approved HDCP source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
-        $plannedChanges.Add('Do not apply GPU vendor filtering; the Ultimate source writes every non-Configuration display-class subkey returned by the source query.')
-        $plannedChanges.Add('Block before capture or write if no source-included target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for RMHdcpKeyglobZero on every source-included target before writing.')
-        $plannedChanges.Add('Set RMHdcpKeyglobZero as REG_DWORD 0 on every captured source-included target, matching the Ultimate Default branch.')
-        $plannedChanges.Add('Read back RMHdcpKeyglobZero after Default and record post-mutation state for rollback evidence.')
-        $plannedChanges.Add('Default is source-defined behavior, not captured-state Restore.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Verify the P0 State source mirror checksum.')
-        $plannedChanges.Add('Report Path B step 4 of 5 while keeping Driver Install Latest, Nvidia Settings, HDCP, P0 State, and Msi Mode separate.')
-        $plannedChanges.Add('Discover immediate source display-class registry subkeys read-only and report source-included targets separately from paths skipped by the *Configuration* rule.')
-        $plannedChanges.Add('Report the exact source value DisableDynamicPstate as REG_DWORD 1 for Apply and REG_DWORD 0 for Default.')
-        $plannedChanges.Add('Report that no Restore action is source-defined or exposed; Default is the source-defined DWORD 0 branch.')
-        $plannedChanges.Add('Perform no registry capture, registry write, external process, download, reboot, driver change, or profile mutation.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Verify the approved P0 State source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
-        $plannedChanges.Add('Do not apply GPU vendor filtering; the Ultimate source writes every non-Configuration display-class subkey returned by the source query.')
-        $plannedChanges.Add('Block before capture or write if no source-included target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for DisableDynamicPstate on every source-included target before writing.')
-        $plannedChanges.Add('Set DisableDynamicPstate as REG_DWORD 1 on every captured source-included target.')
-        $plannedChanges.Add('Read back DisableDynamicPstate after Apply and record post-mutation state for rollback evidence.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
-        $plannedChanges.Add('Verify the approved P0 State source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover only immediate source display-class registry subkeys under HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}, excluding Configuration.')
-        $plannedChanges.Add('Do not apply GPU vendor filtering; the Ultimate source writes every non-Configuration display-class subkey returned by the source query.')
-        $plannedChanges.Add('Block before capture or write if no source-included target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for DisableDynamicPstate on every source-included target before writing.')
-        $plannedChanges.Add('Set DisableDynamicPstate as REG_DWORD 0 on every captured source-included target, matching the Ultimate Default branch.')
-        $plannedChanges.Add('Read back DisableDynamicPstate after Default and record post-mutation state for rollback evidence.')
-        $plannedChanges.Add('Default is source-defined behavior, not captured-state Restore.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Analyze') {
-        $plannedChanges.Add('Verify the Msi Mode source mirror checksum.')
-        $plannedChanges.Add('Report Path B step 5 of 5 while keeping Driver Install Latest, Nvidia Settings, HDCP, P0 State, and Msi Mode separate.')
-        $plannedChanges.Add('Discover the exact source PnP query shape read-only: Get-PnpDevice -Class Display, then build the HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path for every display device with a usable InstanceId.')
-        $plannedChanges.Add('Report the exact source value MSISupported as REG_DWORD 1 for On (Recommended) and REG_DWORD 0 for Off.')
-        $plannedChanges.Add('Report that the source defines Off as a visible branch and does not define Default or Restore.')
-        $plannedChanges.Add('Perform no registry capture, registry write, external process, download, reboot, driver change, device restart, or profile mutation.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        $plannedChanges.Add('Verify the approved Msi Mode source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover source display devices using Get-PnpDevice -Class Display and derive the exact HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path.')
-        $plannedChanges.Add('Do not apply source-undefined NVIDIA/RDP/status/vendor filtering; every source display-device target with a usable InstanceId remains in scope.')
-        $plannedChanges.Add('Block before capture or write if no usable display-device target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for MSISupported on every source-derived display-device target before writing.')
-        $plannedChanges.Add('Set only MSISupported as REG_DWORD 1 on every captured source-derived display-device target.')
-        $plannedChanges.Add('Read back MSISupported after On (Recommended) and record post-mutation state for rollback evidence.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
-        $plannedChanges.Add('Verify the approved Msi Mode source mirror checksum before any target discovery or mutation.')
-        $plannedChanges.Add('Discover source display devices using Get-PnpDevice -Class Display and derive the exact HKLM:\SYSTEM\ControlSet001\Enum\<InstanceId>\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties target path.')
-        $plannedChanges.Add('Do not apply source-undefined NVIDIA/RDP/status/vendor filtering; every source display-device target with a usable InstanceId remains in scope.')
-        $plannedChanges.Add('Block before capture or write if no usable display-device target exists or if target discovery includes an out-of-scope registry path.')
-        $plannedChanges.Add('Capture prior state for MSISupported on every source-derived display-device target before writing.')
-        $plannedChanges.Add('Set only MSISupported as REG_DWORD 0 on every captured source-derived display-device target, matching the Ultimate Off branch.')
-        $plannedChanges.Add('Read back MSISupported after Off and record post-mutation state for rollback evidence.')
-        $plannedChanges.Add('Off is a source-defined branch, not Default or Restore.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Verify the BitLocker source mirror checksum.')
@@ -1266,14 +1082,13 @@ function New-BoostLabActionPlan {
     $isBlockedBitLockerNoMutationAction = $toolId -eq 'bitlocker' -and $ActionName -in @('Default', 'Restore')
     $isBlockedInstallersNoMutationAction = $toolId -eq 'installers' -and $ActionName -in @('Default', 'Restore')
     $isBlockedEdgeWebViewNoMutationAction = $false
-    $isBlockedDriverInstallLatestNoMutationAction = $toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDriverInstallDebloatSettingsNoMutationAction = $toolId -eq 'driver-install-debloat-settings' -and $ActionName -in @('Default', 'Restore')
     $isBlockedDirectXNoMutationAction = $toolId -eq 'directx' -and $ActionName -in @('Default', 'Restore')
     $isBlockedVisualCppNoMutationAction = $toolId -eq 'visual-cpp' -and $ActionName -in @('Default', 'Restore')
     $isBlockedReinstallNoMutationAction = $toolId -eq 'reinstall' -and $ActionName -in @('Default', 'Restore')
     $isBlockedUpdatesDriversBlockRestoreNoMutationAction = $toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore'
     $isBlockedEdgeSettingsRestoreNoMutationAction = $toolId -eq 'edge-settings' -and $ActionName -eq 'Restore'
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedEdgeWebViewNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and -not $isBlockedUpdatesDriversBlockRestoreNoMutationAction -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
         $capabilityChanges = [ordered]@{
             CanModifyRegistry = 'Modify approved Windows registry values.'
             CanModifyServices = 'Modify approved Windows service configuration or state.'
@@ -1294,7 +1109,7 @@ function New-BoostLabActionPlan {
     if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $plannedChanges.Add('Request or perform an approved restart when required by the workflow.')
     }
-    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction) {
+    if ($capabilities.RequiresAdmin -and -not $isReadOnlyAnalyzePrivilegeOverride -and $toolId -notin @('installers') -and -not $isBlockedEdgeSettingsRestoreNoMutationAction) {
         $plannedChanges.Add('Require BoostLab to be running in an elevated Administrator process.')
     }
     if ($capabilities.UsesTrustedInstaller) {
@@ -1330,27 +1145,9 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows driver-search policy, RunOnce, bcdedit Safe Mode, generated scripts, DDU files, and reboot state are changed.')
         $sideEffects.Add('The Auto branch runs DDU after reboot with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; Driver Install Latest analysis is read-only.')
-        $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
-        $sideEffects.Add('NVIDIA, AMD, and INTEL source branch plans are reported without vendor queries, downloads, installer launches, browser/page launches, driver mutation, reboot, or session changes.')
-        $sideEffects.Add('Path B step 1 is reported without enabling the remaining Path B steps.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('Open requires a selected branch and runs only the source-defined INTEL standalone browser/page behavior when INTEL is selected.')
-        $sideEffects.Add('The INTEL branch may open the source-defined Intel Windows 11 graphics driver search page.')
-        $sideEffects.Add('The NVIDIA and AMD branches have no standalone source Open behavior; BoostLab reports that without opening external processes.')
-        $sideEffects.Add('No driver installer is downloaded or launched by Open.')
-        $sideEffects.Add('No registry, driver, file, reboot, or session change occurs from Open.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Apply may query vendor APIs/pages, download source-defined driver installers, and launch the selected branch installer or driver page.')
-        $sideEffects.Add('Driver installer handoff may affect display output, driver state, session state, and reboot prompts controlled by the vendor installer.')
-        $sideEffects.Add('No registry/service/task/profile/debloat steps from other Graphics tools are run by Driver Install Latest.')
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -in @('Default', 'Restore')) {
-        $sideEffects.Add("$ActionName is blocked before execution.")
-        $sideEffects.Add('No driver, file, registry, installer, process, reboot, or session mutation is planned.')
+    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
+        $sideEffects.Add('The default browser may open https://www.nvidia.com/en-us/software/nvidia-app/.')
+        $sideEffects.Add('BoostLab does not download files, run installers, install NVIDIA App, modify drivers, mutate registry/services/packages/files, or reboot from this shortcut.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Installers analysis is read-only.')
@@ -1385,7 +1182,7 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Driver Install Debloat & Settings analysis is read-only.')
         $sideEffects.Add('No warnings are duplicated between result-level warnings and structured details.')
-        $sideEffects.Add('Driver Install Debloat & Settings remains separate from Driver Clean and NVIDIA Path B.')
+        $sideEffects.Add('Driver Install Debloat & Settings remains separate from Driver Clean and the retired standalone NVIDIA tools.')
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
         $sideEffects.Add('The selected branch vendor driver page may open after confirmation.')
@@ -1488,20 +1285,6 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved restore contract.')
         $sideEffects.Add('No system-changing operation occurs.')
     }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; Nvidia Settings analysis is read-only.')
-        $sideEffects.Add('Source-equivalent On and Default plans are reported without enabling the remaining Path B steps.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Downloads and installs the source-defined 7-Zip artifact from the Ultimate source URL, then downloads and runs source-defined NVIDIA Profile Inspector.')
-        $sideEffects.Add('Writes NVIDIA registry/profile settings, writes/imports the exact source On inspector.nip payload, cleans source-defined 7-Zip Start Menu entries, and opens NVIDIA Control Panel.')
-        $sideEffects.Add('No reboot, Safe Mode, TrustedInstaller, service change, driver mutation, or unrelated Path B step runs.')
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Downloads and installs the source-defined 7-Zip artifact from the Ultimate source URL, then downloads and runs source-defined NVIDIA Profile Inspector.')
-        $sideEffects.Add('Deletes or resets only the source-defined NVIDIA Settings registry/profile targets, writes/imports the exact source Default inspector.nip payload, cleans source-defined 7-Zip Start Menu entries, and opens NVIDIA Control Panel.')
-        $sideEffects.Add('Default is not Restore; no reboot, Safe Mode, TrustedInstaller, service change, driver mutation, or unrelated Path B step runs.')
-    }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Updates Drivers Block analysis is read-only.')
         $sideEffects.Add('Yazan final scope is reported as Driver Updates Block Bootable USB only; Unblock and broad Updates branches remain unsupported.')
@@ -1520,45 +1303,6 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Restore is blocked without a selected captured USB setupcomplete.cmd file rollback record from this Updates Drivers Block tool.')
         $sideEffects.Add('No file or registry mutation occurs when no selected captured USB file state is provided.')
         $sideEffects.Add('Restore is not Unblock and Default remains separate from Restore.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; HDCP analysis is read-only.')
-        $sideEffects.Add('Path B step 3 is reported without merging Driver Install Latest, Nvidia Settings, P0 State, or Msi Mode.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Writes RMHdcpKeyglobZero as REG_DWORD 1 on every source-included non-Configuration display-class subkey after source checksum validation and capture.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or source-undefined registry path write occurs.')
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Writes RMHdcpKeyglobZero as REG_DWORD 0 on every source-included non-Configuration display-class subkey after source checksum validation and capture.')
-        $sideEffects.Add('Default is source-defined behavior and is not captured-state Restore.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or source-undefined registry path write occurs.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; P0 State analysis is read-only.')
-        $sideEffects.Add('Path B step 4 is reported without merging Driver Install Latest, Nvidia Settings, HDCP, or Msi Mode.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Writes only DisableDynamicPstate as REG_DWORD 1 after source-included non-Configuration display-class target discovery and capture succeed.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or source-undefined registry path write occurs.')
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
-        $sideEffects.Add('Writes only DisableDynamicPstate as REG_DWORD 0 after source-included non-Configuration display-class target discovery and capture succeed.')
-        $sideEffects.Add('Default is source-defined behavior and is not a captured-state Restore.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, reboot, service change, or source-undefined registry path write occurs.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Analyze') {
-        $sideEffects.Add('No system changes are made; Msi Mode analysis is read-only.')
-        $sideEffects.Add('Path B step 5 is reported without merging Driver Install Latest, Nvidia Settings, HDCP, or P0 State.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        $sideEffects.Add('Writes only MSISupported as REG_DWORD 1 after source Get-PnpDevice display-device target discovery and capture succeed.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or source-undefined registry write occurs.')
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
-        $sideEffects.Add('Writes only MSISupported as REG_DWORD 0 after source Get-PnpDevice display-device target discovery and capture succeed.')
-        $sideEffects.Add('Off is source-defined behavior and is not Default or captured-state Restore.')
-        $sideEffects.Add('No external process, download, Control Panel launch, profile import, driver install, device restart, reboot, service change, or source-undefined registry write occurs.')
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; BitLocker analysis is read-only.')
@@ -1770,31 +1514,31 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows requests the firmware settings interface, but firmware support ultimately determines whether it opens.')
         $sideEffects.Add('BoostLab does not modify BIOS or UEFI settings.')
     }
-    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings')) {
+    if ($ActionName -eq 'Analyze' -and $toolId -notin @('driver-clean', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall')) {
         $sideEffects.Add('Read-only system information may be collected and displayed.')
     }
-    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'driver-install-latest', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'nvidia-settings', 'bitlocker')) {
+    elseif ($ActionName -eq 'Open' -and -not $capabilities.CanReboot -and $toolId -notin @('driver-clean', 'installers', 'edge-webview', 'driver-install-debloat-settings', 'directx', 'visual-cpp', 'reinstall', 'bitlocker')) {
         $sideEffects.Add('A Windows interface or approved external resource may be opened.')
     }
     if ($capabilities.RequiresInternet -and $toolId -notin @('installers')) {
         $sideEffects.Add('The requested action may fail when internet access is unavailable.')
     }
-    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
+    if ($capabilities.CanReboot -and $ActionName -ne 'Analyze' -and -not ($toolId -eq 'reinstall' -and $ActionName -eq 'Open')) {
         $sideEffects.Add('The computer may restart; unsaved work could be lost.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallDebloatSettingsNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyServices) {
         $sideEffects.Add('Service changes may affect dependent Windows or application features.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyDrivers) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifyDrivers) {
         $sideEffects.Add('Driver changes may affect display, devices, stability, or hardware availability.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifySecurity) {
+    if ($isPotentialChangeAction -and -not $isBlockedBitLockerNoMutationAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanModifySecurity) {
         $sideEffects.Add('Security changes may alter system protection or compatibility.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanDeleteFiles) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanDeleteFiles) {
         $sideEffects.Add('Deleted files may not be recoverable unless an approved checkpoint exists.')
     }
-    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDriverInstallLatestNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanInstallSoftware) {
+    if ($isPotentialChangeAction -and -not $isBlockedInstallersNoMutationAction -and -not $isBlockedDirectXNoMutationAction -and -not $isBlockedVisualCppNoMutationAction -and -not $isBlockedReinstallNoMutationAction -and $capabilities.CanInstallSoftware) {
         $sideEffects.Add('Installed software may add files, services, tasks, or application settings.')
     }
     if ($isPotentialChangeAction -and $capabilities.UsesTrustedInstaller) {
@@ -1825,17 +1569,8 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Driver Clean Auto will run the source-equivalent workflow: download 7-Zip and DDU, install/configure 7-Zip, extract/configure DDU, set driver-search policy, create ddu.ps1 and RunOnce, enable Safe Mode with bcdedit, restart, and then run DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart. Continue?'
     }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Open') {
-        'Driver Install Latest Open is INTEL-only: it may open the source-defined Intel Windows 11 graphics driver search page when INTEL is selected. NVIDIA and AMD Open report unavailable because their source behavior runs through Apply Source Workflow. Continue?'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Apply') {
-        'Driver Install Latest will run the selected NVIDIA, AMD, or INTEL source-equivalent latest-driver branch after confirmation. It may query vendor sources, download driver installers, launch installers or driver pages, and hand off to vendor driver behavior that can affect display/session/reboot state. Continue only if this exact selected branch should run.'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Default') {
-        'Driver Install Latest Default is unavailable because the source defines no Default branch. BoostLab will not mutate driver, installer, file, registry, process, reboot, or session state. Continue only to record the blocked result?'
-    }
-    elseif ($toolId -eq 'driver-install-latest' -and $ActionName -eq 'Restore') {
-        'Driver Install Latest Restore is unavailable without approved selected captured driver/download/installer/session state. BoostLab will not mutate driver, installer, file, registry, process, reboot, or session state. Continue only to record the blocked result?'
+    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
+        'BoostLab will open the official NVIDIA App webpage only. It will not download, install, run a driver installer, change drivers, mutate registry/services/files/packages, or reboot.'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
         'BoostLab will open only the source-defined vendor driver page flow for the selected Driver Install Debloat & Settings branch. It will not download or install 7-Zip, run driver installers, extract or debloat files, import profiles, mutate registry/services/packages/drivers, open shared UI panels, or reboot from Open. Continue?'
@@ -1912,12 +1647,6 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'reinstall' -and $ActionName -eq 'Restore') {
         'Reinstall Restore requires selected captured reinstall, setup, generated-file, reboot/session, recovery, and support state plus an approved restore contract. BoostLab will fail closed because neither exists. Continue only to record the blocked Restore result?'
     }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Apply') {
-        'BoostLab will run the source-defined Nvidia Settings On (Recommended) branch: download/install 7-Zip, write 7-Zip options, clean 7-Zip Start Menu entries, unblock NVIDIA Drs files, write NVIDIA registry/profile settings, download and run NVIDIA Profile Inspector with the exact source .nip, and open NVIDIA Control Panel. No reboot, services, drivers, Safe Mode, TrustedInstaller, or unrelated Path B steps will run. Continue?'
-    }
-    elseif ($toolId -eq 'nvidia-settings' -and $ActionName -eq 'Default') {
-        'BoostLab will run the source-defined Nvidia Settings Default branch: run the same 7-Zip prelude, delete/reset only the source-defined NVIDIA Settings registry/profile targets, download and run NVIDIA Profile Inspector with the exact source Default .nip, and open NVIDIA Control Panel. Default is not Restore. No reboot, services, drivers, Safe Mode, TrustedInstaller, or unrelated Path B steps will run. Continue?'
-    }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Apply') {
         'BoostLab will write only the source-equivalent Driver Updates Block setupcomplete.cmd to selected removable USB media after file state capture. It will not execute the script, write host registry values, run Windows Update, modify driver devices, download, launch external tools, change services, or reboot. Continue?'
     }
@@ -1926,24 +1655,6 @@ function New-BoostLabActionPlan {
     }
     elseif ($toolId -eq 'updates-drivers-block' -and $ActionName -eq 'Restore') {
         'Updates Drivers Block Restore requires a selected captured USB setupcomplete.cmd file rollback record from this tool. BoostLab will fail closed if no valid captured state is selected. Continue only to record the blocked Restore result?'
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Apply') {
-        'BoostLab will run the source-defined HDCP Off (Recommended) branch: set RMHdcpKeyglobZero to DWORD 1 on every non-Configuration display-class subkey returned by the source query, after source checksum validation and pre-change registry capture, then read the values back. No external process, download, driver change, or reboot will occur. Continue?'
-    }
-    elseif ($toolId -eq 'hdcp' -and $ActionName -eq 'Default') {
-        'BoostLab will run the source-defined HDCP Default branch: set RMHdcpKeyglobZero to DWORD 0 on every non-Configuration display-class subkey returned by the source query, after source checksum validation and pre-change registry capture, then read the values back. Default is not Restore. No external process, download, driver change, or reboot will occur. Continue?'
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Apply') {
-        'BoostLab will run the source-defined P0 State On (Recommended) branch: set DisableDynamicPstate to DWORD 1 on every non-Configuration display-class subkey returned by the source query, after source checksum validation and pre-change registry capture, then read the values back. No external process, download, driver change, or reboot will occur. Continue?'
-    }
-    elseif ($toolId -eq 'p0-state' -and $ActionName -eq 'Default') {
-        'BoostLab will run the source-defined P0 State Default branch: set DisableDynamicPstate to DWORD 0 on every non-Configuration display-class subkey returned by the source query, after source checksum validation and pre-change registry capture, then read the values back. Default is not Restore. No external process, download, driver change, or reboot will occur. Continue?'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Apply') {
-        'BoostLab will run the source-defined Msi Mode On (Recommended) branch: set only MSISupported to DWORD 1 for every display device returned by Get-PnpDevice -Class Display with a usable InstanceId, after source checksum validation and pre-change registry capture. No external process, download, profile import, driver change, device restart, or reboot will occur. Continue?'
-    }
-    elseif ($toolId -eq 'msi-mode' -and $ActionName -eq 'Off') {
-        'BoostLab will run the source-defined Msi Mode Off branch: set only MSISupported to DWORD 0 for every display device returned by Get-PnpDevice -Class Display with a usable InstanceId, after source checksum validation and pre-change registry capture. Off is not Default or Restore. No external process, download, profile import, driver change, device restart, or reboot will occur. Continue?'
     }
     elseif ($toolId -eq 'bitlocker' -and $ActionName -eq 'Open') {
         'BoostLab will run the source-equivalent BitLocker On/status branch: open BitLocker Drive Encryption Control Panel and run manage-bde -status. It will not enable BitLocker automatically, collect recovery keys, change protectors, or reboot. Continue?'

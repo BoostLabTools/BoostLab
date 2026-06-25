@@ -72,16 +72,18 @@ $activeIds = @($allTools | ForEach-Object { [string]$_.Id })
 $activeTitles = @($allTools | ForEach-Object { [string]$_.Title })
 
 if (
-    [int]$inventoryBaseline.ActiveTools -ne 50 -or
-    [int]$inventoryBaseline.ImplementedTools -ne 50 -or
+    [int]$inventoryBaseline.ActiveTools -ne $allTools.Count -or
+    [int]$inventoryBaseline.ImplementedTools -ne $allTools.Count -or
     [int]$inventoryBaseline.DeferredPlaceholders -ne 0
 ) {
-    throw 'Inventory baseline must be 50 active / 50 implemented / 0 deferred after retiring the four tools.'
+    throw 'Inventory baseline must match the current active implemented tool catalog after permanent retirements.'
 }
+
+$refusedOrDeletedCount = @($parityBaseline.RefusedOrDeletedOutsideActiveCatalog).Count
 if (
-    [int]$parityBaseline.Counts.ActiveTools -ne 50 -or
-    [int]$parityBaseline.Counts.RuntimeImplementedTools -ne 50 -or
-    [int]$parityBaseline.Counts.RefusedOrDeletedOutsideActiveCatalog -ne 25 -or
+    [int]$parityBaseline.Counts.ActiveTools -ne [int]$inventoryBaseline.ActiveTools -or
+    [int]$parityBaseline.Counts.RuntimeImplementedTools -ne [int]$inventoryBaseline.ImplementedTools -or
+    [int]$parityBaseline.Counts.RefusedOrDeletedOutsideActiveCatalog -ne $refusedOrDeletedCount -or
     -not [bool]$parityBaseline.OrderedParityComplete -or
     $null -ne $parityBaseline.CurrentOrderedParityTarget
 ) {

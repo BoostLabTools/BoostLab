@@ -195,7 +195,6 @@ function Invoke-BoostLabAsyncAnalyzeSimulation {
 
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
-$driverInstallLatestModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-latest.psm1'
 $installersModulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
 $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
 $edgeSettingsModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.psm1'
@@ -206,7 +205,6 @@ $visualCppModulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
 foreach ($path in @(
     $uiPath
     $configPath
-    $driverInstallLatestModulePath
     $installersModulePath
     $driverCleanModulePath
     $edgeSettingsModulePath
@@ -319,11 +317,6 @@ $reachedToolIds = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
-    'driver-install-latest'
-    'nvidia-settings'
-    'hdcp'
-    'p0-state'
-    'msi-mode'
     'directx'
     'visual-cpp'
 )
@@ -334,6 +327,7 @@ foreach ($toolId in $reachedToolIds) {
 
 foreach ($outOfScopeToolId in @(
     'graphics-configuration-center'
+    'nvidia-app-download'
     'theme-black'
     'power-plan'
     'smt-ht-assistant'
@@ -341,14 +335,12 @@ foreach ($outOfScopeToolId in @(
     Assert-BoostLabCondition (-not $asyncScopeText.Contains("'$outOfScopeToolId'")) "Unreached tool must not be explicitly opted into the Phase 124 async scope: $outOfScopeToolId"
 }
 
-$driverInstallLatestTool = @($allTools | Where-Object { [string]$_.Id -eq 'driver-install-latest' })[0]
 $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })[0]
-Assert-BoostLabCondition ([string]$driverInstallLatestTool.SelectionMode -eq 'SingleSelect') 'Driver Install Latest must keep single-select branch UI.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must keep single-app selection UI.'
 
 $directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
 $visualCppTool = @($allTools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
-foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool, $directXTool, $visualCppTool)) {
+foreach ($asyncAnalyzeTool in @($installersTool, $directXTool, $visualCppTool)) {
     $asyncAnalyze = Invoke-BoostLabAsyncAnalyzeSimulation -ProjectRoot $ProjectRoot -ToolMetadata $asyncAnalyzeTool
     $toolId = [string]$asyncAnalyzeTool.Id
 
@@ -367,19 +359,6 @@ foreach ($asyncAnalyzeTool in @($installersTool, $driverInstallLatestTool, $dire
     if ($null -ne $data.PSObject.Properties['NoMutationOccurred']) {
         Assert-BoostLabCondition ([bool]$data.NoMutationOccurred) "Async Analyze must report no mutation for $toolId."
     }
-}
-
-$driverInstallLatestText = Get-Content -LiteralPath $driverInstallLatestModulePath -Raw
-foreach ($needle in @(
-    'SourceEquivalentThreeBranchRuntime'
-    'BranchSelectedSourceEquivalentApply'
-    'QueryNvidiaLatestDriver'
-    'DownloadResolvedNvidiaDriver'
-    'QueryAmdDriverInstaller'
-    'DownloadResolvedAmdDriver'
-    'Intel Windows 11 graphics driver search page'
-)) {
-    Assert-BoostLabTextContains -Text $driverInstallLatestText -Needle $needle -Description 'Driver Install Latest source-equivalent behavior'
 }
 
 $installersText = Get-Content -LiteralPath $installersModulePath -Raw
@@ -431,7 +410,7 @@ foreach ($deletedPath in @(
     AsyncDispatch               = 'STA runspace + DispatcherTimer'
     AsyncCompletionContract     = 'Captured helper scriptblocks + shared state cleanup'
     DuplicateClickPolicy        = 'Global single action in progress'
-    DriverInstallLatestMode     = 'SourceEquivalentThreeBranchRuntime'
+    NvidiaAppShortcutAsyncScope = 'Open-only shortcut intentionally not opted into long-running async dispatch'
     InstallersSingleAppModel    = $true
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true

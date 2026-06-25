@@ -1,4 +1,4 @@
-@{
+﻿@{
     SchemaVersion = 1
     Purpose = 'Phase 116 canonical Yazan stage/tool order baseline'
     Rule = 'Future parity work follows Yazan''s final canonical stage/tool order across runtime, customer UI, reporting, and ordered parity execution.'
@@ -59,14 +59,10 @@
             Tools = @(
                 @{ Order = 1; ToolId = 'driver-clean'; DisplayName = 'Driver Clean' }
                 @{ Order = 2; ToolId = 'driver-install-debloat-settings'; DisplayName = 'Driver Install Debloat & Settings' }
-                @{ Order = 3; ToolId = 'driver-install-latest'; DisplayName = 'Driver Install Latest' }
-                @{ Order = 4; ToolId = 'nvidia-settings'; DisplayName = 'Nvidia Settings' }
-                @{ Order = 5; ToolId = 'hdcp'; DisplayName = 'HDCP' }
-                @{ Order = 6; ToolId = 'p0-state'; DisplayName = 'P0 State' }
-                @{ Order = 7; ToolId = 'msi-mode'; DisplayName = 'Msi Mode' }
-                @{ Order = 8; ToolId = 'directx'; DisplayName = 'DirectX' }
-                @{ Order = 9; ToolId = 'visual-cpp'; DisplayName = 'Visual C++' }
-                @{ Order = 10; ToolId = 'graphics-configuration-center'; DisplayName = 'Graphics Configuration Center' }
+                @{ Order = 3; ToolId = 'nvidia-app-download'; DisplayName = 'Install NVIDIA App' }
+                @{ Order = 4; ToolId = 'directx'; DisplayName = 'DirectX' }
+                @{ Order = 5; ToolId = 'visual-cpp'; DisplayName = 'Visual C++' }
+                @{ Order = 6; ToolId = 'graphics-configuration-center'; DisplayName = 'Graphics Configuration Center' }
             )
         }
         @{

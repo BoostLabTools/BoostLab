@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$ProjectRoot
 )
@@ -83,11 +83,7 @@ function Get-BoostLabCanonicalYazanOrder {
             Tools = @(
                 @{ Id = 'driver-clean'; Title = 'Driver Clean' }
                 @{ Id = 'driver-install-debloat-settings'; Title = 'Driver Install Debloat & Settings' }
-                @{ Id = 'driver-install-latest'; Title = 'Driver Install Latest' }
-                @{ Id = 'nvidia-settings'; Title = 'Nvidia Settings' }
-                @{ Id = 'hdcp'; Title = 'HDCP' }
-                @{ Id = 'p0-state'; Title = 'P0 State' }
-                @{ Id = 'msi-mode'; Title = 'Msi Mode' }
+                @{ Id = 'nvidia-app-download'; Title = 'Install NVIDIA App' }
                 @{ Id = 'directx'; Title = 'DirectX' }
                 @{ Id = 'visual-cpp'; Title = 'Visual C++' }
                 @{ Id = 'graphics-configuration-center'; Title = 'Graphics Configuration Center' }

@@ -146,7 +146,7 @@ $graphicsStage = @($stages.Stages | Where-Object { [string]$_.Name -eq 'Graphics
 $visualCppTool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
 Assert-BoostLabCondition ($null -ne $visualCppTool) 'Visual C++ is missing from Graphics stage.'
 Assert-BoostLabCondition ([string]$visualCppTool.Title -eq 'Visual C++') 'Visual C++ title mismatch.'
-Assert-BoostLabCondition ([int]$visualCppTool.Order -eq 9) 'Visual C++ must remain Graphics order 9.'
+Assert-BoostLabCondition ([int]$visualCppTool.Order -eq 5) 'Visual C++ must remain immediately after DirectX at Graphics order 5.'
 Assert-BoostLabCondition ([string]$visualCppTool.Type -eq 'action') 'Visual C++ must be an action tool after Phase 130.'
 Assert-BoostLabCondition ([string]$visualCppTool.RiskLevel -eq 'high') 'Visual C++ must remain high risk.'
 Assert-BoostLabCondition ((@($visualCppTool.Actions) -join ',') -eq 'Analyze,Apply') 'Visual C++ must expose only Analyze and Apply.'

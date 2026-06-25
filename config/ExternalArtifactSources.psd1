@@ -1,4 +1,4 @@
-@{
+﻿@{
     SchemaVersion = '1.0'
 
     # This manifest classifies external source URLs for reached tools. It is
@@ -30,7 +30,7 @@
     OfficialVendorDirectRuntimePolicy = @{
         SchemaVersion = '1.0'
         Phase = '164I'
-        ApprovedCount = 22
+        ApprovedCount = 19
         RequiredScheme = 'https'
         AllowedSourceKinds = @(
             'StaticOfficialInstaller'
@@ -354,63 +354,9 @@
                 ExpectedSignatureStatus = 'Valid'
             }
             @{
-                Id = 'driver-install-latest-nvidia-lookup'
-                OfficialSourceKind = 'OfficialVendorApi'
-                OfficialHostAllowlist = @('gfwsl.geforce.com')
-                ExpectedFileName = $null
-                ExpectedExtension = $null
-                DownloadExecutionApproved = $false
-                ResolvedDownloadExecutionApproved = $false
-                LookupExecutionApproved = $true
-                InstallerExecutionApproved = $false
-                ProductionAllowlistApproved = $true
-                RuntimeSourceSelectionApproved = $true
-                RequiresVerifiedLocalPath = $false
-                NoUrlExecution = $true
-                SignatureVerificationRequired = $false
-            }
-            @{
-                Id = 'driver-install-latest-nvidia-driver-template'
-                OfficialSourceKind = 'FloatingOfficialInstaller'
-                OfficialHostAllowlist = @('international.download.nvidia.com')
-                ResolvedDownloadHostAllowlist = @('international.download.nvidia.com')
-                ResolvedDownloadUrlPattern = '^https://international\.download\.nvidia\.com/Windows/[^/]+/[^/]+-desktop-win10-win11-64bit-international-dch-whql\.exe$'
-                ExpectedFileName = 'nvidiadriver.exe'
-                ExpectedExtension = '.exe'
-                DownloadExecutionApproved = $true
-                ResolvedDownloadExecutionApproved = $true
-                LookupExecutionApproved = $false
-                InstallerExecutionApproved = $true
-                ProductionAllowlistApproved = $true
-                RuntimeSourceSelectionApproved = $true
-                RequiresVerifiedLocalPath = $true
-                NoUrlExecution = $true
-                SignatureVerificationRequired = $true
-                ExpectedSignatureStatus = 'Valid'
-            }
-            @{
-                Id = 'driver-install-latest-amd-support-page'
+                Id = 'nvidia-app-download-page'
                 OfficialSourceKind = 'OfficialVendorLookupPage'
-                OfficialHostAllowlist = @('www.amd.com')
-                ResolvedDownloadHostAllowlist = @('drivers.amd.com')
-                ResolvedDownloadUrlPattern = '^https://drivers\.amd\.com/drivers/installer/.*/whql/amd-software-adrenalin-edition-.*-minimalsetup-.*_web\.exe$'
-                ExpectedFileName = 'amddriver.exe'
-                ExpectedExtension = '.exe'
-                DownloadExecutionApproved = $false
-                ResolvedDownloadExecutionApproved = $true
-                LookupExecutionApproved = $true
-                InstallerExecutionApproved = $true
-                ProductionAllowlistApproved = $true
-                RuntimeSourceSelectionApproved = $true
-                RequiresVerifiedLocalPath = $true
-                NoUrlExecution = $true
-                SignatureVerificationRequired = $true
-                ExpectedSignatureStatus = 'Valid'
-            }
-            @{
-                Id = 'driver-install-latest-intel-driver-page'
-                OfficialSourceKind = 'OfficialVendorLookupPage'
-                OfficialHostAllowlist = @('www.intel.com')
+                OfficialHostAllowlist = @('www.nvidia.com')
                 ExpectedFileName = $null
                 ExpectedExtension = $null
                 DownloadExecutionApproved = $false
@@ -446,11 +392,7 @@
             'installers'
             'driver-clean'
             'driver-install-debloat-settings'
-            'driver-install-latest'
-            'nvidia-settings'
-            'hdcp'
-            'p0-state'
-            'msi-mode'
+            'nvidia-app-download'
             'directx'
             'visual-cpp'
             'bloatware'
@@ -477,9 +419,6 @@
             'background-apps'
             'store-settings'
             'updates-pause'
-            'hdcp'
-            'p0-state'
-            'msi-mode'
         )
 
     ExternalSources = @(
@@ -1054,160 +993,21 @@
             Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
-            Id = 'driver-install-latest-nvidia-lookup'
-            ToolId = 'driver-install-latest'
-            ToolTitle = 'Driver Install Latest'
+            Id = 'nvidia-app-download-page'
+            ToolId = 'nvidia-app-download'
+            ToolTitle = 'Install NVIDIA App'
             Stage = 'Graphics'
             StageOrder = 5
             ToolOrder = 3
             CanonicalOrder = 'Graphics 3'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
-            OriginalDownloadUrl = 'https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=120&pfid=929&osID=57&languageCode=1033&isWHQL=1&dch=1&sort1=0&numberOfResults=1'
-            SourceClassification = 'OfficialVendorDirect'
-            IntendedBoostLabMirrorUrl = $null
-            ExpectedSha256 = $null
-            MirrorStatus = 'NotRequiredOfficial'
-            OperationKind = 'LookupApi'
-            Notes = 'Source-defined NVIDIA latest-driver lookup uses NVIDIA service endpoint directly.'
-        }
-        @{
-            Id = 'driver-install-latest-nvidia-driver-template'
-            ToolId = 'driver-install-latest'
-            ToolTitle = 'Driver Install Latest'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 3
-            CanonicalOrder = 'Graphics 3'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
-            OriginalDownloadUrl = 'https://international.download.nvidia.com/Windows/{version}/{version}-desktop-{windowsVersion}-{windowsArchitecture}-international-dch-whql.exe'
-            SourceClassification = 'OfficialVendorDirect'
-            IntendedBoostLabMirrorUrl = $null
-            ExpectedSha256 = $null
-            MirrorStatus = 'NotRequiredOfficial'
-            OperationKind = 'DynamicDownloadTemplate'
-            Notes = 'Source builds the final NVIDIA driver URL from NVIDIA lookup data; official vendor download remains direct.'
-        }
-        @{
-            Id = 'driver-install-latest-amd-support-page'
-            ToolId = 'driver-install-latest'
-            ToolTitle = 'Driver Install Latest'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 3
-            CanonicalOrder = 'Graphics 3'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
-            OriginalDownloadUrl = 'https://www.amd.com/en/support/download/drivers.html'
-            SourceClassification = 'OfficialVendorDirect'
-            IntendedBoostLabMirrorUrl = $null
-            ExpectedSha256 = $null
-            MirrorStatus = 'NotRequiredOfficial'
-            OperationKind = 'LookupPage'
-            Notes = 'Source scrapes AMD support page and downloads the discovered drivers.amd.com web installer; official vendor flow remains direct.'
-        }
-        @{
-            Id = 'driver-install-latest-intel-driver-page'
-            ToolId = 'driver-install-latest'
-            ToolTitle = 'Driver Install Latest'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 3
-            CanonicalOrder = 'Graphics 3'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/2 Driver Install Latest.ps1'
-            OriginalDownloadUrl = 'https://www.intel.com/content/www/us/en/search.html#sortCriteria=%40lastmodifieddt%20descending&f-operatingsystem_en=Windows%2011%20Family*&f-downloadtype=Drivers&cf-tabfilter=Downloads&cf-downloadsppth=Graphics'
+            SourceScriptPath = $null
+            OriginalDownloadUrl = 'https://www.nvidia.com/en-us/software/nvidia-app/'
             SourceClassification = 'OfficialVendorDirect'
             IntendedBoostLabMirrorUrl = $null
             ExpectedSha256 = $null
             MirrorStatus = 'NotRequiredOfficial'
             OperationKind = 'VendorPage'
-            Notes = 'Source opens the Intel official driver page rather than downloading an artifact directly.'
-        }
-        @{
-            Id = 'nvidia-settings-seven-zip'
-            ToolId = 'nvidia-settings'
-            ToolTitle = 'Nvidia Settings'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 4
-            CanonicalOrder = 'Graphics 4'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
-            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
-            SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-seven-zip__7zip.exe'
-            VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-seven-zip__7zip.exe'
-            VerifiedBoostLabMirrorAvailable = $true
-            MirrorReleaseTag = 'boostlab-artifacts-v1'
-            MirrorAssetName = 'nvidia-settings-seven-zip__7zip.exe'
-            MirrorVerifiedAt = 'Phase164E'
-            MirrorVerificationMethod = 'HEAD'
-            MirrorHttpStatus = '302 -> 200'
-            MirrorContentLength = 1589510
-            MirrorCandidatePath = 'mirrors/nvidia-settings/7zip.exe'
-            ExpectedSha256 = '26CB6E9F56333682122FAFE79DBCDFD51E9F47CC7217DCCD29AC6FC33B5598CD'
-            ExpectedSha1 = '7DF28D340D7084647921CC25A8C2068BB192BDBB'
-            ExpectedSizeBytes = 1589510
-            AuthenticodeStatus = 'NotSigned'
-            SignerPublisher = $null
-            FileVersion = '23.01'
-            ProductVersion = '23.01'
-            EvidenceSource = 'Phase164BLocalIntake'
-            EvidenceCapturedAt = '20260621-205731'
-            DuplicateHashGroup = 'DUP-SHA256-02'
-            BoostLabMirrorAvailable = $true
-            ArtifactProvenanceApproved = $true
-            ArtifactProvenanceOnlyApproved = $true
-            ArtifactProvenanceId = 'phase164g-nvidia-settings-seven-zip'
-            ProductionAllowlistApproved = $true
-            RuntimeSourceSelectionApproved = $true
-            DownloadExecutionApproved = $true
-            InstallerExecutionApproved = $true
-            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
-            MirrorStatus = 'BoostLabMirrorAvailable'
-            OperationKind = 'DownloadArtifact'
-            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
-        }
-        @{
-            Id = 'nvidia-settings-inspector'
-            ToolId = 'nvidia-settings'
-            ToolTitle = 'Nvidia Settings'
-            Stage = 'Graphics'
-            StageOrder = 5
-            ToolOrder = 4
-            CanonicalOrder = 'Graphics 4'
-            SourceScriptPath = 'source-ultimate/_intake-promoted/Ultimate/5 Graphics/4 Nvidia Settings.ps1'
-            OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/inspector.exe'
-            SourceClassification = 'UltimateAuthorHostedArtifact'
-            IntendedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-inspector__inspector.exe'
-            VerifiedBoostLabMirrorUrl = 'https://github.com/BoostLabTools/BoostLab/releases/download/boostlab-artifacts-v1/nvidia-settings-inspector__inspector.exe'
-            VerifiedBoostLabMirrorAvailable = $true
-            MirrorReleaseTag = 'boostlab-artifacts-v1'
-            MirrorAssetName = 'nvidia-settings-inspector__inspector.exe'
-            MirrorVerifiedAt = 'Phase164E'
-            MirrorVerificationMethod = 'HEAD'
-            MirrorHttpStatus = '302 -> 200'
-            MirrorContentLength = 643072
-            MirrorCandidatePath = 'mirrors/nvidia-settings/inspector.exe'
-            ExpectedSha256 = '7D5510DEEAACB50C88A49BBF1D894DAE44C5CE58C00D5A88392346646B14E8F3'
-            ExpectedSha1 = 'FB8A3490780107C504F4D135CC4BEC02E19AC2F6'
-            ExpectedSizeBytes = 643072
-            AuthenticodeStatus = 'NotSigned'
-            SignerPublisher = $null
-            FileVersion = '2.4.0.31'
-            ProductVersion = '2.4.0.31'
-            EvidenceSource = 'Phase164BLocalIntake'
-            EvidenceCapturedAt = '20260621-205731'
-            DuplicateHashGroup = 'DUP-SHA256-03'
-            BoostLabMirrorAvailable = $true
-            ArtifactProvenanceApproved = $true
-            ArtifactProvenanceOnlyApproved = $true
-            ArtifactProvenanceId = 'phase164g-nvidia-settings-inspector'
-            ProductionAllowlistApproved = $true
-            RuntimeSourceSelectionApproved = $true
-            DownloadExecutionApproved = $true
-            InstallerExecutionApproved = $true
-            ReleaseReadiness = 'RuntimeApprovedPendingOfficialVendorDirectClosure'
-            MirrorStatus = 'BoostLabMirrorAvailable'
-            OperationKind = 'DownloadArtifact'
-            Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
+            Notes = 'Phase 173A adds an open-only NVIDIA App webpage shortcut. It does not download, install, execute an installer, or mutate system state.'
         }
         @{
             Id = 'directx-seven-zip'
@@ -1215,8 +1015,8 @@
             ToolTitle = 'DirectX'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 8
-            CanonicalOrder = 'Graphics 8'
+            ToolOrder = 4
+            CanonicalOrder = 'Graphics 4'
             SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/7zip.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1259,8 +1059,8 @@
             ToolTitle = 'DirectX'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 8
-            CanonicalOrder = 'Graphics 8'
+            ToolOrder = 4
+            CanonicalOrder = 'Graphics 4'
             SourceScriptPath = 'source-ultimate/5 Graphics/2 DirectX.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/directx.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1303,8 +1103,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1347,8 +1147,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2005_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1391,8 +1191,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1435,8 +1235,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2008_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1479,8 +1279,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1523,8 +1323,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2010_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1567,8 +1367,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1611,8 +1411,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2012_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1655,8 +1455,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1699,8 +1499,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2013_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1743,8 +1543,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x64.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'
@@ -1787,8 +1587,8 @@
             ToolTitle = 'Visual C++'
             Stage = 'Graphics'
             StageOrder = 5
-            ToolOrder = 9
-            CanonicalOrder = 'Graphics 9'
+            ToolOrder = 5
+            CanonicalOrder = 'Graphics 5'
             SourceScriptPath = 'source-ultimate/5 Graphics/3 C++.ps1'
             OriginalDownloadUrl = 'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/vcredist2015_2017_2019_2022_x86.exe'
             SourceClassification = 'UltimateAuthorHostedArtifact'

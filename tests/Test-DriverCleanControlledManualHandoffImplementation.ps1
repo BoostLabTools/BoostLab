@@ -407,15 +407,13 @@ foreach ($needle in @(
     "if (`$toolId -eq 'driver-clean')",
     "'Open' { return 'Manual' }",
     "'Apply' { return 'Auto' }",
-    "if (`$toolId -eq 'nvidia-settings')",
-    "'Apply' { return 'On (Recommended)' }",
-    "'Default' { return 'Default' }",
+    "if (`$toolId -eq 'nvidia-app-download')",
+    "'Open' { return 'Open NVIDIA App Page' }",
     'ActionName   = $actionName',
     'ActionLabel  = $actionDisplayLabel'
 )) {
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Driver Clean UI display label mapping'
 }
-Assert-BoostLabCondition (-not $uiText.Contains("'driver-clean', 'nvidia-settings'")) 'Driver Clean must not share the Nvidia Settings display label mapping.'
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\DDU.psm1'))) 'Standalone DDU module was reintroduced.'

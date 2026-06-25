@@ -139,14 +139,10 @@ The app must follow this exact order:
 
 1. Driver Clean
 2. Driver Install Debloat & Settings
-3. Driver Install Latest
-4. Nvidia Settings
-5. HDCP
-6. P0 State
-7. Msi Mode
-8. DirectX
-9. Visual C++
-10. Graphics Configuration Center
+3. Install NVIDIA App
+4. DirectX
+5. Visual C++
+6. Graphics Configuration Center
 
 ---
 

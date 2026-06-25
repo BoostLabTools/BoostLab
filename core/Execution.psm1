@@ -87,29 +87,13 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-clean.psm1'
         Actions = @('Analyze', 'Open', 'Apply')
     }
-    'driver-install-latest' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-latest.psm1'
-        Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-    }
-    'nvidia-settings' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-settings.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
-    }
-    'hdcp' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\hdcp.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
-    }
-    'p0-state' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\p0-state.psm1'
-        Actions = @('Analyze', 'Apply', 'Default')
-    }
-    'msi-mode' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\msi-mode.psm1'
-        Actions = @('Analyze', 'Apply', 'Off')
-    }
     'driver-install-debloat-settings' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-debloat-settings.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
+    }
+    'nvidia-app-download' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-app-download.psm1'
+        Actions = @('Open')
     }
     'directx' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\directx.psm1'

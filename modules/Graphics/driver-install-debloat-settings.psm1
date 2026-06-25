@@ -1142,7 +1142,7 @@ function Get-BoostLabDriverInstallDebloatSettingsAnalysis {
         NoAppxOrWingetMutationOccurred  = $true
         NoRebootOrSessionChangeOccurred = $true
         PathASeparation                 = 'Driver Install Debloat & Settings remains separate from Driver Clean and NVIDIA Path B.'
-        PathBSeparation                 = 'NVIDIA Path B remains separate and ordered: Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
+        GraphicsWorkflowSeparation      = 'Driver Install Debloat & Settings remains the main NVIDIA debloat/settings path and stays separate from Driver Clean and the optional NVIDIA App download shortcut.'
     }
 }
 

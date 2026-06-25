@@ -82,14 +82,10 @@ GPU-neutral behavior and NVIDIA-specific behavior may be preserved when otherwis
 
 1. Driver Clean
 2. Driver Install Debloat & Settings
-3. Driver Install Latest
-4. Nvidia Settings
-5. HDCP
-6. P0 State
-7. Msi Mode
-8. DirectX
-9. Visual C++
-10. Graphics Configuration Center
+3. Install NVIDIA App
+4. DirectX
+5. Visual C++
+6. Graphics Configuration Center
 
 ### Stage 6 - Windows
 
@@ -149,6 +145,11 @@ The following components are intentionally excluded from BoostLab:
 * Spectre / Meltdown Assistant
 * MMAgent Assistant
 * Services Optimizer
+* Driver Install Latest
+* Nvidia Settings
+* HDCP
+* P0 State
+* Msi Mode
 
 ### Phase 25 Removal Record
 

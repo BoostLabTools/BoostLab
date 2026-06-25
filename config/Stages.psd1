@@ -1,4 +1,4 @@
-@{
+﻿@{
     Stages = @(
         @{
             Name        = 'Check'
@@ -274,73 +274,21 @@
                     )
                 }
                 @{
-                    Id          = 'driver-install-latest'
-                    Title       = 'Driver Install Latest'
+                    Id          = 'nvidia-app-download'
+                    Title       = 'Install NVIDIA App'
                     Stage       = 'Graphics'
                     Order       = 3
                     Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Run the source-equivalent NVIDIA, AMD, or INTEL latest driver workflow for one selected branch after explicit confirmation.'
-                    Actions     = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $true; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $true; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                    SelectionMode = 'SingleSelect'
-                    SelectionRequiredActions = @('Open', 'Apply')
-                    SelectionLabel = 'Select exactly one GPU branch'
-                    SelectionItems = @(
-                        @{ Id = 'NVIDIA'; Title = 'NVIDIA'; SourceMenuNumber = 1 }
-                        @{ Id = 'AMD'; Title = 'AMD'; SourceMenuNumber = 2 }
-                        @{ Id = 'INTEL'; Title = 'INTEL'; SourceMenuNumber = 3 }
-                    )
-                }
-                @{
-                    Id          = 'nvidia-settings'
-                    Title       = 'Nvidia Settings'
-                    Stage       = 'Graphics'
-                    Order       = 4
-                    Type        = 'assistant'
-                    RiskLevel   = 'high'
-                    Description = 'Source-equivalent controlled runtime. Path B step 2 of 5. Run the Ultimate Nvidia Settings On (Recommended) or Default branch after explicit confirmation.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'hdcp'
-                    Title       = 'HDCP'
-                    Stage       = 'Graphics'
-                    Order       = 5
-                    Type        = 'action'
-                    RiskLevel   = 'high'
-                    Description = 'Path B step 3 of 5. Set the source-defined NVIDIA HDCP registry value on every non-Configuration display-class subkey after explicit confirmation.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'p0-state'
-                    Title       = 'P0 State'
-                    Stage       = 'Graphics'
-                    Order       = 6
-                    Type        = 'action'
-                    RiskLevel   = 'high'
-                    Description = 'Path B step 4 of 5. Set the source-defined NVIDIA P0 State registry value on every non-Configuration display-class subkey after explicit confirmation.'
-                    Actions     = @('Analyze', 'Apply', 'Default')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $true; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
-                }
-                @{
-                    Id          = 'msi-mode'
-                    Title       = 'Msi Mode'
-                    Stage       = 'Graphics'
-                    Order       = 7
-                    Type        = 'action'
-                    RiskLevel   = 'high'
-                    Description = 'Path B step 5 of 5. Run the source-defined Msi Mode On or Off branch for every display device returned by Get-PnpDevice -Class Display after explicit confirmation.'
-                    Actions     = @('Analyze', 'Apply', 'Off')
-                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $false; CanReboot = $false; CanModifyRegistry = $true; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
+                    RiskLevel   = 'low'
+                    Description = 'Open the official NVIDIA App webpage in the default browser. BoostLab does not download, install, or change system settings for this shortcut.'
+                    Actions     = @('Open')
+                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
                 }
                 @{
                     Id          = 'directx'
                     Title       = 'DirectX'
                     Stage       = 'Graphics'
-                    Order       = 8
+                    Order       = 4
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Source-equivalent controlled runtime. Install 7-Zip, configure its source-defined options, download/extract DirectX, and launch DXSETUP after explicit confirmation.'
@@ -351,7 +299,7 @@
                     Id          = 'visual-cpp'
                     Title       = 'Visual C++'
                     Stage       = 'Graphics'
-                    Order       = 9
+                    Order       = 5
                     Type        = 'action'
                     RiskLevel   = 'high'
                     Description = 'Source-equivalent controlled runtime. Download all twelve source-defined Visual C++ redistributable installers and run them sequentially with exact source arguments after explicit confirmation.'
@@ -362,7 +310,7 @@
                     Id          = 'graphics-configuration-center'
                     Title       = 'Graphics Configuration Center'
                     Stage       = 'Graphics'
-                    Order       = 10
+                    Order       = 6
                     Type        = 'assistant'
                     RiskLevel   = 'low'
                     Description = 'Open the installed graphics control center for guided configuration.'

@@ -178,7 +178,7 @@ try {
         'SourceEquivalentOnStatusAvailable',
         'DefaultUnavailable',
         'RestoreUnavailable',
-        'BitLocker remains separate from Driver Install Latest -> Nvidia Settings -> Hdcp -> P0 State -> Msi Mode.'
+        'BitLocker remains separate from the Graphics workflow.'
     )) {
         Assert-BoostLabTextContains -Text $moduleText -Needle $needle -Description 'BitLocker module'
     }
