@@ -284,6 +284,10 @@ Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelec
 Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
 Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require one selected app ID.'
 Assert-BoostLabCondition (@($installersTool.SelectionItems).Count -eq 16) 'Installers selected app list must reflect the Tarkov removal only.'
+$installerSelectionIds = @($installersTool.SelectionItems | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition ('valorant' -in $installerSelectionIds) 'Valorant must remain visible/selectable in Installers.'
+Assert-BoostLabCondition ('ubisoft-connect' -in $installerSelectionIds) 'Ubisoft Connect must remain visible/selectable in Installers.'
+Assert-BoostLabCondition ('escape-from-tarkov' -notin $installerSelectionIds) 'Escape From Tarkov must remain absent from active Installers.'
 Assert-BoostLabCondition (-not $driverCleanTool.Contains('SelectionMode')) 'Driver Clean must use Auto/Manual actions, not a branch selector.'
 Assert-BoostLabCondition ((@($driverCleanTool.Actions) -join '|') -eq 'Analyze|Open|Apply') 'Driver Clean actions must remain Analyze/Open/Apply.'
 
@@ -300,6 +304,21 @@ foreach ($needle in @(
     "Select exactly one GPU branch: NVIDIA, AMD, or INTEL. No branch is selected automatically."
 )) {
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Reached action label/tooltip contract'
+}
+
+foreach ($needle in @(
+    "if (`$toolId -eq 'installers')",
+    '$card.Height = 686',
+    'Choose one installer to run. Only the selected installer will be downloaded/launched. No installer runs until you press Apply.',
+    'Selected installer: none yet.',
+    'Only this installer will run after Apply.',
+    'Source menu {0} - single installer run',
+    '$selectionScroll.Height = 320',
+    '$selectionScroll.MinHeight = 320',
+    '$selectionScroll.MaxHeight = 320',
+    '$selectionPanel.Margin = [System.Windows.Thickness]::new(0, 0, 6, 18)'
+)) {
+    Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Installers readable single-select UI contract'
 }
 
 foreach ($needle in @(

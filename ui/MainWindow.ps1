@@ -2444,7 +2444,10 @@ function New-BoostLabToolCard {
     $card = [System.Windows.Controls.Border]::new()
     $card.Width = 304
     $card.Height = 282
-    if ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect') {
+    if ($toolId -eq 'installers') {
+        $card.Height = 686
+    }
+    elseif ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'MultiSelect') {
         $card.Height = 458
     }
     elseif ($Tool.Contains('SelectionMode') -and [string]$Tool['SelectionMode'] -eq 'SingleSelect') {
@@ -2580,14 +2583,46 @@ function New-BoostLabToolCard {
         $selectionLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
         $contentPanel.Children.Add($selectionLabel) | Out-Null
 
+        $installerSelectedSummary = $null
+        if ($toolId -eq 'installers') {
+            $selectionHelp = [System.Windows.Controls.TextBlock]::new()
+            $selectionHelp.Text = 'Choose one installer to run. Only the selected installer will be downloaded/launched. No installer runs until you press Apply.'
+            $selectionHelp.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#A9B8D0')
+            $selectionHelp.FontSize = 11
+            $selectionHelp.LineHeight = 16
+            $selectionHelp.TextWrapping = [System.Windows.TextWrapping]::Wrap
+            $selectionHelp.Margin = [System.Windows.Thickness]::new(0, 0, 0, 7)
+            $contentPanel.Children.Add($selectionHelp) | Out-Null
+
+            $installerSelectedSummary = [System.Windows.Controls.TextBlock]::new()
+            $installerSelectedSummary.Text = 'Selected installer: none yet.'
+            $installerSelectedSummary.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#BFDBFE')
+            $installerSelectedSummary.FontSize = 11
+            $installerSelectedSummary.FontWeight = [System.Windows.FontWeights]::SemiBold
+            $installerSelectedSummary.TextWrapping = [System.Windows.TextWrapping]::Wrap
+            $installerSelectedSummary.Margin = [System.Windows.Thickness]::new(0, 7, 0, 0)
+        }
+
         $selectionScroll = [System.Windows.Controls.ScrollViewer]::new()
-        $selectionScroll.MaxHeight = if ($selectionMode -eq 'SingleSelect') { 96 } else { 172 }
+        if ($toolId -eq 'installers') {
+            $selectionScroll.Height = 320
+            $selectionScroll.MinHeight = 320
+            $selectionScroll.MaxHeight = 320
+        }
+        else {
+            $selectionScroll.MaxHeight = if ($selectionMode -eq 'SingleSelect') { 96 } else { 172 }
+        }
         $selectionScroll.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
         $selectionScroll.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
 
         $selectionPanel = [System.Windows.Controls.StackPanel]::new()
+        if ($toolId -eq 'installers') {
+            $selectionPanel.Margin = [System.Windows.Thickness]::new(0, 0, 6, 18)
+        }
         $script:BoostLabToolSelectionControls[$toolId] = @()
         foreach ($selectionItem in @($Tool['SelectionItems'])) {
+            $selectionTitle = [string]$selectionItem['Title']
+            $selectionMenuNumber = [int]$selectionItem['SourceMenuNumber']
             if ($selectionMode -eq 'SingleSelect') {
                 $selectionControl = [System.Windows.Controls.RadioButton]::new()
                 $selectionControl.GroupName = "BoostLab_$($toolId)_Selection"
@@ -2595,16 +2630,49 @@ function New-BoostLabToolCard {
             else {
                 $selectionControl = [System.Windows.Controls.CheckBox]::new()
             }
-            $selectionControl.Content = ('{0}. {1}' -f [int]$selectionItem['SourceMenuNumber'], [string]$selectionItem['Title'])
             $selectionControl.Tag = [string]$selectionItem['Id']
-            $selectionControl.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
             $selectionControl.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#CBD5E1')
-            $selectionControl.FontSize = 11
+            $selectionControl.FontSize = if ($toolId -eq 'installers') { 12 } else { 11 }
+            if ($toolId -eq 'installers') {
+                $selectionContent = [System.Windows.Controls.StackPanel]::new()
+                $selectionContent.Margin = [System.Windows.Thickness]::new(6, 0, 0, 0)
+
+                $selectionTitleText = [System.Windows.Controls.TextBlock]::new()
+                $selectionTitleText.Text = $selectionTitle
+                $selectionTitleText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#F4F7FC')
+                $selectionTitleText.FontSize = 12
+                $selectionTitleText.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $selectionTitleText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+                $selectionContent.Children.Add($selectionTitleText) | Out-Null
+
+                $selectionMetaText = [System.Windows.Controls.TextBlock]::new()
+                $selectionMetaText.Text = ('Source menu {0} - single installer run' -f $selectionMenuNumber)
+                $selectionMetaText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#94A3B8')
+                $selectionMetaText.FontSize = 10
+                $selectionMetaText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+                $selectionContent.Children.Add($selectionMetaText) | Out-Null
+
+                $selectionControl.Content = $selectionContent
+                $selectionControl.Margin = [System.Windows.Thickness]::new(0, 0, 0, 7)
+                $selectionControl.Padding = [System.Windows.Thickness]::new(8, 6, 8, 6)
+                $selectionControl.MinHeight = 42
+                $selectionControl.ToolTip = ('Installers option {0}: {1}. Only this installer runs after Apply.' -f $selectionMenuNumber, $selectionTitle)
+                $selectionControl.Add_Checked({
+                    $installerSelectedSummary.Text = ('Selected installer: {0}. Only this installer will run after Apply.' -f $selectionTitle)
+                }.GetNewClosure())
+            }
+            else {
+                $selectionControl.Content = ('{0}. {1}' -f $selectionMenuNumber, $selectionTitle)
+                $selectionControl.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
+            }
             $selectionPanel.Children.Add($selectionControl) | Out-Null
             $script:BoostLabToolSelectionControls[$toolId] = @($script:BoostLabToolSelectionControls[$toolId]) + @($selectionControl)
         }
         $selectionScroll.Content = $selectionPanel
         $contentPanel.Children.Add($selectionScroll) | Out-Null
+        if ($null -ne $installerSelectedSummary) {
+            $contentPanel.Children.Add($installerSelectedSummary) | Out-Null
+        }
     }
 
     [System.Windows.Controls.Grid]::SetRow($contentPanel, 2)
