@@ -572,7 +572,7 @@ foreach ($entry in $expectedModules.Values) {
             1
         }
         elseif ($toolId -eq 'installers') {
-            2
+            3
         }
         elseif ($toolId -eq 'driver-install-debloat-settings') {
             4

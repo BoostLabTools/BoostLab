@@ -234,7 +234,7 @@ function Get-BoostLabInstallersCatalog {
         ) -Operations @(
             New-BoostLabInstallersOperation -Type 'Download' -Label 'Download Epic Games installer' -Parameters @{ Url = 'https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi'; DestinationPath = '$env:SystemRoot\Temp\Epic Games.msi' }
             New-BoostLabInstallersOperation -Type 'StartProcess' -Label 'Install Epic Games silently' -Parameters @{ FilePath = '$env:SystemRoot\Temp\Epic Games.msi'; Arguments = '/quiet'; Wait = $true }
-            New-BoostLabInstallersOperation -Type 'StartProcess' -Label 'Launch Epic Games for update/EOS install' -Parameters @{ FilePath = '$env:SystemDrive\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'; Arguments = ''; Wait = $true }
+            New-BoostLabInstallersOperation -Type 'LaunchEpicGamesLauncher' -Label 'Launch Epic Games for update/EOS install' -Parameters @{ SourceDefinedPath = '$env:SystemDrive\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'; Arguments = ''; Wait = $true; MaxWaitSeconds = 45; PollIntervalSeconds = 3 }
             New-BoostLabInstallersOperation -Type 'UninstallByDisplayName' -Label 'Uninstall Epic Online Services' -Parameters @{ RegistryPath = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; DisplayNameLike = '*Epic Online Services*'; Arguments = '/x {0} /qn' }
             New-BoostLabInstallersOperation -Type 'RemoveRegistryValue' -Label 'Remove Epic Games startup value' -Parameters @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'; Name = 'EpicGamesLauncher'; IgnoreMissing = $true }
         ) -SideEffectFamilies @('Download', 'InstallerLaunch', 'ExternalAppLaunch', 'Uninstall', 'StartupRegistryCleanup')
@@ -582,6 +582,389 @@ function Get-BoostLabInstallersOfficialArtifactIdForUrl {
     return [string]$map[$Url]
 }
 
+function Get-BoostLabInstallersPropertyValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
+function Convert-BoostLabInstallersExecutablePathCandidate {
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    $text = ([string]$Value).Trim()
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return ''
+    }
+
+    $quotedMatch = [regex]::Match($text, '^"([^"]+)"')
+    if ($quotedMatch.Success) {
+        return [string]$quotedMatch.Groups[1].Value
+    }
+
+    return ($text -replace ',\s*\d+\s*$', '').Trim([char[]]@('"', ' '))
+}
+
+function Add-BoostLabInstallersEpicLauncherCandidate {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Candidates,
+        [Parameter(Mandatory)][hashtable]$Seen,
+        [AllowNull()][string]$Path,
+        [Parameter(Mandatory)][string]$Source,
+        [string]$Evidence = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return
+    }
+
+    $normalizedPath = [string]$Path
+    if ([System.IO.Path]::GetFileName($normalizedPath) -ne 'EpicGamesLauncher.exe') {
+        return
+    }
+
+    $key = $normalizedPath.ToLowerInvariant()
+    if ($Seen.ContainsKey($key)) {
+        return
+    }
+
+    $Seen[$key] = $true
+    $Candidates.Add([pscustomobject]@{
+        Path = $normalizedPath
+        Source = $Source
+        Evidence = $Evidence
+    })
+}
+
+function Add-BoostLabInstallersEpicLauncherDirectoryCandidates {
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Candidates,
+        [Parameter(Mandatory)][hashtable]$Seen,
+        [AllowNull()][string]$Directory,
+        [Parameter(Mandatory)][string]$Source,
+        [string]$Evidence = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Directory)) {
+        return
+    }
+
+    $trimmedDirectory = ([string]$Directory).Trim([char[]]@('"', ' ', '\'))
+    if ([string]::IsNullOrWhiteSpace($trimmedDirectory)) {
+        return
+    }
+
+    Add-BoostLabInstallersEpicLauncherCandidate -Candidates $Candidates -Seen $Seen -Path (Join-Path $trimmedDirectory 'EpicGamesLauncher.exe') -Source $Source -Evidence $Evidence
+    Add-BoostLabInstallersEpicLauncherCandidate -Candidates $Candidates -Seen $Seen -Path (Join-Path $trimmedDirectory 'Portal\Binaries\Win64\EpicGamesLauncher.exe') -Source $Source -Evidence $Evidence
+    Add-BoostLabInstallersEpicLauncherCandidate -Candidates $Candidates -Seen $Seen -Path (Join-Path $trimmedDirectory 'Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe') -Source $Source -Evidence $Evidence
+}
+
+function Get-BoostLabInstallersEpicLauncherCandidates {
+    [CmdletBinding()]
+    [OutputType([pscustomobject[]])]
+    param(
+        [Parameter(Mandatory)][string]$SourceDefinedPathExpression,
+
+        [scriptblock]$UninstallEntryEnumerator = {
+            @(
+                Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue
+                Get-ItemProperty -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue
+            )
+        },
+
+        [scriptblock]$ShortcutEnumerator = {
+            $roots = @(
+                (Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs')
+                (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs')
+            )
+            foreach ($root in $roots) {
+                if (-not [string]::IsNullOrWhiteSpace($root) -and (Test-Path -LiteralPath $root)) {
+                    Get-ChildItem -LiteralPath $root -Filter '*.lnk' -Recurse -ErrorAction SilentlyContinue |
+                        Where-Object { $_.Name -like '*Epic*' }
+                }
+            }
+        },
+
+        [scriptblock]$ShortcutTargetResolver = {
+            param([object]$Shortcut)
+            $shell = New-Object -ComObject WScript.Shell
+            $link = $shell.CreateShortcut([string]$Shortcut.FullName)
+            [string]$link.TargetPath
+        }
+    )
+
+    $candidates = [System.Collections.Generic.List[object]]::new()
+    $seen = @{}
+    $sourceDefinedPath = Resolve-BoostLabInstallersPathExpression $SourceDefinedPathExpression
+    Add-BoostLabInstallersEpicLauncherCandidate -Candidates $candidates -Seen $seen -Path $sourceDefinedPath -Source 'SourceDefinedPath' -Evidence $SourceDefinedPathExpression
+
+    $systemDrive = [Environment]::GetEnvironmentVariable('SystemDrive')
+    if ([string]::IsNullOrWhiteSpace($systemDrive)) {
+        $systemDrive = $env:SystemDrive
+    }
+    $programFiles = [Environment]::GetEnvironmentVariable('ProgramFiles')
+    $programFilesX86 = [Environment]::GetEnvironmentVariable('ProgramFiles(x86)')
+
+    if (-not [string]::IsNullOrWhiteSpace($systemDrive)) {
+        Add-BoostLabInstallersEpicLauncherDirectoryCandidates -Candidates $candidates -Seen $seen -Directory (Join-Path $systemDrive 'Program Files\Epic Games') -Source 'SystemDriveProgramFiles' -Evidence '%SystemDrive%\Program Files'
+        Add-BoostLabInstallersEpicLauncherDirectoryCandidates -Candidates $candidates -Seen $seen -Directory (Join-Path $systemDrive 'Program Files (x86)\Epic Games') -Source 'SystemDriveProgramFilesX86' -Evidence '%SystemDrive%\Program Files (x86)'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($programFiles)) {
+        Add-BoostLabInstallersEpicLauncherDirectoryCandidates -Candidates $candidates -Seen $seen -Directory (Join-Path $programFiles 'Epic Games') -Source 'ProgramFiles' -Evidence '%ProgramFiles%'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
+        Add-BoostLabInstallersEpicLauncherDirectoryCandidates -Candidates $candidates -Seen $seen -Directory (Join-Path $programFilesX86 'Epic Games') -Source 'ProgramFilesX86' -Evidence '%ProgramFiles(x86)%'
+    }
+
+    try {
+        foreach ($entry in @(& $UninstallEntryEnumerator)) {
+            $displayName = Get-BoostLabInstallersPropertyValue -InputObject $entry -Name 'DisplayName'
+            if ([string]::IsNullOrWhiteSpace([string]$displayName) -or [string]$displayName -notlike '*Epic Games Launcher*') {
+                continue
+            }
+
+            $entryIdentity = Get-BoostLabInstallersPropertyValue -InputObject $entry -Name 'PSPath'
+            if ([string]::IsNullOrWhiteSpace([string]$entryIdentity)) {
+                $entryIdentity = Get-BoostLabInstallersPropertyValue -InputObject $entry -Name 'PSChildName'
+            }
+
+            $installLocation = Get-BoostLabInstallersPropertyValue -InputObject $entry -Name 'InstallLocation'
+            Add-BoostLabInstallersEpicLauncherDirectoryCandidates -Candidates $candidates -Seen $seen -Directory ([string]$installLocation) -Source 'RegistryInstallLocation' -Evidence ([string]$entryIdentity)
+
+            $displayIcon = Convert-BoostLabInstallersExecutablePathCandidate (Get-BoostLabInstallersPropertyValue -InputObject $entry -Name 'DisplayIcon')
+            Add-BoostLabInstallersEpicLauncherCandidate -Candidates $candidates -Seen $seen -Path $displayIcon -Source 'RegistryDisplayIcon' -Evidence ([string]$entryIdentity)
+        }
+    }
+    catch {
+        $candidates.Add([pscustomobject]@{
+            Path = ''
+            Source = 'RegistryEnumerationError'
+            Evidence = $_.Exception.Message
+        })
+    }
+
+    try {
+        foreach ($shortcut in @(& $ShortcutEnumerator)) {
+            $shortcutName = Get-BoostLabInstallersPropertyValue -InputObject $shortcut -Name 'Name'
+            $shortcutPath = Get-BoostLabInstallersPropertyValue -InputObject $shortcut -Name 'FullName'
+            if ([string]::IsNullOrWhiteSpace([string]$shortcutName) -or [string]$shortcutName -notlike '*Epic*') {
+                continue
+            }
+
+            $targetPath = & $ShortcutTargetResolver $shortcut
+            Add-BoostLabInstallersEpicLauncherCandidate -Candidates $candidates -Seen $seen -Path ([string]$targetPath) -Source 'StartMenuShortcut' -Evidence ([string]$shortcutPath)
+        }
+    }
+    catch {
+        $candidates.Add([pscustomobject]@{
+            Path = ''
+            Source = 'ShortcutEnumerationError'
+            Evidence = $_.Exception.Message
+        })
+    }
+
+    $candidates.ToArray()
+}
+
+function Resolve-BoostLabInstallersEpicLauncher {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$SourceDefinedPathExpression,
+        [int]$MaxWaitSeconds = 45,
+        [int]$PollIntervalSeconds = 3,
+        [scriptblock]$PathTester = {
+            param([string]$Path)
+            Test-Path -LiteralPath $Path -PathType Leaf
+        },
+        [scriptblock]$Sleeper = {
+            param([int]$Seconds)
+            Start-Sleep -Seconds $Seconds
+        },
+        [scriptblock]$UninstallEntryEnumerator,
+        [scriptblock]$ShortcutEnumerator,
+        [scriptblock]$ShortcutTargetResolver
+    )
+
+    $elapsed = 0
+    $attempts = 0
+    $checkedPaths = [System.Collections.Generic.List[object]]::new()
+    $registryCandidates = [System.Collections.Generic.List[object]]::new()
+    $shortcutCandidates = [System.Collections.Generic.List[object]]::new()
+    $lastCandidates = @()
+
+    do {
+        $attempts++
+        $candidateParameters = @{
+            SourceDefinedPathExpression = $SourceDefinedPathExpression
+        }
+        if ($null -ne $UninstallEntryEnumerator) {
+            $candidateParameters['UninstallEntryEnumerator'] = $UninstallEntryEnumerator
+        }
+        if ($null -ne $ShortcutEnumerator) {
+            $candidateParameters['ShortcutEnumerator'] = $ShortcutEnumerator
+        }
+        if ($null -ne $ShortcutTargetResolver) {
+            $candidateParameters['ShortcutTargetResolver'] = $ShortcutTargetResolver
+        }
+
+        $lastCandidates = @(Get-BoostLabInstallersEpicLauncherCandidates @candidateParameters)
+        foreach ($candidate in $lastCandidates) {
+            if ([string]$candidate.Source -like 'Registry*') {
+                $registryCandidates.Add($candidate)
+            }
+            if ([string]$candidate.Source -eq 'StartMenuShortcut' -or [string]$candidate.Source -eq 'ShortcutEnumerationError') {
+                $shortcutCandidates.Add($candidate)
+            }
+            if ([string]::IsNullOrWhiteSpace([string]$candidate.Path)) {
+                continue
+            }
+            $checkedPaths.Add($candidate)
+            if (& $PathTester ([string]$candidate.Path)) {
+                return [pscustomobject]@{
+                    Success = $true
+                    Status = 'Found'
+                    ResolvedPath = [string]$candidate.Path
+                    SourceDefinedPath = Resolve-BoostLabInstallersPathExpression $SourceDefinedPathExpression
+                    SourceDefinedPathExpression = $SourceDefinedPathExpression
+                    MatchedSource = [string]$candidate.Source
+                    Attempts = $attempts
+                    ElapsedWaitSeconds = $elapsed
+                    MaxWaitSeconds = $MaxWaitSeconds
+                    PollIntervalSeconds = $PollIntervalSeconds
+                    CheckedPaths = $checkedPaths.ToArray()
+                    RegistryCandidates = $registryCandidates.ToArray()
+                    ShortcutCandidates = $shortcutCandidates.ToArray()
+                    Message = "Epic Games launcher found at $($candidate.Path)."
+                }
+            }
+        }
+
+        if ($elapsed -ge $MaxWaitSeconds) {
+            break
+        }
+
+        $sleepSeconds = [Math]::Min([Math]::Max(1, $PollIntervalSeconds), [Math]::Max(1, $MaxWaitSeconds - $elapsed))
+        & $Sleeper $sleepSeconds
+        $elapsed += $sleepSeconds
+    } while ($true)
+
+    [pscustomobject]@{
+        Success = $false
+        Status = 'EpicLauncherNotFoundAfterInstall'
+        ResolvedPath = ''
+        SourceDefinedPath = Resolve-BoostLabInstallersPathExpression $SourceDefinedPathExpression
+        SourceDefinedPathExpression = $SourceDefinedPathExpression
+        MatchedSource = ''
+        Attempts = $attempts
+        ElapsedWaitSeconds = $elapsed
+        MaxWaitSeconds = $MaxWaitSeconds
+        PollIntervalSeconds = $PollIntervalSeconds
+        CheckedPaths = $checkedPaths.ToArray()
+        RegistryCandidates = $registryCandidates.ToArray()
+        ShortcutCandidates = $shortcutCandidates.ToArray()
+        Message = 'EpicLauncherNotFoundAfterInstall. EpicGamesLauncher.exe was not found after the bounded post-install discovery wait.'
+    }
+}
+
+function Invoke-BoostLabInstallersEpicLauncher {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$SourceDefinedPathExpression,
+        [string]$Arguments = '',
+        [bool]$Wait = $true,
+        [int]$MaxWaitSeconds = 45,
+        [int]$PollIntervalSeconds = 3,
+        [scriptblock]$PathTester,
+        [scriptblock]$Sleeper,
+        [scriptblock]$UninstallEntryEnumerator,
+        [scriptblock]$ShortcutEnumerator,
+        [scriptblock]$ShortcutTargetResolver,
+        [scriptblock]$Launcher = {
+            param([string]$FilePath, [string]$ArgumentList, [bool]$ShouldWait)
+            $startParams = @{
+                FilePath = $FilePath
+                ErrorAction = 'Stop'
+            }
+            if (-not [string]::IsNullOrWhiteSpace($ArgumentList)) {
+                $startParams['ArgumentList'] = $ArgumentList
+            }
+            if ($ShouldWait) {
+                $startParams['Wait'] = $true
+            }
+            Start-Process @startParams
+        }
+    )
+
+    $resolveParameters = @{
+        SourceDefinedPathExpression = $SourceDefinedPathExpression
+        MaxWaitSeconds = $MaxWaitSeconds
+        PollIntervalSeconds = $PollIntervalSeconds
+    }
+    if ($null -ne $PathTester) {
+        $resolveParameters['PathTester'] = $PathTester
+    }
+    if ($null -ne $Sleeper) {
+        $resolveParameters['Sleeper'] = $Sleeper
+    }
+    if ($null -ne $UninstallEntryEnumerator) {
+        $resolveParameters['UninstallEntryEnumerator'] = $UninstallEntryEnumerator
+    }
+    if ($null -ne $ShortcutEnumerator) {
+        $resolveParameters['ShortcutEnumerator'] = $ShortcutEnumerator
+    }
+    if ($null -ne $ShortcutTargetResolver) {
+        $resolveParameters['ShortcutTargetResolver'] = $ShortcutTargetResolver
+    }
+
+    $resolution = Resolve-BoostLabInstallersEpicLauncher @resolveParameters
+    if (-not [bool]$resolution.Success) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'EpicLauncherNotFoundAfterInstall'
+            Message = [string]$resolution.Message
+            Resolution = $resolution
+            LaunchedPath = ''
+        }
+    }
+
+    try {
+        & $Launcher ([string]$resolution.ResolvedPath) $Arguments $Wait
+        [pscustomobject]@{
+            Success = $true
+            Status = 'Launched'
+            Message = "Launched Epic Games for update/EOS install from $($resolution.ResolvedPath)."
+            Resolution = $resolution
+            LaunchedPath = [string]$resolution.ResolvedPath
+        }
+    }
+    catch {
+        [pscustomobject]@{
+            Success = $false
+            Status = 'LaunchFailed'
+            Message = "Epic Games launcher was found but failed to launch: $($_.Exception.Message)"
+            Resolution = $resolution
+            LaunchedPath = [string]$resolution.ResolvedPath
+        }
+    }
+}
+
 function Invoke-BoostLabInstallersActiveSetupDefaultMatchRemoval {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -835,6 +1218,17 @@ function Invoke-BoostLabInstallersOperation {
                     $startParams['Wait'] = $true
                 }
                 Start-Process @startParams
+            }
+            'LaunchEpicGamesLauncher' {
+                $operationDetails = Invoke-BoostLabInstallersEpicLauncher `
+                    -SourceDefinedPathExpression ([string]$parameters['SourceDefinedPath']) `
+                    -Arguments (Resolve-BoostLabInstallersPathExpression ([string]$parameters['Arguments'])) `
+                    -Wait ([bool]$parameters['Wait']) `
+                    -MaxWaitSeconds ([int]$parameters['MaxWaitSeconds']) `
+                    -PollIntervalSeconds ([int]$parameters['PollIntervalSeconds'])
+                if (-not [bool]$operationDetails.Success) {
+                    throw [string]$operationDetails.Message
+                }
             }
             'WriteTextFile' {
                 $path = Resolve-BoostLabInstallersPathExpression ([string]$parameters['Path'])

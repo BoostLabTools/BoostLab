@@ -160,6 +160,123 @@ try {
     Assert-BoostLabCondition (((@($catalog | ForEach-Object { [string]$_.AppId }) -join ',') -eq ($expectedRetainedIds -join ','))) 'Module catalog source order mismatch.'
     Assert-BoostLabCondition ('escape-from-tarkov' -notin @($catalog | ForEach-Object { [string]$_.AppId })) 'Escape From Tarkov must not remain in the retained Installers catalog.'
     Assert-BoostLabCondition (@($catalog | ForEach-Object { $_.Artifacts } | Where-Object { [string]$_.Url -like '*escapefromtarkov*' }).Count -eq 0) 'Escape From Tarkov download URL must not remain in retained Installers artifacts.'
+    $epicApp = @($catalog | Where-Object { [string]$_.AppId -eq 'epic-games' })[0]
+    Assert-BoostLabCondition ([string]$epicApp.Artifacts[0].Url -eq 'https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi') 'Epic Games installer URL must remain source-defined.'
+    Assert-BoostLabCondition ([string]$epicApp.Artifacts[0].DestinationPath -eq '$env:SystemRoot\Temp\Epic Games.msi') 'Epic Games installer destination path must remain source-defined.'
+    Assert-BoostLabCondition ([string]$epicApp.InstallerCommands[0].Arguments -eq '/quiet') 'Epic Games silent MSI argument must remain /quiet.'
+    Assert-BoostLabCondition (((@($epicApp.Operations | ForEach-Object { [string]$_.Type }) -join '|') -eq 'Download|StartProcess|LaunchEpicGamesLauncher|UninstallByDisplayName|RemoveRegistryValue')) 'Epic Games operations must preserve source flow with robust launcher discovery.'
+    $epicLauncherOperation = @($epicApp.Operations | Where-Object { [string]$_.Type -eq 'LaunchEpicGamesLauncher' })[0]
+    Assert-BoostLabCondition ([string]$epicLauncherOperation.Parameters['SourceDefinedPath'] -eq '$env:SystemDrive\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe') 'Epic Games launcher resolver must keep the source-defined path as first preference.'
+    Assert-BoostLabCondition ([int]$epicLauncherOperation.Parameters['MaxWaitSeconds'] -gt 0) 'Epic Games launcher resolver must use a bounded wait.'
+    Assert-BoostLabCondition ([int]$epicLauncherOperation.Parameters['PollIntervalSeconds'] -gt 0) 'Epic Games launcher resolver must use a bounded poll interval.'
+
+    $epicLauncherProbe = & $module {
+        $sourceExpression = '$env:SystemDrive\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'
+        $sourcePath = Resolve-BoostLabInstallersPathExpression $sourceExpression
+        $programFilesX86Root = [Environment]::GetEnvironmentVariable('ProgramFiles(x86)')
+        if ([string]::IsNullOrWhiteSpace($programFilesX86Root)) {
+            $programFilesX86Root = Join-Path $env:SystemDrive 'Program Files (x86)'
+        }
+        $programFilesX86Path = Join-Path $programFilesX86Root 'Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'
+        $registryDisplayIconPath = 'D:\MockEpic\EpicGamesLauncher.exe'
+
+        $launchedSource = [System.Collections.Generic.List[string]]::new()
+        $sourceResult = Invoke-BoostLabInstallersEpicLauncher `
+            -SourceDefinedPathExpression $sourceExpression `
+            -MaxWaitSeconds 0 `
+            -PollIntervalSeconds 1 `
+            -PathTester { param($Path) [string]$Path -eq [string]$sourcePath }.GetNewClosure() `
+            -Sleeper { param($Seconds) throw 'source path test should not sleep' } `
+            -UninstallEntryEnumerator { @() } `
+            -ShortcutEnumerator { @() } `
+            -Launcher { param($FilePath, $ArgumentList, $ShouldWait) $launchedSource.Add([string]$FilePath) }.GetNewClosure()
+
+        $launchedFallback = [System.Collections.Generic.List[string]]::new()
+        $fallbackResult = Invoke-BoostLabInstallersEpicLauncher `
+            -SourceDefinedPathExpression $sourceExpression `
+            -MaxWaitSeconds 0 `
+            -PollIntervalSeconds 1 `
+            -PathTester { param($Path) [string]$Path -eq [string]$programFilesX86Path }.GetNewClosure() `
+            -Sleeper { param($Seconds) throw 'fallback path test should not sleep' } `
+            -UninstallEntryEnumerator { @() } `
+            -ShortcutEnumerator { @() } `
+            -Launcher { param($FilePath, $ArgumentList, $ShouldWait) $launchedFallback.Add([string]$FilePath) }.GetNewClosure()
+
+        $registryResult = Invoke-BoostLabInstallersEpicLauncher `
+            -SourceDefinedPathExpression $sourceExpression `
+            -MaxWaitSeconds 0 `
+            -PollIntervalSeconds 1 `
+            -PathTester { param($Path) [string]$Path -eq [string]$registryDisplayIconPath }.GetNewClosure() `
+            -Sleeper { param($Seconds) throw 'registry path test should not sleep' } `
+            -UninstallEntryEnumerator {
+                @(
+                    [pscustomobject]@{
+                        PSPath = 'Registry::HKLM\Mock\Uninstall\EpicGamesLauncher'
+                        DisplayName = 'Epic Games Launcher'
+                        DisplayIcon = '"D:\MockEpic\EpicGamesLauncher.exe",0'
+                    }
+                )
+            } `
+            -ShortcutEnumerator { @() } `
+            -Launcher { param($FilePath, $ArgumentList, $ShouldWait) }.GetNewClosure()
+
+        $delayedState = @{ Attempts = 0 }
+        $sleepCalls = [System.Collections.Generic.List[int]]::new()
+        $delayedResult = Invoke-BoostLabInstallersEpicLauncher `
+            -SourceDefinedPathExpression $sourceExpression `
+            -MaxWaitSeconds 2 `
+            -PollIntervalSeconds 1 `
+            -PathTester {
+                param($Path)
+                $delayedState['Attempts'] = [int]$delayedState['Attempts'] + 1
+                ([string]$Path -eq [string]$sourcePath -and [int]$delayedState['Attempts'] -ge 2)
+            }.GetNewClosure() `
+            -Sleeper { param($Seconds) $sleepCalls.Add([int]$Seconds) }.GetNewClosure() `
+            -UninstallEntryEnumerator { @() } `
+            -ShortcutEnumerator { @() } `
+            -Launcher { param($FilePath, $ArgumentList, $ShouldWait) }.GetNewClosure()
+
+        $notFoundLaunches = [System.Collections.Generic.List[string]]::new()
+        $notFoundResult = Invoke-BoostLabInstallersEpicLauncher `
+            -SourceDefinedPathExpression $sourceExpression `
+            -MaxWaitSeconds 1 `
+            -PollIntervalSeconds 1 `
+            -PathTester { param($Path) $false } `
+            -Sleeper { param($Seconds) } `
+            -UninstallEntryEnumerator { @() } `
+            -ShortcutEnumerator { @() } `
+            -Launcher { param($FilePath, $ArgumentList, $ShouldWait) $notFoundLaunches.Add([string]$FilePath) }.GetNewClosure()
+
+        [pscustomobject]@{
+            SourceResult = $sourceResult
+            SourceLaunchedPath = @($launchedSource)[0]
+            FallbackResult = $fallbackResult
+            FallbackLaunchedPath = @($launchedFallback)[0]
+            ProgramFilesX86Path = $programFilesX86Path
+            RegistryResult = $registryResult
+            RegistryDisplayIconPath = $registryDisplayIconPath
+            DelayedResult = $delayedResult
+            DelayedAttempts = [int]$delayedState['Attempts']
+            SleepCallCount = $sleepCalls.Count
+            NotFoundResult = $notFoundResult
+            NotFoundLaunchCount = $notFoundLaunches.Count
+        }
+    }
+    Assert-BoostLabCondition ([bool]$epicLauncherProbe.SourceResult.Success) 'Epic launcher resolver should use the source-defined path when present.'
+    Assert-BoostLabCondition ([string]$epicLauncherProbe.SourceResult.Resolution.MatchedSource -eq 'SourceDefinedPath') 'Epic launcher source-defined path must be the first successful source.'
+    Assert-BoostLabCondition ([string]$epicLauncherProbe.SourceLaunchedPath -eq [string]$epicLauncherProbe.SourceResult.Resolution.ResolvedPath) 'Epic launcher source-defined path launch mismatch.'
+    Assert-BoostLabCondition ([bool]$epicLauncherProbe.FallbackResult.Success) 'Epic launcher resolver should find Program Files x86 fallback path.'
+    Assert-BoostLabCondition ([string]$epicLauncherProbe.FallbackLaunchedPath -eq [string]$epicLauncherProbe.ProgramFilesX86Path) 'Epic launcher fallback launch path mismatch.'
+    Assert-BoostLabCondition ([bool]$epicLauncherProbe.RegistryResult.Success) 'Epic launcher resolver should find registry DisplayIcon candidates.'
+    Assert-BoostLabCondition ([string]$epicLauncherProbe.RegistryResult.Resolution.ResolvedPath -eq [string]$epicLauncherProbe.RegistryDisplayIconPath) 'Epic launcher registry DisplayIcon path mismatch.'
+    Assert-BoostLabCondition ([bool]$epicLauncherProbe.DelayedResult.Success) 'Epic launcher resolver should wait/poll for a delayed launcher path.'
+    Assert-BoostLabCondition ([int]$epicLauncherProbe.DelayedAttempts -ge 2) 'Epic launcher delayed resolver should poll more than once.'
+    Assert-BoostLabCondition ([int]$epicLauncherProbe.SleepCallCount -ge 1) 'Epic launcher delayed resolver should use the bounded sleeper.'
+    Assert-BoostLabCondition (-not [bool]$epicLauncherProbe.NotFoundResult.Success) 'Epic launcher missing path should fail closed.'
+    Assert-BoostLabCondition ([string]$epicLauncherProbe.NotFoundResult.Status -eq 'EpicLauncherNotFoundAfterInstall') 'Epic launcher missing path status mismatch.'
+    Assert-BoostLabCondition ([int]$epicLauncherProbe.NotFoundLaunchCount -eq 0) 'Epic launcher missing path must not launch anything.'
+    Assert-BoostLabCondition (@($epicLauncherProbe.NotFoundResult.Resolution.CheckedPaths).Count -gt 0) 'Epic launcher missing path diagnostics should include checked paths.'
+
     $restoredAppExpectations = @{
         'ubisoft-connect' = @{
             SourceMenuNumber = 23
@@ -489,6 +606,37 @@ try {
     $epicUninstallResult = @($epicObsApply.Data.OperationResults | Where-Object { [string]$_.AppId -eq 'epic-games' -and [string]$_.Operation.Type -eq 'UninstallByDisplayName' })[0]
     Assert-BoostLabCondition ([int]$epicUninstallResult.Details.MissingDisplayNameCount -eq 2) 'Epic Online Services cleanup should report missing DisplayName entries as non-fatal details.'
     Assert-BoostLabCondition ([int]$epicUninstallResult.Details.UninstallAttemptedCount -eq 0) 'Epic Online Services cleanup should not attempt uninstall when no matching DisplayName exists.'
+
+    $epicLauncherMissingSeen = [System.Collections.Generic.List[string]]::new()
+    $epicLauncherMissingExecutor = {
+        param($Operation, $App)
+        $epicLauncherMissingSeen.Add([string]$Operation.Type)
+        if ([string]$App.AppId -eq 'epic-games' -and [string]$Operation.Type -eq 'LaunchEpicGamesLauncher') {
+            return [pscustomobject]@{
+                Success = $false
+                Message = 'EpicLauncherNotFoundAfterInstall. EpicGamesLauncher.exe was not found after the bounded post-install discovery wait.'
+                Operation = $Operation
+                AppId = [string]$App.AppId
+                Details = [pscustomobject]@{
+                    Status = 'EpicLauncherNotFoundAfterInstall'
+                    CheckedPaths = @('C:\Program Files\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe')
+                    RegistryCandidates = @()
+                    ShortcutCandidates = @()
+                }
+            }
+        }
+        [pscustomobject]@{
+            Success = $true
+            Message = 'mock operation completed'
+            Operation = $Operation
+            AppId = [string]$App.AppId
+        }
+    }
+    $epicLauncherMissingApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('epic-games') -OperationExecutor $args[0] -SkipEnvironmentChecks } $epicLauncherMissingExecutor
+    Assert-BoostLabCondition (-not [bool]$epicLauncherMissingApply.Success) 'Missing Epic launcher after install must fail closed.'
+    Assert-BoostLabCondition ([string]$epicLauncherMissingApply.Status -eq 'SelectedAppFailed') 'Missing Epic launcher should fail the selected Epic Games run.'
+    Assert-BoostLabContains -Text ([string]$epicLauncherMissingApply.Message) -Needle 'EpicLauncherNotFoundAfterInstall' -Description 'Missing Epic launcher selected-app failure message'
+    Assert-BoostLabCondition (((@($epicLauncherMissingSeen) -join '|') -eq 'Download|StartProcess|LaunchEpicGamesLauncher')) 'Epic launcher failure must stop before EOS cleanup and startup cleanup.'
 
     $epicFailureSeen = [System.Collections.Generic.List[string]]::new()
     $epicFailingExecutor = {
