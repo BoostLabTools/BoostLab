@@ -158,8 +158,114 @@ function Get-BoostLabNotepadRegistryValue {
 function Test-BoostLabNotepadByteDisplay {
     param([AllowNull()][object]$Value)
 
-    $text = if ($null -eq $Value) { '' } else { [string]$Value }
-    return $text -match '(?i)^[0-9a-f]{2}(,[0-9a-f]{2})*$'
+    return [bool](ConvertTo-BoostLabNotepadNormalizedByteDisplay -Value $Value).Success
+}
+
+function ConvertTo-BoostLabNotepadNormalizedByteDisplay {
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = ''
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is null.'
+        }
+    }
+
+    if ($Value -is [byte[]]) {
+        $bytes = @($Value | ForEach-Object { $_.ToString('x2') })
+        return [pscustomobject]@{
+            Success = $true
+            Raw = (@($bytes) -join ',')
+            Normalized = (@($bytes) -join ',')
+            Bytes = @($bytes)
+            Message = 'Byte value came from a byte array.'
+        }
+    }
+
+    $raw = ([string]$Value).Trim()
+    $compact = $raw -replace '[\s,]', ''
+    if ([string]::IsNullOrWhiteSpace($compact)) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is empty after removing separators.'
+        }
+    }
+    if ($compact -notmatch '^(?i)[0-9a-f]+$' -or ($compact.Length % 2) -ne 0) {
+        return [pscustomobject]@{
+            Success = $false
+            Raw = $raw
+            Normalized = ''
+            Bytes = @()
+            Message = 'Byte value is not valid even-length hexadecimal data.'
+        }
+    }
+
+    $bytes = for ($index = 0; $index -lt $compact.Length; $index += 2) {
+        $compact.Substring($index, 2).ToLowerInvariant()
+    }
+    return [pscustomobject]@{
+        Success = $true
+        Raw = $raw
+        Normalized = (@($bytes) -join ',')
+        Bytes = @($bytes)
+        Message = 'Byte value was normalized from text.'
+    }
+}
+
+function Compare-BoostLabNotepadByteDisplay {
+    param(
+        [AllowNull()][object]$Expected,
+        [AllowNull()][object]$Actual
+    )
+
+    $expectedBytes = ConvertTo-BoostLabNotepadNormalizedByteDisplay -Value $Expected
+    $actualBytes = ConvertTo-BoostLabNotepadNormalizedByteDisplay -Value $Actual
+    $succeeded = [bool]$expectedBytes.Success -and [bool]$actualBytes.Success -and ([string]$expectedBytes.Normalized -eq [string]$actualBytes.Normalized)
+    $message = if (-not [bool]$expectedBytes.Success) {
+        "Expected bytes could not be parsed: $($expectedBytes.Message)"
+    }
+    elseif (-not [bool]$actualBytes.Success) {
+        "Actual bytes could not be parsed: $($actualBytes.Message)"
+    }
+    elseif ($succeeded) {
+        'Expected and actual bytes match after normalization.'
+    }
+    else {
+        'Expected and actual bytes differ after normalization.'
+    }
+
+    [pscustomobject]@{
+        ExpectedBytesRaw = [string]$Expected
+        ActualBytesRaw = [string]$Actual
+        ExpectedBytesNormalized = [string]$expectedBytes.Normalized
+        ActualBytesNormalized = [string]$actualBytes.Normalized
+        ByteComparisonSucceeded = $succeeded
+        ExpectedBytesParsed = [bool]$expectedBytes.Success
+        ActualBytesParsed = [bool]$actualBytes.Success
+        Message = $message
+    }
+}
+
+function Add-BoostLabNotepadByteComparisonDetails {
+    param(
+        [Parameter(Mandatory)][object]$State,
+        [Parameter(Mandatory)][string]$Expected
+    )
+
+    $comparison = Compare-BoostLabNotepadByteDisplay -Expected $Expected -Actual ([string]$State.DisplayValue)
+    $State | Add-Member -NotePropertyName 'ExpectedBytesRaw' -NotePropertyValue ([string]$comparison.ExpectedBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesRaw' -NotePropertyValue ([string]$comparison.ActualBytesRaw) -Force
+    $State | Add-Member -NotePropertyName 'ExpectedBytesNormalized' -NotePropertyValue ([string]$comparison.ExpectedBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ActualBytesNormalized' -NotePropertyValue ([string]$comparison.ActualBytesNormalized) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonSucceeded' -NotePropertyValue ([bool]$comparison.ByteComparisonSucceeded) -Force
+    $State | Add-Member -NotePropertyName 'ByteComparisonMessage' -NotePropertyValue ([string]$comparison.Message) -Force
+    return $comparison
 }
 
 function ConvertFrom-BoostLabNotepadRegQueryOutput {
@@ -682,8 +788,9 @@ function Invoke-BoostLabNotepadSettingsHiveImport {
                     $errors.Add("$($definition.Name) was absent after Notepad settings import.")
                     continue
                 }
-                if ([string]$state.DisplayValue -ne [string]$definition.Expected) {
-                    $errors.Add("$($definition.Name) mismatch after Notepad settings import. Expected $($definition.Expected), found $($state.DisplayValue).")
+                $byteComparison = Add-BoostLabNotepadByteComparisonDetails -State $state -Expected ([string]$definition.Expected)
+                if (-not [bool]$byteComparison.ByteComparisonSucceeded) {
+                    $errors.Add("$($definition.Name) mismatch after Notepad settings import. Expected $($definition.Expected) (normalized $($byteComparison.ExpectedBytesNormalized)), found $($state.DisplayValue) (normalized $($byteComparison.ActualBytesNormalized)). $($byteComparison.Message)")
                 }
             }
         }
@@ -841,17 +948,41 @@ function New-BoostLabNotepadApplyVerification {
 
     foreach ($definition in $script:BoostLabNotepadExpectedValues) {
         $state = @($HiveImportResult.RegistryValuesChecked | Where-Object { $_.Name -eq $definition.Name }) | Select-Object -First 1
+        $byteComparison = $null
+        if ($null -ne $state -and [bool]$state.ReadSucceeded -and [bool]$state.Exists) {
+            if ($null -eq $state.PSObject.Properties['ByteComparisonSucceeded']) {
+                $byteComparison = Add-BoostLabNotepadByteComparisonDetails -State $state -Expected ([string]$definition.Expected)
+            }
+            else {
+                $byteComparison = [pscustomobject]@{
+                    ExpectedBytesRaw = if ($null -eq $state.PSObject.Properties['ExpectedBytesRaw']) { [string]$definition.Expected } else { [string]$state.ExpectedBytesRaw }
+                    ActualBytesRaw = if ($null -eq $state.PSObject.Properties['ActualBytesRaw']) { [string]$state.DisplayValue } else { [string]$state.ActualBytesRaw }
+                    ExpectedBytesNormalized = if ($null -eq $state.PSObject.Properties['ExpectedBytesNormalized']) { '' } else { [string]$state.ExpectedBytesNormalized }
+                    ActualBytesNormalized = if ($null -eq $state.PSObject.Properties['ActualBytesNormalized']) { '' } else { [string]$state.ActualBytesNormalized }
+                    ByteComparisonSucceeded = [bool]$state.ByteComparisonSucceeded
+                    Message = if ($null -eq $state.PSObject.Properties['ByteComparisonMessage']) { '' } else { [string]$state.ByteComparisonMessage }
+                }
+            }
+        }
         $status = if ($null -eq $state -or -not [bool]$state.ReadSucceeded) {
             'Failed'
         }
-        elseif (-not [bool]$state.Exists -or [string]$state.DisplayValue -ne [string]$definition.Expected) {
+        elseif (-not [bool]$state.Exists -or -not [bool]$byteComparison.ByteComparisonSucceeded) {
             'Failed'
         }
         else {
             'Passed'
         }
         $actual = if ($null -eq $state) { 'Not checked' } else { [string]$state.DisplayValue }
-        $message = if ($null -eq $state) { 'Registry value was not captured before hive unload.' } else { [string]$state.Message }
+        $message = if ($null -eq $state) {
+            'Registry value was not captured before hive unload.'
+        }
+        elseif ($null -ne $byteComparison) {
+            "$([string]$state.Message) $([string]$byteComparison.Message)"
+        }
+        else {
+            [string]$state.Message
+        }
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Notepad LocalState | $($definition.Name)" `
             -Expected ([string]$definition.Expected) `

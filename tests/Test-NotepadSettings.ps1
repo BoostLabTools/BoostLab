@@ -156,6 +156,11 @@ try {
         GhostFile = '00,42,60,f1,5a,d1,84,db,01'
         RewriteEnabled = '00,12,4a,7f,5f,d1,84,db,01'
     }
+    $continuousRegQueryValues = [ordered]@{
+        OpenFile = '01000000D1552457D184DB01'
+        GhostFile = '004260F15AD184DB01'
+        RewriteEnabled = '00124A7F5FD184DB01'
+    }
     $newFileState = {
         param([bool]$Exists, [string]$Hash, [string]$Message)
         [pscustomobject]@{
@@ -227,6 +232,20 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     Assert-BoostLabCondition ([string]$regQueryState.ReadMethod -eq 'reg query') 'Notepad Settings reg query fallback must report reg query as the read method.'
     Assert-BoostLabCondition ([string]$regQueryState.ValueType -eq 'REG_5F5E10B') 'Notepad Settings reg query fallback must preserve custom value type.'
     Assert-BoostLabCondition ([string]$regQueryState.DisplayValue -eq $expectedValues['GhostFile']) 'Notepad Settings reg query fallback must normalize custom value bytes.'
+
+    foreach ($valueName in @('OpenFile', 'GhostFile', 'RewriteEnabled')) {
+        $byteComparison = & $notepadModule {
+            param($Expected, $Actual)
+            Compare-BoostLabNotepadByteDisplay -Expected $Expected -Actual $Actual
+        } $expectedValues[$valueName] $continuousRegQueryValues[$valueName]
+        Assert-BoostLabCondition ([bool]$byteComparison.ByteComparisonSucceeded) "Notepad Settings $valueName REG_NONE bytes should match continuous reg-query hex after normalization."
+        Assert-BoostLabCondition ([string]$byteComparison.ExpectedBytesNormalized -eq [string]$byteComparison.ActualBytesNormalized) "Notepad Settings $valueName normalized bytes should match."
+    }
+
+    $mixedWhitespaceComparison = & $notepadModule {
+        Compare-BoostLabNotepadByteDisplay -Expected ' 01, 00, 00, 00, D1,55,24,57,d1,84,db,01 ' -Actual '01000000d1552457D184DB01'
+    }
+    Assert-BoostLabCondition ([bool]$mixedWhitespaceComparison.ByteComparisonSucceeded) 'Notepad Settings byte comparison must accept whitespace and mixed hex casing.'
 
     $missingApplyEvents = [System.Collections.Generic.List[string]]::new()
     $missingApplyResult = & $notepadModule {
@@ -433,7 +452,7 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
         $recoverableExitCodeEvents.Add("read|$Name")
         [pscustomobject]@{
             ReadSucceeded = $true; Exists = $true; Name = $Name
-            DisplayValue = [string]$expectedValues[$Name]; Message = 'Mock value detected.'
+            DisplayValue = [string]$continuousRegQueryValues[$Name]; Message = 'Mock continuous reg query value detected.'
         }
     }.GetNewClosure()
     $recoverableExitCodeResult = & $notepadModule {
@@ -469,6 +488,13 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     Assert-BoostLabCondition ([bool]$recoverableImportOperation.RecoveryAttempted) 'Recovered import operation must mark RecoveryAttempted.'
     Assert-BoostLabCondition ([string]$recoverableImportOperation.NativeOutput -like '*operation completed successfully*') 'Recovered missing exit-code diagnostics must preserve native output.'
     Assert-BoostLabCondition (@($recoverableExitCodeResult.Data.RegistryValuesChecked).Count -eq 3) 'Recovered missing import exit code must verify all source-defined values.'
+    $failedRecoveredValueChecks = @($recoverableExitCodeResult.VerificationResult.Checks | Where-Object { [string]$_.Name -like 'Notepad LocalState | *' -and [string]$_.Status -eq 'Failed' })
+    Assert-BoostLabCondition ($failedRecoveredValueChecks.Count -eq 0) 'Recovered continuous Notepad REG_NONE values must not produce failed value checks.'
+    foreach ($state in @($recoverableExitCodeResult.Data.RegistryValuesChecked)) {
+        Assert-BoostLabCondition ([bool]$state.ByteComparisonSucceeded) "Recovered $($state.Name) byte comparison should pass after normalization."
+        Assert-BoostLabCondition ([string]$state.ExpectedBytesNormalized -eq [string]$state.ActualBytesNormalized) "Recovered $($state.Name) normalized expected/actual bytes should match."
+        Assert-BoostLabCondition ([string]$state.ActualBytesRaw -eq [string]$continuousRegQueryValues[$state.Name]) "Recovered $($state.Name) should preserve raw continuous actual bytes in diagnostics."
+    }
 
     $recoverableMismatchEvents = [System.Collections.Generic.List[string]]::new()
     $recoverableMismatchCommand = {
@@ -602,6 +628,42 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $applyCommand $mismatchValueReader $pathTesterPresent $hiveMountAbsent
     Assert-BoostLabCondition (-not [bool]$mismatchValueResult.Success) 'Mismatched source-required Notepad registry value must fail closed.'
     Assert-BoostLabCondition ([string]$mismatchValueResult.Message -like '*RewriteEnabled mismatch*') 'Mismatched value failure must include the value name.'
+    $mismatchRewriteState = @($mismatchValueResult.Data.RegistryValuesChecked | Where-Object { [string]$_.Name -eq 'RewriteEnabled' }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $mismatchRewriteState) 'Mismatched RewriteEnabled state must be recorded.'
+    Assert-BoostLabCondition (-not [bool]$mismatchRewriteState.ByteComparisonSucceeded) 'Mismatched RewriteEnabled bytes must fail normalized comparison.'
+    Assert-BoostLabCondition ([string]$mismatchRewriteState.ExpectedBytesNormalized -ne [string]$mismatchRewriteState.ActualBytesNormalized) 'Mismatched RewriteEnabled diagnostics must show different normalized bytes.'
+
+    $invalidActualReader = {
+        param($Name)
+        if ($Name -eq 'OpenFile') {
+            return [pscustomobject]@{ ReadSucceeded = $true; Exists = $true; Name = $Name; DisplayValue = '01000000D1552457D184DB0'; Message = 'Mock invalid odd-length OpenFile.' }
+        }
+        [pscustomobject]@{ ReadSucceeded = $true; Exists = $true; Name = $Name; DisplayValue = [string]$continuousRegQueryValues[$Name]; Message = 'Mock value detected.' }
+    }.GetNewClosure()
+    $invalidActualResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UNCHANGED' 'File still present.') $processStopper $delay $registryWriter $applyCommand $invalidActualReader $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition (-not [bool]$invalidActualResult.Success) 'Invalid actual Notepad byte data must fail closed.'
+    Assert-BoostLabCondition ([string]$invalidActualResult.Data.FinalStatusReason -eq 'HiveImportVerificationFailed') 'Invalid actual Notepad byte data must report HiveImportVerificationFailed.'
+    Assert-BoostLabCondition ([string]$invalidActualResult.Message -like '*Actual bytes could not be parsed*') 'Invalid actual byte failure must include parse diagnostics.'
+    $invalidOpenFileState = @($invalidActualResult.Data.RegistryValuesChecked | Where-Object { [string]$_.Name -eq 'OpenFile' }) | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $invalidOpenFileState) 'Invalid OpenFile state must be recorded.'
+    Assert-BoostLabCondition (-not [bool]$invalidOpenFileState.ByteComparisonSucceeded) 'Invalid OpenFile byte comparison must fail.'
+    Assert-BoostLabCondition ([string]$invalidOpenFileState.ByteComparisonMessage -like '*Actual bytes could not be parsed*') 'Invalid OpenFile diagnostics must identify invalid actual byte format.'
 
     $removedPaths = [System.Collections.Generic.List[string]]::new()
     $fileRemover = {
