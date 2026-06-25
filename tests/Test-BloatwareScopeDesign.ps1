@@ -213,6 +213,95 @@ try {
     Assert-BloatwareCondition ([string]$snippingStartProcessProbe.FailureResult.Data.Outcome -eq 'StartProcessFailed') 'Legacy Snipping Tool non-missing launch failure must report StartProcessFailed.'
     Assert-BloatwareCondition ([string]$snippingStartProcessProbe.FailureResult.Message -like '*Mock Snipping Tool launch failure*') 'Legacy Snipping Tool launch failure must preserve the real error.'
 
+    $outputContainmentProbe = & $module {
+        param($RemovePlan)
+
+        $missingFile = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+            -CommandText 'mock missing file command' `
+            -ProcessRunner {
+                param($CommandProcessorPath, $CommandText)
+                [pscustomobject]@{
+                    ExitCode       = 1
+                    StandardOutput = ''
+                    StandardError  = 'ERROR: The system cannot find the file specified.'
+                }
+            }
+        $missingRegistry = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+            -CommandText 'mock missing registry command' `
+            -ProcessRunner {
+                param($CommandProcessorPath, $CommandText)
+                [pscustomobject]@{
+                    ExitCode       = 1
+                    StandardOutput = ''
+                    StandardError  = 'ERROR: The system was unable to find the specified registry key or value.'
+                }
+            }
+        $missingSysWow64OneDrive = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+            -CommandText 'mock SysWOW64 OneDrive command' `
+            -ProcessRunner {
+                param($CommandProcessorPath, $CommandText)
+                [pscustomobject]@{
+                    ExitCode       = 1
+                    StandardOutput = ''
+                    StandardError  = '''"C:\WINDOWS\SysWOW64\OneDriveSetup.exe"'' is not recognized as an internal or external command, operable program or batch file.'
+                }
+            }
+        $strayErrorStream = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+            -CommandText 'mock native command with error stream noise' `
+            -ProcessRunner {
+                param($CommandProcessorPath, $CommandText)
+                Write-Error -Message 'ERROR: The system cannot find the file specified.' -ErrorAction Continue
+                [pscustomobject]@{
+                    ExitCode       = 1
+                    StandardOutput = ''
+                    StandardError  = ''
+                }
+            }
+
+        $oneDriveOperation = @($RemovePlan.Operations | Where-Object { [string]$_.Type -eq 'UninstallOneDriveAllUsers' }) | Select-Object -First 1
+        $oneDriveAccessDenied = Invoke-BoostLabBloatwareUninstallOneDriveAllUsersOperation `
+            -Operation $oneDriveOperation `
+            -Paths @{ LocalAppData = 'C:\Users\Tester\AppData\Local' } `
+            -SetupEnumerator {
+                param($Paths)
+                Write-Error -Message 'C:\WINDOWS\CSC\v2.0.6\*: Access is denied.' -ErrorAction Continue
+                [pscustomobject]@{
+                    SetupFiles = @()
+                    Errors     = @('C:\WINDOWS\CSC\v2.0.6\*: Access is denied.')
+                }
+            } `
+            -ProcessStarter { throw 'OneDrive process starter must not run when no setup files were found.' }
+
+        [pscustomobject]@{
+            MissingFile              = $missingFile
+            MissingRegistry          = $missingRegistry
+            MissingSysWow64OneDrive  = $missingSysWow64OneDrive
+            StrayErrorStream         = $strayErrorStream
+            OneDriveAccessDenied     = $oneDriveAccessDenied
+        }
+    } $removePlan
+    foreach ($suppressedResult in @(
+        $outputContainmentProbe.MissingFile
+        $outputContainmentProbe.MissingRegistry
+        $outputContainmentProbe.MissingSysWow64OneDrive
+        $outputContainmentProbe.StrayErrorStream
+    )) {
+        Assert-BloatwareCondition ([bool]$suppressedResult.Success) 'Source-suppressed Bloatware native command output must not become a hard failure by itself.'
+        Assert-BloatwareCondition ([bool]$suppressedResult.SuppressedHostOutput) 'Source-suppressed Bloatware native command must report SuppressedHostOutput.'
+        Assert-BloatwareCondition ([bool]$suppressedResult.ConsoleLeakPrevented) 'Source-suppressed Bloatware native command must report ConsoleLeakPrevented.'
+        Assert-BloatwareCondition (@($suppressedResult.CapturedNativeOutput).Count -gt 0) 'Source-suppressed Bloatware native command must capture native diagnostics instead of leaking them.'
+    }
+    Assert-BloatwareCondition (($outputContainmentProbe.MissingFile.CapturedNativeOutput -join "`n") -like '*system cannot find the file specified*') 'Missing file native error must be captured.'
+    Assert-BloatwareCondition (($outputContainmentProbe.MissingRegistry.CapturedNativeOutput -join "`n") -like '*specified registry key or value*') 'Missing registry native error must be captured.'
+    Assert-BloatwareCondition (($outputContainmentProbe.MissingSysWow64OneDrive.CapturedNativeOutput -join "`n") -like '*SysWOW64\OneDriveSetup.exe*not recognized*') 'Missing SysWOW64 OneDrive native error must be captured.'
+    Assert-BloatwareCondition (($outputContainmentProbe.StrayErrorStream.CapturedNativeOutput -join "`n") -like '*system cannot find the file specified*') 'PowerShell error stream noise from a handled native command must be captured.'
+    Assert-BloatwareCondition ([bool]$outputContainmentProbe.OneDriveAccessDenied.Success) 'OneDrive recursive search access-denied noise must remain handled/no-op when no setup file was found.'
+    Assert-BloatwareCondition ([string]$outputContainmentProbe.OneDriveAccessDenied.Data.Outcome -eq 'CompletedOrNoMatch') 'OneDrive access-denied search must report completed/no-match outcome.'
+    Assert-BloatwareCondition ([bool]$outputContainmentProbe.OneDriveAccessDenied.Data.SuppressedHostOutput) 'OneDrive access-denied search must report suppressed host output.'
+    Assert-BloatwareCondition ([bool]$outputContainmentProbe.OneDriveAccessDenied.Data.ConsoleLeakPrevented) 'OneDrive access-denied search must report console leak prevention.'
+    Assert-BloatwareCondition (($outputContainmentProbe.OneDriveAccessDenied.Data.EnumerationErrors -join "`n") -like '*CSC\v2.0.6*Access is denied*') 'OneDrive access-denied diagnostic must be captured in result data.'
+    Assert-BloatwareCondition ((Get-Content -Raw -LiteralPath $modulePath) -notmatch "&\\s*cmd\\.exe\\s*/c") 'Bloatware real operation runner must not invoke cmd.exe directly and leak native stderr.'
+
     $gameInputMsiEntries = @(
         [pscustomobject]@{ PSChildName = '{NO-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NoDisplayName' }
         [pscustomobject]@{ PSChildName = '{NULL-DISPLAYNAME-GUID}'; PSPath = 'HKLM:\Mock\NullDisplayName'; DisplayName = $null }

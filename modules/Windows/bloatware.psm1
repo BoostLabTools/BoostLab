@@ -1265,6 +1265,103 @@ function Invoke-BoostLabBloatwareCheckedRegistryCommand {
     return $result
 }
 
+function ConvertTo-BoostLabBloatwareNativeOutputLines {
+    param([AllowNull()][object]$Value)
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in @($Value)) {
+        if ($null -eq $item) {
+            continue
+        }
+        $text = if ($item -is [System.Management.Automation.ErrorRecord]) {
+            [string]$item
+        }
+        else {
+            [string]$item
+        }
+        if (-not [string]::IsNullOrWhiteSpace($text)) {
+            $lines.Add($text)
+        }
+    }
+
+    return $lines.ToArray()
+}
+
+function Invoke-BoostLabBloatwareSourceSuppressedCommand {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$CommandText,
+
+        [scriptblock]$ProcessRunner = $null
+    )
+
+    $rawResults = if ($null -ne $ProcessRunner) {
+        if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+            throw 'The Windows system directory is unavailable.'
+        }
+        $commandProcessorPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
+        @(& $ProcessRunner $commandProcessorPath $CommandText 2>&1)
+    }
+    else {
+        @(Invoke-BoostLabBloatwareRegistryCommand -CommandText $CommandText)
+    }
+
+    $structuredResult = @(
+        $rawResults |
+            Where-Object {
+                $null -ne $_ -and
+                $_ -isnot [System.Management.Automation.ErrorRecord] -and
+                $null -ne $_.PSObject.Properties['ExitCode']
+            }
+    ) | Select-Object -First 1
+    $capturedStreamRecords = @(
+        $rawResults |
+            Where-Object {
+                $null -ne $_ -and
+                (
+                    $_ -is [System.Management.Automation.ErrorRecord] -or
+                    $null -eq $_.PSObject.Properties['ExitCode']
+                )
+            }
+    )
+
+    $exitCode = 0
+    $standardOutput = @()
+    $standardError = @()
+    if ($null -ne $structuredResult) {
+        $exitCodeProperty = $structuredResult.PSObject.Properties['ExitCode']
+        if ($null -ne $exitCodeProperty -and -not [string]::IsNullOrWhiteSpace([string]$exitCodeProperty.Value)) {
+            $exitCode = [int]$exitCodeProperty.Value
+        }
+        if ($null -ne $structuredResult.PSObject.Properties['StandardOutput']) {
+            $standardOutput = ConvertTo-BoostLabBloatwareNativeOutputLines -Value $structuredResult.StandardOutput
+        }
+        if ($null -ne $structuredResult.PSObject.Properties['StandardError']) {
+            $standardError = ConvertTo-BoostLabBloatwareNativeOutputLines -Value $structuredResult.StandardError
+        }
+    }
+
+    $capturedStreamOutput = ConvertTo-BoostLabBloatwareNativeOutputLines -Value $capturedStreamRecords
+    $capturedNativeOutput = @($standardOutput + $standardError + $capturedStreamOutput) |
+        Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+        Select-Object -Unique
+
+    [pscustomobject]@{
+        Success                 = $true
+        ExitCode                = $exitCode
+        StandardOutput          = (@($standardOutput) -join [Environment]::NewLine)
+        StandardError           = (@($standardError) -join [Environment]::NewLine)
+        CapturedNativeOutput    = @($capturedNativeOutput)
+        CapturedErrorRecords    = @($capturedStreamOutput)
+        SuppressedHostOutput    = $true
+        ConsoleLeakPrevented    = $true
+        SourceOutputSuppressed  = $true
+        SourceCommandSemantics  = 'Source command output is treated like >nul 2>&1; native output is captured for diagnostics and not written to the host console.'
+    }
+}
+
 function Invoke-BoostLabBloatwareStoreSettingsHiveImport {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -1787,6 +1884,143 @@ function Invoke-BoostLabBloatwareMsiUninstallByDisplayName {
     }
 }
 
+function Invoke-BoostLabBloatwareUninstallOneDriveAllUsersOperation {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$Operation,
+
+        [Parameter(Mandatory)]
+        [hashtable]$Paths,
+
+        [scriptblock]$SetupEnumerator = $null,
+
+        [scriptblock]$ProcessStarter = $null
+    )
+
+    if ($null -eq $SetupEnumerator) {
+        $SetupEnumerator = {
+            param([hashtable]$ResolvedPaths)
+            $enumerationErrors = @()
+            $setupFiles = @(
+                Get-ChildItem `
+                    -Path 'C:\Program Files*\Microsoft OneDrive', (Join-Path $ResolvedPaths.LocalAppData 'Microsoft\OneDrive') `
+                    -Filter 'OneDriveSetup.exe' `
+                    -Recurse `
+                    -ErrorAction SilentlyContinue `
+                    -ErrorVariable enumerationErrors `
+                    2>$null
+            )
+            [pscustomobject]@{
+                SetupFiles = @($setupFiles)
+                Errors     = @($enumerationErrors)
+            }
+        }
+    }
+    if ($null -eq $ProcessStarter) {
+        $ProcessStarter = {
+            param([string]$FilePath)
+            $startErrors = @()
+            Start-Process `
+                -Wait `
+                -FilePath $FilePath `
+                -ArgumentList '/uninstall /allusers' `
+                -WindowStyle Hidden `
+                -ErrorAction SilentlyContinue `
+                -ErrorVariable startErrors `
+                2>$null
+            [pscustomobject]@{
+                FilePath = $FilePath
+                Errors   = @($startErrors)
+            }
+        }
+    }
+
+    $enumeratorOutput = @(& $SetupEnumerator $Paths 2>&1)
+    $enumerationErrors = [System.Collections.Generic.List[string]]::new()
+    $setupFiles = [System.Collections.Generic.List[object]]::new()
+    foreach ($item in @($enumeratorOutput)) {
+        if ($null -eq $item) {
+            continue
+        }
+        if ($item -is [System.Management.Automation.ErrorRecord]) {
+            $enumerationErrors.Add([string]$item)
+            continue
+        }
+        if ($null -ne $item.PSObject.Properties['SetupFiles']) {
+            foreach ($setupFile in @($item.SetupFiles)) {
+                if ($null -ne $setupFile) {
+                    $setupFiles.Add($setupFile)
+                }
+            }
+            foreach ($errorItem in @($item.Errors)) {
+                if ($null -ne $errorItem) {
+                    $enumerationErrors.Add([string]$errorItem)
+                }
+            }
+            continue
+        }
+        $setupFiles.Add($item)
+    }
+
+    $started = [System.Collections.Generic.List[string]]::new()
+    $startErrors = [System.Collections.Generic.List[string]]::new()
+    foreach ($setupFile in @($setupFiles.ToArray())) {
+        $fullName = if ($null -ne $setupFile.PSObject.Properties['FullName']) {
+            [string]$setupFile.FullName
+        }
+        else {
+            [string]$setupFile
+        }
+        if ([string]::IsNullOrWhiteSpace($fullName)) {
+            continue
+        }
+        $starterOutput = @(& $ProcessStarter $fullName 2>&1)
+        $started.Add($fullName)
+        foreach ($starterItem in @($starterOutput)) {
+            if ($null -eq $starterItem) {
+                continue
+            }
+            if ($starterItem -is [System.Management.Automation.ErrorRecord]) {
+                $startErrors.Add([string]$starterItem)
+                continue
+            }
+            foreach ($errorItem in @((Get-BoostLabBloatwareObjectProperty -InputObject $starterItem -Name 'Errors'))) {
+                if ($null -ne $errorItem) {
+                    $startErrors.Add([string]$errorItem)
+                }
+            }
+        }
+    }
+
+    $data = [pscustomobject]@{
+        Outcome                  = 'CompletedOrNoMatch'
+        SetupFileCount           = $setupFiles.Count
+        StartedCount             = $started.Count
+        StartedPaths             = $started.ToArray()
+        EnumerationErrorCount    = $enumerationErrors.Count
+        EnumerationErrors        = $enumerationErrors.ToArray()
+        StartErrorCount          = $startErrors.Count
+        StartErrors              = $startErrors.ToArray()
+        SuppressedHostOutput     = $true
+        ConsoleLeakPrevented     = $true
+        SourceOutputSuppressed   = $true
+    }
+    $message = if ($setupFiles.Count -eq 0) {
+        'No Office 365 OneDrive setup executables were found; source-equivalent uninstall search completed.'
+    }
+    else {
+        "Processed $($setupFiles.Count) Office 365 OneDrive setup executable(s)."
+    }
+
+    New-BoostLabBloatwareOperationResult `
+        -Operation $Operation `
+        -Success $true `
+        -Message $message `
+        -Data $data
+}
+
 function Invoke-BoostLabBloatwareRealOperation {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -1811,8 +2045,24 @@ function Invoke-BoostLabBloatwareRealOperation {
                 }
                 return New-BoostLabBloatwareOperationResult -Operation $Operation -Success $true -Message 'Internet connectivity confirmed.'
             }
-            'RegistryCommand' { & cmd.exe /c (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths) | Out-Null }
-            'Cmd' { & cmd.exe /c (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths) | Out-Null }
+            'RegistryCommand' {
+                $nativeResult = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+                    -CommandText (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths)
+                return New-BoostLabBloatwareOperationResult `
+                    -Operation $Operation `
+                    -Success $true `
+                    -Message 'Operation completed with source-suppressed native output captured.' `
+                    -Data $nativeResult
+            }
+            'Cmd' {
+                $nativeResult = Invoke-BoostLabBloatwareSourceSuppressedCommand `
+                    -CommandText (Resolve-BoostLabBloatwareCommandText -CommandText ([string]$p.Command) -Paths $paths)
+                return New-BoostLabBloatwareOperationResult `
+                    -Operation $Operation `
+                    -Success $true `
+                    -Message 'Operation completed with source-suppressed native output captured.' `
+                    -Data $nativeResult
+            }
             'RemoveAppxExcept' {
                 $appxResult = Invoke-BoostLabBloatwareRemoveAppxExcept -ExcludeLike @($p.ExcludeLike)
                 return New-BoostLabBloatwareOperationResult `
@@ -1856,12 +2106,11 @@ function Invoke-BoostLabBloatwareRealOperation {
                     -Data $msiResult
             }
             'StopProcess' { Stop-Process -Force -Name ([string]$p.Name) -ErrorAction SilentlyContinue | Out-Null }
-            'StopProcesses' { foreach ($name in @($p.Names)) { Stop-Process -Name ([string]$name) -Force -ErrorAction SilentlyContinue } }
+            'StopProcesses' { foreach ($name in @($p.Names)) { Stop-Process -Name ([string]$name) -Force -ErrorAction SilentlyContinue 2>$null } }
             'UninstallOneDriveAllUsers' {
-                Get-ChildItem -Path 'C:\Program Files*\Microsoft OneDrive', (Join-Path $paths.LocalAppData 'Microsoft\OneDrive') -Filter 'OneDriveSetup.exe' -Recurse -ErrorAction SilentlyContinue |
-                    ForEach-Object { Start-Process -Wait $_.FullName -ArgumentList '/uninstall /allusers' -WindowStyle Hidden -ErrorAction SilentlyContinue }
+                return Invoke-BoostLabBloatwareUninstallOneDriveAllUsersOperation -Operation $Operation -Paths $paths
             }
-            'UnregisterScheduledTasksLike' { Get-ScheduledTask | Where-Object { $_.TaskName -match [string]$p.TaskNameMatch } | Unregister-ScheduledTask -Confirm:$false }
+            'UnregisterScheduledTasksLike' { Get-ScheduledTask -ErrorAction SilentlyContinue 2>$null | Where-Object { $_.TaskName -match [string]$p.TaskNameMatch } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue 2>$null }
             'UnregisterScheduledTaskName' { Unregister-ScheduledTask -TaskName ([string]$p.TaskName) -Confirm:$false -ErrorAction SilentlyContinue | Out-Null }
             'StartProcess' {
                 return Invoke-BoostLabBloatwareStartProcessOperation -Operation $Operation
@@ -1885,8 +2134,8 @@ function Invoke-BoostLabBloatwareRealOperation {
             }
             'AppxRegisterLike' {
                 Get-AppXPackage -AllUsers | Where-Object { $_.Name -like [string]$p.NameLike } | ForEach-Object {
-                    Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml"
-                }
+                    Add-AppxPackage -DisableDevelopmentMode -Register -ErrorAction SilentlyContinue "$($_.InstallLocation)\AppXManifest.xml" 2>$null
+                } 2>$null
             }
             'AppxRegisterAll' {
                 Get-AppxPackage -AllUsers | ForEach-Object {
