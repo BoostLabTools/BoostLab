@@ -83,7 +83,7 @@ function Get-BoostLabCanonicalYazanOrder {
             Tools = @(
                 @{ Id = 'driver-clean'; Title = 'Driver Clean' }
                 @{ Id = 'driver-install-debloat-settings'; Title = 'Driver Install Debloat & Settings' }
-                @{ Id = 'nvidia-app-download'; Title = 'Install NVIDIA App' }
+                @{ Id = 'nvidia-app-install'; Title = 'Install NVIDIA App' }
                 @{ Id = 'directx'; Title = 'DirectX' }
                 @{ Id = 'visual-cpp'; Title = 'Visual C++' }
                 @{ Id = 'graphics-configuration-center'; Title = 'Graphics Configuration Center' }

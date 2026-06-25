@@ -112,7 +112,7 @@ $reachedToolsForward = @(
     'installers',
     'driver-clean',
     'driver-install-debloat-settings',
-    'nvidia-app-download',
+    'nvidia-app-install',
     'directx',
     'visual-cpp'
 )
@@ -133,7 +133,7 @@ foreach ($outOfScope in @('graphics-configuration-center')) {
 $uiText = Get-Content -LiteralPath $uiPath -Raw
 Assert-BoostLabTextContains -Text $uiText -Needle 'function Get-BoostLabToolActionDisplayLabel' -Description 'UI action display label helper'
 
-$sourceAlignedActionLabelBlock = Get-BoostLabTextBetween -Text $uiText -Start '$sourceAlignedActionLabels = @{' -End 'if ($toolId -eq ''nvidia-app-download'')'
+$sourceAlignedActionLabelBlock = Get-BoostLabTextBetween -Text $uiText -Start '$sourceAlignedActionLabels = @{' -End 'if ($toolId -eq ''nvidia-app-install'')'
 $expectedSourceAlignedLabels = @(
     @{ ToolId = 'memory-compression'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Enable'") }
     @{ ToolId = 'background-apps'; Labels = @("'Apply' = 'Off (Recommended)'", "'Default' = 'Default'") }
@@ -163,11 +163,11 @@ foreach ($expected in $expectedSourceAlignedLabels) {
     }
 }
 
-$nvidiaAppBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''nvidia-app-download'')' -End 'if ($toolId -eq ''driver-clean'')'
-Assert-BoostLabTextContains -Text $nvidiaAppBlock -Needle "'Open' { return 'Open NVIDIA App Page' }" -Description 'NVIDIA App shortcut Open label'
-Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Manual Handoff')) 'NVIDIA App shortcut must not show Manual Handoff.'
-Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Apply Auto')) 'NVIDIA App shortcut must not show Apply Auto.'
-Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains("'Apply'")) 'NVIDIA App shortcut must not expose Apply.'
+$nvidiaAppBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''nvidia-app-install'')' -End 'if ($toolId -eq ''driver-clean'')'
+Assert-BoostLabTextContains -Text $nvidiaAppBlock -Needle "'Apply' { return 'Install NVIDIA App' }" -Description 'NVIDIA App installer Apply label'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Manual Handoff')) 'NVIDIA App installer must not show Manual Handoff.'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains('Apply Auto')) 'NVIDIA App installer must not show Apply Auto.'
+Assert-BoostLabCondition (-not $nvidiaAppBlock.Contains("'Open'")) 'NVIDIA App installer must not expose Open.'
 
 $driverCleanBlock = Get-BoostLabTextBetween -Text $uiText -Start 'if ($toolId -eq ''driver-clean'')' -End 'if ($toolId -eq ''start-menu-taskbar'')'
 Assert-BoostLabTextContains -Text $driverCleanBlock -Needle "'Open' { return 'Manual' }" -Description 'Driver Clean Manual visible label'
@@ -255,7 +255,7 @@ Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot '
     ReachedToolCount = $reachedToolsForward.Count
     DriverCleanVisibleLabels = @('Manual', 'Auto')
     DriverCleanRouting = 'Open maps to Ultimate Manual; Apply maps to Ultimate Auto'
-    NvidiaAppShortcutLabels = @('Open NVIDIA App Page')
+    NvidiaAppInstallerLabels = @('Install NVIDIA App')
     InstallersSelectionMode = [string]$installersTool.SelectionMode
     VisualCppVisibleLabels = @('Install Visual C++')
     Message = 'Reached-tool action labels preserve source-truthful UI wording without changing runtime behavior.'

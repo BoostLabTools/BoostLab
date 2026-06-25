@@ -199,7 +199,7 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $allowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $driverInstallDebloatSettingsModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
-$nvidiaAppModulePath = Join-Path $ProjectRoot 'modules\Graphics\nvidia-app-download.psm1'
+$nvidiaAppModulePath = Join-Path $ProjectRoot 'modules\Graphics\nvidia-app-install.psm1'
 $driverCleanModulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1'
 $installersModulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
 $directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
@@ -250,7 +250,7 @@ $reachedToolsForward = @(
     'installers',
     'driver-clean',
     'driver-install-debloat-settings',
-    'nvidia-app-download',
+    'nvidia-app-install',
     'directx',
     'visual-cpp'
 )
@@ -269,7 +269,7 @@ foreach ($outOfScope in @('graphics-configuration-center')) {
 }
 
 $driverInstallDebloatSettingsTool = Get-BoostLabToolById -Tools $allTools -ToolId 'driver-install-debloat-settings'
-$nvidiaAppTool = Get-BoostLabToolById -Tools $allTools -ToolId 'nvidia-app-download'
+$nvidiaAppTool = Get-BoostLabToolById -Tools $allTools -ToolId 'nvidia-app-install'
 $installersTool = Get-BoostLabToolById -Tools $allTools -ToolId 'installers'
 $driverCleanTool = Get-BoostLabToolById -Tools $allTools -ToolId 'driver-clean'
 $updatesDriversBlockTool = Get-BoostLabToolById -Tools $allTools -ToolId 'updates-drivers-block'
@@ -278,8 +278,8 @@ Assert-BoostLabCondition ([string]$driverInstallDebloatSettingsTool.SelectionMod
 Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings branch choices must be exactly NVIDIA, AMD, INTEL.'
 Assert-BoostLabCondition ((@($driverInstallDebloatSettingsTool.SelectionRequiredActions) -join '|') -eq 'Open|Apply') 'Driver Install Debloat & Settings must require a selected branch for Open and Apply.'
 Assert-BoostLabCondition ([string]$driverInstallDebloatSettingsTool.SelectionLabel -eq 'Select exactly one GPU branch for Open or Apply') 'Driver Install Debloat & Settings selection label must make the required branch obvious.'
-Assert-BoostLabCondition ((@($nvidiaAppTool.Actions) -join '|') -eq 'Open') 'NVIDIA App shortcut must expose only Open.'
-Assert-BoostLabCondition (-not $nvidiaAppTool.Contains('SelectionMode')) 'NVIDIA App shortcut must not expose branch/app selection.'
+Assert-BoostLabCondition ((@($nvidiaAppTool.Actions) -join '|') -eq 'Analyze|Apply') 'NVIDIA App installer must expose Analyze and Apply.'
+Assert-BoostLabCondition (-not $nvidiaAppTool.Contains('SelectionMode')) 'NVIDIA App installer must not expose branch/app selection.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must expose single-app selection.'
 Assert-BoostLabCondition ([string]$installersTool.SelectionLabel -eq 'Select exactly one app to install') 'Installers selection label must require exactly one app.'
 Assert-BoostLabCondition ('Apply' -in @($installersTool.SelectionRequiredActions)) 'Installers Apply must require one selected app ID.'
@@ -295,8 +295,8 @@ foreach ($needle in @(
     "if (`$toolId -eq 'driver-clean')",
     "'Open' { return 'Manual' }",
     "'Apply' { return 'Auto' }",
-    "if (`$toolId -eq 'nvidia-app-download')",
-    "'Open' { return 'Open NVIDIA App Page' }",
+    "if (`$toolId -eq 'nvidia-app-install')",
+    "'Apply' { return 'Install NVIDIA App' }",
     "if (`$toolId -eq 'directx')",
     "'Apply' { return 'Install DirectX' }",
     "if (`$toolId -eq 'visual-cpp')",
@@ -443,18 +443,27 @@ Assert-BoostLabCondition ([string]$didsSelected.Result.Status -eq 'SourceDriverP
 Assert-BoostLabCondition ([string]$didsSelected.Result.Data.Branch -eq 'AMD') 'Driver Install Debloat & Settings selected Open did not use AMD branch.'
 Assert-BoostLabCondition (@($didsSelected.Result.Data.Operations | Where-Object { [string]$_.Branch -ne 'AMD' }).Count -eq 0) 'Driver Install Debloat & Settings selected Open must not include other branch operations.'
 
-$openedNvidiaAppUrls = [System.Collections.Generic.List[string]]::new()
-$nvidiaAppOpen = Invoke-BoostLabRuntimeActionSimulation -ProjectRoot $ProjectRoot -ToolMetadata $nvidiaAppTool -ActionName 'Open' -ActionOptions @{
-    UrlOpener = {
-        param([string]$Url)
-        $openedNvidiaAppUrls.Add($Url)
+$nvidiaAppOperationTypes = [System.Collections.Generic.List[string]]::new()
+$nvidiaAppApply = Invoke-BoostLabRuntimeActionSimulation -ProjectRoot $ProjectRoot -ToolMetadata $nvidiaAppTool -ActionName 'Apply' -ActionOptions @{
+    OperationExecutor = {
+        param($Operation)
+        $nvidiaAppOperationTypes.Add([string]$Operation.Type)
+        [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            Required = [bool]$Operation.Required
+            Status = 'Completed'
+            Message = 'Mocked NVIDIA App installer operation; no host mutation.'
+            SourceCommand = [string]$Operation.SourceCommand
+            Timestamp = Get-Date
+        }
     }.GetNewClosure()
 }
-Assert-BoostLabCondition ([bool]$nvidiaAppOpen.Result.Success) 'NVIDIA App shortcut Open should succeed with mocked URL opener.'
-Assert-BoostLabCondition ([string]$nvidiaAppOpen.Result.Url -eq 'https://www.nvidia.com/en-us/software/nvidia-app/') 'NVIDIA App shortcut Open URL mismatch.'
-Assert-BoostLabCondition ($openedNvidiaAppUrls.Count -eq 1) 'NVIDIA App shortcut should open exactly one URL in the mocked opener.'
-Assert-BoostLabCondition ([string]$openedNvidiaAppUrls[0] -eq 'https://www.nvidia.com/en-us/software/nvidia-app/') 'NVIDIA App shortcut mocked URL mismatch.'
-Assert-BoostLabCondition (-not [bool]$nvidiaAppOpen.Result.ChangesExecuted) 'NVIDIA App shortcut must not report system changes.'
+Assert-BoostLabCondition ([bool]$nvidiaAppApply.Result.Success) 'NVIDIA App installer Apply should succeed with mocked operations.'
+Assert-BoostLabCondition ((@($nvidiaAppApply.Result.Data.Operations | ForEach-Object { [string]$_.Type }) -join '|') -eq 'Download|StartProcess|MoveItem|RemoveItem') 'NVIDIA App mocked Apply operation sequence mismatch.'
+Assert-BoostLabCondition ((@($nvidiaAppOperationTypes) -join '|') -eq 'Download|StartProcess|MoveItem|RemoveItem') 'NVIDIA App mocked Apply must request exactly source operations.'
 
 $installersMissing = Invoke-BoostLabRuntimeActionSimulation -ProjectRoot $ProjectRoot -ToolMetadata $installersTool -ActionName 'Apply' -ActionOptions @{}
 Assert-BoostLabCondition (-not [bool]$installersMissing.Result.Success) 'Installers Apply without selected apps must fail closed.'

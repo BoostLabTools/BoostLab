@@ -91,9 +91,9 @@ $script:BoostLabImplementedToolModules = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\driver-install-debloat-settings.psm1'
         Actions = @('Analyze', 'Open', 'Apply', 'Default', 'Restore')
     }
-    'nvidia-app-download' = @{
-        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-app-download.psm1'
-        Actions = @('Open')
+    'nvidia-app-install' = @{
+        Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\nvidia-app-install.psm1'
+        Actions = @('Analyze', 'Apply')
     }
     'directx' = @{
         Path    = Join-Path $script:BoostLabModulesRoot 'Graphics\directx.psm1'

@@ -128,10 +128,10 @@ $implementedModules = @{
         RelativePath          = 'Graphics\driver-install-debloat-settings.psm1'
         ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Open'', ''Apply'', ''Default'', ''Restore'')'
     }
-    'nvidia-app-download' = @{
-        RelativePath          = 'Graphics\nvidia-app-download.psm1'
-        LaunchText            = 'https://www.nvidia.com/en-us/software/nvidia-app/'
-        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Open'')'
+    'nvidia-app-install' = @{
+        RelativePath          = 'Graphics\nvidia-app-install.psm1'
+        LaunchText            = 'https://us.download.nvidia.com/nvapp/client/11.0.6.383/NVIDIA_app_v11.0.6.383.exe'
+        ImplementedActionsText = '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'')'
     }
     'directx' = @{
         RelativePath          = 'Graphics\directx.psm1'
@@ -455,6 +455,10 @@ foreach ($entry in $expectedModules.Values) {
             $toolId -eq 'driver-install-debloat-settings' -and
             $commandName -in @('Invoke-WebRequest', 'Remove-Item', 'Set-Content', 'Set-ItemProperty')
         )
+        $approvedNvidiaAppInstallCommand = (
+            $toolId -eq 'nvidia-app-install' -and
+            $commandName -eq 'Remove-Item'
+        )
         $approvedDirectXCommand = (
             $toolId -eq 'directx' -and
             $commandName -in @('Invoke-WebRequest', 'New-ItemProperty', 'Remove-Item')
@@ -508,6 +512,7 @@ foreach ($entry in $expectedModules.Values) {
             -not $approvedInstallersCommand -and
             -not $approvedDriverCleanCommand -and
             -not $approvedDriverInstallDebloatSettingsCommand -and
+            -not $approvedNvidiaAppInstallCommand -and
             -not $approvedDirectXCommand -and
             -not $approvedVisualCppCommand -and
             -not $approvedBloatwareCommand -and
@@ -572,7 +577,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'driver-install-debloat-settings') {
             4
         }
-        elseif ($toolId -eq 'nvidia-app-download') {
+        elseif ($toolId -eq 'nvidia-app-install') {
             1
         }
         elseif ($toolId -eq 'directx') {

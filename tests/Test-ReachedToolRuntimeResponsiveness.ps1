@@ -317,6 +317,7 @@ $reachedToolIds = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
+    'nvidia-app-install'
     'directx'
     'visual-cpp'
 )
@@ -327,7 +328,6 @@ foreach ($toolId in $reachedToolIds) {
 
 foreach ($outOfScopeToolId in @(
     'graphics-configuration-center'
-    'nvidia-app-download'
     'theme-black'
     'power-plan'
     'smt-ht-assistant'
@@ -338,9 +338,10 @@ foreach ($outOfScopeToolId in @(
 $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })[0]
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must keep single-app selection UI.'
 
+$nvidiaAppTool = @($allTools | Where-Object { [string]$_.Id -eq 'nvidia-app-install' })[0]
 $directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
 $visualCppTool = @($allTools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
-foreach ($asyncAnalyzeTool in @($installersTool, $directXTool, $visualCppTool)) {
+foreach ($asyncAnalyzeTool in @($installersTool, $nvidiaAppTool, $directXTool, $visualCppTool)) {
     $asyncAnalyze = Invoke-BoostLabAsyncAnalyzeSimulation -ProjectRoot $ProjectRoot -ToolMetadata $asyncAnalyzeTool
     $toolId = [string]$asyncAnalyzeTool.Id
 
@@ -410,7 +411,7 @@ foreach ($deletedPath in @(
     AsyncDispatch               = 'STA runspace + DispatcherTimer'
     AsyncCompletionContract     = 'Captured helper scriptblocks + shared state cleanup'
     DuplicateClickPolicy        = 'Global single action in progress'
-    NvidiaAppShortcutAsyncScope = 'Open-only shortcut intentionally not opted into long-running async dispatch'
+    NvidiaAppInstallerAsyncScope = 'Installer flow is opted into long-running async dispatch'
     InstallersSingleAppModel    = $true
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true

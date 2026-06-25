@@ -122,9 +122,9 @@ try {
         $officialKindCounts[[string]$group.Name] = [int]$group.Count
     }
     $expectedOfficialKindCounts = @{
-        StaticOfficialInstaller = 3
+        StaticOfficialInstaller = 4
         FloatingOfficialInstaller = 13
-        OfficialVendorLookupPage = 1
+        OfficialVendorLookupPage = 0
         OfficialVendorApi = 0
         BrowserExtensionOfficialSource = 1
     }
@@ -158,14 +158,15 @@ try {
     if ($badSchemeOfficial.Allowed -or (@($badSchemeOfficial.Errors) -join ' ') -notmatch 'HTTPS') {
         $errors.Add('Official source with a non-HTTPS scheme was not blocked.')
     }
+    $nvidiaAppDownloadSource = Get-BoostLabApprovedOfficialVendorRuntimeSource `
+        -ArtifactId 'nvidia-app-installer' `
+        -Purpose Download `
+        -SourceUrl 'https://us.download.nvidia.com/nvapp/client/11.0.6.383/NVIDIA_app_v11.0.6.383.exe'
     $nvidiaAppLookup = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'nvidia-app-download-page' `
+        -ArtifactId 'nvidia-app-installer' `
         -Purpose Lookup
-    $nvidiaAppDownload = Get-BoostLabApprovedOfficialVendorRuntimeSource `
-        -ArtifactId 'nvidia-app-download-page' `
-        -Purpose Download
-    if (-not $nvidiaAppLookup.Allowed -or $nvidiaAppDownload.Allowed) {
-        $errors.Add('NVIDIA App shortcut must be lookup-approved but not executable/download-approved.')
+    if (-not $nvidiaAppDownloadSource.Allowed -or $nvidiaAppLookup.Allowed) {
+        $errors.Add('NVIDIA App Graphics installer must be download-approved but not lookup/page approved.')
     }
 
     $blockedOfficialManifest = Get-BoostLabExternalArtifactSourceManifest

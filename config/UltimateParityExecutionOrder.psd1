@@ -59,7 +59,7 @@
             Tools = @(
                 @{ Order = 1; ToolId = 'driver-clean'; DisplayName = 'Driver Clean' }
                 @{ Order = 2; ToolId = 'driver-install-debloat-settings'; DisplayName = 'Driver Install Debloat & Settings' }
-                @{ Order = 3; ToolId = 'nvidia-app-download'; DisplayName = 'Install NVIDIA App' }
+                @{ Order = 3; ToolId = 'nvidia-app-install'; DisplayName = 'Install NVIDIA App' }
                 @{ Order = 4; ToolId = 'directx'; DisplayName = 'DirectX' }
                 @{ Order = 5; ToolId = 'visual-cpp'; DisplayName = 'Visual C++' }
                 @{ Order = 6; ToolId = 'graphics-configuration-center'; DisplayName = 'Graphics Configuration Center' }

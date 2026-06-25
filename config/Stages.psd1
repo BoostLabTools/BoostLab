@@ -273,15 +273,15 @@
                     )
                 }
                 @{
-                    Id          = 'nvidia-app-download'
+                    Id          = 'nvidia-app-install'
                     Title       = 'Install NVIDIA App'
                     Stage       = 'Graphics'
                     Order       = 3
-                    Type        = 'assistant'
-                    RiskLevel   = 'low'
-                    Description = 'Open the official NVIDIA App webpage in the default browser. BoostLab does not download, install, or change system settings for this shortcut.'
-                    Actions     = @('Open')
-                    Capabilities = @{ RequiresAdmin = $false; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $false; CanDownload = $false; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $false; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $false }
+                    Type        = 'action'
+                    RiskLevel   = 'high'
+                    Description = 'Download and run the source-defined official NVIDIA App installer, then perform the source-defined Start Menu shortcut cleanup after explicit confirmation.'
+                    Actions     = @('Analyze', 'Apply')
+                    Capabilities = @{ RequiresAdmin = $true; RequiresInternet = $true; CanReboot = $false; CanModifyRegistry = $false; CanModifyServices = $false; CanInstallSoftware = $true; CanDownload = $true; CanModifyDrivers = $false; CanModifySecurity = $false; CanDeleteFiles = $true; UsesTrustedInstaller = $false; UsesSafeMode = $false; SupportsDefault = $false; SupportsRestore = $false; NeedsExplicitConfirmation = $true }
                 }
                 @{
                     Id          = 'directx'

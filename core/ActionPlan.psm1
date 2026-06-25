@@ -201,8 +201,11 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Run the source-equivalent Driver Clean Auto branch after confirmation: prepare 7-Zip/DDU, create the automatic DDU RunOnce flow, enable Safe Mode, and restart.'
     }
-    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
-        'Open the official NVIDIA App webpage in the default browser. BoostLab does not download, install, or change system settings from this shortcut.'
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Analyze') {
+        'Review the source-defined NVIDIA App installer flow without downloading, launching the installer, opening a browser, or changing the system.'
+    }
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Apply') {
+        'Download and run the source-defined official NVIDIA App installer after explicit confirmation, then perform the source-defined Start Menu shortcut cleanup.'
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         'Analyze the Installers source, Yazan-excluded menu entries, retained app catalog, and single-app Apply model without running any installer workflow.'
@@ -513,10 +516,17 @@ function New-BoostLabActionPlan {
         $plannedChanges.Add('Create the source-defined ddu.ps1 script and RunOnce entry, enable bcdedit Safe Mode minimal, wait five seconds, and restart.')
         $plannedChanges.Add('After restart, the RunOnce script deletes Safe Mode and launches DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
-    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
-        $plannedChanges.Add('Open only https://www.nvidia.com/en-us/software/nvidia-app/ in the default browser.')
-        $plannedChanges.Add('Do not download, install, run a driver installer, mutate registry, services, drivers, packages, scheduled tasks, files, security settings, or reboot state.')
-        $plannedChanges.Add('Keep Driver Clean and Driver Install Debloat & Settings as the main NVIDIA workflow path; this shortcut is optional for users who want NVIDIA App.')
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Analyze') {
+        $plannedChanges.Add('Verify the Installers source checksum that contains the old source-defined NVIDIA App option.')
+        $plannedChanges.Add('Report the exact NVIDIA App installer URL, destination path, /s installer argument, and Start Menu cleanup commands.')
+        $plannedChanges.Add('Perform no download, installer launch, browser launch, registry/service/driver/package mutation, file cleanup, or reboot.')
+    }
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Apply') {
+        $plannedChanges.Add('Verify the Installers source checksum and require explicit confirmation.')
+        $plannedChanges.Add('Download https://us.download.nvidia.com/nvapp/client/11.0.6.383/NVIDIA_app_v11.0.6.383.exe to %SystemRoot%\Temp\NvidiaApp.exe through the official vendor runtime policy.')
+        $plannedChanges.Add('Run %SystemRoot%\Temp\NvidiaApp.exe with the exact source-defined /s argument and wait for completion.')
+        $plannedChanges.Add('Perform source-defined Start Menu shortcut cleanup by moving the NVIDIA App shortcut up one level if it exists.')
+        $plannedChanges.Add('Perform source-defined Start Menu shortcut cleanup by removing the NVIDIA Corporation Start Menu folder if it exists.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $plannedChanges.Add('Read the Installers source checksum and implementation status.')
@@ -1145,9 +1155,13 @@ function New-BoostLabActionPlan {
         $sideEffects.Add('Windows driver-search policy, RunOnce, bcdedit Safe Mode, generated scripts, DDU files, and reboot state are changed.')
         $sideEffects.Add('The Auto branch runs DDU after reboot with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart.')
     }
-    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
-        $sideEffects.Add('The default browser may open https://www.nvidia.com/en-us/software/nvidia-app/.')
-        $sideEffects.Add('BoostLab does not download files, run installers, install NVIDIA App, modify drivers, mutate registry/services/packages/files, or reboot from this shortcut.')
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Analyze') {
+        $sideEffects.Add('No system changes are made; NVIDIA App installer analysis is read-only.')
+    }
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Apply') {
+        $sideEffects.Add('The official NVIDIA App installer is downloaded to Windows Temp and launched with /s.')
+        $sideEffects.Add('The source-defined Start Menu shortcut move and NVIDIA Corporation Start Menu folder removal may mutate files under ProgramData.')
+        $sideEffects.Add('No browser launch, driver install/debloat operation, registry mutation, service mutation, Safe Mode, TrustedInstaller, or reboot is requested by this source option.')
     }
     elseif ($toolId -eq 'installers' -and $ActionName -eq 'Analyze') {
         $sideEffects.Add('No system changes are made; Installers analysis is read-only.')
@@ -1569,8 +1583,8 @@ function New-BoostLabActionPlan {
     elseif ($toolId -eq 'driver-clean' -and $ActionName -eq 'Apply') {
         'Driver Clean Auto will run the source-equivalent workflow: download 7-Zip and DDU, install/configure 7-Zip, extract/configure DDU, set driver-search policy, create ddu.ps1 and RunOnce, enable Safe Mode with bcdedit, restart, and then run DDU with -CleanSoundBlaster -CleanRealtek -CleanAllGpus -Restart. Continue?'
     }
-    elseif ($toolId -eq 'nvidia-app-download' -and $ActionName -eq 'Open') {
-        'BoostLab will open the official NVIDIA App webpage only. It will not download, install, run a driver installer, change drivers, mutate registry/services/files/packages, or reboot.'
+    elseif ($toolId -eq 'nvidia-app-install' -and $ActionName -eq 'Apply') {
+        'BoostLab will download the source-defined official NVIDIA App installer to Windows Temp, run it with /s, and perform the source-defined Start Menu shortcut cleanup. It will not run Driver Clean, Driver Install Debloat & Settings, or any driver mutation. Continue?'
     }
     elseif ($toolId -eq 'driver-install-debloat-settings' -and $ActionName -eq 'Open') {
         'BoostLab will open only the source-defined vendor driver page flow for the selected Driver Install Debloat & Settings branch. It will not download or install 7-Zip, run driver installers, extract or debloat files, import profiles, mutate registry/services/packages/drivers, open shared UI panels, or reboot from Open. Continue?'

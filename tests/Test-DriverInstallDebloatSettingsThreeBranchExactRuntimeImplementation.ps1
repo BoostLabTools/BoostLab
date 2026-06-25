@@ -127,9 +127,9 @@ Assert-BoostLabCondition ((@($tool.SelectionRequiredActions) -join '|') -eq 'Ope
 Assert-BoostLabCondition ([string]$tool.SelectionLabel -eq 'Select exactly one GPU branch for Open or Apply') 'Driver Install Debloat & Settings selection label must make branch selection obvious.'
 Assert-BoostLabCondition ((@($tool.SelectionItems | ForEach-Object { [string]$_.Id }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings branch selection items must be exactly NVIDIA, AMD, INTEL.'
 Assert-BoostLabCondition ((@($tool.SelectionItems | ForEach-Object { [string]$_.Title }) -join '|') -eq 'NVIDIA|AMD|INTEL') 'Driver Install Debloat & Settings visible branch labels must be exactly NVIDIA, AMD, INTEL.'
-$nvidiaAppTool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'nvidia-app-download' }) | Select-Object -First 1
-Assert-BoostLabCondition ($null -ne $nvidiaAppTool) 'NVIDIA App shortcut must remain separate from Driver Install Debloat & Settings.'
-Assert-BoostLabCondition ((@($nvidiaAppTool.Actions) -join '|') -eq 'Open') 'NVIDIA App shortcut must remain Open-only.'
+$nvidiaAppTool = @($graphicsStage.Tools | Where-Object { [string]$_.Id -eq 'nvidia-app-install' }) | Select-Object -First 1
+Assert-BoostLabCondition ($null -ne $nvidiaAppTool) 'NVIDIA App installer must remain separate from Driver Install Debloat & Settings.'
+Assert-BoostLabCondition ((@($nvidiaAppTool.Actions) -join '|') -eq 'Analyze|Apply') 'NVIDIA App installer must remain a separate installer flow.'
 $installersStage = @($stages.Stages | Where-Object { [string]$_.Name -eq 'Installers' }) | Select-Object -First 1
 $installersTool = @($installersStage.Tools | Where-Object { [string]$_.Id -eq 'installers' }) | Select-Object -First 1
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must use single-app selection behavior.'

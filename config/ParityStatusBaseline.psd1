@@ -339,7 +339,7 @@
             NextParityAction = 'Skip; accepted near-parity.'
         }
         @{
-            ToolId = 'nvidia-app-download'
+            ToolId = 'nvidia-app-install'
             DisplayName = 'Install NVIDIA App'
             Stage = 'Graphics'
             StageOrder = 5
@@ -347,11 +347,14 @@
             RuntimeStatus = 'RuntimeImplemented'
             ImplementationLevel = 'ParityImplemented'
             UltimateParity = 'Yes'
-            SourceType = 'BoostLabProductShortcut'
-            GapSummary = 'Phase 173A BoostLab workflow shortcut. Open-only official NVIDIA App webpage launcher; it does not download, install, or mutate system state.'
+            SourceType = 'UltimateInstallerOptionPromotedToGraphics'
+            SourceScriptPath = 'source-ultimate/4 Installers/1 Installers.ps1'
+            SourceSha256 = '1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67'
+            SourceCanonicalSha256 = '268C1EFE627FADDA17892223D4C35E4845833506C22AADD3240C894ED046A6F8'
+            GapSummary = 'Phase 173E promotes only the source-defined old Installers NVIDIA App option into Graphics: download the official NVIDIA App installer, run it with /s, move the Start Menu shortcut, and remove the NVIDIA Corporation Start Menu folder after confirmation.'
             YazanFinalException = $false
             FinalProgressStatus = 'DoneParity'
-            NextParityAction = 'No ordered Ultimate parity work required; this is an approved BoostLab product shortcut replacing retired standalone NVIDIA Path B tools.'
+            NextParityAction = 'No ordered Ultimate parity work required; this is an approved Graphics-stage placement of the source-defined NVIDIA App installer option.'
         }
         @{
             ToolId = 'directx'

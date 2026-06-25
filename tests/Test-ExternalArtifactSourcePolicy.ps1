@@ -133,17 +133,7 @@ foreach ($entry in $entries) {
     Assert-BoostLabCondition ($allowedClassifications -contains [string]$entry.SourceClassification) "Invalid source classification for $($entry.Id)."
     Assert-BoostLabCondition ($allowedMirrorStatuses -contains [string]$entry.MirrorStatus) "Invalid mirror status for $($entry.Id)."
     Assert-BoostLabCondition ([string]$entry.OriginalDownloadUrl -match '^https://') "Manifest URL must be HTTPS for $($entry.Id)."
-    $isBoostLabProductShortcut = (
-        [string]$entry.ToolId -eq 'nvidia-app-download' -and
-        [string]$entry.OperationKind -eq 'VendorPage' -and
-        [string]$entry.SourceClassification -eq 'OfficialVendorDirect'
-    )
-    if ($isBoostLabProductShortcut) {
-        Assert-BoostLabCondition ([string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "BoostLab-owned shortcut must not pretend to have an Ultimate source script: $($entry.Id)."
-    }
-    else {
-        Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "Source script path missing for $($entry.Id)."
-    }
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$entry.SourceScriptPath)) "Source script path missing for $($entry.Id)."
 
     $toolId = [string]$entry.ToolId
     Assert-BoostLabCondition ($stageToolIndex.ContainsKey($toolId)) "Manifest references unknown tool id: $toolId"
@@ -198,7 +188,7 @@ $expectedReachedToolIds = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
-    'nvidia-app-download'
+    'nvidia-app-install'
     'directx'
     'visual-cpp'
     'bloatware'
@@ -214,6 +204,7 @@ $toolsWithRuntimeExternalDownloads = @(
     'installers'
     'driver-clean'
     'driver-install-debloat-settings'
+    'nvidia-app-install'
     'directx'
     'visual-cpp'
     'bloatware'
@@ -229,11 +220,14 @@ foreach ($toolId in $noRuntimeArtifactTools) {
     Assert-BoostLabCondition (@($entries | Where-Object { [string]$_.ToolId -eq $toolId }).Count -eq 0) "Tool marked as no-runtime-artifact has manifest entries: $toolId"
 }
 
-$nvidiaAppEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'nvidia-app-download' })
-Assert-BoostLabCondition ($nvidiaAppEntries.Count -eq 1) 'NVIDIA App shortcut must classify exactly one official page source.'
-Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].OriginalDownloadUrl -eq 'https://www.nvidia.com/en-us/software/nvidia-app/') 'NVIDIA App shortcut URL classification mismatch.'
-Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].SourceClassification -eq 'OfficialVendorDirect') 'NVIDIA App shortcut must be OfficialVendorDirect.'
-Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].MirrorStatus -eq 'NotRequiredOfficial') 'NVIDIA App shortcut must not require a BoostLab mirror.'
+$nvidiaAppEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'nvidia-app-install' })
+Assert-BoostLabCondition ($nvidiaAppEntries.Count -eq 1) 'NVIDIA App installer must classify exactly one official installer source.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].Id -eq 'nvidia-app-installer') 'NVIDIA App installer artifact id mismatch.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].OriginalDownloadUrl -eq 'https://us.download.nvidia.com/nvapp/client/11.0.6.383/NVIDIA_app_v11.0.6.383.exe') 'NVIDIA App installer URL classification mismatch.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].SourceScriptPath -eq 'source-ultimate/4 Installers/1 Installers.ps1') 'NVIDIA App installer source path mismatch.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].OperationKind -eq 'DownloadInstaller') 'NVIDIA App installer operation kind mismatch.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].SourceClassification -eq 'OfficialVendorDirect') 'NVIDIA App installer must be OfficialVendorDirect.'
+Assert-BoostLabCondition ([string]$nvidiaAppEntries[0].MirrorStatus -eq 'NotRequiredOfficial') 'NVIDIA App installer must not require a BoostLab mirror.'
 
 $directXEntries = @($entries | Where-Object { [string]$_.ToolId -eq 'directx' })
 Assert-BoostLabCondition ($directXEntries.Count -eq 2) 'DirectX must classify exactly 7-Zip and DirectX runtime source artifacts.'
@@ -322,9 +316,9 @@ foreach ($group in @($officialPolicyEntries | ForEach-Object { [string]$_['Offic
     $officialKindCounts[[string]$group.Name] = [int]$group.Count
 }
 $expectedOfficialKindCounts = @{
-    StaticOfficialInstaller = 3
+    StaticOfficialInstaller = 4
     FloatingOfficialInstaller = 13
-    OfficialVendorLookupPage = 1
+    OfficialVendorLookupPage = 0
     OfficialVendorApi = 0
     BrowserExtensionOfficialSource = 1
 }
@@ -523,7 +517,7 @@ $sourceTextByTool = @{
     'installers' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Installers\installers.psm1') -Raw
     'driver-clean' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-clean.psm1') -Raw
     'driver-install-debloat-settings' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1') -Raw
-    'nvidia-app-download' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\nvidia-app-download.psm1') -Raw
+    'nvidia-app-install' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\nvidia-app-install.psm1') -Raw
     'directx' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\directx.psm1') -Raw
     'visual-cpp' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1') -Raw
     'bloatware' = Get-Content -LiteralPath (Join-Path $ProjectRoot 'modules\Windows\bloatware.psm1') -Raw

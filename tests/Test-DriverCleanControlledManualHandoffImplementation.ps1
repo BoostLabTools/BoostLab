@@ -407,8 +407,8 @@ foreach ($needle in @(
     "if (`$toolId -eq 'driver-clean')",
     "'Open' { return 'Manual' }",
     "'Apply' { return 'Auto' }",
-    "if (`$toolId -eq 'nvidia-app-download')",
-    "'Open' { return 'Open NVIDIA App Page' }",
+    "if (`$toolId -eq 'nvidia-app-install')",
+    "'Apply' { return 'Install NVIDIA App' }",
     'ActionName   = $actionName',
     'ActionLabel  = $actionDisplayLabel'
 )) {

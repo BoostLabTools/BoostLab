@@ -598,9 +598,9 @@ function Get-BoostLabToolActionDisplayLabel {
         }
     }
 
-    if ($toolId -eq 'nvidia-app-download') {
+    if ($toolId -eq 'nvidia-app-install') {
         switch ($ActionName) {
-            'Open' { return 'Open NVIDIA App Page' }
+            'Apply' { return 'Install NVIDIA App' }
         }
     }
 
@@ -1696,6 +1696,7 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         'installers'
         'driver-clean'
         'driver-install-debloat-settings'
+        'nvidia-app-install'
         'directx'
         'visual-cpp'
     )

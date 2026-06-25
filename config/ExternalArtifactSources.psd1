@@ -337,20 +337,23 @@
                 ExpectedSignatureStatus = 'Valid'
             }
             @{
-                Id = 'nvidia-app-download-page'
-                OfficialSourceKind = 'OfficialVendorLookupPage'
-                OfficialHostAllowlist = @('www.nvidia.com')
-                ExpectedFileName = $null
-                ExpectedExtension = $null
-                DownloadExecutionApproved = $false
+                Id = 'nvidia-app-installer'
+                OfficialSourceKind = 'StaticOfficialInstaller'
+                OfficialHostAllowlist = @('us.download.nvidia.com')
+                ExactSourceUrlRequired = $true
+                ExpectedSourceFileName = 'NVIDIA_app_v11.0.6.383.exe'
+                ExpectedFileName = 'NvidiaApp.exe'
+                ExpectedExtension = '.exe'
+                DownloadExecutionApproved = $true
                 ResolvedDownloadExecutionApproved = $false
-                LookupExecutionApproved = $true
-                InstallerExecutionApproved = $false
+                LookupExecutionApproved = $false
+                InstallerExecutionApproved = $true
                 ProductionAllowlistApproved = $true
                 RuntimeSourceSelectionApproved = $true
-                RequiresVerifiedLocalPath = $false
+                RequiresVerifiedLocalPath = $true
                 NoUrlExecution = $true
-                SignatureVerificationRequired = $false
+                SignatureVerificationRequired = $true
+                ExpectedSignatureStatus = 'Valid'
             }
         )
     }
@@ -375,7 +378,7 @@
             'installers'
             'driver-clean'
             'driver-install-debloat-settings'
-            'nvidia-app-download'
+            'nvidia-app-install'
             'directx'
             'visual-cpp'
             'bloatware'
@@ -959,21 +962,21 @@
             Notes = 'Phase 164H approves this verified BoostLab mirror for runtime source selection and production artifact use with filename, size, SHA-256, signature, local-path, and no-direct-network-execution verification gates. OfficialVendorDirect entries remain unchanged.'
         }
         @{
-            Id = 'nvidia-app-download-page'
-            ToolId = 'nvidia-app-download'
+            Id = 'nvidia-app-installer'
+            ToolId = 'nvidia-app-install'
             ToolTitle = 'Install NVIDIA App'
             Stage = 'Graphics'
             StageOrder = 5
             ToolOrder = 3
             CanonicalOrder = 'Graphics 3'
-            SourceScriptPath = $null
-            OriginalDownloadUrl = 'https://www.nvidia.com/en-us/software/nvidia-app/'
+            SourceScriptPath = 'source-ultimate/4 Installers/1 Installers.ps1'
+            OriginalDownloadUrl = 'https://us.download.nvidia.com/nvapp/client/11.0.6.383/NVIDIA_app_v11.0.6.383.exe'
             SourceClassification = 'OfficialVendorDirect'
             IntendedBoostLabMirrorUrl = $null
             ExpectedSha256 = $null
             MirrorStatus = 'NotRequiredOfficial'
-            OperationKind = 'VendorPage'
-            Notes = 'Phase 173A adds an open-only NVIDIA App webpage shortcut. It does not download, install, execute an installer, or mutate system state.'
+            OperationKind = 'DownloadInstaller'
+            Notes = 'Phase 173E replaces the webpage shortcut with the source-defined old Installers NVIDIA App option, now scoped to Graphics only. Runtime uses official-vendor local-path and signature verification before launching the installer with /s.'
         }
         @{
             Id = 'directx-seven-zip'
