@@ -56,9 +56,10 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $allowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
+$externalSourcesPath = Join-Path $ProjectRoot 'config\ExternalArtifactSources.psd1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-foreach ($path in @($configPath, $modulePath, $sourcePath, $actionPlanPath, $executionPath, $uiPath, $artifactPath, $allowlistPath)) {
+foreach ($path in @($configPath, $modulePath, $sourcePath, $actionPlanPath, $executionPath, $uiPath, $artifactPath, $allowlistPath, $externalSourcesPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Installers Phase 119 file missing: $path"
 }
 
@@ -93,6 +94,7 @@ $sourceDownloadUrls = @(
 Assert-BoostLabCondition ($sourceDownloadUrls.Count -eq 24) "Expected 24 unique source download URLs, found $($sourceDownloadUrls.Count)."
 
 $config = Import-PowerShellDataFile -LiteralPath $configPath
+$externalSources = Import-PowerShellDataFile -LiteralPath $externalSourcesPath
 $installersStage = @($config.Stages | Where-Object { [string]$_['Name'] -eq 'Installers' })[0]
 $installersTool = @($installersStage.Tools | Where-Object { [string]$_['Id'] -eq 'installers' })[0]
 Assert-BoostLabCondition ($null -ne $installersTool) 'Installers tool metadata is missing.'
@@ -158,6 +160,61 @@ try {
     Assert-BoostLabCondition (((@($catalog | ForEach-Object { [string]$_.AppId }) -join ',') -eq ($expectedRetainedIds -join ','))) 'Module catalog source order mismatch.'
     Assert-BoostLabCondition ('escape-from-tarkov' -notin @($catalog | ForEach-Object { [string]$_.AppId })) 'Escape From Tarkov must not remain in the retained Installers catalog.'
     Assert-BoostLabCondition (@($catalog | ForEach-Object { $_.Artifacts } | Where-Object { [string]$_.Url -like '*escapefromtarkov*' }).Count -eq 0) 'Escape From Tarkov download URL must not remain in retained Installers artifacts.'
+    $restoredAppExpectations = @{
+        'ubisoft-connect' = @{
+            SourceMenuNumber = 23
+            DisplayName = 'Ubisoft Connect'
+            Url = 'https://static3.cdn.ubi.com/orbit/launcher_installer/UbisoftConnectInstaller.exe'
+            DestinationPath = '$env:SystemRoot\Temp\Ubisoft Connect.exe'
+            FilePath = '$env:SystemRoot\Temp\Ubisoft Connect.exe'
+            Arguments = '/S'
+            Wait = $true
+            OperationTypes = 'Download|StartProcess|MoveItem|RemoveItem'
+            ArtifactId = 'installers-ubisoft-connect'
+            OfficialHost = 'static3.cdn.ubi.com'
+        }
+        'valorant' = @{
+            SourceMenuNumber = 24
+            DisplayName = 'Valorant'
+            Url = 'https://valorant.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.live.ap.exe'
+            DestinationPath = '$env:SystemRoot\Temp\Valorant.exe'
+            FilePath = '$env:SystemRoot\Temp\Valorant.exe'
+            Arguments = '--skip-to-install'
+            Wait = $false
+            OperationTypes = 'Download|StartProcess'
+            ArtifactId = 'installers-valorant'
+            OfficialHost = 'valorant.secure.dyn.riotcdn.net'
+        }
+    }
+    foreach ($restoredId in @('ubisoft-connect', 'valorant')) {
+        $expectedRestored = $restoredAppExpectations[$restoredId]
+        $selectionItem = @($selectionItems | Where-Object { [string]$_['Id'] -eq $restoredId }) | Select-Object -First 1
+        Assert-BoostLabCondition ($null -ne $selectionItem) "Restored Installers app must be selectable: $restoredId"
+        Assert-BoostLabCondition ([int]$selectionItem['SourceMenuNumber'] -eq [int]$expectedRestored.SourceMenuNumber) "Restored Installers source menu number mismatch: $restoredId"
+
+        $restoredApp = @($catalog | Where-Object { [string]$_.AppId -eq $restoredId }) | Select-Object -First 1
+        Assert-BoostLabCondition ($null -ne $restoredApp) "Restored Installers app missing from catalog: $restoredId"
+        Assert-BoostLabCondition ([int]$restoredApp.SourceMenuNumber -eq [int]$expectedRestored.SourceMenuNumber) "Restored catalog source menu number mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApp.DisplayName -eq [string]$expectedRestored.DisplayName) "Restored catalog display name mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApp.Artifacts[0].Url -eq [string]$expectedRestored.Url) "Restored artifact URL mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApp.Artifacts[0].DestinationPath -eq [string]$expectedRestored.DestinationPath) "Restored artifact destination mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApp.InstallerCommands[0].FilePath -eq [string]$expectedRestored.FilePath) "Restored installer command path mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApp.InstallerCommands[0].Arguments -eq [string]$expectedRestored.Arguments) "Restored installer arguments mismatch: $restoredId"
+        Assert-BoostLabCondition ([bool]$restoredApp.InstallerCommands[0].Wait -eq [bool]$expectedRestored.Wait) "Restored installer wait flag mismatch: $restoredId"
+        Assert-BoostLabCondition (((@($restoredApp.Operations | ForEach-Object { [string]$_.Type }) -join '|') -eq [string]$expectedRestored.OperationTypes)) "Restored operation list mismatch: $restoredId"
+
+        $artifactId = & $module { Get-BoostLabInstallersOfficialArtifactIdForUrl -Url $args[0] } ([string]$expectedRestored.Url)
+        Assert-BoostLabCondition ([string]$artifactId -eq [string]$expectedRestored.ArtifactId) "Restored official artifact id mapping mismatch: $restoredId"
+        $officialPolicyEntry = @($externalSources.OfficialVendorDirectRuntimePolicy.Entries | Where-Object { [string]$_['Id'] -eq [string]$expectedRestored.ArtifactId }) | Select-Object -First 1
+        Assert-BoostLabCondition ($null -ne $officialPolicyEntry) "Restored official runtime policy missing: $restoredId"
+        Assert-BoostLabCondition ([string]$officialPolicyEntry['OfficialSourceKind'] -eq 'FloatingOfficialInstaller') "Restored official source kind mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$expectedRestored.OfficialHost -in @($officialPolicyEntry['OfficialHostAllowlist'] | ForEach-Object { [string]$_ })) "Restored official host allowlist mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$officialPolicyEntry['ExpectedFileName'] -eq [string]$expectedRestored.DestinationPath.Replace('$env:SystemRoot\Temp\', '')) "Restored expected filename mismatch: $restoredId"
+        $externalSourceEntry = @($externalSources.ExternalSources | Where-Object { [string]$_['Id'] -eq [string]$expectedRestored.ArtifactId }) | Select-Object -First 1
+        Assert-BoostLabCondition ($null -ne $externalSourceEntry) "Restored external source entry missing: $restoredId"
+        Assert-BoostLabCondition ([string]$externalSourceEntry['OriginalDownloadUrl'] -eq [string]$expectedRestored.Url) "Restored external source URL mismatch: $restoredId"
+        Assert-BoostLabCondition ([string]$externalSourceEntry['SourceClassification'] -eq 'OfficialVendorDirect') "Restored external source classification mismatch: $restoredId"
+    }
     foreach ($app in $catalog) {
         Assert-BoostLabCondition (@($app.Artifacts).Count -ge 1) "Retained app missing artifact descriptor: $($app.AppId)"
         Assert-BoostLabCondition (@($app.InstallerCommands).Count -ge 1) "Retained app missing installer/helper descriptor: $($app.AppId)"
@@ -220,6 +277,25 @@ try {
     Assert-BoostLabCondition ([bool]$branchSelectionApply.Success) 'SingleSelect Branch option should run the selected Installers app.'
     Assert-BoostLabCondition ([string]$branchSelectionApply.Data.SelectedApp.AppId -eq 'seven-zip') 'Branch-selected Installers Apply should select 7-Zip.'
     Assert-BoostLabCondition (((@($branchSelectionSeen) | Sort-Object -Unique) -join ',') -eq 'seven-zip') 'Branch-selected Installers Apply must not execute unrelated apps.'
+
+    foreach ($restoredId in @('ubisoft-connect', 'valorant')) {
+        $restoredSeen = [System.Collections.Generic.List[string]]::new()
+        $restoredExecutor = {
+            param($Operation, $App)
+            $restoredSeen.Add(('{0}|{1}' -f [string]$App.AppId, [string]$Operation.Type))
+            [pscustomobject]@{
+                Success = $true
+                Message = 'mock operation completed'
+                Operation = $Operation
+                AppId = [string]$App.AppId
+            }
+        }.GetNewClosure()
+        $restoredApply = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @($args[1]) -OperationExecutor $args[0] -SkipEnvironmentChecks } $restoredExecutor $restoredId
+        Assert-BoostLabCondition ([bool]$restoredApply.Success) "Restored app single-select Apply should complete in mocked path: $restoredId"
+        Assert-BoostLabCondition ([string]$restoredApply.Data.SelectedApp.AppId -eq $restoredId) "Restored app Apply selected app mismatch: $restoredId"
+        Assert-BoostLabCondition (((@($restoredSeen | ForEach-Object { ([string]$_).Split('|')[0] }) | Sort-Object -Unique) -join ',') -eq $restoredId) "Restored app Apply must not execute another installer app: $restoredId"
+        Assert-BoostLabCondition (((@($restoredSeen | ForEach-Object { ([string]$_).Split('|')[1] }) -join '|') -eq [string]$restoredAppExpectations[$restoredId].OperationTypes)) "Restored app Apply operation order mismatch: $restoredId"
+    }
 
     $multiSelection = & $module { Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed $true -SelectedAppIds @('discord', 'seven-zip') -OperationExecutor { throw 'side effects should not start for multi-select' } -SkipEnvironmentChecks }
     Assert-BoostLabCondition (-not [bool]$multiSelection.Success) 'Selecting more than one installer app must fail closed.'
