@@ -2186,8 +2186,18 @@ function Invoke-BoostLabBloatwareBranchWorkflow {
     $plan = Get-BoostLabBloatwareOperationPlan -Branch $Branch
     $operationResults = [System.Collections.Generic.List[object]]::new()
     $changesStarted = $false
+    $operations = @($plan.Operations)
+    $operationCount = $operations.Count
 
-    foreach ($operation in @($plan.Operations)) {
+    foreach ($operation in $operations) {
+        $operationNumber = $operationResults.Count + 1
+        if ($operationCount -gt 0) {
+            Write-Progress `
+                -Activity ('BoostLab Bloatware: {0}' -f [string]$plan.BranchTitle) `
+                -Status ('Operation {0}/{1}: {2}' -f $operationNumber, $operationCount, [string]$operation.Label) `
+                -PercentComplete ([Math]::Min(99, [Math]::Max(0, [int](($operationNumber - 1) * 100 / $operationCount))))
+        }
+
         if ($SkipEnvironmentChecks -and [string]$operation.Type -in @('RequireAdministrator', 'RequireInternet')) {
             $result = New-BoostLabBloatwareOperationResult -Operation $operation -Success $true -Message 'Skipped by test-safe executor option.'
         }
@@ -2207,6 +2217,10 @@ function Invoke-BoostLabBloatwareBranchWorkflow {
         }
 
         if (-not [bool]$result.Success) {
+            Write-Progress `
+                -Activity ('BoostLab Bloatware: {0}' -f [string]$plan.BranchTitle) `
+                -Status ('Stopped at operation {0}/{1}: {2}' -f $operationNumber, $operationCount, [string]$operation.Label) `
+                -Completed
             return [pscustomobject]@{
                 Success = $false
                 Branch = $Branch
@@ -2218,6 +2232,11 @@ function Invoke-BoostLabBloatwareBranchWorkflow {
             }
         }
     }
+
+    Write-Progress `
+        -Activity ('BoostLab Bloatware: {0}' -f [string]$plan.BranchTitle) `
+        -Status 'Completed' `
+        -Completed
 
     [pscustomobject]@{
         Success = $true

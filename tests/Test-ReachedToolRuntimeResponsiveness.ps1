@@ -201,6 +201,7 @@ $edgeSettingsModulePath = Join-Path $ProjectRoot 'modules\Setup\edge-settings.ps
 $bitLockerModulePath = Join-Path $ProjectRoot 'modules\Setup\bitlocker.psm1'
 $directXModulePath = Join-Path $ProjectRoot 'modules\Graphics\directx.psm1'
 $visualCppModulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
+$bloatwareModulePath = Join-Path $ProjectRoot 'modules\Windows\bloatware.psm1'
 
 foreach ($path in @(
     $uiPath
@@ -211,6 +212,7 @@ foreach ($path in @(
     $bitLockerModulePath
     $directXModulePath
     $visualCppModulePath
+    $bloatwareModulePath
 )) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file missing: $path"
 }
@@ -240,10 +242,12 @@ foreach ($needle in @(
     '$powerShell.EndInvoke($asyncResult)'
     '[System.Windows.Threading.DispatcherTimer]::new()'
     '$getDiagnosticsCommand = ${function:Get-BoostLabAsyncStreamDiagnostics}'
+    '$getProgressMessageCommand = ${function:Get-BoostLabAsyncLatestProgressMessage}'
     '$getExceptionMessageCommand = ${function:Get-BoostLabAsyncExceptionDiagnosticMessage}'
     '$newFailureResultCommand = ${function:New-BoostLabAsyncRuntimeFailureResult}'
     '$addDiagnosticsCommand = ${function:Add-BoostLabAsyncDiagnosticsToResult}'
     '$completeActionCommand = ${function:Complete-BoostLabToolCardAction}'
+    '& $getProgressMessageCommand `'
     '& $getDiagnosticsCommand -PowerShell $powerShell -Output $output'
     '& $newFailureResultCommand `'
     '& $addDiagnosticsCommand -Result $result -Diagnostics $diagnostics'
@@ -261,8 +265,12 @@ foreach ($needle in @(
     '$Context.ActionButton.IsEnabled = $false'
     '$Context.ActionButton.IsEnabled = $true'
     'Get-BoostLabAsyncStreamDiagnostics'
+    'Get-BoostLabAsyncLatestProgressMessage'
     '$PowerShell.Streams.Progress'
     '$PowerShell.Streams.Error'
+    '$script:BoostLabDiagnosticMaxEnumerableItems = 80'
+    'Showing first {0} of {1} diagnostic item(s). Full structured payload remains attached to the Latest Result object.'
+    'Select-Object -First $script:BoostLabDiagnosticMaxEnumerableItems'
     'New-BoostLabUiActionBusyResult'
     'Another BoostLab action is already running'
 )) {
@@ -285,6 +293,8 @@ foreach ($bareHelperCall in @(
 }
 Assert-BoostLabTextContains -Text $timerBody -Needle "`$asyncActionState['InProgress'] = `$false" -Description 'Async timer busy-state cleanup'
 Assert-BoostLabTextContains -Text $timerBody -Needle '& $completeActionCommand -Context $Context -Result $result' -Description 'Async timer visible result completion'
+Assert-BoostLabTextContains -Text $timerBody -Needle '& $getProgressMessageCommand `' -Description 'Async timer progress polling'
+Assert-BoostLabTextContains -Text $timerBody -Needle 'Progress is advisory; final result handling remains authoritative.' -Description 'Async timer progress safety'
 Assert-BoostLabTextContains -Text $timerBody -Needle 'Tool async completion failed' -Description 'Async timer structured failure result path'
 Assert-BoostLabTextContains -Text $uiText -Needle 'function Get-BoostLabAsyncExceptionDiagnosticMessage' -Description 'Async EndInvoke diagnostic helper'
 Assert-BoostLabTextContains -Text $uiText -Needle 'if ($null -eq $ActionOptions) {' -Description 'Async worker nullable action option normalization'
@@ -298,42 +308,31 @@ $asyncScopeMatch = [regex]::Match(
 Assert-BoostLabCondition $asyncScopeMatch.Success 'Could not locate Test-BoostLabToolUsesAsyncUiDispatch body.'
 $asyncScopeText = $asyncScopeMatch.Groups['Body'].Value
 
-$reachedToolIds = @(
-    'bios-information'
-    'bios-settings'
-    'reinstall'
-    'unattended'
-    'updates-drivers-block'
-    'to-bios'
-    'bitlocker'
-    'memory-compression'
-    'date-language-region-time'
-    'startup-apps-settings'
-    'startup-apps-task-manager'
-    'background-apps'
-    'edge-settings'
-    'store-settings'
-    'updates-pause'
-    'installers'
-    'driver-clean'
-    'driver-install-debloat-settings'
-    'nvidia-app-install'
-    'directx'
-    'visual-cpp'
-)
-foreach ($toolId in $reachedToolIds) {
-    Assert-BoostLabTextContains -Text $asyncScopeText -Needle "'$toolId'" -Description 'Async reached-tool scope'
-    Assert-BoostLabCondition (@($allTools | Where-Object { [string]$_.Id -eq $toolId }).Count -eq 1) "Reached tool missing from Stages.psd1: $toolId"
+$activeToolIds = @($allTools | ForEach-Object { [string]$_.Id } | Sort-Object)
+Assert-BoostLabCondition ($activeToolIds.Count -eq [int]$inventoryBaseline.ActiveTools) 'Active async tool count must match the inventory baseline.'
+foreach ($toolId in $activeToolIds) {
+    Assert-BoostLabCondition (@($allTools | Where-Object { [string]$_.Id -eq $toolId }).Count -eq 1) "Active tool missing from Stages.psd1: $toolId"
 }
 
-foreach ($outOfScopeToolId in @(
-    'graphics-configuration-center'
-    'theme-black'
-    'power-plan'
+foreach ($deletedOrRemovedToolId in @(
+    'loudness-eq'
+    'nvme-faster-driver'
+    'spectre-meltdown-assistant'
+    'mmagent-assistant'
+    'services-optimizer'
+    'restore-point'
+    'driver-install-latest'
+    'nvidia-settings'
+    'hdcp'
+    'p0-state'
+    'msi-mode'
     'smt-ht-assistant'
+    'resizable-bar-assistant'
 )) {
-    Assert-BoostLabCondition (-not $asyncScopeText.Contains("'$outOfScopeToolId'")) "Unreached tool must not be explicitly opted into the Phase 124 async scope: $outOfScopeToolId"
+    Assert-BoostLabCondition ($deletedOrRemovedToolId -notin $activeToolIds) "Retired/removed tool must not be active or async-dispatched: $deletedOrRemovedToolId"
 }
+Assert-BoostLabCondition (-not [regex]::IsMatch($asyncScopeText, "'[a-z0-9][a-z0-9-]+'")) 'Async dispatch scope must not return to a hardcoded tool-id whitelist.'
+Assert-BoostLabTextContains -Text $asyncScopeText -Needle 'return $true' -Description 'All active tool-card async dispatch policy'
 
 $installersTool = @($allTools | Where-Object { [string]$_.Id -eq 'installers' })[0]
 Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelect') 'Installers must keep single-app selection UI.'
@@ -341,7 +340,8 @@ Assert-BoostLabCondition ([string]$installersTool.SelectionMode -eq 'SingleSelec
 $nvidiaAppTool = @($allTools | Where-Object { [string]$_.Id -eq 'nvidia-app-install' })[0]
 $directXTool = @($allTools | Where-Object { [string]$_.Id -eq 'directx' })[0]
 $visualCppTool = @($allTools | Where-Object { [string]$_.Id -eq 'visual-cpp' })[0]
-foreach ($asyncAnalyzeTool in @($installersTool, $nvidiaAppTool, $directXTool, $visualCppTool)) {
+$bloatwareTool = @($allTools | Where-Object { [string]$_.Id -eq 'bloatware' })[0]
+foreach ($asyncAnalyzeTool in @($installersTool, $nvidiaAppTool, $directXTool, $visualCppTool, $bloatwareTool)) {
     $asyncAnalyze = Invoke-BoostLabAsyncAnalyzeSimulation -ProjectRoot $ProjectRoot -ToolMetadata $asyncAnalyzeTool
     $toolId = [string]$asyncAnalyzeTool.Id
 
@@ -350,7 +350,8 @@ foreach ($asyncAnalyzeTool in @($installersTool, $nvidiaAppTool, $directXTool, $
     Assert-BoostLabCondition ($null -ne $asyncAnalyze.Result) "Async Analyze returned null result for $toolId."
     Assert-BoostLabCondition ([bool]$asyncAnalyze.Result.Success) "Async Analyze should succeed for $toolId."
     Assert-BoostLabCondition ([string]$asyncAnalyze.Result.Action -eq 'Analyze') "Async Analyze returned wrong action for $toolId."
-    Assert-BoostLabCondition ([string]$asyncAnalyze.Result.Status -eq 'Analyzed') "Async Analyze returned wrong status for $toolId."
+    $allowedAnalyzeStatuses = if ($toolId -eq 'bloatware') { @('Success') } else { @('Analyzed') }
+    Assert-BoostLabCondition ([string]$asyncAnalyze.Result.Status -in $allowedAnalyzeStatuses) "Async Analyze returned wrong status for $toolId."
     Assert-BoostLabCondition ($null -ne $asyncAnalyze.Result.PSObject.Properties['ActionPlan']) "Async Analyze did not attach ActionPlan for $toolId."
     Assert-BoostLabCondition ([string]$asyncAnalyze.Result.ActionPlan.Action -eq 'Analyze') "Async Analyze ActionPlan action mismatch for $toolId."
     Assert-BoostLabCondition ($asyncAnalyze.StateCreated) "Async Analyze did not initialize isolated temp state for $toolId."
@@ -386,6 +387,19 @@ Assert-BoostLabTextContains -Text $visualCppText -Needle 'SourceEquivalentContro
 Assert-BoostLabTextContains -Text $visualCppText -Needle 'SourceEquivalentVisualCppInstall' -Description 'Visual C++ controlled install action'
 Assert-BoostLabTextContains -Text $visualCppText -Needle 'OperationExecutor' -Description 'Visual C++ test-safe executor seam'
 
+$bloatwareText = Get-Content -LiteralPath $bloatwareModulePath -Raw
+Assert-BoostLabTextContains -Text $bloatwareText -Needle 'Write-Progress' -Description 'Bloatware operation-level progress reporting'
+Assert-BoostLabTextContains -Text $bloatwareText -Needle "Operation {0}/{1}: {2}" -Description 'Bloatware progress must include operation number and label'
+Assert-BoostLabTextContains -Text $bloatwareText -Needle 'Remove all non-excluded UWP apps for all users' -Description 'Bloatware RemoveAll operation label must remain source-equivalent'
+foreach ($classification in @(
+    'SkippedProtectedSystemApp'
+    'SkippedDependencyFramework'
+    'SkippedInUseFrameworkRuntime'
+    'FailedUnexpected'
+)) {
+    Assert-BoostLabTextContains -Text $bloatwareText -Needle $classification -Description 'Bloatware AppX classification regression guard'
+}
+
 foreach ($protectedPath in @(
     'source-ultimate'
     'source-ultimate\_intake-promoted'
@@ -407,14 +421,15 @@ foreach ($deletedPath in @(
 
 [pscustomobject]@{
     TestName                    = 'ReachedToolRuntimeResponsiveness'
-    ReachedAsyncToolCount       = $reachedToolIds.Count
+    ActiveAsyncToolCount        = $activeToolIds.Count
     AsyncDispatch               = 'STA runspace + DispatcherTimer'
-    AsyncCompletionContract     = 'Captured helper scriptblocks + shared state cleanup'
+    AsyncCompletionContract     = 'Captured helper scriptblocks + shared state cleanup + progress polling'
     DuplicateClickPolicy        = 'Global single action in progress'
-    NvidiaAppInstallerAsyncScope = 'Installer flow is opted into long-running async dispatch'
+    BloatwareAsyncScope         = 'Bloatware uses the active tool-card async dispatch path'
+    LargeResultRenderingGuard   = 'Bounded diagnostic enumerable preview'
     InstallersSingleAppModel    = $true
     RealHostMutationDuringTest  = $false
     SourceUltimateUnchanged     = $true
     DeletedToolsRemainDeleted   = $true
-    Message                     = 'Reached tools through Visual C++ use the non-blocking WPF dispatch path; validators are static/mock-safe.'
+    Message                     = 'All active tool cards use the non-blocking WPF dispatch path; validators are static/mock-safe.'
 }

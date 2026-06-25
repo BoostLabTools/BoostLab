@@ -388,6 +388,49 @@ try {
         throw 'The plain-text Latest Result formatter omitted structured Power Plan diagnostics.'
     }
 
+    $largeBloatwareTool = [ordered]@{
+        Id = 'bloatware'
+        Title = 'Bloatware'
+    }
+    $largePackageOutcomes = @(
+        1..85 | ForEach-Object {
+            [pscustomobject]@{
+                Name            = ('Package{0:D3}' -f $_)
+                Outcome         = 'SkippedProtectedSystemApp'
+                PackageFullName = ('Package{0:D3}_1.0.0.0_x64__8wekyb3d8bbwe' -f $_)
+            }
+        }
+    )
+    $largeBloatwareResult = [pscustomobject]@{
+        Success = $true
+        ToolId = 'bloatware'
+        ToolTitle = 'Bloatware'
+        Action = 'Apply'
+        Status = 'Warning'
+        Message = 'Bloatware completed with protected package skips.'
+        RestartRequired = $false
+        Cancelled = $false
+        Data = [pscustomobject]@{
+            CommandStatus = 'Completed with warnings'
+            VerificationStatus = 'Warning'
+            PackageOutcomes = $largePackageOutcomes
+            ProtectedSystemAppSkippedPackages = $largePackageOutcomes
+        }
+        Timestamp = Get-Date
+    }
+    $largeFormattedResult = Format-BoostLabLatestResultText `
+        -ToolMetadata $largeBloatwareTool `
+        -ActionName 'Apply' `
+        -Result $largeBloatwareResult
+    if (
+        -not $largeFormattedResult.Contains('Showing first 80 of 85 diagnostic item(s)') -or
+        -not $largeFormattedResult.Contains('Package080') -or
+        $largeFormattedResult.Contains('Package081') -or
+        @($largeBloatwareResult.Data.PackageOutcomes).Count -ne 85
+    ) {
+        throw 'Large Bloatware-like Latest Result formatting was not bounded while preserving the full result object.'
+    }
+
     Copy-BoostLabLatestResult
     $copiedLatestResult = [System.Windows.Clipboard]::GetText()
     if (

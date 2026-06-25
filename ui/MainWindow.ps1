@@ -11,6 +11,7 @@ $script:BoostLabLatestResultText = ''
 $script:BoostLabToolSelectionControls = @{}
 $script:BoostLabActionInProgress = $false
 $script:BoostLabActionInProgressKey = ''
+$script:BoostLabDiagnosticMaxEnumerableItems = 80
 $script:BoostLabAsyncActionState = @{
     InProgress = $false
     Key        = ''
@@ -58,7 +59,9 @@ function ConvertTo-BoostLabDiagnosticValueText {
         [AllowNull()]
         [object]$Value,
 
-        [int]$Depth = 0
+        [int]$Depth = 0,
+
+        [int]$MaxEnumerableItems = $script:BoostLabDiagnosticMaxEnumerableItems
     )
 
     if ($null -eq $Value) {
@@ -80,7 +83,7 @@ function ConvertTo-BoostLabDiagnosticValueText {
     if ($Value -is [System.Collections.IDictionary]) {
         $lines = [System.Collections.Generic.List[string]]::new()
         foreach ($key in @($Value.Keys)) {
-            $propertyText = ConvertTo-BoostLabDiagnosticValueText -Value $Value[$key] -Depth ($Depth + 1)
+            $propertyText = ConvertTo-BoostLabDiagnosticValueText -Value $Value[$key] -Depth ($Depth + 1) -MaxEnumerableItems $MaxEnumerableItems
             $lines.Add(('{0}: {1}' -f [string]$key, $propertyText))
         }
         return $(if ($lines.Count -gt 0) { $lines -join [Environment]::NewLine } else { 'Not available' })
@@ -92,9 +95,16 @@ function ConvertTo-BoostLabDiagnosticValueText {
             return 'None'
         }
 
-        return @(
-            foreach ($item in $items) {
-                $itemText = ConvertTo-BoostLabDiagnosticValueText -Value $item -Depth ($Depth + 1)
+        $itemsToRender = if ($items.Count -gt $MaxEnumerableItems) {
+            @($items | Select-Object -First $MaxEnumerableItems)
+        }
+        else {
+            $items
+        }
+
+        $lines = @(
+            foreach ($item in $itemsToRender) {
+                $itemText = ConvertTo-BoostLabDiagnosticValueText -Value $item -Depth ($Depth + 1) -MaxEnumerableItems $MaxEnumerableItems
                 if ($itemText.Contains([Environment]::NewLine)) {
                     "- $($itemText -replace [regex]::Escape([Environment]::NewLine), ([Environment]::NewLine + '  '))"
                 }
@@ -102,7 +112,12 @@ function ConvertTo-BoostLabDiagnosticValueText {
                     "- $itemText"
                 }
             }
-        ) -join [Environment]::NewLine
+        )
+        if ($items.Count -gt $MaxEnumerableItems) {
+            $lines += ('- Showing first {0} of {1} diagnostic item(s). Full structured payload remains attached to the Latest Result object.' -f $MaxEnumerableItems, $items.Count)
+        }
+
+        return $lines -join [Environment]::NewLine
     }
 
     $properties = @($Value.PSObject.Properties)
@@ -111,7 +126,7 @@ function ConvertTo-BoostLabDiagnosticValueText {
             foreach ($property in $properties) {
                 '{0}: {1}' -f `
                     $property.Name, `
-                    (ConvertTo-BoostLabDiagnosticValueText -Value $property.Value -Depth ($Depth + 1))
+                    (ConvertTo-BoostLabDiagnosticValueText -Value $property.Value -Depth ($Depth + 1) -MaxEnumerableItems $MaxEnumerableItems)
             }
         ) -join [Environment]::NewLine
     }
@@ -287,7 +302,13 @@ function Format-BoostLabLatestResultText {
         [void]$builder.AppendLine('Not available')
     }
     else {
-        foreach ($check in $checks) {
+        $checksToRender = if ($checks.Count -gt $script:BoostLabDiagnosticMaxEnumerableItems) {
+            @($checks | Select-Object -First $script:BoostLabDiagnosticMaxEnumerableItems)
+        }
+        else {
+            $checks
+        }
+        foreach ($check in $checksToRender) {
             [void]$builder.AppendLine((
                 '[{0}] {1}' -f `
                     (Get-BoostLabObjectPropertyValue $check 'Status' 'Not available'), `
@@ -305,6 +326,9 @@ function Format-BoostLabLatestResultText {
                 '  Message: {0}' -f `
                     (ConvertTo-BoostLabDiagnosticValueText (Get-BoostLabObjectPropertyValue $check 'Message' 'Not available'))
             ))
+        }
+        if ($checks.Count -gt $script:BoostLabDiagnosticMaxEnumerableItems) {
+            [void]$builder.AppendLine(('Showing first {0} of {1} verification check(s). Full structured payload remains attached to the Latest Result object.' -f $script:BoostLabDiagnosticMaxEnumerableItems, $checks.Count))
         }
     }
 
@@ -1058,7 +1082,13 @@ function Show-BoostLabActionResult {
         $verificationChecks = @(Get-BoostLabDiagnosticItems $verificationResult 'Checks')
         if ($verificationChecks.Count -gt 0) {
             Add-BoostLabResultSectionTitle -Panel $panel -Text 'Verification Checks'
-            foreach ($check in $verificationChecks) {
+            $verificationChecksToRender = if ($verificationChecks.Count -gt $script:BoostLabDiagnosticMaxEnumerableItems) {
+                @($verificationChecks | Select-Object -First $script:BoostLabDiagnosticMaxEnumerableItems)
+            }
+            else {
+                $verificationChecks
+            }
+            foreach ($check in $verificationChecksToRender) {
                 $checkText = '{0} [{1}] Expected: {2}; Actual: {3}. {4}' -f `
                     (Get-BoostLabObjectPropertyValue $check 'Name' 'Not available'), `
                     (Get-BoostLabObjectPropertyValue $check 'Status' 'Not available'), `
@@ -1072,6 +1102,12 @@ function Show-BoostLabActionResult {
                     default { '#AAB7CA' }
                 }
                 Add-BoostLabResultBullet -Panel $panel -Text $checkText -Color $checkColor
+            }
+            if ($verificationChecks.Count -gt $script:BoostLabDiagnosticMaxEnumerableItems) {
+                Add-BoostLabResultBullet `
+                    -Panel $panel `
+                    -Text ('Showing first {0} of {1} verification check(s). Full structured payload remains attached to the Latest Result object.' -f $script:BoostLabDiagnosticMaxEnumerableItems, $verificationChecks.Count) `
+                    -Color '#93C5FD'
             }
         }
     }
@@ -1676,30 +1712,15 @@ function Test-BoostLabToolUsesAsyncUiDispatch {
         [System.Collections.IDictionary]$ToolMetadata
     )
 
-    $toolId = [string]$ToolMetadata['Id']
-    return $toolId -in @(
-        'bios-information'
-        'bios-settings'
-        'reinstall'
-        'unattended'
-        'updates-drivers-block'
-        'to-bios'
-        'bitlocker'
-        'memory-compression'
-        'date-language-region-time'
-        'startup-apps-settings'
-        'startup-apps-task-manager'
-        'background-apps'
-        'edge-settings'
-        'store-settings'
-        'updates-pause'
-        'installers'
-        'driver-clean'
-        'driver-install-debloat-settings'
-        'nvidia-app-install'
-        'directx'
-        'visual-cpp'
-    )
+    if (
+        $null -eq $ToolMetadata -or
+        -not $ToolMetadata.Contains('Id') -or
+        [string]::IsNullOrWhiteSpace([string]$ToolMetadata['Id'])
+    ) {
+        return $false
+    }
+
+    return $true
 }
 
 function Add-BoostLabAsyncDiagnosticsToResult {
@@ -1822,6 +1843,63 @@ function Get-BoostLabAsyncStreamDiagnostics {
         Debug       = @($PowerShell.Streams.Debug | ForEach-Object { [string]$_ })
         Information = @($PowerShell.Streams.Information | ForEach-Object { [string]$_.MessageData })
     }
+}
+
+function Get-BoostLabAsyncLatestProgressMessage {
+    param(
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PowerShell]$PowerShell,
+
+        [Parameter(Mandatory)]
+        [string]$ToolTitle,
+
+        [Parameter(Mandatory)]
+        [string]$ActionName
+    )
+
+    try {
+        $progressRecords = @($PowerShell.Streams.Progress)
+        if ($progressRecords.Count -gt 0) {
+            $latestProgress = $progressRecords[$progressRecords.Count - 1]
+            $activity = [string]$latestProgress.Activity
+            $statusDescription = [string]$latestProgress.StatusDescription
+            $percent = [int]$latestProgress.PercentComplete
+            $parts = @($activity, $statusDescription) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+            $message = if ($parts.Count -gt 0) {
+                $parts -join ': '
+            }
+            else {
+                'Running'
+            }
+
+            if ($percent -ge 0 -and $percent -le 100) {
+                return ('Running {0}: {1} ({2}%)' -f $ToolTitle, $message, $percent)
+            }
+
+            return ('Running {0}: {1}' -f $ToolTitle, $message)
+        }
+
+        $informationRecords = @($PowerShell.Streams.Information)
+        if ($informationRecords.Count -gt 0) {
+            $message = [string]$informationRecords[$informationRecords.Count - 1].MessageData
+            if (-not [string]::IsNullOrWhiteSpace($message)) {
+                return ('Running {0}: {1}' -f $ToolTitle, $message)
+            }
+        }
+
+        $verboseRecords = @($PowerShell.Streams.Verbose)
+        if ($verboseRecords.Count -gt 0) {
+            $message = [string]$verboseRecords[$verboseRecords.Count - 1]
+            if (-not [string]::IsNullOrWhiteSpace($message)) {
+                return ('Running {0}: {1}' -f $ToolTitle, $message)
+            }
+        }
+    }
+    catch {
+        return ('Running {0}: {1}...' -f $ToolTitle, $ActionName)
+    }
+
+    return ('Running {0}: {1}...' -f $ToolTitle, $ActionName)
 }
 
 function Invoke-BoostLabToolCardActionAsync {
@@ -2024,6 +2102,7 @@ function Invoke-BoostLabToolCardActionAsync {
     }
 
     $getDiagnosticsCommand = ${function:Get-BoostLabAsyncStreamDiagnostics}
+    $getProgressMessageCommand = ${function:Get-BoostLabAsyncLatestProgressMessage}
     $getExceptionMessageCommand = ${function:Get-BoostLabAsyncExceptionDiagnosticMessage}
     $newFailureResultCommand = ${function:New-BoostLabAsyncRuntimeFailureResult}
     $addDiagnosticsCommand = ${function:Add-BoostLabAsyncDiagnosticsToResult}
@@ -2071,8 +2150,26 @@ function Invoke-BoostLabToolCardActionAsync {
 
     $timer = [System.Windows.Threading.DispatcherTimer]::new()
     $timer.Interval = [TimeSpan]::FromMilliseconds(250)
+    $lastProgressMessage = ''
     $timer.Add_Tick(({
         if (-not $asyncResult.IsCompleted) {
+            try {
+                $progressMessage = & $getProgressMessageCommand `
+                    -PowerShell $powerShell `
+                    -ToolTitle ([string]$toolMetadata['Title']) `
+                    -ActionName $actionName
+                if (
+                    -not [string]::IsNullOrWhiteSpace($progressMessage) -and
+                    $progressMessage -ne $lastProgressMessage
+                ) {
+                    $lastProgressMessage = $progressMessage
+                    $Context.StatusText.Text = 'Status: Running...'
+                    (Get-BoostLabUiElement -Name 'ApplicationStatusText').Text = $progressMessage
+                }
+            }
+            catch {
+                # Progress is advisory; final result handling remains authoritative.
+            }
             return
         }
 
