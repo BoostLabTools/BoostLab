@@ -346,6 +346,149 @@ try {
         }
         $mockedActionResults.Add($result)
     }
+
+    $delayedCalls = [System.Collections.Generic.List[string]]::new()
+    $delayedReadCount = 0
+    $delayedResult = & $memoryModule {
+        param($CommandResolver, $Calls, [ref]$ReadCount)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker {
+                param($RequestedAction)
+                $Calls.Add([string]$RequestedAction)
+            }.GetNewClosure() `
+            -StateReader {
+                $ReadCount.Value++
+                [pscustomobject]@{
+                    ReadSucceeded     = $true
+                    MemoryCompression = ($ReadCount.Value -eq 1)
+                    DisplayValue      = [string]($ReadCount.Value -eq 1)
+                    Message           = 'Mock delayed Get-MMAgent result.'
+                }
+            }.GetNewClosure() `
+            -DelayInvoker { param($Milliseconds) } `
+            -VerificationRetryDelayMilliseconds 1
+    } $scalarCommandResolver $delayedCalls ([ref]$delayedReadCount)
+    if (
+        -not [bool]$delayedResult.Success -or
+        [string]$delayedResult.Status -ne 'Warning' -or
+        [string]$delayedResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        [string]$delayedResult.Data.VerificationStatus -ne 'Warning' -or
+        [string]$delayedResult.Data.FinalStatusReason -ne 'MemoryCompressionVerifiedAfterReassertion' -or
+        -not [bool]$delayedResult.Data.ReassertionAttempted -or
+        [int]$delayedResult.Data.CommandAttemptCount -ne 2 -or
+        $delayedCalls.Count -ne 2 -or
+        $delayedReadCount -ne 2
+    ) {
+        throw 'Memory Compression delayed verification success must require one bounded reassertion and return Warning, not Error.'
+    }
+
+    $mismatchCalls = [System.Collections.Generic.List[string]]::new()
+    $mismatchResult = & $memoryModule {
+        param($CommandResolver, $Calls)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker {
+                param($RequestedAction)
+                $Calls.Add([string]$RequestedAction)
+            }.GetNewClosure() `
+            -StateReader {
+                [pscustomobject]@{
+                    ReadSucceeded     = $true
+                    MemoryCompression = $true
+                    DisplayValue      = 'True'
+                    Message           = 'Mock Get-MMAgent still reports memory compression enabled.'
+                }
+            } `
+            -DelayInvoker { param($Milliseconds) } `
+            -VerificationRetryDelayMilliseconds 1
+    } $scalarCommandResolver $mismatchCalls
+    if (
+        [bool]$mismatchResult.Success -or
+        [string]$mismatchResult.Status -in @('Success', 'Passed') -or
+        [string]$mismatchResult.Data.VerificationStatus -ne 'Failed' -or
+        [string]$mismatchResult.VerificationResult.Status -ne 'Failed' -or
+        [string]$mismatchResult.Data.FinalStatusReason -ne 'MemoryCompressionVerificationMismatch' -or
+        [bool]$mismatchResult.Data.ExpectedMemoryCompression -ne $false -or
+        [bool]$mismatchResult.Data.DetectedMemoryCompression -ne $true -or
+        $mismatchCalls.Count -ne 2
+    ) {
+        throw 'Memory Compression verification mismatch must fail the final result and must not serialize as Success.'
+    }
+
+    $commandFailureResult = & $memoryModule {
+        param($CommandResolver)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker { param($RequestedAction) throw 'Mock Disable-MMAgent failure.' } `
+            -StateReader { throw 'State reader must not run after command failure.' }
+    } $scalarCommandResolver
+    if (
+        [bool]$commandFailureResult.Success -or
+        [string]$commandFailureResult.Status -ne 'Failed' -or
+        [string]$commandFailureResult.Message -notmatch 'Mock Disable-MMAgent failure'
+    ) {
+        throw 'Memory Compression command failure must fail closed before verification.'
+    }
+
+    $stateFailureResult = & $memoryModule {
+        param($CommandResolver)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Apply' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker { param($RequestedAction) } `
+            -StateReader {
+                [pscustomobject]@{
+                    ReadSucceeded     = $false
+                    MemoryCompression = $null
+                    DisplayValue      = 'Unknown'
+                    Message           = 'Mock Get-MMAgent failure.'
+                }
+            }
+    } $scalarCommandResolver
+    if (
+        [bool]$stateFailureResult.Success -or
+        [string]$stateFailureResult.Status -ne 'Failed' -or
+        [string]$stateFailureResult.Data.VerificationStatus -ne 'Failed' -or
+        [string]$stateFailureResult.Data.FinalStatusReason -ne 'MemoryCompressionVerificationUnavailable' -or
+        [string]$stateFailureResult.VerificationResult.Status -ne 'Failed'
+    ) {
+        throw 'Memory Compression Get-MMAgent failure must fail closed with consistent final status.'
+    }
+
+    $defaultMismatchResult = & $memoryModule {
+        param($CommandResolver)
+        Invoke-BoostLabMemoryCompressionAction `
+            -ActionName 'Default' `
+            -AdministratorChecker { return $true } `
+            -CommandResolver $CommandResolver `
+            -CommandInvoker { param($RequestedAction) } `
+            -StateReader {
+                [pscustomobject]@{
+                    ReadSucceeded     = $true
+                    MemoryCompression = $false
+                    DisplayValue      = 'False'
+                    Message           = 'Mock Get-MMAgent still reports memory compression disabled.'
+                }
+            } `
+            -DelayInvoker { param($Milliseconds) } `
+            -VerificationRetryDelayMilliseconds 1
+    } $scalarCommandResolver
+    if (
+        [bool]$defaultMismatchResult.Success -or
+        [string]$defaultMismatchResult.Status -ne 'Failed' -or
+        [string]$defaultMismatchResult.Data.FinalStatusReason -ne 'MemoryCompressionVerificationMismatch'
+    ) {
+        throw 'Memory Compression Default verification mismatch must follow the same final-status contract.'
+    }
+
     if ($mockedActionResults.Count -ne 2) {
         throw 'Both mocked Memory Compression action paths were not validated.'
     }

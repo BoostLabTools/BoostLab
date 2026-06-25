@@ -42,7 +42,11 @@ function New-BoostLabMemoryCompressionResult {
         [Parameter(Mandatory)]
         [string]$Message,
 
+        [string]$Status = '',
+
         [bool]$Cancelled = $false,
+
+        [bool]$RestartRequired = $false,
 
         [AllowNull()]
         [object]$Data = $null,
@@ -51,13 +55,24 @@ function New-BoostLabMemoryCompressionResult {
         [object]$VerificationResult = $null
     )
 
+    $resolvedStatus = if (-not [string]::IsNullOrWhiteSpace($Status)) {
+        $Status
+    }
+    elseif ($Success) {
+        'Passed'
+    }
+    else {
+        'Failed'
+    }
+
     return [pscustomobject]@{
         Success            = $Success
         ToolId             = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle          = [string]$script:BoostLabToolMetadata['Title']
         Action             = $Action
+        Status             = $resolvedStatus
         Message            = $Message
-        RestartRequired    = $false
+        RestartRequired    = $RestartRequired
         Cancelled          = $Cancelled
         Timestamp          = Get-Date
         Data               = $Data
@@ -314,6 +329,47 @@ function Test-BoostLabMemoryCompressionState {
         -Message $message
 }
 
+function New-BoostLabMemoryCompressionFinalVerification {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [Parameter(Mandatory)]
+        [bool]$Expected,
+
+        [AllowNull()]
+        [object]$Actual,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Passed', 'Warning', 'Failed')]
+        [string]$Status,
+
+        [Parameter(Mandatory)]
+        [string]$CheckMessage,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    $check = New-BoostLabVerificationCheck `
+        -Name 'MemoryCompression' `
+        -Expected $Expected `
+        -Actual $Actual `
+        -Status $Status `
+        -Message $CheckMessage
+
+    return New-BoostLabVerificationResult `
+        -ToolId ([string]$script:BoostLabToolMetadata['Id']) `
+        -ToolTitle ([string]$script:BoostLabToolMetadata['Title']) `
+        -Action $ActionName `
+        -Status $Status `
+        -ExpectedState ([pscustomobject]@{ MemoryCompression = $Expected }) `
+        -DetectedState ([pscustomobject]@{ MemoryCompression = $Actual }) `
+        -Checks @($check) `
+        -Message $Message
+}
+
 function Invoke-BoostLabMemoryCompressionAction {
     param(
         [Parameter(Mandatory)]
@@ -341,8 +397,34 @@ function Invoke-BoostLabMemoryCompressionAction {
 
         [scriptblock]$StateReader = {
             Get-BoostLabMemoryCompressionState
-        }
+        },
+
+        [scriptblock]$DelayInvoker = {
+            param($Milliseconds)
+            Start-Sleep -Milliseconds $Milliseconds
+        },
+
+        [int]$VerificationRetryDelayMilliseconds = 500
     )
+
+    function New-MemoryCompressionAttemptRecord {
+        param(
+            [Parameter(Mandatory)][int]$Attempt,
+            [Parameter(Mandatory)][string]$Phase,
+            [Parameter(Mandatory)][object]$Verification
+        )
+
+        [pscustomobject]@{
+            Attempt           = $Attempt
+            Phase             = $Phase
+            Status            = [string]$Verification.Status
+            Detected          = (Get-BoostLabMemoryCompressionPropertyValue `
+                -InputObject $Verification.DetectedState `
+                -Name 'MemoryCompression' `
+                -DefaultValue 'Unknown')
+            Message           = [string]$Verification.Message
+        }
+    }
 
     if (-not [bool](& $AdministratorChecker)) {
         return New-BoostLabMemoryCompressionResult `
@@ -378,21 +460,105 @@ function Invoke-BoostLabMemoryCompressionAction {
     }
 
     $completedAt = Get-Date
+    $expected = $ActionName -eq 'Default'
+    $verificationAttempts = [System.Collections.Generic.List[object]]::new()
+    $commandAttemptCount = 1
+    $reassertionAttempted = $false
+    $reassertionFailed = $false
+    $reassertionFailureMessage = ''
     $verificationResult = Test-BoostLabMemoryCompressionState `
         -ActionName $ActionName `
         -StateReader $StateReader
-    $expected = $ActionName -eq 'Default'
-    $detected = $verificationResult.DetectedState.MemoryCompression
+    $verificationAttempts.Add((New-MemoryCompressionAttemptRecord -Attempt 1 -Phase 'InitialVerification' -Verification $verificationResult))
+
+    if ($verificationResult.Status -eq 'Failed') {
+        $reassertionAttempted = $true
+        try {
+            & $DelayInvoker $VerificationRetryDelayMilliseconds
+            & $CommandInvoker $ActionName | Out-Null
+            $commandAttemptCount++
+            $retryVerification = Test-BoostLabMemoryCompressionState `
+                -ActionName $ActionName `
+                -StateReader $StateReader
+            $verificationAttempts.Add((New-MemoryCompressionAttemptRecord -Attempt 2 -Phase 'AfterReassertion' -Verification $retryVerification))
+            $verificationResult = $retryVerification
+        }
+        catch {
+            $reassertionFailed = $true
+            $reassertionFailureMessage = $_.Exception.Message
+        }
+    }
+
+    $detected = Get-BoostLabMemoryCompressionPropertyValue `
+        -InputObject $verificationResult.DetectedState `
+        -Name 'MemoryCompression' `
+        -DefaultValue 'Unknown'
+    $recoveredByReassertion = ($reassertionAttempted -and -not $reassertionFailed -and $verificationResult.Status -eq 'Passed')
+    if ($reassertionFailed) {
+        $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
+            -ActionName $ActionName `
+            -Expected $expected `
+            -Actual $detected `
+            -Status 'Failed' `
+            -CheckMessage "Reasserting the source MMAgent command failed: $reassertionFailureMessage" `
+            -Message 'Memory Compression verification reassertion failed.'
+    }
+    elseif ($verificationResult.Status -eq 'Warning') {
+        $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
+            -ActionName $ActionName `
+            -Expected $expected `
+            -Actual $detected `
+            -Status 'Failed' `
+            -CheckMessage 'Get-MMAgent did not return a verified MemoryCompression state.' `
+            -Message 'Memory Compression verification was unavailable after the source command completed.'
+    }
+    elseif ($recoveredByReassertion) {
+        $verificationResult = New-BoostLabMemoryCompressionFinalVerification `
+            -ActionName $ActionName `
+            -Expected $expected `
+            -Actual $detected `
+            -Status 'Warning' `
+            -CheckMessage 'MemoryCompression initially remained unexpected, then matched after one bounded source-command reassertion.' `
+            -Message 'Memory Compression matched the expected state after one bounded reassertion.'
+    }
+
+    $verificationStatus = [string]$verificationResult.Status
+    $success = $verificationStatus -ne 'Failed'
+    $finalStatusReason = if ($verificationStatus -eq 'Passed') {
+        'MemoryCompressionVerified'
+    }
+    elseif ($recoveredByReassertion) {
+        'MemoryCompressionVerifiedAfterReassertion'
+    }
+    elseif ($reassertionFailed) {
+        'MemoryCompressionReassertionFailed'
+    }
+    elseif ($verificationAttempts[0].Status -eq 'Warning') {
+        'MemoryCompressionVerificationUnavailable'
+    }
+    else {
+        'MemoryCompressionVerificationMismatch'
+    }
     $data = [pscustomobject]@{
-        CommandStatus              = 'Completed'
+        CommandStatus              = if ($success -and $verificationStatus -eq 'Warning') { 'Completed with warnings' } else { 'Completed' }
+        VerificationStatus         = $verificationStatus
+        FinalStatusReason          = $finalStatusReason
         ExpectedMemoryCompression = $expected
         DetectedMemoryCompression = $detected
+        CommandAttemptCount        = $commandAttemptCount
+        ReassertionAttempted       = $reassertionAttempted
+        ReassertionFailure         = $reassertionFailed
+        ReassertionFailureMessage  = $reassertionFailureMessage
+        VerificationAttempts       = $verificationAttempts.ToArray()
         CompletedAt                = $completedAt
     }
-    $message = if ($verificationResult.Status -eq 'Warning') {
+    $message = if ($recoveredByReassertion) {
+        'Memory Compression command completed; initial verification remained unexpected, but one bounded reassertion reached the expected state.'
+    }
+    elseif ($verificationStatus -eq 'Failed' -and $finalStatusReason -eq 'MemoryCompressionVerificationUnavailable') {
         'Memory Compression command completed, but verification was unavailable.'
     }
-    elseif ($verificationResult.Status -eq 'Failed') {
+    elseif ($verificationStatus -eq 'Failed') {
         'Memory Compression command completed, but verification detected an unexpected state.'
     }
     elseif ($ActionName -eq 'Apply') {
@@ -403,8 +569,9 @@ function Invoke-BoostLabMemoryCompressionAction {
     }
 
     return New-BoostLabMemoryCompressionResult `
-        -Success $true `
+        -Success $success `
         -Action $ActionName `
+        -Status $(if (-not $success) { 'Failed' } elseif ($verificationStatus -eq 'Warning') { 'Warning' } else { 'Passed' }) `
         -Message $message `
         -Data $data `
         -VerificationResult $verificationResult
