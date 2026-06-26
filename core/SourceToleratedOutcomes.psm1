@@ -110,6 +110,33 @@ $script:BoostLabSourceToleratedOutcomeCatalog = @(
         BlanketSuppression = $false
     }
     [pscustomobject]@{
+        ToolId            = 'notepad-settings'
+        ReasonCode        = 'NativeExitCodeMissingRecoveredByVerification'
+        SourceTolerance   = 'Native reg.exe wrappers can lose an exit code while still producing success output; BoostLab accepts this only after mounted hive value verification passes.'
+        SourcePatterns    = @('reg import', 'The operation completed successfully.')
+        DefaultSeverity   = 'Info'
+        AppliesWhen       = 'The import reports successful native output without a captured exit code, all required Notepad hive values match, and no import or verification error remains.'
+        BlanketSuppression = $false
+    }
+    [pscustomobject]@{
+        ToolId            = 'notepad-settings'
+        ReasonCode        = 'PreExistingHiveMountRecovered'
+        SourceTolerance   = 'BoostLab may safely unload an owned/stale HKLM:\Settings mount before running the source-defined Notepad hive import.'
+        SourcePatterns    = @('reg unload', 'HKLM\Settings')
+        DefaultSeverity   = 'Info'
+        AppliesWhen       = 'The pre-existing mount is unloadable, the import continues, all required Notepad hive values match, and no user action is needed.'
+        BlanketSuppression = $false
+    }
+    [pscustomobject]@{
+        ToolId            = 'notepad-settings'
+        ReasonCode        = 'HiveLoadAccessDeniedRecovered'
+        SourceTolerance   = 'A transient reg load access-denied result can be recovered by the source-equivalent Notepad stop/delay retry before hive verification.'
+        SourcePatterns    = @('reg load', 'access denied')
+        DefaultSeverity   = 'Info'
+        AppliesWhen       = 'The first hive load reports access denied, the bounded retry succeeds, all required Notepad hive values match, and no user action is needed.'
+        BlanketSuppression = $false
+    }
+    [pscustomobject]@{
         ToolId            = 'device-manager-power-savings-wake'
         ReasonCode        = 'SourceToleratedAccessDenied'
         SourceTolerance   = 'Some source-approved device registry paths may be protected or inaccessible on a live system.'

@@ -56,6 +56,9 @@ $requiredOutcomes = @(
     [pscustomobject]@{ ToolId = 'power-plan'; ReasonCode = 'ActiveSchemeDeleteAttemptExpected' }
     [pscustomobject]@{ ToolId = 'power-plan'; ReasonCode = 'ExistingTargetSchemeReuse' }
     [pscustomobject]@{ ToolId = 'network-adapter-power-savings-wake'; ReasonCode = 'HardwareSpecificUnsupportedSetting' }
+    [pscustomobject]@{ ToolId = 'notepad-settings'; ReasonCode = 'NativeExitCodeMissingRecoveredByVerification' }
+    [pscustomobject]@{ ToolId = 'notepad-settings'; ReasonCode = 'PreExistingHiveMountRecovered' }
+    [pscustomobject]@{ ToolId = 'notepad-settings'; ReasonCode = 'HiveLoadAccessDeniedRecovered' }
     [pscustomobject]@{ ToolId = 'device-manager-power-savings-wake'; ReasonCode = 'SourceToleratedAccessDenied' }
 )
 
@@ -94,6 +97,9 @@ foreach ($expectedPattern in @(
     'msiexec.exe'
     'SnippingTool.exe'
     'powercfg'
+    'reg import'
+    'reg unload'
+    'reg load'
     'setting specified does not exist'
     'driver does not expose this property'
     'Requested registry access is not allowed'

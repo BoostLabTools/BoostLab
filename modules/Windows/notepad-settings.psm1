@@ -2,6 +2,10 @@ Set-StrictMode -Version Latest
 
 $verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\Verification.psm1'
 Import-Module -Name $verificationModulePath -Scope Local -ErrorAction Stop
+$sourceToleratedOutcomeModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\SourceToleratedOutcomes.psm1'
+if (-not (Get-Command -Name 'New-BoostLabSourceToleratedOutcomeNote' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $sourceToleratedOutcomeModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'notepad-settings'; Title = 'Notepad Settings'; Stage = 'Windows'; Order = 14
@@ -938,11 +942,18 @@ function New-BoostLabNotepadApplyVerification {
 
     foreach ($operation in @($HiveImportResult.HiveOperations)) {
         $operationRecovered = [bool]$operation.RecoveryAttempted
+        $loadAccessDeniedRecovered = (
+            [bool]$HiveImportResult.Success -and
+            [string]$operation.Stage -eq 'LoadSettingsHive' -and
+            -not [bool]$operation.Success -and
+            (Test-BoostLabNotepadAccessDeniedOutput -Value $operation.NativeOutput) -and
+            @($HiveImportResult.HiveOperations | Where-Object { [string]$_.Stage -eq 'LoadSettingsHive' -and [bool]$_.Success }).Count -gt 0
+        )
         $checks.Add((New-BoostLabVerificationCheck `
             -Name "Hive operation | $($operation.Stage)" `
-            -Expected $(if ($operationRecovered) { 'Exit code 0 or mounted hive verification recovery' } else { 'Exit code 0' }) `
+            -Expected $(if ($operationRecovered) { 'Exit code 0 or mounted hive verification recovery' } elseif ($loadAccessDeniedRecovered) { 'Exit code 0 or bounded access-denied retry recovery' } else { 'Exit code 0' }) `
             -Actual $(if ($null -eq $operation.ExitCode) { 'No exit code' } else { "ExitCode=$($operation.ExitCode)" }) `
-            -Status $(if (-not [bool]$operation.Success) { 'Failed' } elseif ($operationRecovered) { 'Warning' } else { 'Passed' }) `
+            -Status $(if (-not [bool]$operation.Success -and -not $loadAccessDeniedRecovered) { 'Failed' } else { 'Passed' }) `
             -Message ([string]$operation.Message)))
     }
 
@@ -1193,9 +1204,61 @@ function Invoke-BoostLabNotepadSettingsAction {
                 -HiveImportResult $hiveImportResult `
                 -FileState $detectedFileState
             $success = [bool]$hiveImportResult.Success -and $verificationResult.Status -ne 'Failed'
-            $completedWithWarnings = ($success -and ($verificationResult.Status -eq 'Warning' -or @($hiveImportResult.Warnings).Count -gt 0))
+            $informationalNotes = [System.Collections.Generic.List[object]]::new()
+            $severityWarnings = [System.Collections.Generic.List[string]]::new()
+            foreach ($warning in @($hiveImportResult.Warnings)) {
+                $warningText = [string]$warning
+                if (
+                    $success -and
+                    [string]$verificationResult.Status -eq 'Passed' -and
+                    [string]$hiveImportResult.FinalStatusReason -eq 'NativeExitCodeMissingRecoveredByVerification' -and
+                    $warningText -like 'ImportNotepadSettingsPayload returned no native exit code*'
+                ) {
+                    $informationalNotes.Add(
+                        (New-BoostLabSourceToleratedOutcomeNote `
+                            -ToolId 'notepad-settings' `
+                            -ReasonCode 'NativeExitCodeMissingRecoveredByVerification' `
+                            -Message $warningText `
+                            -Details ([pscustomobject]@{ Action = $ActionName; VerificationStatus = [string]$verificationResult.Status }))
+                    )
+                    continue
+                }
+                if (
+                    $success -and
+                    [string]$verificationResult.Status -eq 'Passed' -and
+                    $warningText -like 'Pre-existing HKLM:\Settings mount was unloaded before Notepad settings.dat import.*'
+                ) {
+                    $informationalNotes.Add(
+                        (New-BoostLabSourceToleratedOutcomeNote `
+                            -ToolId 'notepad-settings' `
+                            -ReasonCode 'PreExistingHiveMountRecovered' `
+                            -Message $warningText `
+                            -Details ([pscustomobject]@{ Action = $ActionName; VerificationStatus = [string]$verificationResult.Status }))
+                    )
+                    continue
+                }
+                if (
+                    $success -and
+                    [string]$verificationResult.Status -eq 'Passed' -and
+                    $warningText -like 'reg load returned access denied; Notepad stop/delay retry was attempted.*'
+                ) {
+                    $informationalNotes.Add(
+                        (New-BoostLabSourceToleratedOutcomeNote `
+                            -ToolId 'notepad-settings' `
+                            -ReasonCode 'HiveLoadAccessDeniedRecovered' `
+                            -Message $warningText `
+                            -Details ([pscustomobject]@{ Action = $ActionName; VerificationStatus = [string]$verificationResult.Status }))
+                    )
+                    continue
+                }
+                $severityWarnings.Add($warningText)
+            }
+            $completedWithWarnings = ($success -and ($verificationResult.Status -eq 'Warning' -or $severityWarnings.Count -gt 0))
             $message = if ($success -and $completedWithWarnings) {
                 'Notepad settings Apply source sequence completed with warnings; mounted hive verification passed.'
+            }
+            elseif ($success -and $informationalNotes.Count -gt 0) {
+                'Notepad settings Apply source sequence completed; expected informational recovery details were recorded.'
             }
             elseif ($success) {
                 'Notepad settings Apply source sequence completed.'
@@ -1228,7 +1291,9 @@ function Invoke-BoostLabNotepadSettingsAction {
                 RegistryValuesChecked = @($hiveImportResult.RegistryValuesChecked)
                 FileDisposition = if ($success) { 'settings.dat was targeted through the source-defined mounted hive sequence and verified before unload.' } else { 'Operation failed before a verified Notepad settings.dat state could be established.' }
                 FinalStatusReason = [string]$hiveImportResult.FinalStatusReason
-                Warnings = @($hiveImportResult.Warnings)
+                Warnings = $severityWarnings.ToArray()
+                InformationalNotes = $informationalNotes.ToArray()
+                ExpectedNoOpOutcomes = $informationalNotes.ToArray()
                 Errors = @($hiveImportResult.Errors)
                 RecoveryAttempted = $recoveryAttempted
                 RecoveryReason = $recoveryReason

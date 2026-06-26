@@ -356,6 +356,51 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     Assert-BoostLabCondition (@($accessDeniedProcessActions).Count -eq 2) 'Access denied retry must invoke the Notepad stop path once before Apply and once before retry.'
     Assert-BoostLabCondition ([string]$accessDeniedResult.Message -like '*Access is denied*') 'Access denied result must preserve native output.'
 
+    $recoveredAccessDeniedEvents = [System.Collections.Generic.List[string]]::new()
+    $recoveredAccessDeniedProcessActions = [System.Collections.Generic.List[string]]::new()
+    $recoveredAccessDeniedState = @{ LoadCount = 0 }
+    $recoveredAccessDeniedStopper = {
+        $recoveredAccessDeniedProcessActions.Add('Stop-Notepad')
+        [pscustomobject]@{ Success = $true; Status = 'StopRequested'; Message = 'Stop-Process Notepad was invoked with SilentlyContinue, matching Ultimate.' }
+    }.GetNewClosure()
+    $recoveredAccessDeniedCommand = {
+        param($Operation, $Arguments, $Root)
+        $recoveredAccessDeniedEvents.Add("$Operation|$($Arguments -join '|')")
+        if ($Operation -eq 'load') {
+            $recoveredAccessDeniedState.LoadCount = [int]$recoveredAccessDeniedState.LoadCount + 1
+            if ([int]$recoveredAccessDeniedState.LoadCount -eq 1) {
+                return [pscustomobject]@{ Success = $false; Operation = $Operation; ExitCode = 5; Output = @('ERROR: Access is denied.') }
+            }
+        }
+
+        [pscustomobject]@{ Success = $true; Operation = $Operation; ExitCode = 0; Output = @('The operation completed successfully.') }
+    }.GetNewClosure()
+    $recoveredAccessDeniedResult = & $notepadModule {
+        param($FileState, $ProcessStopper, $Delay, $RegistryWriter, $RegistryCommand, $RegistryReader, $PathTester, $HiveMountReader)
+        Invoke-BoostLabNotepadSettingsAction `
+            -ActionName 'Apply' `
+            -Confirmed:$true `
+            -AdministratorChecker { $true } `
+            -FileStateReader { param($Path) $FileState } `
+            -ProcessStopper $ProcessStopper `
+            -DelayInvoker $Delay `
+            -RegistryFileWriter $RegistryWriter `
+            -RegistryCommandInvoker $RegistryCommand `
+            -RegistryReader $RegistryReader `
+            -PathTester $PathTester `
+            -HiveMountReader $HiveMountReader `
+            -LocalAppData 'C:\Users\Tester\AppData\Local' `
+            -SystemRoot 'C:\Windows'
+    } (& $newFileState $true 'UPDATED' 'Updated file detected.') $recoveredAccessDeniedStopper $delay $registryWriter $recoveredAccessDeniedCommand $registryReader $pathTesterPresent $hiveMountAbsent
+    Assert-BoostLabCondition ([bool]$recoveredAccessDeniedResult.Success) 'Recovered access denied reg load must succeed after retry and value verification.'
+    Assert-BoostLabCondition ([string]$recoveredAccessDeniedResult.Status -eq 'Passed') 'Recovered access denied reg load with verified values should not surface as Warning.'
+    Assert-BoostLabCondition ([string]$recoveredAccessDeniedResult.VerificationResult.Status -eq 'Passed') 'Recovered access denied reg load should pass verification after value checks.'
+    Assert-BoostLabCondition ([string]$recoveredAccessDeniedResult.Data.CommandStatus -eq 'Completed') 'Recovered access denied reg load should report completed with informational details.'
+    Assert-BoostLabCondition (@($recoveredAccessDeniedResult.Data.Warnings).Count -eq 0) 'Recovered access denied reg load should not leave user-facing warnings.'
+    Assert-BoostLabCondition (@($recoveredAccessDeniedResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'HiveLoadAccessDeniedRecovered' }).Count -eq 1) 'Recovered access denied reg load should be recorded as an informational source-tolerated outcome.'
+    Assert-BoostLabCondition (($recoveredAccessDeniedEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Recovered access denied retry must continue to import and unload after the second load succeeds.'
+    Assert-BoostLabCondition (@($recoveredAccessDeniedProcessActions).Count -eq 2) 'Recovered access denied retry must invoke the Notepad stop path once before Apply and once before retry.'
+
     $staleMountEvents = [System.Collections.Generic.List[string]]::new()
     $staleMountCommand = {
         param($Operation, $Arguments, $Root)
@@ -381,7 +426,9 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $staleMountCommand $registryReader $pathTesterPresent
     Assert-BoostLabCondition ([bool]$staleMountResult.Success) 'Unloadable stale HKLM:\Settings mount should be cleaned before Notepad import.'
     Assert-BoostLabCondition (($staleMountEvents.ToArray() -join ',') -eq "unload|HKLM\Settings,load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,unload|HKLM\Settings") 'Stale mount cleanup must unload before loading the Notepad hive.'
-    Assert-BoostLabCondition (@($staleMountResult.Data.Warnings | Where-Object { [string]$_ -like '*Pre-existing HKLM:\Settings mount*' }).Count -eq 1) 'Stale mount cleanup must be reported as a warning/detail.'
+    Assert-BoostLabCondition ([string]$staleMountResult.Status -eq 'Passed') 'Recovered stale mount cleanup with verified values should not surface as Warning.'
+    Assert-BoostLabCondition (@($staleMountResult.Data.Warnings).Count -eq 0) 'Recovered stale mount cleanup should not leave user-facing warnings.'
+    Assert-BoostLabCondition (@($staleMountResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'PreExistingHiveMountRecovered' -and [string]$_.Message -like '*Pre-existing HKLM:\Settings mount*' }).Count -eq 1) 'Stale mount cleanup must be reported as an informational recovery detail.'
 
     $blockedMountEvents = [System.Collections.Generic.List[string]]::new()
     $blockedMountResult = & $notepadModule {
@@ -474,10 +521,12 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
             -SystemRoot 'C:\Windows'
     } (& $newFileState $true 'UPDATED' 'Updated file detected.') $processStopper $delay $registryWriter $recoverableExitCodeCommand $recoverableExitCodeReader $pathTesterPresent $hiveMountAbsent
     Assert-BoostLabCondition ([bool]$recoverableExitCodeResult.Success) 'Missing import exit code with native success output and matching values must not fail.'
-    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Status -eq 'Warning') 'Recovered missing import exit code should surface as Warning.'
-    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.VerificationResult.Status -eq 'Warning') 'Recovered missing import exit code should keep verification warning diagnostics.'
-    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Data.CommandStatus -eq 'Completed with warnings') 'Recovered missing import exit code should report completed with warnings.'
+    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Status -eq 'Passed') 'Recovered missing import exit code with verified values should not surface as Warning.'
+    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.VerificationResult.Status -eq 'Passed') 'Recovered missing import exit code should pass verification after value checks.'
+    Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Data.CommandStatus -eq 'Completed') 'Recovered missing import exit code should report completed with informational details.'
     Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Data.FinalStatusReason -eq 'NativeExitCodeMissingRecoveredByVerification') 'Recovered import must report NativeExitCodeMissingRecoveredByVerification.'
+    Assert-BoostLabCondition (@($recoverableExitCodeResult.Data.Warnings).Count -eq 0) 'Recovered missing import exit code should not leave user-facing warnings.'
+    Assert-BoostLabCondition (@($recoverableExitCodeResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'NativeExitCodeMissingRecoveredByVerification' }).Count -eq 1) 'Recovered missing import exit code should be recorded as an informational source-tolerated outcome.'
     Assert-BoostLabCondition ([bool]$recoverableExitCodeResult.Data.RecoveryAttempted) 'Recovered import must report RecoveryAttempted.'
     Assert-BoostLabCondition ([string]$recoverableExitCodeResult.Data.RecoveryReason -eq 'NativeExitCodeMissingWithSuccessOutput') 'Recovered import must report the recovery reason.'
     Assert-BoostLabCondition (($recoverableExitCodeEvents.ToArray() -join ',') -eq "load|HKLM\Settings|$notepadSettingsDatPath,import|$notepadRegFilePath,read|OpenFile,read|GhostFile,read|RewriteEnabled,unload|HKLM\Settings") 'Recovered missing import exit code must verify values before unload.'
