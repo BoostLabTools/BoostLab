@@ -265,9 +265,12 @@ foreach ($needle in @(
     'function Show-BoostLabRefreshRateRestartConfirmationDialog'
     'function New-BoostLabRefreshRateRestartConfirmationCallback'
     'Have you adjusted the refresh rate and are you ready to restart?'
-    'Refresh-rate confirmation dialog command was unavailable.'
-    '$dialogCommand.Invoke($promptText)'
+    'Refresh-rate confirmation UI dispatcher was unavailable.'
+    '$confirmationRequest = [pscustomobject]@{'
+    '$body.Text = [string]$confirmationRequest.Prompt'
+    '$dialog.ShowDialog()'
     'Succeeded = $false'
+    'if ([bool]$dispatcher.HasShutdownStarted -or [bool]$dispatcher.HasShutdownFinished)'
     '$operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)'
     '$operationHandle.Wait()'
     "RefreshRateConfirmationCallback"
@@ -390,6 +393,9 @@ Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('ms-se
 Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('mmsys.cpl')) 'Driver Install Debloat & Settings must not launch Windows Sound Settings from the refresh-rate gate.'
 Assert-BoostLabCondition (-not $driverInstallDebloatSettingsText.Contains('Read-Host')) 'Driver Install Debloat & Settings must not use raw console confirmation prompts.'
 Assert-BoostLabCondition (-not $uiText.Contains('& $dialogCommand')) 'Refresh-rate confirmation UI must not invoke a captured dialog command with an unvalidated call operator.'
+Assert-BoostLabCondition (-not $uiText.Contains('$dialogCommand')) 'Refresh-rate confirmation UI must not depend on a captured dialog command object.'
+Assert-BoostLabCondition (-not $uiText.Contains('$dialogCommand.Invoke')) 'Refresh-rate confirmation UI must not invoke a stale dialog command object.'
+Assert-BoostLabCondition (-not $uiText.Contains('Refresh-rate confirmation dialog command was unavailable.')) 'Normal MainWindow refresh-rate confirmation must not expose the stale dialog-command failure.'
 
 $edgeSettingsText = Get-Content -LiteralPath $edgeSettingsModulePath -Raw
 Assert-BoostLabTextContains -Text $edgeSettingsText -Needle 'SourceEquivalent' -Description 'Edge Settings source-equivalent behavior'

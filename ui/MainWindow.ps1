@@ -2523,7 +2523,7 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
     param()
 
     $dispatcher = if ($null -ne $script:BoostLabWindow) { $script:BoostLabWindow.Dispatcher } else { $null }
-    $dialogCommand = ${function:Show-BoostLabRefreshRateRestartConfirmationDialog}.GetNewClosure()
+    $ownerWindow = $script:BoostLabWindow
 
     return {
         param(
@@ -2534,7 +2534,10 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
         )
 
         if ($null -eq $dispatcher) {
-            return $false
+            throw 'Refresh-rate confirmation UI dispatcher was unavailable.'
+        }
+        if ([bool]$dispatcher.HasShutdownStarted -or [bool]$dispatcher.HasShutdownFinished) {
+            throw 'Refresh-rate confirmation UI dispatcher was unavailable.'
         }
 
         $promptText = if ([string]::IsNullOrWhiteSpace($Prompt)) {
@@ -2544,27 +2547,118 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
             $Prompt
         }
 
+        $confirmationRequest = [pscustomobject]@{
+            Prompt        = $promptText
+            Branch        = [string]$Branch
+            OperationType = if ($null -ne $Operation -and $null -ne $Operation.PSObject.Properties['Type']) { [string]$Operation.Type } else { '' }
+        }
+
         $showDialog = {
-            if ($null -eq $dialogCommand -or $dialogCommand -isnot [scriptblock]) {
-                return [pscustomobject]@{
-                    Succeeded = $false
-                    Confirmed = $false
-                    Error     = 'Refresh-rate confirmation dialog command was unavailable.'
-                }
-            }
-
             try {
-                $dialogValues = @($dialogCommand.Invoke($promptText))
-                $confirmed = if ($dialogValues.Count -gt 0) {
-                    [bool]$dialogValues[0]
-                }
-                else {
-                    $false
+                $dialog = [System.Windows.Window]::new()
+                $dialog.Title = 'Confirm Graphics Restart'
+                $dialog.Width = 560
+                $dialog.Height = 260
+                $dialog.MinWidth = 500
+                $dialog.MinHeight = 240
+                $dialog.ResizeMode = [System.Windows.ResizeMode]::NoResize
+                $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+                $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#0B1220')
+                $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E2E8F0')
+                $dialog.Tag = $false
+
+                $buttonStyle = $null
+                if ($null -ne $ownerWindow) {
+                    try {
+                        if ([bool]$ownerWindow.IsVisible) {
+                            $dialog.Owner = $ownerWindow
+                        }
+                    }
+                    catch {
+                    }
+                    try {
+                        $buttonStyle = $ownerWindow.FindResource('ActionButtonStyle')
+                    }
+                    catch {
+                        $buttonStyle = $null
+                    }
                 }
 
+                $root = [System.Windows.Controls.Grid]::new()
+                $root.Margin = [System.Windows.Thickness]::new(22)
+                $root.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
+                $root.RowDefinitions.Add([System.Windows.Controls.RowDefinition]::new())
+                $root.RowDefinitions[0].Height = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+                $root.RowDefinitions[1].Height = [System.Windows.GridLength]::Auto
+
+                $content = [System.Windows.Controls.StackPanel]::new()
+                $heading = [System.Windows.Controls.TextBlock]::new()
+                $heading.Text = 'Refresh Rate Checkpoint'
+                $heading.FontSize = 21
+                $heading.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $heading.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#F8FAFC')
+                $content.Children.Add($heading) | Out-Null
+
+                $body = [System.Windows.Controls.TextBlock]::new()
+                $body.Margin = [System.Windows.Thickness]::new(0, 12, 0, 0)
+                $body.Text = [string]$confirmationRequest.Prompt
+                $body.FontSize = 14
+                $body.LineHeight = 21
+                $body.TextWrapping = [System.Windows.TextWrapping]::Wrap
+                $body.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#D6DFED')
+                $content.Children.Add($body) | Out-Null
+
+                $note = [System.Windows.Controls.TextBlock]::new()
+                $note.Margin = [System.Windows.Thickness]::new(0, 10, 0, 0)
+                $note.Text = 'BoostLab will only submit the restart after you explicitly confirm.'
+                $note.FontSize = 12
+                $note.TextWrapping = [System.Windows.TextWrapping]::Wrap
+                $note.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FDE68A')
+                $content.Children.Add($note) | Out-Null
+
+                [System.Windows.Controls.Grid]::SetRow($content, 0)
+                $root.Children.Add($content) | Out-Null
+
+                $buttons = [System.Windows.Controls.StackPanel]::new()
+                $buttons.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+                $buttons.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+                $buttons.Margin = [System.Windows.Thickness]::new(0, 18, 0, 0)
+
+                $noButton = [System.Windows.Controls.Button]::new()
+                $noButton.Content = 'No, do not restart yet'
+                $noButton.MinWidth = 150
+                $noButton.Margin = [System.Windows.Thickness]::new(0, 0, 10, 0)
+                if ($null -ne $buttonStyle) {
+                    $noButton.Style = $buttonStyle
+                }
+                $noButton.Add_Click({
+                    $dialog.Tag = $false
+                    $dialog.DialogResult = $false
+                    $dialog.Close()
+                })
+                $buttons.Children.Add($noButton) | Out-Null
+
+                $yesButton = [System.Windows.Controls.Button]::new()
+                $yesButton.Content = 'Yes, I adjusted refresh rate and am ready to restart'
+                $yesButton.MinWidth = 300
+                if ($null -ne $buttonStyle) {
+                    $yesButton.Style = $buttonStyle
+                }
+                $yesButton.Add_Click({
+                    $dialog.Tag = $true
+                    $dialog.DialogResult = $true
+                    $dialog.Close()
+                })
+                $buttons.Children.Add($yesButton) | Out-Null
+
+                [System.Windows.Controls.Grid]::SetRow($buttons, 1)
+                $root.Children.Add($buttons) | Out-Null
+                $dialog.Content = $root
+
+                $null = $dialog.ShowDialog()
                 return [pscustomobject]@{
                     Succeeded = $true
-                    Confirmed = $confirmed
+                    Confirmed = [bool]$dialog.Tag
                     Error     = ''
                 }
             }
@@ -2572,7 +2666,7 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
                 return [pscustomobject]@{
                     Succeeded = $false
                     Confirmed = $false
-                    Error     = $_.Exception.Message
+                    Error     = "Refresh-rate confirmation dialog failed: $($_.Exception.Message)"
                 }
             }
         }.GetNewClosure()

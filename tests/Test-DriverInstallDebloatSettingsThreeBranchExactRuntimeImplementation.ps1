@@ -228,6 +228,20 @@ try {
     Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.ConfirmationCallbackAvailable) 'Valid refresh-rate confirmation callback must be reported available.'
     Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.ConfirmationCallbackUsed) 'Valid refresh-rate confirmation callback must be used.'
     Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.RestartConfirmedByUser) 'Valid refresh-rate confirmation callback must set RestartConfirmedByUser.'
+    Assert-BoostLabCondition (-not [bool]$confirmedRefreshRate.Data.RestartTriggered) 'Refresh-rate confirmation operation itself must not trigger restart.'
+    Assert-BoostLabCondition ([string]$confirmedRefreshRate.Data.ConfirmationFailureKind -eq 'Not available') 'Successful refresh-rate confirmation must report no failure classification.'
+    Assert-BoostLabCondition ([string]$confirmedRefreshRate.Data.ConfirmationError -eq '') 'Successful refresh-rate confirmation must not report an error.'
+
+    $declinedRefreshRate = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        return $false
+    }
+    Assert-BoostLabCondition (-not [bool]$declinedRefreshRate.Success) 'Declined refresh-rate confirmation callback must not allow restart continuation.'
+    Assert-BoostLabCondition ([bool]$declinedRefreshRate.Data.ConfirmationCallbackAvailable) 'Declined refresh-rate confirmation callback must still be reported available.'
+    Assert-BoostLabCondition ([bool]$declinedRefreshRate.Data.ConfirmationCallbackUsed) 'Declined refresh-rate confirmation callback must still be used.'
+    Assert-BoostLabCondition (-not [bool]$declinedRefreshRate.Data.RestartConfirmedByUser) 'Declined refresh-rate confirmation must report RestartConfirmedByUser false.'
+    Assert-BoostLabCondition (-not [bool]$declinedRefreshRate.Data.RestartTriggered) 'Declined refresh-rate confirmation must not trigger restart.'
+    Assert-BoostLabCondition ([string]$declinedRefreshRate.Data.ConfirmationFailureKind -eq 'Not available') 'Declined refresh-rate confirmation must not be classified as callback infrastructure failure.'
 
     $missingCallbackConfirmation = & $invokeRefreshRateConfirmationOperation $null
     Assert-BoostLabCondition (-not [bool]$missingCallbackConfirmation.Success) 'Missing refresh-rate confirmation callback must not allow restart continuation.'
@@ -360,6 +374,7 @@ try {
             Assert-BoostLabCondition ([bool]$apply.Data.RefreshRateConfirmationRequired) 'NVIDIA Apply must report refresh-rate confirmation required.'
             Assert-BoostLabCondition ([bool]$apply.Data.RestartConfirmedByUser) 'NVIDIA Apply must report restart confirmation when the confirmation operation succeeds.'
             Assert-BoostLabCondition ([bool]$apply.Data.RestartTriggered) 'NVIDIA Apply must report restart triggered after confirmation.'
+            Assert-BoostLabCondition ([string]$apply.Data.ConfirmationFailureKind -eq 'Not available') 'NVIDIA Apply success must report no refresh-rate confirmation failure classification.'
         }
     }
 
@@ -428,6 +443,7 @@ try {
     Assert-BoostLabCondition ([bool]$declinedApply.RestartRequired) 'Declined refresh-rate confirmation must keep restart required.'
     Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartConfirmedByUser) 'Declined refresh-rate confirmation must report RestartConfirmedByUser false.'
     Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartTriggered) 'Declined refresh-rate confirmation must not trigger restart.'
+    Assert-BoostLabCondition ([string]$declinedApply.Data.ConfirmationFailureKind -eq 'Not available') 'Declined refresh-rate confirmation must not be classified as callback infrastructure failure.'
     Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsDeclineOps | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 0) 'Restart operation must not run before refresh-rate confirmation.'
 
     $script:DriverInstallDebloatSettingsOpenFailOps = [System.Collections.Generic.List[object]]::new()
@@ -577,5 +593,4 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     HostMutationDuringValidation = $false
     Message = 'Driver Install Debloat & Settings maps NVIDIA, AMD, and INTEL source branches and validates with mocked execution only.'
 }
-
 

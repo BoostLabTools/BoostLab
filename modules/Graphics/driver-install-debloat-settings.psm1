@@ -896,7 +896,7 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     Prompt                          = $prompt
                     ConfirmationCallbackAvailable   = $false
                     ConfirmationCallbackUsed        = $false
-                    ConfirmationFailureKind         = ''
+                    ConfirmationFailureKind         = 'Not available'
                     ConfirmationError               = ''
                 }
 
@@ -1192,6 +1192,10 @@ function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
     $confirmationSucceeded = $null -ne $confirmationResult -and [bool]$confirmationResult.Success
     $restartConfirmed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'RestartConfirmedByUser' -DefaultValue $confirmationSucceeded)
     $restartTriggered = $null -ne $restartResult
+    $confirmationCallbackAvailable = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationCallbackAvailable' -DefaultValue $false)
+    $confirmationCallbackUsed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationCallbackUsed' -DefaultValue $false)
+    $confirmationFailureKind = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationFailureKind' -DefaultValue 'Not available')
+    $confirmationError = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationError' -DefaultValue '')
 
     [pscustomobject]@{
         NvidiaControlPanelOpenAttempted = $nvidiaOpenAttempted
@@ -1201,6 +1205,10 @@ function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
         RefreshRateConfirmationRequired = ($Branch -eq 'NVIDIA')
         RestartConfirmedByUser          = $restartConfirmed
         RestartTriggered                = $restartTriggered
+        ConfirmationCallbackAvailable   = $confirmationCallbackAvailable
+        ConfirmationCallbackUsed        = $confirmationCallbackUsed
+        ConfirmationFailureKind         = $confirmationFailureKind
+        ConfirmationError               = $confirmationError
         FinalStatusReason               = $FinalStatusReason
     }
 }
@@ -1289,6 +1297,10 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
                     RefreshRateConfirmationRequired    = [bool]$diagnostics.RefreshRateConfirmationRequired
                     RestartConfirmedByUser             = [bool]$diagnostics.RestartConfirmedByUser
                     RestartTriggered                   = [bool]$diagnostics.RestartTriggered
+                    ConfirmationCallbackAvailable      = [bool]$diagnostics.ConfirmationCallbackAvailable
+                    ConfirmationCallbackUsed           = [bool]$diagnostics.ConfirmationCallbackUsed
+                    ConfirmationFailureKind            = [string]$diagnostics.ConfirmationFailureKind
+                    ConfirmationError                  = [string]$diagnostics.ConfirmationError
                     FinalStatusReason                  = [string]$diagnostics.FinalStatusReason
                 }
             }
@@ -1334,6 +1346,10 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
         RefreshRateConfirmationRequired    = [bool]$successDiagnostics.RefreshRateConfirmationRequired
         RestartConfirmedByUser             = [bool]$successDiagnostics.RestartConfirmedByUser
         RestartTriggered                   = [bool]$successDiagnostics.RestartTriggered
+        ConfirmationCallbackAvailable      = [bool]$successDiagnostics.ConfirmationCallbackAvailable
+        ConfirmationCallbackUsed           = [bool]$successDiagnostics.ConfirmationCallbackUsed
+        ConfirmationFailureKind            = [string]$successDiagnostics.ConfirmationFailureKind
+        ConfirmationError                  = [string]$successDiagnostics.ConfirmationError
         FinalStatusReason                  = [string]$successDiagnostics.FinalStatusReason
     }
 }
