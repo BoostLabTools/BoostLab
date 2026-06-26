@@ -3,7 +3,7 @@
 * **Tool name:** Restore Point
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/23 Restore Point.ps1`
-* **Source checksum:** `E9164E079DB76112A59D686B9C0C77B1A9B26E69CA4326B3B4FF46BF63C03C34`
+* **Source checksum:** `0FCC75B291F40F234632BA44A2705B31BA7EBC29FE817D42630A953D0D10A451`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

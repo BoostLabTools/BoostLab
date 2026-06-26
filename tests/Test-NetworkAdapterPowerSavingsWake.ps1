@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -37,7 +38,7 @@ $recordPath = Join-Path $ProjectRoot 'docs\migrations\network-adapter-power-savi
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-$sourceHash = '1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB'
+$sourceHash = 'D0CD4D79295D78366478C45958E5790ABAA63FE42065FBC29B88D6326DF6A4B6'
 $adapterClassPath = 'HKLM:\System\ControlSet001\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'
 $valueDefinitions = @(
     [pscustomobject]@{ Name = 'PnPCapabilities'; Type = 'REG_DWORD'; Data = '24' }
@@ -1004,12 +1005,12 @@ $protectedModules = [ordered]@{
     }
     'GameBar' = @{
         Path = Join-Path $modulesRoot 'Windows\game-bar.psm1'
-        Hash = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'
+        Hash = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'Copilot' = @{
         Path = Join-Path $modulesRoot 'Windows\copilot.psm1'
-        Hash = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'
+        Hash = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     'GameMode' = @{
@@ -1146,7 +1147,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

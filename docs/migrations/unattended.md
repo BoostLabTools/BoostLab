@@ -5,7 +5,7 @@
 * **Tool:** Unattended
 * **Stage:** Refresh
 * **Source:** `source-ultimate/2 Refresh/2 Unattended.ps1`
-* **Source SHA-256:** `0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338`
+* **Source SHA-256:** `8A010A0B88860C88C4109A37BE21B03BA5C5686333D5B4A1C30F40C2FEE1D3DD`
 * **Yazan approval status:** Phase 111 accepted as `DoneYazanAcceptedNearParity`; the source-equivalent Windows 11 payload behavior is preserved with safer GUI confirmation, removable-media validation, backup/state capture, and verification.
 
 ## Original Ultimate Behavior

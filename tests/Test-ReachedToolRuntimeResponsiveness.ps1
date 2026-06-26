@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -419,17 +420,10 @@ foreach ($classification in @(
     Assert-BoostLabTextContains -Text $bloatwareText -Needle $classification -Description 'Bloatware AppX classification regression guard'
 }
 
-foreach ($protectedPath in @(
-    'source-ultimate'
-    'source-ultimate\_intake-promoted'
-    'intake'
-)) {
-    $fullPath = Join-Path $ProjectRoot $protectedPath
-    if (Test-Path -LiteralPath $fullPath) {
-        $recent = @(Get-ChildItem -LiteralPath $fullPath -Recurse -File | Where-Object { $_.LastWriteTime -gt (Get-Date).AddHours(-6) })
-        Assert-BoostLabCondition ($recent.Count -eq 0) "Protected path has recent modifications during responsiveness hotfix: $protectedPath"
-    }
-}
+Assert-BoostLabTestProtectedPathsClean `
+    -ProjectRoot $ProjectRoot `
+    -ProtectedPath @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake') `
+    -Message 'Protected paths changed during responsiveness hotfix'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1'

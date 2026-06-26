@@ -3,7 +3,7 @@
 * **Tool name:** Start Menu Layout
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/2 Start Menu Layout.ps1`
-* **Source checksum:** `81C1298D7C9E112DB910C4398CD94E4B70ECD97ED3B185CF2FD2B8A380E069E8`
+* **Source checksum:** `B769C351189A3DC2BB8E4A595F9E745A9F25E5A69923DF10619B6D9C34D37724`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 20

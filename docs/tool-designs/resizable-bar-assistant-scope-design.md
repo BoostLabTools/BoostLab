@@ -17,7 +17,7 @@ rollback rules, firmware/reboot workflow, verification, and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/3 Resizable BAR Assistant.ps1`
-* Source SHA-256: `E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443`
+* Source SHA-256: `BE2DFA30206B92EE34BE32D8DE1D2360C5C214DEDE8F1A48B0698DD60A2BE3EA`
 * Current BoostLab module path:
   `modules/Advanced/resizable-bar-assistant.psm1`
 * Current status: refused placeholder

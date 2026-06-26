@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -51,7 +52,7 @@ foreach ($path in @($configPath, $executionPath, $actionPlanPath, $modulePath, $
     Assert-CopilotCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file is missing: $path"
 }
 
-$expectedSourceHash = '21B58212B241A6C0B74582063E3E74F746014E9137194B58B088CC6692F22A90'
+$expectedSourceHash = '45F87252A018398E87B281DE094E4943A63026567EB0782B631BBEF989CF6A9E'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-CopilotCondition ($actualSourceHash -eq $expectedSourceHash) "Copilot source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 

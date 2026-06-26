@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -42,7 +43,7 @@ $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-$expectedSourceHash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B'
+$expectedSourceHash = 'F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83'
 Assert-BoostLabCondition ((Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash -eq $expectedSourceHash) 'Control Panel Settings Ultimate source hash changed.'
 
 $sourceText = Get-Content -LiteralPath $sourcePath -Raw

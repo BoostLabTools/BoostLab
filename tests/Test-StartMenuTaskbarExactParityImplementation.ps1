@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 function Assert-BoostLabCondition {
@@ -83,7 +84,7 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 
-$expectedSourceHash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91'
+$expectedSourceHash = 'D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) 'Start Menu Taskbar source checksum mismatch.'
 

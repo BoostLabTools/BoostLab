@@ -3,7 +3,7 @@
 * **Tool name:** Background Apps
 * **Stage:** Setup
 * **Source script path:** `source-ultimate/3 Setup/5 Background Apps.ps1`
-* **Source checksum:** `2DF15DE03306CCAF19180940F215972E943EA94E7B2C52B7D6EC2B6403E79445`
+* **Source checksum:** `E85316D98951A7ED0D7367EA12B521486293AE72A2442C4F8D1C514DC437DBE7`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -80,7 +81,7 @@ function New-BoostLabMockVisualCppOperationResult {
     }
 }
 
-$expectedSourceHash = '7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09'
+$expectedSourceHash = '01D6A5FAFD5E7C1FB9DA1913BD17C543EE0F8A4A7E2A7DF5583A50AEF1D82374'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\3 C++.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Graphics\visual-cpp.psm1'
 $stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
@@ -368,13 +369,10 @@ $categoryCounts = Get-BoostLabParityCategoryCounts -ParityBaseline $parityBaseli
 Assert-BoostLabCondition ([int]$categoryCounts['NearParityControlled'] -eq [int]$parityBaseline.Counts.NearParityControlled) 'NearParityControlled count mismatch after Visual C++.'
 Assert-BoostLabCondition ([int]$categoryCounts['ManualHandoffOnly'] -eq [int]$parityBaseline.Counts.ManualHandoffOnly) 'ManualHandoffOnly count mismatch after Visual C++.'
 
-foreach ($protectedPath in @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake')) {
-    $fullPath = Join-Path $ProjectRoot $protectedPath
-    if (Test-Path -LiteralPath $fullPath) {
-        $recent = @(Get-ChildItem -LiteralPath $fullPath -Recurse -File | Where-Object { $_.LastWriteTime -gt (Get-Date).AddHours(-6) })
-        Assert-BoostLabCondition ($recent.Count -eq 0) "Protected source/intake path has recent modifications during Visual C++ Phase 130: $protectedPath"
-    }
-}
+Assert-BoostLabTestProtectedPathsClean `
+    -ProjectRoot $ProjectRoot `
+    -ProtectedPath @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake') `
+    -Message 'Protected source/intake paths changed during Visual C++ Phase 130'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\23 NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'
 

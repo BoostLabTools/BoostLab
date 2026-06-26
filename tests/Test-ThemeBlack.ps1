@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -67,7 +68,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '3E5C58E1128B20041828BD3BDDA07033D84B2C540CAE18DDC82C989BDEECE31A') {
     throw 'Theme Black Ultimate source hash changed.'
 }
 $source = Get-Content -Raw -LiteralPath $sourcePath
@@ -907,7 +908,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/6 Windows/4 Theme Black.ps1'
-    'C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F'
+    '3E5C58E1128B20041828BD3BDDA07033D84B2C540CAE18DDC82C989BDEECE31A'
     'Approved by Yazan'
     'blacktheme.reg'
     'defaulttheme.reg'
@@ -927,12 +928,12 @@ $unchangedModules = [ordered]@{
     }
     GameBar = @{
         Path = Join-Path $modulesRoot 'Windows\game-bar.psm1'
-        Hash = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'
+        Hash = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     Copilot = @{
         Path = Join-Path $modulesRoot 'Windows\copilot.psm1'
-        Hash = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'
+        Hash = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
 }
@@ -1060,7 +1061,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

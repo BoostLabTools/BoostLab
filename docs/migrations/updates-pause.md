@@ -3,7 +3,7 @@
 * **Tool name:** Updates Pause
 * **Stage:** Setup
 * **Source script path:** `source-ultimate/3 Setup/8 Updates Pause.ps1`
-* **Source checksum:** `4BBEF16C51FBEBAFAECB58307F8C619A37CD10BB3DC489BD4DF9A59DDBD1A0BD`
+* **Source checksum:** `5A587526097C9A11198FF5C3367B1B81D7C0531A806AACA63FC8998526099BE4`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

@@ -3,7 +3,7 @@
 * **Tool name:** Network Adapter Power Savings & Wake
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/19 Network Adapter Power Savings & Wake.ps1`
-* **Source checksum:** `1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB`
+* **Source checksum:** `D0CD4D79295D78366478C45958E5790ABAA63FE42065FBC29B88D6326DF6A4B6`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 23

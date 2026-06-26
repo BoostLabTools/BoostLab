@@ -349,7 +349,7 @@
             UltimateParity = 'Yes'
             SourceType = 'UltimateInstallerOptionPromotedToGraphics'
             SourceScriptPath = 'source-ultimate/4 Installers/1 Installers.ps1'
-            SourceSha256 = '1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67'
+            SourceSha256 = '268C1EFE627FADDA17892223D4C35E4845833506C22AADD3240C894ED046A6F8'
             SourceCanonicalSha256 = '268C1EFE627FADDA17892223D4C35E4845833506C22AADD3240C894ED046A6F8'
             GapSummary = 'Phase 173E promotes only the source-defined old Installers NVIDIA App option into Graphics: download the official NVIDIA App installer, run it with /s, move the Start Menu shortcut, and remove the NVIDIA Corporation Start Menu folder after confirmation.'
             YazanFinalException = $false

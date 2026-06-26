@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -48,7 +49,7 @@ $migrationPath = Join-Path $ProjectRoot 'docs\migrations\cleanup.md'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 
-$expectedSourceHash = '3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA'
+$expectedSourceHash = '13C3933AC95A9817E48C0FFA4971FB2CC2234F9783831C34675F9F529F2D507E'
 $inventoryBaseline = Get-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot
 $parityBaseline = Get-BoostLabParityStatusBaseline -ProjectRoot $ProjectRoot
 $parityOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $ProjectRoot
@@ -508,7 +509,7 @@ try {
 finally {
     $sha256.Dispose()
 }
-Assert-BoostLabCondition ($sourceLines.Count -eq 49 -and $sourceManifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition ($sourceLines.Count -eq 49 -and $sourceManifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate content or paths changed.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Filter '*NVME Faster Driver*.ps1').Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 

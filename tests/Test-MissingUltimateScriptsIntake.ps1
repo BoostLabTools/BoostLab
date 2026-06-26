@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -347,7 +348,7 @@ $sourceManifestHash = [BitConverter]::ToString(
 if ($sourceFiles.Count -ne 49) {
     throw "Expected 49 source-ultimate files, found $($sourceFiles.Count)."
 }
-if ($sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') {
+if ($sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') {
     throw "source-ultimate manifest hash changed unexpectedly: $sourceManifestHash"
 }
 

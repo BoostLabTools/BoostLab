@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -75,7 +76,7 @@ foreach ($path in @($configPath, $modulePath, $sourcePath, $migrationPath, $acti
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required To BIOS parity file was not found: $path"
 }
 
-$expectedSourceHash = 'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C'
+$expectedSourceHash = '555C124CC29006D9E6E42A1B2B3761AB760431E3D028758400A69065890E403D'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "To BIOS Ultimate source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
@@ -282,7 +283,7 @@ finally {
     $sha256.Dispose()
 }
 Assert-BoostLabCondition (@($sourceManifestLines).Count -eq 49) "source-ultimate file count changed: $(@($sourceManifestLines).Count)"
-Assert-BoostLabCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition ($manifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate content or paths changed.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',

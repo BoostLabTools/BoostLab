@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 function Assert-BloatwareCondition {
@@ -52,7 +53,8 @@ foreach ($requiredPath in @($sourcePath, $modulePath, $stagesPath, $executionPat
     Assert-BloatwareCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required file missing: $requiredPath"
 }
 
-$expectedSourceHash = '36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5'
+$expectedSourceHash = 'EBCE09158AB61ADE2C181DD5DB64C94B962BAF133DB4DB6122CEE642B9A48C9F'
+$expectedRawSourceHash = '36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BloatwareCondition ($actualSourceHash -eq $expectedSourceHash) "Bloatware source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 
@@ -127,7 +129,8 @@ try {
 
     $sourceStatus = Get-BoostLabBloatwareSourceStatus
     Assert-BloatwareCondition ([string]$sourceStatus.ChecksumStatus -eq 'Passed') 'Bloatware source status must pass checksum verification.'
-    Assert-BloatwareCondition ([string]$sourceStatus.ExpectedSha256 -eq $expectedSourceHash) 'Bloatware source status expected hash mismatch.'
+    Assert-BloatwareCondition ([string]$sourceStatus.ExpectedSha256 -eq $expectedRawSourceHash) 'Bloatware source status expected raw hash mismatch.'
+    Assert-BloatwareCondition ([string]$sourceStatus.ExpectedCanonicalSha256 -eq $expectedSourceHash) 'Bloatware source status expected canonical hash mismatch.'
 
     $analysisResult = Invoke-BoostLabToolAction -ActionName 'Analyze'
     Assert-BloatwareCondition ([bool]$analysisResult.Success) 'Bloatware Analyze should succeed.'
@@ -968,7 +971,7 @@ finally {
     $sha256.Dispose()
 }
 Assert-BloatwareCondition (@($sourceLines).Count -eq 49) 'source-ultimate file count changed.'
-Assert-BloatwareCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate manifest hash changed.'
+Assert-BloatwareCondition ($manifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate manifest hash changed.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',

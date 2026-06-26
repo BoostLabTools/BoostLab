@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -216,7 +217,7 @@ try {
     }
 
     $legacyHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $legacyPath).Hash
-    if ($legacyHash -ne 'C68BDADC7EEAC77A0FE8ECE999CEB5A28C51D819D69107AFD471739BA36E2737') {
+    if ($legacyHash -ne '60978F4598F7D632D077E29A6B463659D612EE8597B0D2F6A998AC2FC4FBA6BD') {
         throw 'The Ultimate BIOS Settings source file was modified.'
     }
 

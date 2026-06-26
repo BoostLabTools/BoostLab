@@ -15,7 +15,7 @@ adds exact production scopes and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/1 Start Menu Taskbar.ps1`
-* Source SHA-256: `88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91`
+* Source SHA-256: `D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4`
 * Current BoostLab module path: `modules/Windows/start-menu-taskbar.psm1`
 * Current status: refused placeholder
 * Current implemented actions: none

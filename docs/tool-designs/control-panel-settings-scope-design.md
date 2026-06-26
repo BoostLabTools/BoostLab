@@ -17,7 +17,7 @@ phase splits the source into exact bounded scopes and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/15 Control Panel Settings.ps1`
-* Source SHA-256: `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B`
+* Source SHA-256: `F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83`
 * Current BoostLab module path: `modules/Windows/control-panel-settings.psm1`
 * Current status: refused placeholder
 * Current implemented actions: none

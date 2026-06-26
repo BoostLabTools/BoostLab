@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -200,7 +201,7 @@ $legacySourceHash = Get-BoostLabManifestHash -Lines $legacySourceLines
 if ($legacySourceLines.Count -ne 49) {
     throw "Expected 49 legacy source-ultimate files outside _intake-promoted, found $($legacySourceLines.Count)."
 }
-if ($legacySourceHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') {
+if ($legacySourceHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') {
     throw "Legacy source-ultimate manifest outside _intake-promoted changed unexpectedly: $legacySourceHash"
 }
 

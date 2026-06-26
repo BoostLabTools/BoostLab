@@ -3,7 +3,7 @@
 * **Tool name:** Widgets
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/7 Widgets.ps1`
-* **Source checksum:** `7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73`
+* **Source checksum:** `0171013B91F2A6F7FD6D055F305045650AD1A326D5F45CB08953759A7A69AC0A`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Parity status:** Exact Ultimate parity implemented and accepted in Phase 141

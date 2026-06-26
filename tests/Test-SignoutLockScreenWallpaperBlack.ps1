@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -84,7 +85,7 @@ foreach ($field in $capabilities.Keys) {
 
 Assert-BoostLabCondition (
     (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq
-        'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+        '132C79401BE9CC2067FA97558AC28C03946B4D50BC2E895CF516A658332ECEB1'
 ) 'Signout LockScreen Wallpaper Black Ultimate source hash changed.'
 $source = Get-Content -Raw -LiteralPath $sourcePath
 foreach ($requiredText in @(
@@ -463,7 +464,7 @@ foreach ($requiredText in @(
 Assert-BoostLabCondition (Test-Path -LiteralPath $recordPath -PathType Leaf) 'The Signout LockScreen Wallpaper Black migration record is missing.'
 $recordSource = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
-    'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+    '132C79401BE9CC2067FA97558AC28C03946B4D50BC2E895CF516A658332ECEB1'
     'Exact Ultimate parity implemented and accepted in Phase 139'
     'Default deletes the complete `PersonalizationCSP` key'
     'There is no BoostLab backup or ownership-state wrapper'
@@ -507,8 +508,8 @@ $protectedModuleHashes = [ordered]@{
     'Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
     'Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'
     'Windows\ThemeBlack.psm1' = 'A3234AC0D27818C1F36DB9A9940726C6C346649B5B33A92B49452593F2FB5C2F'
-    'Windows\game-bar.psm1' = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'
-    'Windows\copilot.psm1' = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'
+    'Windows\game-bar.psm1' = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'
+    'Windows\copilot.psm1' = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'
     'Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
 }
 foreach ($relativePath in $protectedModuleHashes.Keys) {

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -72,7 +73,7 @@ $artifactPolicy = Import-PowerShellDataFile -LiteralPath $artifactPolicyPath
 $cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
-$expectedSourceHash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+$expectedSourceHash = '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
     throw "Timer Resolution Assistant source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
@@ -107,7 +108,7 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621`',
+    'Source SHA-256: `46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73`',
     'Phase 160 supersedes the placeholder',
     'No reusable production service/file/registry/compiler/LocalSystem/download/installer scopes',
     'The source contains no external download URL and no installer launch.',
@@ -203,7 +204,7 @@ if (-not $planText.Contains('docs/tool-designs/timer-resolution-assistant-scope-
 
 foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-    '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+    '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
     'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
     'Get-BoostLabTimerCSharpPayload'
     'Set Timer Resolution Service'
@@ -297,7 +298,7 @@ finally {
 
 if (
     @($sourceManifestLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

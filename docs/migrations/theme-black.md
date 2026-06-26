@@ -3,7 +3,7 @@
 * **Tool name:** Theme Black
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/4 Theme Black.ps1`
-* **Source checksum:** `C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F`
+* **Source checksum:** `3E5C58E1128B20041828BD3BDDA07033D84B2C540CAE18DDC82C989BDEECE31A`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 19

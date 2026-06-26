@@ -29,7 +29,7 @@ substitution or artifact-provenance approval exists.
 * Tool id: `directx`
 * Source path: `source-ultimate/5 Graphics/2 DirectX.ps1`
 * Source SHA-256:
-  `17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05`
+  `B944AE03DE0AFDD7329B84BBF53FF5624739465CBB7130A021E097A6723B1B27`
 
 ## Ultimate Behavior Reviewed
 

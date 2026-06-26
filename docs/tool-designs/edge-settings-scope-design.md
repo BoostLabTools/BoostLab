@@ -16,7 +16,7 @@ RunOnce, Active Setup, BHO, Default, or Restore behavior.
 ## Source Reference
 
 * Source path: `source-ultimate/3 Setup/6 Edge Settings.ps1`
-* Source SHA-256: `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28`
+* Source SHA-256: `3EE9E6F586D71E74F7400379E8D5DA079D52208D5B2DFA0E4AB035FCB08096A8`
 * Current BoostLab module path: `modules/Setup/edge-settings.psm1`
 * Current status: Phase 118 implemented near-parity controlled workflow
 * Current implemented actions: `Analyze`, `Apply`, `Default`, `Restore`

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -34,7 +35,7 @@ $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-$sourceHash = 'FB543A5C6BD8F2FBEA5CD3069FD72DCDCCAB847D9E4753FD33BB0909843D209F'
+$sourceHash = 'A02238FA5785F9EC4A483906E1E2C73941C93DACF5D286FF5D8F56CEE8494B76'
 $deviceClasses = @('ACPI', 'HID', 'PCI', 'USB')
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
@@ -716,10 +717,10 @@ $protectedHashes = [ordered]@{
     'modules\Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'
     'modules\Windows\ThemeBlack.psm1' = 'A3234AC0D27818C1F36DB9A9940726C6C346649B5B33A92B49452593F2FB5C2F'
     'modules\Windows\sound.psm1' = 'B20CBF149CDAA562011AABD05D5828100D0B3810A565A4B7E305EBD50C91FDE3'
-    'modules\Windows\game-bar.psm1' = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'
-    'modules\Windows\copilot.psm1' = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'
+    'modules\Windows\game-bar.psm1' = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'
+    'modules\Windows\copilot.psm1' = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
-    'modules\Setup\edge-settings.psm1' = 'B3F3CE4267F0EF86B560B1B4399608704A6DC1B0943660E7C39A450FE916189A'
+    'modules\Setup\edge-settings.psm1' = 'F93A752A9D84BF77FB76E3DE2AF81AC172B7902BAA406D1F927B5F701FCD5ED8'
 }
 foreach ($relativePath in $protectedHashes.Keys) {
     $path = Join-Path $ProjectRoot $relativePath
@@ -809,7 +810,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate changed during Phase 26.'
 }

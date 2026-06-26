@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -76,7 +77,7 @@ foreach ($requiredPath in @(
     Assert-BoostLabCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required DirectX review file is missing: $requiredPath"
 }
 
-$expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
+$expectedSourceHash = 'B944AE03DE0AFDD7329B84BBF53FF5624739465CBB7130A021E097A6723B1B27'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "DirectX Ultimate source checksum changed: $actualSourceHash"
 
@@ -202,7 +203,7 @@ finally {
     $sha256.Dispose()
 }
 Assert-BoostLabCondition (@($sourceLines).Count -eq 49) "source-ultimate file count changed: $(@($sourceLines).Count)"
-Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition ($sourceManifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate content or paths changed.'
 
 [pscustomobject]@{
     Success = $true

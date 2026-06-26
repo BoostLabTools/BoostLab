@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -75,6 +76,29 @@ function Get-BoostLabStageToolIndex {
     }
 
     return $index
+}
+
+function Get-BoostLabGitExecutable {
+    $gitCommand = Get-Command -Name 'git' -ErrorAction SilentlyContinue
+    if ($null -ne $gitCommand) {
+        return [string]$gitCommand.Source
+    }
+
+    $githubDesktopRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'GitHubDesktop'
+    if (Test-Path -LiteralPath $githubDesktopRoot -PathType Container) {
+        $githubDesktopGit = @(
+            Get-ChildItem -LiteralPath $githubDesktopRoot -Directory -Filter 'app-*' -ErrorAction SilentlyContinue |
+                Sort-Object -Property Name -Descending |
+                ForEach-Object { Join-Path $_.FullName 'resources\app\git\cmd\git.exe' } |
+                Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
+        ) | Select-Object -First 1
+
+        if (-not [string]::IsNullOrWhiteSpace($githubDesktopGit)) {
+            return [string]$githubDesktopGit
+        }
+    }
+
+    return ''
 }
 
 $manifestPath = Join-Path $ProjectRoot 'config\ExternalArtifactSources.psd1'
@@ -580,13 +604,13 @@ $binaryFiles = @(
 )
 Assert-BoostLabCondition ($binaryFiles.Count -eq 0) 'Binary artifact files must not be added to the repository in this phase.'
 
-foreach ($protectedPath in @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake')) {
-    $fullPath = Join-Path $ProjectRoot $protectedPath
-    if (Test-Path -LiteralPath $fullPath) {
-        $recent = @(Get-ChildItem -LiteralPath $fullPath -Recurse -File | Where-Object { $_.LastWriteTime -gt (Get-Date).AddHours(-6) })
-        Assert-BoostLabCondition ($recent.Count -eq 0) "Protected source/intake path has recent modifications during external source policy phase: $protectedPath"
-    }
-}
+$gitPath = Get-BoostLabGitExecutable
+Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($gitPath)) 'Git executable was not found for protected source/intake working-tree guard.'
+$protectedSourceChanges = @(
+    & $gitPath -C $ProjectRoot status --short -- 'source-ultimate' 'source-ultimate/_intake-promoted' 'intake'
+)
+Assert-BoostLabCondition ($LASTEXITCODE -eq 0) 'Unable to inspect protected source/intake working-tree status.'
+Assert-BoostLabCondition ($protectedSourceChanges.Count -eq 0) "Protected source/intake paths have working-tree modifications: $($protectedSourceChanges -join '; ')"
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\23 NVME Faster Driver.ps1'))) 'NVME Faster Driver source was reintroduced.'

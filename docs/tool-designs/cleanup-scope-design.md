@@ -16,7 +16,7 @@ Restore remain unavailable because the Ultimate source does not define them.
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/22 Cleanup.ps1`
-* Source SHA-256: `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA`
+* Source SHA-256: `13C3933AC95A9817E48C0FFA4971FB2CC2234F9783831C34675F9F529F2D507E`
 * Current BoostLab module path: `modules/Windows/cleanup.psm1`
 * Current status: implemented exact Ultimate parity as of Phase 154
 * Current implemented actions: Apply

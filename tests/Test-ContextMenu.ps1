@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -69,7 +70,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '0E0B63E158A22D01CB0654A92BBF4B1EFD01A9DD610CCF0631F4ACB851AF5117') {
     throw 'Context Menu Ultimate source hash changed.'
 }
 $source = Get-Content -Raw -LiteralPath $sourcePath
@@ -583,7 +584,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/6 Windows/3 Context Menu.ps1'
-    '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2'
+    '0E0B63E158A22D01CB0654A92BBF4B1EFD01A9DD610CCF0631F4ACB851AF5117'
     'Approved by Yazan'
     'Exact Ultimate Default Parity'
     'deletes the complete shared `Shell Extensions\Blocked` key'
@@ -614,12 +615,12 @@ $unchangedModules = [ordered]@{
     }
     GameBar = @{
         Path = Join-Path $modulesRoot 'Windows\game-bar.psm1'
-        Hash = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'
+        Hash = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
     Copilot = @{
         Path = Join-Path $modulesRoot 'Windows\copilot.psm1'
-        Hash = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'
+        Hash = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'
         Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')'
     }
 }
@@ -711,7 +712,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

@@ -3,7 +3,7 @@
 * **Tool name:** Spectre / Meltdown Assistant
 * **Stage:** Advanced
 * **Source script path:** `source-ultimate/8 Advanced/1 Spectre  Meltdown Assistant.ps1`
-* **Source checksum:** `3989B93BC4B3367B1ED0CF831C93DA6C2E87C556D945854FEE4ECA5D4C66AB50`
+* **Source checksum:** `4017EF3ED792A26AF1AFEE0E8948C01BE856BD8E06B8CB079656135694C76E85`
 * **Risk level:** High
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 30

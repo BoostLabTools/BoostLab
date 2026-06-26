@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -68,7 +69,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '0171013B91F2A6F7FD6D055F305045650AD1A326D5F45CB08953759A7A69AC0A') {
     throw 'Widgets Ultimate source hash changed.'
 }
 
@@ -552,7 +553,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/6 Windows/7 Widgets.ps1'
-    '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
+    '0171013B91F2A6F7FD6D055F305045650AD1A326D5F45CB08953759A7A69AC0A'
     'Exact Ultimate parity implemented and accepted in Phase 141'
     'Verification Strategy'
     'Windows may delay the taskbar''s visual update'
@@ -663,7 +664,7 @@ finally {
 }
 if (
     @($sourceLines).Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

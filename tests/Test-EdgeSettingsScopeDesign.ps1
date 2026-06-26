@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -99,7 +100,7 @@ $rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
 $productionAllowlist = Import-PowerShellDataFile -LiteralPath $productionAllowlistPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
-$expectedSourceHash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28'
+$expectedSourceHash = '3EE9E6F586D71E74F7400379E8D5DA079D52208D5B2DFA0E4AB035FCB08096A8'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Edge Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
 
@@ -133,7 +134,7 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28`',
+    'Source SHA-256: `3EE9E6F586D71E74F7400379E8D5DA079D52208D5B2DFA0E4AB035FCB08096A8`',
     'Phase 118 implements Yazan''s option 1',
     'source-equivalent Edge Settings behavior',
     'not policy-only and is not Open-only',
@@ -242,7 +243,7 @@ finally {
 }
 
 Assert-BoostLabCondition (@($sourceLines).Count -eq 49) 'source-ultimate file count changed.'
-Assert-BoostLabCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition ($manifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate content or paths changed.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 

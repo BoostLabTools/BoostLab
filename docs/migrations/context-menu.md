@@ -3,7 +3,7 @@
 * **Tool name:** Context Menu
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/3 Context Menu.ps1`
-* **Source checksum:** `33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2`
+* **Source checksum:** `0E0B63E158A22D01CB0654A92BBF4B1EFD01A9DD610CCF0631F4ACB851AF5117`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 137 exact Ultimate parity

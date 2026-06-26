@@ -7,7 +7,7 @@
 - Stage: Graphics
 - Module: `modules/Graphics/visual-cpp.psm1`
 - Source script path: `source-ultimate/5 Graphics/3 C++.ps1`
-- Source SHA-256: `7ACB1F25ECFEEAD83FA389E2D0C1FEEF12232C4E9A740CB5DE64A326FFD38C09`
+- Source SHA-256: `01D6A5FAFD5E7C1FB9DA1913BD17C543EE0F8A4A7E2A7DF5583A50AEF1D82374`
 
 ## Original Ultimate Behavior
 

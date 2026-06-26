@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -44,7 +45,7 @@ $displayName = 'SMT / HT Assistant'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\8 Advanced\4 SMT  HT Assistant.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\smt-ht-assistant.psm1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\smt-ht-assistant.md'
-$expectedSourceHash = '5D53BF2A9A589ECB14D9F8F9048FF4830D2E6F4DEE7E4B54BA6B6B6F77F004FE'
+$expectedSourceHash = '10E72B972E68415E96243EEA3B642E7A7D9DF93D1101987F11E01106B14D2433'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 $stages = Import-PowerShellDataFile -LiteralPath (Join-Path $ProjectRoot 'config\Stages.psd1')

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -45,7 +46,7 @@ $modulePath = Join-Path $ProjectRoot 'modules\Windows\StartMenuLayout.psm1'
 $stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $existingValidatorPath = Join-Path $ProjectRoot 'tests\Test-StartMenuLayout.ps1'
 
-$expectedSourceHash = '81C1298D7C9E112DB910C4398CD94E4B70ECD97ED3B185CF2FD2B8A380E069E8'
+$expectedSourceHash = 'B769C351189A3DC2BB8E4A595F9E745A9F25E5A69923DF10619B6D9C34D37724'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) 'Start Menu Layout source checksum mismatch.'
 

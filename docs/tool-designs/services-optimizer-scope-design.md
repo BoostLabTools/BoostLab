@@ -19,7 +19,7 @@ allowlists, scopes, or Restore contract.
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/5 Services Optimizer.ps1`
-* Source SHA-256: `386EEF403F48907E82C2E8E4BE5DFE509B0ED93CADBB5639B42D6326163EDB8F`
+* Source SHA-256: `15E4E1EAE613C70F91B15DC2614C6EB7DB8A80ADA1618297188FB41A38F0F1AE`
 * Retired BoostLab module path: `modules/Advanced/services-optimizer.psm1`
 * Current status after Phase 170A: retired/deleted outside active catalog
 * Current implemented actions after Phase 170A: none

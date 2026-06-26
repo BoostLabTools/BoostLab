@@ -25,28 +25,21 @@ function ConvertTo-BoostLabCanonicalSourceTextBytes {
         [byte[]]$Bytes
     )
 
-    $offset = 0
-    if (
-        $Bytes.Length -ge 3 -and
-        $Bytes[0] -eq 0xEF -and
-        $Bytes[1] -eq 0xBB -and
-        $Bytes[2] -eq 0xBF
-    ) {
-        $offset = 3
+    $normalized = [Collections.Generic.List[byte]]::new($Bytes.Length)
+    for ($index = 0; $index -lt $Bytes.Length; $index++) {
+        $byte = $Bytes[$index]
+        if ($byte -eq 0x0D) {
+            $normalized.Add([byte]0x0A)
+            if (($index + 1) -lt $Bytes.Length -and $Bytes[$index + 1] -eq 0x0A) {
+                $index++
+            }
+            continue
+        }
+
+        $normalized.Add($byte)
     }
 
-    $contentLength = $Bytes.Length - $offset
-    $contentBytes = [byte[]]::new($contentLength)
-    if ($contentLength -gt 0) {
-        [Array]::Copy($Bytes, $offset, $contentBytes, 0, $contentLength)
-    }
-
-    $strictUtf8 = [Text.UTF8Encoding]::new($false, $true)
-    $text = $strictUtf8.GetString($contentBytes)
-    $text = $text -replace "`r`n", "`n"
-    $text = $text -replace "`r", "`n"
-
-    return ,[Text.UTF8Encoding]::new($false).GetBytes($text)
+    return ,[byte[]]$normalized.ToArray()
 }
 
 function Test-BoostLabSourceChecksum {
@@ -75,10 +68,29 @@ function Test-BoostLabSourceChecksum {
             $rawSha256 = Get-BoostLabSha256Hex -Bytes $bytes
 
             $extension = [IO.Path]::GetExtension($LiteralPath).ToLowerInvariant()
+            $canonicalTextExtensions = @(
+                '.bat'
+                '.cmd'
+                '.config'
+                '.csv'
+                '.json'
+                '.jsonc'
+                '.md'
+                '.ps1'
+                '.ps1xml'
+                '.psd1'
+                '.psm1'
+                '.reg'
+                '.txt'
+                '.xaml'
+                '.xml'
+                '.yaml'
+                '.yml'
+            )
             $canUseCanonicalText = (
                 $TextNormalizationEnabled -and
                 -not [string]::IsNullOrWhiteSpace($ExpectedCanonicalSha256) -and
-                $extension -in @('.ps1', '.psm1', '.psd1')
+                $extension -in $canonicalTextExtensions
             )
 
             if ($canUseCanonicalText) {

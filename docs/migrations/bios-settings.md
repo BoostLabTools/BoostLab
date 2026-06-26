@@ -3,7 +3,7 @@
 * **Tool name:** BIOS Settings
 * **Stage:** Check
 * **Source script path:** `source-ultimate/1 Check/2 BIOS Settings.ps1`
-* **Source checksum:** `C68BDADC7EEAC77A0FE8ECE999CEB5A28C51D819D69107AFD471739BA36E2737`
+* **Source checksum:** `60978F4598F7D632D077E29A6B463659D612EE8597B0D2F6A998AC2FC4FBA6BD`
 * **Risk level:** High
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

@@ -16,7 +16,7 @@ registry scope, or reinstall workflow.
 * Stage: `Refresh`
 * Current module: `modules/Refresh/reinstall.psm1`
 * Source path: `source-ultimate/2 Refresh/1 Reinstall.ps1`
-* Source SHA-256: `137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB`
+* Source SHA-256: `64F76A856E4CC57BEE34C6DEA86F2B7ADC432B01A3FA4AEB5C2A650B9AE9A477`
 
 ## Product Scope Decision
 

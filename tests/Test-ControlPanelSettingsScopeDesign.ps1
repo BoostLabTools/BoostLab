@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -72,7 +73,7 @@ $rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
 $trustedPolicy = Import-PowerShellDataFile -LiteralPath $trustedPolicyPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
-$expectedSourceHash = 'B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B'
+$expectedSourceHash = 'F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
     throw "Control Panel Settings source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
@@ -114,7 +115,7 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `B78F643D21069F14E7E766769FB1EE15AEF974ABDF3CA010FE808D9EC162FB0B`',
+    'Source SHA-256: `F81FB649A4645A5145B43A051DDF8306145E64F1FCA5249F90B66BFDFA97BE83`',
     'No production Control Panel',
     'No Windows 10-only branch was found',
     'Privacy and security mutation is high risk',
@@ -303,7 +304,7 @@ finally {
 
 if (
     @($sourceLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

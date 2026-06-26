@@ -3,7 +3,7 @@
 * **Tool name:** MMAgent Assistant
 * **Stage:** Advanced
 * **Source script path:** `source-ultimate/8 Advanced/2 MMAgent Assistant.ps1`
-* **Source checksum:** `C7E6E7879B7B32E548607A5D30124CC327622E09E7BEF817D36E8BC095B64A79`
+* **Source checksum:** `5B53236C5CC6B2E791A7F2E2E7A0B36EC7F3662628CADE9A64013664B0A0AF97`
 * **Risk level:** High
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 28

@@ -16,7 +16,7 @@ bounded production scopes and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/11 Bloatware.ps1`
-* Source SHA-256: `36677A334B37025A7234F4320EE54EF50E9528D1814E2B3A463EEB564C5814F5`
+* Source SHA-256: `EBCE09158AB61ADE2C181DD5DB64C94B962BAF133DB4DB6122CEE642B9A48C9F`
 * Current BoostLab module path: `modules/Windows/bloatware.psm1`
 * Current status: refused placeholder
 * Current implemented actions: none

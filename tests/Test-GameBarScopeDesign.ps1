@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -45,7 +46,7 @@ $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $artifactProvenancePath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $productionAllowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 
-$expectedSourceHash = '8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59'
+$expectedSourceHash = 'C35831AFE527DFA090E5DA6EBF0F6132256A4ABF3BEBDA90FC8605C47F55C0D2'
 Assert-GameBarCondition (Test-Path -LiteralPath $sourcePath -PathType Leaf) 'GameBar Ultimate source file is missing.'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-GameBarCondition ($actualSourceHash -eq $expectedSourceHash) "GameBar source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."

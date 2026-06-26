@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -78,7 +79,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'C16EDA260DA2FA48A4830894BC44BF11FC8541A6087B4013A8C67BA7979ED0BD') {
     throw 'Store Settings Ultimate source hash changed.'
 }
 $source = Get-Content -Raw -LiteralPath $sourcePath
@@ -1032,7 +1033,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/3 Setup/7 Store Settings.ps1'
-    'D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167'
+    'C16EDA260DA2FA48A4830894BC44BF11FC8541A6087B4013A8C67BA7979ED0BD'
     'Approved by Yazan'
     $autoDownloadCommand
     $defaultDeleteCommand
@@ -1088,7 +1089,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

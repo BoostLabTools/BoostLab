@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -42,7 +43,7 @@ function Assert-BoostLabCondition {
     }
 }
 
-$sourceHash = '2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB'
+$sourceHash = 'CF139B4C5C96F57A2031F0CB9EDAC04E0F3CF86691BDC47F78DF5B45B76C1BA1'
 Assert-BoostLabCondition ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq $sourceHash) 'Notepad Settings Ultimate source hash changed.'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath

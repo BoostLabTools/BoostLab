@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -57,7 +58,7 @@ try {
 
     Assert-BoostLabCondition (Test-Path -LiteralPath $modulePath -PathType Leaf) 'Write Cache Buffer Flushing module is missing.'
     Assert-BoostLabCondition (Test-Path -LiteralPath $migrationPath -PathType Leaf) 'Write Cache Buffer Flushing migration record is missing.'
-    Assert-BoostLabCondition ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq '67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D') 'Write Cache Buffer Flushing source hash changed.'
+    Assert-BoostLabCondition ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -eq '28891440103D710F66F73620D944A9F29174B0DCCC211DCDE1008D694BBC90E2') 'Write Cache Buffer Flushing source hash changed.'
 
     $config = Import-PowerShellDataFile -LiteralPath $configPath
     $tool = @($config['Stages'] | ForEach-Object { $_['Tools'] }) |
@@ -150,7 +151,7 @@ try {
 
     $migrationText = Get-Content -LiteralPath $migrationPath -Raw
     foreach ($requiredMigrationText in @(
-        'Source SHA-256: `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D`'
+        'Source SHA-256: `28891440103D710F66F73620D944A9F29174B0DCCC211DCDE1008D694BBC90E2`'
         'Default deletes complete source-discovered storage `Disk` registry keys.'
         'Restore is not exposed'
         'no explicit Windows 10-only branch'

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -64,7 +65,7 @@ foreach ($field in @('RequiresInternet', 'CanReboot', 'CanDownload', 'CanModifyD
     }
 }
 
-$expectedSourceHash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+$expectedSourceHash = '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
 if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne $expectedSourceHash) {
     throw 'Timer Resolution Assistant Ultimate source hash changed.'
 }
@@ -419,7 +420,7 @@ finally {
 }
 if (
     @($sourceLines).Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

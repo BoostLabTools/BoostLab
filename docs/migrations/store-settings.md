@@ -3,7 +3,7 @@
 * **Tool name:** Store Settings
 * **Stage:** Setup
 * **Source script path:** `source-ultimate/3 Setup/7 Store Settings.ps1`
-* **Source checksum:** `D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167`
+* **Source checksum:** `C16EDA260DA2FA48A4830894BC44BF11FC8541A6087B4013A8C67BA7979ED0BD`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

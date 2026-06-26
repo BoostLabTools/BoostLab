@@ -3,7 +3,7 @@
 * **Tool name:** User Account Pictures Black
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/6 User Account Pictures Black.ps1`
-* **Source checksum:** `8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710`
+* **Source checksum:** `F4BFE40640F6825F288535332CD97FBB69E0C22137FD53985A4D04ED7210E73F`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Parity status:** Exact Ultimate parity implemented and accepted in Phase 140

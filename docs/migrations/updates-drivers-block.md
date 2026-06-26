@@ -7,7 +7,7 @@
 - Stage: Refresh
 - Module: `modules/Refresh/updates-drivers-block.psm1`
 - Source script path: `source-ultimate/2 Refresh/3 Updates Drivers Block.ps1`
-- Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`
+- Source SHA-256: `D18878A8856096913643F7619917CAE688A19368A34792D94F3CC53BE45B0367`
 
 ## Original Ultimate Behavior
 

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -53,30 +54,38 @@ try {
     $utf8NoBom = [Text.UTF8Encoding]::new($false)
     $contentLf = "Write-Host 'BoostLab source check'`n`$value = 1`n"
     $contentCrlf = $contentLf -replace "`n", "`r`n"
+    $contentCr = $contentLf -replace "`n", "`r"
     $contentMutated = $contentLf + "Write-Host 'mutated'`n"
 
     $crlfPath = Join-Path $tempRoot 'Source-Crlf.ps1'
     $lfPath = Join-Path $tempRoot 'Source-Lf.ps1'
+    $crPath = Join-Path $tempRoot 'Source-Cr.ps1'
     $bomPath = Join-Path $tempRoot 'Source-Bom.ps1'
     $mutatedPath = Join-Path $tempRoot 'Source-Mutated.ps1'
 
     [IO.File]::WriteAllBytes($crlfPath, $utf8NoBom.GetBytes($contentCrlf))
     [IO.File]::WriteAllBytes($lfPath, $utf8NoBom.GetBytes($contentLf))
+    [IO.File]::WriteAllBytes($crPath, $utf8NoBom.GetBytes($contentCr))
     [IO.File]::WriteAllBytes($bomPath, ([byte[]]@(0xEF, 0xBB, 0xBF) + $utf8NoBom.GetBytes($contentLf)))
     [IO.File]::WriteAllBytes($mutatedPath, $utf8NoBom.GetBytes($contentMutated))
 
     $expectedRaw = (Get-FileHash -LiteralPath $crlfPath -Algorithm SHA256).Hash
     $expectedCanonical = Get-BoostLabSha256Hex -Bytes (ConvertTo-BoostLabCanonicalSourceTextBytes -Bytes ([IO.File]::ReadAllBytes($crlfPath)))
+    $bomCanonical = Get-BoostLabSha256Hex -Bytes (ConvertTo-BoostLabCanonicalSourceTextBytes -Bytes ([IO.File]::ReadAllBytes($bomPath)))
 
     $crlfStatus = Test-BoostLabSourceChecksum -LiteralPath $crlfPath -ExpectedSha256 $expectedRaw -ExpectedCanonicalSha256 $expectedCanonical
     $lfStatus = Test-BoostLabSourceChecksum -LiteralPath $lfPath -ExpectedSha256 $expectedRaw -ExpectedCanonicalSha256 $expectedCanonical
+    $crStatus = Test-BoostLabSourceChecksum -LiteralPath $crPath -ExpectedSha256 $expectedRaw -ExpectedCanonicalSha256 $expectedCanonical
     $bomStatus = Test-BoostLabSourceChecksum -LiteralPath $bomPath -ExpectedSha256 $expectedRaw -ExpectedCanonicalSha256 $expectedCanonical
     $mutatedStatus = Test-BoostLabSourceChecksum -LiteralPath $mutatedPath -ExpectedSha256 $expectedRaw -ExpectedCanonicalSha256 $expectedCanonical
 
     Assert-BoostLabCondition ([string]$crlfStatus.ChecksumStatus -eq 'Passed') 'CRLF source variant should verify.'
     Assert-BoostLabCondition ([string]$lfStatus.ChecksumStatus -eq 'Passed') 'LF source variant should verify through canonical text checksum.'
     Assert-BoostLabCondition ([string]$lfStatus.VerificationMode -eq 'CanonicalTextSha256') 'LF source variant should use canonical text verification.'
-    Assert-BoostLabCondition ([string]$bomStatus.ChecksumStatus -eq 'Passed') 'UTF-8 BOM source variant should verify through canonical text checksum.'
+    Assert-BoostLabCondition ([string]$crStatus.ChecksumStatus -eq 'Passed') 'CR source variant should verify through canonical text checksum.'
+    Assert-BoostLabCondition ([string]$crStatus.VerificationMode -eq 'CanonicalTextSha256') 'CR source variant should use canonical text verification.'
+    Assert-BoostLabCondition ($bomCanonical -ne $expectedCanonical) 'UTF-8 BOM and no-BOM source variants must produce different canonical hashes.'
+    Assert-BoostLabCondition ([string]$bomStatus.ChecksumStatus -eq 'Failed') 'UTF-8 BOM source variant must fail when the expected canonical checksum has no BOM.'
     Assert-BoostLabCondition ([string]$mutatedStatus.ChecksumStatus -eq 'Failed') 'Actual content mutation must fail source verification.'
 
     $reinstallRawExpected = '137F519926293F37052817ACBBE20851652E5EA1B9F3B5B9F933AA1E22C2D9FB'
@@ -198,11 +207,12 @@ finally {
     Test = 'SourceChecksumPackagingRobustness'
     CrlfVariantVerified = $true
     LfVariantVerified = $true
-    BomVariantVerified = $true
+    CrVariantVerified = $true
+    BomVariantRejected = $true
     ContentMutationBlocked = $true
     ReinstallPackagedSourceVerified = $true
     UpdatesDriversBlockPackagedSourceVerified = $true
     SourceBackedModuleGuardPassed = $true
     RuntimeActionExecuted = $false
-    Message = 'Canonical source checksum verification tolerates packaging line-ending/BOM normalization while blocking real content mutation.'
+    Message = 'Canonical source checksum verification tolerates line-ending normalization while preserving BOM and blocking real content mutation.'
 }

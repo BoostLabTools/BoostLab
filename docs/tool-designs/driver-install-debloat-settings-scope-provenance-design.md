@@ -19,7 +19,7 @@ or Restore scope outside that tool-specific module path.
 * Stage: `Graphics`
 * Current module: `modules/Graphics/driver-install-debloat-settings.psm1`
 * Source path: `source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1`
-* Source SHA-256: `E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F`
+* Source SHA-256: `00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3`
 
 ## Product Scope Decision
 

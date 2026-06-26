@@ -3,7 +3,7 @@
 * **Tool name:** Signout LockScreen Wallpaper Black
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/5 Signout Lockscreen Wallpaper Black.ps1`
-* **Source checksum:** `C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C`
+* **Source checksum:** `132C79401BE9CC2067FA97558AC28C03946B4D50BC2E895CF516A658332ECEB1`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Parity status:** Exact Ultimate parity implemented and accepted in Phase 139

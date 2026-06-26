@@ -5,7 +5,7 @@
 - Stage: Windows
 - Module: `modules/Windows/edge-webview.psm1`
 - Source script path: `source-ultimate/6 Windows/13 Edge & WebView.ps1`
-- Source SHA-256: `161ED9C99D437E45650369CB7E15D5737DED363712E647138F134B049AC7E691`
+- Source SHA-256: `3AB92D76307B1CB4C6988DB2201631C14D3B91B32CFFA4F1177B3E1F4F0D7966`
 - Migration status: Exact Ultimate parity implemented
 - Yazan approval status: Approved for Phase 147 exact source-equivalent Apply/Default behavior
 

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -64,7 +65,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '2D5612341E0FA423DC70FD95B2103007E4A1A371C5C19D8A87E03F640DB6EF46') {
     throw 'Memory Compression Ultimate source hash changed.'
 }
 
@@ -708,7 +709,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/3 Setup/1 Memory Compression.ps1'
-    'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352'
+    '2D5612341E0FA423DC70FD95B2103007E4A1A371C5C19D8A87E03F640DB6EF46'
     'Approved by Yazan'
     'Disable-MMAgent -MemoryCompression'
     'Enable-MMAgent -MemoryCompression'
@@ -758,7 +759,7 @@ finally {
 }
 if (
     @($sourceLines).Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

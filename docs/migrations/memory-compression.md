@@ -3,7 +3,7 @@
 * **Tool name:** Memory Compression
 * **Stage:** Setup
 * **Source script path:** `source-ultimate/3 Setup/1 Memory Compression.ps1`
-* **Source checksum:** `CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352`
+* **Source checksum:** `2D5612341E0FA423DC70FD95B2103007E4A1A371C5C19D8A87E03F640DB6EF46`
 * **Risk level:** Low
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan

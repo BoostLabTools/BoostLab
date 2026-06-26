@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -32,7 +33,7 @@ $recordPath = Join-Path $ProjectRoot 'docs\migrations\unattended.md'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-$sourceHash = '0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338'
+$sourceHash = '8A010A0B88860C88C4109A37BE21B03BA5C5686333D5B4A1C30F40C2FEE1D3DD'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration['Stages'] | ForEach-Object { $_['Tools'] })
@@ -458,7 +459,7 @@ try {
 finally {
     $sha256.Dispose()
 }
-if (@($sourceLines).Count -ne 49 -or $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') {
+if (@($sourceLines).Count -ne 49 -or $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') {
     throw 'source-ultimate content or paths changed.'
 }
 

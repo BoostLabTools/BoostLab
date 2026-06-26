@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -86,7 +87,7 @@ foreach ($path in @(
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required DirectX Phase 129 file missing: $path"
 }
 
-$expectedSourceHash = '17051A2F0F7A0CF16BE525121720406E8F1630C94E5977A7CD4C18652A87EE05'
+$expectedSourceHash = 'B944AE03DE0AFDD7329B84BBF53FF5624739465CBB7130A021E097A6723B1B27'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "DirectX source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 

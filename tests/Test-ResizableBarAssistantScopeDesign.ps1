@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -43,7 +44,7 @@ $toolId = 'resizable-bar-assistant'
 $displayName = 'Resizable BAR Assistant'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\8 Advanced\3 Resizable BAR Assistant.ps1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\resizable-bar-assistant.psm1'
-$expectedSourceHash = 'E2E1D919B350FA5190DFD4FAF23F3AB51ED2A324155CAFF49CDE774B092FB443'
+$expectedSourceHash = 'BE2DFA30206B92EE34BE32D8DE1D2360C5C214DEDE8F1A48B0698DD60A2BE3EA'
 
 $inventory = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 $stages = Import-PowerShellDataFile -LiteralPath (Join-Path $ProjectRoot 'config\Stages.psd1')

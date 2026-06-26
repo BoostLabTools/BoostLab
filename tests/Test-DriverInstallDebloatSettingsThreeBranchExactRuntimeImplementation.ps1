@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -97,7 +98,7 @@ Assert-BoostLabCondition (-not $moduleText.Contains('Read-Host')) 'Driver Instal
 Assert-BoostLabTextContains -Text $moduleText -Needle 'ConfirmationCallbackAvailable' -Description 'Driver Install Debloat & Settings confirmation callback diagnostics'
 Assert-BoostLabTextContains -Text $moduleText -Needle 'ConfirmationFailureKind' -Description 'Driver Install Debloat & Settings confirmation failure classification'
 
-$expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
+$expectedSourceHash = '00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Driver Install Debloat & Settings source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 

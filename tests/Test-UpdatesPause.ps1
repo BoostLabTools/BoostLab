@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -74,7 +75,7 @@ foreach ($field in $capabilities.Keys) {
     }
 }
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '4BBEF16C51FBEBAFAECB58307F8C619A37CD10BB3DC489BD4DF9A59DDBD1A0BD') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '5A587526097C9A11198FF5C3367B1B81D7C0531A806AACA63FC8998526099BE4') {
     throw 'Updates Pause Ultimate source hash changed.'
 }
 $source = Get-Content -Raw -LiteralPath $sourcePath
@@ -540,7 +541,7 @@ foreach ($requiredText in @(
 $record = Get-Content -Raw -LiteralPath $recordPath
 foreach ($requiredText in @(
     'source-ultimate/3 Setup/8 Updates Pause.ps1'
-    '4BBEF16C51FBEBAFAECB58307F8C619A37CD10BB3DC489BD4DF9A59DDBD1A0BD'
+    '5A587526097C9A11198FF5C3367B1B81D7C0531A806AACA63FC8998526099BE4'
     'Approved by Yazan'
     'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'
     'PauseUpdatesExpiryTime'
@@ -598,7 +599,7 @@ finally {
 }
 if (
     $sourceLines.Count -ne 49 -or
-    $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

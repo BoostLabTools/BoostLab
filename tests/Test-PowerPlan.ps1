@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -39,7 +40,7 @@ $recordPath = Join-Path $ProjectRoot 'docs\migrations\power-plan.md'
 $modulesRoot = Join-Path $ProjectRoot 'modules'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
 
-$sourceHash = '97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56'
+$sourceHash = 'BC0CA2C442CE74CA07ECDA0FE6F52DDD50C86D9E5F1A9DD420943AA08D9D1285'
 $ultimateGuid = 'e9a42b02-d5df-448d-aa00-03f14749eb61'
 $boostLabGuid = '99999999-9999-9999-9999-999999999999'
 $balancedGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
@@ -1102,8 +1103,8 @@ $protectedModules = [ordered]@{
     'Context Menu' = @{ Path = 'Windows\ContextMenu.psm1'; Hash = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Start Menu Layout' = @{ Path = 'Windows\StartMenuLayout.psm1'; Hash = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'Theme Black' = @{ Path = 'Windows\ThemeBlack.psm1'; Hash = 'A3234AC0D27818C1F36DB9A9940726C6C346649B5B33A92B49452593F2FB5C2F'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
-    'GameBar' = @{ Path = 'Windows\game-bar.psm1'; Hash = '8DB85CD336D8EFE665F7710004DC1C2A869ADB77D01D98F71D6D39CC6DB6BBC9'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
-    'Copilot' = @{ Path = 'Windows\copilot.psm1'; Hash = 'B4E7FEC7BF1BE0AD4D5B8295008C315409B261388DB782541102409DC7E239B7'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
+    'GameBar' = @{ Path = 'Windows\game-bar.psm1'; Hash = '2EABB62D41AFCAB0E29B126442364844E2300DD8253E01DF9FBEA3525CACE2AD'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
+    'Copilot' = @{ Path = 'Windows\copilot.psm1'; Hash = 'C77E3A3B2A8543BE1AB12477F69A8EBAC84B38618B77A0740FC400E184CFD6AB'; Required = '$script:BoostLabImplementedActions = @(''Apply'', ''Default'')' }
     'GameMode' = @{ Path = 'Windows\game-mode.psm1'; Hash = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'; Required = '$script:BoostLabImplementedActions = @(''Open'')' }
 }
 foreach ($name in $protectedModules.Keys) {
@@ -1156,7 +1157,7 @@ try {
 finally {
     $sha256.Dispose()
 }
-if ($sourceLines.Count -ne 49 -or $sourceManifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') {
+if ($sourceLines.Count -ne 49 -or $sourceManifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') {
     throw 'source-ultimate content or paths changed.'
 }
 

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -63,7 +64,7 @@ foreach ($path in @(
     }
 }
 
-$expectedSourceHash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6'
+$expectedSourceHash = 'FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
     throw "Defender Optimize Assistant source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
@@ -556,7 +557,7 @@ finally {
 
 if (
     @($sourceManifestLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }

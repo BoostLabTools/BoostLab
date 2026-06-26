@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -60,7 +61,7 @@ $sourcePath = Join-Path $ProjectRoot 'source-ultimate\5 Graphics\1 Driver Instal
 $modulePath = Join-Path $ProjectRoot 'modules\Graphics\driver-install-debloat-settings.psm1'
 $codexPath = Join-Path $ProjectRoot 'CODEX_INSTRUCTIONS.md'
 $blueprintPath = Join-Path $ProjectRoot 'BOOSTLAB_BLUEPRINT.md'
-$expectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
+$expectedSourceHash = '00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3'
 
 Assert-BoostLabCondition ((Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash -eq $expectedSourceHash) 'Source hash mismatch.'
 

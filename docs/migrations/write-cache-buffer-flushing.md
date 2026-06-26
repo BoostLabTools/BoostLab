@@ -6,7 +6,7 @@
 - Tool id: `write-cache-buffer-flushing`
 - Stage: Windows
 - Source script path: `source-ultimate/6 Windows/20 Write Cache Buffer Flushing.ps1`
-- Source SHA-256: `67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D`
+- Source SHA-256: `28891440103D710F66F73620D944A9F29174B0DCCC211DCDE1008D694BBC90E2`
 - Yazan approval status: Phase 152 approved exact Ultimate parity with Apply and Default implemented.
 
 ## Original Ultimate Behavior

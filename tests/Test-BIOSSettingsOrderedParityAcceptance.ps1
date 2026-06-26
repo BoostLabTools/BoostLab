@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -81,7 +82,7 @@ $migrationPath = Join-Path $ProjectRoot 'docs\migrations\bios-settings.md'
 $modulePath = Join-Path $ProjectRoot 'modules\Check\BIOSSettings.psm1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
-$expectedHash = 'C68BDADC7EEAC77A0FE8ECE999CEB5A28C51D819D69107AFD471739BA36E2737'
+$expectedHash = '60978F4598F7D632D077E29A6B463659D612EE8597B0D2F6A998AC2FC4FBA6BD'
 Assert-BoostLabCondition ($sourceHash -eq $expectedHash) 'BIOS Settings Ultimate source checksum changed.'
 
 $migrationText = Get-Content -Raw -LiteralPath $migrationPath

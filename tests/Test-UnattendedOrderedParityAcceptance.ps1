@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -108,7 +109,7 @@ $phaseStartTarget = Get-BoostLabPhaseStartOrderedTarget -ParityBaseline $parityB
 Assert-BoostLabCondition ($null -ne $phaseStartTarget) 'Could not determine Phase 111 starting ordered target.'
 Assert-BoostLabCondition ([string]$phaseStartTarget.ToolId -eq 'unattended') 'Unattended must be the ordered parity target resolved by this phase.'
 
-$expectedSourceHash = '0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338'
+$expectedSourceHash = '8A010A0B88860C88C4109A37BE21B03BA5C5686333D5B4A1C30F40C2FEE1D3DD'
 $actualSourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Unattended source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
@@ -298,7 +299,7 @@ finally {
     $sha256.Dispose()
 }
 Assert-BoostLabCondition (@($sourceManifestLines).Count -eq 49) "source-ultimate file count changed: $(@($sourceManifestLines).Count)"
-Assert-BoostLabCondition ($manifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'source-ultimate content or paths changed.'
+Assert-BoostLabCondition ($manifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'source-ultimate content or paths changed.'
 
 foreach ($deletedPath in @(
     'source-ultimate\6 Windows\17 Loudness EQ.ps1',

@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -63,7 +64,7 @@ $cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
 $rebootPolicy = Import-PowerShellDataFile -LiteralPath $rebootPolicyPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
-$expectedSourceHash = '4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991'
+$expectedSourceHash = 'D18878A8856096913643F7619917CAE688A19368A34792D94F3CC53BE45B0367'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
     throw "Updates Drivers Block source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
@@ -102,7 +103,7 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991`',
+    'Source SHA-256: `D18878A8856096913643F7619917CAE688A19368A34792D94F3CC53BE45B0367`',
     'Phase 102 implemented only the bounded live Driver Updates policy branch',
     'Phase 112 supersedes the Phase 102 final customer scope.',
     'Yazan selected Driver Updates Block Bootable USB only as the final scope',
@@ -235,6 +236,7 @@ if ($moduleText.Contains('ToolModule.Placeholder.ps1')) {
 foreach ($requiredImplementationText in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'', ''Restore'')',
     '$script:BoostLabExpectedSourceHash = ''4D4EC652C5A7F78824F53B7DC7FD46DDA948F3716A7CD6FD102D6C678EE11991''',
+    '$script:BoostLabExpectedCanonicalSourceHash = ''D18878A8856096913643F7619917CAE688A19368A34792D94F3CC53BE45B0367''',
     '$script:BoostLabFinalScope = ''Driver Updates Block (Bootable USB) only''',
     '$script:BoostLabSetupCompleteRelativePath = ''sources\$OEM$\$$\Setup\Scripts\setupcomplete.cmd''',
     'New-BoostLabFileStateCapture',
@@ -338,7 +340,7 @@ finally {
 
 if (
     @($sourceManifestLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }
@@ -371,6 +373,5 @@ if ($nvmeSource.Count -ne 0) {
     Message                   = 'Updates Drivers Block scope design is present, linked, branch-scoped, and non-executing.'
     Timestamp                 = Get-Date
 }
-
 
 

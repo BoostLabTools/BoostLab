@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -515,13 +516,10 @@ foreach ($needle in @(
     Assert-BoostLabTextContains -Text $uiText -Needle $needle -Description 'Async/latest-result/activity-log contract'
 }
 
-foreach ($protectedPath in @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake')) {
-    $fullPath = Join-Path $ProjectRoot $protectedPath
-    if (Test-Path -LiteralPath $fullPath) {
-        $recent = @(Get-ChildItem -LiteralPath $fullPath -Recurse -File | Where-Object { $_.LastWriteTime -gt (Get-Date).AddHours(-6) })
-        Assert-BoostLabCondition ($recent.Count -eq 0) "Protected path has recent modifications during reverse reached-tool audit: $protectedPath"
-    }
-}
+Assert-BoostLabTestProtectedPathsClean `
+    -ProjectRoot $ProjectRoot `
+    -ProtectedPath @('source-ultimate', 'source-ultimate\_intake-promoted', 'intake') `
+    -Message 'Protected paths changed during reverse reached-tool audit'
 
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'modules\Graphics\ddu.psm1'))) 'Standalone DDU module was reintroduced.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot 'source-ultimate\6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'

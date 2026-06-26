@@ -18,7 +18,7 @@ parallel installer workflow.
 * Stage: `Installers`
 * Current module: `modules/Installers/installers.psm1`
 * Source path: `source-ultimate/4 Installers/1 Installers.ps1`
-* Source SHA-256: `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67`
+* Source SHA-256: `268C1EFE627FADDA17892223D4C35E4845833506C22AADD3240C894ED046A6F8`
 
 ## Product Scope Decision
 

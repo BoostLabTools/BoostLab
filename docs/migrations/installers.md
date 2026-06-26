@@ -5,7 +5,7 @@
 - Stage: Installers
 - Module: `modules/Installers/installers.psm1`
 - Source script path: `source-ultimate/4 Installers/1 Installers.ps1`
-- Source SHA-256: `1065D64183457D4E7B28EA78DDE41525EC8F7C4A4BCA12D29B70D991141C0C67`
+- Source SHA-256: `268C1EFE627FADDA17892223D4C35E4845833506C22AADD3240C894ED046A6F8`
 - Migration status: Controlled single-app install flow with Yazan final app-list exception
 - Yazan approval status: Approved for Phase 172C single-app flow; Yazan excluded source menu entries 9, 11, 12, 15, 16, 18, and 19
 

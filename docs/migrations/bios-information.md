@@ -3,7 +3,7 @@
 * **Tool name:** BIOS Information
 * **Stage:** Check
 * **Source script path:** `source-ultimate/1 Check/1 BIOS Information.ps1`
-* **Source checksum:** `A4C4CD8835C05C0FC880142420F41FE9633CB44E9FD102B9368D30EFD6B12B42`
+* **Source checksum:** `A5BB6A0DABC156A26D9767500BDA528BFDE9C61955FE814014F6663B8224EDBC`
 * **Risk level:** Low
 * **Required privileges:** BoostLab application context; catalog currently requires Administrator
 * **Yazan approval status:** Approved by Yazan

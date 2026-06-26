@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -48,7 +49,7 @@ $sourcePath = Join-Path $ProjectRoot 'source-ultimate\6 Windows\6 User Account P
 $recordPath = Join-Path $ProjectRoot 'docs\migrations\user-account-pictures-black.md'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
-$sourceHash = '8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710'
+$sourceHash = 'F4BFE40640F6825F288535332CD97FBB69E0C22137FD53985A4D04ED7210E73F'
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration['Stages'] | ForEach-Object { @($_['Tools']) })

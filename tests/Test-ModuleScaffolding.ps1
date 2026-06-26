@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -655,6 +656,7 @@ foreach ($entry in $expectedModules.Values) {
         if ($toolId -eq 'game-bar') {
             foreach ($requiredText in @(
                 '$script:BoostLabExpectedSourceHash = ''8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59'''
+                '$script:BoostLabExpectedCanonicalSourceHash = ''C35831AFE527DFA090E5DA6EBF0F6132256A4ABF3BEBDA90FC8605C47F55C0D2'''
                 'Get-BoostLabGameBarOperationPlan'
                 'Invoke-BoostLabGameBarBranchWorkflow'
                 'Invoke-BoostLabGameBarTrustedInstallerCommand'
@@ -1360,7 +1362,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'timer-resolution-assistant') {
             foreach ($requiredText in @(
                 '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
+                '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
                 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
                 'Get-BoostLabTimerCSharpPayload'
                 'Timer Resolution: On (Recommended)'
@@ -1403,7 +1405,7 @@ foreach ($entry in $expectedModules.Values) {
         elseif ($toolId -eq 'defender-optimize-assistant') {
             foreach ($requiredText in @(
                 '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
-                '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6'
+                'FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92'
                 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
                 'Get-BoostLabDefenderScriptPayload'
                 'Get-BoostLabDefenderSecurityCommands'

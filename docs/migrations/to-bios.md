@@ -3,7 +3,7 @@
 * **Tool name:** To BIOS
 * **Stage:** Refresh
 * **Source script path:** `source-ultimate/2 Refresh/4 To Bios.ps1`
-* **Source checksum:** `A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C`
+* **Source checksum:** `555C124CC29006D9E6E42A1B2B3761AB760431E3D028758400A69065890E403D`
 * **Risk level:** High
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 31

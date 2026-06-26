@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -48,7 +49,7 @@ $cleanupPolicy = Import-PowerShellDataFile -LiteralPath $cleanupPolicyPath
 $config = Import-PowerShellDataFile -LiteralPath $configPath
 $allTools = @($config.Stages | ForEach-Object { $_.Tools })
 
-$expectedSourceHash = '3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA'
+$expectedSourceHash = '13C3933AC95A9817E48C0FFA4971FB2CC2234F9783831C34675F9F529F2D507E'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 if ($actualSourceHash -ne $expectedSourceHash) {
     throw "Cleanup source checksum changed. Expected $expectedSourceHash, found $actualSourceHash."
@@ -82,7 +83,7 @@ foreach ($requiredSection in @(
 }
 
 foreach ($requiredPhrase in @(
-    'Source SHA-256: `3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA`',
+    'Source SHA-256: `13C3933AC95A9817E48C0FFA4971FB2CC2234F9783831C34675F9F529F2D507E`',
     'Cleanup no longer remains a refused placeholder after Phase 154.',
     'Phase 154 is a tool-specific exact-parity implementation approval',
     'No production cleanup allowlists or scopes are approved by this document.',
@@ -145,6 +146,7 @@ if (-not $planText.Contains('docs/tool-designs/cleanup-scope-design.md')) {
 foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Apply'')',
     '$script:BoostLabExpectedSourceHash = ''3419A995AD4483A145999B659268302F02BE982733DE831554ADA1C40F07CCAA''',
+    '$script:BoostLabExpectedCanonicalSourceHash = ''13C3933AC95A9817E48C0FFA4971FB2CC2234F9783831C34675F9F529F2D507E''',
     'function Invoke-BoostLabCleanupApply',
     'function Invoke-BoostLabCleanupRemoveTarget',
     'Start-Process',
@@ -223,7 +225,7 @@ finally {
 
 if (
     @($sourceLines).Count -ne 49 -or
-    $manifestHash -ne '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477'
+    $manifestHash -ne 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4'
 ) {
     throw 'source-ultimate content or paths changed.'
 }
@@ -253,6 +255,5 @@ if ($nvmeSource.Count -ne 0) {
     Message                    = 'Cleanup scope design is retained as historical reference and Phase 154 exact parity remains bounded.'
     Timestamp                  = Get-Date
 }
-
 
 

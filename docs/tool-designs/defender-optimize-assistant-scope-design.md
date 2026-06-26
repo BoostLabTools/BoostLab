@@ -19,7 +19,7 @@ workflow records, rollback rules, verification, and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/7 Defender Optimize Assistant.ps1`
-* Source SHA-256: `512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6`
+* Source SHA-256: `FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92`
 * Current BoostLab module path:
   `modules/Advanced/defender-optimize-assistant.psm1`
 * Current status: refused placeholder

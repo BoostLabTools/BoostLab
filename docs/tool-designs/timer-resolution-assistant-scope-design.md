@@ -17,7 +17,7 @@ mocked validator coverage.
 ## Source Reference
 
 * Source path: `source-ultimate/8 Advanced/6 Timer Resolution Assistant.ps1`
-* Source SHA-256: `883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621`
+* Source SHA-256: `46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73`
 * Current BoostLab module path:
   `modules/Advanced/timer-resolution-assistant.psm1`
 * Current status: exact Ultimate parity implemented in Phase 160

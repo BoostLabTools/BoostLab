@@ -17,7 +17,7 @@ bounded production scopes and implementation.
 ## Source Reference
 
 * Source path: `source-ultimate/6 Windows/12 Gamebar.ps1`
-* Source SHA-256: `8C6703E68C251D63ADD81A87B7CB6C1F572A4CE55A1E092C33B9B444A9884E59`
+* Source SHA-256: `C35831AFE527DFA090E5DA6EBF0F6132256A4ABF3BEBDA90FC8605C47F55C0D2`
 * Current BoostLab module path: `modules/Windows/game-bar.psm1`
 * Current status: refused placeholder
 * Current implemented actions: none

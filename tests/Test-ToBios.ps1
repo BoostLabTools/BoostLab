@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -34,7 +35,7 @@ $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $safetyPath = Join-Path $ProjectRoot 'core\Safety.psm1'
 $migrationPath = Join-Path $ProjectRoot 'docs\migrations\to-bios.md'
 
-if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne 'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C') {
+if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash -ne '555C124CC29006D9E6E42A1B2B3761AB760431E3D028758400A69065890E403D') {
     throw 'The Ultimate To BIOS source file was modified.'
 }
 
@@ -200,7 +201,7 @@ finally {
 
 $migrationSource = Get-Content -Raw -LiteralPath $migrationPath
 foreach ($requiredText in @(
-    'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C'
+    '555C124CC29006D9E6E42A1B2B3761AB760431E3D028758400A69065890E403D'
     'cmd /c C:\Windows\System32\shutdown.exe /r /fw /t 0'
     'NeedsExplicitConfirmation = true'
     'never call `Open` with confirmation'

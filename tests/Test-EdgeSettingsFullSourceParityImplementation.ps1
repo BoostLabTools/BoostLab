@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -74,7 +75,7 @@ foreach ($path in @($sourcePath, $modulePath, $stagesPath, $executionPath, $acti
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required Edge Settings file is missing: $path"
 }
 
-$expectedSourceHash = '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28'
+$expectedSourceHash = '3EE9E6F586D71E74F7400379E8D5DA079D52208D5B2DFA0E4AB035FCB08096A8'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
 Assert-BoostLabCondition ($actualSourceHash -eq $expectedSourceHash) "Edge Settings source hash mismatch. Expected $expectedSourceHash, found $actualSourceHash."
 
@@ -142,7 +143,7 @@ Assert-BoostLabTextContains -Text $actionPlanText -Needle 'approved captured Edg
 
 foreach ($migrationNeedle in @(
     'source-ultimate/3 Setup/6 Edge Settings.ps1',
-    '342869157930ECF0869A07B4254CB8F174C63648CD329DB3914BAD291CD5FF28',
+    '3EE9E6F586D71E74F7400379E8D5DA079D52208D5B2DFA0E4AB035FCB08096A8',
     'Edge Settings: Optimize (Recommended)',
     'Edge Settings: Default',
     'https://github.com/FR33THYFR33THY/Ultimate-Files/raw/refs/heads/main/edge.exe',
@@ -379,7 +380,7 @@ finally {
     $sha256.Dispose()
 }
 Assert-BoostLabCondition (@($sourceLines).Count -eq 49) 'Legacy source file count changed.'
-Assert-BoostLabCondition ($sourceManifestHash -eq '4804366AADB45394EB3E8A850258A7C8F33BCA10D97D1DEB0D1548D904DE2477') 'Legacy source manifest changed.'
+Assert-BoostLabCondition ($sourceManifestHash -eq 'B07E015D5BA32E9CF4DBC1804597311D8A41CE7FA537C0091914056BEF06FFF4') 'Legacy source manifest changed.'
 Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $sourceRoot '6 Windows\17 Loudness EQ.ps1'))) 'Loudness EQ source was reintroduced.'
 Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Object { $_.Name -like '*NVME Faster Driver*' -or $_.Name -like '*NVMe Faster Driver*' }).Count -eq 0) 'NVME Faster Driver source was reintroduced.'
 

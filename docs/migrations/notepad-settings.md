@@ -3,7 +3,7 @@
 * **Tool name:** Notepad Settings
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/14 Notepad Settings.ps1`
-* **Source checksum:** `2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB`
+* **Source checksum:** `CF139B4C5C96F57A2031F0CB9EDAC04E0F3CF86691BDC47F78DF5B45B76C1BA1`
 * **Risk level:** Medium
 * **Yazan approval status:** Approved by Yazan for Phase 32
 

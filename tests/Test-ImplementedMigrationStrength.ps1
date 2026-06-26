@@ -4,6 +4,7 @@ param(
 )
 
 Set-StrictMode -Version Latest
+. (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
@@ -27,22 +28,22 @@ $implementedTools = [ordered]@{
     'BIOS Information' = @{
         LegacyPath = 'source-ultimate\1 Check\1 BIOS Information.ps1'
         ModulePath = 'modules\Check\BIOSInformation.psm1'
-        LegacyHash = 'A4C4CD8835C05C0FC880142420F41FE9633CB44E9FD102B9368D30EFD6B12B42'
+        LegacyHash = 'A5BB6A0DABC156A26D9767500BDA528BFDE9C61955FE814014F6663B8224EDBC'
     }
     'BIOS Settings' = @{
         LegacyPath = 'source-ultimate\1 Check\2 BIOS Settings.ps1'
         ModulePath = 'modules\Check\BIOSSettings.psm1'
-        LegacyHash = 'C68BDADC7EEAC77A0FE8ECE999CEB5A28C51D819D69107AFD471739BA36E2737'
+        LegacyHash = '60978F4598F7D632D077E29A6B463659D612EE8597B0D2F6A998AC2FC4FBA6BD'
     }
     'To BIOS' = @{
         LegacyPath = 'source-ultimate\2 Refresh\4 To Bios.ps1'
         ModulePath = 'modules\Refresh\to-bios.psm1'
-        LegacyHash = 'A8371B42B235A6AC1F9661D96B430BEC0E4CAB6D9DE3CBD1461A02572220CA0C'
+        LegacyHash = '555C124CC29006D9E6E42A1B2B3761AB760431E3D028758400A69065890E403D'
     }
     'Unattended' = @{
         LegacyPath = 'source-ultimate\2 Refresh\2 Unattended.ps1'
         ModulePath = 'modules\Refresh\unattended.psm1'
-        LegacyHash = '0974CFCC4FFC4B21BF4EB62172C0C1C31FF32AB147878A4610FC19C95DF74338'
+        LegacyHash = '8A010A0B88860C88C4109A37BE21B03BA5C5686333D5B4A1C30F40C2FEE1D3DD'
     }
     'Startup Apps (Settings)' = @{
         LegacyPath = 'source-ultimate\3 Setup\3 Startup Apps (Settings).ps1'
@@ -59,22 +60,22 @@ $implementedTools = [ordered]@{
     'Memory Compression' = @{
         LegacyPath = 'source-ultimate\3 Setup\1 Memory Compression.ps1'
         ModulePath = 'modules\Setup\MemoryCompression.psm1'
-        LegacyHash = 'CCBABB01D249C1206F4762579665DCE6F95F12A8D221D9A65A6310A0393C2352'
+        LegacyHash = '2D5612341E0FA423DC70FD95B2103007E4A1A371C5C19D8A87E03F640DB6EF46'
     }
     'Background Apps' = @{
         LegacyPath = 'source-ultimate\3 Setup\5 Background Apps.ps1'
         ModulePath = 'modules\Setup\BackgroundApps.psm1'
-        LegacyHash = '2DF15DE03306CCAF19180940F215972E943EA94E7B2C52B7D6EC2B6403E79445'
+        LegacyHash = 'E85316D98951A7ED0D7367EA12B521486293AE72A2442C4F8D1C514DC437DBE7'
     }
     'Store Settings' = @{
         LegacyPath = 'source-ultimate\3 Setup\7 Store Settings.ps1'
         ModulePath = 'modules\Setup\StoreSettings.psm1'
-        LegacyHash = 'D6B2AF6B399E2E9A34198578472FCCAFB924E2E8B15D1A38B85091BE3DDF3167'
+        LegacyHash = 'C16EDA260DA2FA48A4830894BC44BF11FC8541A6087B4013A8C67BA7979ED0BD'
     }
     'Updates Pause' = @{
         LegacyPath = 'source-ultimate\3 Setup\8 Updates Pause.ps1'
         ModulePath = 'modules\Setup\UpdatesPause.psm1'
-        LegacyHash = '4BBEF16C51FBEBAFAECB58307F8C619A37CD10BB3DC489BD4DF9A59DDBD1A0BD'
+        LegacyHash = '5A587526097C9A11198FF5C3367B1B81D7C0531A806AACA63FC8998526099BE4'
         Launcher   = 'Start-Process ms-settings:windowsupdate'
     }
     'Graphics Configuration Center' = @{
@@ -110,57 +111,57 @@ $implementedTools = [ordered]@{
     'Widgets' = @{
         LegacyPath = 'source-ultimate\6 Windows\7 Widgets.ps1'
         ModulePath = 'modules\Windows\Widgets.psm1'
-        LegacyHash = '7A530557AA503EE038BDF910007D6A496DABFE61FA0D8818C189774E33892A73'
+        LegacyHash = '0171013B91F2A6F7FD6D055F305045650AD1A326D5F45CB08953759A7A69AC0A'
     }
     'Theme Black' = @{
         LegacyPath = 'source-ultimate\6 Windows\4 Theme Black.ps1'
         ModulePath = 'modules\Windows\ThemeBlack.psm1'
-        LegacyHash = 'C7FAEA241747065A9B752D989C5D0EA740E1525F442ABDDFFF3320766A005B2F'
+        LegacyHash = '3E5C58E1128B20041828BD3BDDA07033D84B2C540CAE18DDC82C989BDEECE31A'
     }
     'Start Menu Layout' = @{
         LegacyPath = 'source-ultimate\6 Windows\2 Start Menu Layout.ps1'
         ModulePath = 'modules\Windows\StartMenuLayout.psm1'
-        LegacyHash = '81C1298D7C9E112DB910C4398CD94E4B70ECD97ED3B185CF2FD2B8A380E069E8'
+        LegacyHash = 'B769C351189A3DC2BB8E4A595F9E745A9F25E5A69923DF10619B6D9C34D37724'
     }
     'Context Menu' = @{
         LegacyPath = 'source-ultimate\6 Windows\3 Context Menu.ps1'
         ModulePath = 'modules\Windows\ContextMenu.psm1'
-        LegacyHash = '33DA36782CF6416A2FAE98829ADF0913B0E54DC53DE454AB0C5210A79754B6F2'
+        LegacyHash = '0E0B63E158A22D01CB0654A92BBF4B1EFD01A9DD610CCF0631F4ACB851AF5117'
     }
     'Signout LockScreen Wallpaper Black' = @{
         LegacyPath = 'source-ultimate\6 Windows\5 Signout Lockscreen Wallpaper Black.ps1'
         ModulePath = 'modules\Windows\SignoutLockScreenWallpaperBlack.psm1'
-        LegacyHash = 'C5A3E791BB85EE166397748D95B0BD4725063B55DC50CAEA805DC212E485C64C'
+        LegacyHash = '132C79401BE9CC2067FA97558AC28C03946B4D50BC2E895CF516A658332ECEB1'
     }
     'User Account Pictures Black' = @{
         LegacyPath = 'source-ultimate\6 Windows\6 User Account Pictures Black.ps1'
         ModulePath = 'modules\Windows\user-account-pictures-black.psm1'
-        LegacyHash = '8B978374BC9D5AE51858FC71BE02D0DFFAE29AADFEFAF8662D8654D735443710'
+        LegacyHash = 'F4BFE40640F6825F288535332CD97FBB69E0C22137FD53985A4D04ED7210E73F'
     }
     'Device Manager Power Savings & Wake' = @{
         LegacyPath = 'source-ultimate\6 Windows\18 Device Manager Power Savings & Wake.ps1'
         ModulePath = 'modules\Windows\device-manager-power-savings-wake.psm1'
-        LegacyHash = 'FB543A5C6BD8F2FBEA5CD3069FD72DCDCCAB847D9E4753FD33BB0909843D209F'
+        LegacyHash = 'A02238FA5785F9EC4A483906E1E2C73941C93DACF5D286FF5D8F56CEE8494B76'
     }
     'Network Adapter Power Savings & Wake' = @{
         LegacyPath = 'source-ultimate\6 Windows\19 Network Adapter Power Savings & Wake.ps1'
         ModulePath = 'modules\Windows\NetworkAdapterPowerSavingsWake.psm1'
-        LegacyHash = '1DAAC872ECB1C601FD165FD471BFA9B9137D895333FBFBC5ADE5427561D4BCEB'
+        LegacyHash = 'D0CD4D79295D78366478C45958E5790ABAA63FE42065FBC29B88D6326DF6A4B6'
     }
     'Write Cache Buffer Flushing' = @{
         LegacyPath = 'source-ultimate\6 Windows\20 Write Cache Buffer Flushing.ps1'
         ModulePath = 'modules\Windows\write-cache-buffer-flushing.psm1'
-        LegacyHash = '67D8CA0FECBFD9FCE7D2C81CE1713F1B08E83B729DC8FEC7B8C2E33806F9AD5D'
+        LegacyHash = '28891440103D710F66F73620D944A9F29174B0DCCC211DCDE1008D694BBC90E2'
     }
     'Power Plan' = @{
         LegacyPath = 'source-ultimate\6 Windows\21 Power Plan.ps1'
         ModulePath = 'modules\Windows\PowerPlan.psm1'
-        LegacyHash = '97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56'
+        LegacyHash = 'BC0CA2C442CE74CA07ECDA0FE6F52DDD50C86D9E5F1A9DD420943AA08D9D1285'
     }
     'Notepad Settings' = @{
         LegacyPath = 'source-ultimate\6 Windows\14 Notepad Settings.ps1'
         ModulePath = 'modules\Windows\notepad-settings.psm1'
-        LegacyHash = '2086D75FAA560C9746B1FA2EDB29AE9A8364633FD6268DEEDBE7FB4720EA39FB'
+        LegacyHash = 'CF139B4C5C96F57A2031F0CB9EDAC04E0F3CF86691BDC47F78DF5B45B76C1BA1'
     }
 }
 

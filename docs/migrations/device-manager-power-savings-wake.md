@@ -3,7 +3,7 @@
 * **Tool name:** Device Manager Power Savings & Wake
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/18 Device Manager Power Savings & Wake.ps1`
-* **Source checksum:** `FB543A5C6BD8F2FBEA5CD3069FD72DCDCCAB847D9E4753FD33BB0909843D209F`
+* **Source checksum:** `A02238FA5785F9EC4A483906E1E2C73941C93DACF5D286FF5D8F56CEE8494B76`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 26

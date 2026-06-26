@@ -3,7 +3,7 @@
 * **Tool name:** Power Plan
 * **Stage:** Windows
 * **Source script path:** `source-ultimate/6 Windows/21 Power Plan.ps1`
-* **Source checksum:** `97CD584B1713809466E372B70434F06FFABC10DE0C4C4F67AF4212B5892DAC56`
+* **Source checksum:** `BC0CA2C442CE74CA07ECDA0FE6F52DDD50C86D9E5F1A9DD420943AA08D9D1285`
 * **Risk level:** Medium
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 24

@@ -3,7 +3,7 @@
 * **Tool name:** SMT / HT Assistant
 * **Stage:** Advanced
 * **Source script path:** `source-ultimate/8 Advanced/4 SMT  HT Assistant.ps1`
-* **Source checksum:** `5D53BF2A9A589ECB14D9F8F9048FF4830D2E6F4DEE7E4B54BA6B6B6F77F004FE`
+* **Source checksum:** `10E72B972E68415E96243EEA3B642E7A7D9DF93D1101987F11E01106B14D2433`
 * **Risk level:** High
 * **Required privileges:** Administrator
 * **Yazan approval status:** Approved by Yazan for Phase 29
