@@ -739,13 +739,14 @@ HKEY_LOCAL_MACHINE\Settings\LocalState
     } $respawnCommandInvoker $respawnStoreLauncher $respawnDelay $respawnFileWriter $respawnPathTester $respawnRegistryReader $respawnProcessStopper
     if (
         -not $respawnApply.Success -or
-        [string]$respawnApply.Status -ne 'Warning' -or
+        [string]$respawnApply.Status -ne 'Success' -or
         $respawnApply.Data.CommandStatus -ne 'Completed' -or
         $respawnApply.VerificationResult.Status -ne 'Passed' -or
-        -not ([string]$respawnApply.Message).Contains('Warning: Store process stop was best-effort') -or
-        @($respawnApply.Data.Warnings | Where-Object { [string]$_ -like '*remained running after the stop request*' }).Count -lt 2
+        [string]$respawnApply.Data.FinalStatusReason -ne 'CompletedVerifiedWithInfo' -or
+        @($respawnApply.Data.Warnings).Count -ne 0 -or
+        @($respawnApply.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'BestEffortVerified' -and [string]$_.Message -like '*remained running after the stop request*' }).Count -lt 2
     ) {
-        throw 'Store Settings Apply must treat Store process respawn/remaining-running state as a warning when registry and hive operations succeed.'
+        throw 'Store Settings Apply must treat source-tolerated process respawn/remaining-running state as informational when registry and hive operations succeed.'
     }
     foreach ($state in @($respawnApply.Data.StoreHiveValuesCaptured)) {
         if (-not [bool]$state.ByteComparisonSucceeded) {
@@ -1108,6 +1109,5 @@ if (
     Message                 = 'Store Settings Apply/Default and verification were validated with mocks only.'
     Timestamp               = Get-Date
 }
-
 
 

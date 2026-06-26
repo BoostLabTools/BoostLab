@@ -101,7 +101,7 @@ $protectedHashes = [ordered]@{
     'modules\Windows\game-mode.psm1' = 'CADEC6B0E4262990BF9D9BBDBD8DBA55EE910EEFC1FF72B78912800AD04624E9'
     'modules\Windows\sound.psm1' = 'B20CBF149CDAA562011AABD05D5828100D0B3810A565A4B7E305EBD50C91FDE3'
     'modules\Setup\edge-settings.psm1' = 'F93A752A9D84BF77FB76E3DE2AF81AC172B7902BAA406D1F927B5F701FCD5ED8'
-    'modules\Windows\PowerPlan.psm1' = '6AC56C282668FC0C1A72DAE3597937295C8A1DEFABF7B905ED4D968AD2ACE86A'
+    'modules\Windows\PowerPlan.psm1' = '8FFD8CFF13AD876BD60DA1B1FF311FACD3C2172A4727EE25E1E40EF5F9CB6F2F'
 }
 foreach ($relativePath in $protectedHashes.Keys) {
     $path = Join-Path $ProjectRoot $relativePath
@@ -164,6 +164,5 @@ foreach ($requiredText in $requiredRemovalText) {
     RemovedSourceSHA256      = '2F11A145B3E035372AB023614662524159BDDFA122A3778D6FEE9824782416AE'
     ProtectedFileCount       = $protectedHashes.Count
 }
-
 
 

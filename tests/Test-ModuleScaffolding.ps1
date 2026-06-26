@@ -1052,7 +1052,7 @@ foreach ($entry in $expectedModules.Values) {
                 '*ModernStandbyWoLMagicPacket'
                 'function Test-BoostLabNetworkAdapterPowerWakeState'
                 'New-BoostLabVerificationResult'
-                '-VerificationResult $verificationResult'
+                '-VerificationResult $effectiveVerification'
                 '[bool]$Confirmed = $false'
             )) {
                 if (-not $source.Contains($requiredText)) {

@@ -711,7 +711,7 @@ foreach ($requiredRecordText in @(
 }
 
 $protectedHashes = [ordered]@{
-    'modules\Windows\PowerPlan.psm1' = '6AC56C282668FC0C1A72DAE3597937295C8A1DEFABF7B905ED4D968AD2ACE86A'
+    'modules\Windows\PowerPlan.psm1' = '8FFD8CFF13AD876BD60DA1B1FF311FACD3C2172A4727EE25E1E40EF5F9CB6F2F'
     'modules\Windows\SignoutLockScreenWallpaperBlack.psm1' = '216CE7CA8E3EDCD29B126BD6EB167CE8B43EEB2B5E15C984D9E066CA254B24B2'
     'modules\Windows\ContextMenu.psm1' = '1F875028B1C730323E44F59CE80C9A7F8B5DE1407BB2425BD58C5924BACCA3C2'
     'modules\Windows\StartMenuLayout.psm1' = 'D93019267A3D566146F713DF69C86F41CDAD93A2B0786D5CB8DDF9F2878E103A'
@@ -831,6 +831,5 @@ if (
     NextOrderedParityTarget = [string]$nextTarget.ToolId
     Message = 'Device Manager Power Savings & Wake passed static and mocked exact Ultimate parity validation.'
 }
-
 
 

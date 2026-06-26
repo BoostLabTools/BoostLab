@@ -4,6 +4,10 @@ $verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSS
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name $verificationModulePath -Scope Local -ErrorAction Stop
 }
+$sourceToleratedOutcomeModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\SourceToleratedOutcomes.psm1'
+if (-not (Get-Command -Name 'New-BoostLabSourceToleratedOutcomeNote' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $sourceToleratedOutcomeModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'power-plan'; Title = 'Power Plan'; Stage = 'Windows'; Order = 20
@@ -317,8 +321,14 @@ function Get-BoostLabPowerPlanWarningSummary {
     foreach ($warning in @($CommandWarnings)) {
         $category = [string]$warning.Category
         $settingName = [string]$warning.SettingName
-        if ($category -eq 'HardwareSpecificUnsupportedSetting' -and -not [string]::IsNullOrWhiteSpace($settingName) -and $settingName -notin $hardwareNames) {
-            $hardwareNames.Add($settingName)
+        if ($category -eq 'HardwareSpecificUnsupportedSetting') {
+            if (-not [string]::IsNullOrWhiteSpace($settingName) -and $settingName -notin $hardwareNames) {
+                $hardwareNames.Add($settingName)
+            }
+            continue
+        }
+        elseif ($category -eq 'UnsupportedPowerCfgSetting') {
+            continue
         }
         elseif ($category -notin @('ActiveSchemeDeleteAttemptExpected', 'ExistingTargetSchemeReuse')) {
             $text = [string]$warning.Description
@@ -336,7 +346,10 @@ function Get-BoostLabPowerPlanWarningSummary {
             continue
         }
 
-        if ([string]$check.Message -match '(?i)powercfg\s+output\s+did\s+not\s+expose\s+readable\s+AC\s+and\s+DC\s+indexes') {
+        if (
+            [string]$check.Message -match '(?i)powercfg\s+output\s+did\s+not\s+expose\s+readable\s+AC\s+and\s+DC\s+indexes' -or
+            [string]$check.Message -match '(?i)\b(unavailable|unsupported|not\s+supported|does\s+not\s+exist)\b'
+        ) {
             $unreadableWarnings.Add([string]$check.Name)
         }
         else {
@@ -906,12 +919,118 @@ function Invoke-BoostLabPowerPlanAction {
         }
         '/list active scheme'
     )
-    $commandStatus = if ($errors.Count -gt 0) { 'Completed with errors' } elseif ($warnings.Count -gt 0) { 'Completed with warnings' } else { 'Completed' }
     $warningSummary = Get-BoostLabPowerPlanWarningSummary -CommandWarnings $warningDetails.ToArray() -VerificationResult $verification -Errors $errors.ToArray()
+    $recognizedCompatibilityCategories = @(
+        'ActiveSchemeDeleteAttemptExpected'
+        'ExistingTargetSchemeReuse'
+        'HardwareSpecificUnsupportedSetting'
+        'UnsupportedPowerCfgSetting'
+    )
+    $unclassifiedWarningDetails = @(
+        $warningDetails |
+            Where-Object { [string]$_.Category -notin $recognizedCompatibilityCategories }
+    )
+    $sourceToleratedCompatibility = (
+        $ActionName -eq 'Apply' -and
+        $errors.Count -eq 0 -and
+        [bool]$warningSummary.ActivePlanVerified -and
+        [int]$warningSummary.UnexpectedFailureCount -eq 0 -and
+        [int]$warningSummary.OtherCompatibilityWarningCount -eq 0 -and
+        $unclassifiedWarningDetails.Count -eq 0 -and
+        $warnings.Count -eq $warningDetails.Count -and
+        (
+            [int]$warningSummary.HardwareSpecificUnsupportedSettingCount -gt 0 -or
+            [int]$warningSummary.UnreadablePowerCfgIndexWarningCount -gt 0 -or
+            -not [string]::IsNullOrWhiteSpace([string]$warningSummary.ExpectedActiveSchemeDeleteWarning) -or
+            @($warningDetails | Where-Object { [string]$_.Category -eq 'ExistingTargetSchemeReuse' }).Count -gt 0
+        )
+    )
+    $informationalNotes = [System.Collections.Generic.List[object]]::new()
+    if ($sourceToleratedCompatibility) {
+        foreach ($detail in @($warningDetails)) {
+            $reasonCode = switch ([string]$detail.Category) {
+                'ActiveSchemeDeleteAttemptExpected' { 'ActiveSchemeDeleteAttemptExpected' }
+                'ExistingTargetSchemeReuse' { 'ExistingTargetSchemeReuse' }
+                default { 'HardwareSpecificUnsupportedSetting' }
+            }
+            $messageText = [string]$detail.Description
+            if ([string]::IsNullOrWhiteSpace($messageText)) {
+                $messageText = [string]$detail.Message
+            }
+            $informationalNotes.Add(
+                (New-BoostLabSourceToleratedOutcomeNote `
+                    -ToolId 'power-plan' `
+                    -ReasonCode $reasonCode `
+                    -Message $messageText `
+                    -Details $detail)
+            )
+        }
+        foreach ($settingName in @($warningSummary.HardwareSpecificUnsupportedSettings)) {
+            if (@($informationalNotes | Where-Object { [string]$_.Message -like "*$settingName*" }).Count -eq 0) {
+                $informationalNotes.Add(
+                    (New-BoostLabSourceToleratedOutcomeNote `
+                        -ToolId 'power-plan' `
+                        -ReasonCode 'HardwareSpecificUnsupportedSetting' `
+                        -Message ("Hardware-specific power setting was unavailable: {0}" -f [string]$settingName) `
+                        -Details ([pscustomobject]@{ SettingName = [string]$settingName }))
+                )
+            }
+        }
+        foreach ($unreadableSetting in @($warningSummary.UnreadablePowerCfgIndexWarnings)) {
+            $settingName = [string]$unreadableSetting
+            if ($settingName -like 'Power setting | *') {
+                $settingNameParts = @($settingName -split '\s+\|\s+', 3)
+                if ($settingNameParts.Count -ge 2) {
+                    $settingName = [string]$settingNameParts[1]
+                }
+            }
+            if (@($informationalNotes | Where-Object { [string]$_.Message -like "*$settingName*" }).Count -eq 0) {
+                $informationalNotes.Add(
+                    (New-BoostLabSourceToleratedOutcomeNote `
+                        -ToolId 'power-plan' `
+                        -ReasonCode 'HardwareSpecificUnsupportedSetting' `
+                        -Message ("Power setting index was unavailable or unreadable: {0}" -f [string]$unreadableSetting) `
+                        -Details ([pscustomobject]@{ CheckName = [string]$unreadableSetting }))
+                )
+            }
+        }
+    }
+    $effectiveVerification = $verification
+    if ($sourceToleratedCompatibility -and [string]$verification.Status -eq 'Warning') {
+        $effectiveVerification = [pscustomobject]@{
+            ToolId        = [string]$verification.ToolId
+            ToolTitle     = [string]$verification.ToolTitle
+            Action        = [string]$verification.Action
+            Status        = 'Passed'
+            ExpectedState = $verification.ExpectedState
+            DetectedState = $verification.DetectedState
+            Checks        = @($verification.Checks)
+            Message       = 'The expected Power Plan state was detected; source-tolerated compatibility notes were recorded.'
+            Timestamp     = $verification.Timestamp
+        }
+    }
+    $commandStatus = if ($errors.Count -gt 0) {
+        'Completed with errors'
+    }
+    elseif ($sourceToleratedCompatibility) {
+        'Completed'
+    }
+    elseif ($warnings.Count -gt 0) {
+        'Completed with warnings'
+    }
+    else {
+        'Completed'
+    }
+    $finalStatusReason = if ($sourceToleratedCompatibility) {
+        'ActivePlanVerifiedWithInformationalCompatibility'
+    }
+    else {
+        [string]$warningSummary.FinalStatusReason
+    }
     $data = [pscustomobject]@{
         CommandStatus = $commandStatus
-        VerificationStatus = [string]$verification.Status
-        FinalStatusReason = [string]$warningSummary.FinalStatusReason
+        VerificationStatus = [string]$effectiveVerification.Status
+        FinalStatusReason = $finalStatusReason
         ActivePlanVerified = [bool]$warningSummary.ActivePlanVerified
         PassedSettingCount = [int]$warningSummary.PassedSettingCount
         HardwareSpecificUnsupportedSettingCount = [int]$warningSummary.HardwareSpecificUnsupportedSettingCount
@@ -930,7 +1049,9 @@ function Invoke-BoostLabPowerPlanAction {
         RegistryValuesOrFilesChecked = $registryChecks
         CommandsAttempted = $attempted.ToArray()
         CommandsCompleted = $completed.ToArray()
-        Warnings = $warnings.ToArray()
+        Warnings = if ($sourceToleratedCompatibility) { @() } else { $warnings.ToArray() }
+        InformationalNotes = $informationalNotes.ToArray()
+        ExpectedNoOpOutcomes = $informationalNotes.ToArray()
         WarningClassifications = $warningDetails.ToArray()
         Errors = $errors.ToArray()
         PowerOptionsStatus = $uiStatus
@@ -938,12 +1059,15 @@ function Invoke-BoostLabPowerPlanAction {
     }
 
     if ($errors.Count -gt 0) {
-        return New-BoostLabPowerPlanResult -Success $false -Action $ActionName -Message ('Power Plan action completed with errors: {0}' -f ($errors -join '; ')) -Data $data -VerificationResult $verification
+        return New-BoostLabPowerPlanResult -Success $false -Action $ActionName -Message ('Power Plan action completed with errors: {0}' -f ($errors -join '; ')) -Data $data -VerificationResult $effectiveVerification
     }
-    if ($verification.Status -eq 'Failed') {
-        return New-BoostLabPowerPlanResult -Success $false -Action $ActionName -Message 'Power Plan commands completed, but verification detected an unexpected state.' -Data $data -VerificationResult $verification
+    if ($effectiveVerification.Status -eq 'Failed') {
+        return New-BoostLabPowerPlanResult -Success $false -Action $ActionName -Message 'Power Plan commands completed, but verification detected an unexpected state.' -Data $data -VerificationResult $effectiveVerification
     }
-    $message = if ($verification.Status -eq 'Warning' -or $warnings.Count -gt 0) {
+    $message = if ($sourceToleratedCompatibility) {
+        'Ultimate Power Plan applied; expected source-tolerated compatibility notes were recorded in result details.'
+    }
+    elseif ($effectiveVerification.Status -eq 'Warning' -or $warnings.Count -gt 0) {
         if ([string]$warningSummary.FinalStatusReason -eq 'ActivePlanVerifiedWithCompatibilityWarnings' -and $ActionName -eq 'Apply') {
             'Power Plan applied and the BoostLab Ultimate scheme is active; review expected hardware-specific or unreadable setting warnings.'
         }
@@ -957,7 +1081,7 @@ function Invoke-BoostLabPowerPlanAction {
     else {
         'Windows default power plans restored.'
     }
-    return New-BoostLabPowerPlanResult -Success $true -Action $ActionName -Message $message -Data $data -VerificationResult $verification
+    return New-BoostLabPowerPlanResult -Success $true -Action $ActionName -Message $message -Data $data -VerificationResult $effectiveVerification
 }
 
 function Invoke-BoostLabToolAction {

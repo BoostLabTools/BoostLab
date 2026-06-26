@@ -4,6 +4,10 @@ $verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSS
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name $verificationModulePath -Scope Local -ErrorAction Stop
 }
+$sourceToleratedOutcomeModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\SourceToleratedOutcomes.psm1'
+if (-not (Get-Command -Name 'New-BoostLabSourceToleratedOutcomeNote' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $sourceToleratedOutcomeModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'cleanup'
@@ -431,9 +435,10 @@ function Get-BoostLabCleanupRemainingClassification {
 
     $explicitClassification = [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Classification' -DefaultValue '')
     if ($explicitClassification -in @('RemainingLockedOrInUse', 'RemainingRecreatedAfterCleanup', 'RemainingAccessDenied', 'VerificationUnavailable')) {
+        $isExpectedVolatileLeftover = $explicitClassification -ne 'VerificationUnavailable'
         return [pscustomobject]@{
             Classification = $explicitClassification
-            Status         = 'Warning'
+            Status         = if ($isExpectedVolatileLeftover) { 'Passed' } else { 'Warning' }
             Reason         = [string](Get-BoostLabCleanupPropertyValue -InputObject $State -Name 'Message' -DefaultValue "Volatile Temp leftovers classified as $explicitClassification.")
         }
     }
@@ -449,14 +454,14 @@ function Get-BoostLabCleanupRemainingClassification {
     if ($errorText -match '(?i)access.*denied|unauthorized|permission') {
         return [pscustomobject]@{
             Classification = 'RemainingAccessDenied'
-            Status         = 'Warning'
+            Status         = 'Passed'
             Reason         = 'Remove-Item reported access-denied/permission evidence for this volatile Temp target.'
         }
     }
     if ($errorText -match '(?i)being used|in use|cannot access.*because.*used|locked|sharing violation|process cannot access') {
         return [pscustomobject]@{
             Classification = 'RemainingLockedOrInUse'
-            Status         = 'Warning'
+            Status         = 'Passed'
             Reason         = 'Remove-Item reported locked/in-use evidence for this volatile Temp target.'
         }
     }
@@ -467,7 +472,7 @@ function Get-BoostLabCleanupRemainingClassification {
         if ($lastWrite -is [datetime] -and $CleanupStartTime -ne [datetime]::MinValue -and $lastWrite -ge $CleanupStartTime.ToUniversalTime()) {
             return [pscustomobject]@{
                 Classification = 'RemainingRecreatedAfterCleanup'
-                Status         = 'Warning'
+                Status         = 'Passed'
                 Reason         = 'Remaining volatile Temp sample was written during or after the cleanup window.'
             }
         }
@@ -766,14 +771,34 @@ function Invoke-BoostLabCleanupApply {
             ForEach-Object { @($_.RemainingSamples) } |
             Select-Object -First 10
     )
+    $informationalNotes = [System.Collections.Generic.List[object]]::new()
+    foreach ($expectedVolatileCheck in @(
+        $volatileRemainingChecks |
+            Where-Object {
+                [string]$_.RemainingClassification -in @('RemainingLockedOrInUse', 'RemainingRecreatedAfterCleanup', 'RemainingAccessDenied') -and
+                [string]$_.Status -eq 'Passed'
+            }
+    )) {
+        $informationalNotes.Add(
+            (New-BoostLabSourceToleratedOutcomeNote `
+                -ToolId 'cleanup' `
+                -ReasonCode 'VolatileLeftoverIgnored' `
+                -Message ([string]$expectedVolatileCheck.Message) `
+                -Details ([pscustomobject]@{
+                    TargetId = [string]$expectedVolatileCheck.TargetId
+                    Classification = [string]$expectedVolatileCheck.RemainingClassification
+                    RemainingItemCount = [int]$expectedVolatileCheck.RemainingItemCount
+                }))
+        )
+    }
     $finalStatusReason = if ($errors.Count -gt 0) {
         'CommandError'
     }
     elseif ([string]$verification.Status -eq 'Failed') {
         'VerificationFailed'
     }
-    elseif ($volatileRemainingChecks.Count -gt 0) {
-        'VolatileTempLeftovers'
+    elseif ($informationalNotes.Count -gt 0 -and [string]$verification.Status -eq 'Passed') {
+        'VolatileLeftoverIgnored'
     }
     elseif ([string]$verification.Status -eq 'Warning') {
         'VerificationWarning'
@@ -809,6 +834,8 @@ function Invoke-BoostLabCleanupApply {
         )
         CleanMgrStatus     = $cleanMgrStatus
         Warnings           = $warnings.ToArray()
+        InformationalNotes = $informationalNotes.ToArray()
+        ExpectedNoOpOutcomes = $informationalNotes.ToArray()
         Errors             = $errors.ToArray()
         FinalStatusReason  = $finalStatusReason
         CompletedAt        = $cleanupEndTime

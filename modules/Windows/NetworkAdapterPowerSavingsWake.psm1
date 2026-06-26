@@ -4,6 +4,10 @@ $verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSS
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name $verificationModulePath -Scope Local -ErrorAction Stop
 }
+$sourceToleratedOutcomeModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\SourceToleratedOutcomes.psm1'
+if (-not (Get-Command -Name 'New-BoostLabSourceToleratedOutcomeNote' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $sourceToleratedOutcomeModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'network-adapter-power-savings-wake'; Title = 'Network Adapter Power Savings & Wake'; Stage = 'Windows'; Order = 18
@@ -1116,6 +1120,41 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
             } |
             ForEach-Object { [string]$_.Name }
     )
+    $sourceToleratedUnsupportedOnly = (
+        @($inventory.Adapters).Count -gt 0 -and
+        $unsupportedResults.Count + $verificationWarningProperties.Count -gt 0 -and
+        $inaccessibleResults.Count -eq 0 -and
+        @($inventory.InaccessibleTargets).Count -eq 0 -and
+        $failedResults.Count -eq 0 -and
+        $errors.Count -eq 0 -and
+        [string]$verificationResult.Status -eq 'Warning'
+    )
+    $informationalNotes = [System.Collections.Generic.List[object]]::new()
+    if ($sourceToleratedUnsupportedOnly) {
+        foreach ($sample in @($unsupportedSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)) {
+            $informationalNotes.Add(
+                (New-BoostLabSourceToleratedOutcomeNote `
+                    -ToolId 'network-adapter-power-savings-wake' `
+                    -ReasonCode 'HardwareSpecificUnsupportedSetting' `
+                    -Message ([string]$sample) `
+                    -Details ([pscustomobject]@{ Action = $ActionName }))
+            )
+        }
+    }
+    $effectiveVerification = $verificationResult
+    if ($sourceToleratedUnsupportedOnly) {
+        $effectiveVerification = [pscustomobject]@{
+            ToolId        = [string]$verificationResult.ToolId
+            ToolTitle     = [string]$verificationResult.ToolTitle
+            Action        = [string]$verificationResult.Action
+            Status        = 'Passed'
+            ExpectedState = $verificationResult.ExpectedState
+            DetectedState = $verificationResult.DetectedState
+            Checks        = @($verificationResult.Checks)
+            Message       = 'The expected network adapter state was detected where supported; hardware-specific unsupported properties were recorded as informational.'
+            Timestamp     = $verificationResult.Timestamp
+        }
+    }
     foreach ($sample in @($failedSamples)) {
         $errors.Add($sample)
     }
@@ -1145,9 +1184,9 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
     elseif (
         $unsupportedResults.Count -gt 0 -or
         $inaccessibleResults.Count -gt 0 -or
-        $verificationResult.Status -eq 'Warning'
+        ([string]$effectiveVerification.Status -eq 'Warning')
     ) {
-        'Completed with warnings'
+        if ($sourceToleratedUnsupportedOnly) { 'Completed' } else { 'Completed with warnings' }
     }
     else {
         'Completed'
@@ -1155,7 +1194,7 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
     $data = [pscustomobject]@{
         AdapterEnumerationStatus          = [string]$inventory.EnumerationStatus
         CommandStatus                    = $commandStatus
-        VerificationStatus               = [string]$verificationResult.Status
+        VerificationStatus               = [string]$effectiveVerification.Status
         ExpectedAdapterPowerWakeState    = $expectedState
         DetectedAdapterPowerWakeState    = $detectedState
         AdapterNamesTargeted              = $adapterNames
@@ -1174,7 +1213,9 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
         InaccessibleCount                 = $inaccessibleResults.Count + @($inventory.InaccessibleTargets).Count
         FailedCount                       = $failedResults.Count
         InaccessibleOrUnsupportedProperties = @($unsupportedSamples + $inaccessibleSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)
-        Warnings                          = @($unsupportedSamples + $inaccessibleSamples + $verificationWarningProperties | Select-Object -First $sampleLimit)
+        Warnings                          = if ($sourceToleratedUnsupportedOnly) { @() } else { @($unsupportedSamples + $inaccessibleSamples + $verificationWarningProperties | Select-Object -First $sampleLimit) }
+        InformationalNotes                = $informationalNotes.ToArray()
+        ExpectedNoOpOutcomes              = $informationalNotes.ToArray()
         Errors                            = $errors.ToArray()
         RegistryOperationsAttempted       = $registryOperationsAttempted.ToArray()
         RegistryOperationsCompleted       = @($changedResults | ForEach-Object { [string]$_.Description })
@@ -1198,7 +1239,7 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
             -Action $ActionName `
             -Message ([string]$inventory.Message) `
             -Data $data `
-            -VerificationResult $verificationResult
+            -VerificationResult $effectiveVerification
     }
     if ($failedResults.Count -gt 0) {
         return New-BoostLabNetworkAdapterPowerWakeResult `
@@ -1206,18 +1247,21 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
             -Action $ActionName `
             -Message ('Network adapter power and wake action completed with {0} failed registry operation(s). Sample: {1}' -f $failedResults.Count, ($failedSamples -join '; ')) `
             -Data $data `
-            -VerificationResult $verificationResult
+            -VerificationResult $effectiveVerification
     }
-    if ($verificationResult.Status -eq 'Failed') {
+    if ($effectiveVerification.Status -eq 'Failed') {
         return New-BoostLabNetworkAdapterPowerWakeResult `
             -Success $false `
             -Action $ActionName `
             -Message 'Network adapter power and wake commands completed, but verification detected an unexpected state.' `
             -Data $data `
-            -VerificationResult $verificationResult
+            -VerificationResult $effectiveVerification
     }
 
-    $message = if ($verificationResult.Status -eq 'Warning') {
+    $message = if ($sourceToleratedUnsupportedOnly) {
+        'Network adapter power savings and wake disabled where supported; unsupported hardware-specific properties were recorded in result details.'
+    }
+    elseif ($effectiveVerification.Status -eq 'Warning') {
         if ($inaccessibleTargets.Count -gt 0) {
             'Network adapter power and wake commands completed on accessible adapters; protected or unsupported targets were reported as warnings.'
         }
@@ -1240,7 +1284,7 @@ function Invoke-BoostLabNetworkAdapterPowerWakeAction {
         -Action $ActionName `
         -Message $message `
         -Data $data `
-        -VerificationResult $verificationResult
+        -VerificationResult $effectiveVerification
 }
 
 function Invoke-BoostLabToolAction {

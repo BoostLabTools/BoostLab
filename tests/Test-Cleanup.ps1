@@ -313,9 +313,10 @@ try {
             -CleanMgrLauncher $CleanMgr
     } $mockTargetProvider $lockedTargetRemover $lockedStateReader $mockCleanMgr
     Assert-BoostLabCondition ([bool]$lockedResult.Success) 'Cleanup should not hard-fail solely for locked volatile User Temp leftovers.'
-    Assert-BoostLabCondition ([string]$lockedResult.Status -eq 'Warning') 'Locked volatile temp leftovers should return Warning.'
-    Assert-BoostLabCondition ([string]$lockedResult.VerificationResult.Status -eq 'Warning') 'Locked volatile temp leftovers should be verification Warning.'
-    Assert-BoostLabCondition ([string]$lockedResult.Data.FinalStatusReason -eq 'VolatileTempLeftovers') 'Locked temp leftovers should set FinalStatusReason to VolatileTempLeftovers.'
+    Assert-BoostLabCondition ([string]$lockedResult.Status -eq 'Passed') 'Locked volatile temp leftovers should return Passed with informational details.'
+    Assert-BoostLabCondition ([string]$lockedResult.VerificationResult.Status -eq 'Passed') 'Locked volatile temp leftovers should pass verification as source-tolerated volatile leftovers.'
+    Assert-BoostLabCondition ([string]$lockedResult.Data.FinalStatusReason -eq 'VolatileLeftoverIgnored') 'Locked temp leftovers should set FinalStatusReason to VolatileLeftoverIgnored.'
+    Assert-BoostLabCondition (@($lockedResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'VolatileLeftoverIgnored' }).Count -gt 0) 'Locked temp leftovers should be recorded as informational source-tolerated outcomes.'
     Assert-BoostLabCondition ([int]$lockedResult.Data.RemainingTempItemCount -eq 5) 'Locked temp leftover count was not reported.'
     Assert-BoostLabCondition ('RemainingLockedOrInUse' -in @($lockedResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Locked temp leftovers were not classified clearly.'
 
@@ -336,8 +337,10 @@ try {
             -TargetStateReader $StateReader `
             -CleanMgrLauncher $CleanMgr
     } $mockTargetProvider $mockTargetRemover $recreatedStateReader $mockCleanMgr
-    Assert-BoostLabCondition ([bool]$recreatedResult.Success) 'Cleanup should warn, not fail, when volatile temp contents were recreated after cleanup.'
-    Assert-BoostLabCondition ([string]$recreatedResult.Status -eq 'Warning') 'Recreated volatile temp leftovers should return Warning.'
+    Assert-BoostLabCondition ([bool]$recreatedResult.Success) 'Cleanup should succeed when only volatile temp contents were recreated after cleanup.'
+    Assert-BoostLabCondition ([string]$recreatedResult.Status -eq 'Passed') 'Recreated volatile temp leftovers should return Passed with informational details.'
+    Assert-BoostLabCondition ([string]$recreatedResult.VerificationResult.Status -eq 'Passed') 'Recreated volatile temp leftovers should pass verification as source-tolerated volatile leftovers.'
+    Assert-BoostLabCondition (@($recreatedResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'VolatileLeftoverIgnored' }).Count -gt 0) 'Recreated temp leftovers should be recorded as informational source-tolerated outcomes.'
     Assert-BoostLabCondition ('RemainingRecreatedAfterCleanup' -in @($recreatedResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Recreated temp leftovers were not classified clearly.'
 
     $windowsTempAccessDeniedRemover = {
@@ -374,7 +377,9 @@ try {
             -TargetStateReader $StateReader `
             -CleanMgrLauncher $CleanMgr
     } $mockTargetProvider $windowsTempAccessDeniedRemover $windowsTempStateReader $mockCleanMgr
-    Assert-BoostLabCondition ([bool]$windowsTempResult.Success -and [string]$windowsTempResult.Status -eq 'Warning') 'Windows Temp access-denied leftovers should follow volatile warning policy.'
+    Assert-BoostLabCondition ([bool]$windowsTempResult.Success -and [string]$windowsTempResult.Status -eq 'Passed') 'Windows Temp access-denied leftovers should follow volatile informational policy.'
+    Assert-BoostLabCondition ([string]$windowsTempResult.VerificationResult.Status -eq 'Passed') 'Windows Temp access-denied leftovers should pass verification as source-tolerated volatile leftovers.'
+    Assert-BoostLabCondition (@($windowsTempResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'VolatileLeftoverIgnored' }).Count -gt 0) 'Windows Temp access-denied leftovers should be recorded as informational source-tolerated outcomes.'
     Assert-BoostLabCondition ('RemainingAccessDenied' -in @($windowsTempResult.Data.RemainingTargetClassifications | ForEach-Object { [string]$_.Classification })) 'Windows Temp leftovers were not classified as access denied.'
 
     $unexpectedTempStateReader = {

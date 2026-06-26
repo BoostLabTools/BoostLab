@@ -197,7 +197,7 @@ foreach ($requiredText in @(
     'FailedCount'
     'RegistryOperationResultSummary'
     'New-BoostLabVerificationResult'
-    '-VerificationResult $verificationResult'
+    '-VerificationResult $effectiveVerification'
     '[bool]$Confirmed = $false'
     'Network adapter power savings and wake disabled.'
     'Network adapter power savings and wake restored to default.'
@@ -647,12 +647,14 @@ try {
     } $inventoryReader $applyReader $unsupportedInvoker
     if (
         -not $unsupportedResult.Success -or
-        $unsupportedResult.Data.CommandStatus -ne 'Completed with warnings' -or
-        $unsupportedResult.VerificationResult.Status -ne 'Warning' -or
+        $unsupportedResult.Data.CommandStatus -ne 'Completed' -or
+        $unsupportedResult.VerificationResult.Status -ne 'Passed' -or
         [int]$unsupportedResult.Data.UnsupportedOrAbsentCount -ne 1 -or
-        @($unsupportedResult.Data.UnsupportedOrAbsentProperties).Count -eq 0
+        @($unsupportedResult.Data.UnsupportedOrAbsentProperties).Count -eq 0 -or
+        @($unsupportedResult.Data.Warnings).Count -ne 0 -or
+        @($unsupportedResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'HardwareSpecificUnsupportedSetting' }).Count -eq 0
     ) {
-        throw 'Unsupported adapter properties were not reported as bounded warnings.'
+        throw 'Unsupported adapter properties were not reported as informational source-tolerated outcomes.'
     }
 
     $accessDeniedInvoker = {
@@ -1172,6 +1174,4 @@ if (
     Message                  = 'Network Adapter Power Savings & Wake was validated with static inspection and mocks only.'
     Timestamp                = Get-Date
 }
-
-
 

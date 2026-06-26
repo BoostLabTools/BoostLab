@@ -4,6 +4,10 @@ $verificationModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSS
 if (-not (Get-Command -Name 'New-BoostLabVerificationResult' -ErrorAction SilentlyContinue)) {
     Import-Module -Name $verificationModulePath -Scope Local -Force -ErrorAction Stop
 }
+$sourceToleratedOutcomeModulePath = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'core\SourceToleratedOutcomes.psm1'
+if (-not (Get-Command -Name 'New-BoostLabSourceToleratedOutcomeNote' -ErrorAction SilentlyContinue)) {
+    Import-Module -Name $sourceToleratedOutcomeModulePath -Scope Local -Force -ErrorAction Stop
+}
 
 $script:BoostLabToolMetadata = [ordered]@{
     Id = 'store-settings'; Title = 'Store Settings'; Stage = 'Setup'; Order = 8
@@ -1142,14 +1146,33 @@ function Invoke-BoostLabStoreSettingsAction {
     $registryValuesChecked = @($verificationResult.Checks | ForEach-Object { [string]$_.Name })
     $completedAt = Get-Date
     $verificationStatus = [string]$verificationResult.Status
+    $informationalNotes = [System.Collections.Generic.List[object]]::new()
+    $severityWarnings = [System.Collections.Generic.List[string]]::new()
+    foreach ($warning in @($warnings.ToArray())) {
+        if ($verificationStatus -eq 'Passed' -and $errors.Count -eq 0 -and [string]$warning -like 'Store process stop was best-effort:*') {
+            $informationalNotes.Add(
+                (New-BoostLabSourceToleratedOutcomeNote `
+                    -ToolId 'store-settings' `
+                    -ReasonCode 'BestEffortVerified' `
+                    -Message ([string]$warning) `
+                    -Details ([pscustomobject]@{ Action = $ActionName; VerificationStatus = $verificationStatus }))
+            )
+        }
+        else {
+            $severityWarnings.Add([string]$warning)
+        }
+    }
     $finalStatusReason = if ($errors.Count -gt 0) {
         'CommandError'
     }
     elseif ($verificationStatus -eq 'Failed') {
         'VerificationFailed'
     }
-    elseif ($verificationStatus -eq 'Warning' -or $warnings.Count -gt 0) {
+    elseif ($verificationStatus -eq 'Warning' -or $severityWarnings.Count -gt 0) {
         'CompletedWithWarnings'
+    }
+    elseif ($informationalNotes.Count -gt 0) {
+        'CompletedVerifiedWithInfo'
     }
     else {
         'CompletedVerified'
@@ -1171,7 +1194,9 @@ function Invoke-BoostLabStoreSettingsAction {
         StoreHiveValuesCaptured   = @($capturedStoreHiveStates.ToArray())
         ProcessActions            = $processActions.ToArray()
         StoreUiActions            = $storeUiActions.ToArray() -join [Environment]::NewLine
-        Warnings                  = $warnings.ToArray()
+        Warnings                  = $severityWarnings.ToArray()
+        InformationalNotes        = $informationalNotes.ToArray()
+        ExpectedNoOpOutcomes      = $informationalNotes.ToArray()
         Errors                    = $errors.ToArray()
         FinalStatusReason         = $finalStatusReason
         CompletedAt               = $completedAt
@@ -1199,15 +1224,18 @@ function Invoke-BoostLabStoreSettingsAction {
     else {
         'Store settings restored to default.'
     }
-    if ($warnings.Count -gt 0) {
-        $message = "$message Warning: $($warnings -join '; ')"
+    if ($severityWarnings.Count -gt 0) {
+        $message = "$message Warning: $($severityWarnings -join '; ')"
+    }
+    elseif ($informationalNotes.Count -gt 0) {
+        $message = "$message Expected best-effort process-stop notes were recorded in result details."
     }
 
     $success = $verificationStatus -ne 'Failed'
     $status = if ($verificationStatus -eq 'Failed') {
         'Error'
     }
-    elseif ($verificationStatus -eq 'Warning' -or $warnings.Count -gt 0) {
+    elseif ($verificationStatus -eq 'Warning' -or $severityWarnings.Count -gt 0) {
         'Warning'
     }
     else {

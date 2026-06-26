@@ -460,10 +460,11 @@ try {
     if (
         -not $applyResult.Success -or
         $applyResult.VerificationResult.Status -ne 'Passed' -or
-        $applyResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $applyResult.Data.CommandStatus -ne 'Completed' -or
         $applyPowerCommands.Count -ne 78 -or
         $applyRegistryCommands.Count -ne 10 -or
-        @($applyResult.Data.Warnings).Count -ne 1
+        @($applyResult.Data.Warnings).Count -ne 0 -or
+        @($applyResult.Data.InformationalNotes | Where-Object { [string]$_.ReasonCode -eq 'ActiveSchemeDeleteAttemptExpected' }).Count -ne 1
     ) {
         throw 'Mocked Power Plan Apply did not preserve the complete Ultimate sequence.'
     }
@@ -508,7 +509,7 @@ try {
     if (
         -not $emptyMessageApplyResult.Success -or
         $emptyMessageApplyResult.VerificationResult.Status -ne 'Passed' -or
-        $emptyMessageApplyResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $emptyMessageApplyResult.Data.CommandStatus -ne 'Completed' -or
         [string]::IsNullOrWhiteSpace([string]$emptyMessageApplyResult.Message) -or
         $emptyMessagePowerCommands.Count -ne 78 -or
         $emptyMessageRegistryCommands.Count -ne 10
@@ -559,23 +560,27 @@ try {
     } $idempotentPowerInvoker $applyRegistryInvoker $initialInventory $applyFinalInventory $applySettingReader $applyRegistryReader
     if (
         -not $idempotentResult.Success -or
-        $idempotentResult.Status -ne 'Warning' -or
-        $idempotentResult.Data.CommandStatus -ne 'Completed with warnings' -or
+        $idempotentResult.Status -ne 'Passed' -or
+        $idempotentResult.Data.CommandStatus -ne 'Completed' -or
         $idempotentResult.VerificationResult.Status -ne 'Passed' -or
         @($idempotentResult.Data.Errors).Count -ne 0 -or
-        @($idempotentResult.Data.Warnings).Count -ne 2 -or
+        @($idempotentResult.Data.Warnings).Count -ne 0 -or
+        @($idempotentResult.Data.InformationalNotes).Count -ne 2 -or
         $idempotentPowerCommands.Count -ne 78 -or
         $idempotentPowerCommands[0] -ne "/duplicatescheme $ultimateGuid $boostLabGuid" -or
         $idempotentPowerCommands[1] -ne "/setactive $boostLabGuid"
     ) {
         throw 'An existing target Power Plan scheme was not reused idempotently with mandatory activation.'
     }
-    $idempotentWarnings = @($idempotentResult.Data.Warnings) -join [Environment]::NewLine
+    $idempotentInfoReasonCodes = @($idempotentResult.Data.InformationalNotes | ForEach-Object { [string]$_.ReasonCode })
+    $idempotentInfoText = @($idempotentResult.Data.InformationalNotes | ForEach-Object { '{0} {1}' -f [string]$_.Message, [string]$_.Details.Message }) -join [Environment]::NewLine
     if (
-        -not $idempotentWarnings.Contains('specified GUID already exists') -or
-        -not $idempotentWarnings.Contains("Delete enumerated power scheme $boostLabGuid")
+        'ExistingTargetSchemeReuse' -notin $idempotentInfoReasonCodes -or
+        'ActiveSchemeDeleteAttemptExpected' -notin $idempotentInfoReasonCodes -or
+        -not $idempotentInfoText.Contains('specified GUID already exists') -or
+        -not $idempotentInfoText.Contains("Delete enumerated power scheme $boostLabGuid")
     ) {
-        throw 'The idempotent Power Plan result did not report target reuse and active-scheme deletion warnings.'
+        throw 'The idempotent Power Plan result did not report target reuse and active-scheme deletion informational notes.'
     }
     if (@($idempotentPowerCommands | Where-Object { $_ -match '^/set(ac|dc)valueindex ' }).Count -ne 72) {
         throw 'The idempotent Power Plan Apply path did not continue all source-defined setting commands.'
@@ -718,16 +723,17 @@ try {
     } $compatibilityPowerInvoker $applyRegistryInvoker $initialInventory $applyFinalInventory $compatibilitySettingReader $applyRegistryReader
     if (
         -not $compatibilityResult.Success -or
-        $compatibilityResult.Status -ne 'Warning' -or
-        $compatibilityResult.Data.CommandStatus -ne 'Completed with warnings' -or
-        $compatibilityResult.VerificationResult.Status -ne 'Warning' -or
+        $compatibilityResult.Status -ne 'Passed' -or
+        $compatibilityResult.Data.CommandStatus -ne 'Completed' -or
+        $compatibilityResult.VerificationResult.Status -ne 'Passed' -or
         @($compatibilityResult.Data.Errors).Count -ne 0 -or
-        @($compatibilityResult.Data.Warnings).Count -ne 5 -or
+        @($compatibilityResult.Data.Warnings).Count -ne 0 -or
+        @($compatibilityResult.Data.InformationalNotes).Count -ne 5 -or
         $compatibilityPowerCommands.Count -ne 78
     ) {
-        throw 'Unsupported GPU, battery saver, or active-scheme deletion failures were not classified as warnings.'
+        throw 'Unsupported GPU, battery saver, or active-scheme deletion failures were not classified as informational source-tolerated notes.'
     }
-    $compatibilityWarningText = @($compatibilityResult.Data.Warnings) -join [Environment]::NewLine
+    $compatibilityInfoText = @($compatibilityResult.Data.InformationalNotes | ForEach-Object { '{0} {1}' -f [string]$_.Message, [string]$_.Details.Message }) -join [Environment]::NewLine
     foreach ($warningText in @(
         'Set AC Intel graphics power plan'
         'Set DC Intel graphics power plan'
@@ -735,8 +741,8 @@ try {
         'Set DC Battery saver screen brightness'
         "Delete enumerated power scheme $boostLabGuid"
     )) {
-        if (-not $compatibilityWarningText.Contains($warningText)) {
-            throw "Power Plan compatibility warning is missing: $warningText"
+        if (-not $compatibilityInfoText.Contains($warningText)) {
+            throw "Power Plan compatibility informational note is missing: $warningText"
         }
     }
 
@@ -784,17 +790,19 @@ try {
     } $summaryPowerInvoker $applyRegistryInvoker $initialInventory $applyFinalInventory $realWorldWarningSettingReader $applyRegistryReader
     if (
         -not $realWorldWarningResult.Success -or
-        $realWorldWarningResult.Status -ne 'Warning' -or
-        $realWorldWarningResult.VerificationResult.Status -ne 'Warning' -or
-        $realWorldWarningResult.Data.FinalStatusReason -ne 'ActivePlanVerifiedWithCompatibilityWarnings' -or
+        $realWorldWarningResult.Status -ne 'Passed' -or
+        $realWorldWarningResult.VerificationResult.Status -ne 'Passed' -or
+        $realWorldWarningResult.Data.FinalStatusReason -ne 'ActivePlanVerifiedWithInformationalCompatibility' -or
         -not [bool]$realWorldWarningResult.Data.ActivePlanVerified -or
         [int]$realWorldWarningResult.Data.HardwareSpecificUnsupportedSettingCount -ne 4 -or
         [int]$realWorldWarningResult.Data.UnreadablePowerCfgIndexWarningCount -ne 3 -or
         [int]$realWorldWarningResult.Data.UnexpectedFailureCount -ne 0 -or
         [string]::IsNullOrWhiteSpace([string]$realWorldWarningResult.Data.ExpectedActiveSchemeDeleteWarning) -or
-        -not ([string]$realWorldWarningResult.Message).Contains('BoostLab Ultimate scheme is active')
+        @($realWorldWarningResult.Data.Warnings).Count -ne 0 -or
+        @($realWorldWarningResult.Data.InformationalNotes).Count -lt 8 -or
+        -not ([string]$realWorldWarningResult.Message).Contains('source-tolerated compatibility notes')
     ) {
-        throw 'Power Plan did not classify active-plan and hardware-specific warnings clearly.'
+        throw 'Power Plan did not classify active-plan and hardware-specific compatibility conditions as informational when final state is verified.'
     }
     foreach ($expectedHardwareWarning in @('Intel graphics power plan', 'AMD power slider overlay', 'ATI PowerPlay', 'Switchable dynamic graphics')) {
         if ($expectedHardwareWarning -notin @($realWorldWarningResult.Data.HardwareSpecificUnsupportedSettings)) {
@@ -989,6 +997,8 @@ try {
             'PowerCfgCommandsOrSettingsChecked'
             'RegistryValuesOrFilesChecked'
             'Warnings'
+            'InformationalNotes'
+            'ExpectedNoOpOutcomes'
             'WarningClassifications'
             'Errors'
             'PowerOptionsStatus'
@@ -1225,6 +1235,4 @@ if (
     Message = 'Power Plan was validated with static inspection and injected mocks only.'
     Timestamp = Get-Date
 }
-
-
 
