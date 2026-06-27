@@ -180,6 +180,7 @@ $policyMentions = @(
                 'Stages.psd1',
                 'ProcessHandlingPolicy.psd1',
                 'ParityStatusBaseline.psd1',
+                'RuntimePayloadManifest.psd1',
                 'RuntimeSourceIntentManifest.psd1',
                 'UltimateParityExecutionOrder.psd1'
             )
@@ -258,5 +259,4 @@ if ($nvmeSource.Count -ne 0) {
     Message                    = 'Start Menu Taskbar scope design remains linked while exact source-equivalent implementation is present.'
     Timestamp                  = Get-Date
 }
-
 
