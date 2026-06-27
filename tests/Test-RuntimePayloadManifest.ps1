@@ -232,12 +232,12 @@ foreach ($entryId in @($entries.Keys | Sort-Object)) {
 $payloadStatuses = @(Test-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -Manifest $manifest)
 Assert-BoostLabCondition ($payloadStatuses.Count -eq 5) 'Runtime payload verification should report five payload entries.'
 $readyRuntimePayloadIds = @(
+    'defender-optimize-apply-script'
+    'defender-optimize-default-script'
     'driver-install-debloat-settings-nvidia-profile'
     'start-menu-taskbar-start2-bin'
 )
 $blockedRuntimePayloadIds = @(
-    'defender-optimize-apply-script'
-    'defender-optimize-default-script'
     'timer-resolution-csharp-service'
 )
 foreach ($payloadStatus in $payloadStatuses) {
@@ -264,13 +264,18 @@ Assert-BoostLabCondition ([int]$readiness.TotalPayloadEntries -eq 5) 'Runtime pa
 Assert-BoostLabCondition ([int]$readiness.GeneratedRuntimePayloadAvailableEntries -eq 5) 'All generated runtime payload artifacts should be available.'
 Assert-BoostLabCondition ([int]$readiness.MissingPayloadEntries -eq 0) 'Generated runtime payload readiness must not report missing payloads.'
 Assert-BoostLabCondition ([int]$readiness.FailedPayloadEntries -eq 0) 'Generated runtime payload readiness must not report failed payloads.'
-Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 3) 'Only three generated payload entries should remain unwired after the DIDS .nip and start2.bin rewires.'
-Assert-BoostLabCondition ([int]$readiness.RuntimeWiredPayloadEntries -eq 2) 'Exactly two generated payload entries should be runtime-wired.'
-Assert-BoostLabCondition ([int]$readiness.BlockedPayloadEntries -eq 3) 'Exactly three generated payload entries should remain external runtime blockers.'
+Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 1) 'Only the Timer Resolution generated payload should remain unwired after the Defender Optimize payload rewires.'
+Assert-BoostLabCondition ([int]$readiness.RuntimeWiredPayloadEntries -eq 4) 'Exactly four generated payload entries should be runtime-wired.'
+Assert-BoostLabCondition ([int]$readiness.BlockedPayloadEntries -eq 1) 'Exactly one generated payload entry should remain an external runtime blocker.'
+Assert-BoostLabCondition ('defender-optimize-apply-script' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'Defender Optimize Apply payload should be listed as ready for external runtime.'
+Assert-BoostLabCondition ('defender-optimize-default-script' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'Defender Optimize Default payload should be listed as ready for external runtime.'
 Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'DIDS .nip payload should be listed as ready for external runtime.'
 Assert-BoostLabCondition ('start-menu-taskbar-start2-bin' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'Start Menu Taskbar start2.bin payload should be listed as ready for external runtime.'
+Assert-BoostLabCondition ('defender-optimize-apply-script' -notin @($readiness.RuntimePayloadBlockerIds)) 'Defender Optimize Apply payload must not remain in the runtime payload blocker list.'
+Assert-BoostLabCondition ('defender-optimize-default-script' -notin @($readiness.RuntimePayloadBlockerIds)) 'Defender Optimize Default payload must not remain in the runtime payload blocker list.'
 Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -notin @($readiness.RuntimePayloadBlockerIds)) 'DIDS .nip payload must not remain in the runtime payload blocker list.'
 Assert-BoostLabCondition ('start-menu-taskbar-start2-bin' -notin @($readiness.RuntimePayloadBlockerIds)) 'Start Menu Taskbar start2.bin payload must not remain in the runtime payload blocker list.'
+Assert-BoostLabCondition ('timer-resolution-csharp-service' -in @($readiness.RuntimePayloadBlockerIds)) 'Timer Resolution should remain the generated runtime payload blocker.'
 Assert-BoostLabCondition (-not [bool]$readiness.ExternalRuntimeReady) 'External runtime must not claim readiness while modules still use protected source paths.'
 Assert-BoostLabCondition (-not [bool]$readiness.RuntimeActionExecuted) 'Readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$readiness.ChangesExecuted) 'Readiness reporting must not mutate state.'
@@ -313,6 +318,29 @@ Assert-BoostLabCondition ([string]$start2PayloadStatus.VerificationMode -eq 'Raw
 
 $defenderPayloads = @(Resolve-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -ToolId 'defender-optimize-assistant' -Manifest $manifest)
 Assert-BoostLabCondition ($defenderPayloads.Count -eq 2) 'Defender Optimize Assistant should have two generated script payload entries.'
+foreach ($defenderPayload in $defenderPayloads) {
+    Assert-BoostLabCondition ([bool]$defenderPayload.PayloadExists) "Defender Optimize Assistant runtime payload should exist: $($defenderPayload.PayloadId)"
+    Assert-BoostLabCondition (-not [bool]$defenderPayload.ExternalRuntimeBlocked) "Defender Optimize Assistant runtime payload should no longer be an external runtime blocker: $($defenderPayload.PayloadId)"
+    Assert-BoostLabCondition (-not [bool]$defenderPayload.RuntimeActionExecuted) 'Runtime payload resolution must not execute runtime actions.'
+}
+
+$defenderApplyEntry = $entries['defender-optimize-apply-script']
+$defenderDefaultEntry = $entries['defender-optimize-default-script']
+Assert-BoostLabCondition ([string]$defenderApplyEntry.RuntimePayloadRelativePath -eq 'runtime-payloads/defender-optimize-assistant/defenderoptimize.ps1') 'Defender Optimize Apply runtime payload path mismatch.'
+Assert-BoostLabCondition ([string]$defenderDefaultEntry.RuntimePayloadRelativePath -eq 'runtime-payloads/defender-optimize-assistant/defenderdefault.ps1') 'Defender Optimize Default runtime payload path mismatch.'
+foreach ($defenderEntry in @($defenderApplyEntry, $defenderDefaultEntry)) {
+    Assert-BoostLabCondition ([string]$defenderEntry.RuntimePayloadRelativePath -notmatch '^(source-ultimate|source-extra|intake)(/|\\)') "Defender Optimize runtime payload must not point at protected source or intake paths: $($defenderEntry.PayloadId)"
+    Assert-BoostLabCondition ([string]$defenderEntry.PayloadKind -eq 'Text') "Defender Optimize runtime payload must be declared text: $($defenderEntry.PayloadId)"
+    Assert-BoostLabCondition ([string]$defenderEntry.HashMode -eq 'CanonicalText') "Defender Optimize runtime payload must use canonical text hash mode: $($defenderEntry.PayloadId)"
+    Assert-BoostLabCondition ([string]$defenderEntry.CanonicalTextSha256 -match '^[A-Fa-f0-9]{64}$') "Defender Optimize runtime payload must declare a canonical text hash: $($defenderEntry.PayloadId)"
+}
+$defenderPayloadStatuses = @($payloadStatuses | Where-Object { [string]$_.ToolId -eq 'defender-optimize-assistant' })
+Assert-BoostLabCondition ($defenderPayloadStatuses.Count -eq 2) 'Defender Optimize Assistant should have two verified runtime payload statuses.'
+foreach ($defenderPayloadStatus in $defenderPayloadStatuses) {
+    Assert-BoostLabCondition ([string]$defenderPayloadStatus.ChecksumStatus -eq 'Passed') "Defender Optimize runtime payload hash must pass: $($defenderPayloadStatus.PayloadId)"
+    Assert-BoostLabCondition ([string]$defenderPayloadStatus.VerificationMode -in @('ExactRawSha256', 'CanonicalTextSha256')) "Defender Optimize runtime payload must verify by raw or canonical text SHA-256: $($defenderPayloadStatus.PayloadId)"
+    Assert-BoostLabCondition ([string]$defenderPayloadStatus.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') "Defender Optimize runtime payload status mismatch: $($defenderPayloadStatus.PayloadId)"
+}
 
 $payloadParityChecks = @(
     @{
@@ -360,7 +388,7 @@ $modulesWithRuntimePayloads = @(
         }
 )
 $moduleRelativePathsWithRuntimePayloads = @($modulesWithRuntimePayloads | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/') } | Sort-Object)
-Assert-BoostLabCondition (($moduleRelativePathsWithRuntimePayloads -join '|') -eq 'modules/Graphics/driver-install-debloat-settings.psm1|modules/Windows/start-menu-taskbar.psm1') "Only Driver Install Debloat & Settings and Start Menu Taskbar may be wired to runtime payloads in this phase: $($moduleRelativePathsWithRuntimePayloads -join ', ')"
+Assert-BoostLabCondition (($moduleRelativePathsWithRuntimePayloads -join '|') -eq 'modules/Advanced/defender-optimize-assistant.psm1|modules/Graphics/driver-install-debloat-settings.psm1|modules/Windows/start-menu-taskbar.psm1') "Only Defender Optimize Assistant, Driver Install Debloat & Settings, and Start Menu Taskbar may be wired to runtime payloads in this phase: $($moduleRelativePathsWithRuntimePayloads -join ', ')"
 
 $gitPath = Get-BoostLabGitExecutable
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($gitPath)) 'Git executable was not found for protected source/intake working-tree guard.'
@@ -383,5 +411,5 @@ Assert-BoostLabCondition ($protectedSourceChanges.Count -eq 0) "Protected source
     SourceUltimateUntouched = $true
     SourceExtraUntouched = $true
     IntakeUntouched = $true
-    Message = 'Generated runtime payload artifacts are present and hash-verified; DIDS .nip and Start Menu Taskbar start2.bin are runtime-wired while Defender and Timer generated payloads remain blocked.'
+    Message = 'Generated runtime payload artifacts are present and hash-verified; Defender Optimize Apply/Default, DIDS .nip, and Start Menu Taskbar start2.bin are runtime-wired while Timer remains blocked.'
 }

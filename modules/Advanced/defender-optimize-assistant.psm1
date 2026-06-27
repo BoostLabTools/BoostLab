@@ -30,9 +30,17 @@ $script:BoostLabToolMetadata = [ordered]@{
 
 $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$script:BoostLabDefenderSourcePath = Join-Path $script:BoostLabProjectRoot 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
+$script:BoostLabDefenderSourceRelativePath = 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
+$script:BoostLabDefenderSourcePath = Join-Path $script:BoostLabProjectRoot ($script:BoostLabDefenderSourceRelativePath -replace '/', '\')
 $script:BoostLabDefenderSourceHash = '512F12D805715E9232304ABE5BA400BE6B3965D63F77D3B39E4C304507BFB9B6'
 $script:BoostLabDefenderCanonicalSourceHash = 'FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92'
+$script:BoostLabRuntimePackageModeEnvironmentVariable = 'BOOSTLAB_RUNTIME_PACKAGE_MODE'
+$script:BoostLabDefenderApplyRuntimePayloadId = 'defender-optimize-apply-script'
+$script:BoostLabDefenderDefaultRuntimePayloadId = 'defender-optimize-default-script'
+$script:BoostLabDefenderRuntimePayloadIds = @{
+    Apply = $script:BoostLabDefenderApplyRuntimePayloadId
+    Default = $script:BoostLabDefenderDefaultRuntimePayloadId
+}
 $script:BoostLabDefenderScheduledTasks = @(
     'Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh'
     'Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance'
@@ -162,7 +170,143 @@ function Get-BoostLabDefenderSourceText {
     return Get-Content -Raw -LiteralPath $SourcePath
 }
 
-function Get-BoostLabDefenderScriptPayload {
+function ConvertTo-BoostLabDefenderRuntimePackageModeName {
+    param(
+        [AllowNull()]
+        [string]$Mode
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Mode)) {
+        return ''
+    }
+
+    $normalized = $Mode.Trim().Replace('-', '').Replace('_', '').ToLowerInvariant()
+    switch ($normalized) {
+        'internal' { return 'InternalDevelopment' }
+        'internaldevelopment' { return 'InternalDevelopment' }
+        'development' { return 'InternalDevelopment' }
+        'external' { return 'ExternalRuntime' }
+        'externalruntime' { return 'ExternalRuntime' }
+        'runtime' { return 'ExternalRuntime' }
+        default {
+            throw "Unsupported BoostLab runtime package mode: $Mode"
+        }
+    }
+}
+
+function Get-BoostLabDefenderRuntimePackageMode {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [AllowEmptyString()]
+        [string]$EnvironmentMode = $null
+    )
+
+    if ($null -eq $EnvironmentMode) {
+        $EnvironmentMode = [Environment]::GetEnvironmentVariable($script:BoostLabRuntimePackageModeEnvironmentVariable, 'Process')
+    }
+
+    $requested = ConvertTo-BoostLabDefenderRuntimePackageModeName -Mode $RequestedMode
+    $environmentRequested = ConvertTo-BoostLabDefenderRuntimePackageModeName -Mode $EnvironmentMode
+    $mode = if (-not [string]::IsNullOrWhiteSpace($requested)) {
+        $requested
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($environmentRequested)) {
+        $environmentRequested
+    }
+    else {
+        'InternalDevelopment'
+    }
+
+    [pscustomobject]@{
+        Mode = $mode
+        RequestedMode = $requested
+        EnvironmentMode = $environmentRequested
+        IsInternalDevelopment = ($mode -eq 'InternalDevelopment')
+        IsExternalRuntime = ($mode -eq 'ExternalRuntime')
+    }
+}
+
+function Get-BoostLabDefenderRuntimePayloadId {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName
+    )
+
+    return [string]$script:BoostLabDefenderRuntimePayloadIds[$ActionName]
+}
+
+function Get-BoostLabDefenderRuntimePayloadStatus {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
+    )
+
+    $payloadId = Get-BoostLabDefenderRuntimePayloadId -ActionName $ActionName
+    $runtimePayloadModulePath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabRuntimePayload' -ErrorAction SilentlyContinue)) {
+        if (-not (Test-Path -LiteralPath $runtimePayloadModulePath -PathType Leaf)) {
+            return [pscustomobject]@{
+                PayloadId = $payloadId
+                PayloadPath = ''
+                Exists = $false
+                ChecksumStatus = 'Missing'
+                LengthStatus = 'Missing'
+                VerificationMode = 'Missing'
+                RuntimeWiringStatus = ''
+                ExternalRuntimeBlocked = $true
+                Error = "Runtime payload helper was not found: $runtimePayloadModulePath"
+            }
+        }
+
+        Import-Module -Name $runtimePayloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $parameters = @{
+        PayloadId = $payloadId
+        ProjectRoot = $ProjectRoot
+    }
+    if ($null -ne $PayloadManifest) {
+        $parameters['Manifest'] = $PayloadManifest
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($PayloadManifestPath)) {
+        $parameters['ManifestPath'] = $PayloadManifestPath
+    }
+
+    $status = @(Test-BoostLabRuntimePayload @parameters | Select-Object -First 1)
+    if ($status.Count -ne 1) {
+        return [pscustomobject]@{
+            PayloadId = $payloadId
+            PayloadPath = ''
+            Exists = $false
+            ChecksumStatus = 'Missing'
+            LengthStatus = 'Missing'
+            VerificationMode = 'Missing'
+            RuntimeWiringStatus = ''
+            ExternalRuntimeBlocked = $true
+            Error = "Defender Optimize Assistant $ActionName runtime payload manifest entry was not found."
+        }
+    }
+
+    return $status[0]
+}
+
+function Get-BoostLabDefenderScriptPayloadFromSource {
     [CmdletBinding()]
     [OutputType([string])]
     param(
@@ -186,6 +330,218 @@ function Get-BoostLabDefenderScriptPayload {
     }
 
     return [string]$match.Groups['Content'].Value
+}
+
+function Resolve-BoostLabDefenderScriptPayload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [string]$RequestedMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [string]$SourcePath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SourcePath)) {
+        $SourcePath = Join-Path $ProjectRoot ($script:BoostLabDefenderSourceRelativePath -replace '/', '\')
+    }
+
+    $payloadId = Get-BoostLabDefenderRuntimePayloadId -ActionName $ActionName
+    $mode = Get-BoostLabDefenderRuntimePackageMode -RequestedMode $RequestedMode
+    $payloadStatus = Get-BoostLabDefenderRuntimePayloadStatus `
+        -ActionName $ActionName `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath
+
+    if ([string]$payloadStatus.ChecksumStatus -eq 'Passed') {
+        try {
+            $content = Get-Content -LiteralPath ([string]$payloadStatus.PayloadPath) -Raw -ErrorAction Stop
+            return [pscustomobject]@{
+                Success = $true
+                Status = 'RuntimePayloadVerified'
+                Message = "Defender Optimize Assistant $ActionName runtime payload verified."
+                RuntimePackageMode = [string]$mode.Mode
+                PayloadId = $payloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+                PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+                PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                ContentSource = 'RuntimePayload'
+                Content = $content
+                UsedProtectedSource = $false
+                FallbackUsed = $false
+                RequiresProtectedSource = $false
+                ExternalRuntimeBlocked = $false
+                RuntimeActionExecuted = $false
+                ChangesExecuted = $false
+            }
+        }
+        catch {
+            $payloadStatus = [pscustomobject]@{
+                PayloadId = $payloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                Exists = $true
+                ChecksumStatus = 'Failed'
+                LengthStatus = [string]$payloadStatus.LengthStatus
+                VerificationMode = 'ReadFailed'
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    $payloadMessage = if ([string]$payloadStatus.ChecksumStatus -eq 'Missing') {
+        "Defender Optimize Assistant $ActionName runtime payload is missing."
+    }
+    elseif ([string]$payloadStatus.ChecksumStatus -eq 'Failed') {
+        "Defender Optimize Assistant $ActionName runtime payload failed hash validation."
+    }
+    else {
+        "Defender Optimize Assistant $ActionName runtime payload is unavailable: $($payloadStatus.ChecksumStatus)."
+    }
+
+    if ([bool]$mode.IsExternalRuntime) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage ExternalRuntime mode cannot fall back to protected source text."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $payloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $true
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    if (-not $AllowInternalSourceFallback) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage Internal source fallback was disabled."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $payloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    try {
+        $sourceContent = Get-BoostLabDefenderScriptPayloadFromSource -ActionName $ActionName -SourcePath $SourcePath
+        return [pscustomobject]@{
+            Success = $true
+            Status = 'ProtectedSourceFallbackUsed'
+            Message = "$payloadMessage InternalDevelopment mode used verified protected-source fallback."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $payloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = 'ProtectedSourceFallback'
+            Content = $sourceContent
+            UsedProtectedSource = $true
+            FallbackUsed = $true
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'ProtectedSourceFallbackFailed'
+            Message = "$payloadMessage InternalDevelopment protected-source fallback failed: $($_.Exception.Message)"
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $payloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+}
+
+function Get-BoostLabDefenderScriptPayload {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Apply', 'Default')]
+        [string]$ActionName,
+
+        [string]$SourcePath = $script:BoostLabDefenderSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    $resolution = Resolve-BoostLabDefenderScriptPayload `
+        -ActionName $ActionName `
+        -RequestedMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath `
+        -SourcePath $SourcePath `
+        -AllowInternalSourceFallback $AllowInternalSourceFallback
+    if (-not [bool]$resolution.Success) {
+        throw ([string]$resolution.Message)
+    }
+
+    return [string]$resolution.Content
 }
 
 function Get-BoostLabDefenderSecurityCommands {
@@ -221,7 +577,18 @@ function Get-BoostLabDefenderBranchDefinition {
 
         [string]$SystemRoot = $env:SystemRoot,
 
-        [string]$SourcePath = $script:BoostLabDefenderSourcePath
+        [string]$SourcePath = $script:BoostLabDefenderSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
     )
 
     if ([string]::IsNullOrWhiteSpace($SystemRoot)) {
@@ -235,7 +602,19 @@ function Get-BoostLabDefenderBranchDefinition {
     $taskSwitch = if ($isApply) { 'Disable' } else { 'Enable' }
     $edgeValue = if ($isApply) { 0 } else { 1 }
     $scriptPath = Join-Path (Join-Path $SystemRoot 'Temp') "$fileStem.ps1"
-    $scriptPayload = Get-BoostLabDefenderScriptPayload -ActionName $ActionName -SourcePath $SourcePath
+    $payloadResolution = Resolve-BoostLabDefenderScriptPayload `
+        -ActionName $ActionName `
+        -RequestedMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath `
+        -SourcePath $SourcePath `
+        -AllowInternalSourceFallback $AllowInternalSourceFallback
+    if (-not [bool]$payloadResolution.Success) {
+        throw ([string]$payloadResolution.Message)
+    }
+
+    $scriptPayload = [string]$payloadResolution.Content
     $securityCommands = Get-BoostLabDefenderSecurityCommands -ScriptPayload $scriptPayload
 
     $normalBootCommands = [System.Collections.Generic.List[string]]::new()
@@ -254,6 +633,19 @@ function Get-BoostLabDefenderBranchDefinition {
         GeneratedScriptFileName = "$fileStem.ps1"
         GeneratedScriptPath = $scriptPath
         GeneratedScriptPayload = $scriptPayload
+        GeneratedScriptPayloadId = [string]$payloadResolution.PayloadId
+        GeneratedScriptPayloadPath = [string]$payloadResolution.PayloadPath
+        GeneratedScriptPayloadStatus = [string]$payloadResolution.Status
+        GeneratedScriptPayloadChecksumStatus = [string]$payloadResolution.PayloadChecksumStatus
+        GeneratedScriptPayloadVerificationMode = [string]$payloadResolution.PayloadVerificationMode
+        GeneratedScriptPayloadLengthStatus = [string]$payloadResolution.PayloadLengthStatus
+        GeneratedScriptPayloadRuntimeWiringStatus = [string]$payloadResolution.RuntimeWiringStatus
+        GeneratedScriptPayloadContentSource = [string]$payloadResolution.ContentSource
+        GeneratedScriptPayloadFallbackUsed = [bool]$payloadResolution.FallbackUsed
+        GeneratedScriptPayloadUsedProtectedSource = [bool]$payloadResolution.UsedProtectedSource
+        GeneratedScriptPayloadRequiresProtectedSource = [bool]$payloadResolution.RequiresProtectedSource
+        GeneratedScriptPayloadExternalRuntimeBlocked = [bool]$payloadResolution.ExternalRuntimeBlocked
+        RuntimePackageMode = [string]$payloadResolution.RuntimePackageMode
         GeneratedSecurityCommands = $securityCommands
         GeneratedSecurityCommandCount = @($securityCommands).Count
         RunOnceKeyPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
@@ -521,7 +913,16 @@ function Invoke-BoostLabDefenderOptimizeAction {
 
         [string]$SystemRoot = $env:SystemRoot,
 
-        [string]$SourcePath = $script:BoostLabDefenderSourcePath
+        [string]$SourcePath = $script:BoostLabDefenderSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
     )
 
     if (-not [bool](& $AdministratorChecker)) {
@@ -532,8 +933,15 @@ function Invoke-BoostLabDefenderOptimizeAction {
     }
 
     try {
-        $sourceInfo = Assert-BoostLabDefenderSourceIdentity -SourcePath $SourcePath
-        $branch = Get-BoostLabDefenderBranchDefinition -ActionName $ActionName -SystemRoot $SystemRoot -SourcePath $SourcePath
+        $sourceInfo = Get-BoostLabDefenderSourceInfo -SourcePath $SourcePath
+        $branch = Get-BoostLabDefenderBranchDefinition `
+            -ActionName $ActionName `
+            -SystemRoot $SystemRoot `
+            -SourcePath $SourcePath `
+            -RuntimePackageMode $RuntimePackageMode `
+            -ProjectRoot $ProjectRoot `
+            -PayloadManifest $PayloadManifest `
+            -PayloadManifestPath $PayloadManifestPath
     }
     catch {
         return New-BoostLabDefenderOptimizeResult `
@@ -610,9 +1018,24 @@ function Invoke-BoostLabDefenderOptimizeAction {
     $data = [pscustomobject]@{
         SourcePath = $sourceInfo.SourcePath
         SourceSha256 = $sourceInfo.ActualSha256
+        SourceChecksumStatus = $sourceInfo.ChecksumStatus
+        SourceHashMatches = [bool]$sourceInfo.HashMatches
         SourceBranchLabel = $branch.SourceLabel
         GeneratedScriptPath = $branch.GeneratedScriptPath
         GeneratedScriptFileName = $branch.GeneratedScriptFileName
+        GeneratedScriptPayloadId = $branch.GeneratedScriptPayloadId
+        GeneratedScriptPayloadPath = $branch.GeneratedScriptPayloadPath
+        GeneratedScriptPayloadStatus = $branch.GeneratedScriptPayloadStatus
+        GeneratedScriptPayloadChecksumStatus = $branch.GeneratedScriptPayloadChecksumStatus
+        GeneratedScriptPayloadVerificationMode = $branch.GeneratedScriptPayloadVerificationMode
+        GeneratedScriptPayloadLengthStatus = $branch.GeneratedScriptPayloadLengthStatus
+        GeneratedScriptPayloadRuntimeWiringStatus = $branch.GeneratedScriptPayloadRuntimeWiringStatus
+        GeneratedScriptPayloadContentSource = $branch.GeneratedScriptPayloadContentSource
+        GeneratedScriptPayloadFallbackUsed = $branch.GeneratedScriptPayloadFallbackUsed
+        GeneratedScriptPayloadUsedProtectedSource = $branch.GeneratedScriptPayloadUsedProtectedSource
+        GeneratedScriptPayloadRequiresProtectedSource = $branch.GeneratedScriptPayloadRequiresProtectedSource
+        GeneratedScriptPayloadExternalRuntimeBlocked = $branch.GeneratedScriptPayloadExternalRuntimeBlocked
+        RuntimePackageMode = $branch.RuntimePackageMode
         RunOnceKeyPath = $branch.RunOnceKeyPath
         RunOnceValueName = $branch.RunOnceValueName
         ExpectedRunOnceData = $branch.RunOnceData
@@ -793,7 +1216,16 @@ function Invoke-BoostLabToolAction {
 
         [string]$SystemRoot = $env:SystemRoot,
 
-        [string]$SourcePath = $script:BoostLabDefenderSourcePath
+        [string]$SourcePath = $script:BoostLabDefenderSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
     )
 
     if ($ActionName -notin @($script:BoostLabImplementedActions)) {
@@ -828,7 +1260,11 @@ function Invoke-BoostLabToolAction {
         -SleepInvoker $SleepInvoker `
         -RestartInvoker $RestartInvoker `
         -SystemRoot $SystemRoot `
-        -SourcePath $SourcePath
+        -SourcePath $SourcePath `
+        -RuntimePackageMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath
 }
 
 function Restore-BoostLabToolDefault {

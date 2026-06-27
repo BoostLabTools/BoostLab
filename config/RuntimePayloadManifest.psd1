@@ -7,7 +7,7 @@
     PayloadRoot = 'runtime-payloads'
     CustomerVisible = $false
     DefaultMode = 'InternalDevelopment'
-    ExternalRuntimeStatus = 'TwoPayloadsRuntimeWiredButExternalRuntimeStillBlocked'
+    ExternalRuntimeStatus = 'FourPayloadsRuntimeWiredButExternalRuntimeStillBlocked'
     Entries = @{
         'defender-optimize-apply-script' = @{
             PayloadId = 'defender-optimize-apply-script'
@@ -26,13 +26,13 @@
             ExpectedLengthBytes = 10222
             ExtractionMode = 'StaticProtectedSourceRead'
             ExternalHandling = 'GeneratedRuntimePayloadAvailable'
-            RuntimeWiringStatus = 'InternalRuntimeStillUsesSource'
+            RuntimeWiringStatus = 'ReadyForExternalRuntime'
             CustomerVisible = $false
             HighRiskBlocker = $true
             SourceExecutionRequired = $false
             RuntimeActionExecuted = $false
             ChangesExecuted = $false
-            Notes = 'Generated Apply script payload is available as a hashed artifact, but Defender Optimize Assistant still reads the protected source internally.'
+            Notes = 'Generated Apply script payload is available as a hashed artifact and Defender Optimize Assistant resolves it through the runtime payload helper; protected source fallback remains internal-development only.'
         }
         'defender-optimize-default-script' = @{
             PayloadId = 'defender-optimize-default-script'
@@ -51,13 +51,13 @@
             ExpectedLengthBytes = 9814
             ExtractionMode = 'StaticProtectedSourceRead'
             ExternalHandling = 'GeneratedRuntimePayloadAvailable'
-            RuntimeWiringStatus = 'InternalRuntimeStillUsesSource'
+            RuntimeWiringStatus = 'ReadyForExternalRuntime'
             CustomerVisible = $false
             HighRiskBlocker = $true
             SourceExecutionRequired = $false
             RuntimeActionExecuted = $false
             ChangesExecuted = $false
-            Notes = 'Generated Default script payload is available as a hashed artifact, but Defender Optimize Assistant still reads the protected source internally.'
+            Notes = 'Generated Default script payload is available as a hashed artifact and Defender Optimize Assistant resolves it through the runtime payload helper; protected source fallback remains internal-development only.'
         }
         'driver-install-debloat-settings-nvidia-profile' = @{
             PayloadId = 'driver-install-debloat-settings-nvidia-profile'

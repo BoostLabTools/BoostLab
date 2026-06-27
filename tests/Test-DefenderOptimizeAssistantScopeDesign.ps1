@@ -7,6 +7,60 @@ Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot 'BoostLab.Hashing.ps1')
 $ErrorActionPreference = 'Stop'
 
+function Get-DefenderOptimizeTestSha256Hex {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$Bytes
+    )
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha256.ComputeHash($Bytes))).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
+function ConvertTo-DefenderOptimizeTestCanonicalTextBytes {
+    [CmdletBinding()]
+    [OutputType([byte[]])]
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$Bytes
+    )
+
+    $normalized = [Collections.Generic.List[byte]]::new($Bytes.Length)
+    for ($index = 0; $index -lt $Bytes.Length; $index++) {
+        $byte = $Bytes[$index]
+        if ($byte -eq 0x0D) {
+            $normalized.Add([byte]0x0A)
+            if (($index + 1) -lt $Bytes.Length -and $Bytes[$index + 1] -eq 0x0A) {
+                $index++
+            }
+            continue
+        }
+
+        $normalized.Add($byte)
+    }
+
+    return ,[byte[]]$normalized.ToArray()
+}
+
+function Get-DefenderOptimizeTestCanonicalTextHash {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($Text)
+    return Get-DefenderOptimizeTestSha256Hex -Bytes (ConvertTo-DefenderOptimizeTestCanonicalTextBytes -Bytes $bytes)
+}
+
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
     $scriptPath = if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
         $PSCommandPath
@@ -32,6 +86,10 @@ $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $Project
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\defender-optimize-assistant.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'
+$runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
+$runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+$defenderApplyPayloadPath = Join-Path $ProjectRoot 'runtime-payloads\defender-optimize-assistant\defenderoptimize.ps1'
+$defenderDefaultPayloadPath = Join-Path $ProjectRoot 'runtime-payloads\defender-optimize-assistant\defenderdefault.ps1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $designPath = Join-Path $ProjectRoot 'docs\tool-designs\defender-optimize-assistant-scope-design.md'
@@ -48,6 +106,10 @@ foreach ($path in @(
     $configPath,
     $modulePath,
     $sourcePath,
+    $runtimePayloadManifestPath,
+    $runtimePayloadHelperPath,
+    $defenderApplyPayloadPath,
+    $defenderDefaultPayloadPath,
     $actionPlanPath,
     $executionPath,
     $designPath,
@@ -145,6 +207,9 @@ foreach ($requiredModuleText in @(
     '$script:BoostLabImplementedActions = @(''Analyze'', ''Apply'', ''Default'')'
     $expectedSourceHash
     'Get-BoostLabDefenderScriptPayload'
+    'Get-BoostLabDefenderScriptPayloadFromSource'
+    'Resolve-BoostLabDefenderScriptPayload'
+    'RuntimePayload'
     'Get-BoostLabDefenderSecurityCommands'
     'defenderoptimize.ps1'
     'defenderdefault.ps1'
@@ -235,6 +300,9 @@ if ([int]$parityBaseline.Counts.DeferredForParityWork -ne 0) {
     throw 'DeferredForParityWork baseline count must be zero after final acceptance.'
 }
 
+$runtimePayloadManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+$runtimeResolverTempRoot = ''
+Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
 $module = Import-Module -Name $modulePath -Force -PassThru -Prefix 'DefenderTest' -Scope Local -DisableNameChecking -ErrorAction Stop
 try {
     $info = & (Get-Command -Name 'Get-DefenderTestBoostLabToolInfo' -Module $module.Name -ErrorAction Stop)
@@ -277,6 +345,153 @@ try {
         -not [bool]$analysis.UsesTrustedInstaller
     ) {
         throw 'Defender Optimize Assistant Analyze did not report the expected read-only source workflow.'
+    }
+
+    $payloadCases = @(
+        [pscustomobject]@{
+            Action = 'Apply'
+            PayloadId = 'defender-optimize-apply-script'
+            RelativePath = 'runtime-payloads\defender-optimize-assistant\defenderoptimize.ps1'
+            PayloadPath = $defenderApplyPayloadPath
+            MissingRelativePath = 'runtime-payloads/defender-optimize-assistant/missing-defenderoptimize.ps1'
+        }
+        [pscustomobject]@{
+            Action = 'Default'
+            PayloadId = 'defender-optimize-default-script'
+            RelativePath = 'runtime-payloads\defender-optimize-assistant\defenderdefault.ps1'
+            PayloadPath = $defenderDefaultPayloadPath
+            MissingRelativePath = 'runtime-payloads/defender-optimize-assistant/missing-defenderdefault.ps1'
+        }
+    )
+
+    $runtimeResolverTempRoot = Join-Path ([IO.Path]::GetTempPath()) ('BoostLab-DefenderRuntime-{0}' -f ([guid]::NewGuid().ToString('N')))
+    New-Item -ItemType Directory -Path $runtimeResolverTempRoot -Force | Out-Null
+
+    foreach ($payloadCase in $payloadCases) {
+        $payloadText = Get-Content -LiteralPath $payloadCase.PayloadPath -Raw
+        $sourcePayloadText = [string](& $module {
+            param($ActionName)
+            Get-BoostLabDefenderScriptPayloadFromSource -ActionName $ActionName
+        } $payloadCase.Action)
+        $payloadCanonical = Get-DefenderOptimizeTestCanonicalTextHash -Text $payloadText
+        $sourceCanonical = Get-DefenderOptimizeTestCanonicalTextHash -Text $sourcePayloadText
+        if ($payloadCanonical -ne $sourceCanonical) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) runtime payload no longer matches protected source extraction."
+        }
+        foreach ($requiredPayloadText in @('Run-Trusted', 'bcdedit /deletevalue {current} safeboot', 'shutdown -r -t 00', 'TamperProtection', 'VulnerableDriverBlocklistEnable')) {
+            if (-not $payloadText.Contains($requiredPayloadText)) {
+                throw "Defender Optimize Assistant $($payloadCase.Action) runtime payload is missing required source-intent text: $requiredPayloadText"
+            }
+        }
+
+        $internalValid = @(& $module {
+            param($ActionName, $Manifest, $Root)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $payloadCase.Action $runtimePayloadManifest $ProjectRoot)
+        if (
+            $internalValid.Count -ne 1 -or
+            -not [bool]$internalValid[0].Success -or
+            [string]$internalValid[0].ContentSource -ne 'RuntimePayload' -or
+            [bool]$internalValid[0].FallbackUsed -or
+            [bool]$internalValid[0].UsedProtectedSource
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) InternalDevelopment valid payload should use the runtime artifact."
+        }
+
+        $validExternalRoot = Join-Path $runtimeResolverTempRoot ("valid-{0}" -f ([string]$payloadCase.Action).ToLowerInvariant())
+        $validPayloadPath = Join-Path $validExternalRoot ([string]$payloadCase.RelativePath)
+        New-Item -ItemType Directory -Path (Split-Path -Parent $validPayloadPath) -Force | Out-Null
+        Copy-Item -LiteralPath $payloadCase.PayloadPath -Destination $validPayloadPath -Force
+        $validExternal = @(& $module {
+            param($ActionName, $Root, $Manifest, $SourcePath)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest -SourcePath $SourcePath
+        } $payloadCase.Action $validExternalRoot $runtimePayloadManifest (Join-Path $validExternalRoot 'source-ultimate\8 Advanced\7 Defender Optimize Assistant.ps1'))
+        if (
+            $validExternal.Count -ne 1 -or
+            -not [bool]$validExternal[0].Success -or
+            [string]$validExternal[0].ContentSource -ne 'RuntimePayload' -or
+            [bool]$validExternal[0].UsedProtectedSource -or
+            [bool]$validExternal[0].RequiresProtectedSource -or
+            [bool]$validExternal[0].FallbackUsed
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) ExternalRuntime valid payload should resolve without protected source."
+        }
+        if (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-ultimate')) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) ExternalRuntime valid payload test root must not contain source-ultimate."
+        }
+        if (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-extra')) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) ExternalRuntime valid payload test root must not contain source-extra."
+        }
+
+        $missingExternalRoot = Join-Path $runtimeResolverTempRoot ("missing-{0}" -f ([string]$payloadCase.Action).ToLowerInvariant())
+        New-Item -ItemType Directory -Path $missingExternalRoot -Force | Out-Null
+        $missingExternal = @(& $module {
+            param($ActionName, $Root, $Manifest)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $payloadCase.Action $missingExternalRoot $runtimePayloadManifest)
+        if (
+            $missingExternal.Count -ne 1 -or
+            [bool]$missingExternal[0].Success -or
+            [string]$missingExternal[0].Status -ne 'RuntimePayloadUnavailable' -or
+            [string]$missingExternal[0].PayloadChecksumStatus -ne 'Missing' -or
+            [bool]$missingExternal[0].FallbackUsed -or
+            [bool]$missingExternal[0].UsedProtectedSource -or
+            [string]$missingExternal[0].Message -notlike '*cannot fall back to protected source text*'
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) ExternalRuntime missing payload should fail closed without fallback."
+        }
+
+        $invalidExternalRoot = Join-Path $runtimeResolverTempRoot ("invalid-{0}" -f ([string]$payloadCase.Action).ToLowerInvariant())
+        $invalidPayloadPath = Join-Path $invalidExternalRoot ([string]$payloadCase.RelativePath)
+        New-Item -ItemType Directory -Path (Split-Path -Parent $invalidPayloadPath) -Force | Out-Null
+        Set-Content -LiteralPath $invalidPayloadPath -Value 'invalid Defender runtime payload' -Encoding UTF8 -Force
+        $invalidExternal = @(& $module {
+            param($ActionName, $Root, $Manifest)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $payloadCase.Action $invalidExternalRoot $runtimePayloadManifest)
+        if (
+            $invalidExternal.Count -ne 1 -or
+            [bool]$invalidExternal[0].Success -or
+            [string]$invalidExternal[0].Status -ne 'RuntimePayloadUnavailable' -or
+            [string]$invalidExternal[0].PayloadChecksumStatus -ne 'Failed' -or
+            [bool]$invalidExternal[0].FallbackUsed -or
+            [bool]$invalidExternal[0].UsedProtectedSource
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) ExternalRuntime invalid payload should fail closed without fallback."
+        }
+
+        $internalMissingManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+        $internalMissingManifest.Entries[[string]$payloadCase.PayloadId].RuntimePayloadRelativePath = [string]$payloadCase.MissingRelativePath
+        $internalMissing = @(& $module {
+            param($ActionName, $Manifest, $Root)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $payloadCase.Action $internalMissingManifest $ProjectRoot)
+        if (
+            $internalMissing.Count -ne 1 -or
+            -not [bool]$internalMissing[0].Success -or
+            [string]$internalMissing[0].ContentSource -ne 'ProtectedSourceFallback' -or
+            -not [bool]$internalMissing[0].FallbackUsed -or
+            -not [bool]$internalMissing[0].UsedProtectedSource
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) InternalDevelopment missing payload should use verified protected-source fallback."
+        }
+
+        $internalInvalidManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+        $internalInvalidManifest.Entries[[string]$payloadCase.PayloadId].RawSha256 = '0000000000000000000000000000000000000000000000000000000000000000'
+        $internalInvalidManifest.Entries[[string]$payloadCase.PayloadId].CanonicalTextSha256 = '0000000000000000000000000000000000000000000000000000000000000000'
+        $internalInvalid = @(& $module {
+            param($ActionName, $Manifest, $Root)
+            Resolve-BoostLabDefenderScriptPayload -ActionName $ActionName -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $payloadCase.Action $internalInvalidManifest $ProjectRoot)
+        if (
+            $internalInvalid.Count -ne 1 -or
+            -not [bool]$internalInvalid[0].Success -or
+            [string]$internalInvalid[0].ContentSource -ne 'ProtectedSourceFallback' -or
+            -not [bool]$internalInvalid[0].FallbackUsed -or
+            -not [bool]$internalInvalid[0].UsedProtectedSource
+        ) {
+            throw "Defender Optimize Assistant $($payloadCase.Action) InternalDevelopment invalid payload should use verified protected-source fallback."
+        }
     }
 
     foreach ($actionName in @('Apply', 'Default')) {
@@ -374,6 +589,16 @@ try {
         $payload = [string]$fileWrites[$case.ScriptPath]
         if (-not $payload.Contains('Run-Trusted') -or -not $payload.Contains('bcdedit /deletevalue {current} safeboot') -or -not $payload.Contains('shutdown -r -t 00')) {
             throw "Defender Optimize Assistant $($case.Action) generated script payload is missing required Safe Mode/TrustedInstaller behavior."
+        }
+        if (
+            [string]$result.Data.GeneratedScriptPayloadContentSource -ne 'RuntimePayload' -or
+            [bool]$result.Data.GeneratedScriptPayloadFallbackUsed -or
+            [bool]$result.Data.GeneratedScriptPayloadUsedProtectedSource -or
+            [bool]$result.Data.GeneratedScriptPayloadRequiresProtectedSource -or
+            [string]$result.Data.GeneratedScriptPayloadRuntimeWiringStatus -ne 'ReadyForExternalRuntime' -or
+            [string]$result.Data.GeneratedScriptPayloadChecksumStatus -ne 'Passed'
+        ) {
+            throw "Defender Optimize Assistant $($case.Action) mocked workflow should use the verified runtime payload without protected-source fallback."
         }
         if ($runOnceInstalls.Count -ne 1) {
             throw "Defender Optimize Assistant $($case.Action) did not create exactly one mocked RunOnce value."
@@ -487,6 +712,9 @@ try {
 }
 finally {
     Remove-Module -Name $module.Name -Force -ErrorAction SilentlyContinue
+    if (-not [string]::IsNullOrWhiteSpace($runtimeResolverTempRoot) -and (Test-Path -LiteralPath $runtimeResolverTempRoot)) {
+        Remove-Item -LiteralPath $runtimeResolverTempRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 $activeTools = @($allTools)
