@@ -24,6 +24,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'reinstall-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source path before the action path can proceed.'
         }
         'updates-drivers-block.source' = @{
@@ -42,6 +44,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'updates-drivers-block-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source path before creating the selected USB setup script.'
         }
         'bitlocker.source' = @{
@@ -60,6 +64,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'bitlocker-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies the source-promoted setup source before reporting security assistant actions.'
         }
         'convert-home-to-pro.source' = @{
@@ -78,6 +84,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'convert-home-to-pro-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies the protected extra source before preparing the edition conversion flow.'
         }
         'edge-settings.source' = @{
@@ -96,6 +104,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'edge-settings-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before Edge settings action planning and execution.'
         }
         'installers.source' = @{
@@ -114,6 +124,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'installers-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before retained installer catalog actions.'
         }
         'driver-clean.source' = @{
@@ -132,6 +144,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'driver-clean-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies the source-promoted graphics cleanup source before action planning.'
         }
         'driver-install-debloat-settings.source' = @{
@@ -180,6 +194,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'nvidia-app-install-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies the installer source identity for the graphics-scoped app install flow.'
         }
         'directx.source' = @{
@@ -198,6 +214,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'directx-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before DirectX action planning.'
         }
         'visual-cpp.source' = @{
@@ -216,6 +234,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'visual-cpp-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before Visual C++ action planning.'
         }
         'start-menu-taskbar.source' = @{
@@ -264,6 +284,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'bloatware-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before bloatware branch planning.'
         }
         'copilot.source' = @{
@@ -282,6 +304,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'copilot-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before Copilot action planning.'
         }
         'game-bar.source' = @{
@@ -300,6 +324,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'game-bar-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before GameBar action planning.'
         }
         'edge-webview.source' = @{
@@ -318,6 +344,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'edge-webview-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before Edge and WebView action planning.'
         }
         'control-panel-settings.source' = @{
@@ -336,6 +364,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'control-panel-settings-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before Control Panel Settings action planning.'
         }
         'cleanup.source' = @{
@@ -354,6 +384,8 @@
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
             PayloadBlockers = @()
+            OperationDescriptorId = 'cleanup-operation-summary'
+            OperationDescriptorStatus = 'AvailableNotWired'
             Notes = 'Current runtime verifies this protected source before cleanup action planning.'
         }
         'timer-resolution-assistant.source' = @{
