@@ -42,16 +42,20 @@ $helperPath = Join-Path $ProjectRoot 'core\RuntimeSourceIntent.psm1'
 $sourceVerificationPath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
 $runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
 $runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
-foreach ($path in @($manifestPath, $helperPath, $sourceVerificationPath, $runtimePayloadManifestPath, $runtimePayloadHelperPath)) {
+$runtimeOperationDescriptorManifestPath = Join-Path $ProjectRoot 'config\RuntimeOperationDescriptors.psd1'
+$runtimeOperationDescriptorHelperPath = Join-Path $ProjectRoot 'core\RuntimeOperationDescriptors.psm1'
+foreach ($path in @($manifestPath, $helperPath, $sourceVerificationPath, $runtimePayloadManifestPath, $runtimePayloadHelperPath, $runtimeOperationDescriptorManifestPath, $runtimeOperationDescriptorHelperPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required runtime source intent file is missing: $path"
 }
 
 Import-Module -Name $helperPath -Force -ErrorAction Stop
 Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
+Import-Module -Name $runtimeOperationDescriptorHelperPath -Force -ErrorAction Stop
 Import-Module -Name $sourceVerificationPath -Force -ErrorAction Stop
 
 $manifest = Get-BoostLabRuntimeSourceIntentManifest -ManifestPath $manifestPath
 $runtimePayloadManifest = Get-BoostLabRuntimePayloadManifest -ManifestPath $runtimePayloadManifestPath
+$runtimeOperationDescriptorManifest = Get-BoostLabRuntimeOperationDescriptorManifest -ManifestPath $runtimeOperationDescriptorManifestPath
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$manifest.SchemaVersion)) 'Runtime source intent manifest must declare SchemaVersion.'
 Assert-BoostLabCondition ([string]$manifest.CustomerVisible -eq 'False') 'Runtime source intent manifest must not be customer-visible.'
 Assert-BoostLabCondition ($manifest.Contains('Entries')) 'Runtime source intent manifest must contain Entries.'
@@ -83,11 +87,15 @@ $allowedExternalHandling = @(
     'ManifestOnly'
     'GeneratedRuntimePayloadRequired'
     'ExternalRuntimeBlockedUntilDecoupled'
+    'OperationDescriptorAvailable'
     'NotRequiredExternally'
 )
 $allowedExternalModeTreatments = @(
     'ManifestOnly'
     'RuntimePayloadReady'
+    'OperationDescriptorAvailable'
+    'ExternalRuntimeDescriptorBacked'
+    'ExternalRuntimeCanExcludeRawSource'
     'DevelopmentOnlySourceParity'
     'DiagnosticsOnly'
     'ExternalRuntimeCanExcludeSource'
@@ -119,6 +127,16 @@ foreach ($entryId in @($entries.Keys | Sort-Object)) {
     Assert-BoostLabCondition ([string]$entry.CustomerVisible -eq 'False') "Entry must not be customer-visible: $entryId"
     Assert-BoostLabCondition ([string]$entry.CurrentInternalSourceRequired -eq 'True') "Entry must record current internal source dependency: $entryId"
     Assert-BoostLabCondition (@($entry.RuntimeUse).Count -gt 0) "Entry must declare RuntimeUse: $entryId"
+
+    if ([string]$entry.ExternalHandling -eq 'OperationDescriptorAvailable') {
+        Assert-BoostLabCondition ($entry.Contains('OperationDescriptorId')) "Descriptor-backed entry must declare OperationDescriptorId: $entryId"
+        Assert-BoostLabCondition ($entry.Contains('OperationDescriptorStatus')) "Descriptor-backed entry must declare OperationDescriptorStatus: $entryId"
+        Assert-BoostLabCondition ([string]$entry.OperationDescriptorStatus -eq 'Available') "Descriptor-backed entry status mismatch: $entryId"
+        Assert-BoostLabCondition ([string]$entry.RuntimeWiringStatus -eq 'DescriptorBackedEvidenceReady') "Descriptor-backed entry runtime evidence status mismatch: $entryId"
+        Assert-BoostLabCondition ([string]$entry.ModuleRuntimeWiringStatus -eq 'NotWired') "Descriptor-backed entry must not claim module rewiring: $entryId"
+        Assert-BoostLabCondition ([string]$entry.ExternalPackageStatus -eq 'SourceFreeLaunchBlockedByDirectModuleReferences') "Descriptor-backed entry package status mismatch: $entryId"
+        Assert-BoostLabCondition ($runtimeOperationDescriptorManifest.Entries.Contains([string]$entry.OperationDescriptorId)) "Descriptor-backed entry references unknown descriptor: $entryId"
+    }
 }
 
 $manifestText = Get-Content -LiteralPath $manifestPath -Raw
@@ -136,12 +154,23 @@ Assert-BoostLabCondition ([bool]$defaultMode.IntakePresent) 'Internal developmen
 
 $externalReadiness = Test-BoostLabExternalRuntimeReadiness -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot -Manifest $manifest
 Assert-BoostLabCondition ([string]$externalReadiness.Mode -eq 'ExternalRuntime') 'External readiness check must run in ExternalRuntime mode.'
-Assert-BoostLabCondition (-not [bool]$externalReadiness.ExternalRuntimeReady) 'External runtime must not claim readiness while source dependencies remain blocked.'
+Assert-BoostLabCondition ([bool]$externalReadiness.ExternalRuntimeReady) 'External runtime source-intent readiness should be satisfied by payloads and operation descriptors.'
+Assert-BoostLabCondition (-not [bool]$externalReadiness.ExternalPackageBuildReady) 'External package build readiness must remain false while direct module source references remain.'
+Assert-BoostLabCondition ([bool]$externalReadiness.ExternalPackageSourceFreeLaunchBlocked) 'External package source-free launch must report direct source-reference blockers.'
 Assert-BoostLabCondition ([int]$externalReadiness.TotalSourceIntentEntries -eq 20) 'External readiness must report all runtime source intent entries.'
-Assert-BoostLabCondition ([int]$externalReadiness.ExternalReadyEntries -eq 4) 'Exactly four source-intent entries should be external-ready after generated payload rewiring.'
-Assert-BoostLabCondition ([int]$externalReadiness.BlockedEntries -eq 16) 'Sixteen source-intent entries should remain blocked until future source decoupling.'
+Assert-BoostLabCondition ([int]$externalReadiness.ExternalReadyEntries -eq 20) 'All source-intent entries should be external-ready through payload or descriptor evidence.'
+Assert-BoostLabCondition ([int]$externalReadiness.PayloadBackedReadyEntries -eq 4) 'Four source-intent entries should be runtime-payload backed.'
+Assert-BoostLabCondition ([int]$externalReadiness.DescriptorBackedReadyEntries -eq 16) 'Sixteen source-intent entries should be operation-descriptor backed.'
+Assert-BoostLabCondition ([int]$externalReadiness.BlockedEntries -eq 0) 'No source-intent entries should remain blocked after descriptor evidence wiring.'
 Assert-BoostLabCondition ([int]$externalReadiness.GeneratedPayloadRequiredEntries -eq 0) 'Generated payload requirements should no longer block source intent readiness after the payload rewires.'
 Assert-BoostLabCondition ([int]$externalReadiness.RawSourceRequiredEntries -eq 20) 'All current entries still require internal raw source validation.'
+Assert-BoostLabCondition ([int]$externalReadiness.ExternalRawSourceVerificationEntries -eq 0) 'ExternalRuntime readiness must not claim raw source verification.'
+Assert-BoostLabCondition ([int]$externalReadiness.TotalPayloads -eq 5) 'External readiness must report five runtime payloads.'
+Assert-BoostLabCondition ([int]$externalReadiness.ReadyPayloads -eq 5) 'External readiness must report all runtime payloads ready.'
+Assert-BoostLabCondition ([int]$externalReadiness.TotalOperationDescriptors -eq 16) 'External readiness must report sixteen operation descriptors.'
+Assert-BoostLabCondition ([int]$externalReadiness.ValidOperationDescriptors -eq 16) 'External readiness must report sixteen valid operation descriptors.'
+Assert-BoostLabCondition ([int]$externalReadiness.MissingOrInvalidOperationDescriptors -eq 0) 'External readiness must not report missing or invalid operation descriptors.'
+Assert-BoostLabCondition ([int]$externalReadiness.SourceFreePackageBlockerCount -gt 0) 'External readiness must report remaining direct source-reference package blockers.'
 Assert-BoostLabCondition ([int]$externalReadiness.HighRiskBlockerCount -eq 0) 'No high-risk generated payload blockers should remain after Phase 175H.'
 Assert-BoostLabCondition (-not [bool]$externalReadiness.RuntimeActionExecuted) 'External readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$externalReadiness.ChangesExecuted) 'External readiness reporting must not mutate state.'
@@ -170,8 +199,9 @@ Assert-BoostLabCondition (-not [bool]$timerIntent[0].RuntimeActionExecuted) 'Tim
 
 $directXIntent = @(Resolve-BoostLabRuntimeSourceIntent -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot -ToolId 'directx' -Manifest $manifest)
 Assert-BoostLabCondition ($directXIntent.Count -eq 1) 'DirectX source intent should resolve exactly once.'
-Assert-BoostLabCondition ([bool]$directXIntent[0].ExternalRuntimeBlocked) 'DirectX should remain externally blocked until source verification is decoupled.'
-Assert-BoostLabCondition ([string]$directXIntent[0].BlockerReason -eq 'ExternalRuntimeBlockedUntilDecoupled') 'DirectX blocker reason mismatch.'
+Assert-BoostLabCondition (-not [bool]$directXIntent[0].ExternalRuntimeBlocked) 'DirectX source intent should be descriptor-backed in ExternalRuntime mode.'
+Assert-BoostLabCondition ([string]$directXIntent[0].SourceEvidenceMode -eq 'OperationDescriptor') 'DirectX should resolve through operation-descriptor evidence.'
+Assert-BoostLabCondition ([string]$directXIntent[0].BlockerReason -eq '') 'DirectX should not report a source-intent blocker reason after descriptor wiring.'
 
 $internalTimerIntent = @(Resolve-BoostLabRuntimeSourceIntent -RequestedMode 'InternalDevelopment' -ProjectRoot $ProjectRoot -ToolId 'timer-resolution-assistant' -Manifest $manifest)
 Assert-BoostLabCondition ($internalTimerIntent.Count -eq 1) 'Timer Resolution internal source intent should resolve exactly once.'
@@ -259,8 +289,11 @@ foreach ($requiredFolder in @('source-ultimate', 'source-extra', 'intake')) {
     Passed = $true
     ManifestEntries = $entries.Count
     ExternalRuntimeReady = [bool]$externalReadiness.ExternalRuntimeReady
+    ExternalPackageBuildReady = [bool]$externalReadiness.ExternalPackageBuildReady
     ExternalReadyEntries = [int]$externalReadiness.ExternalReadyEntries
     BlockedEntries = [int]$externalReadiness.BlockedEntries
+    PayloadBackedReadyEntries = [int]$externalReadiness.PayloadBackedReadyEntries
+    DescriptorBackedReadyEntries = [int]$externalReadiness.DescriptorBackedReadyEntries
     GeneratedPayloadRequiredEntries = [int]$externalReadiness.GeneratedPayloadRequiredEntries
     RuntimePayloadReadyTools = $actualPayloadReadyTools
     HighRiskBlockers = $actualHighRiskTools

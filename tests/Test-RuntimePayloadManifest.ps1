@@ -135,12 +135,14 @@ function Get-BoostLabStart2BytesFromSource {
 $manifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
 $helperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
 $sourceIntentManifestPath = Join-Path $ProjectRoot 'config\RuntimeSourceIntentManifest.psd1'
+$sourceIntentHelperPath = Join-Path $ProjectRoot 'core\RuntimeSourceIntent.psm1'
 $sourceVerificationPath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
-foreach ($path in @($manifestPath, $helperPath, $sourceIntentManifestPath, $sourceVerificationPath)) {
+foreach ($path in @($manifestPath, $helperPath, $sourceIntentManifestPath, $sourceIntentHelperPath, $sourceVerificationPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required runtime payload file is missing: $path"
 }
 
 Import-Module -Name $helperPath -Force -ErrorAction Stop
+Import-Module -Name $sourceIntentHelperPath -Force -ErrorAction Stop
 Import-Module -Name $sourceVerificationPath -Force -ErrorAction Stop
 
 $manifest = Get-BoostLabRuntimePayloadManifest -ManifestPath $manifestPath
@@ -279,6 +281,12 @@ Assert-BoostLabCondition ('timer-resolution-csharp-service' -notin @($readiness.
 Assert-BoostLabCondition ([bool]$readiness.ExternalRuntimeReady) 'Generated runtime payload readiness should be true after all payload entries are runtime-wired.'
 Assert-BoostLabCondition (-not [bool]$readiness.RuntimeActionExecuted) 'Readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$readiness.ChangesExecuted) 'Readiness reporting must not mutate state.'
+
+$sourceIntentReadiness = Test-BoostLabExternalRuntimeReadiness -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.TotalPayloads -eq 5) 'Combined external readiness should report five runtime payloads.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.ReadyPayloads -eq 5) 'Combined external readiness should report five ready runtime payloads.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.BlockedPayloads -eq 0) 'Combined external readiness should not report runtime payload blockers.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.PayloadBackedReadyEntries -eq 4) 'Combined external readiness should retain four payload-backed source intents.'
 
 $expectedHighRiskTools = @(
     'defender-optimize-assistant'

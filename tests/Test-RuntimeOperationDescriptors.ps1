@@ -225,23 +225,26 @@ foreach ($entryId in @($entries.Keys | Sort-Object)) {
 
 $sourceIntentEntries = $sourceIntentManifest.Entries
 Assert-BoostLabCondition ($sourceIntentEntries -is [System.Collections.IDictionary]) 'Runtime source intent Entries must be a dictionary.'
-$blockedSourceIntentRecords = @(
+$descriptorBackedSourceIntentRecords = @(
     $sourceIntentEntries.GetEnumerator() |
-        Where-Object { [string]$_.Value['ExternalHandling'] -eq 'ExternalRuntimeBlockedUntilDecoupled' } |
+        Where-Object { [string]$_.Value['ExternalHandling'] -eq 'OperationDescriptorAvailable' } |
         Sort-Object -Property Name
 )
-Assert-BoostLabCondition ($blockedSourceIntentRecords.Count -eq 16) 'Source-intent manifest must still report sixteen blocked entries.'
+Assert-BoostLabCondition ($descriptorBackedSourceIntentRecords.Count -eq 16) 'Source-intent manifest must report sixteen descriptor-backed entries.'
 
-$blockedSourceIntentIds = @($blockedSourceIntentRecords | ForEach-Object { [string]$_.Name } | Sort-Object)
+$blockedSourceIntentIds = @($descriptorBackedSourceIntentRecords | ForEach-Object { [string]$_.Name } | Sort-Object)
 $requiredSourceIntentIds = @($manifest.RequiredSourceIntentBlockers | ForEach-Object { [string]$_ } | Sort-Object)
-Assert-BoostLabCondition (($blockedSourceIntentIds -join '|') -eq ($requiredSourceIntentIds -join '|')) 'Runtime operation descriptor required blockers must match source-intent blocked entries.'
+Assert-BoostLabCondition (($blockedSourceIntentIds -join '|') -eq ($requiredSourceIntentIds -join '|')) 'Runtime operation descriptor required source intents must match descriptor-backed source-intent entries.'
 
-foreach ($record in $blockedSourceIntentRecords) {
+foreach ($record in $descriptorBackedSourceIntentRecords) {
     $sourceIntentId = [string]$record.Name
     $sourceEntry = $record.Value
-    Assert-BoostLabCondition ($sourceEntry.Contains('OperationDescriptorId')) "Blocked source-intent entry must reference an operation descriptor: $sourceIntentId"
-    Assert-BoostLabCondition ($sourceEntry.Contains('OperationDescriptorStatus')) "Blocked source-intent entry must declare operation descriptor status: $sourceIntentId"
-    Assert-BoostLabCondition ([string]$sourceEntry['OperationDescriptorStatus'] -eq 'AvailableNotWired') "Blocked source-intent operation descriptor status mismatch: $sourceIntentId"
+    Assert-BoostLabCondition ($sourceEntry.Contains('OperationDescriptorId')) "Descriptor-backed source-intent entry must reference an operation descriptor: $sourceIntentId"
+    Assert-BoostLabCondition ($sourceEntry.Contains('OperationDescriptorStatus')) "Descriptor-backed source-intent entry must declare operation descriptor status: $sourceIntentId"
+    Assert-BoostLabCondition ([string]$sourceEntry['OperationDescriptorStatus'] -eq 'Available') "Descriptor-backed source-intent operation descriptor status mismatch: $sourceIntentId"
+    Assert-BoostLabCondition ([string]$sourceEntry['RuntimeWiringStatus'] -eq 'DescriptorBackedEvidenceReady') "Descriptor-backed source-intent runtime evidence status mismatch: $sourceIntentId"
+    Assert-BoostLabCondition ([string]$sourceEntry['ModuleRuntimeWiringStatus'] -eq 'NotWired') "Descriptor-backed source-intent entry must not claim module wiring: $sourceIntentId"
+    Assert-BoostLabCondition ([string]$sourceEntry['ExternalPackageStatus'] -eq 'SourceFreeLaunchBlockedByDirectModuleReferences') "Descriptor-backed source-intent package status mismatch: $sourceIntentId"
 
     $descriptorId = [string]$sourceEntry['OperationDescriptorId']
     Assert-BoostLabCondition ($entries.Contains($descriptorId)) "Blocked source-intent entry references unknown descriptor: $sourceIntentId -> $descriptorId"
@@ -303,10 +306,14 @@ Assert-BoostLabCondition ([bool]$runtimePayloadReadiness.ExternalRuntimeReady) '
 
 $sourceIntentReadiness = Test-BoostLabExternalRuntimeReadiness -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot -Manifest $sourceIntentManifest
 Assert-BoostLabCondition ([int]$sourceIntentReadiness.TotalSourceIntentEntries -eq 20) 'Source-intent readiness total mismatch.'
-Assert-BoostLabCondition ([int]$sourceIntentReadiness.ExternalReadyEntries -eq 4) 'Source-intent external-ready count mismatch.'
-Assert-BoostLabCondition ([int]$sourceIntentReadiness.BlockedEntries -eq 16) 'Source-intent blocked count mismatch.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.ExternalReadyEntries -eq 20) 'Source-intent external-ready count mismatch.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.PayloadBackedReadyEntries -eq 4) 'Source-intent payload-backed count mismatch.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.DescriptorBackedReadyEntries -eq 16) 'Source-intent descriptor-backed count mismatch.'
+Assert-BoostLabCondition ([int]$sourceIntentReadiness.BlockedEntries -eq 0) 'Source-intent blocked count mismatch.'
 Assert-BoostLabCondition ([int]$sourceIntentReadiness.GeneratedPayloadRequiredEntries -eq 0) 'Generated payload requirements should remain solved.'
-Assert-BoostLabCondition (-not [bool]$sourceIntentReadiness.ExternalRuntimeReady) 'Source-intent readiness must remain blocked until descriptor-backed module decoupling is implemented.'
+Assert-BoostLabCondition ([bool]$sourceIntentReadiness.ExternalRuntimeReady) 'Source-intent readiness should be satisfied by descriptor-backed evidence.'
+Assert-BoostLabCondition (-not [bool]$sourceIntentReadiness.ExternalPackageBuildReady) 'External package build readiness must remain false while direct module references remain.'
+Assert-BoostLabCondition ([bool]$sourceIntentReadiness.ExternalPackageSourceFreeLaunchBlocked) 'External package source-free launch must report direct module references.'
 
 $modulesWithRuntimeOperationDescriptors = @(
     Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'modules') -Recurse -File -Filter '*.psm1' |
@@ -337,6 +344,8 @@ Assert-BoostLabCondition ($protectedPathStatus.Count -eq 0) "Protected/internal 
     ExternalRuntimeReady = [bool]$descriptorReadiness.ExternalRuntimeReady
     RuntimePayloadReady = [bool]$runtimePayloadReadiness.ExternalRuntimeReady
     SourceIntentBlockedEntries = [int]$sourceIntentReadiness.BlockedEntries
+    SourceIntentDescriptorBackedEntries = [int]$sourceIntentReadiness.DescriptorBackedReadyEntries
+    ExternalPackageBuildReady = [bool]$sourceIntentReadiness.ExternalPackageBuildReady
     RuntimeActionExecuted = $false
     SourceUltimateUntouched = $true
     SourceExtraUntouched = $true
