@@ -231,6 +231,26 @@ try {
     Assert-BoostLabCondition (-not [bool]$confirmedRefreshRate.Data.RestartTriggered) 'Refresh-rate confirmation operation itself must not trigger restart.'
     Assert-BoostLabCondition ([string]$confirmedRefreshRate.Data.ConfirmationFailureKind -eq 'Not available') 'Successful refresh-rate confirmation must report no failure classification.'
     Assert-BoostLabCondition ([string]$confirmedRefreshRate.Data.ConfirmationError -eq '') 'Successful refresh-rate confirmation must not report an error.'
+    Assert-BoostLabCondition ([bool]$confirmedRefreshRate.Data.ConfirmationDialogClosed) 'Successful refresh-rate confirmation must report the dialog closed before continuation.'
+    Assert-BoostLabCondition (-not [bool]$confirmedRefreshRate.Data.PostConfirmationContinuationStarted) 'The confirmation operation itself must not start post-confirmation work.'
+    Assert-BoostLabCondition (-not [bool]$confirmedRefreshRate.Data.PostConfirmationRunsInsideCallback) 'Post-confirmation work must not run inside the confirmation callback.'
+
+    $structuredConfirmedRefreshRate = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        return [pscustomobject]@{
+            Succeeded                           = $true
+            Confirmed                           = $true
+            ConfirmationDialogClosed            = $true
+            DialogClosed                        = $true
+            ConfirmationFailureKind             = 'Not available'
+            Error                               = ''
+            PostConfirmationContinuationStarted = $false
+            PostConfirmationRunsInsideCallback  = $false
+        }
+    }
+    Assert-BoostLabCondition ([bool]$structuredConfirmedRefreshRate.Success) 'Structured refresh-rate confirmation should allow restart continuation.'
+    Assert-BoostLabCondition ([bool]$structuredConfirmedRefreshRate.Data.RestartConfirmedByUser) 'Structured refresh-rate confirmation must set RestartConfirmedByUser.'
+    Assert-BoostLabCondition ([bool]$structuredConfirmedRefreshRate.Data.ConfirmationDialogClosed) 'Structured refresh-rate confirmation must prove the dialog closed.'
 
     $declinedRefreshRate = & $invokeRefreshRateConfirmationOperation {
         param($Prompt, $Branch, $Operation)
@@ -242,6 +262,40 @@ try {
     Assert-BoostLabCondition (-not [bool]$declinedRefreshRate.Data.RestartConfirmedByUser) 'Declined refresh-rate confirmation must report RestartConfirmedByUser false.'
     Assert-BoostLabCondition (-not [bool]$declinedRefreshRate.Data.RestartTriggered) 'Declined refresh-rate confirmation must not trigger restart.'
     Assert-BoostLabCondition ([string]$declinedRefreshRate.Data.ConfirmationFailureKind -eq 'Not available') 'Declined refresh-rate confirmation must not be classified as callback infrastructure failure.'
+
+    $dialogNotClosedConfirmation = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        return [pscustomobject]@{
+            Succeeded                           = $true
+            Confirmed                           = $true
+            ConfirmationDialogClosed            = $false
+            DialogClosed                        = $false
+            ConfirmationFailureKind             = 'Not available'
+            Error                               = ''
+            PostConfirmationContinuationStarted = $false
+            PostConfirmationRunsInsideCallback  = $false
+        }
+    }
+    Assert-BoostLabCondition (-not [bool]$dialogNotClosedConfirmation.Success) 'Refresh-rate confirmation must fail closed if Yes returns before dialog close is observed.'
+    Assert-BoostLabCondition (-not [bool]$dialogNotClosedConfirmation.Data.RestartTriggered) 'Dialog-not-closed confirmation must not trigger restart.'
+    Assert-BoostLabCondition ([string]$dialogNotClosedConfirmation.Data.ConfirmationFailureKind -eq 'DialogNotClosed') 'Dialog-not-closed confirmation must be classified.'
+
+    $callbackContinuationViolation = & $invokeRefreshRateConfirmationOperation {
+        param($Prompt, $Branch, $Operation)
+        return [pscustomobject]@{
+            Succeeded                           = $true
+            Confirmed                           = $true
+            ConfirmationDialogClosed            = $true
+            DialogClosed                        = $true
+            ConfirmationFailureKind             = 'Not available'
+            Error                               = ''
+            PostConfirmationContinuationStarted = $true
+            PostConfirmationRunsInsideCallback  = $true
+        }
+    }
+    Assert-BoostLabCondition (-not [bool]$callbackContinuationViolation.Success) 'Refresh-rate confirmation must fail closed if the callback tries to run post-confirmation work.'
+    Assert-BoostLabCondition (-not [bool]$callbackContinuationViolation.Data.RestartTriggered) 'Callback continuation violation must not trigger restart.'
+    Assert-BoostLabCondition ([string]$callbackContinuationViolation.Data.ConfirmationFailureKind -eq 'CallbackContinuationViolation') 'Callback continuation violation must be classified.'
 
     $missingCallbackConfirmation = & $invokeRefreshRateConfirmationOperation $null
     Assert-BoostLabCondition (-not [bool]$missingCallbackConfirmation.Success) 'Missing refresh-rate confirmation callback must not allow restart continuation.'
@@ -375,6 +429,9 @@ try {
             Assert-BoostLabCondition ([bool]$apply.Data.RestartConfirmedByUser) 'NVIDIA Apply must report restart confirmation when the confirmation operation succeeds.'
             Assert-BoostLabCondition ([bool]$apply.Data.RestartTriggered) 'NVIDIA Apply must report restart triggered after confirmation.'
             Assert-BoostLabCondition ([string]$apply.Data.ConfirmationFailureKind -eq 'Not available') 'NVIDIA Apply success must report no refresh-rate confirmation failure classification.'
+            Assert-BoostLabCondition ([bool]$apply.Data.ConfirmationDialogClosed) 'NVIDIA Apply success must report the confirmation dialog closed before continuation.'
+            Assert-BoostLabCondition ([bool]$apply.Data.PostConfirmationContinuationStarted) 'NVIDIA Apply success must report post-confirmation continuation started.'
+            Assert-BoostLabCondition (-not [bool]$apply.Data.PostConfirmationRunsInsideCallback) 'NVIDIA Apply success must not run post-confirmation work inside the dialog callback.'
         }
     }
 
@@ -400,6 +457,10 @@ try {
                     RefreshRateConfirmationRequired = $true
                     RestartConfirmedByUser = $false
                     RestartTriggered = $false
+                    ConfirmationFailureKind = 'Not available'
+                    ConfirmationDialogClosed = $true
+                    PostConfirmationContinuationStarted = $false
+                    PostConfirmationRunsInsideCallback = $false
                     FinalStatusReason = 'Refresh-rate restart confirmation was not granted; restart was not triggered.'
                 }
                 Timestamp = Get-Date
@@ -444,7 +505,87 @@ try {
     Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartConfirmedByUser) 'Declined refresh-rate confirmation must report RestartConfirmedByUser false.'
     Assert-BoostLabCondition (-not [bool]$declinedApply.Data.RestartTriggered) 'Declined refresh-rate confirmation must not trigger restart.'
     Assert-BoostLabCondition ([string]$declinedApply.Data.ConfirmationFailureKind -eq 'Not available') 'Declined refresh-rate confirmation must not be classified as callback infrastructure failure.'
+    Assert-BoostLabCondition ([bool]$declinedApply.Data.ConfirmationDialogClosed) 'Declined refresh-rate confirmation must report the dialog closed.'
+    Assert-BoostLabCondition (-not [bool]$declinedApply.Data.PostConfirmationContinuationStarted) 'Declined refresh-rate confirmation must not continue into post-confirmation operations.'
+    Assert-BoostLabCondition (-not [bool]$declinedApply.Data.PostConfirmationRunsInsideCallback) 'Declined refresh-rate confirmation must not run post-confirmation work inside the callback.'
     Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsDeclineOps | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 0) 'Restart operation must not run before refresh-rate confirmation.'
+
+    $script:DriverInstallDebloatSettingsRestartFailOps = [System.Collections.Generic.List[object]]::new()
+    $restartFailureExecutor = {
+        param($Operation, $SelectedBranch, $Context)
+        $script:DriverInstallDebloatSettingsRestartFailOps.Add($Operation)
+        if ([string]$Operation.Type -eq 'ShutdownRestart') {
+            return [pscustomobject]@{
+                Success = $false
+                Order = [int]$Operation.Order
+                Branch = [string]$Operation.Branch
+                Category = [string]$Operation.Category
+                Type = [string]$Operation.Type
+                Label = [string]$Operation.Label
+                SourceCommand = [string]$Operation.SourceCommand
+                Message = 'Mocked restart command unavailable.'
+                Data = [pscustomobject]@{ RestartTriggered = $false; RestartCommand = 'shutdown -r -t 00' }
+                Timestamp = Get-Date
+            }
+        }
+
+        return [pscustomobject]@{
+            Success = $true
+            Order = [int]$Operation.Order
+            Branch = [string]$Operation.Branch
+            Category = [string]$Operation.Category
+            Type = [string]$Operation.Type
+            Label = [string]$Operation.Label
+            SourceCommand = [string]$Operation.SourceCommand
+            Message = 'Mocked operation before restart failure.'
+            Data = if ([string]$Operation.Type -eq 'SelectInstaller') {
+                [pscustomobject]@{ SelectedInstaller = 'C:\BoostLabMock\NVIDIA-driver.exe' }
+            }
+            elseif ([string]$Operation.Type -eq 'OpenNvidiaControlPanelForRefreshRate') {
+                [pscustomobject]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $true
+                    NvidiaControlPanelOpenCommand = 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    NvidiaControlPanelOpenPath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser = $false
+                    RestartTriggered = $false
+                    FinalStatusReason = 'NVIDIA Control Panel opened for refresh-rate adjustment.'
+                }
+            }
+            elseif ([string]$Operation.Type -eq 'RefreshRateRestartConfirmation') {
+                [pscustomobject]@{
+                    NvidiaControlPanelOpenAttempted = $true
+                    NvidiaControlPanelOpenSucceeded = $true
+                    NvidiaControlPanelOpenCommand = 'Start-Process shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    NvidiaControlPanelOpenPath = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
+                    RefreshRateConfirmationRequired = $true
+                    RestartConfirmedByUser = $true
+                    RestartTriggered = $false
+                    ConfirmationCallbackAvailable = $true
+                    ConfirmationCallbackUsed = $true
+                    ConfirmationFailureKind = 'Not available'
+                    ConfirmationError = ''
+                    ConfirmationDialogClosed = $true
+                    PostConfirmationContinuationStarted = $false
+                    PostConfirmationRunsInsideCallback = $false
+                    FinalStatusReason = 'User confirmed refresh-rate adjustment is complete and restart may continue.'
+                }
+            }
+            else {
+                $null
+            }
+            Timestamp = Get-Date
+        }
+    }
+    $restartFailedApply = Invoke-BoostLabToolAction -ActionName 'Apply' -Confirmed:$true -Branch 'NVIDIA' -InstallFile 'C:\BoostLabMock\NVIDIA-driver.exe' -SkipEnvironmentChecks:$true -OperationExecutor $restartFailureExecutor
+    Assert-BoostLabCondition (-not [bool]$restartFailedApply.Success) 'Restart command failure must return a controlled failed result.'
+    Assert-BoostLabCondition ([string]$restartFailedApply.Status -eq 'OperationFailed') 'Restart command failure status mismatch.'
+    Assert-BoostLabCondition ([bool]$restartFailedApply.Data.RestartConfirmedByUser) 'Restart command failure must preserve the prior Yes confirmation diagnostic.'
+    Assert-BoostLabCondition ([bool]$restartFailedApply.Data.ConfirmationDialogClosed) 'Restart command failure must preserve dialog-closed diagnostic.'
+    Assert-BoostLabCondition ([bool]$restartFailedApply.Data.PostConfirmationContinuationStarted) 'Restart command failure must report post-confirmation continuation started.'
+    Assert-BoostLabCondition (-not [bool]$restartFailedApply.Data.RestartTriggered) 'Failed restart command must not report restart triggered.'
+    Assert-BoostLabCondition (@($script:DriverInstallDebloatSettingsRestartFailOps | Where-Object { [string]$_.Type -eq 'ShutdownRestart' }).Count -eq 1) 'Restart command failure must attempt the approved restart operation exactly once.'
 
     $script:DriverInstallDebloatSettingsOpenFailOps = [System.Collections.Generic.List[object]]::new()
     $openFailureExecutor = {
@@ -593,4 +734,3 @@ Assert-BoostLabCondition (@(Get-ChildItem -LiteralPath $sourceRoot -Recurse -Fil
     HostMutationDuringValidation = $false
     Message = 'Driver Install Debloat & Settings maps NVIDIA, AMD, and INTEL source branches and validates with mocked execution only.'
 }
-

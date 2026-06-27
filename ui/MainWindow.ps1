@@ -2489,7 +2489,6 @@ function Show-BoostLabRefreshRateRestartConfirmationDialog {
     $noButton.Add_Click({
         $dialog.Tag = $false
         $dialog.DialogResult = $false
-        $dialog.Close()
     })
     $buttons.Children.Add($noButton) | Out-Null
 
@@ -2500,7 +2499,6 @@ function Show-BoostLabRefreshRateRestartConfirmationDialog {
     $yesButton.Add_Click({
         $dialog.Tag = $true
         $dialog.DialogResult = $true
-        $dialog.Close()
     })
     $buttons.Children.Add($yesButton) | Out-Null
 
@@ -2555,6 +2553,7 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
 
         $showDialog = {
             try {
+                $dialogClosed = $false
                 $dialog = [System.Windows.Window]::new()
                 $dialog.Title = 'Confirm Graphics Restart'
                 $dialog.Width = 560
@@ -2566,6 +2565,9 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
                 $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#0B1220')
                 $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#E2E8F0')
                 $dialog.Tag = $false
+                $dialog.Add_Closed({
+                    $dialogClosed = $true
+                }.GetNewClosure())
 
                 $buttonStyle = $null
                 if ($null -ne $ownerWindow) {
@@ -2634,7 +2636,6 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
                 $noButton.Add_Click({
                     $dialog.Tag = $false
                     $dialog.DialogResult = $false
-                    $dialog.Close()
                 })
                 $buttons.Children.Add($noButton) | Out-Null
 
@@ -2647,7 +2648,6 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
                 $yesButton.Add_Click({
                     $dialog.Tag = $true
                     $dialog.DialogResult = $true
-                    $dialog.Close()
                 })
                 $buttons.Children.Add($yesButton) | Out-Null
 
@@ -2657,29 +2657,69 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
 
                 $null = $dialog.ShowDialog()
                 return [pscustomobject]@{
-                    Succeeded = $true
-                    Confirmed = [bool]$dialog.Tag
-                    Error     = ''
+                    Succeeded                           = $true
+                    Confirmed                           = [bool]$dialog.Tag
+                    ConfirmationDialogClosed            = [bool]$dialogClosed
+                    DialogClosed                        = [bool]$dialogClosed
+                    ConfirmationFailureKind             = 'Not available'
+                    Error                               = ''
+                    PostConfirmationContinuationStarted = $false
+                    PostConfirmationRunsInsideCallback  = $false
                 }
             }
             catch {
                 return [pscustomobject]@{
-                    Succeeded = $false
-                    Confirmed = $false
-                    Error     = "Refresh-rate confirmation dialog failed: $($_.Exception.Message)"
+                    Succeeded                           = $false
+                    Confirmed                           = $false
+                    ConfirmationDialogClosed            = $false
+                    DialogClosed                        = $false
+                    ConfirmationFailureKind             = 'DialogError'
+                    Error                               = "Refresh-rate confirmation dialog failed: $($_.Exception.Message)"
+                    PostConfirmationContinuationStarted = $false
+                    PostConfirmationRunsInsideCallback  = $false
                 }
             }
         }.GetNewClosure()
 
         $dialogResult = $null
         if ($dispatcher.CheckAccess()) {
-            $dialogResultValues = @($showDialog.Invoke())
-            $dialogResult = if ($dialogResultValues.Count -gt 0) { $dialogResultValues[0] } else { $null }
+            throw 'Refresh-rate confirmation callback must be requested from the background execution path.'
         }
         else {
-            $operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)
-            $operationHandle.Wait()
-            $dialogResult = $operationHandle.Result
+            $dialogState = [hashtable]::Synchronized(@{
+                Result = $null
+                Error  = ''
+            })
+            $dialogFinished = [System.Threading.ManualResetEventSlim]::new($false)
+            try {
+                $dispatchDialog = {
+                    try {
+                        $dialogResultValues = @($showDialog.Invoke())
+                        $dialogState['Result'] = if ($dialogResultValues.Count -gt 0) { $dialogResultValues[0] } else { $null }
+                    }
+                    catch {
+                        $dialogState['Error'] = $_.Exception.Message
+                    }
+                    finally {
+                        $dialogFinished.Set()
+                    }
+                }.GetNewClosure()
+
+                $null = $dispatcher.BeginInvoke([System.Action]$dispatchDialog)
+                while (-not $dialogFinished.Wait(250)) {
+                    if ([bool]$dispatcher.HasShutdownStarted -or [bool]$dispatcher.HasShutdownFinished) {
+                        throw 'Refresh-rate confirmation UI dispatcher shut down before the dialog returned.'
+                    }
+                }
+
+                if (-not [string]::IsNullOrWhiteSpace([string]$dialogState['Error'])) {
+                    throw [string]$dialogState['Error']
+                }
+                $dialogResult = $dialogState['Result']
+            }
+            finally {
+                $dialogFinished.Dispose()
+            }
         }
 
         if ($null -eq $dialogResult) {
@@ -2695,7 +2735,7 @@ function New-BoostLabRefreshRateRestartConfirmationCallback {
             throw $dialogError
         }
 
-        return [bool]$dialogResult.Confirmed
+        return $dialogResult
     }.GetNewClosure()
 }
 

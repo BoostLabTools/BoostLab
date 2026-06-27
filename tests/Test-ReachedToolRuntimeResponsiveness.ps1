@@ -269,10 +269,13 @@ foreach ($needle in @(
     '$confirmationRequest = [pscustomobject]@{'
     '$body.Text = [string]$confirmationRequest.Prompt'
     '$dialog.ShowDialog()'
-    'Succeeded = $false'
+    'Succeeded                           = $false'
     'if ([bool]$dispatcher.HasShutdownStarted -or [bool]$dispatcher.HasShutdownFinished)'
-    '$operationHandle = $dispatcher.BeginInvoke([System.Func[object]]$showDialog)'
-    '$operationHandle.Wait()'
+    '[System.Threading.ManualResetEventSlim]::new($false)'
+    '$dispatcher.BeginInvoke([System.Action]$dispatchDialog)'
+    'Refresh-rate confirmation callback must be requested from the background execution path.'
+    'ConfirmationDialogClosed'
+    'PostConfirmationContinuationStarted'
     "RefreshRateConfirmationCallback"
     'Invoke-BoostLabToolAction `'
     '-RiskConfirmed'
@@ -396,6 +399,8 @@ Assert-BoostLabCondition (-not $uiText.Contains('& $dialogCommand')) 'Refresh-ra
 Assert-BoostLabCondition (-not $uiText.Contains('$dialogCommand')) 'Refresh-rate confirmation UI must not depend on a captured dialog command object.'
 Assert-BoostLabCondition (-not $uiText.Contains('$dialogCommand.Invoke')) 'Refresh-rate confirmation UI must not invoke a stale dialog command object.'
 Assert-BoostLabCondition (-not $uiText.Contains('Refresh-rate confirmation dialog command was unavailable.')) 'Normal MainWindow refresh-rate confirmation must not expose the stale dialog-command failure.'
+Assert-BoostLabCondition (-not $uiText.Contains('$operationHandle.Wait()')) 'Refresh-rate confirmation UI must not block on DispatcherOperation.Wait after the dialog returns.'
+Assert-BoostLabCondition (-not $uiText.Contains('$dispatcher.Invoke(')) 'Refresh-rate confirmation UI must not use a synchronous dispatcher Invoke for the modal checkpoint.'
 
 $edgeSettingsText = Get-Content -LiteralPath $edgeSettingsModulePath -Raw
 Assert-BoostLabTextContains -Text $edgeSettingsText -Needle 'SourceEquivalent' -Description 'Edge Settings source-equivalent behavior'

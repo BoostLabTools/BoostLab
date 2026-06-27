@@ -898,6 +898,9 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     ConfirmationCallbackUsed        = $false
                     ConfirmationFailureKind         = 'Not available'
                     ConfirmationError               = ''
+                    ConfirmationDialogClosed        = $false
+                    PostConfirmationContinuationStarted = $false
+                    PostConfirmationRunsInsideCallback  = $false
                 }
 
                 $callback = if ($Context.Contains('RefreshRateConfirmationCallback')) {
@@ -932,7 +935,54 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
 
                 $data['ConfirmationCallbackUsed'] = $true
                 try {
-                    $confirmed = [bool](& $callback -Prompt $prompt -Branch ([string]$Operation.Branch) -Operation $Operation)
+                    $confirmationResponse = & $callback -Prompt $prompt -Branch ([string]$Operation.Branch) -Operation $Operation
+                    if ($confirmationResponse -is [bool]) {
+                        $confirmed = [bool]$confirmationResponse
+                        $data['ConfirmationDialogClosed'] = $true
+                    }
+                    else {
+                        $confirmationSucceeded = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'Succeeded' `
+                            -DefaultValue $true)
+                        $confirmationFailureKind = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'ConfirmationFailureKind' `
+                            -DefaultValue 'Not available')
+                        $confirmationError = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'Error' `
+                            -DefaultValue '')
+                        $dialogClosed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'ConfirmationDialogClosed' `
+                            -DefaultValue (Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                                -Data $confirmationResponse `
+                                -Name 'DialogClosed' `
+                                -DefaultValue $false))
+                        $runsInsideCallback = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'PostConfirmationRunsInsideCallback' `
+                            -DefaultValue $false)
+
+                        $data['ConfirmationDialogClosed'] = $dialogClosed
+                        $data['PostConfirmationRunsInsideCallback'] = $runsInsideCallback
+                        if (-not $confirmationSucceeded) {
+                            $data['ConfirmationFailureKind'] = if ([string]::IsNullOrWhiteSpace($confirmationFailureKind)) { 'CallbackError' } else { $confirmationFailureKind }
+                            $data['ConfirmationError'] = $confirmationError
+                            $data['FinalStatusReason'] = 'Refresh-rate confirmation callback failed; restart was not triggered.'
+                            return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                                -Operation $Operation `
+                                -Success $false `
+                                -Message "Refresh-rate confirmation failed: $confirmationError" `
+                                -Data ([pscustomobject]$data)
+                        }
+
+                        $confirmed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                            -Data $confirmationResponse `
+                            -Name 'Confirmed' `
+                            -DefaultValue $false)
+                    }
                     $data['RestartConfirmedByUser'] = $confirmed
                 }
                 catch {
@@ -946,12 +996,34 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                         -Data ([pscustomobject]$data)
                 }
 
+                if ([bool]$data['PostConfirmationRunsInsideCallback']) {
+                    $data['ConfirmationFailureKind'] = 'CallbackContinuationViolation'
+                    $data['ConfirmationError'] = 'Refresh-rate confirmation callback attempted to run post-confirmation work inside the dialog callback.'
+                    $data['FinalStatusReason'] = 'Refresh-rate confirmation callback violated the UI ownership contract; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message 'Refresh-rate confirmation callback violated the UI ownership contract. Restart was not triggered.' `
+                        -Data ([pscustomobject]$data)
+                }
+
                 if (-not [bool]$data['RestartConfirmedByUser']) {
                     $data['FinalStatusReason'] = 'Refresh-rate restart confirmation was not granted; restart was not triggered.'
                     return New-BoostLabDriverInstallDebloatSettingsOperationResult `
                         -Operation $Operation `
                         -Success $false `
                         -Message 'Refresh-rate restart confirmation was not granted. Restart was not triggered.' `
+                        -Data ([pscustomobject]$data)
+                }
+
+                if (-not [bool]$data['ConfirmationDialogClosed']) {
+                    $data['ConfirmationFailureKind'] = 'DialogNotClosed'
+                    $data['ConfirmationError'] = 'Refresh-rate confirmation returned Yes before the dialog close was observed.'
+                    $data['FinalStatusReason'] = 'Refresh-rate confirmation did not prove the dialog closed; restart was not triggered.'
+                    return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                        -Operation $Operation `
+                        -Success $false `
+                        -Message 'Refresh-rate confirmation did not prove the dialog closed. Restart was not triggered.' `
                         -Data ([pscustomobject]$data)
                 }
 
@@ -1168,6 +1240,34 @@ function Get-BoostLabDriverInstallDebloatSettingsResultDataValue {
     return $DefaultValue
 }
 
+function Set-BoostLabDriverInstallDebloatSettingsResultDataValue {
+    param(
+        [AllowNull()]
+        [object]$Result,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($null -eq $Result) {
+        return
+    }
+
+    if ($null -eq $Result.PSObject.Properties['Data'] -or $null -eq $Result.Data) {
+        $Result | Add-Member -NotePropertyName 'Data' -NotePropertyValue ([pscustomobject]@{}) -Force
+    }
+
+    if ($null -ne $Result.Data.PSObject.Properties[$Name]) {
+        $Result.Data.$Name = $Value
+    }
+    else {
+        $Result.Data | Add-Member -NotePropertyName $Name -NotePropertyValue $Value -Force
+    }
+}
+
 function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
     param(
         [Parameter(Mandatory)]
@@ -1196,6 +1296,9 @@ function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
     $confirmationCallbackUsed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationCallbackUsed' -DefaultValue $false)
     $confirmationFailureKind = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationFailureKind' -DefaultValue 'Not available')
     $confirmationError = [string](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationError' -DefaultValue '')
+    $confirmationDialogClosed = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'ConfirmationDialogClosed' -DefaultValue $confirmationSucceeded)
+    $postConfirmationContinuationStarted = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'PostConfirmationContinuationStarted' -DefaultValue ($confirmationSucceeded -and $restartTriggered))
+    $postConfirmationRunsInsideCallback = [bool](Get-BoostLabDriverInstallDebloatSettingsResultDataValue -Data $confirmationData -Name 'PostConfirmationRunsInsideCallback' -DefaultValue $false)
 
     [pscustomobject]@{
         NvidiaControlPanelOpenAttempted = $nvidiaOpenAttempted
@@ -1209,6 +1312,9 @@ function New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics {
         ConfirmationCallbackUsed        = $confirmationCallbackUsed
         ConfirmationFailureKind         = $confirmationFailureKind
         ConfirmationError               = $confirmationError
+        ConfirmationDialogClosed        = $confirmationDialogClosed
+        PostConfirmationContinuationStarted = $postConfirmationContinuationStarted
+        PostConfirmationRunsInsideCallback  = $postConfirmationRunsInsideCallback
         FinalStatusReason               = $FinalStatusReason
     }
 }
@@ -1238,8 +1344,25 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
     }
     $operationResults = [System.Collections.Generic.List[object]]::new()
     $changesStarted = $false
+    $pendingPostConfirmationResult = $null
 
     foreach ($operation in @($plan.Operations)) {
+        if ($null -ne $pendingPostConfirmationResult) {
+            Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                -Result $pendingPostConfirmationResult `
+                -Name 'PostConfirmationContinuationStarted' `
+                -Value $true
+            Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                -Result $pendingPostConfirmationResult `
+                -Name 'PostConfirmationContinuationOperation' `
+                -Value ([string]$operation.Type)
+            Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                -Result $pendingPostConfirmationResult `
+                -Name 'PostConfirmationRunsInsideCallback' `
+                -Value $false
+            $pendingPostConfirmationResult = $null
+        }
+
         if ($SkipEnvironmentChecks -and [string]$operation.Type -in @('RequireAdministrator', 'RequireInternet')) {
             $resolvedSkipOperation = Resolve-BoostLabDriverInstallDebloatSettingsOperation -Operation $operation -Context $context
             $skipResult = New-BoostLabDriverInstallDebloatSettingsOperationResult -Operation $resolvedSkipOperation -Success $true -Message 'Skipped by test-safe executor option.'
@@ -1265,6 +1388,24 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
 
         if ($null -ne $result.Data -and $result.Data.PSObject.Properties['SelectedInstaller']) {
             $context['InstallFile'] = [string]$result.Data.SelectedInstaller
+        }
+
+        if ([string]$resolvedOperation.Type -eq 'RefreshRateRestartConfirmation' -and [bool]$result.Success) {
+            if ($null -eq $result.Data -or $null -eq $result.Data.PSObject.Properties['ConfirmationDialogClosed']) {
+                Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                    -Result $result `
+                    -Name 'ConfirmationDialogClosed' `
+                    -Value $true
+            }
+            Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                -Result $result `
+                -Name 'PostConfirmationContinuationStarted' `
+                -Value $false
+            Set-BoostLabDriverInstallDebloatSettingsResultDataValue `
+                -Result $result `
+                -Name 'PostConfirmationRunsInsideCallback' `
+                -Value $false
+            $pendingPostConfirmationResult = $result
         }
 
         if (-not [bool]$result.Success) {
@@ -1301,18 +1442,44 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
                     ConfirmationCallbackUsed           = [bool]$diagnostics.ConfirmationCallbackUsed
                     ConfirmationFailureKind            = [string]$diagnostics.ConfirmationFailureKind
                     ConfirmationError                  = [string]$diagnostics.ConfirmationError
+                    ConfirmationDialogClosed           = [bool]$diagnostics.ConfirmationDialogClosed
+                    PostConfirmationContinuationStarted = [bool]$diagnostics.PostConfirmationContinuationStarted
+                    PostConfirmationRunsInsideCallback  = [bool]$diagnostics.PostConfirmationRunsInsideCallback
                     FinalStatusReason                  = [string]$diagnostics.FinalStatusReason
                 }
             }
 
+            $operationFailureReason = "Operation failed: $($resolvedOperation.Label). $($result.Message)"
+            $failureDiagnostics = New-BoostLabDriverInstallDebloatSettingsWorkflowDiagnostics `
+                -Branch $Branch `
+                -OperationResults $operationResults.ToArray() `
+                -FinalStatusReason $operationFailureReason
+
             return [pscustomobject]@{
-                Success = $false
-                Branch = $Branch
-                Plan = $plan
-                OperationResults = $operationResults.ToArray()
-                FailedOperation = $resolvedOperation
-                ChangesStarted = $changesStarted
-                Message = "Operation failed: $($resolvedOperation.Label). $($result.Message)"
+                Success                            = $false
+                Warning                            = $false
+                Status                             = 'OperationFailed'
+                Branch                             = $Branch
+                Plan                               = $plan
+                OperationResults                   = $operationResults.ToArray()
+                FailedOperation                    = $resolvedOperation
+                ChangesStarted                     = $changesStarted
+                Message                            = $operationFailureReason
+                NvidiaControlPanelOpenAttempted    = [bool]$failureDiagnostics.NvidiaControlPanelOpenAttempted
+                NvidiaControlPanelOpenSucceeded    = [bool]$failureDiagnostics.NvidiaControlPanelOpenSucceeded
+                NvidiaControlPanelOpenCommand      = [string]$failureDiagnostics.NvidiaControlPanelOpenCommand
+                NvidiaControlPanelOpenPath         = [string]$failureDiagnostics.NvidiaControlPanelOpenPath
+                RefreshRateConfirmationRequired    = [bool]$failureDiagnostics.RefreshRateConfirmationRequired
+                RestartConfirmedByUser             = [bool]$failureDiagnostics.RestartConfirmedByUser
+                RestartTriggered                   = [bool]$failureDiagnostics.RestartTriggered
+                ConfirmationCallbackAvailable      = [bool]$failureDiagnostics.ConfirmationCallbackAvailable
+                ConfirmationCallbackUsed           = [bool]$failureDiagnostics.ConfirmationCallbackUsed
+                ConfirmationFailureKind            = [string]$failureDiagnostics.ConfirmationFailureKind
+                ConfirmationError                  = [string]$failureDiagnostics.ConfirmationError
+                ConfirmationDialogClosed           = [bool]$failureDiagnostics.ConfirmationDialogClosed
+                PostConfirmationContinuationStarted = [bool]$failureDiagnostics.PostConfirmationContinuationStarted
+                PostConfirmationRunsInsideCallback  = [bool]$failureDiagnostics.PostConfirmationRunsInsideCallback
+                FinalStatusReason                  = [string]$failureDiagnostics.FinalStatusReason
             }
         }
     }
@@ -1350,6 +1517,9 @@ function Invoke-BoostLabDriverInstallDebloatSettingsWorkflow {
         ConfirmationCallbackUsed           = [bool]$successDiagnostics.ConfirmationCallbackUsed
         ConfirmationFailureKind            = [string]$successDiagnostics.ConfirmationFailureKind
         ConfirmationError                  = [string]$successDiagnostics.ConfirmationError
+        ConfirmationDialogClosed           = [bool]$successDiagnostics.ConfirmationDialogClosed
+        PostConfirmationContinuationStarted = [bool]$successDiagnostics.PostConfirmationContinuationStarted
+        PostConfirmationRunsInsideCallback  = [bool]$successDiagnostics.PostConfirmationRunsInsideCallback
         FinalStatusReason                  = [string]$successDiagnostics.FinalStatusReason
     }
 }
