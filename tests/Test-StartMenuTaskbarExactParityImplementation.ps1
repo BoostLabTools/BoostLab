@@ -58,6 +58,23 @@ function Assert-OperationExists {
     Assert-BoostLabCondition ($matches.Count -gt 0) "Missing operation: $Kind $Path $Name"
 }
 
+function Get-BoostLabStartMenuTaskbarByteHash {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$Bytes
+    )
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha256.ComputeHash($Bytes))).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
     $scriptPath = if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
         $PSCommandPath
@@ -83,6 +100,23 @@ $stagesPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $parityPath = Join-Path $ProjectRoot 'config\ParityStatusBaseline.psd1'
 $uiPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
+$runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
+$runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+$start2PayloadPath = Join-Path $ProjectRoot 'runtime-payloads\start-menu-taskbar\start2.bin'
+
+foreach ($requiredPath in @(
+    $sourcePath
+    $modulePath
+    $stagesPath
+    $executionPath
+    $parityPath
+    $uiPath
+    $runtimePayloadManifestPath
+    $runtimePayloadHelperPath
+    $start2PayloadPath
+)) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $requiredPath -PathType Leaf) "Required Start Menu Taskbar parity file is missing: $requiredPath"
+}
 
 $expectedSourceHash = 'D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4'
 $actualSourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sourcePath).Hash
@@ -115,6 +149,8 @@ Assert-BoostLabCondition (-not $moduleText.Contains('$script:BoostLabImplemented
 Assert-BoostLabCondition (-not $moduleText.Contains('RestoreUnavailable')) 'Start Menu Taskbar must not expose a Restore implementation.'
 Assert-BoostLabCondition (-not $moduleText.Contains('certutil.exe')) 'Module must not execute certutil; start2.bin is decoded internally.'
 
+$runtimeResolverTempRoot = ''
+Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
 $module = Import-Module -Name $modulePath -Force -PassThru -ErrorAction Stop
 try {
     $info = Get-BoostLabToolInfo
@@ -125,6 +161,78 @@ try {
     Assert-BoostLabCondition ([string]$payload.Status -eq 'Passed') 'start2.bin payload status must pass.'
     Assert-BoostLabCondition ([int]$payload.Length -eq 4540) 'start2.bin payload length mismatch.'
     Assert-BoostLabCondition ([string]$payload.Sha256 -eq '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D') 'start2.bin payload hash mismatch.'
+    Assert-BoostLabCondition ([string]$payload.PayloadChecksumStatus -eq 'Passed') 'start2.bin runtime payload checksum status must pass.'
+    Assert-BoostLabCondition ([string]$payload.PayloadVerificationMode -eq 'RawBytesSha256') 'start2.bin runtime payload must verify by raw-byte SHA-256.'
+    Assert-BoostLabCondition ([string]$payload.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') 'start2.bin runtime payload manifest status must be ReadyForExternalRuntime.'
+    Assert-BoostLabCondition ([string]$payload.ContentSource -eq 'RuntimePayload') 'start2.bin must resolve from the runtime payload artifact.'
+    Assert-BoostLabCondition (-not [bool]$payload.FallbackUsed) 'start2.bin valid runtime payload resolution must not use fallback.'
+    Assert-BoostLabCondition (-not [bool]$payload.UsedProtectedSource) 'start2.bin valid runtime payload resolution must not read protected source.'
+    Assert-BoostLabCondition (-not [bool]$payload.RequiresProtectedSource) 'start2.bin valid runtime payload resolution must not require protected source.'
+    Assert-BoostLabCondition (-not [bool]$payload.ExternalRuntimeBlocked) 'start2.bin valid runtime payload resolution must not remain externally blocked.'
+    Assert-BoostLabCondition (-not [bool]$payload.RuntimeActionExecuted) 'start2.bin payload status must not execute runtime actions.'
+    Assert-BoostLabCondition (-not [bool]$payload.ChangesExecuted) 'start2.bin payload status must not mutate state.'
+
+    $runtimePayloadBytes = [IO.File]::ReadAllBytes($start2PayloadPath)
+    $sourcePayloadBytes = [byte[]](& $module { Get-BoostLabStartMenuTaskbarStart2PayloadBytesFromSource })
+    Assert-BoostLabCondition ($runtimePayloadBytes.Length -eq $sourcePayloadBytes.Length) 'start2.bin runtime payload length must match protected source extraction.'
+    Assert-BoostLabCondition ((Get-BoostLabStartMenuTaskbarByteHash -Bytes $runtimePayloadBytes) -eq (Get-BoostLabStartMenuTaskbarByteHash -Bytes $sourcePayloadBytes)) 'start2.bin runtime payload hash must match protected source extraction.'
+    Assert-BoostLabCondition ([BitConverter]::ToString($runtimePayloadBytes) -eq [BitConverter]::ToString($sourcePayloadBytes)) 'start2.bin runtime payload bytes must exactly match protected source extraction.'
+
+    $runtimePayloadManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $runtimeResolverTempRoot = Join-Path ([IO.Path]::GetTempPath()) ('BoostLab-Start2Runtime-{0}' -f ([guid]::NewGuid().ToString('N')))
+    New-Item -ItemType Directory -Path $runtimeResolverTempRoot -Force | Out-Null
+
+    $validExternalRoot = Join-Path $runtimeResolverTempRoot 'valid-external'
+    $validExternalPayloadPath = Join-Path $validExternalRoot 'runtime-payloads\start-menu-taskbar\start2.bin'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $validExternalPayloadPath) -Force | Out-Null
+    Copy-Item -LiteralPath $start2PayloadPath -Destination $validExternalPayloadPath -Force
+    $validExternal = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabStartMenuTaskbarStart2Payload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $validExternalRoot $runtimePayloadManifest)
+    Assert-BoostLabCondition ($validExternal.Count -eq 1 -and [bool]$validExternal[0].Success) 'ExternalRuntime start2.bin resolution should pass with only the runtime payload present.'
+    Assert-BoostLabCondition ([string]$validExternal[0].ContentSource -eq 'RuntimePayload') 'ExternalRuntime start2.bin resolution should use the runtime payload artifact.'
+    Assert-BoostLabCondition (-not [bool]$validExternal[0].UsedProtectedSource) 'ExternalRuntime valid start2.bin resolution must not use protected source.'
+    Assert-BoostLabCondition (-not [bool]$validExternal[0].RequiresProtectedSource) 'ExternalRuntime valid start2.bin resolution must not require protected source.'
+    Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-ultimate'))) 'ExternalRuntime valid start2.bin resolution test root must not contain source-ultimate.'
+    Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-extra'))) 'ExternalRuntime valid start2.bin resolution test root must not contain source-extra.'
+    Assert-BoostLabCondition ((Get-BoostLabStartMenuTaskbarByteHash -Bytes ([byte[]]$validExternal[0].ContentBytes)) -eq '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D') 'ExternalRuntime valid start2.bin resolution hash mismatch.'
+
+    $missingExternalRoot = Join-Path $runtimeResolverTempRoot 'missing-external'
+    New-Item -ItemType Directory -Path $missingExternalRoot -Force | Out-Null
+    $missingExternal = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabStartMenuTaskbarStart2Payload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $missingExternalRoot $runtimePayloadManifest)
+    Assert-BoostLabCondition ($missingExternal.Count -eq 1 -and -not [bool]$missingExternal[0].Success) 'ExternalRuntime missing start2.bin resolution should fail closed.'
+    Assert-BoostLabCondition ([string]$missingExternal[0].Status -eq 'RuntimePayloadUnavailable') 'ExternalRuntime missing start2.bin resolution status mismatch.'
+    Assert-BoostLabCondition ([string]$missingExternal[0].PayloadChecksumStatus -eq 'Missing') 'ExternalRuntime missing start2.bin payload status should be Missing.'
+    Assert-BoostLabCondition (-not [bool]$missingExternal[0].FallbackUsed -and -not [bool]$missingExternal[0].UsedProtectedSource) 'ExternalRuntime missing start2.bin resolution must not fall back to protected source.'
+    Assert-BoostLabCondition ([string]$missingExternal[0].Message -like '*cannot fall back to protected source text*') 'ExternalRuntime missing start2.bin resolution must explain that protected-source fallback is unavailable.'
+
+    $invalidExternalRoot = Join-Path $runtimeResolverTempRoot 'invalid-external'
+    $invalidExternalPayloadPath = Join-Path $invalidExternalRoot 'runtime-payloads\start-menu-taskbar\start2.bin'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $invalidExternalPayloadPath) -Force | Out-Null
+    [IO.File]::WriteAllBytes($invalidExternalPayloadPath, [byte[]](1, 2, 3))
+    $invalidExternal = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabStartMenuTaskbarStart2Payload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $invalidExternalRoot $runtimePayloadManifest)
+    Assert-BoostLabCondition ($invalidExternal.Count -eq 1 -and -not [bool]$invalidExternal[0].Success) 'ExternalRuntime invalid start2.bin resolution should fail closed.'
+    Assert-BoostLabCondition ([string]$invalidExternal[0].PayloadChecksumStatus -eq 'Failed') 'ExternalRuntime invalid start2.bin payload status should be Failed.'
+    Assert-BoostLabCondition (-not [bool]$invalidExternal[0].FallbackUsed -and -not [bool]$invalidExternal[0].UsedProtectedSource) 'ExternalRuntime invalid start2.bin resolution must not fall back to protected source.'
+
+    $internalFallbackManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $internalFallbackManifest.Entries['start-menu-taskbar-start2-bin'].RuntimePayloadRelativePath = 'runtime-payloads/start-menu-taskbar/missing-start2.bin'
+    $internalFallback = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabStartMenuTaskbarStart2Payload -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $ProjectRoot $internalFallbackManifest)
+    Assert-BoostLabCondition ($internalFallback.Count -eq 1 -and [bool]$internalFallback[0].Success) 'InternalDevelopment missing start2.bin runtime payload should allow verified protected-source fallback.'
+    Assert-BoostLabCondition ([string]$internalFallback[0].ContentSource -eq 'ProtectedSourceFallback') 'InternalDevelopment fallback should report protected source fallback.'
+    Assert-BoostLabCondition ([bool]$internalFallback[0].FallbackUsed -and [bool]$internalFallback[0].UsedProtectedSource) 'InternalDevelopment fallback should use protected source.'
+    Assert-BoostLabCondition ([bool]$internalFallback[0].RequiresProtectedSource) 'InternalDevelopment fallback should declare protected source requirement.'
+    Assert-BoostLabCondition ((Get-BoostLabStartMenuTaskbarByteHash -Bytes ([byte[]]$internalFallback[0].ContentBytes)) -eq '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D') 'InternalDevelopment fallback start2.bin hash mismatch.'
 
     $fakeSystemRoot = 'X:\Windows'
     $fakeSystemDrive = 'X:'
@@ -159,6 +267,10 @@ try {
     Assert-OperationExists -Operations $cleanOps -Kind 'WriteTextFile' -Path 'X:\Windows\Temp\start2.txt'
     Assert-OperationExists -Operations $cleanOps -Kind 'WriteBytesFile' -Path 'X:\Windows\Temp\start2.bin'
     Assert-OperationExists -Operations $cleanOps -Kind 'CopyFile' -Path 'X:\Windows\Temp\start2.bin'
+    $start2WriteOps = @($cleanOps | Where-Object { [string]$_.Kind -eq 'WriteBytesFile' -and [string]$_.Path -eq 'X:\Windows\Temp\start2.bin' })
+    Assert-BoostLabCondition ($start2WriteOps.Count -eq 1) 'Clean must write exactly one start2.bin temporary payload.'
+    Assert-BoostLabCondition (([byte[]]$start2WriteOps[0].Content).Length -eq 4540) 'Clean start2.bin temporary payload length mismatch.'
+    Assert-BoostLabCondition ((Get-BoostLabStartMenuTaskbarByteHash -Bytes ([byte[]]$start2WriteOps[0].Content)) -eq '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D') 'Clean start2.bin temporary payload hash mismatch.'
     Assert-BoostLabCondition ((@($cleanOps | Where-Object { $_.Kind -eq 'RestartExplorer' }).Count -eq 2)) 'Clean must represent both source Explorer restarts.'
 
     Assert-OperationExists -Operations $defaultOps -Kind 'SetRegistryValue' -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins' -Name 'MailPin' -Data 1
@@ -211,7 +323,7 @@ try {
     }.GetNewClosure()
     $recordBytesWrite = {
         param($Path, [byte[]]$Bytes)
-        $script:mockOperations.Add([pscustomobject]@{ Kind = 'WriteBytesFile'; Path = $Path; Length = $Bytes.Length })
+        $script:mockOperations.Add([pscustomobject]@{ Kind = 'WriteBytesFile'; Path = $Path; Length = $Bytes.Length; Sha256 = Get-BoostLabStartMenuTaskbarByteHash -Bytes $Bytes })
         [pscustomobject]@{ Success = $true }
     }.GetNewClosure()
     $recordCopy = {
@@ -262,6 +374,7 @@ try {
     Assert-BoostLabCondition ([bool]$applyResult.ChangesExecuted) 'Mocked Clean should report executed changes.'
     Assert-BoostLabCondition ((@($script:mockOperations | Where-Object { $_.Kind -eq 'RestartExplorer' }).Count -eq 2)) 'Mocked Clean must route Explorer handling through the adapter.'
     Assert-BoostLabCondition ((@($script:mockOperations | Where-Object { $_.Kind -eq 'WriteBytesFile' -and $_.Length -eq 4540 }).Count -eq 1)) 'Mocked Clean must write the decoded start2.bin payload through the bytes adapter.'
+    Assert-BoostLabCondition ((@($script:mockOperations | Where-Object { $_.Kind -eq 'WriteBytesFile' -and $_.Sha256 -eq '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D' }).Count -eq 1)) 'Mocked Clean must write the runtime start2.bin payload bytes through the bytes adapter.'
 
     $script:mockOperations.Clear()
     $defaultResult = Invoke-BoostLabToolAction `
@@ -286,6 +399,9 @@ try {
 }
 finally {
     Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
+    if (-not [string]::IsNullOrWhiteSpace($runtimeResolverTempRoot) -and (Test-Path -LiteralPath $runtimeResolverTempRoot)) {
+        Remove-Item -LiteralPath $runtimeResolverTempRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 $parity = Import-PowerShellDataFile -LiteralPath $parityPath

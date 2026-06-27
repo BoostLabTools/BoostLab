@@ -231,17 +231,27 @@ foreach ($entryId in @($entries.Keys | Sort-Object)) {
 
 $payloadStatuses = @(Test-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -Manifest $manifest)
 Assert-BoostLabCondition ($payloadStatuses.Count -eq 5) 'Runtime payload verification should report five payload entries.'
+$readyRuntimePayloadIds = @(
+    'driver-install-debloat-settings-nvidia-profile'
+    'start-menu-taskbar-start2-bin'
+)
+$blockedRuntimePayloadIds = @(
+    'defender-optimize-apply-script'
+    'defender-optimize-default-script'
+    'timer-resolution-csharp-service'
+)
 foreach ($payloadStatus in $payloadStatuses) {
     Assert-BoostLabCondition ([bool]$payloadStatus.Exists) "Generated runtime payload file is missing: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition ([string]$payloadStatus.ChecksumStatus -eq 'Passed') "Generated runtime payload hash mismatch: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition ([string]$payloadStatus.LengthStatus -eq 'Passed') "Generated runtime payload length mismatch: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition ([bool]$payloadStatus.PayloadArtifactReady) "Generated runtime payload should be artifact-ready: $($payloadStatus.PayloadId)"
-    if ([string]$payloadStatus.PayloadId -eq 'driver-install-debloat-settings-nvidia-profile') {
-        Assert-BoostLabCondition (-not [bool]$payloadStatus.ExternalRuntimeBlocked) 'Driver Install Debloat & Settings .nip payload should be ready for external runtime.'
-        Assert-BoostLabCondition ([string]$payloadStatus.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') 'Driver Install Debloat & Settings .nip payload wiring status mismatch.'
-        Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq '') 'Driver Install Debloat & Settings .nip payload must not report a blocker reason.'
+    if ([string]$payloadStatus.PayloadId -in $readyRuntimePayloadIds) {
+        Assert-BoostLabCondition (-not [bool]$payloadStatus.ExternalRuntimeBlocked) "Runtime-wired payload should be ready for external runtime: $($payloadStatus.PayloadId)"
+        Assert-BoostLabCondition ([string]$payloadStatus.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') "Runtime-wired payload wiring status mismatch: $($payloadStatus.PayloadId)"
+        Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq '') "Runtime-wired payload must not report a blocker reason: $($payloadStatus.PayloadId)"
     }
     else {
+        Assert-BoostLabCondition ([string]$payloadStatus.PayloadId -in $blockedRuntimePayloadIds) "Unexpected externally blocked payload id: $($payloadStatus.PayloadId)"
         Assert-BoostLabCondition ([bool]$payloadStatus.ExternalRuntimeBlocked) "Payload should remain externally blocked until module rewiring: $($payloadStatus.PayloadId)"
         Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq 'InternalRuntimeStillUsesSource') "Payload blocker reason mismatch: $($payloadStatus.PayloadId)"
     }
@@ -254,11 +264,13 @@ Assert-BoostLabCondition ([int]$readiness.TotalPayloadEntries -eq 5) 'Runtime pa
 Assert-BoostLabCondition ([int]$readiness.GeneratedRuntimePayloadAvailableEntries -eq 5) 'All generated runtime payload artifacts should be available.'
 Assert-BoostLabCondition ([int]$readiness.MissingPayloadEntries -eq 0) 'Generated runtime payload readiness must not report missing payloads.'
 Assert-BoostLabCondition ([int]$readiness.FailedPayloadEntries -eq 0) 'Generated runtime payload readiness must not report failed payloads.'
-Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 4) 'Only four generated payload entries should remain unwired after the DIDS .nip rewire.'
-Assert-BoostLabCondition ([int]$readiness.RuntimeWiredPayloadEntries -eq 1) 'Exactly one generated payload entry should be runtime-wired.'
-Assert-BoostLabCondition ([int]$readiness.BlockedPayloadEntries -eq 4) 'Exactly four generated payload entries should remain external runtime blockers.'
+Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 3) 'Only three generated payload entries should remain unwired after the DIDS .nip and start2.bin rewires.'
+Assert-BoostLabCondition ([int]$readiness.RuntimeWiredPayloadEntries -eq 2) 'Exactly two generated payload entries should be runtime-wired.'
+Assert-BoostLabCondition ([int]$readiness.BlockedPayloadEntries -eq 3) 'Exactly three generated payload entries should remain external runtime blockers.'
 Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'DIDS .nip payload should be listed as ready for external runtime.'
+Assert-BoostLabCondition ('start-menu-taskbar-start2-bin' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'Start Menu Taskbar start2.bin payload should be listed as ready for external runtime.'
 Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -notin @($readiness.RuntimePayloadBlockerIds)) 'DIDS .nip payload must not remain in the runtime payload blocker list.'
+Assert-BoostLabCondition ('start-menu-taskbar-start2-bin' -notin @($readiness.RuntimePayloadBlockerIds)) 'Start Menu Taskbar start2.bin payload must not remain in the runtime payload blocker list.'
 Assert-BoostLabCondition (-not [bool]$readiness.ExternalRuntimeReady) 'External runtime must not claim readiness while modules still use protected source paths.'
 Assert-BoostLabCondition (-not [bool]$readiness.RuntimeActionExecuted) 'Readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$readiness.ChangesExecuted) 'Readiness reporting must not mutate state.'
@@ -283,6 +295,21 @@ Assert-BoostLabCondition ($didsPayload.Count -eq 1) 'Driver Install Debloat & Se
 Assert-BoostLabCondition ([bool]$didsPayload[0].PayloadExists) 'Driver Install Debloat & Settings runtime payload should exist.'
 Assert-BoostLabCondition (-not [bool]$didsPayload[0].ExternalRuntimeBlocked) 'Driver Install Debloat & Settings .nip payload should no longer be an external runtime blocker.'
 Assert-BoostLabCondition (-not [bool]$didsPayload[0].RuntimeActionExecuted) 'Runtime payload resolution must not execute runtime actions.'
+
+$start2Payload = @(Resolve-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -PayloadId 'start-menu-taskbar-start2-bin' -Manifest $manifest)
+Assert-BoostLabCondition ($start2Payload.Count -eq 1) 'Start Menu Taskbar start2.bin runtime payload should resolve exactly once.'
+Assert-BoostLabCondition ([bool]$start2Payload[0].PayloadExists) 'Start Menu Taskbar start2.bin runtime payload should exist.'
+Assert-BoostLabCondition (-not [bool]$start2Payload[0].ExternalRuntimeBlocked) 'Start Menu Taskbar start2.bin payload should no longer be an external runtime blocker.'
+Assert-BoostLabCondition (-not [bool]$start2Payload[0].RuntimeActionExecuted) 'Runtime payload resolution must not execute runtime actions.'
+
+$start2Entry = $entries['start-menu-taskbar-start2-bin']
+Assert-BoostLabCondition ([string]$start2Entry.RuntimePayloadRelativePath -eq 'runtime-payloads/start-menu-taskbar/start2.bin') 'Start Menu Taskbar start2.bin runtime payload path mismatch.'
+Assert-BoostLabCondition ([string]$start2Entry.RuntimePayloadRelativePath -notmatch '^(source-ultimate|source-extra|intake)(/|\\)') 'Start Menu Taskbar start2.bin runtime payload must not point at protected source or intake paths.'
+Assert-BoostLabCondition ([string]$start2Entry.PayloadKind -eq 'Binary') 'Start Menu Taskbar start2.bin runtime payload must be declared binary.'
+Assert-BoostLabCondition ([string]$start2Entry.HashMode -eq 'RawBytes') 'Start Menu Taskbar start2.bin runtime payload must use raw-byte hash mode.'
+Assert-BoostLabCondition ([string]$start2Entry.CanonicalTextSha256 -eq '') 'Start Menu Taskbar start2.bin runtime payload must not declare a canonical text hash.'
+$start2PayloadStatus = $payloadStatuses | Where-Object { [string]$_.PayloadId -eq 'start-menu-taskbar-start2-bin' } | Select-Object -First 1
+Assert-BoostLabCondition ([string]$start2PayloadStatus.VerificationMode -eq 'RawBytesSha256') 'Start Menu Taskbar start2.bin runtime payload must verify by raw-byte SHA-256.'
 
 $defenderPayloads = @(Resolve-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -ToolId 'defender-optimize-assistant' -Manifest $manifest)
 Assert-BoostLabCondition ($defenderPayloads.Count -eq 2) 'Defender Optimize Assistant should have two generated script payload entries.'
@@ -333,7 +360,7 @@ $modulesWithRuntimePayloads = @(
         }
 )
 $moduleRelativePathsWithRuntimePayloads = @($modulesWithRuntimePayloads | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/') } | Sort-Object)
-Assert-BoostLabCondition (($moduleRelativePathsWithRuntimePayloads -join '|') -eq 'modules/Graphics/driver-install-debloat-settings.psm1') "Only Driver Install Debloat & Settings may be wired to runtime payloads in this phase: $($moduleRelativePathsWithRuntimePayloads -join ', ')"
+Assert-BoostLabCondition (($moduleRelativePathsWithRuntimePayloads -join '|') -eq 'modules/Graphics/driver-install-debloat-settings.psm1|modules/Windows/start-menu-taskbar.psm1') "Only Driver Install Debloat & Settings and Start Menu Taskbar may be wired to runtime payloads in this phase: $($moduleRelativePathsWithRuntimePayloads -join ', ')"
 
 $gitPath = Get-BoostLabGitExecutable
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($gitPath)) 'Git executable was not found for protected source/intake working-tree guard.'
@@ -356,5 +383,5 @@ Assert-BoostLabCondition ($protectedSourceChanges.Count -eq 0) "Protected source
     SourceUltimateUntouched = $true
     SourceExtraUntouched = $true
     IntakeUntouched = $true
-    Message = 'Generated runtime payload artifacts are present and hash-verified; DIDS .nip is runtime-wired while the other generated payloads remain blocked.'
+    Message = 'Generated runtime payload artifacts are present and hash-verified; DIDS .nip and Start Menu Taskbar start2.bin are runtime-wired while Defender and Timer generated payloads remain blocked.'
 }

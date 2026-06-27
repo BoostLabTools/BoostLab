@@ -7,7 +7,7 @@
     PayloadRoot = 'runtime-payloads'
     CustomerVisible = $false
     DefaultMode = 'InternalDevelopment'
-    ExternalRuntimeStatus = 'OnePayloadRuntimeWiredButExternalRuntimeStillBlocked'
+    ExternalRuntimeStatus = 'TwoPayloadsRuntimeWiredButExternalRuntimeStillBlocked'
     Entries = @{
         'defender-optimize-apply-script' = @{
             PayloadId = 'defender-optimize-apply-script'
@@ -101,13 +101,13 @@
             ExpectedLengthBytes = 4540
             ExtractionMode = 'StaticProtectedSourceRead'
             ExternalHandling = 'GeneratedRuntimePayloadAvailable'
-            RuntimeWiringStatus = 'InternalRuntimeStillUsesSource'
+            RuntimeWiringStatus = 'ReadyForExternalRuntime'
             CustomerVisible = $false
             HighRiskBlocker = $true
             SourceExecutionRequired = $false
             RuntimeActionExecuted = $false
             ChangesExecuted = $false
-            Notes = 'start2.bin is available as a raw-byte hashed artifact, but Start Menu Taskbar still decodes the protected source internally.'
+            Notes = 'start2.bin is available as a raw-byte hashed artifact and Start Menu Taskbar resolves it through the runtime payload helper; protected source fallback remains internal-development only.'
         }
         'timer-resolution-csharp-service' = @{
             PayloadId = 'timer-resolution-csharp-service'

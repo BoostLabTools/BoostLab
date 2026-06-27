@@ -22,6 +22,8 @@ $script:BoostLabImplementedActions = @('Apply', 'Default')
 $script:BoostLabExpectedSourceHash = '88BEB0E8C41F7A32AAE6A0A6E184E87E678FB25BEDEB092C63F4BA98B8712E91'
 $script:BoostLabExpectedCanonicalSourceHash = 'D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4'
 $script:BoostLabSourceRelativePath = 'source-ultimate/6 Windows/1 Start Menu Taskbar.ps1'
+$script:BoostLabStart2RuntimePayloadId = 'start-menu-taskbar-start2-bin'
+$script:BoostLabRuntimePackageModeEnvironmentVariable = 'BOOSTLAB_RUNTIME_PACKAGE_MODE'
 $script:BoostLabExpectedStart2Sha256 = '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D'
 $script:BoostLabExpectedStart2Length = 4540
 $script:BoostLabSecurityHealthClean = [byte[]](0x07,0x00,0x00,0x00,0x05,0xdb,0x8a,0x69,0x8a,0x49,0xd9,0x01)
@@ -40,12 +42,20 @@ function Test-BoostLabAdministrator {
     }
 }
 
+function Get-BoostLabStartMenuTaskbarProjectRoot {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    return (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+}
+
 function Get-BoostLabStartMenuTaskbarSourcePath {
     [CmdletBinding()]
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $projectRoot = Get-BoostLabStartMenuTaskbarProjectRoot
     return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
@@ -55,7 +65,7 @@ function Get-BoostLabStartMenuTaskbarSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabStartMenuTaskbarSourcePath
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $projectRoot = Get-BoostLabStartMenuTaskbarProjectRoot
     $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
     if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
         Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
@@ -128,17 +138,176 @@ function Get-BoostLabStartMenuTaskbarDefaultLayoutXml {
 '@
 }
 
-function Get-BoostLabStartMenuTaskbarStart2Pem {
+function ConvertTo-BoostLabStartMenuTaskbarRuntimePackageModeName {
+    param(
+        [AllowNull()]
+        [string]$Mode
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Mode)) {
+        return ''
+    }
+
+    $normalized = $Mode.Trim().Replace('-', '').Replace('_', '').ToLowerInvariant()
+    switch ($normalized) {
+        'internal' { return 'InternalDevelopment' }
+        'internaldevelopment' { return 'InternalDevelopment' }
+        'development' { return 'InternalDevelopment' }
+        'external' { return 'ExternalRuntime' }
+        'externalruntime' { return 'ExternalRuntime' }
+        'runtime' { return 'ExternalRuntime' }
+        default {
+            throw "Unsupported BoostLab runtime package mode: $Mode"
+        }
+    }
+}
+
+function Get-BoostLabStartMenuTaskbarRuntimePackageMode {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [AllowEmptyString()]
+        [string]$EnvironmentMode = $null
+    )
+
+    if ($null -eq $EnvironmentMode) {
+        $EnvironmentMode = [Environment]::GetEnvironmentVariable($script:BoostLabRuntimePackageModeEnvironmentVariable, 'Process')
+    }
+
+    $requested = ConvertTo-BoostLabStartMenuTaskbarRuntimePackageModeName -Mode $RequestedMode
+    $environmentRequested = ConvertTo-BoostLabStartMenuTaskbarRuntimePackageModeName -Mode $EnvironmentMode
+    $mode = if (-not [string]::IsNullOrWhiteSpace($requested)) {
+        $requested
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($environmentRequested)) {
+        $environmentRequested
+    }
+    else {
+        'InternalDevelopment'
+    }
+
+    [pscustomobject]@{
+        Mode = $mode
+        RequestedMode = $requested
+        EnvironmentMode = $environmentRequested
+        IsInternalDevelopment = ($mode -eq 'InternalDevelopment')
+        IsExternalRuntime = ($mode -eq 'ExternalRuntime')
+    }
+}
+
+function Get-BoostLabStartMenuTaskbarRuntimePayloadStatus {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$ProjectRoot = (Get-BoostLabStartMenuTaskbarProjectRoot),
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
+    )
+
+    $runtimePayloadModulePath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabRuntimePayload' -ErrorAction SilentlyContinue)) {
+        if (-not (Test-Path -LiteralPath $runtimePayloadModulePath -PathType Leaf)) {
+            return [pscustomobject]@{
+                PayloadId = $script:BoostLabStart2RuntimePayloadId
+                PayloadPath = ''
+                Exists = $false
+                ChecksumStatus = 'Missing'
+                LengthStatus = 'Missing'
+                VerificationMode = 'Missing'
+                RuntimeWiringStatus = ''
+                ExternalRuntimeBlocked = $true
+                Error = "Runtime payload helper was not found: $runtimePayloadModulePath"
+            }
+        }
+
+        Import-Module -Name $runtimePayloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $parameters = @{
+        PayloadId = $script:BoostLabStart2RuntimePayloadId
+        ProjectRoot = $ProjectRoot
+    }
+    if ($null -ne $PayloadManifest) {
+        $parameters['Manifest'] = $PayloadManifest
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($PayloadManifestPath)) {
+        $parameters['ManifestPath'] = $PayloadManifestPath
+    }
+
+    $status = @(Test-BoostLabRuntimePayload @parameters | Select-Object -First 1)
+    if ($status.Count -ne 1) {
+        return [pscustomobject]@{
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = ''
+            Exists = $false
+            ChecksumStatus = 'Missing'
+            LengthStatus = 'Missing'
+            VerificationMode = 'Missing'
+            RuntimeWiringStatus = ''
+            ExternalRuntimeBlocked = $true
+            Error = 'Start Menu Taskbar start2.bin runtime payload manifest entry was not found.'
+        }
+    }
+
+    return $status[0]
+}
+
+function Get-BoostLabStartMenuTaskbarSourceFileStatus {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$ProjectRoot = (Get-BoostLabStartMenuTaskbarProjectRoot)
+    )
+
+    $sourcePath = Join-Path $ProjectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    $sourceVerificationModulePath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    return Test-BoostLabSourceChecksum `
+        -LiteralPath $sourcePath `
+        -ExpectedSha256 $script:BoostLabExpectedSourceHash `
+        -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+}
+
+function ConvertTo-BoostLabStartMenuTaskbarStart2Pem {
     [CmdletBinding()]
     [OutputType([string])]
-    param()
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$Bytes
+    )
 
-    $sourceStatus = Get-BoostLabStartMenuTaskbarSourceStatus
+    $base64 = [Convert]::ToBase64String($Bytes)
+    $lines = [System.Collections.Generic.List[string]]::new()
+    for ($index = 0; $index -lt $base64.Length; $index += 64) {
+        $length = [Math]::Min(64, $base64.Length - $index)
+        $lines.Add($base64.Substring($index, $length))
+    }
+
+    return "-----BEGIN CERTIFICATE-----`n$($lines.ToArray() -join "`n")`n-----END CERTIFICATE-----`n"
+}
+
+function Get-BoostLabStartMenuTaskbarStart2PemFromSource {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [string]$ProjectRoot = (Get-BoostLabStartMenuTaskbarProjectRoot)
+    )
+
+    $sourceStatus = Get-BoostLabStartMenuTaskbarSourceFileStatus -ProjectRoot $ProjectRoot
     if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
         throw 'Start Menu Taskbar source checksum verification failed; start2.bin payload extraction is blocked.'
     }
 
-    $sourceText = Get-Content -LiteralPath $sourceStatus.SourcePath -Raw -ErrorAction Stop
+    $sourcePath = Join-Path $ProjectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    $sourceText = Get-Content -LiteralPath $sourcePath -Raw -ErrorAction Stop
     $match = [regex]::Match(
         $sourceText,
         '-----BEGIN CERTIFICATE-----\s*(?<payload>.*?)\s*-----END CERTIFICATE-----',
@@ -151,14 +320,211 @@ function Get-BoostLabStartMenuTaskbarStart2Pem {
     return "-----BEGIN CERTIFICATE-----`n$($match.Groups['payload'].Value.Trim())`n-----END CERTIFICATE-----`n"
 }
 
+function Get-BoostLabStartMenuTaskbarStart2PayloadBytesFromSource {
+    [CmdletBinding()]
+    [OutputType([byte[]])]
+    param(
+        [string]$ProjectRoot = (Get-BoostLabStartMenuTaskbarProjectRoot)
+    )
+
+    $pem = Get-BoostLabStartMenuTaskbarStart2PemFromSource -ProjectRoot $ProjectRoot
+    $payload = (($pem -replace '-----BEGIN CERTIFICATE-----', '') -replace '-----END CERTIFICATE-----', '') -replace '\s+', ''
+    return ,[byte[]][Convert]::FromBase64String($payload)
+}
+
+function Resolve-BoostLabStartMenuTaskbarStart2Payload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [string]$ProjectRoot = (Get-BoostLabStartMenuTaskbarProjectRoot),
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    $mode = Get-BoostLabStartMenuTaskbarRuntimePackageMode -RequestedMode $RequestedMode
+    $payloadStatus = Get-BoostLabStartMenuTaskbarRuntimePayloadStatus `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath
+
+    if ([string]$payloadStatus.ChecksumStatus -eq 'Passed') {
+        try {
+            $bytes = [IO.File]::ReadAllBytes([string]$payloadStatus.PayloadPath)
+            return [pscustomobject]@{
+                Success = $true
+                Status = 'RuntimePayloadVerified'
+                Message = 'Start Menu Taskbar start2.bin runtime payload verified.'
+                RuntimePackageMode = [string]$mode.Mode
+                PayloadId = $script:BoostLabStart2RuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+                PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+                PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                ContentSource = 'RuntimePayload'
+                ContentBytes = [byte[]]$bytes
+                Pem = ConvertTo-BoostLabStartMenuTaskbarStart2Pem -Bytes $bytes
+                UsedProtectedSource = $false
+                FallbackUsed = $false
+                RequiresProtectedSource = $false
+                ExternalRuntimeBlocked = $false
+                RuntimeActionExecuted = $false
+                ChangesExecuted = $false
+            }
+        }
+        catch {
+            $payloadStatus = [pscustomobject]@{
+                PayloadId = $script:BoostLabStart2RuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                Exists = $true
+                ChecksumStatus = 'Failed'
+                LengthStatus = [string]$payloadStatus.LengthStatus
+                VerificationMode = 'ReadFailed'
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    $payloadMessage = if ([string]$payloadStatus.ChecksumStatus -eq 'Missing') {
+        'Start Menu Taskbar start2.bin runtime payload is missing.'
+    }
+    elseif ([string]$payloadStatus.ChecksumStatus -eq 'Failed') {
+        'Start Menu Taskbar start2.bin runtime payload failed raw hash validation.'
+    }
+    else {
+        "Start Menu Taskbar start2.bin runtime payload is unavailable: $($payloadStatus.ChecksumStatus)."
+    }
+
+    if ([bool]$mode.IsExternalRuntime) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage ExternalRuntime mode cannot fall back to protected source text."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            ContentBytes = [byte[]]@()
+            Pem = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $true
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    if (-not $AllowInternalSourceFallback) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage Internal source fallback was disabled."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            ContentBytes = [byte[]]@()
+            Pem = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    try {
+        $sourcePem = Get-BoostLabStartMenuTaskbarStart2PemFromSource -ProjectRoot $ProjectRoot
+        $sourceBytes = Get-BoostLabStartMenuTaskbarStart2PayloadBytesFromSource -ProjectRoot $ProjectRoot
+        return [pscustomobject]@{
+            Success = $true
+            Status = 'ProtectedSourceFallbackUsed'
+            Message = "$payloadMessage InternalDevelopment mode used verified protected-source fallback."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = 'ProtectedSourceFallback'
+            ContentBytes = [byte[]]$sourceBytes
+            Pem = $sourcePem
+            UsedProtectedSource = $true
+            FallbackUsed = $true
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'ProtectedSourceFallbackFailed'
+            Message = "$payloadMessage InternalDevelopment protected-source fallback failed: $($_.Exception.Message)"
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            ContentBytes = [byte[]]@()
+            Pem = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+}
+
+function Get-BoostLabStartMenuTaskbarStart2Pem {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    $resolution = Resolve-BoostLabStartMenuTaskbarStart2Payload
+    if (-not [bool]$resolution.Success) {
+        throw ([string]$resolution.Message)
+    }
+
+    return [string]$resolution.Pem
+}
+
 function Get-BoostLabStartMenuTaskbarStart2PayloadBytes {
     [CmdletBinding()]
     [OutputType([byte[]])]
     param()
 
-    $pem = Get-BoostLabStartMenuTaskbarStart2Pem
-    $payload = (($pem -replace '-----BEGIN CERTIFICATE-----', '') -replace '-----END CERTIFICATE-----', '') -replace '\s+', ''
-    return [Convert]::FromBase64String($payload)
+    $resolution = Resolve-BoostLabStartMenuTaskbarStart2Payload
+    if (-not [bool]$resolution.Success) {
+        throw ([string]$resolution.Message)
+    }
+
+    return ,[byte[]]$resolution.ContentBytes
 }
 
 function Get-BoostLabStartMenuTaskbarStart2PayloadStatus {
@@ -167,7 +533,12 @@ function Get-BoostLabStartMenuTaskbarStart2PayloadStatus {
     param()
 
     try {
-        $bytes = Get-BoostLabStartMenuTaskbarStart2PayloadBytes
+        $resolution = Resolve-BoostLabStartMenuTaskbarStart2Payload
+        if (-not [bool]$resolution.Success) {
+            throw ([string]$resolution.Message)
+        }
+
+        $bytes = [byte[]]$resolution.ContentBytes
         $sha = [Security.Cryptography.SHA256]::Create()
         try {
             $hash = [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '')
@@ -183,6 +554,19 @@ function Get-BoostLabStartMenuTaskbarStart2PayloadStatus {
             ExpectedLength = $script:BoostLabExpectedStart2Length
             ExpectedSha256 = $script:BoostLabExpectedStart2Sha256
             Status    = if ($bytes.Length -eq $script:BoostLabExpectedStart2Length -and $hash -eq $script:BoostLabExpectedStart2Sha256) { 'Passed' } else { 'Failed' }
+            PayloadId = [string]$resolution.PayloadId
+            PayloadPath = [string]$resolution.PayloadPath
+            PayloadChecksumStatus = [string]$resolution.PayloadChecksumStatus
+            PayloadVerificationMode = [string]$resolution.PayloadVerificationMode
+            PayloadLengthStatus = [string]$resolution.PayloadLengthStatus
+            RuntimeWiringStatus = [string]$resolution.RuntimeWiringStatus
+            ContentSource = [string]$resolution.ContentSource
+            FallbackUsed = [bool]$resolution.FallbackUsed
+            UsedProtectedSource = [bool]$resolution.UsedProtectedSource
+            RequiresProtectedSource = [bool]$resolution.RequiresProtectedSource
+            ExternalRuntimeBlocked = [bool]$resolution.ExternalRuntimeBlocked
+            RuntimeActionExecuted = [bool]$resolution.RuntimeActionExecuted
+            ChangesExecuted = [bool]$resolution.ChangesExecuted
         }
     }
     catch {
@@ -193,6 +577,19 @@ function Get-BoostLabStartMenuTaskbarStart2PayloadStatus {
             ExpectedLength = $script:BoostLabExpectedStart2Length
             ExpectedSha256 = $script:BoostLabExpectedStart2Sha256
             Status    = 'Failed'
+            PayloadId = $script:BoostLabStart2RuntimePayloadId
+            PayloadPath = ''
+            PayloadChecksumStatus = 'Failed'
+            PayloadVerificationMode = ''
+            PayloadLengthStatus = ''
+            RuntimeWiringStatus = ''
+            ContentSource = ''
+            FallbackUsed = $false
+            UsedProtectedSource = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $true
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
             Error     = $_.Exception.Message
         }
     }
