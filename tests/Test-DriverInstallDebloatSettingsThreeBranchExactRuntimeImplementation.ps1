@@ -75,6 +75,36 @@ function Get-BoostLabOperationByTypeAndLabel {
     }) | Select-Object -First 1
 }
 
+function Get-BoostLabCanonicalTextHashFromString {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($Text)
+    $normalized = [Collections.Generic.List[byte]]::new($bytes.Length)
+    for ($index = 0; $index -lt $bytes.Length; $index++) {
+        $byte = $bytes[$index]
+        if ($byte -eq 0x0D) {
+            $normalized.Add([byte]0x0A)
+            if (($index + 1) -lt $bytes.Length -and $bytes[$index + 1] -eq 0x0A) {
+                $index++
+            }
+            continue
+        }
+
+        $normalized.Add($byte)
+    }
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha256.ComputeHash($normalized.ToArray()))).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
 $inventoryAssertion = Assert-BoostLabInventoryBaseline -ProjectRoot $ProjectRoot -IncludeSourcePromoted
 $inventoryBaseline = $inventoryAssertion.Baseline
 
@@ -86,8 +116,11 @@ $orderPath = Join-Path $ProjectRoot 'config\UltimateParityExecutionOrder.psd1'
 $artifactPath = Join-Path $ProjectRoot 'config\ArtifactProvenance.psd1'
 $allowlistPath = Join-Path $ProjectRoot 'config\ProductionAllowlistGovernance.psd1'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
+$runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
+$runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+$didsNipPayloadPath = Join-Path $ProjectRoot 'runtime-payloads\driver-install-debloat-settings\inspector.nip'
 
-foreach ($path in @($modulePath, $sourcePath, $stagesPath, $parityPath, $orderPath, $artifactPath, $allowlistPath, $actionPlanPath)) {
+foreach ($path in @($modulePath, $sourcePath, $stagesPath, $parityPath, $orderPath, $artifactPath, $allowlistPath, $actionPlanPath, $runtimePayloadManifestPath, $runtimePayloadHelperPath, $didsNipPayloadPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required file is missing: $path"
 }
 
@@ -155,6 +188,7 @@ Assert-BoostLabCondition (-not [bool]$tool.Capabilities.SupportsDefault) 'Suppor
 Assert-BoostLabCondition (-not [bool]$tool.Capabilities.SupportsRestore) 'SupportsRestore must remain false.'
 
 Import-Module -Name $actionPlanPath -Force -ErrorAction Stop
+Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
 $applyActionPlan = New-BoostLabActionPlan -ToolMetadata $tool -ActionName 'Apply'
 $applyActionPlanText = @(
     [string]$applyActionPlan.Summary
@@ -353,7 +387,116 @@ try {
     $nipOperation = Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'WriteTextFile' -LabelNeedle '.nip'
     Assert-BoostLabCondition ($null -ne $nipOperation) 'NVIDIA plan must write the .nip profile.'
     Assert-BoostLabCondition ([int]$nipOperation.Parameters.ProfileSettingCount -eq 31) 'NVIDIA .nip profile must preserve 31 settings.'
+    Assert-BoostLabCondition ([string]$nipOperation.Parameters.PayloadId -eq 'driver-install-debloat-settings-nvidia-profile') 'NVIDIA .nip operation must use the runtime payload id.'
+    Assert-BoostLabCondition ([string]$nipOperation.Parameters.PayloadContentSource -eq 'RuntimePayload') 'NVIDIA .nip operation must prefer the generated runtime payload.'
+    Assert-BoostLabCondition ([string]$nipOperation.Parameters.PayloadChecksumStatus -eq 'Passed') 'NVIDIA .nip runtime payload hash must pass before use.'
+    Assert-BoostLabCondition ([string]$nipOperation.Parameters.PayloadVerificationMode -in @('ExactRawSha256', 'CanonicalTextSha256')) 'NVIDIA .nip runtime payload verification mode mismatch.'
+    Assert-BoostLabCondition (-not [bool]$nipOperation.Parameters.RuntimePayloadFallbackUsed) 'NVIDIA .nip operation must not use protected source fallback while the runtime payload is valid.'
+    Assert-BoostLabCondition (-not [bool]$nipOperation.Parameters.RuntimePayloadUsedProtectedSource) 'NVIDIA .nip operation must not read protected source while the runtime payload is valid.'
+    Assert-BoostLabCondition ([string]$nipOperation.Parameters.RuntimePayloadPath -like '*runtime-payloads*driver-install-debloat-settings*inspector.nip') 'NVIDIA .nip operation must resolve the generated payload path.'
+    $sourceNipContent = & $module {
+        Get-BoostLabDriverInstallDebloatSettingsNipContentFromSource
+    }
+    $operationNipCanonical = Get-BoostLabCanonicalTextHashFromString -Text ([string]$nipOperation.Parameters.Content)
+    $sourceNipCanonical = Get-BoostLabCanonicalTextHashFromString -Text ([string]$sourceNipContent)
+    Assert-BoostLabCondition ($operationNipCanonical -eq $sourceNipCanonical) 'Runtime payload .nip content must remain equivalent to the source-derived .nip content.'
+    [xml]$nipXml = [string]$nipOperation.Parameters.Content
+    $profileSettings = @($nipXml.ArrayOfProfile.Profile.Settings.ProfileSetting)
+    Assert-BoostLabCondition ($profileSettings.Count -eq 31) 'Generated .nip payload must contain exactly 31 Profile Inspector settings.'
+    $settingsByName = @{}
+    foreach ($profileSetting in $profileSettings) {
+        $settingsByName[[string]$profileSetting.SettingNameInfo] = $profileSetting
+    }
+    $expectedNipValues = [ordered]@{
+        'Frame Rate Limiter V3' = '0'
+        'GSYNC - Application Mode' = '0'
+        'GSYNC - Application State' = '4'
+        'GSYNC - Global Feature' = '0'
+        'GSYNC - Global Mode' = '0'
+        'GSYNC - Indicator Overlay' = '0'
+        'Maximum Pre-Rendered Frames' = '1'
+        'Preferred Refresh Rate' = '1'
+        'Ultra Low Latency - CPL State' = '2'
+        'Ultra Low Latency - Enabled' = '1'
+        'Vertical Sync' = '138504007'
+        'Vertical Sync - Smooth AFR Behavior' = '0'
+        'Vertical Sync - Tear Control' = '2525368439'
+        'CUDA - Force P2 State' = '0'
+        'CUDA - Sysmem Fallback Policy' = '1'
+        'Power Management - Mode' = '1'
+        'Shader Cache - Cache Size' = '4294967295'
+        'Threaded Optimization' = '1'
+        'Preferred OpenGL GPU' = 'id,2.0:268410DE,00000100,GF - (400,2,161,24564) @ (0)'
+    }
+    foreach ($settingName in $expectedNipValues.Keys) {
+        Assert-BoostLabCondition ($settingsByName.ContainsKey($settingName)) "Generated .nip payload is missing setting: $settingName"
+        Assert-BoostLabCondition ([string]$settingsByName[$settingName].SettingValue -eq [string]$expectedNipValues[$settingName]) "Generated .nip payload value changed for $settingName."
+    }
     Assert-BoostLabCondition ($null -ne (Get-BoostLabOperationByTypeAndLabel -Operations $nvidiaPlan.Operations -Type 'StartProcess' -LabelNeedle 'Import NVIDIA Profile Inspector')) 'NVIDIA plan must import Profile Inspector .nip.'
+
+    $runtimePayloadManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $payloadStatus = @(Test-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -PayloadId 'driver-install-debloat-settings-nvidia-profile' -Manifest $runtimePayloadManifest | Select-Object -First 1)
+    Assert-BoostLabCondition ($payloadStatus.Count -eq 1) 'DIDS .nip runtime payload status should resolve exactly once.'
+    Assert-BoostLabCondition ([string]$payloadStatus[0].ChecksumStatus -eq 'Passed') 'DIDS .nip runtime payload status must pass hash validation.'
+    Assert-BoostLabCondition (-not [bool]$payloadStatus[0].ExternalRuntimeBlocked) 'DIDS .nip runtime payload status must no longer be externally blocked.'
+
+    $tempPayloadRoot = Join-Path ([IO.Path]::GetTempPath()) ('BoostLabDidsNipPayload-' + [guid]::NewGuid().ToString('N'))
+    New-Item -Path $tempPayloadRoot -ItemType Directory -Force | Out-Null
+    try {
+        $validExternalRoot = Join-Path $tempPayloadRoot 'valid-external'
+        $validExternalPayload = Join-Path $validExternalRoot 'runtime-payloads\driver-install-debloat-settings\inspector.nip'
+        New-Item -Path (Split-Path -Parent $validExternalPayload) -ItemType Directory -Force | Out-Null
+        Copy-Item -LiteralPath $didsNipPayloadPath -Destination $validExternalPayload -Force
+        $externalValid = & $module {
+            param($Root, $Manifest)
+            Resolve-BoostLabDriverInstallDebloatSettingsNipPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $validExternalRoot $runtimePayloadManifest
+        Assert-BoostLabCondition ([bool]$externalValid.Success) 'ExternalRuntime with a valid DIDS .nip payload should resolve successfully.'
+        Assert-BoostLabCondition ([string]$externalValid.ContentSource -eq 'RuntimePayload') 'ExternalRuntime valid DIDS .nip must use runtime payload content.'
+        Assert-BoostLabCondition (-not [bool]$externalValid.UsedProtectedSource) 'ExternalRuntime valid DIDS .nip must not read protected source text.'
+        Assert-BoostLabCondition (-not [bool]$externalValid.RequiresProtectedSource) 'ExternalRuntime valid DIDS .nip must not require protected source folders.'
+        Assert-BoostLabCondition (-not (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-ultimate') -PathType Container)) 'ExternalRuntime valid-payload temp root should not contain source-ultimate.'
+        Assert-BoostLabCondition ((Get-BoostLabCanonicalTextHashFromString -Text ([string]$externalValid.Content)) -eq $sourceNipCanonical) 'ExternalRuntime valid DIDS .nip content must match source-derived canonical content.'
+
+        $missingExternalRoot = Join-Path $tempPayloadRoot 'missing-external'
+        New-Item -Path $missingExternalRoot -ItemType Directory -Force | Out-Null
+        $externalMissing = & $module {
+            param($Root, $Manifest)
+            Resolve-BoostLabDriverInstallDebloatSettingsNipPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $missingExternalRoot $runtimePayloadManifest
+        Assert-BoostLabCondition (-not [bool]$externalMissing.Success) 'ExternalRuntime missing DIDS .nip payload should fail closed.'
+        Assert-BoostLabCondition ([string]$externalMissing.Status -eq 'RuntimePayloadUnavailable') 'ExternalRuntime missing DIDS .nip status mismatch.'
+        Assert-BoostLabCondition ([string]$externalMissing.PayloadChecksumStatus -eq 'Missing') 'ExternalRuntime missing DIDS .nip checksum status mismatch.'
+        Assert-BoostLabCondition (-not [bool]$externalMissing.UsedProtectedSource) 'ExternalRuntime missing DIDS .nip must not fall back to protected source.'
+        Assert-BoostLabCondition ([string]$externalMissing.Message -like '*cannot fall back to protected source text*') 'ExternalRuntime missing DIDS .nip must explain source fallback is blocked.'
+
+        $invalidExternalRoot = Join-Path $tempPayloadRoot 'invalid-external'
+        $invalidExternalPayload = Join-Path $invalidExternalRoot 'runtime-payloads\driver-install-debloat-settings\inspector.nip'
+        New-Item -Path (Split-Path -Parent $invalidExternalPayload) -ItemType Directory -Force | Out-Null
+        Set-Content -LiteralPath $invalidExternalPayload -Value '<ArrayOfProfile>mutated</ArrayOfProfile>' -Encoding UTF8
+        $externalInvalid = & $module {
+            param($Root, $Manifest)
+            Resolve-BoostLabDriverInstallDebloatSettingsNipPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $invalidExternalRoot $runtimePayloadManifest
+        Assert-BoostLabCondition (-not [bool]$externalInvalid.Success) 'ExternalRuntime invalid DIDS .nip payload should fail closed.'
+        Assert-BoostLabCondition ([string]$externalInvalid.PayloadChecksumStatus -eq 'Failed') 'ExternalRuntime invalid DIDS .nip checksum status mismatch.'
+        Assert-BoostLabCondition (-not [bool]$externalInvalid.UsedProtectedSource) 'ExternalRuntime invalid DIDS .nip must not fall back to protected source.'
+
+        $internalFallbackManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+        $internalFallbackManifest.Entries['driver-install-debloat-settings-nvidia-profile'].RuntimePayloadRelativePath = 'runtime-payloads/driver-install-debloat-settings/missing-inspector.nip'
+        $internalFallback = & $module {
+            param($Root, $Manifest)
+            Resolve-BoostLabDriverInstallDebloatSettingsNipPayload -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+        } $ProjectRoot $internalFallbackManifest
+        Assert-BoostLabCondition ([bool]$internalFallback.Success) 'InternalDevelopment missing DIDS .nip payload should use protected-source fallback when source is available.'
+        Assert-BoostLabCondition ([string]$internalFallback.ContentSource -eq 'ProtectedSourceFallback') 'InternalDevelopment missing DIDS .nip should report protected-source fallback.'
+        Assert-BoostLabCondition ([bool]$internalFallback.FallbackUsed) 'InternalDevelopment missing DIDS .nip should report fallback used.'
+        Assert-BoostLabCondition ([bool]$internalFallback.UsedProtectedSource) 'InternalDevelopment missing DIDS .nip should report protected source use.'
+        Assert-BoostLabCondition ((Get-BoostLabCanonicalTextHashFromString -Text ([string]$internalFallback.Content)) -eq $sourceNipCanonical) 'InternalDevelopment fallback DIDS .nip content must match source-derived canonical content.'
+    }
+    finally {
+        Remove-Item -LiteralPath $tempPayloadRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     $amdPlan = Get-BoostLabDriverInstallDebloatSettingsOperationPlan -Branch 'AMD'
     $amdXml = Get-BoostLabOperationByTypeAndLabel -Operations $amdPlan.Operations -Type 'EditXmlFiles' -LabelNeedle 'AMD XML'

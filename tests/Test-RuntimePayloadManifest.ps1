@@ -236,8 +236,15 @@ foreach ($payloadStatus in $payloadStatuses) {
     Assert-BoostLabCondition ([string]$payloadStatus.ChecksumStatus -eq 'Passed') "Generated runtime payload hash mismatch: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition ([string]$payloadStatus.LengthStatus -eq 'Passed') "Generated runtime payload length mismatch: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition ([bool]$payloadStatus.PayloadArtifactReady) "Generated runtime payload should be artifact-ready: $($payloadStatus.PayloadId)"
-    Assert-BoostLabCondition ([bool]$payloadStatus.ExternalRuntimeBlocked) "Payload should remain externally blocked until module rewiring: $($payloadStatus.PayloadId)"
-    Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq 'InternalRuntimeStillUsesSource') "Payload blocker reason mismatch: $($payloadStatus.PayloadId)"
+    if ([string]$payloadStatus.PayloadId -eq 'driver-install-debloat-settings-nvidia-profile') {
+        Assert-BoostLabCondition (-not [bool]$payloadStatus.ExternalRuntimeBlocked) 'Driver Install Debloat & Settings .nip payload should be ready for external runtime.'
+        Assert-BoostLabCondition ([string]$payloadStatus.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') 'Driver Install Debloat & Settings .nip payload wiring status mismatch.'
+        Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq '') 'Driver Install Debloat & Settings .nip payload must not report a blocker reason.'
+    }
+    else {
+        Assert-BoostLabCondition ([bool]$payloadStatus.ExternalRuntimeBlocked) "Payload should remain externally blocked until module rewiring: $($payloadStatus.PayloadId)"
+        Assert-BoostLabCondition ([string]$payloadStatus.BlockerReason -eq 'InternalRuntimeStillUsesSource') "Payload blocker reason mismatch: $($payloadStatus.PayloadId)"
+    }
     Assert-BoostLabCondition (-not [bool]$payloadStatus.RuntimeActionExecuted) "Runtime payload verification must not execute runtime actions: $($payloadStatus.PayloadId)"
     Assert-BoostLabCondition (-not [bool]$payloadStatus.ChangesExecuted) "Runtime payload verification must not mutate state: $($payloadStatus.PayloadId)"
 }
@@ -247,7 +254,11 @@ Assert-BoostLabCondition ([int]$readiness.TotalPayloadEntries -eq 5) 'Runtime pa
 Assert-BoostLabCondition ([int]$readiness.GeneratedRuntimePayloadAvailableEntries -eq 5) 'All generated runtime payload artifacts should be available.'
 Assert-BoostLabCondition ([int]$readiness.MissingPayloadEntries -eq 0) 'Generated runtime payload readiness must not report missing payloads.'
 Assert-BoostLabCondition ([int]$readiness.FailedPayloadEntries -eq 0) 'Generated runtime payload readiness must not report failed payloads.'
-Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 5) 'This phase must leave all generated payloads unwired from runtime modules.'
+Assert-BoostLabCondition ([int]$readiness.NotWiredPayloadEntries -eq 4) 'Only four generated payload entries should remain unwired after the DIDS .nip rewire.'
+Assert-BoostLabCondition ([int]$readiness.RuntimeWiredPayloadEntries -eq 1) 'Exactly one generated payload entry should be runtime-wired.'
+Assert-BoostLabCondition ([int]$readiness.BlockedPayloadEntries -eq 4) 'Exactly four generated payload entries should remain external runtime blockers.'
+Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -in @($readiness.ReadyForExternalRuntimePayloadIds)) 'DIDS .nip payload should be listed as ready for external runtime.'
+Assert-BoostLabCondition ('driver-install-debloat-settings-nvidia-profile' -notin @($readiness.RuntimePayloadBlockerIds)) 'DIDS .nip payload must not remain in the runtime payload blocker list.'
 Assert-BoostLabCondition (-not [bool]$readiness.ExternalRuntimeReady) 'External runtime must not claim readiness while modules still use protected source paths.'
 Assert-BoostLabCondition (-not [bool]$readiness.RuntimeActionExecuted) 'Readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$readiness.ChangesExecuted) 'Readiness reporting must not mutate state.'
@@ -266,6 +277,12 @@ Assert-BoostLabCondition ($timerPayload.Count -eq 1) 'Timer Resolution runtime p
 Assert-BoostLabCondition ([bool]$timerPayload[0].PayloadExists) 'Timer Resolution runtime payload should exist.'
 Assert-BoostLabCondition ([bool]$timerPayload[0].ExternalRuntimeBlocked) 'Timer Resolution runtime payload should remain externally blocked until rewiring.'
 Assert-BoostLabCondition (-not [bool]$timerPayload[0].RuntimeActionExecuted) 'Runtime payload resolution must not execute runtime actions.'
+
+$didsPayload = @(Resolve-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -PayloadId 'driver-install-debloat-settings-nvidia-profile' -Manifest $manifest)
+Assert-BoostLabCondition ($didsPayload.Count -eq 1) 'Driver Install Debloat & Settings runtime payload should resolve exactly once.'
+Assert-BoostLabCondition ([bool]$didsPayload[0].PayloadExists) 'Driver Install Debloat & Settings runtime payload should exist.'
+Assert-BoostLabCondition (-not [bool]$didsPayload[0].ExternalRuntimeBlocked) 'Driver Install Debloat & Settings .nip payload should no longer be an external runtime blocker.'
+Assert-BoostLabCondition (-not [bool]$didsPayload[0].RuntimeActionExecuted) 'Runtime payload resolution must not execute runtime actions.'
 
 $defenderPayloads = @(Resolve-BoostLabRuntimePayload -ProjectRoot $ProjectRoot -ToolId 'defender-optimize-assistant' -Manifest $manifest)
 Assert-BoostLabCondition ($defenderPayloads.Count -eq 2) 'Defender Optimize Assistant should have two generated script payload entries.'
@@ -315,7 +332,8 @@ $modulesWithRuntimePayloads = @(
             (Get-Content -LiteralPath $_.FullName -Raw).Contains('RuntimePayload')
         }
 )
-Assert-BoostLabCondition ($modulesWithRuntimePayloads.Count -eq 0) 'This phase must not wire runtime payloads into tool modules.'
+$moduleRelativePathsWithRuntimePayloads = @($modulesWithRuntimePayloads | ForEach-Object { $_.FullName.Substring($ProjectRoot.Length + 1).Replace('\', '/') } | Sort-Object)
+Assert-BoostLabCondition (($moduleRelativePathsWithRuntimePayloads -join '|') -eq 'modules/Graphics/driver-install-debloat-settings.psm1') "Only Driver Install Debloat & Settings may be wired to runtime payloads in this phase: $($moduleRelativePathsWithRuntimePayloads -join ', ')"
 
 $gitPath = Get-BoostLabGitExecutable
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($gitPath)) 'Git executable was not found for protected source/intake working-tree guard.'
@@ -333,9 +351,10 @@ Assert-BoostLabCondition ($protectedSourceChanges.Count -eq 0) "Protected source
     HighRiskBlockerTools = $actualHighRiskTools
     ExternalRuntimeReady = [bool]$readiness.ExternalRuntimeReady
     NotWiredPayloadEntries = [int]$readiness.NotWiredPayloadEntries
+    RuntimeWiredPayloadEntries = [int]$readiness.RuntimeWiredPayloadEntries
     RuntimeActionExecuted = $false
     SourceUltimateUntouched = $true
     SourceExtraUntouched = $true
     IntakeUntouched = $true
-    Message = 'Generated runtime payload artifacts are present, hash-verified, source-extraction equivalent, and intentionally not wired into runtime modules yet.'
+    Message = 'Generated runtime payload artifacts are present and hash-verified; DIDS .nip is runtime-wired while the other generated payloads remain blocked.'
 }

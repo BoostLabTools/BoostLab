@@ -7,7 +7,7 @@
     PayloadRoot = 'runtime-payloads'
     CustomerVisible = $false
     DefaultMode = 'InternalDevelopment'
-    ExternalRuntimeStatus = 'PayloadArtifactsAvailableButModulesStillSourceBacked'
+    ExternalRuntimeStatus = 'OnePayloadRuntimeWiredButExternalRuntimeStillBlocked'
     Entries = @{
         'defender-optimize-apply-script' = @{
             PayloadId = 'defender-optimize-apply-script'
@@ -76,13 +76,13 @@
             ExpectedLengthBytes = 7712
             ExtractionMode = 'StaticProtectedSourceRead'
             ExternalHandling = 'GeneratedRuntimePayloadAvailable'
-            RuntimeWiringStatus = 'InternalRuntimeStillUsesSource'
+            RuntimeWiringStatus = 'ReadyForExternalRuntime'
             CustomerVisible = $false
             HighRiskBlocker = $true
             SourceExecutionRequired = $false
             RuntimeActionExecuted = $false
             ChangesExecuted = $false
-            Notes = 'NVIDIA Profile Inspector profile payload is available as a hashed artifact, but Driver Install Debloat & Settings still reads the protected source internally.'
+            Notes = 'NVIDIA Profile Inspector profile payload is available as a hashed artifact and Driver Install Debloat & Settings resolves it through the runtime payload helper; protected source fallback remains internal-development only.'
         }
         'start-menu-taskbar-start2-bin' = @{
             PayloadId = 'start-menu-taskbar-start2-bin'

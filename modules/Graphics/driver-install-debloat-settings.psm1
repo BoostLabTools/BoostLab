@@ -40,9 +40,19 @@ $script:BoostLabImplementedActions = @('Analyze', 'Open', 'Apply', 'Default', 'R
 $script:BoostLabExpectedSourceHash = 'E69EFF538E7CE6108233C525A2BB88BA2D549CE6954AE751BE7BED778271C26F'
 $script:BoostLabExpectedCanonicalSourceHash = '00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3'
 $script:BoostLabSourceRelativePath = 'source-ultimate/5 Graphics/1 Driver Install Debloat & Settings.ps1'
+$script:BoostLabNipRuntimePayloadId = 'driver-install-debloat-settings-nvidia-profile'
+$script:BoostLabRuntimePackageModeEnvironmentVariable = 'BOOSTLAB_RUNTIME_PACKAGE_MODE'
 $script:BoostLabApprovedBranches = @('NVIDIA', 'AMD', 'INTEL')
 $script:BoostLabNvidiaControlPanelShellTarget = 'shell:appsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel'
 $script:BoostLabRefreshRateConfirmationPrompt = 'Have you adjusted the refresh rate and are you ready to restart?'
+
+function Get-BoostLabDriverInstallDebloatSettingsProjectRoot {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    return (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+}
 
 function Invoke-BoostLabDriverInstallDebloatSettingsVerifiedArtifactDownload {
     param(
@@ -66,7 +76,7 @@ function Get-BoostLabDriverInstallDebloatSettingsSourcePath {
     [OutputType([string])]
     param()
 
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $projectRoot = Get-BoostLabDriverInstallDebloatSettingsProjectRoot
     return Join-Path $projectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
 }
 
@@ -76,7 +86,7 @@ function Get-BoostLabDriverInstallDebloatSettingsSourceStatus {
     param()
 
     $sourcePath = Get-BoostLabDriverInstallDebloatSettingsSourcePath
-    $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $projectRoot = Get-BoostLabDriverInstallDebloatSettingsProjectRoot
     $sourceVerificationModulePath = Join-Path $projectRoot 'core\SourceVerification.psm1'
     if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
         Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
@@ -316,12 +326,159 @@ function Add-BoostLabDriverInstallDebloatSettingsOperation {
     $Order.Value++
 }
 
-function Get-BoostLabDriverInstallDebloatSettingsNipContent {
+function ConvertTo-BoostLabDriverInstallDebloatSettingsRuntimePackageModeName {
+    param(
+        [AllowNull()]
+        [string]$Mode
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Mode)) {
+        return ''
+    }
+
+    $normalized = $Mode.Trim().Replace('-', '').Replace('_', '').ToLowerInvariant()
+    switch ($normalized) {
+        'internal' { return 'InternalDevelopment' }
+        'internaldevelopment' { return 'InternalDevelopment' }
+        'development' { return 'InternalDevelopment' }
+        'external' { return 'ExternalRuntime' }
+        'externalruntime' { return 'ExternalRuntime' }
+        'runtime' { return 'ExternalRuntime' }
+        default {
+            throw "Unsupported BoostLab runtime package mode: $Mode"
+        }
+    }
+}
+
+function Get-BoostLabDriverInstallDebloatSettingsRuntimePackageMode {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [AllowEmptyString()]
+        [string]$EnvironmentMode = $null
+    )
+
+    if ($null -eq $EnvironmentMode) {
+        $EnvironmentMode = [Environment]::GetEnvironmentVariable($script:BoostLabRuntimePackageModeEnvironmentVariable, 'Process')
+    }
+
+    $requested = ConvertTo-BoostLabDriverInstallDebloatSettingsRuntimePackageModeName -Mode $RequestedMode
+    $environmentRequested = ConvertTo-BoostLabDriverInstallDebloatSettingsRuntimePackageModeName -Mode $EnvironmentMode
+    $mode = if (-not [string]::IsNullOrWhiteSpace($requested)) {
+        $requested
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($environmentRequested)) {
+        $environmentRequested
+    }
+    else {
+        'InternalDevelopment'
+    }
+
+    [pscustomobject]@{
+        Mode = $mode
+        RequestedMode = $requested
+        EnvironmentMode = $environmentRequested
+        IsInternalDevelopment = ($mode -eq 'InternalDevelopment')
+        IsExternalRuntime = ($mode -eq 'ExternalRuntime')
+    }
+}
+
+function Get-BoostLabDriverInstallDebloatSettingsRuntimePayloadStatus {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$ProjectRoot = (Get-BoostLabDriverInstallDebloatSettingsProjectRoot),
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
+    )
+
+    $runtimePayloadModulePath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabRuntimePayload' -ErrorAction SilentlyContinue)) {
+        if (-not (Test-Path -LiteralPath $runtimePayloadModulePath -PathType Leaf)) {
+            return [pscustomobject]@{
+                PayloadId = $script:BoostLabNipRuntimePayloadId
+                PayloadPath = ''
+                Exists = $false
+                ChecksumStatus = 'Missing'
+                LengthStatus = 'Missing'
+                VerificationMode = 'Missing'
+                RuntimeWiringStatus = ''
+                ExternalRuntimeBlocked = $true
+                Error = "Runtime payload helper was not found: $runtimePayloadModulePath"
+            }
+        }
+
+        Import-Module -Name $runtimePayloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $parameters = @{
+        PayloadId = $script:BoostLabNipRuntimePayloadId
+        ProjectRoot = $ProjectRoot
+    }
+    if ($null -ne $PayloadManifest) {
+        $parameters['Manifest'] = $PayloadManifest
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($PayloadManifestPath)) {
+        $parameters['ManifestPath'] = $PayloadManifestPath
+    }
+
+    $status = @(Test-BoostLabRuntimePayload @parameters | Select-Object -First 1)
+    if ($status.Count -ne 1) {
+        return [pscustomobject]@{
+            PayloadId = $script:BoostLabNipRuntimePayloadId
+            PayloadPath = ''
+            Exists = $false
+            ChecksumStatus = 'Missing'
+            LengthStatus = 'Missing'
+            VerificationMode = 'Missing'
+            RuntimeWiringStatus = ''
+            ExternalRuntimeBlocked = $true
+            Error = 'Driver Install Debloat & Settings runtime payload manifest entry was not found.'
+        }
+    }
+
+    return $status[0]
+}
+
+function Test-BoostLabDriverInstallDebloatSettingsSourceFileChecksum {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SourcePath,
+
+        [string]$ProjectRoot = (Get-BoostLabDriverInstallDebloatSettingsProjectRoot)
+    )
+
+    $sourceVerificationModulePath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabSourceChecksum' -ErrorAction SilentlyContinue)) {
+        Import-Module -Name $sourceVerificationModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    return Test-BoostLabSourceChecksum `
+        -LiteralPath $SourcePath `
+        -ExpectedSha256 $script:BoostLabExpectedSourceHash `
+        -ExpectedCanonicalSha256 $script:BoostLabExpectedCanonicalSourceHash
+}
+
+function Get-BoostLabDriverInstallDebloatSettingsNipContentFromSource {
     [CmdletBinding()]
     [OutputType([string])]
-    param()
+    param(
+        [string]$ProjectRoot = (Get-BoostLabDriverInstallDebloatSettingsProjectRoot)
+    )
 
-    $sourcePath = Get-BoostLabDriverInstallDebloatSettingsSourcePath
+    $sourcePath = Join-Path $ProjectRoot ($script:BoostLabSourceRelativePath -replace '/', '\')
+    $sourceStatus = Test-BoostLabDriverInstallDebloatSettingsSourceFileChecksum -SourcePath $sourcePath -ProjectRoot $ProjectRoot
+    if ([string]$sourceStatus.ChecksumStatus -ne 'Passed') {
+        throw 'Driver Install Debloat & Settings protected source checksum verification failed; .nip fallback extraction is blocked.'
+    }
+
     $lines = Get-Content -LiteralPath $sourcePath
     $start = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -346,6 +503,182 @@ function Get-BoostLabDriverInstallDebloatSettingsNipContent {
     }
 
     return (($lines[$start..$end]) -join "`r`n")
+}
+
+function Resolve-BoostLabDriverInstallDebloatSettingsNipPayload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [string]$ProjectRoot = (Get-BoostLabDriverInstallDebloatSettingsProjectRoot),
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    $mode = Get-BoostLabDriverInstallDebloatSettingsRuntimePackageMode -RequestedMode $RequestedMode
+    $payloadStatus = Get-BoostLabDriverInstallDebloatSettingsRuntimePayloadStatus `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath
+
+    if ([string]$payloadStatus.ChecksumStatus -eq 'Passed') {
+        try {
+            $content = Get-Content -LiteralPath ([string]$payloadStatus.PayloadPath) -Raw -ErrorAction Stop
+            return [pscustomobject]@{
+                Success = $true
+                Status = 'RuntimePayloadVerified'
+                Message = 'Driver Install Debloat & Settings .nip runtime payload verified.'
+                RuntimePackageMode = [string]$mode.Mode
+                PayloadId = $script:BoostLabNipRuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+                PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+                PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                ContentSource = 'RuntimePayload'
+                Content = $content
+                UsedProtectedSource = $false
+                FallbackUsed = $false
+                RequiresProtectedSource = $false
+                ExternalRuntimeBlocked = $false
+                RuntimeActionExecuted = $false
+                ChangesExecuted = $false
+            }
+        }
+        catch {
+            $payloadStatus = [pscustomobject]@{
+                PayloadId = $script:BoostLabNipRuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                Exists = $true
+                ChecksumStatus = 'Failed'
+                LengthStatus = [string]$payloadStatus.LengthStatus
+                VerificationMode = 'ReadFailed'
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    $payloadMessage = if ([string]$payloadStatus.ChecksumStatus -eq 'Missing') {
+        'Driver Install Debloat & Settings .nip runtime payload is missing.'
+    }
+    elseif ([string]$payloadStatus.ChecksumStatus -eq 'Failed') {
+        'Driver Install Debloat & Settings .nip runtime payload failed hash validation.'
+    }
+    else {
+        "Driver Install Debloat & Settings .nip runtime payload is unavailable: $($payloadStatus.ChecksumStatus)."
+    }
+
+    if ([bool]$mode.IsExternalRuntime) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage ExternalRuntime mode cannot fall back to protected source text."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabNipRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $true
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    if (-not $AllowInternalSourceFallback) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage Internal source fallback was disabled."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabNipRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    try {
+        $sourceContent = Get-BoostLabDriverInstallDebloatSettingsNipContentFromSource -ProjectRoot $ProjectRoot
+        return [pscustomobject]@{
+            Success = $true
+            Status = 'ProtectedSourceFallbackUsed'
+            Message = "$payloadMessage InternalDevelopment mode used verified protected-source fallback."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabNipRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = 'ProtectedSourceFallback'
+            Content = $sourceContent
+            UsedProtectedSource = $true
+            FallbackUsed = $true
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'ProtectedSourceFallbackFailed'
+            Message = "$payloadMessage InternalDevelopment protected-source fallback failed: $($_.Exception.Message)"
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabNipRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+}
+
+function Get-BoostLabDriverInstallDebloatSettingsNipContent {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param()
+
+    $resolution = Resolve-BoostLabDriverInstallDebloatSettingsNipPayload
+    if (-not [bool]$resolution.Success) {
+        throw ([string]$resolution.Message)
+    }
+
+    return [string]$resolution.Content
 }
 
 function Add-BoostLabDriverInstallDebloatSettingsCommonOperations {
@@ -463,10 +796,36 @@ function Add-BoostLabDriverInstallDebloatSettingsNvidiaOperations {
         Destination = $Paths.NvidiaInspectorExe
         ArtifactId = 'driver-install-debloat-settings-inspector'
     })
+    $nipPayload = Resolve-BoostLabDriverInstallDebloatSettingsNipPayload
+    if (-not [bool]$nipPayload.Success) {
+        Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $branch 'Profile' 'RuntimePayloadUnavailable' 'Block NVIDIA Profile Inspector .nip payload use' 'BoostLab runtime payload validation blocked inspector.nip' ([ordered]@{
+            PayloadId = [string]$nipPayload.PayloadId
+            PayloadPath = [string]$nipPayload.PayloadPath
+            RuntimePackageMode = [string]$nipPayload.RuntimePackageMode
+            PayloadChecksumStatus = [string]$nipPayload.PayloadChecksumStatus
+            PayloadVerificationMode = [string]$nipPayload.PayloadVerificationMode
+            PayloadLengthStatus = [string]$nipPayload.PayloadLengthStatus
+            RuntimeWiringStatus = [string]$nipPayload.RuntimeWiringStatus
+            Message = [string]$nipPayload.Message
+            ExternalRuntimeBlocked = [bool]$nipPayload.ExternalRuntimeBlocked
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        })
+        return
+    }
+
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $branch 'Profile' 'WriteTextFile' 'Write source-defined NVIDIA Profile Inspector .nip file' 'Set-Content -Path "$env:SystemRoot\Temp\inspector.nip" -Value $nipfile -Force' ([ordered]@{
         Path = $Paths.NvidiaInspectorNip
-        Content = (Get-BoostLabDriverInstallDebloatSettingsNipContent)
+        Content = ([string]$nipPayload.Content)
         ProfileSettingCount = 31
+        PayloadId = [string]$nipPayload.PayloadId
+        RuntimePayloadPath = [string]$nipPayload.PayloadPath
+        RuntimePackageMode = [string]$nipPayload.RuntimePackageMode
+        PayloadChecksumStatus = [string]$nipPayload.PayloadChecksumStatus
+        PayloadVerificationMode = [string]$nipPayload.PayloadVerificationMode
+        PayloadContentSource = [string]$nipPayload.ContentSource
+        RuntimePayloadFallbackUsed = [bool]$nipPayload.FallbackUsed
+        RuntimePayloadUsedProtectedSource = [bool]$nipPayload.UsedProtectedSource
     })
     Add-BoostLabDriverInstallDebloatSettingsOperation $Operations $Order $branch 'Profile' 'StartProcess' 'Import NVIDIA Profile Inspector .nip file' 'Start-Process -wait "$env:SystemRoot\Temp\inspector.exe" -ArgumentList "-silentImport -silent $env:SystemRoot\Temp\inspector.nip"' ([ordered]@{
         FilePath = $Paths.NvidiaInspectorExe
@@ -843,6 +1202,25 @@ function Invoke-BoostLabDriverInstallDebloatSettingsRealOperation {
                     -Success $true `
                     -Message "Downloaded artifact from verified BoostLab mirror to $($p['Destination'])." `
                     -Data ([pscustomobject]@{ ArtifactId = [string]$download.ArtifactId; SourceUrl = [string]$download.SourceUrl })
+            }
+            'RuntimePayloadUnavailable' {
+                $data = [ordered]@{
+                    PayloadId = [string]$p['PayloadId']
+                    PayloadPath = [string]$p['PayloadPath']
+                    RuntimePackageMode = [string]$p['RuntimePackageMode']
+                    PayloadChecksumStatus = [string]$p['PayloadChecksumStatus']
+                    PayloadVerificationMode = [string]$p['PayloadVerificationMode']
+                    PayloadLengthStatus = [string]$p['PayloadLengthStatus']
+                    RuntimeWiringStatus = [string]$p['RuntimeWiringStatus']
+                    ExternalRuntimeBlocked = [bool]$p['ExternalRuntimeBlocked']
+                    RuntimeActionExecuted = $false
+                    ChangesExecuted = $false
+                }
+                return New-BoostLabDriverInstallDebloatSettingsOperationResult `
+                    -Operation $Operation `
+                    -Success $false `
+                    -Message ([string]$p['Message']) `
+                    -Data ([pscustomobject]$data)
             }
             'OpenNvidiaControlPanelForRefreshRate' {
                 $filePath = [string]$p['FilePath']

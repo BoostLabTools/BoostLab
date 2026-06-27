@@ -393,7 +393,9 @@ function Get-BoostLabRuntimePayloadReadiness {
     $available = @($payloadStatuses | Where-Object { [bool]$_.PayloadArtifactReady })
     $failed = @($payloadStatuses | Where-Object { [string]$_.ChecksumStatus -eq 'Failed' })
     $missing = @($payloadStatuses | Where-Object { [string]$_.ChecksumStatus -eq 'Missing' })
+    $blockedPayloads = @($payloadStatuses | Where-Object { [bool]$_.ExternalRuntimeBlocked })
     $notWired = @($entries | Where-Object { [string]$_.RuntimeWiringStatus -ne $script:BoostLabRuntimePayloadExternalReadyState })
+    $runtimeWired = @($entries | Where-Object { [string]$_.RuntimeWiringStatus -eq $script:BoostLabRuntimePayloadExternalReadyState })
     $highRiskTools = @(
         $entries |
             Where-Object { [bool](Get-BoostLabRuntimePayloadPropertyValue -InputObject $_ -Name 'HighRiskBlocker' -DefaultValue $false) } |
@@ -407,13 +409,20 @@ function Get-BoostLabRuntimePayloadReadiness {
         MissingPayloadEntries = [int]$missing.Count
         FailedPayloadEntries = [int]$failed.Count
         NotWiredPayloadEntries = [int]$notWired.Count
-        RuntimeWiredPayloadEntries = [int]($entries.Count - $notWired.Count)
+        RuntimeWiredPayloadEntries = [int]$runtimeWired.Count
+        BlockedPayloadEntries = [int]$blockedPayloads.Count
+        RuntimePayloadBlockerIds = @($blockedPayloads | ForEach-Object { [string]$_.PayloadId } | Sort-Object)
+        RuntimePayloadBlockerTools = @($blockedPayloads | ForEach-Object { [string]$_.ToolId } | Sort-Object -Unique)
+        ReadyForExternalRuntimePayloadIds = @($runtimeWired | ForEach-Object { [string]$_.PayloadId } | Sort-Object)
         HighRiskBlockerToolCount = [int]$highRiskTools.Count
         HighRiskBlockerTools = $highRiskTools
-        ExternalRuntimeReady = [bool]($entries.Count -gt 0 -and $failed.Count -eq 0 -and $missing.Count -eq 0 -and $notWired.Count -eq 0)
+        ExternalRuntimeReady = [bool]($entries.Count -gt 0 -and $failed.Count -eq 0 -and $missing.Count -eq 0 -and $blockedPayloads.Count -eq 0)
         RuntimeActionExecuted = $false
         ChangesExecuted = $false
-        Message = if ($failed.Count -eq 0 -and $missing.Count -eq 0 -and $notWired.Count -gt 0) {
+        Message = if ($failed.Count -eq 0 -and $missing.Count -eq 0 -and $blockedPayloads.Count -gt 0 -and $runtimeWired.Count -gt 0) {
+            'Some generated runtime payload artifacts are wired for external runtime, but other payload entries still use internal protected source paths.'
+        }
+        elseif ($failed.Count -eq 0 -and $missing.Count -eq 0 -and $blockedPayloads.Count -gt 0) {
             'Generated runtime payload artifacts are present and verified, but modules still use internal protected source paths.'
         }
         elseif ($failed.Count -eq 0 -and $missing.Count -eq 0) {
