@@ -33,9 +33,56 @@ $executionOrder = Get-BoostLabUltimateParityExecutionOrder -ProjectRoot $Project
 $configPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $modulePath = Join-Path $ProjectRoot 'modules\Advanced\timer-resolution-assistant.psm1'
 $sourcePath = Join-Path $ProjectRoot 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
+$runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
+$runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+$timerRuntimePayloadPath = Join-Path $ProjectRoot 'runtime-payloads\timer-resolution-assistant\SetTimerResolutionService.cs'
 $actionPlanPath = Join-Path $ProjectRoot 'core\ActionPlan.psm1'
 $executionPath = Join-Path $ProjectRoot 'core\Execution.psm1'
 $sourceRoot = Join-Path $ProjectRoot 'source-ultimate'
+foreach ($requiredPath in @($runtimePayloadManifestPath, $runtimePayloadHelperPath, $timerRuntimePayloadPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Timer Resolution runtime payload validation file is missing: $requiredPath"
+    }
+}
+
+function Get-BoostLabTimerTestSha256Hex {
+    param(
+        [Parameter(Mandatory)]
+        [byte[]]$Bytes
+    )
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        return ([BitConverter]::ToString($sha256.ComputeHash($Bytes))).Replace('-', '')
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
+function Get-BoostLabTimerTestCanonicalTextHash {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($Text)
+    $normalized = [Collections.Generic.List[byte]]::new($bytes.Length)
+    for ($index = 0; $index -lt $bytes.Length; $index++) {
+        $byte = $bytes[$index]
+        if ($byte -eq 0x0D) {
+            $normalized.Add([byte]0x0A)
+            if (($index + 1) -lt $bytes.Length -and $bytes[$index + 1] -eq 0x0A) {
+                $index++
+            }
+            continue
+        }
+
+        $normalized.Add($byte)
+    }
+
+    return Get-BoostLabTimerTestSha256Hex -Bytes ([byte[]]$normalized.ToArray())
+}
 
 $configuration = Import-PowerShellDataFile -LiteralPath $configPath
 $tools = @($configuration.Stages | ForEach-Object { $_.Tools })
@@ -169,6 +216,8 @@ else {
     }
 }
 
+$runtimeResolverTempRoot = ''
+Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
 $module = Import-Module -Name $modulePath -Force -PassThru -Prefix 'TimerTest' -Scope Local -DisableNameChecking -ErrorAction Stop
 try {
     $info = & (Get-Command -Name 'Get-TimerTestBoostLabToolInfo' -Module $module.Name -ErrorAction Stop)
@@ -204,10 +253,199 @@ try {
         [string]$analysis.InternalServiceName -ne 'STR' -or
         [string]$analysis.CompilerPath -ne 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' -or
         [string]$analysis.RegistryValueName -ne 'GlobalTimerResolutionRequests' -or
+        [string]$analysis.CSharpPayloadContentSource -ne 'RuntimePayload' -or
+        [string]$analysis.CSharpPayloadChecksumStatus -ne 'Passed' -or
+        [string]$analysis.CSharpPayloadRuntimeWiringStatus -ne 'ReadyForExternalRuntime' -or
+        [bool]$analysis.CSharpPayloadFallbackUsed -or
+        [bool]$analysis.CSharpPayloadUsedProtectedSource -or
         @($analysis.Downloads).Count -ne 0 -or
         @($analysis.ExternalArtifacts).Count -ne 0
     ) {
-        throw 'Timer Resolution Assistant Analyze did not report the expected read-only source workflow.'
+        throw 'Timer Resolution Assistant Analyze did not report the expected read-only runtime payload workflow.'
+    }
+
+    $runtimePayloadManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $timerPayloadEntry = $runtimePayloadManifest.Entries['timer-resolution-csharp-service']
+    if ($null -eq $timerPayloadEntry) {
+        throw 'Timer Resolution runtime payload manifest entry is missing.'
+    }
+    if (
+        [string]$timerPayloadEntry.RuntimePayloadRelativePath -ne 'runtime-payloads/timer-resolution-assistant/SetTimerResolutionService.cs' -or
+        [string]$timerPayloadEntry.RuntimeWiringStatus -ne 'ReadyForExternalRuntime' -or
+        [string]$timerPayloadEntry.PayloadKind -ne 'Text' -or
+        [string]$timerPayloadEntry.HashMode -ne 'CanonicalText' -or
+        [string]$timerPayloadEntry.RuntimePayloadRelativePath -match '^(source-ultimate|source-extra|intake)(/|\\)'
+    ) {
+        throw 'Timer Resolution runtime payload manifest entry is not wired to the expected generated C# payload.'
+    }
+
+    $timerPayloadStatus = @(& $module {
+        param($Root, $Manifest)
+        Get-BoostLabTimerRuntimePayloadStatus -ProjectRoot $Root -PayloadManifest $Manifest
+    } $ProjectRoot $runtimePayloadManifest)
+    if (
+        $timerPayloadStatus.Count -ne 1 -or
+        [string]$timerPayloadStatus[0].ChecksumStatus -ne 'Passed' -or
+        [string]$timerPayloadStatus[0].LengthStatus -ne 'Passed' -or
+        [string]$timerPayloadStatus[0].RuntimeWiringStatus -ne 'ReadyForExternalRuntime' -or
+        [bool]$timerPayloadStatus[0].ExternalRuntimeBlocked
+    ) {
+        throw 'Timer Resolution runtime payload status should be verified and ready for external runtime.'
+    }
+
+    $runtimePayloadText = Get-Content -LiteralPath $timerRuntimePayloadPath -Raw
+    $sourcePayloadText = [string](& $module { Get-BoostLabTimerCSharpPayloadFromSource })
+    $runtimePayloadCanonical = Get-BoostLabTimerTestCanonicalTextHash -Text $runtimePayloadText
+    $sourcePayloadCanonical = Get-BoostLabTimerTestCanonicalTextHash -Text $sourcePayloadText
+    if ($runtimePayloadCanonical -ne $sourcePayloadCanonical) {
+        throw 'Timer Resolution runtime payload no longer matches protected source C# extraction.'
+    }
+    foreach ($requiredPayloadText in @('NtSetTimerResolution', 'NtQueryTimerResolution', 'ServiceAccount.LocalSystem', 'ServiceName = "STR"', 'Set Timer Resolution Service')) {
+        if (-not $runtimePayloadText.Contains($requiredPayloadText)) {
+            throw "Timer Resolution runtime C# payload is missing required source-intent text: $requiredPayloadText"
+        }
+    }
+
+    $internalValid = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $ProjectRoot $runtimePayloadManifest)
+    if (
+        $internalValid.Count -ne 1 -or
+        -not [bool]$internalValid[0].Success -or
+        [string]$internalValid[0].ContentSource -ne 'RuntimePayload' -or
+        [bool]$internalValid[0].FallbackUsed -or
+        [bool]$internalValid[0].UsedProtectedSource -or
+        [bool]$internalValid[0].RequiresProtectedSource
+    ) {
+        throw 'Timer Resolution InternalDevelopment valid payload should use the runtime artifact without protected-source fallback.'
+    }
+
+    $runtimeResolverTempRoot = Join-Path ([IO.Path]::GetTempPath()) ('BoostLab-TimerRuntime-{0}' -f ([guid]::NewGuid().ToString('N')))
+    New-Item -ItemType Directory -Path $runtimeResolverTempRoot -Force | Out-Null
+
+    $validExternalRoot = Join-Path $runtimeResolverTempRoot 'valid-external'
+    $validExternalPayloadPath = Join-Path $validExternalRoot 'runtime-payloads\timer-resolution-assistant\SetTimerResolutionService.cs'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $validExternalPayloadPath) -Force | Out-Null
+    Copy-Item -LiteralPath $timerRuntimePayloadPath -Destination $validExternalPayloadPath -Force
+    $validExternal = @(& $module {
+        param($Root, $Manifest, $SourcePath)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest -SourcePath $SourcePath
+    } $validExternalRoot $runtimePayloadManifest (Join-Path $validExternalRoot 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'))
+    if (
+        $validExternal.Count -ne 1 -or
+        -not [bool]$validExternal[0].Success -or
+        [string]$validExternal[0].ContentSource -ne 'RuntimePayload' -or
+        [bool]$validExternal[0].FallbackUsed -or
+        [bool]$validExternal[0].UsedProtectedSource -or
+        [bool]$validExternal[0].RequiresProtectedSource -or
+        [string]$validExternal[0].RuntimeWiringStatus -ne 'ReadyForExternalRuntime'
+    ) {
+        throw 'Timer Resolution ExternalRuntime valid payload should resolve without protected source.'
+    }
+    if (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-ultimate')) {
+        throw 'Timer Resolution ExternalRuntime valid payload test root must not contain source-ultimate.'
+    }
+    if (Test-Path -LiteralPath (Join-Path $validExternalRoot 'source-extra')) {
+        throw 'Timer Resolution ExternalRuntime valid payload test root must not contain source-extra.'
+    }
+    $validExternalCanonical = Get-BoostLabTimerTestCanonicalTextHash -Text ([string]$validExternal[0].Content)
+    if ($validExternalCanonical -ne $sourcePayloadCanonical) {
+        throw 'Timer Resolution ExternalRuntime valid payload content does not match source-derived C# content.'
+    }
+
+    $externalCompatibility = & (Get-Command -Name 'Test-TimerTestBoostLabToolCompatibility' -Module $module.Name -ErrorAction Stop) `
+        -OperatingSystem 'Windows_NT' `
+        -SystemDrive 'C:' `
+        -SystemRoot 'C:\Windows' `
+        -PathChecker { param($Path) return ($Path -in @('C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe', 'C:\Windows\System32\cmd.exe')) } `
+        -CommandResolver { param($CommandName) return [pscustomobject]@{ Name = $CommandName } } `
+        -RuntimePackageMode 'ExternalRuntime' `
+        -ProjectRoot $validExternalRoot `
+        -PayloadManifest $runtimePayloadManifest `
+        -SourcePath (Join-Path $validExternalRoot 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1')
+    if (
+        -not [bool]$externalCompatibility.Supported -or
+        [string]$externalCompatibility.CSharpPayloadContentSource -ne 'RuntimePayload' -or
+        [bool]$externalCompatibility.CSharpPayloadUsedProtectedSource -or
+        [bool]$externalCompatibility.CSharpPayloadRequiresProtectedSource
+    ) {
+        throw "Timer Resolution ExternalRuntime compatibility should pass with only the runtime payload present: $($externalCompatibility.Reason)"
+    }
+
+    $missingExternalRoot = Join-Path $runtimeResolverTempRoot 'missing-external'
+    New-Item -ItemType Directory -Path $missingExternalRoot -Force | Out-Null
+    $missingExternal = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $missingExternalRoot $runtimePayloadManifest)
+    if (
+        $missingExternal.Count -ne 1 -or
+        [bool]$missingExternal[0].Success -or
+        [string]$missingExternal[0].Status -ne 'RuntimePayloadUnavailable' -or
+        [string]$missingExternal[0].PayloadChecksumStatus -ne 'Missing' -or
+        [bool]$missingExternal[0].FallbackUsed -or
+        [bool]$missingExternal[0].UsedProtectedSource -or
+        [string]$missingExternal[0].Message -notlike '*cannot fall back to protected source text*'
+    ) {
+        throw 'Timer Resolution ExternalRuntime missing payload should fail closed without fallback.'
+    }
+
+    $invalidExternalRoot = Join-Path $runtimeResolverTempRoot 'invalid-external'
+    $invalidExternalPayloadPath = Join-Path $invalidExternalRoot 'runtime-payloads\timer-resolution-assistant\SetTimerResolutionService.cs'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $invalidExternalPayloadPath) -Force | Out-Null
+    Set-Content -LiteralPath $invalidExternalPayloadPath -Value 'invalid Timer runtime payload' -Encoding UTF8 -Force
+    $invalidExternal = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'ExternalRuntime' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $invalidExternalRoot $runtimePayloadManifest)
+    if (
+        $invalidExternal.Count -ne 1 -or
+        [bool]$invalidExternal[0].Success -or
+        [string]$invalidExternal[0].Status -ne 'RuntimePayloadUnavailable' -or
+        [string]$invalidExternal[0].PayloadChecksumStatus -ne 'Failed' -or
+        [bool]$invalidExternal[0].FallbackUsed -or
+        [bool]$invalidExternal[0].UsedProtectedSource
+    ) {
+        throw 'Timer Resolution ExternalRuntime invalid payload should fail closed without fallback.'
+    }
+
+    $internalMissingManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $internalMissingManifest.Entries['timer-resolution-csharp-service'].RuntimePayloadRelativePath = 'runtime-payloads/timer-resolution-assistant/missing-SetTimerResolutionService.cs'
+    $internalMissing = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $ProjectRoot $internalMissingManifest)
+    if (
+        $internalMissing.Count -ne 1 -or
+        -not [bool]$internalMissing[0].Success -or
+        [string]$internalMissing[0].ContentSource -ne 'ProtectedSourceFallback' -or
+        -not [bool]$internalMissing[0].FallbackUsed -or
+        -not [bool]$internalMissing[0].UsedProtectedSource -or
+        -not [bool]$internalMissing[0].RequiresProtectedSource
+    ) {
+        throw 'Timer Resolution InternalDevelopment missing payload should use verified protected-source fallback.'
+    }
+
+    $internalInvalidManifest = Import-PowerShellDataFile -LiteralPath $runtimePayloadManifestPath
+    $internalInvalidManifest.Entries['timer-resolution-csharp-service'].RawSha256 = '0000000000000000000000000000000000000000000000000000000000000000'
+    $internalInvalidManifest.Entries['timer-resolution-csharp-service'].CanonicalTextSha256 = '0000000000000000000000000000000000000000000000000000000000000000'
+    $internalInvalid = @(& $module {
+        param($Root, $Manifest)
+        Resolve-BoostLabTimerCSharpPayload -RequestedMode 'InternalDevelopment' -ProjectRoot $Root -PayloadManifest $Manifest
+    } $ProjectRoot $internalInvalidManifest)
+    if (
+        $internalInvalid.Count -ne 1 -or
+        -not [bool]$internalInvalid[0].Success -or
+        [string]$internalInvalid[0].ContentSource -ne 'ProtectedSourceFallback' -or
+        -not [bool]$internalInvalid[0].FallbackUsed -or
+        -not [bool]$internalInvalid[0].UsedProtectedSource
+    ) {
+        throw 'Timer Resolution InternalDevelopment invalid payload should use verified protected-source fallback.'
+    }
+    $internalInvalidCanonical = Get-BoostLabTimerTestCanonicalTextHash -Text ([string]$internalInvalid[0].Content)
+    if ($internalInvalidCanonical -ne $sourcePayloadCanonical) {
+        throw 'Timer Resolution InternalDevelopment fallback content changed.'
     }
 
     foreach ($actionName in @('Apply', 'Default')) {
@@ -285,6 +523,12 @@ try {
         if (
             -not $result.Success -or
             [string]$result.Data.SourceBranchLabel -ne [string]$case.Label -or
+            [string]$result.Data.CSharpPayloadContentSource -ne 'RuntimePayload' -or
+            [string]$result.Data.CSharpPayloadChecksumStatus -ne 'Passed' -or
+            [string]$result.Data.CSharpPayloadRuntimeWiringStatus -ne 'ReadyForExternalRuntime' -or
+            [bool]$result.Data.CSharpPayloadFallbackUsed -or
+            [bool]$result.Data.CSharpPayloadUsedProtectedSource -or
+            [bool]$result.Data.CSharpPayloadRequiresProtectedSource -or
             @($result.Data.Errors).Count -ne 0
         ) {
             throw "Mocked Timer Resolution Assistant $($case.Action) workflow did not return the expected structured result."
@@ -343,6 +587,9 @@ try {
     }
 }
 finally {
+    if (-not [string]::IsNullOrWhiteSpace($runtimeResolverTempRoot) -and (Test-Path -LiteralPath $runtimeResolverTempRoot)) {
+        Remove-Item -LiteralPath $runtimeResolverTempRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue
 }
 

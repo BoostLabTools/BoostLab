@@ -30,9 +30,12 @@ $script:BoostLabToolMetadata = [ordered]@{
 
 $script:BoostLabImplementedActions = @('Analyze', 'Apply', 'Default')
 $script:BoostLabProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$script:BoostLabTimerSourcePath = Join-Path $script:BoostLabProjectRoot 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
+$script:BoostLabTimerSourceRelativePath = 'source-ultimate\8 Advanced\6 Timer Resolution Assistant.ps1'
+$script:BoostLabTimerSourcePath = Join-Path $script:BoostLabProjectRoot ($script:BoostLabTimerSourceRelativePath -replace '/', '\')
 $script:BoostLabTimerSourceHash = '883F7CF4E6179383DE02E44B94FFC8DAFD380246751F1B1D81CAB8800B1E8621'
 $script:BoostLabTimerCanonicalSourceHash = '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
+$script:BoostLabRuntimePackageModeEnvironmentVariable = 'BOOSTLAB_RUNTIME_PACKAGE_MODE'
+$script:BoostLabTimerRuntimePayloadId = 'timer-resolution-csharp-service'
 $script:BoostLabTimerServiceName = 'Set Timer Resolution Service'
 $script:BoostLabTimerInternalServiceName = 'STR'
 $script:BoostLabTimerCompilerPath = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -162,7 +165,126 @@ function Get-BoostLabTimerSourceText {
     return Get-Content -Raw -LiteralPath $SourcePath
 }
 
-function Get-BoostLabTimerCSharpPayload {
+function ConvertTo-BoostLabTimerRuntimePackageModeName {
+    param(
+        [AllowNull()]
+        [string]$Mode
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Mode)) {
+        return ''
+    }
+
+    $normalized = $Mode.Trim().Replace('-', '').Replace('_', '').ToLowerInvariant()
+    switch ($normalized) {
+        'internal' { return 'InternalDevelopment' }
+        'internaldevelopment' { return 'InternalDevelopment' }
+        'development' { return 'InternalDevelopment' }
+        'external' { return 'ExternalRuntime' }
+        'externalruntime' { return 'ExternalRuntime' }
+        'runtime' { return 'ExternalRuntime' }
+        default {
+            throw "Unsupported BoostLab runtime package mode: $Mode"
+        }
+    }
+}
+
+function Get-BoostLabTimerRuntimePackageMode {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [AllowEmptyString()]
+        [string]$EnvironmentMode = $null
+    )
+
+    if ($null -eq $EnvironmentMode) {
+        $EnvironmentMode = [Environment]::GetEnvironmentVariable($script:BoostLabRuntimePackageModeEnvironmentVariable, 'Process')
+    }
+
+    $requested = ConvertTo-BoostLabTimerRuntimePackageModeName -Mode $RequestedMode
+    $environmentRequested = ConvertTo-BoostLabTimerRuntimePackageModeName -Mode $EnvironmentMode
+    $mode = if (-not [string]::IsNullOrWhiteSpace($requested)) {
+        $requested
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($environmentRequested)) {
+        $environmentRequested
+    }
+    else {
+        'InternalDevelopment'
+    }
+
+    [pscustomobject]@{
+        Mode = $mode
+        RequestedMode = $requested
+        EnvironmentMode = $environmentRequested
+        IsInternalDevelopment = ($mode -eq 'InternalDevelopment')
+        IsExternalRuntime = ($mode -eq 'ExternalRuntime')
+    }
+}
+
+function Get-BoostLabTimerRuntimePayloadStatus {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = ''
+    )
+
+    $runtimePayloadModulePath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+    if (-not (Get-Command -Name 'Test-BoostLabRuntimePayload' -ErrorAction SilentlyContinue)) {
+        if (-not (Test-Path -LiteralPath $runtimePayloadModulePath -PathType Leaf)) {
+            return [pscustomobject]@{
+                PayloadId = $script:BoostLabTimerRuntimePayloadId
+                PayloadPath = ''
+                Exists = $false
+                ChecksumStatus = 'Missing'
+                LengthStatus = 'Missing'
+                VerificationMode = 'Missing'
+                RuntimeWiringStatus = ''
+                ExternalRuntimeBlocked = $true
+                Error = "Runtime payload helper was not found: $runtimePayloadModulePath"
+            }
+        }
+
+        Import-Module -Name $runtimePayloadModulePath -Scope Local -Force -ErrorAction Stop
+    }
+
+    $parameters = @{
+        PayloadId = $script:BoostLabTimerRuntimePayloadId
+        ProjectRoot = $ProjectRoot
+    }
+    if ($null -ne $PayloadManifest) {
+        $parameters['Manifest'] = $PayloadManifest
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($PayloadManifestPath)) {
+        $parameters['ManifestPath'] = $PayloadManifestPath
+    }
+
+    $status = @(Test-BoostLabRuntimePayload @parameters | Select-Object -First 1)
+    if ($status.Count -ne 1) {
+        return [pscustomobject]@{
+            PayloadId = $script:BoostLabTimerRuntimePayloadId
+            PayloadPath = ''
+            Exists = $false
+            ChecksumStatus = 'Missing'
+            LengthStatus = 'Missing'
+            VerificationMode = 'Missing'
+            RuntimeWiringStatus = ''
+            ExternalRuntimeBlocked = $true
+            Error = 'Timer Resolution Assistant runtime payload manifest entry was not found.'
+        }
+    }
+
+    return $status[0]
+}
+
+function Get-BoostLabTimerCSharpPayloadFromSource {
     [CmdletBinding()]
     [OutputType([string])]
     param(
@@ -179,6 +301,218 @@ function Get-BoostLabTimerCSharpPayload {
         throw 'Unable to extract the source-defined Timer Resolution C# payload.'
     }
     return [string]$match.Groups['Content'].Value
+}
+
+function Resolve-BoostLabTimerCSharpPayload {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [string]$RequestedMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [string]$SourcePath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SourcePath)) {
+        $SourcePath = Join-Path $ProjectRoot ($script:BoostLabTimerSourceRelativePath -replace '/', '\')
+    }
+
+    $mode = Get-BoostLabTimerRuntimePackageMode -RequestedMode $RequestedMode
+    $payloadStatus = Get-BoostLabTimerRuntimePayloadStatus `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath
+
+    if ([string]$payloadStatus.ChecksumStatus -eq 'Passed') {
+        try {
+            $content = Get-Content -LiteralPath ([string]$payloadStatus.PayloadPath) -Raw -ErrorAction Stop
+            return [pscustomobject]@{
+                Success = $true
+                Status = 'RuntimePayloadVerified'
+                Message = 'Timer Resolution Assistant C# service runtime payload verified.'
+                RuntimePackageMode = [string]$mode.Mode
+                PayloadId = $script:BoostLabTimerRuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+                PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+                PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                ContentSource = 'RuntimePayload'
+                Content = $content
+                SourcePath = $SourcePath
+                SourceSha256 = ''
+                UsedProtectedSource = $false
+                FallbackUsed = $false
+                RequiresProtectedSource = $false
+                ExternalRuntimeBlocked = $false
+                RuntimeActionExecuted = $false
+                ChangesExecuted = $false
+            }
+        }
+        catch {
+            $payloadStatus = [pscustomobject]@{
+                PayloadId = $script:BoostLabTimerRuntimePayloadId
+                PayloadPath = [string]$payloadStatus.PayloadPath
+                Exists = $true
+                ChecksumStatus = 'Failed'
+                LengthStatus = [string]$payloadStatus.LengthStatus
+                VerificationMode = 'ReadFailed'
+                RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    $payloadMessage = if ([string]$payloadStatus.ChecksumStatus -eq 'Missing') {
+        'Timer Resolution Assistant C# service runtime payload is missing.'
+    }
+    elseif ([string]$payloadStatus.ChecksumStatus -eq 'Failed') {
+        'Timer Resolution Assistant C# service runtime payload failed hash validation.'
+    }
+    else {
+        "Timer Resolution Assistant C# service runtime payload is unavailable: $($payloadStatus.ChecksumStatus)."
+    }
+
+    if ([bool]$mode.IsExternalRuntime) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage ExternalRuntime mode cannot fall back to protected source text."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabTimerRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            SourcePath = $SourcePath
+            SourceSha256 = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $true
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    if (-not $AllowInternalSourceFallback) {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'RuntimePayloadUnavailable'
+            Message = "$payloadMessage Internal source fallback was disabled."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabTimerRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            SourcePath = $SourcePath
+            SourceSha256 = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $false
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+
+    try {
+        $sourceInfo = Assert-BoostLabTimerSourceIdentity -SourcePath $SourcePath
+        $sourceContent = Get-BoostLabTimerCSharpPayloadFromSource -SourcePath $SourcePath
+        return [pscustomobject]@{
+            Success = $true
+            Status = 'ProtectedSourceFallbackUsed'
+            Message = "$payloadMessage InternalDevelopment mode used verified protected-source fallback."
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabTimerRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = 'ProtectedSourceFallback'
+            Content = $sourceContent
+            SourcePath = $sourceInfo.SourcePath
+            SourceSha256 = $sourceInfo.ActualSha256
+            UsedProtectedSource = $true
+            FallbackUsed = $true
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Success = $false
+            Status = 'ProtectedSourceFallbackFailed'
+            Message = "$payloadMessage InternalDevelopment protected-source fallback failed: $($_.Exception.Message)"
+            RuntimePackageMode = [string]$mode.Mode
+            PayloadId = $script:BoostLabTimerRuntimePayloadId
+            PayloadPath = [string]$payloadStatus.PayloadPath
+            PayloadChecksumStatus = [string]$payloadStatus.ChecksumStatus
+            PayloadVerificationMode = [string]$payloadStatus.VerificationMode
+            PayloadLengthStatus = [string]$payloadStatus.LengthStatus
+            RuntimeWiringStatus = [string]$payloadStatus.RuntimeWiringStatus
+            ContentSource = ''
+            Content = ''
+            SourcePath = $SourcePath
+            SourceSha256 = ''
+            UsedProtectedSource = $false
+            FallbackUsed = $false
+            RequiresProtectedSource = $true
+            ExternalRuntimeBlocked = $false
+            RuntimeActionExecuted = $false
+            ChangesExecuted = $false
+        }
+    }
+}
+
+function Get-BoostLabTimerCSharpPayload {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [string]$SourcePath = $script:BoostLabTimerSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
+    )
+
+    $resolution = Resolve-BoostLabTimerCSharpPayload `
+        -RequestedMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath `
+        -SourcePath $SourcePath `
+        -AllowInternalSourceFallback $AllowInternalSourceFallback
+    if (-not [bool]$resolution.Success) {
+        throw ([string]$resolution.Message)
+    }
+
+    return [string]$resolution.Content
 }
 
 function Get-BoostLabTimerPaths {
@@ -203,22 +537,39 @@ function Get-BoostLabTimerResolutionAnalyzeData {
     param(
         [string]$SourcePath = $script:BoostLabTimerSourcePath,
 
-        [string]$SystemDrive = $env:SystemDrive
+        [string]$SystemDrive = $env:SystemDrive,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
     )
 
-    $sourceInfo = Get-BoostLabTimerSourceInfo -SourcePath $SourcePath
     $paths = Get-BoostLabTimerPaths -SystemDrive $SystemDrive
-    $payload = if ($sourceInfo.HashMatches) {
-        Get-BoostLabTimerCSharpPayload -SourcePath $SourcePath
+    $payloadResolution = Resolve-BoostLabTimerCSharpPayload `
+        -RequestedMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath `
+        -SourcePath $SourcePath `
+        -AllowInternalSourceFallback $AllowInternalSourceFallback
+    $payload = if ([bool]$payloadResolution.Success) {
+        [string]$payloadResolution.Content
     }
     else {
         ''
     }
 
     [pscustomobject]@{
-        SourcePath = $sourceInfo.SourcePath
-        SourceSha256 = $sourceInfo.ActualSha256
-        SourceHashMatches = $sourceInfo.HashMatches
+        SourcePath = [string]$payloadResolution.SourcePath
+        SourceSha256 = [string]$payloadResolution.SourceSha256
+        SourceHashMatches = [bool]$payloadResolution.Success
         Branches = @('Timer Resolution: On (Recommended)', 'Timer Resolution: Default')
         ApplyLabel = 'Timer Resolution: On (Recommended)'
         DefaultLabel = 'Timer Resolution: Default'
@@ -236,6 +587,19 @@ function Get-BoostLabTimerResolutionAnalyzeData {
         CSharpPayloadLength = $payload.Length
         CSharpContainsNtSetTimerResolution = $payload.Contains('NtSetTimerResolution')
         CSharpContainsNtQueryTimerResolution = $payload.Contains('NtQueryTimerResolution')
+        CSharpPayloadId = [string]$payloadResolution.PayloadId
+        CSharpPayloadPath = [string]$payloadResolution.PayloadPath
+        CSharpPayloadStatus = [string]$payloadResolution.Status
+        CSharpPayloadChecksumStatus = [string]$payloadResolution.PayloadChecksumStatus
+        CSharpPayloadVerificationMode = [string]$payloadResolution.PayloadVerificationMode
+        CSharpPayloadLengthStatus = [string]$payloadResolution.PayloadLengthStatus
+        CSharpPayloadRuntimeWiringStatus = [string]$payloadResolution.RuntimeWiringStatus
+        CSharpPayloadContentSource = [string]$payloadResolution.ContentSource
+        CSharpPayloadFallbackUsed = [bool]$payloadResolution.FallbackUsed
+        CSharpPayloadUsedProtectedSource = [bool]$payloadResolution.UsedProtectedSource
+        CSharpPayloadRequiresProtectedSource = [bool]$payloadResolution.RequiresProtectedSource
+        CSharpPayloadExternalRuntimeBlocked = [bool]$payloadResolution.ExternalRuntimeBlocked
+        RuntimePackageMode = [string]$payloadResolution.RuntimePackageMode
         SourceWorkflow = @(
             'Apply writes the embedded C# payload to the source-defined Windows path.'
             'Apply compiles the payload with the source-defined .NET Framework compiler path and arguments.'
@@ -297,10 +661,27 @@ function Test-BoostLabToolCompatibility {
             Get-Command -Name $CommandName -ErrorAction SilentlyContinue
         },
 
-        [string]$SourcePath = $script:BoostLabTimerSourcePath
+        [string]$SourcePath = $script:BoostLabTimerSourcePath,
+
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true
     )
 
-    $sourceInfo = Get-BoostLabTimerSourceInfo -SourcePath $SourcePath
+    $payloadResolution = Resolve-BoostLabTimerCSharpPayload `
+        -RequestedMode $RuntimePackageMode `
+        -ProjectRoot $ProjectRoot `
+        -PayloadManifest $PayloadManifest `
+        -PayloadManifestPath $PayloadManifestPath `
+        -SourcePath $SourcePath `
+        -AllowInternalSourceFallback $AllowInternalSourceFallback
     $paths = Get-BoostLabTimerPaths -SystemDrive $SystemDrive
     $compilerAvailable = [bool](& $PathChecker $paths.CompilerPath)
     $cmdPath = if ([string]::IsNullOrWhiteSpace($SystemRoot)) { '' } else { Join-Path $SystemRoot 'System32\cmd.exe' }
@@ -316,7 +697,7 @@ function Test-BoostLabToolCompatibility {
     $supported = (
         $OperatingSystem -eq 'Windows_NT' -and
         -not [string]::IsNullOrWhiteSpace($SystemDrive) -and
-        $sourceInfo.HashMatches -and
+        [bool]$payloadResolution.Success -and
         $compilerAvailable -and
         $cmdAvailable -and
         $missingCommands.Count -eq 0
@@ -326,7 +707,15 @@ function Test-BoostLabToolCompatibility {
         Supported = $supported
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        SourceHashMatches = $sourceInfo.HashMatches
+        SourceHashMatches = [bool]$payloadResolution.Success
+        CSharpPayloadStatus = [string]$payloadResolution.Status
+        CSharpPayloadChecksumStatus = [string]$payloadResolution.PayloadChecksumStatus
+        CSharpPayloadContentSource = [string]$payloadResolution.ContentSource
+        CSharpPayloadFallbackUsed = [bool]$payloadResolution.FallbackUsed
+        CSharpPayloadUsedProtectedSource = [bool]$payloadResolution.UsedProtectedSource
+        CSharpPayloadRequiresProtectedSource = [bool]$payloadResolution.RequiresProtectedSource
+        CSharpPayloadExternalRuntimeBlocked = [bool]$payloadResolution.ExternalRuntimeBlocked
+        RuntimePackageMode = [string]$payloadResolution.RuntimePackageMode
         CompilerAvailable = $compilerAvailable
         CommandProcessorAvailable = $cmdAvailable
         MissingCommands = $missingCommands
@@ -336,8 +725,8 @@ function Test-BoostLabToolCompatibility {
         elseif ([string]::IsNullOrWhiteSpace($SystemDrive)) {
             'Timer Resolution Assistant requires SystemDrive.'
         }
-        elseif (-not $sourceInfo.HashMatches) {
-            'Timer Resolution Assistant Ultimate source identity could not be verified.'
+        elseif (-not [bool]$payloadResolution.Success) {
+            "Timer Resolution Assistant C# payload identity could not be verified: $($payloadResolution.Message)"
         }
         elseif (-not $compilerAvailable) {
             "Timer Resolution Assistant requires the source-defined compiler: $($paths.CompilerPath)."
@@ -349,7 +738,7 @@ function Test-BoostLabToolCompatibility {
             'Timer Resolution Assistant is unavailable because required commands were not found: {0}.' -f ($missingCommands -join ', ')
         }
         else {
-            'The required Timer Resolution source identity, compiler, and command surface are available.'
+            'The required Timer Resolution payload identity, compiler, and command surface are available.'
         }
         Timestamp = Get-Date
     }
@@ -360,11 +749,11 @@ function Get-BoostLabToolState {
     [OutputType([pscustomobject])]
     param()
 
-    $sourceInfo = Get-BoostLabTimerSourceInfo
+    $payloadResolution = Resolve-BoostLabTimerCSharpPayload
     [pscustomobject]@{
         ToolId = [string]$script:BoostLabToolMetadata['Id']
         ToolTitle = [string]$script:BoostLabToolMetadata['Title']
-        Status = if ($sourceInfo.HashMatches) { 'Source workflow available' } else { 'Source identity unavailable' }
+        Status = if ([bool]$payloadResolution.Success) { 'Source workflow available' } else { 'Source identity unavailable' }
         LastAction = $null
         LastResult = $null
         RestartRequired = $false
@@ -501,6 +890,17 @@ function Invoke-BoostLabTimerResolutionAction {
 
         [string]$SystemDrive = $env:SystemDrive,
 
+        [string]$RuntimePackageMode = '',
+
+        [string]$ProjectRoot = $script:BoostLabProjectRoot,
+
+        [AllowNull()]
+        [object]$PayloadManifest = $null,
+
+        [string]$PayloadManifestPath = '',
+
+        [bool]$AllowInternalSourceFallback = $true,
+
         [string]$SourcePath = $script:BoostLabTimerSourcePath
     )
 
@@ -512,9 +912,18 @@ function Invoke-BoostLabTimerResolutionAction {
     }
 
     try {
-        $sourceInfo = Assert-BoostLabTimerSourceIdentity -SourcePath $SourcePath
         $paths = Get-BoostLabTimerPaths -SystemDrive $SystemDrive
-        $payload = Get-BoostLabTimerCSharpPayload -SourcePath $SourcePath
+        $payloadResolution = Resolve-BoostLabTimerCSharpPayload `
+            -RequestedMode $RuntimePackageMode `
+            -ProjectRoot $ProjectRoot `
+            -PayloadManifest $PayloadManifest `
+            -PayloadManifestPath $PayloadManifestPath `
+            -SourcePath $SourcePath `
+            -AllowInternalSourceFallback $AllowInternalSourceFallback
+        if (-not [bool]$payloadResolution.Success) {
+            throw ([string]$payloadResolution.Message)
+        }
+        $payload = [string]$payloadResolution.Content
     }
     catch {
         return New-BoostLabTimerResolutionResult `
@@ -591,9 +1000,22 @@ function Invoke-BoostLabTimerResolutionAction {
         'Timer Resolution: Default'
     }
     $data = [pscustomobject]@{
-        SourcePath = $sourceInfo.SourcePath
-        SourceSha256 = $sourceInfo.ActualSha256
+        SourcePath = [string]$payloadResolution.SourcePath
+        SourceSha256 = [string]$payloadResolution.SourceSha256
         SourceBranchLabel = $branchLabel
+        CSharpPayloadId = [string]$payloadResolution.PayloadId
+        CSharpPayloadPath = [string]$payloadResolution.PayloadPath
+        CSharpPayloadStatus = [string]$payloadResolution.Status
+        CSharpPayloadChecksumStatus = [string]$payloadResolution.PayloadChecksumStatus
+        CSharpPayloadVerificationMode = [string]$payloadResolution.PayloadVerificationMode
+        CSharpPayloadLengthStatus = [string]$payloadResolution.PayloadLengthStatus
+        CSharpPayloadRuntimeWiringStatus = [string]$payloadResolution.RuntimeWiringStatus
+        CSharpPayloadContentSource = [string]$payloadResolution.ContentSource
+        CSharpPayloadFallbackUsed = [bool]$payloadResolution.FallbackUsed
+        CSharpPayloadUsedProtectedSource = [bool]$payloadResolution.UsedProtectedSource
+        CSharpPayloadRequiresProtectedSource = [bool]$payloadResolution.RequiresProtectedSource
+        CSharpPayloadExternalRuntimeBlocked = [bool]$payloadResolution.ExternalRuntimeBlocked
+        RuntimePackageMode = [string]$payloadResolution.RuntimePackageMode
         ServiceName = $script:BoostLabTimerServiceName
         InternalServiceName = $script:BoostLabTimerInternalServiceName
         GeneratedSourcePath = $paths.GeneratedSourcePath

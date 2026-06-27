@@ -7,7 +7,7 @@
     PayloadRoot = 'runtime-payloads'
     CustomerVisible = $false
     DefaultMode = 'InternalDevelopment'
-    ExternalRuntimeStatus = 'FourPayloadsRuntimeWiredButExternalRuntimeStillBlocked'
+    ExternalRuntimeStatus = 'AllGeneratedPayloadsRuntimeWiredSourceIntentStillBlocked'
     Entries = @{
         'defender-optimize-apply-script' = @{
             PayloadId = 'defender-optimize-apply-script'
@@ -126,13 +126,13 @@
             ExpectedLengthBytes = 8012
             ExtractionMode = 'StaticProtectedSourceRead'
             ExternalHandling = 'GeneratedRuntimePayloadAvailable'
-            RuntimeWiringStatus = 'InternalRuntimeStillUsesSource'
+            RuntimeWiringStatus = 'ReadyForExternalRuntime'
             CustomerVisible = $false
             HighRiskBlocker = $true
             SourceExecutionRequired = $false
             RuntimeActionExecuted = $false
             ChangesExecuted = $false
-            Notes = 'C# service payload is available as a hashed artifact, but Timer Resolution Assistant still reads the protected source internally.'
+            Notes = 'C# service payload is available as a hashed artifact and Timer Resolution Assistant resolves it through the runtime payload helper; protected source fallback remains internal-development only.'
         }
     }
 }
