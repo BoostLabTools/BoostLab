@@ -6,7 +6,7 @@
     GeneratedAt = 'Static Phase 175C foundation record; future phases may replace this with generated manifest output.'
     CustomerVisible = $false
     DefaultMode = 'InternalDevelopment'
-    ExternalRuntimeStatus = 'BlockedUntilSourceDependenciesAreDecoupled'
+    ExternalRuntimeStatus = 'GeneratedPayloadIntentsReadyOtherSourceDependenciesBlocked'
     Entries = @{
         'reinstall.source' = @{
             SourceId = 'reinstall-source'
@@ -19,6 +19,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -36,6 +37,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -53,6 +55,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -70,6 +73,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -87,6 +91,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -104,6 +109,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -121,6 +127,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -137,20 +144,25 @@
             CanonicalTextSha256 = '00D7EA2C941DF776F729CD35A9386FE18D59D02717DCB3CF43282714E345A6D3'
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimePayloadGeneration', 'RuntimeVerification')
-            ExternalHandling = 'GeneratedRuntimePayloadRequired'
+            ExternalHandling = 'ManifestOnly'
+            ExternalModeTreatment = @('ManifestOnly', 'RuntimePayloadReady', 'DevelopmentOnlySourceParity', 'ExternalRuntimeCanExcludeSource')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
-            HighRiskBlocker = $true
+            HighRiskBlocker = $false
             PayloadBlockers = @(
                 @{
                     PayloadId = 'driver-install-debloat-settings-nvidia-profile'
                     PayloadKind = 'Text'
-                    HashMode = 'GeneratedRuntimePayloadPending'
-                    ExternalHandling = 'GeneratedRuntimePayloadRequired'
-                    Notes = 'The NVIDIA profile payload is currently extracted from protected source and needs a generated runtime payload record.'
+                    HashMode = 'CanonicalText'
+                    RuntimePayloadRelativePath = 'runtime-payloads/driver-install-debloat-settings/inspector.nip'
+                    RuntimeWiringStatus = 'ReadyForExternalRuntime'
+                    ExpectedSha256 = '8843CA82507C858A3A204883B71E791275BAC6F6EAAA2EAADBA02CDB3D1A242B'
+                    ExpectedLength = 7712
+                    ExternalHandling = 'GeneratedRuntimePayloadAvailable'
+                    Notes = 'The NVIDIA profile payload is now available as a generated runtime payload; protected source remains internal-development parity/provenance input.'
                 }
             )
-            Notes = 'Current runtime reads protected source text to extract the NVIDIA profile payload.'
+            Notes = 'External runtime can use the generated NVIDIA profile payload; internal development still records the protected source for parity and provenance.'
         }
         'nvidia-app-install.source' = @{
             SourceId = 'nvidia-app-install-source'
@@ -163,6 +175,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -180,6 +193,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -197,6 +211,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -213,22 +228,25 @@
             CanonicalTextSha256 = 'D53678CE91FE8ADE6D28F221A2E4153188597D850149F87227B26E0B821EFFF4'
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimePayloadGeneration', 'RuntimeVerification')
-            ExternalHandling = 'GeneratedRuntimePayloadRequired'
+            ExternalHandling = 'ManifestOnly'
+            ExternalModeTreatment = @('ManifestOnly', 'RuntimePayloadReady', 'DevelopmentOnlySourceParity', 'ExternalRuntimeCanExcludeSource')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
-            HighRiskBlocker = $true
+            HighRiskBlocker = $false
             PayloadBlockers = @(
                 @{
                     PayloadId = 'start-menu-taskbar-start2-bin'
                     PayloadKind = 'Binary'
                     HashMode = 'RawBytes'
+                    RuntimePayloadRelativePath = 'runtime-payloads/start-menu-taskbar/start2.bin'
+                    RuntimeWiringStatus = 'ReadyForExternalRuntime'
                     ExpectedSha256 = '21EAF7925A26A59880D799509C5E49D4034B36BD86D84D035A50D17D6A32206D'
                     ExpectedLength = 4540
-                    ExternalHandling = 'GeneratedRuntimePayloadRequired'
-                    Notes = 'The start2.bin payload is currently decoded from protected source and needs a generated runtime payload artifact.'
+                    ExternalHandling = 'GeneratedRuntimePayloadAvailable'
+                    Notes = 'The start2.bin payload is now available as a generated runtime payload; protected source remains internal-development parity/provenance input.'
                 }
             )
-            Notes = 'Current runtime reads protected source text to decode start2.bin.'
+            Notes = 'External runtime can use the generated start2.bin payload; internal development still records the protected source for parity and provenance.'
         }
         'bloatware.source' = @{
             SourceId = 'bloatware-source'
@@ -241,6 +259,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -258,6 +277,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -275,6 +295,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -292,6 +313,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -309,6 +331,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -326,6 +349,7 @@
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimeVerification')
             ExternalHandling = 'ExternalRuntimeBlockedUntilDecoupled'
+            ExternalModeTreatment = @('ExternalRuntimeStillBlocked', 'NeedsModuleDecoupling', 'DevelopmentOnlySourceParity')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
             HighRiskBlocker = $false
@@ -342,20 +366,25 @@
             CanonicalTextSha256 = '46098A6B38BA04DA4A5A962EDC9B7EEBF2742A158845FA82C183D865133D2E73'
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimePayloadGeneration', 'RuntimeVerification')
-            ExternalHandling = 'GeneratedRuntimePayloadRequired'
+            ExternalHandling = 'ManifestOnly'
+            ExternalModeTreatment = @('ManifestOnly', 'RuntimePayloadReady', 'DevelopmentOnlySourceParity', 'ExternalRuntimeCanExcludeSource')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
-            HighRiskBlocker = $true
+            HighRiskBlocker = $false
             PayloadBlockers = @(
                 @{
                     PayloadId = 'timer-resolution-csharp-service'
                     PayloadKind = 'Text'
-                    HashMode = 'GeneratedRuntimePayloadPending'
-                    ExternalHandling = 'GeneratedRuntimePayloadRequired'
-                    Notes = 'The C# service payload is currently extracted from protected source and needs a generated runtime payload record.'
+                    HashMode = 'CanonicalText'
+                    RuntimePayloadRelativePath = 'runtime-payloads/timer-resolution-assistant/SetTimerResolutionService.cs'
+                    RuntimeWiringStatus = 'ReadyForExternalRuntime'
+                    ExpectedSha256 = '34E5F2E420884FE59F5265F5963B943F9C38CC3D12EDEBF09843B85F95B40C77'
+                    ExpectedLength = 8012
+                    ExternalHandling = 'GeneratedRuntimePayloadAvailable'
+                    Notes = 'The C# service payload is now available as a generated runtime payload; protected source remains internal-development parity/provenance input.'
                 }
             )
-            Notes = 'Current runtime reads protected source text to extract the generated service payload.'
+            Notes = 'External runtime can use the generated C# service payload; internal development still records the protected source for parity and provenance.'
         }
         'defender-optimize-assistant.source' = @{
             SourceId = 'defender-optimize-assistant-source'
@@ -367,20 +396,36 @@
             CanonicalTextSha256 = 'FA09439A4056CA16937B47AEA6D70092312513D92EC9DFA09CF62B1D625E0B92'
             HashMode = 'CanonicalText'
             RuntimeUse = @('SourceParityValidation', 'RuntimePayloadGeneration', 'RuntimeVerification')
-            ExternalHandling = 'GeneratedRuntimePayloadRequired'
+            ExternalHandling = 'ManifestOnly'
+            ExternalModeTreatment = @('ManifestOnly', 'RuntimePayloadReady', 'DevelopmentOnlySourceParity', 'ExternalRuntimeCanExcludeSource')
             CustomerVisible = $false
             CurrentInternalSourceRequired = $true
-            HighRiskBlocker = $true
+            HighRiskBlocker = $false
             PayloadBlockers = @(
                 @{
-                    PayloadId = 'defender-optimize-generated-scripts'
+                    PayloadId = 'defender-optimize-apply-script'
                     PayloadKind = 'Text'
-                    HashMode = 'GeneratedRuntimePayloadPending'
-                    ExternalHandling = 'GeneratedRuntimePayloadRequired'
-                    Notes = 'Generated scripts and security command descriptors are currently extracted from protected source and need generated runtime payload records.'
+                    HashMode = 'CanonicalText'
+                    RuntimePayloadRelativePath = 'runtime-payloads/defender-optimize-assistant/defenderoptimize.ps1'
+                    RuntimeWiringStatus = 'ReadyForExternalRuntime'
+                    ExpectedSha256 = 'DB0D5742D39127A2349953905A3647699023A942FE3FE2A37B264E7894444611'
+                    ExpectedLength = 10222
+                    ExternalHandling = 'GeneratedRuntimePayloadAvailable'
+                    Notes = 'The Defender Optimize Apply script is now available as a generated runtime payload; protected source remains internal-development parity/provenance input.'
+                }
+                @{
+                    PayloadId = 'defender-optimize-default-script'
+                    PayloadKind = 'Text'
+                    HashMode = 'CanonicalText'
+                    RuntimePayloadRelativePath = 'runtime-payloads/defender-optimize-assistant/defenderdefault.ps1'
+                    RuntimeWiringStatus = 'ReadyForExternalRuntime'
+                    ExpectedSha256 = '71885EFD529F13EF3C42C21C25F2040C6D38FD7F98F94B60EF9B23760C083948'
+                    ExpectedLength = 9814
+                    ExternalHandling = 'GeneratedRuntimePayloadAvailable'
+                    Notes = 'The Defender Optimize Default script is now available as a generated runtime payload; protected source remains internal-development parity/provenance input.'
                 }
             )
-            Notes = 'Current runtime reads protected source text to derive generated Safe Mode script descriptors.'
+            Notes = 'External runtime can use the generated Defender Apply and Default script payloads; internal development still records the protected source for parity and provenance.'
         }
     }
 }

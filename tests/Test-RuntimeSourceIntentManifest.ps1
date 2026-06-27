@@ -40,14 +40,18 @@ function Assert-BoostLabCondition {
 $manifestPath = Join-Path $ProjectRoot 'config\RuntimeSourceIntentManifest.psd1'
 $helperPath = Join-Path $ProjectRoot 'core\RuntimeSourceIntent.psm1'
 $sourceVerificationPath = Join-Path $ProjectRoot 'core\SourceVerification.psm1'
-foreach ($path in @($manifestPath, $helperPath, $sourceVerificationPath)) {
+$runtimePayloadManifestPath = Join-Path $ProjectRoot 'config\RuntimePayloadManifest.psd1'
+$runtimePayloadHelperPath = Join-Path $ProjectRoot 'core\RuntimePayloads.psm1'
+foreach ($path in @($manifestPath, $helperPath, $sourceVerificationPath, $runtimePayloadManifestPath, $runtimePayloadHelperPath)) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $path -PathType Leaf) "Required runtime source intent file is missing: $path"
 }
 
 Import-Module -Name $helperPath -Force -ErrorAction Stop
+Import-Module -Name $runtimePayloadHelperPath -Force -ErrorAction Stop
 Import-Module -Name $sourceVerificationPath -Force -ErrorAction Stop
 
 $manifest = Get-BoostLabRuntimeSourceIntentManifest -ManifestPath $manifestPath
+$runtimePayloadManifest = Get-BoostLabRuntimePayloadManifest -ManifestPath $runtimePayloadManifestPath
 Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace([string]$manifest.SchemaVersion)) 'Runtime source intent manifest must declare SchemaVersion.'
 Assert-BoostLabCondition ([string]$manifest.CustomerVisible -eq 'False') 'Runtime source intent manifest must not be customer-visible.'
 Assert-BoostLabCondition ($manifest.Contains('Entries')) 'Runtime source intent manifest must contain Entries.'
@@ -67,6 +71,7 @@ $requiredEntryFields = @(
     'HashMode'
     'RuntimeUse'
     'ExternalHandling'
+    'ExternalModeTreatment'
     'CustomerVisible'
     'CurrentInternalSourceRequired'
     'HighRiskBlocker'
@@ -79,6 +84,16 @@ $allowedExternalHandling = @(
     'GeneratedRuntimePayloadRequired'
     'ExternalRuntimeBlockedUntilDecoupled'
     'NotRequiredExternally'
+)
+$allowedExternalModeTreatments = @(
+    'ManifestOnly'
+    'RuntimePayloadReady'
+    'DevelopmentOnlySourceParity'
+    'DiagnosticsOnly'
+    'ExternalRuntimeCanExcludeSource'
+    'ExternalRuntimeStillBlocked'
+    'NeedsModuleDecoupling'
+    'NeedsCustomerFacingTextCleanup'
 )
 
 foreach ($entryId in @($entries.Keys | Sort-Object)) {
@@ -95,6 +110,10 @@ foreach ($entryId in @($entries.Keys | Sort-Object)) {
     Assert-BoostLabCondition ([string]$entry.SourceRole -in $allowedSourceRoles) "Invalid SourceRole for $entryId`: $($entry.SourceRole)"
     Assert-BoostLabCondition ([string]$entry.HashMode -in $allowedHashModes) "Invalid HashMode for $entryId`: $($entry.HashMode)"
     Assert-BoostLabCondition ([string]$entry.ExternalHandling -in $allowedExternalHandling) "Invalid ExternalHandling for $entryId`: $($entry.ExternalHandling)"
+    Assert-BoostLabCondition (@($entry.ExternalModeTreatment).Count -gt 0) "Entry must declare ExternalModeTreatment: $entryId"
+    foreach ($treatment in @($entry.ExternalModeTreatment)) {
+        Assert-BoostLabCondition ([string]$treatment -in $allowedExternalModeTreatments) "Invalid ExternalModeTreatment for $entryId`: $treatment"
+    }
     Assert-BoostLabCondition ([string]$entry.RawSha256 -match '^[A-Fa-f0-9]{64}$') "RawSha256 must be a full SHA-256 hash: $entryId"
     Assert-BoostLabCondition ([string]$entry.CanonicalTextSha256 -match '^[A-Fa-f0-9]{64}$') "CanonicalTextSha256 must be a full SHA-256 hash: $entryId"
     Assert-BoostLabCondition ([string]$entry.CustomerVisible -eq 'False') "Entry must not be customer-visible: $entryId"
@@ -119,26 +138,34 @@ $externalReadiness = Test-BoostLabExternalRuntimeReadiness -RequestedMode 'Exter
 Assert-BoostLabCondition ([string]$externalReadiness.Mode -eq 'ExternalRuntime') 'External readiness check must run in ExternalRuntime mode.'
 Assert-BoostLabCondition (-not [bool]$externalReadiness.ExternalRuntimeReady) 'External runtime must not claim readiness while source dependencies remain blocked.'
 Assert-BoostLabCondition ([int]$externalReadiness.TotalSourceIntentEntries -eq 20) 'External readiness must report all runtime source intent entries.'
-Assert-BoostLabCondition ([int]$externalReadiness.BlockedEntries -eq 20) 'All current entries should remain blocked until future decoupling.'
-Assert-BoostLabCondition ([int]$externalReadiness.GeneratedPayloadRequiredEntries -eq 4) 'Exactly four high-risk generated payload blockers should be recorded.'
+Assert-BoostLabCondition ([int]$externalReadiness.ExternalReadyEntries -eq 4) 'Exactly four source-intent entries should be external-ready after generated payload rewiring.'
+Assert-BoostLabCondition ([int]$externalReadiness.BlockedEntries -eq 16) 'Sixteen source-intent entries should remain blocked until future source decoupling.'
+Assert-BoostLabCondition ([int]$externalReadiness.GeneratedPayloadRequiredEntries -eq 0) 'Generated payload requirements should no longer block source intent readiness after the payload rewires.'
 Assert-BoostLabCondition ([int]$externalReadiness.RawSourceRequiredEntries -eq 20) 'All current entries still require internal raw source validation.'
-Assert-BoostLabCondition ([int]$externalReadiness.HighRiskBlockerCount -eq 4) 'Exactly four high-risk blockers should be reported.'
+Assert-BoostLabCondition ([int]$externalReadiness.HighRiskBlockerCount -eq 0) 'No high-risk generated payload blockers should remain after Phase 175H.'
 Assert-BoostLabCondition (-not [bool]$externalReadiness.RuntimeActionExecuted) 'External readiness reporting must not execute runtime actions.'
 Assert-BoostLabCondition (-not [bool]$externalReadiness.ChangesExecuted) 'External readiness reporting must not mutate state.'
 
-$expectedHighRiskTools = @(
+$expectedPayloadReadyTools = @(
     'defender-optimize-assistant'
     'driver-install-debloat-settings'
     'start-menu-taskbar'
     'timer-resolution-assistant'
 )
 $actualHighRiskTools = @($externalReadiness.HighRiskBlockers | ForEach-Object { [string]$_.ToolId } | Sort-Object)
-Assert-BoostLabCondition (($actualHighRiskTools -join '|') -eq (($expectedHighRiskTools | Sort-Object) -join '|')) "High-risk blocker list mismatch: $($actualHighRiskTools -join ', ')"
+Assert-BoostLabCondition ($actualHighRiskTools.Count -eq 0) "High-risk blocker list should be empty after payload rewiring: $($actualHighRiskTools -join ', ')"
+$actualPayloadReadyTools = @(
+    $entries.Values |
+        Where-Object { 'RuntimePayloadReady' -in @($_.ExternalModeTreatment) } |
+        ForEach-Object { [string]$_.ToolId } |
+        Sort-Object
+)
+Assert-BoostLabCondition (($actualPayloadReadyTools -join '|') -eq (($expectedPayloadReadyTools | Sort-Object) -join '|')) "Runtime-payload-ready source intent list mismatch: $($actualPayloadReadyTools -join ', ')"
 
 $timerIntent = @(Resolve-BoostLabRuntimeSourceIntent -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot -ToolId 'timer-resolution-assistant' -Manifest $manifest)
 Assert-BoostLabCondition ($timerIntent.Count -eq 1) 'Timer Resolution source intent should resolve exactly once.'
-Assert-BoostLabCondition ([bool]$timerIntent[0].ExternalRuntimeBlocked) 'Timer Resolution should be externally blocked until generated payload decoupling.'
-Assert-BoostLabCondition ([string]$timerIntent[0].BlockerReason -eq 'GeneratedRuntimePayloadRequired') 'Timer Resolution blocker reason mismatch.'
+Assert-BoostLabCondition (-not [bool]$timerIntent[0].ExternalRuntimeBlocked) 'Timer Resolution source intent should no longer be externally blocked by generated payload decoupling.'
+Assert-BoostLabCondition ([string]$timerIntent[0].BlockerReason -eq '') 'Timer Resolution source intent should not report a generated-payload blocker reason.'
 Assert-BoostLabCondition (-not [bool]$timerIntent[0].RuntimeActionExecuted) 'Timer Resolution source intent resolution must not execute runtime actions.'
 
 $directXIntent = @(Resolve-BoostLabRuntimeSourceIntent -RequestedMode 'ExternalRuntime' -ProjectRoot $ProjectRoot -ToolId 'directx' -Manifest $manifest)
@@ -192,14 +219,27 @@ $startMenuPayloads = @($entries['start-menu-taskbar.source'].PayloadBlockers)
 Assert-BoostLabCondition ($startMenuPayloads.Count -eq 1) 'Start Menu Taskbar must record one generated payload blocker.'
 Assert-BoostLabCondition ([string]$startMenuPayloads[0].PayloadKind -eq 'Binary') 'Start Menu Taskbar payload blocker must identify the binary payload.'
 Assert-BoostLabCondition ([string]$startMenuPayloads[0].HashMode -eq 'RawBytes') 'Start Menu Taskbar binary payload must remain raw-byte hashed.'
+Assert-BoostLabCondition ([string]$startMenuPayloads[0].ExternalHandling -eq 'GeneratedRuntimePayloadAvailable') 'Start Menu Taskbar payload blocker must be classified as generated-runtime-payload available.'
+Assert-BoostLabCondition ([string]$startMenuPayloads[0].RuntimeWiringStatus -eq 'ReadyForExternalRuntime') 'Start Menu Taskbar payload blocker must be runtime-wired.'
 Assert-BoostLabCondition ([string]$startMenuPayloads[0].ExpectedSha256 -match '^[A-Fa-f0-9]{64}$') 'Start Menu Taskbar binary payload must record its raw SHA-256.'
 Assert-BoostLabCondition ([int]$startMenuPayloads[0].ExpectedLength -eq 4540) 'Start Menu Taskbar binary payload length mismatch.'
 
-foreach ($highRiskTool in $expectedHighRiskTools) {
-    $entry = @($entries.Values | Where-Object { [string]$_['ToolId'] -eq $highRiskTool } | Select-Object -First 1)
-    Assert-BoostLabCondition ($entry.Count -eq 1) "High-risk manifest entry missing: $highRiskTool"
-    Assert-BoostLabCondition ([string]$entry[0].ExternalHandling -eq 'GeneratedRuntimePayloadRequired') "High-risk tool must require generated runtime payload: $highRiskTool"
-    Assert-BoostLabCondition (@($entry[0].PayloadBlockers).Count -gt 0) "High-risk tool must list payload blockers: $highRiskTool"
+foreach ($payloadReadyTool in $expectedPayloadReadyTools) {
+    $entry = @($entries.Values | Where-Object { [string]$_['ToolId'] -eq $payloadReadyTool } | Select-Object -First 1)
+    Assert-BoostLabCondition ($entry.Count -eq 1) "Runtime-payload-ready manifest entry missing: $payloadReadyTool"
+    Assert-BoostLabCondition ([string]$entry[0].ExternalHandling -eq 'ManifestOnly') "Payload-ready source intent must become ManifestOnly externally: $payloadReadyTool"
+    Assert-BoostLabCondition ('RuntimePayloadReady' -in @($entry[0].ExternalModeTreatment)) "Payload-ready source intent must declare RuntimePayloadReady: $payloadReadyTool"
+    Assert-BoostLabCondition ('ExternalRuntimeCanExcludeSource' -in @($entry[0].ExternalModeTreatment)) "Payload-ready source intent must allow external source exclusion: $payloadReadyTool"
+    Assert-BoostLabCondition (-not [bool]$entry[0].HighRiskBlocker) "Payload-ready source intent must not remain a high-risk generated payload blocker: $payloadReadyTool"
+    Assert-BoostLabCondition (@($entry[0].PayloadBlockers).Count -gt 0) "Payload-ready source intent must list generated payload records: $payloadReadyTool"
+    foreach ($payloadBlocker in @($entry[0].PayloadBlockers)) {
+        $payloadId = [string]$payloadBlocker.PayloadId
+        Assert-BoostLabCondition ($runtimePayloadManifest.Entries.Contains($payloadId)) "Payload-ready source intent references unknown runtime payload: $payloadReadyTool -> $payloadId"
+        $runtimePayloadEntry = $runtimePayloadManifest.Entries[$payloadId]
+        Assert-BoostLabCondition ([string]$runtimePayloadEntry.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') "Runtime payload is not ready for external runtime: $payloadReadyTool -> $payloadId"
+        Assert-BoostLabCondition ([string]$payloadBlocker.RuntimeWiringStatus -eq 'ReadyForExternalRuntime') "Source intent payload blocker status mismatch: $payloadReadyTool -> $payloadId"
+        Assert-BoostLabCondition ([string]$payloadBlocker.ExternalHandling -eq 'GeneratedRuntimePayloadAvailable') "Source intent payload blocker handling mismatch: $payloadReadyTool -> $payloadId"
+    }
 }
 
 $modulesWithRuntimeSourceIntent = @(
@@ -219,12 +259,14 @@ foreach ($requiredFolder in @('source-ultimate', 'source-extra', 'intake')) {
     Passed = $true
     ManifestEntries = $entries.Count
     ExternalRuntimeReady = [bool]$externalReadiness.ExternalRuntimeReady
+    ExternalReadyEntries = [int]$externalReadiness.ExternalReadyEntries
     BlockedEntries = [int]$externalReadiness.BlockedEntries
     GeneratedPayloadRequiredEntries = [int]$externalReadiness.GeneratedPayloadRequiredEntries
+    RuntimePayloadReadyTools = $actualPayloadReadyTools
     HighRiskBlockers = $actualHighRiskTools
     RuntimeActionExecuted = $false
     SourceUltimateUntouched = $true
     SourceExtraUntouched = $true
     IntakeUntouched = $true
-    Message = 'Runtime source intent manifest foundation is schema-valid, internal-mode safe, and externally blocked with structured reasons.'
+    Message = 'Runtime source intent manifest is schema-valid, records payload-ready source intents, preserves internal source parity, and keeps remaining external blockers structured.'
 }
