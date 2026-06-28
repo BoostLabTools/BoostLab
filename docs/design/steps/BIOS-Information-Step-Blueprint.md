@@ -13,6 +13,16 @@ BoostLab config and module data may be used only for internal implementation map
 
 Final AXIS customer-facing copy must be supplied or explicitly approved by Yazan before any implementation phase uses it.
 
+## Localization and Direction
+
+BIOS Information follows the AXIS Arabic-first localization workflow.
+
+Arabic copy is pending Yazan approval. English copy is pending future translation after Arabic approval.
+
+Arabic layout must be RTL and mirrored. English layout must be LTR.
+
+No customer-facing copy from BoostLab config or module descriptions is approved automatically.
+
 ## Purpose
 
 This document converts the BIOS Information first-use wizard blueprint into an owner-controlled content template.
