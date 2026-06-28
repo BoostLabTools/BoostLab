@@ -19,6 +19,61 @@ function Get-AxisDesignTokens {
         'Axis.Color.Background.Deep' = '#05080C'
         'Axis.Color.Background.Inset' = '#111923'
 
+        'Axis.Color.Wizard.Background' = '#080808'
+        'Axis.Color.Wizard.WindowSurface' = '#080808'
+        'Axis.Color.Wizard.AppBackground' = '#0C0C0C'
+        'Axis.Color.Wizard.HeaderBackground' = '#0C0C0C'
+        'Axis.Color.Wizard.StageStripBackground' = '#0C0C0C'
+        'Axis.Color.Wizard.Panel' = '#161616'
+        'Axis.Color.Wizard.MainPanel' = '#161616'
+        'Axis.Color.Wizard.MainCardBackground' = '#161616'
+        'Axis.Color.Wizard.Surface' = '#161616'
+        'Axis.Color.Wizard.ElevatedCard' = '#181818'
+        'Axis.Color.Wizard.CardAlt' = '#202020'
+        'Axis.Color.Wizard.StatusPanel' = '#161616'
+        'Axis.Color.Wizard.SecondaryButton' = '#161616'
+        'Axis.Color.Wizard.SurfaceSoft' = '#202020'
+        'Axis.Color.Wizard.Card' = '#161616'
+        'Axis.Color.Wizard.InfoCard' = '#181818'
+        'Axis.Color.Wizard.SurfaceElevated' = '#202020'
+        'Axis.Color.Wizard.SecondaryButtonHover' = '#202020'
+        'Axis.Color.Wizard.Border' = '#242424'
+        'Axis.Color.Wizard.BorderSoft' = '#242424'
+        'Axis.Color.Wizard.BorderStrong' = '#363636'
+        'Axis.Color.Wizard.TextPrimary' = '#FAF9F6'
+        'Axis.Color.Wizard.TextHighlight' = '#F5F5F5'
+        'Axis.Color.Wizard.TextSecondary' = '#EDEDED'
+        'Axis.Color.Wizard.TextMuted' = '#C9C9C9'
+        'Axis.Color.Wizard.TextDim' = '#9A9A9A'
+        'Axis.Color.Wizard.Accent' = '#F0F2F5'
+        'Axis.Color.Wizard.AccentHover' = '#F5F5F5'
+        'Axis.Color.Wizard.AccentPressed' = '#EDEDED'
+        'Axis.Color.Wizard.AccentText' = '#F0F2F5'
+        'Axis.Color.Wizard.AccentSoft' = '#202020'
+        'Axis.Color.Wizard.BrandWarm' = '#F0F2F5'
+        'Axis.Color.Wizard.WarmAccent' = '#F0F2F5'
+        'Axis.Color.Wizard.WarmAccentHover' = '#F5F5F5'
+        'Axis.Color.Wizard.WarmAccentPressed' = '#EDEDED'
+        'Axis.Color.Wizard.WarmAccentMuted' = '#C9C9C9'
+        'Axis.Color.Wizard.WarmAccentSoft' = '#202020'
+        'Axis.Color.Wizard.IconStone' = '#F5F5F5'
+        'Axis.Color.Wizard.IconSoft' = '#C9C9C9'
+        'Axis.Color.Wizard.PrimaryButton' = '#F0F2F5'
+        'Axis.Color.Wizard.PrimaryButtonHover' = '#F5F5F5'
+        'Axis.Color.Wizard.PrimaryButtonText' = '#101010'
+        'Axis.Color.Wizard.StateReady.Background' = '#161616'
+        'Axis.Color.Wizard.StateReady.Border' = '#363636'
+        'Axis.Color.Wizard.StateReady.Text' = '#EDEDED'
+        'Axis.Color.Wizard.StateChecking.Background' = '#161616'
+        'Axis.Color.Wizard.StateChecking.Border' = '#F0F2F5'
+        'Axis.Color.Wizard.StateChecking.Text' = '#FAF9F6'
+        'Axis.Color.Wizard.StateCompleted.Background' = '#161616'
+        'Axis.Color.Wizard.StateCompleted.Border' = '#F0F2F5'
+        'Axis.Color.Wizard.StateCompleted.Text' = '#FAF9F6'
+        'Axis.Color.Wizard.SuccessCalm' = '#F0F2F5'
+        'Axis.Color.Wizard.Disabled' = '#363636'
+        'Axis.Color.Wizard.Shadow' = '#080808'
+
         'Axis.Color.Surface.Base' = '#121A24'
         'Axis.Color.Surface.Raised' = '#172231'
         'Axis.Color.Surface.Elevated' = '#1B2838'
@@ -189,13 +244,13 @@ function Get-AxisDesignTokens {
     $typography = [ordered]@{
         'Axis.Type.Display.FontFamily' = 'Segoe UI'
         'Axis.Type.Display.FontSize' = 32.0
-        'Axis.Type.Display.FontWeight' = 'SemiBold'
+        'Axis.Type.Display.FontWeight' = 'Bold'
         'Axis.Type.Display.LineHeight' = 40.0
 
         'Axis.Type.PageTitle.FontFamily' = 'Segoe UI'
-        'Axis.Type.PageTitle.FontSize' = 24.0
+        'Axis.Type.PageTitle.FontSize' = 28.0
         'Axis.Type.PageTitle.FontWeight' = 'SemiBold'
-        'Axis.Type.PageTitle.LineHeight' = 32.0
+        'Axis.Type.PageTitle.LineHeight' = 36.0
 
         'Axis.Type.SectionTitle.FontFamily' = 'Segoe UI'
         'Axis.Type.SectionTitle.FontSize' = 18.0
@@ -203,29 +258,29 @@ function Get-AxisDesignTokens {
         'Axis.Type.SectionTitle.LineHeight' = 26.0
 
         'Axis.Type.CardTitle.FontFamily' = 'Segoe UI'
-        'Axis.Type.CardTitle.FontSize' = 15.0
+        'Axis.Type.CardTitle.FontSize' = 17.0
         'Axis.Type.CardTitle.FontWeight' = 'SemiBold'
-        'Axis.Type.CardTitle.LineHeight' = 22.0
+        'Axis.Type.CardTitle.LineHeight' = 24.0
 
         'Axis.Type.Body.FontFamily' = 'Segoe UI'
-        'Axis.Type.Body.FontSize' = 14.0
+        'Axis.Type.Body.FontSize' = 15.0
         'Axis.Type.Body.FontWeight' = 'Normal'
-        'Axis.Type.Body.LineHeight' = 21.0
+        'Axis.Type.Body.LineHeight' = 23.0
 
         'Axis.Type.BodySmall.FontFamily' = 'Segoe UI'
-        'Axis.Type.BodySmall.FontSize' = 13.0
+        'Axis.Type.BodySmall.FontSize' = 15.0
         'Axis.Type.BodySmall.FontWeight' = 'Normal'
-        'Axis.Type.BodySmall.LineHeight' = 19.0
+        'Axis.Type.BodySmall.LineHeight' = 21.0
 
         'Axis.Type.Caption.FontFamily' = 'Segoe UI'
-        'Axis.Type.Caption.FontSize' = 12.0
+        'Axis.Type.Caption.FontSize' = 13.0
         'Axis.Type.Caption.FontWeight' = 'Normal'
-        'Axis.Type.Caption.LineHeight' = 16.0
+        'Axis.Type.Caption.LineHeight' = 18.0
 
         'Axis.Type.Micro.FontFamily' = 'Segoe UI'
-        'Axis.Type.Micro.FontSize' = 11.0
+        'Axis.Type.Micro.FontSize' = 14.0
         'Axis.Type.Micro.FontWeight' = 'Medium'
-        'Axis.Type.Micro.LineHeight' = 14.0
+        'Axis.Type.Micro.LineHeight' = 19.0
 
         'Axis.Type.DiagnosticsMono.FontFamily' = 'Cascadia Mono, Consolas'
         'Axis.Type.DiagnosticsMono.FontSize' = 12.0
@@ -254,6 +309,12 @@ function Get-AxisDesignTokens {
         'Axis.Radius.Large' = 8.0
         'Axis.Radius.XLarge' = 12.0
         'Axis.Radius.Pill' = 999.0
+        'Axis.Radius.Wizard.Window' = 14.0
+        'Axis.Radius.Wizard.MainCard' = 16.0
+        'Axis.Radius.Wizard.InfoCard' = 12.0
+        'Axis.Radius.Wizard.Button' = 14.0
+        'Axis.Radius.Wizard.IconBackplate' = 20.0
+        'Axis.Radius.Wizard.StatusPanel' = 12.0
     }
 
     $borders = [ordered]@{

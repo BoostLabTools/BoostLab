@@ -24,6 +24,93 @@ The desired first-use AXIS experience is now:
 
 The wizard keeps the dark, premium, technical AXIS design direction while reducing visual density.
 
+## Phase 176K Correction
+
+Phase 176K refines this prototype without changing runtime behavior.
+
+Corrections:
+
+- the preview keeps the `900 x 650` target window
+- the root content now auto-sizes to the available client area
+- the center step region fits inside the fixed layout without a default visible scrollbar
+- the bottom action area remains fully visible
+- the stage progress strip uses the canonical stage names from `config/Stages.psd1`
+- the visual treatment shifts toward a cleaner, softer, more modern first-use wizard surface
+
+The developer preview remains isolated and is not wired into production UI.
+
+## Phase 176M Neutral Palette Experiment
+
+Phase 176M keeps the isolated first-use wizard structure and behavior, but changes the wizard-specific visual tokens to a premium neutral palette.
+
+The experiment uses only the approved off-white and dark-gray values:
+
+- `#F5F5F5`
+- `#FAF9F6`
+- `#F0F2F5`
+- `#EDEDED`
+- `#121212`
+- `#2C2C2C`
+- `#222222`
+- `#0C0C0C`
+
+The result is intended to feel minimal, soft, modern, and premium without becoming dark mode or overly bright.
+
+The change remains prototype-only and does not affect `MainWindow`, production runtime behavior, modules, or execution flow.
+
+## Dark Premium Natural Iteration
+
+The next visual iteration keeps the same isolated prototype structure and shifts the wizard-specific tokens to a dark premium natural palette.
+
+The direction uses near-black and charcoal surfaces with soft off-white text and neutral accents. Earlier icon exploration from this iteration is superseded by the Phase 176Y text-only product decision.
+
+This remains a visual-only experiment and does not affect `MainWindow`, production runtime behavior, modules, or execution flow. It does not add external image assets, design-kit dependencies, runtime dependencies, or production UI wiring.
+
+## Phase 176V Small Polish
+
+Phase 176V keeps the restored first-use wizard structure and applies only a small polish pass.
+
+The polish:
+
+- slightly darkens wizard-specific surfaces and borders
+- keeps off-white text and neutral controls readable
+- increases usable content room so the Ready/status panel is fully visible at `900 x 650`
+- keeps the normal Windows titlebar/chrome, no sidebar, and stage-only progress strip
+- any icon work from this earlier polish pass is superseded by the Phase 176Y text-only product decision
+
+This remains prototype-only and does not affect `MainWindow`, production runtime behavior, modules, execution flow, diagnostics, or result contracts.
+
+## Phase 176W Footer Polish
+
+Phase 176W keeps the approved restored wizard direction and applies a narrow prototype-only footer refinement.
+
+The polish:
+
+- gives the footer row more vertical room so Back / Continue / Cancel borders and shadows are not clipped
+- keeps the bottom-left prototype note and bottom-right visual buttons in the same footer structure
+
+The earlier image-icon support from this pass is superseded by the Phase 176Y text-only product decision.
+
+## Phase 176X Exact Model A BIOS Icon Superseded
+
+Phase 176X briefly used the supplied cropped Model A BIOS Information PNG.
+
+That decision is superseded by Phase 176Y. The current prototype does not load that PNG, does not draw a fallback, and does not keep an icon placeholder.
+
+## Phase 176Y Text-Only Wizard Decision
+
+Phase 176Y applies the final product-owner decision that the AXIS first-use wizard customer UI should not use icons.
+
+The current prototype:
+
+- removes the BIOS Information image icon
+- removes the WPF vector fallback
+- removes the icon column and empty placeholder space
+- removes the status indicator next to `Ready`
+- keeps the BIOS Information step as a text-only customer-facing screen
+
+The layout remains prototype-only and does not affect `MainWindow`, production runtime behavior, modules, execution flow, diagnostics, or result contracts.
+
 ## Completion-Only Customer State Model
 
 The product-owner decision for the normal AXIS first-use customer UI is completion-only state language.
@@ -67,14 +154,16 @@ The progress strip shows stage names only:
 - Check
 - Refresh
 - Setup
-- Apps
+- Installers
 - Graphics
 - Windows
-- Finish
+- Advanced
 
 The active sample stage is `Check`.
 
 The strip is intentionally not a script list. It does not show tool names or step names such as BIOS Information.
+
+The stage names and order are taken from the project stage model in `config/Stages.psd1`.
 
 ## BIOS Information Step
 
@@ -88,23 +177,16 @@ Static sample content includes:
 
 - BIOS/UEFI version
 - motherboard and vendor details
-- Windows boot mode when available later
-- basic firmware readiness signals
 
 The prototype does not query BIOS, firmware, motherboard, Windows boot mode, or device state.
 
 The BIOS Information sample starts in a neutral `Ready` state and supports a visual `Checking` placeholder. The only customer-facing end state in the model is `Completed`.
 
-## BIOS Icon
+## No BIOS Icon
 
-`ui/AxisFirstUseWizardPrototype.ps1` creates a simple WPF vector-style BIOS Information icon using shapes.
+The current prototype intentionally renders no BIOS Information icon.
 
-The icon direction is:
-
-- motherboard/chip outline
-- subtle firmware dot
-- restrained blue/cyan accent
-- no external image asset
+The BIOS Information screen is text-only. It has no image icon, SVG icon, WPF vector icon, icon placeholder, icon column, or status indicator next to `Ready`.
 
 ## Documentation Button Rule
 

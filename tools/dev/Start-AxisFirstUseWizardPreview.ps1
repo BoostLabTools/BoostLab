@@ -98,6 +98,10 @@ function Invoke-AxisFirstUseWizardPreview {
             WindowTitle = $window.Title
             WindowWidth = [double]$window.Width
             WindowHeight = [double]$window.Height
+            WindowStyle = [string]$window.WindowStyle
+            ResizeMode = [string]$window.ResizeMode
+            CustomChrome = ($window.WindowStyle -eq [System.Windows.WindowStyle]::None)
+            DefaultTitlebarVisible = ($window.WindowStyle -ne [System.Windows.WindowStyle]::None)
             ContentType = $content.GetType().FullName
             UsesAxisResources = [bool]$usesAxisResources
             ResourcePath = $imports.ResourcePath
@@ -118,6 +122,10 @@ function Invoke-AxisFirstUseWizardPreview {
         WindowTitle = $window.Title
         WindowWidth = [double]$window.Width
         WindowHeight = [double]$window.Height
+        WindowStyle = [string]$window.WindowStyle
+        ResizeMode = [string]$window.ResizeMode
+        CustomChrome = ($window.WindowStyle -eq [System.Windows.WindowStyle]::None)
+        DefaultTitlebarVisible = ($window.WindowStyle -ne [System.Windows.WindowStyle]::None)
         ContentType = $content.GetType().FullName
         UsesAxisResources = [bool]$usesAxisResources
         ResourcePath = $imports.ResourcePath
