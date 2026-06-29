@@ -1,33 +1,47 @@
-# AXIS BIOS Information Step Content Template
+# AXIS BIOS Drivers & Downloads Step Content Record
 
 Date: 2026-06-29
-Scope: owner-controlled content template only
+Scope: owner-approved Arabic content record only
 
 ## Owner-Control Notice
 
-This document does not approve final customer-facing copy.
+This document records Yazan-approved Arabic-first customer-facing content for the first AXIS first-use wizard script.
 
-All visible customer-facing text and button labels are pending Yazan approval before implementation.
+The approved customer-facing Arabic content in this document may be used only in a later explicitly approved UI implementation phase.
 
-BoostLab config and module data may be used only for internal implementation mapping, such as technical IDs, stage order, runtime action mapping, capability metadata, and diagnostics mapping.
+English customer-facing copy is not approved in this phase. English copy must be translated later from the approved Arabic content and remain reviewable before final implementation.
 
-Final AXIS customer-facing copy must be supplied or explicitly approved by Yazan before any implementation phase uses it.
+BoostLab config and module data may be used only for internal implementation mapping, such as technical IDs, stage order, runtime action mapping, capability metadata, diagnostics mapping, and implementation references.
+
+This phase does not implement UI behavior, query BIOS data, wire the wizard into production UI, or change runtime contracts.
 
 ## Localization and Direction
 
-BIOS Information follows the AXIS Arabic-first localization workflow.
+This is Arabic-first AXIS content.
 
-Arabic copy is pending Yazan approval. English copy is pending future translation after Arabic approval.
+Arabic layout must be RTL and mirrored when implemented. English layout must be LTR.
 
-Arabic layout must be RTL and mirrored. English layout must be LTR.
+Keep the mixed English technical title `BIOS Drivers & Downloads` readable in RTL context.
 
 No customer-facing copy from BoostLab config or module descriptions is approved automatically.
 
+## Global First-Use Wizard Interaction Decisions
+
+Yazan's Phase 177C owner decisions apply globally to the AXIS first-use wizard:
+
+- `Cancel` must not appear anywhere in the first-use wizard.
+- No `Cancel` button may appear in any script, step, footer, or confirmation dialog.
+- `Cancel` must not remain as a disabled or hidden customer-facing placeholder.
+- Running/checking status must use a real runtime animation or effect when implemented.
+- The `جاري التحقق` state must not use a static icon, static PNG, or static SVG.
+- Runtime checking/completed visuals are allowed only as state animations/effects.
+- The global no-script-icons decision remains active.
+
 ## Purpose
 
-This document converts the BIOS Information first-use wizard blueprint into an owner-controlled content template.
+This document records the owner-approved Arabic customer content and interaction rules for the current first AXIS script.
 
-It does not implement UI behavior, query BIOS data, wire the wizard into production UI, or change runtime contracts.
+The internal BoostLab tool remains `bios-information`, but the customer-facing step identity is owner-approved as `BIOS Drivers & Downloads`.
 
 ## Source Inspection
 
@@ -43,13 +57,13 @@ No runtime BIOS query, Apply action, Open action, browser launch, firmware query
 
 ## Internal Implementation Mapping
 
-These are technical facts from current BoostLab config/module state. They are not approved customer-facing copy.
+These are technical facts from current BoostLab config/module state. They are not approved customer-facing copy unless explicitly listed in the owner-approved content sections below.
 
 | Field | Internal value |
 | --- | --- |
 | Step ID | `bios-information` |
 | Config title | `BIOS Information` |
-| Stage | `Check` |
+| Internal stage | `Check` |
 | Stage order | Stage 1 |
 | Tool order in stage | 1 |
 | Runtime tool ID | `bios-information` |
@@ -69,124 +83,182 @@ Current config capability mapping:
 - all modification, download, install, driver, security, delete, reboot, Safe Mode, and TrustedInstaller capabilities are false
 - `NeedsExplicitConfirmation = false`
 
-Technical action mapping:
+## Technical Action Mapping
 
-| Runtime action | Current technical meaning | Customer-facing label |
+The runtime may retain the existing internal action shape, but the customer-facing AXIS UI for this step exposes only the owner-approved visible action.
+
+| Runtime action | Current technical meaning | Customer-facing exposure |
 | --- | --- | --- |
-| `Analyze` | Runs read-only BIOS/motherboard/system analysis | `PENDING_YAZAN_APPROVAL` |
-| `Open` | Opens a motherboard-model-only web search when allowed by runtime | `PENDING_YAZAN_APPROVAL` |
+| `Analyze` | Runs read-only BIOS/motherboard/system analysis | Not customer-facing for this step |
+| `Open` | Opens a motherboard-model-only web search when allowed by runtime | Customer-facing primary action, label `افتح` |
 
-## Owner-Controlled Customer Content Template
+Do not expose `Analyze` as a customer-facing button for this step, even if it exists internally.
 
-No row in this section is approved final copy. Every visible field remains pending Yazan approval.
+## Owner-Approved Arabic Customer Content
 
-| Surface | Owner-approved copy |
+The following Arabic-first customer content is owner-approved by Yazan for this step.
+
+| Surface | Owner-approved value |
 | --- | --- |
-| Customer title | `PENDING_YAZAN_APPROVAL` |
-| Customer subtitle | `PENDING_YAZAN_APPROVAL` |
-| Main explanation | `PENDING_YAZAN_APPROVAL` |
-| Section 1 title | `PENDING_YAZAN_APPROVAL` |
-| Section 1 bullets | `PENDING_YAZAN_APPROVAL` |
-| Section 2 title | `PENDING_YAZAN_APPROVAL` |
-| Section 2 bullets | `PENDING_YAZAN_APPROVAL` |
-| Primary button label | `PENDING_YAZAN_APPROVAL` |
-| Documentation button label | `PENDING_YAZAN_APPROVAL` |
-| Documentation body/helper text | `PENDING_YAZAN_APPROVAL` |
-| Acknowledgement checkbox text | `PENDING_YAZAN_APPROVAL` |
+| Visible step title | `BIOS Drivers & Downloads` |
+| Visible stage label | `Check` |
+| Arabic short subtitle/body | `تحميل التعريفات من صفحة اللوحة الام الرسمي` |
+| Primary visible button label | `افتح` |
+| Documentation button label | `التعليمات` |
+| Arabic Continue/Next label | `التالي` |
 
-## Owner-Controlled State Text Template
+Primary purpose:
 
-Allowed normal customer-facing states remain:
+- The customer is guided to open the official motherboard page and download the required motherboard drivers.
 
-- `Ready`
-- `Checking`
-- `Completed`
+## Owner-Approved Information Panel
 
-`Completed` is the only customer-facing end state.
+Show first information card: yes.
 
-Exact title/body copy remains pending Yazan approval:
-
-| State key | Customer title | Customer body |
-| --- | --- | --- |
-| `Ready` | `PENDING_YAZAN_APPROVAL` | `PENDING_YAZAN_APPROVAL` |
-| `Checking` | `PENDING_YAZAN_APPROVAL` | `PENDING_YAZAN_APPROVAL` |
-| `Completed` | `PENDING_YAZAN_APPROVAL` | `PENDING_YAZAN_APPROVAL` |
-
-Do not show these labels in the normal customer-facing first-use wizard:
-
-- `Error`
-- `Failed`
-- `Warning`
-- `Needs attention`
-- `Stopped`
-- `Restart needed`
-- `Waiting for confirmation`
-- `Not available`
-- `Skipped`
-- `Completed with notes`
-
-## Yazan Content Decision Checklist
-
-Before implementation, Yazan must approve:
-
-- [ ] Exact visible step title
-- [ ] Exact short subtitle
-- [ ] Exact explanation text
-- [ ] Whether to show one or two information panels
-- [ ] Exact panel titles
-- [ ] Exact bullets in each panel
-- [ ] Exact primary button label
-- [ ] Exact documentation button label
-- [ ] Whether the Documentation button opens a future docs page or remains visual-only for now
-- [ ] Whether documentation acknowledgement checkbox is required
-- [ ] Exact Ready title and body text
-- [ ] Exact Checking title and body text
-- [ ] Exact Completed title and body text
-- [ ] Whether any runtime data values should be shown to the customer
-- [ ] What must remain diagnostics-only
-
-## Documentation Button Decision
-
-Documentation behavior is not approved by this document.
-
-Pending owner decisions:
-
-| Decision | Status |
+| Surface | Owner-approved value |
 | --- | --- |
-| Documentation button visible label | `PENDING_YAZAN_APPROVAL` |
-| Whether the button opens a future docs page | `PENDING_YAZAN_APPROVAL` |
-| Future documentation path or slug | `PENDING_YAZAN_APPROVAL` |
-| Whether the button remains visual-only in the prototype | `PENDING_YAZAN_APPROVAL` |
+| Card title | `ما هو عليك تحميله كالاتي` |
+| Card bullet 1 | `تعريف كرت الشبكة` |
+| Card bullet 2 | `تعريف كرت الصوت` |
 
-No URL or route should be implemented from this template.
+## Requirements Panel
 
-## Documentation Acknowledgement Decision
+Show requirements card: no.
 
-The current technical template keeps BIOS Information acknowledgement unset for implementation.
+No requirements panel text is approved or needed for this step.
 
-| Decision | Status |
+## Owner-Approved Visible Actions
+
+Only expose the `Open` customer action for this step.
+
+The visible `افتح` button maps to the internal `Open` behavior for this step.
+
+Do not expose `Analyze` as a customer-facing button.
+
+The documentation button visible label is `التعليمات`.
+
+The final documentation route, page, or behavior remains `PENDING_YAZAN_APPROVAL`.
+
+## Back and Continue Behavior
+
+Back button appears on this step.
+
+Back is allowed because a separate simple introductory page will be designed later before the scripts.
+
+Continue/Next appears on every script.
+
+Arabic visible Continue label should be `التالي` when implemented.
+
+Continue/Next must be disabled or visually inactive before the customer completes the step primary action flow.
+
+After the primary action flow completes, Continue/Next becomes enabled and takes the customer to the next script.
+
+After completion, do not auto-advance. Wait for the customer to press Continue/Next.
+
+The exact Arabic Back label remains `PENDING_YAZAN_APPROVAL`.
+
+## Global No-Cancel Rule
+
+Cancel must not appear in this step.
+
+Cancel must not appear in any future first-use wizard script or step.
+
+Cancel must not appear in the customer-facing wizard footer.
+
+Cancel must not appear in confirmation dialogs.
+
+Later UI implementation must remove Cancel from the customer-facing wizard footer. Any older prototype or design note that described `Cancel` as part of the footer or button set is superseded by this owner decision.
+
+## Documentation Acknowledgement Behavior
+
+This step requires a checkbox, but not inline on the main screen.
+
+The checkbox appears only inside a small confirmation dialog after the customer presses the primary button `افتح`.
+
+The customer cannot continue the primary action from that dialog until checking the checkbox.
+
+Checkbox text exactly as provided by Yazan:
+
+`لقد قرات التعليمات`
+
+The confirmation dialog must not include a Cancel button when implemented.
+
+The dialog should provide only the minimum required continue/confirm path after acknowledgement.
+
+The exact confirm/continue wording inside that dialog remains `PENDING_YAZAN_APPROVAL` unless Yazan separately approves it.
+
+## Owner-Approved Support Panel
+
+The previous Ready/status area becomes a reusable support panel for all scripts.
+
+For this step, the visible support panel content is:
+
+| Surface | Owner-approved value |
 | --- | --- |
-| Whether this step requires documentation acknowledgement | `PENDING_YAZAN_APPROVAL` |
-| Acknowledgement checkbox text if required | `PENDING_YAZAN_APPROVAL` |
-| Whether the primary action is disabled until acknowledgement | `PENDING_YAZAN_APPROVAL` |
+| Support panel title | `مساعدة` |
+| Support panel body | `يمكنك التواصل مع اخصائي الدعم من خلال خادم الدسكورد الخاص بالمتجر` |
 
-Future high-risk steps may use acknowledgement patterns, but BIOS Information customer behavior must still be owner-approved before implementation.
+Do not show the old visible `Ready` wording to the customer in Arabic for this step.
+
+Internally, the system may still have a ready state, but the visible customer panel is the support panel above.
+
+## Owner-Approved Running and Completed State Behavior
+
+When the customer confirms and starts the primary action:
+
+- show a real animated loading/checking effect
+- the animation must be a true moving animation/effect, not a static icon
+- visible Arabic status title: `جاري التحقق`
+- no description/body text for this state
+- final placement is pending implementation, but it should be visually close to the primary action/status flow and must fit the approved `900 x 650` layout
+
+When the primary action flow completes:
+
+- replace the checking animation with a completed state indicator/effect
+- the completed state may use a green completion-style effect or check-style completion motion when implemented
+- it must be treated as a runtime completion status, not a decorative tool icon
+- visible Arabic status title: `مكتمل`
+- no description/body text for this state
+
+`مكتمل` is the only customer-facing end state for this step.
+
+Running/completed visuals are runtime status animations/effects. They are not static script icons, decorative step icons, PNG icons, SVG icons, WPF vector tool icons, or icon columns.
+
+## Owner-Controlled Fields Still Pending
+
+These fields remain pending owner approval:
+
+| Field | Status |
+| --- | --- |
+| English title | `PENDING_YAZAN_APPROVAL` |
+| English subtitle/body | Pending future translation after Arabic approval |
+| English panel text | Pending future translation after Arabic approval |
+| English button labels | Pending future translation after Arabic approval |
+| English state titles | Pending future translation after Arabic approval |
+| Arabic Back label | `PENDING_YAZAN_APPROVAL` |
+| Confirmation dialog confirm/continue label | `PENDING_YAZAN_APPROVAL` |
+| Documentation route/page/behavior | `PENDING_YAZAN_APPROVAL` |
+| Final checking/completed animation placement | Pending later UI implementation |
 
 ## Runtime Data Mapping
 
-The current module can collect or expose richer read-only data later. No customer-visible runtime data is approved by this phase.
+Do not show device/system results to the customer for this step.
+
+Do not show BIOS version, motherboard model, vendor, boot mode, raw command output, or diagnostics in the normal customer-facing wizard.
+
+The customer only sees the checking/completed flow.
 
 | Data item | Current source or status | First-use visibility decision |
 | --- | --- | --- |
-| BIOS/UEFI version | `BiosVersion` from `Win32_BIOS.SMBIOSBIOSVersion` | `Pending Yazan approval` |
+| BIOS/UEFI version | `BiosVersion` from `Win32_BIOS.SMBIOSBIOSVersion` | Diagnostics-only |
 | BIOS release date | `BiosReleaseDate` from `Win32_BIOS.ReleaseDate` | Diagnostics-only |
 | BIOS manufacturer | `BiosManufacturer` from `Win32_BIOS.Manufacturer` | Diagnostics-only |
-| Motherboard vendor | `MotherboardManufacturer` from `Win32_BaseBoard.Manufacturer` | `Pending Yazan approval` |
-| Motherboard model | `MotherboardModel` from `Win32_BaseBoard.Product` | `Pending Yazan approval` |
+| Motherboard vendor | `MotherboardManufacturer` from `Win32_BaseBoard.Manufacturer` | Diagnostics-only |
+| Motherboard model | `MotherboardModel` from `Win32_BaseBoard.Product` | Diagnostics-only |
 | System manufacturer | `SystemManufacturer` from `Win32_ComputerSystem.Manufacturer` | Diagnostics-only |
 | System model | `SystemModel` from `Win32_ComputerSystem.Model` | Diagnostics-only |
-| Windows boot mode | Not currently a direct `BIOSInformation.psm1` output field | `Pending Yazan approval` after a separately approved read-only mapping |
-| Basic firmware readiness signals | Not a single current field | `Pending Yazan approval` after a separately approved read-only mapping |
+| Windows boot mode | Not currently a direct `BIOSInformation.psm1` output field | Diagnostics-only unless Yazan later approves otherwise |
+| Basic firmware readiness signals | Not a single current field | Diagnostics-only unless Yazan later approves otherwise |
 | Secure Boot status | `SecureBootStatus` from `Confirm-SecureBootUEFI` when available | Diagnostics-only |
 | TPM status | `TpmStatus` from `Get-Tpm` or `Win32_Tpm` when available | Diagnostics-only |
 | CPU name | `CpuName` from `Win32_Processor.Name` | Diagnostics-only |
@@ -215,8 +287,28 @@ Diagnostics or developer-only reports may preserve:
 - logs
 - copyable report content
 - structured result messages and data fields
+- exceptions
 
 Diagnostics are not normal first-use wizard customer copy.
+
+## Customer Problem-State Policy
+
+Normal customer-facing first-use UI must not show:
+
+- `Error`
+- `Failed`
+- `Warning`
+- `Needs attention`
+- `Stopped`
+- `Restart needed`
+- `Waiting for confirmation`
+- `Not available`
+- `Skipped`
+- `Completed with notes`
+
+Technical truth, failures, diagnostics, logs, command status, and verification details may remain available in diagnostics/developer reporting only.
+
+The normal customer-facing flow for this step shows only the owner-approved checking/completed experience.
 
 ## UI Layout Mapping
 
@@ -226,14 +318,15 @@ Map the eventual owner-approved content into the approved text-only first-use wi
 - `900 x 650` window
 - stage-only progress strip
 - content card
-- customer title/subtitle/explanation region
-- information panel region or regions
-- primary action
+- visible title/subtitle region
+- information panel region
+- no requirements panel for this step
+- primary action button
 - documentation button
-- status panel
-- bottom navigation
-
-Actual visible text inside each region is pending Yazan approval.
+- reusable support panel before action
+- runtime checking/completed animation area during and after the primary action flow
+- bottom navigation with Back and Continue/Next only
+- no Cancel button
 
 No icons:
 
@@ -244,18 +337,34 @@ No icons:
 - no icon column
 - no status icon next to the state text
 
+Runtime checking/completed animations are allowed only as state effects, not decorative script icons.
+
 ## Acceptance Criteria
 
-- No customer-facing copy is implemented from this document until Yazan approves it.
+- Owner-approved Arabic content is recorded exactly for this step.
+- English copy remains pending future translation after Arabic approval.
+- The visible customer step title is `BIOS Drivers & Downloads`.
+- The visible customer stage label is `Check`.
+- The customer-facing primary action is only `Open`, labeled `افتح`.
+- `Analyze` is not customer-facing for this step.
+- The support panel replaces the old visible Arabic Ready panel for this step.
+- The documentation acknowledgement checkbox appears only in a confirmation dialog after `افتح`.
+- The checkbox text is `لقد قرات التعليمات`.
+- The confirmation dialog has no Cancel button.
+- Continue/Next is disabled or visually inactive until the step primary action flow completes.
+- Continue/Next does not auto-advance after completion.
+- `مكتمل` is the only customer-facing end state for this step.
+- Cancel is globally disallowed in the first-use wizard.
+- Checking/completed visuals must be true runtime animations/effects when implemented.
+- No static icons are introduced for checking/completed status.
+- No script icons are reintroduced.
+- No customer-facing device/system results appear for this step.
 - No customer text is pulled directly from BoostLab config or module descriptions.
 - Technical config is used only for internal mapping.
-- Customer title, body copy, section labels, bullets, button labels, documentation text, acknowledgement text, and state body text remain pending owner approval.
-- No icons are introduced.
-- Normal customer-facing states remain Ready, Checking, and Completed only.
-- Completed remains the only customer-facing end state.
 - No problem/failure labels appear in normal customer UI.
 - No raw technical status appears in normal customer UI.
 - No runtime behavior changes.
+- No UI implementation in this phase.
 - No `ui/MainWindow.ps1` integration.
 - No source-ultimate, source-extra, or intake changes.
 
@@ -263,19 +372,20 @@ No icons:
 
 A later implementation phase should:
 
-- wait for owner-approved copy before changing visible wizard text
+- implement the owner-approved Arabic content exactly
+- keep English text pending until translation is approved
 - keep runtime behavior untouched unless separately approved
-- keep the first-use wizard text-only
-- add exact visible-copy tests after copy is approved
+- keep the first-use wizard text-only except for runtime checking/completed animations
+- remove Cancel from all customer-facing first-use wizard surfaces
 - keep diagnostics separate from normal customer UI
-- show real BIOS result summaries only after Yazan approves the exact fields and wording
-- avoid adding boot-mode or readiness-summary display until a future approved read-only mapping exists
+- ensure RTL mirroring for Arabic mode
+- keep the mixed English title readable in RTL context
+- add exact visible-copy tests after UI implementation is approved
 
 ## Non-Goals
 
 This phase does not:
 
-- approve customer-facing copy
 - implement UI changes
 - run a BIOS query
 - run an Analyze or Open action
@@ -284,6 +394,8 @@ This phase does not:
 - change action plans
 - change diagnostics or result contracts
 - implement localization
+- implement English translation
 - implement the documentation website
 - add icons
+- add animations
 - rename technical IDs or runtime contracts

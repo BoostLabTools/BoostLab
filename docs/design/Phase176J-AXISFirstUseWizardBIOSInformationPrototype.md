@@ -86,10 +86,25 @@ Phase 176W keeps the approved restored wizard direction and applies a narrow pro
 
 The polish:
 
-- gives the footer row more vertical room so Back / Continue / Cancel borders and shadows are not clipped
+- gives the footer row more vertical room so the then-prototype Back / Continue / Cancel borders and shadows were not clipped
 - keeps the bottom-left prototype note and bottom-right visual buttons in the same footer structure
 
+Phase 177C supersedes any first-use wizard footer or dialog model that includes Cancel. Cancel must not appear anywhere in the customer-facing first-use wizard.
+
 The earlier image-icon support from this pass is superseded by the Phase 176Y text-only product decision.
+
+## Phase 177C Arabic Content and Global Interaction Decisions
+
+Phase 177C records Yazan-approved Arabic-first content for the first script and adds global first-use wizard interaction rules.
+
+Global decisions:
+
+- Cancel must not appear in any first-use wizard script, step, footer, or confirmation dialog.
+- Checking/running status must use a real runtime animation/effect when implemented.
+- Checking/running status must not use a static icon, static PNG, or static SVG.
+- Runtime checking/completed visuals are state effects, not decorative script icons.
+
+The Phase 177C content record for this step lives in `docs/design/steps/BIOS-Information-Step-Blueprint.md`.
 
 ## Phase 176X Exact Model A BIOS Icon Superseded
 

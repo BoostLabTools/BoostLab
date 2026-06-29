@@ -28,6 +28,16 @@ BoostLab config/module descriptions must not become customer-facing AXIS copy au
 
 Technical config and module data may be used only for internal mapping, such as tool identity, stage order, runtime action mapping, capability metadata, diagnostics mapping, and implementation references.
 
+## Global First-Use Wizard Interaction Rules
+
+Yazan's Phase 177C owner decisions apply globally to the AXIS first-use wizard.
+
+`Cancel` must not appear anywhere in the first-use wizard. It must not appear in any script, step, footer, or confirmation dialog, and it must not remain as a disabled or hidden customer-facing placeholder.
+
+Running/checking status must use a real runtime animation or effect when implemented. This must not be a static icon, static PNG, or static SVG, and it must not reintroduce script icons or decorative step icons.
+
+These rules are documented here only. This phase does not implement UI behavior.
+
 ## Arabic RTL Behavior
 
 Arabic mode must use:
@@ -156,6 +166,8 @@ These details are not normal customer-facing first-use wizard copy.
 - English LTR requirement is documented.
 - BoostLab config text cannot be used as customer copy automatically.
 - All customer-facing Arabic copy remains pending Yazan approval until explicitly approved.
+- Cancel is globally disallowed in the customer-facing first-use wizard.
+- Checking/running status animation requirements are documented.
 - No UI implementation is performed in this phase.
 - No runtime behavior is changed.
 - No `ui/MainWindow.ps1` integration is added.
