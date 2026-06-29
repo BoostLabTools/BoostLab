@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $script:AxisFirstUseWizardResourcePath = Join-Path $PSScriptRoot 'AxisResources.ps1'
 . $script:AxisFirstUseWizardResourcePath
 $script:AxisFirstUseWizardButtonStyle = $null
+$script:AxisFirstUseWizardFilledSquareCheckboxStyle = $null
 
 function Get-AxisWizardMapValue {
     [CmdletBinding()]
@@ -51,6 +52,140 @@ function New-AxisWizardThickness {
     )
 
     return [System.Windows.Thickness]::new($Left, $Top, $Right, $Bottom)
+}
+
+function New-AxisWizardSpacer {
+    [CmdletBinding()]
+    param(
+        [double]$Width = 0.0,
+
+        [double]$Height = 0.0,
+
+        [string]$Tag = ''
+    )
+
+    $spacer = [System.Windows.Controls.Border]::new()
+    $spacer.Background = [System.Windows.Media.Brushes]::Transparent
+    $spacer.IsHitTestVisible = $false
+    if ($Width -gt 0.0) {
+        $spacer.Width = $Width
+    }
+    if ($Height -gt 0.0) {
+        $spacer.Height = $Height
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Tag)) {
+        $spacer.Tag = $Tag
+    }
+
+    return $spacer
+}
+
+function Add-AxisWizardGridRow {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Grid]$Grid,
+
+        [Parameter(Mandatory)]
+        [System.Windows.UIElement]$Child
+    )
+
+    $rowIndex = $Grid.RowDefinitions.Count
+    $row = [System.Windows.Controls.RowDefinition]::new()
+    $row.Height = [System.Windows.GridLength]::Auto
+    [void]$Grid.RowDefinitions.Add($row)
+    [System.Windows.Controls.Grid]::SetRow($Child, $rowIndex)
+    [void]$Grid.Children.Add($Child)
+
+    return $Child
+}
+
+function New-AxisWizardRightAnchor {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.FrameworkElement]$Child,
+
+        [Parameter(Mandatory)]
+        [string]$Tag,
+
+        [double]$MaxWidth = 0.0
+    )
+
+    $anchor = [System.Windows.Controls.Grid]::new()
+    $anchor.Tag = $Tag
+    $anchor.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $anchor.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $Child.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $Child.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    if ($MaxWidth -gt 0.0) {
+        $Child.MaxWidth = $MaxWidth
+    }
+
+    [void]$anchor.Children.Add($Child)
+    return $anchor
+}
+
+function New-AxisWizardPhysicalRightEdgeTextGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Tag,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IEnumerable]$Lines,
+
+        [double]$MaxWidth = 0.0
+    )
+
+    $group = [System.Windows.Controls.Grid]::new()
+    $group.Tag = $Tag
+    $group.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $group.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    if ($MaxWidth -gt 0.0) {
+        $group.MaxWidth = $MaxWidth
+    }
+
+    $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $rightColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$group.ColumnDefinitions.Add($rightColumn)
+
+    foreach ($line in @($Lines)) {
+        if ($line -isnot [System.Collections.IDictionary]) {
+            continue
+        }
+
+        $textBlock = New-AxisWizardTextBlock `
+            -Text ([string](Get-AxisWizardMapValue -Map $line -Name 'Text')) `
+            -Resources $Resources `
+            -FontSizeKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontSizeKey' -DefaultValue 'Axis.Type.BodySmall.FontSize')) `
+            -FontWeightKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontWeightKey' -DefaultValue 'Axis.Type.Body.FontWeight')) `
+            -FontFamilyKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontFamilyKey' -DefaultValue 'Axis.Type.Body.FontFamily')) `
+            -ForegroundKey ([string](Get-AxisWizardMapValue -Map $line -Name 'ForegroundKey' -DefaultValue 'Axis.Brush.Wizard.TextSecondary')) `
+            -Margin (New-AxisWizardThickness -Left 0 -Top ([double](Get-AxisWizardMapValue -Map $line -Name 'TopMargin' -DefaultValue 0.0)) -Right 0 -Bottom 0) `
+            -TextAlignment ([System.Windows.TextAlignment]::Right) `
+            -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+            -Wrap:([bool](Get-AxisWizardMapValue -Map $line -Name 'Wrap' -DefaultValue $false))
+
+        $lineTag = [string](Get-AxisWizardMapValue -Map $line -Name 'Tag')
+        if (-not [string]::IsNullOrWhiteSpace($lineTag)) {
+            $textBlock.Tag = $lineTag
+        }
+
+        $lineMaxWidth = [double](Get-AxisWizardMapValue -Map $line -Name 'MaxWidth' -DefaultValue 0.0)
+        if ($lineMaxWidth -gt 0.0) {
+            $textBlock.MaxWidth = $lineMaxWidth
+        }
+
+        [System.Windows.Controls.Grid]::SetColumn($textBlock, 0)
+        [void](Add-AxisWizardGridRow -Grid $group -Child $textBlock)
+    }
+
+    return $group
 }
 
 function Get-AxisFirstUseWizardCanonicalStageNames {
@@ -218,6 +353,43 @@ function New-AxisWizardShadowEffect {
     return $effect
 }
 
+function New-AxisWizardColorBrush {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Color
+    )
+
+    return [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString($Color))
+}
+
+function New-AxisWizardSuccessGlowEffect {
+    [CmdletBinding()]
+    param()
+
+    $effect = [System.Windows.Media.Effects.DropShadowEffect]::new()
+    $effect.Color = [System.Windows.Media.ColorConverter]::ConvertFromString('#22C55E')
+    $effect.Direction = 0
+    $effect.Opacity = 0.58
+    $effect.BlurRadius = 14
+    $effect.ShadowDepth = 0
+    return $effect
+}
+
+function Set-AxisWizardEnabledNextButtonBlue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Button]$Button
+    )
+
+    $Button.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.EnabledNextButtonBlue')
+    $Button.Background = New-AxisWizardColorBrush -Color '#2563EB'
+    $Button.BorderBrush = New-AxisWizardColorBrush -Color '#60A5FA'
+    $Button.Foreground = New-AxisWizardColorBrush -Color '#FAF9F6'
+    $Button.Effect = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
+}
+
 function Get-AxisWizardButtonStyle {
     [CmdletBinding()]
     param()
@@ -258,6 +430,58 @@ function Get-AxisWizardButtonStyle {
     return $script:AxisFirstUseWizardButtonStyle
 }
 
+function Get-AxisWizardFilledSquareCheckboxStyle {
+    [CmdletBinding()]
+    param()
+
+    if ($null -eq $script:AxisFirstUseWizardFilledSquareCheckboxStyle) {
+        $styleXaml = @'
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="{x:Type CheckBox}">
+  <Setter Property="Focusable" Value="False" />
+  <Setter Property="Width" Value="16" />
+  <Setter Property="Height" Value="16" />
+  <Setter Property="Template">
+    <Setter.Value>
+      <ControlTemplate TargetType="{x:Type CheckBox}">
+        <Border x:Name="OuterBox"
+                Width="16"
+                Height="16"
+                Background="Transparent"
+                BorderBrush="#EDEDED"
+                BorderThickness="1"
+                CornerRadius="2"
+                SnapsToDevicePixels="True">
+          <Border x:Name="InnerFill"
+                  Width="8"
+                  Height="8"
+                  Background="#2563EB"
+                  CornerRadius="1"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Opacity="0" />
+        </Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsChecked" Value="True">
+            <Setter TargetName="InnerFill" Property="Opacity" Value="1" />
+            <Setter TargetName="OuterBox" Property="BorderBrush" Value="#FAF9F6" />
+          </Trigger>
+          <Trigger Property="IsEnabled" Value="False">
+            <Setter TargetName="OuterBox" Property="Opacity" Value="0.62" />
+          </Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate>
+    </Setter.Value>
+  </Setter>
+</Style>
+'@
+        $script:AxisFirstUseWizardFilledSquareCheckboxStyle = [System.Windows.Markup.XamlReader]::Parse($styleXaml)
+    }
+
+    return $script:AxisFirstUseWizardFilledSquareCheckboxStyle
+}
+
 function New-AxisWizardTextBlock {
     [CmdletBinding()]
     param(
@@ -273,7 +497,9 @@ function New-AxisWizardTextBlock {
         [string]$ForegroundKey = 'Axis.Brush.Wizard.TextSecondary',
         [string]$LineHeightKey = '',
         [System.Windows.Thickness]$Margin = (New-AxisWizardThickness -Left 0),
-        [switch]$Wrap
+        [switch]$Wrap,
+        [System.Windows.TextAlignment]$TextAlignment = [System.Windows.TextAlignment]::Left,
+        [System.Windows.FlowDirection]$FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     )
 
     $textBlock = [System.Windows.Controls.TextBlock]::new()
@@ -283,6 +509,14 @@ function New-AxisWizardTextBlock {
     $textBlock.FontWeight = Get-AxisWizardResource -Resources $Resources -Name $FontWeightKey
     $textBlock.Foreground = Get-AxisWizardResource -Resources $Resources -Name $ForegroundKey
     $textBlock.Margin = $Margin
+    $textBlock.TextAlignment = $TextAlignment
+    $textBlock.FlowDirection = $FlowDirection
+    if ($FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft -and $TextAlignment -eq [System.Windows.TextAlignment]::Right) {
+        $textBlock.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    }
+    else {
+        $textBlock.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    }
 
     $resolvedLineHeightKey = if ([string]::IsNullOrWhiteSpace($LineHeightKey)) {
         $FontSizeKey -replace '\.FontSize$', '.LineHeight'
@@ -300,6 +534,137 @@ function New-AxisWizardTextBlock {
     }
 
     return $textBlock
+}
+
+function Copy-AxisWizardMap {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$Map
+    )
+
+    $copy = [ordered]@{}
+    if ($null -eq $Map) {
+        return $copy
+    }
+
+    foreach ($key in $Map.Keys) {
+        $copy[$key] = $Map[$key]
+    }
+
+    return $copy
+}
+
+function ConvertFrom-AxisWizardCodePoints {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [int[]]$CodePoints
+    )
+
+    return [string]::Concat(@($CodePoints | ForEach-Object { [char]$_ }))
+}
+
+function Get-AxisWizardArabicText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet(
+            'Open',
+            'Completed',
+            'Subtitle',
+            'InformationCardTitle',
+            'NetworkDriver',
+            'AudioDriver',
+            'Documentation',
+            'Acknowledgement',
+            'SupportTitle',
+            'SupportBody',
+            'Checking',
+            'Back',
+            'Next',
+            'Return'
+        )]
+        [string]$Name
+    )
+
+    switch ($Name) {
+        'Open' { return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0641, 0x062A, 0x062D) }
+        'Completed' { return ConvertFrom-AxisWizardCodePoints @(0x0645, 0x0643, 0x062A, 0x0645, 0x0644) }
+        'Subtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0641, 0x062A, 0x062D, 0x0020,
+                0x0635, 0x0641, 0x062D, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x062F, 0x0639, 0x0645, 0x0020,
+                0x0627, 0x0644, 0x0631, 0x0633, 0x0645, 0x064A, 0x0629, 0x0020,
+                0x0644, 0x0644, 0x0648, 0x062D, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x0623, 0x0645, 0x0020,
+                0x0644, 0x062A, 0x062D, 0x0645, 0x064A, 0x0644, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0623, 0x0633, 0x0627, 0x0633, 0x064A, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0637, 0x0644, 0x0648, 0x0628, 0x0629, 0x002E
+            )
+        }
+        'InformationCardTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0644, 0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0637, 0x0644, 0x0648, 0x0628, 0x0629
+            )
+        }
+        'NetworkDriver' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0020,
+                0x0627, 0x0644, 0x0634, 0x0628, 0x0643, 0x0629
+            )
+        }
+        'AudioDriver' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0020,
+                0x0627, 0x0644, 0x0635, 0x0648, 0x062A
+            )
+        }
+        'Documentation' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x062A, 0x0639, 0x0644, 0x064A, 0x0645, 0x0627, 0x062A)
+        }
+        'Acknowledgement' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0644, 0x0642, 0x062F, 0x0020,
+                0x0642, 0x0631, 0x0623, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x0639, 0x0644, 0x064A, 0x0645, 0x0627, 0x062A
+            )
+        }
+        'SupportTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0645, 0x0633, 0x0627, 0x0639, 0x062F, 0x0629)
+        }
+        'SupportBody' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x062A, 0x062D, 0x062A, 0x0627, 0x062C, 0x0020,
+                0x0645, 0x0633, 0x0627, 0x0639, 0x062F, 0x0629, 0x061F, 0x0020,
+                0x064A, 0x0645, 0x0643, 0x0646, 0x0643, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x0648, 0x0627, 0x0635, 0x0644, 0x0020,
+                0x0645, 0x0639, 0x0020,
+                0x0623, 0x062E, 0x0635, 0x0627, 0x0626, 0x064A, 0x0020,
+                0x0627, 0x0644, 0x062F, 0x0639, 0x0645, 0x0020,
+                0x0639, 0x0628, 0x0631, 0x0020,
+                0x062E, 0x0627, 0x062F, 0x0645, 0x0020,
+                0x0044, 0x0069, 0x0073, 0x0063, 0x006F, 0x0072, 0x0064, 0x0020,
+                0x0627, 0x0644, 0x062E, 0x0627, 0x0635, 0x0020,
+                0x0628, 0x0627, 0x0644, 0x0645, 0x062A, 0x062C, 0x0631, 0x002E
+            )
+        }
+        'Checking' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x20, 0x0627, 0x0644, 0x062A, 0x062D, 0x0642, 0x0642)
+        }
+        'Back' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0633, 0x0627, 0x0628, 0x0642)
+        }
+        'Next' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x062A, 0x0627, 0x0644, 0x064A)
+        }
+        'Return' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0631, 0x062C, 0x0648, 0x0639)
+        }
+    }
 }
 
 function New-AxisWizardPanel {
@@ -370,7 +735,7 @@ function New-AxisWizardButton {
     }
     $button.Style = Get-AxisWizardButtonStyle
     $button.Focusable = $false
-    $button.IsHitTestVisible = $false
+    $button.IsHitTestVisible = $true
     $button.IsEnabled = $Enabled
     $button.Tag = 'AxisFirstUseWizard.VisualButton'
 
@@ -443,41 +808,41 @@ function Get-AxisFirstUseWizardSampleState {
 
     $biosStep = [ordered]@{
         Id = 'bios-information'
-        Title = 'BIOS Information'
+        Title = 'BIOS Drivers & Downloads'
         StageName = 'Check'
         State = 'Ready'
-        StateLabel = 'Ready'
-        PrimaryActionLabel = 'Check firmware information'
-        RunningActionLabel = 'Checking...'
-        ReadyStatusText = 'Ready when you are.'
-        RunningStatusText = 'Checking firmware information...'
-        CompletionStateLabel = 'Completed'
-        CompletedStatusText = 'BIOS Information completed.'
-        Description = 'Review basic firmware and motherboard information before continuing the setup flow.'
-        WhatThisStepChecks = @(
-            'BIOS/UEFI version'
-            'Motherboard and vendor details'
+        StateLabel = ''
+        PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'Open')
+        RunningActionLabel = (Get-AxisWizardArabicText -Name 'Open')
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'Completed')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'Subtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'InformationCardTitle')
+        InformationItems = @(
+            (Get-AxisWizardArabicText -Name 'NetworkDriver')
+            (Get-AxisWizardArabicText -Name 'AudioDriver')
         )
-        Requirements = @(
-            'No special action is needed.'
-            'AXIS may ask for administrator context during the full setup flow.'
-        )
-        DocumentationTitle = 'AXIS Documentation'
-        DocumentationLabel = 'View documentation'
-        DocumentationDescription = 'BIOS Information guide and setup notes will live in AXIS documentation later.'
-        RequiresDocumentationAcknowledgement = $false
-        DocumentationAcknowledgementText = 'I have read the instructions for this step.'
-        SampleValues = [ordered]@{
-            Firmware = 'Sample UEFI firmware'
-            Board = 'Sample motherboard family'
-            BootMode = 'UEFI expected'
-        }
+        ShowRequirements = $false
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $true
+        DocumentationAcknowledgementText = (Get-AxisWizardArabicText -Name 'Acknowledgement')
+        ConfirmationActionLabel = (Get-AxisWizardArabicText -Name 'Open')
+        ConfirmationReturnLabel = (Get-AxisWizardArabicText -Name 'Return')
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'Checking')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'Completed')
+        CustomerAction = 'Open'
+        CustomerVisibleActions = @('Open')
     }
 
     return [ordered]@{
         BrandName = 'AXIS'
-        ModeLabel = 'Guided setup'
+        ModeLabel = ''
         CurrentStageName = 'Check'
+        FlowDirection = 'RightToLeft'
+        BackLabel = (Get-AxisWizardArabicText -Name 'Back')
+        ContinueLabel = (Get-AxisWizardArabicText -Name 'Next')
         Window = [ordered]@{
             Width = 900.0
             Height = 650.0
@@ -492,9 +857,10 @@ function Get-AxisFirstUseWizardSampleState {
         Step = $biosStep
         DangerousStepPattern = [ordered]@{
             Title = 'Sample protected step'
-            PrimaryActionLabel = 'Continue'
+            PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'Open')
             RequiresDocumentationAcknowledgement = $true
-            DocumentationAcknowledgementText = 'I have read the instructions for this step.'
+            DocumentationAcknowledgementText = (Get-AxisWizardArabicText -Name 'Acknowledgement')
+            ConfirmationReturnLabel = (Get-AxisWizardArabicText -Name 'Return')
             Acknowledged = $false
         }
     }
@@ -517,10 +883,12 @@ function New-AxisStageProgressStrip {
         -BorderThickness (New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 1)
     $strip.Tag = 'AxisFirstUseWizard.StageProgressStrip'
     $strip.ClipToBounds = $true
+    $strip.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
 
     $grid = [System.Windows.Controls.Grid]::new()
     $grid.Tag = 'AxisFirstUseWizard.StageProgressGrid'
     $grid.ClipToBounds = $true
+    $grid.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
 
     $stageItems = @(Resolve-AxisFirstUseWizardStageItems -Stages $Stages)
     foreach ($stage in $stageItems) {
@@ -581,7 +949,7 @@ function New-AxisStageProgressStrip {
         $barBackground.ClipToBounds = $true
 
         $fill = [System.Windows.Controls.Border]::new()
-        $fill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $fill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
         $fill.Width = [Math]::Max(0, [Math]::Min(1, $progress)) * 104
         $fill.CornerRadius = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Radius.Small'
         $fill.Background = if ($stageState -eq 'Complete') {
@@ -614,14 +982,152 @@ function New-AxisStepDocumentationButton {
     )
 
     $button = New-AxisWizardButton `
-        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'DocumentationLabel' -DefaultValue 'View documentation')) `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'DocumentationLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Documentation'))) `
         -Resources $Resources `
         -Variant 'Quiet' `
-        -Width 180 `
+        -Width 150 `
         -Height 42 `
-        -Margin (New-AxisWizardThickness -Left 14 -Top 0 -Right 0 -Bottom 0)
+        -Margin (New-AxisWizardThickness -Left 0 -Top 0 -Right 24 -Bottom 0)
     $button.Tag = 'AxisFirstUseWizard.DocumentationButton'
     return $button
+}
+
+function New-AxisWizardRuntimeStatusEffect {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Checking', 'Completed')]
+        [string]$State,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $track = [System.Windows.Controls.Border]::new()
+    $track.Width = 92
+    $track.Height = 5
+    $track.CornerRadius = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Radius.Small'
+    $track.Background = if ($State -eq 'Completed') {
+        New-AxisWizardColorBrush -Color '#0E2A1A'
+    }
+    else {
+        Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    }
+    $track.ClipToBounds = $true
+    $track.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $track.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $track.Tag = if ($State -eq 'Completed') {
+        'AxisFirstUseWizard.CompletedEffect'
+    }
+    else {
+        'AxisFirstUseWizard.CheckingAnimation'
+    }
+
+    $pulse = [System.Windows.Controls.Border]::new()
+    $pulse.Height = 5
+    $pulse.CornerRadius = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Radius.Small'
+    $pulse.Background = if ($State -eq 'Completed') {
+        New-AxisWizardColorBrush -Color '#22C55E'
+    }
+    else {
+        Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.Accent'
+    }
+    $pulse.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    if ($State -eq 'Completed') {
+        $track.Effect = New-AxisWizardSuccessGlowEffect
+        $track.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.CompletedRuntimeSuccessGlow')
+        $pulse.Tag = 'AxisFirstUseWizard.CompletedRuntimeSuccessGlow'
+        $pulse.Effect = New-AxisWizardSuccessGlowEffect
+        $pulse.Width = 92
+        $pulse.Opacity = 0.86
+        $fade = [System.Windows.Media.Animation.DoubleAnimation]::new()
+        $fade.From = 0.86
+        $fade.To = 1.0
+        $fade.Duration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(360))
+        $fade.AutoReverse = $false
+        $fade.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::new(1.0)
+        $pulse.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $fade)
+    }
+    else {
+        $pulse.Width = 28
+        $transform = [System.Windows.Media.TranslateTransform]::new()
+        $pulse.RenderTransform = $transform
+        $slide = [System.Windows.Media.Animation.DoubleAnimation]::new()
+        $slide.From = 0.0
+        $slide.To = -64.0
+        $slide.Duration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(760))
+        $slide.AutoReverse = $true
+        $slide.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+        $transform.BeginAnimation([System.Windows.Media.TranslateTransform]::XProperty, $slide)
+    }
+
+    $track.Child = $pulse
+    return $track
+}
+
+function New-AxisWizardRuntimeStatusContent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Checking', 'Completed')]
+        [string]$State,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $stateResources = Get-AxisWizardStepStateResourceKeys -State $State
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.Width = 190
+    $content.MinHeight = 30
+    $content.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $content.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $content.Tag = "AxisFirstUseWizard.RuntimeStatusContent.$State"
+
+    $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $effectColumn.Width = [System.Windows.GridLength]::Auto
+    $spacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $spacerColumn.Width = [System.Windows.GridLength]::new(10.0)
+    $textColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $textColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$content.ColumnDefinitions.Add($effectColumn)
+    [void]$content.ColumnDefinitions.Add($spacerColumn)
+    [void]$content.ColumnDefinitions.Add($textColumn)
+
+    $effect = New-AxisWizardRuntimeStatusEffect -State $State -Resources $Resources
+    [System.Windows.Controls.Grid]::SetColumn($effect, 0)
+    [void]$content.Children.Add($effect)
+
+    $labelText = if ($State -eq 'Completed') {
+        [string](Get-AxisWizardMapValue -Map $Step -Name 'CompletedStatusTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'Completed'))
+    }
+    else {
+        [string](Get-AxisWizardMapValue -Map $Step -Name 'CheckingStatusTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'Checking'))
+    }
+
+    $label = New-AxisWizardTextBlock `
+        -Text $labelText `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey ([string]$stateResources['Text']) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $label.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $label.Tag = 'AxisFirstUseWizard.RuntimeStatusArabicTextInset'
+    $label.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 8 -Bottom 0
+    $labelAnchor = New-AxisWizardRightAnchor `
+        -Child $label `
+        -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor' `
+        -MaxWidth 86
+    $labelAnchor.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($labelAnchor, 2)
+    [void]$content.Children.Add($labelAnchor)
+
+    return $content
 }
 
 function New-AxisStepStatusArea {
@@ -634,44 +1140,95 @@ function New-AxisStepStatusArea {
     )
 
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
-    $stateLabel = [string](Get-AxisWizardMapValue -Map $Step -Name 'StateLabel' -DefaultValue 'Ready')
     $stateResources = Get-AxisWizardStepStateResourceKeys -State $state
-    $statusText = if ($state -eq 'Completed') {
-        [string](Get-AxisWizardMapValue -Map $Step -Name 'CompletedStatusText' -DefaultValue 'Completed')
-    }
-    elseif ($state -in @('Checking', 'Running')) {
-        [string](Get-AxisWizardMapValue -Map $Step -Name 'RunningStatusText' -DefaultValue 'Checking...')
-    }
-    else {
-        [string](Get-AxisWizardMapValue -Map $Step -Name 'ReadyStatusText' -DefaultValue 'Ready when you are.')
-    }
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
         -BackgroundKey ([string]$stateResources['Background']) `
         -BorderBrushKey ([string]$stateResources['Border']) `
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
-        -Padding (New-AxisWizardThickness -Left 12 -Top 7 -Right 12 -Bottom 7) `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 8 -Right 0 -Bottom 0)
-    $panel.MinHeight = 52
-    $panel.Tag = 'AxisFirstUseWizard.StepStatusArea'
+        -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $panel.MinHeight = 42
+    $panel.Width = 214
+    $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
+    $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $panel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
-    $stack = [System.Windows.Controls.StackPanel]::new()
-    $stack.Orientation = [System.Windows.Controls.Orientation]::Vertical
-    [void]$stack.Children.Add((New-AxisWizardTextBlock `
-        -Text $stateLabel `
+    if ($state -eq 'Completed') {
+        $panel.Child = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $Step -Resources $Resources
+        $panel.Visibility = [System.Windows.Visibility]::Visible
+    }
+    elseif ($state -in @('Checking', 'Running')) {
+        $panel.Child = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $Step -Resources $Resources
+        $panel.Visibility = [System.Windows.Visibility]::Visible
+    }
+    else {
+        $panel.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    return $panel
+}
+
+function New-AxisStepSupportPanel {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $stateResources = Get-AxisWizardStepStateResourceKeys -State 'Ready'
+    $panel = New-AxisWizardPanel `
         -Resources $Resources `
-        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
-        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
-        -ForegroundKey ([string]$stateResources['Text'])))
-    [void]$stack.Children.Add((New-AxisWizardTextBlock `
-        -Text $statusText `
+        -BackgroundKey ([string]$stateResources['Background']) `
+        -BorderBrushKey ([string]$stateResources['Border']) `
+        -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
+        -Padding (New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8) `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 8 -Right 0 -Bottom 0)
+    $panel.MinHeight = 58
+    $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
+    $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $support = [System.Windows.Controls.Grid]::new()
+    $support.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $support.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $support.MaxWidth = 720
+    $support.Tag = 'AxisFirstUseWizard.SupportPanelContent'
+    $supportPhysicalRightEdge = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.SupportSharedPhysicalRightEdge' `
         -Resources $Resources `
-        -FontSizeKey 'Axis.Type.Caption.FontSize' `
-        -ForegroundKey ([string]$stateResources['Text']) `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 0) `
-        -Wrap))
-    $panel.Child = $stack
+        -MaxWidth 720 `
+        -Lines @(
+            [ordered]@{
+                Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'SupportTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'SupportTitle'))
+                Tag = 'AxisFirstUseWizard.SupportPhysicalRightTitle'
+                FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+                FontWeightKey = 'Axis.Type.Micro.FontWeight'
+                FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+                ForegroundKey = [string]$stateResources['Text']
+            }
+            [ordered]@{
+                Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'SupportBody')
+                Tag = 'AxisFirstUseWizard.SupportPhysicalRightBody'
+                FontSizeKey = 'Axis.Type.Caption.FontSize'
+                FontWeightKey = 'Axis.Type.Body.FontWeight'
+                FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+                ForegroundKey = [string]$stateResources['Text']
+                TopMargin = 2.0
+                Wrap = $true
+                MaxWidth = 720.0
+            }
+        )
+    [void](Add-AxisWizardGridRow -Grid $support -Child $supportPhysicalRightEdge)
+
+    $panel.Child = New-AxisWizardRightAnchor `
+        -Child $support `
+        -Tag 'AxisFirstUseWizard.ArabicSupportPanelRightAnchor' `
+        -MaxWidth 720
     return $panel
 }
 
@@ -684,47 +1241,59 @@ function New-AxisStepPrimaryActionArea {
         [object]$Resources = (New-AxisWpfResourceDictionary)
     )
 
-    $requiresAcknowledgement = [bool](Get-AxisWizardMapValue -Map $Step -Name 'RequiresDocumentationAcknowledgement' -DefaultValue $false)
-    $acknowledged = [bool](Get-AxisWizardMapValue -Map $Step -Name 'Acknowledged' -DefaultValue $false)
-    $primaryEnabled = -not $requiresAcknowledgement -or $acknowledged
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
-    $buttonText = if ($state -in @('Checking', 'Running')) {
-        [string](Get-AxisWizardMapValue -Map $Step -Name 'RunningActionLabel' -DefaultValue 'Checking...')
-    }
-    else {
-        [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue 'Continue')
-    }
+    $primaryEnabled = ($state -eq 'Ready')
+    $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
 
-    $panel = [System.Windows.Controls.StackPanel]::new()
-    $panel.Orientation = [System.Windows.Controls.Orientation]::Vertical
+    $panel = [System.Windows.Controls.Grid]::new()
+    $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     $panel.Tag = 'AxisFirstUseWizard.PrimaryActionArea'
-
-    if ($requiresAcknowledgement) {
-        $checkbox = [System.Windows.Controls.CheckBox]::new()
-        $checkbox.Content = [string](Get-AxisWizardMapValue -Map $Step -Name 'DocumentationAcknowledgementText' -DefaultValue 'I have read the instructions for this step.')
-        $checkbox.IsChecked = $acknowledged
-        $checkbox.IsHitTestVisible = $false
-        $checkbox.Focusable = $false
-        $checkbox.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 0 -Bottom 12
-        $checkbox.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextSecondary'
-        $checkbox.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
-        $checkbox.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
-        $checkbox.Tag = 'AxisFirstUseWizard.DocumentationAcknowledgement'
-        [void]$panel.Children.Add($checkbox)
-    }
+    $fillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $fillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $statusColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $statusColumn.Width = [System.Windows.GridLength]::Auto
+    $statusSpacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $statusSpacerColumn.Width = [System.Windows.GridLength]::new(16.0)
+    $buttonColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $buttonColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$panel.ColumnDefinitions.Add($fillColumn)
+    [void]$panel.ColumnDefinitions.Add($statusColumn)
+    [void]$panel.ColumnDefinitions.Add($statusSpacerColumn)
+    [void]$panel.ColumnDefinitions.Add($buttonColumn)
 
     $buttonRow = [System.Windows.Controls.StackPanel]::new()
     $buttonRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    [void]$buttonRow.Children.Add((New-AxisWizardButton `
+    $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $buttonRow.Tag = 'AxisFirstUseWizard.PrimaryActionButtonRow'
+    $primaryButton = New-AxisWizardButton `
         -Text $buttonText `
         -Resources $Resources `
         -Variant 'Primary' `
         -Enabled $primaryEnabled `
-        -Width 235 `
+        -Width 142 `
         -Height 42 `
-        -Margin (New-AxisWizardThickness -Left 0)))
-    [void]$buttonRow.Children.Add((New-AxisStepDocumentationButton -Step $Step -Resources $Resources))
+        -Margin (New-AxisWizardThickness -Left 0)
+    $primaryButton.Tag = 'AxisFirstUseWizard.PrimaryOpenButton'
+    $documentationButton = New-AxisStepDocumentationButton -Step $Step -Resources $Resources
+    $documentationButton.Margin = New-AxisWizardThickness -Left 0
+    [void]$buttonRow.Children.Add($primaryButton)
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.PrimaryActionButtonSpacer'))
+    [void]$buttonRow.Children.Add($documentationButton)
+
+    $runtimeStatus = New-AxisStepStatusArea -Step $Step -Resources $Resources
+    [System.Windows.Controls.Grid]::SetColumn($runtimeStatus, 1)
+    [void]$panel.Children.Add($runtimeStatus)
+
+    $runtimeSpacer = New-AxisWizardSpacer -Width 16 -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer'
+    if ($runtimeStatus.Visibility -eq [System.Windows.Visibility]::Collapsed) {
+        $runtimeSpacer.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+    [System.Windows.Controls.Grid]::SetColumn($runtimeSpacer, 2)
+    [void]$panel.Children.Add($runtimeSpacer)
+
+    [System.Windows.Controls.Grid]::SetColumn($buttonRow, 3)
     [void]$panel.Children.Add($buttonRow)
 
     return $panel
@@ -747,44 +1316,55 @@ function New-AxisBiosInformationStep {
         -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
         -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
         -RadiusKey 'Axis.Radius.Wizard.MainCard' `
-        -Padding (New-AxisWizardThickness -Left 36 -Top 20 -Right 34 -Bottom 16) `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 20 -Right 34 -Bottom 16) `
         -Elevation 'Card'
     $container.Height = 382
     $container.Tag = 'AxisFirstUseWizard.BiosInformationStep'
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
 
-    $content = [System.Windows.Controls.StackPanel]::new()
-    $content.Orientation = [System.Windows.Controls.Orientation]::Vertical
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     $content.Tag = 'AxisFirstUseWizard.StepTextContent'
 
-    [void]$content.Children.Add((New-AxisWizardTextBlock `
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Check')) `
         -Resources $Resources `
         -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
         -FontWeightKey 'Axis.Type.Micro.FontWeight' `
-        -ForegroundKey 'Axis.Brush.Wizard.AccentText'))
-    [void]$content.Children.Add((New-AxisWizardTextBlock `
-        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue 'BIOS Information')) `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue 'BIOS Drivers & Downloads')) `
         -Resources $Resources `
         -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
         -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
         -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 8)))
-    [void]$content.Children.Add((New-AxisWizardTextBlock `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 8) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    $descriptionText = New-AxisWizardTextBlock `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
         -Resources $Resources `
         -FontSizeKey 'Axis.Type.Body.FontSize' `
         -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
-        -Wrap))
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+        -Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag 'AxisFirstUseWizard.ArabicSubtitleRightAnchor' `
+        -MaxWidth 690))
 
     $detailsGrid = [System.Windows.Controls.Grid]::new()
     $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 10 -Right 0 -Bottom 8
     $detailsGrid.Tag = 'AxisFirstUseWizard.StepDetails'
-    $leftDetail = [System.Windows.Controls.ColumnDefinition]::new()
-    $leftDetail.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $rightDetail = [System.Windows.Controls.ColumnDefinition]::new()
-    $rightDetail.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    [void]$detailsGrid.ColumnDefinitions.Add($leftDetail)
-    [void]$detailsGrid.ColumnDefinitions.Add($rightDetail)
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $detailColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $detailColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$detailsGrid.ColumnDefinitions.Add($detailColumn)
 
     $checksPanel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -794,62 +1374,195 @@ function New-AxisBiosInformationStep {
         -Padding (New-AxisWizardThickness -Left 15 -Top 10 -Right 15 -Bottom 10) `
         -Elevation 'Soft'
     $checksPanel.MinHeight = 96
-    $checksStack = [System.Windows.Controls.StackPanel]::new()
-    [void]$checksStack.Children.Add((New-AxisWizardTextBlock `
-        -Text 'What this step checks' `
-        -Resources $Resources `
-        -FontSizeKey 'Axis.Type.CardTitle.FontSize' `
-        -FontWeightKey 'Axis.Type.CardTitle.FontWeight' `
-        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 0 -Right 0 -Bottom 8)))
-    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'WhatThisStepChecks' -DefaultValue @())) {
-        [void]$checksStack.Children.Add((New-AxisWizardTextBlock `
-            -Text ("- {0}" -f [string]$item) `
-            -Resources $Resources `
-            -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
-            -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
-            -Wrap))
+    $checksPanel.Tag = 'AxisFirstUseWizard.InformationCard'
+    $checksPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $checksPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $checksStack = [System.Windows.Controls.Grid]::new()
+    $checksStack.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $checksStack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $checksStack.MaxWidth = 650
+    $checksStack.Tag = 'AxisFirstUseWizard.InformationCardContent'
+    $informationLines = [System.Collections.Generic.List[object]]::new()
+    $informationLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'InformationCardTitle'))
+        Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightTitle'
+        FontSizeKey = 'Axis.Type.CardTitle.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+        $informationLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightItem'
+            FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 3.0
+        })
     }
-    $checksPanel.Child = $checksStack
+    $informationPhysicalRightEdge = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.InformationCardSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 650 `
+        -Lines $informationLines
+    [void](Add-AxisWizardGridRow -Grid $checksStack -Child $informationPhysicalRightEdge)
+    $checksPanel.Child = New-AxisWizardRightAnchor `
+        -Child $checksStack `
+        -Tag 'AxisFirstUseWizard.ArabicInfoCardRightAnchor' `
+        -MaxWidth 650
     [System.Windows.Controls.Grid]::SetColumn($checksPanel, 0)
     [void]$detailsGrid.Children.Add($checksPanel)
 
-    $requirementsPanel = New-AxisWizardPanel `
-        -Resources $Resources `
-        -BackgroundKey 'Axis.Brush.Wizard.ElevatedCard' `
-        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
-        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
-        -Padding (New-AxisWizardThickness -Left 15 -Top 10 -Right 15 -Bottom 10) `
-        -Margin (New-AxisWizardThickness -Left 16 -Top 0 -Right 0 -Bottom 0) `
-        -Elevation 'Soft'
-    $requirementsPanel.MinHeight = 96
-    $requirementsStack = [System.Windows.Controls.StackPanel]::new()
-    [void]$requirementsStack.Children.Add((New-AxisWizardTextBlock `
-        -Text 'Requirements' `
-        -Resources $Resources `
-        -FontSizeKey 'Axis.Type.CardTitle.FontSize' `
-        -FontWeightKey 'Axis.Type.CardTitle.FontWeight' `
-        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 0 -Right 0 -Bottom 8)))
-    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'Requirements' -DefaultValue @())) {
-        [void]$requirementsStack.Children.Add((New-AxisWizardTextBlock `
-            -Text ("- {0}" -f [string]$item) `
-            -Resources $Resources `
-            -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
-            -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
-            -Wrap))
-    }
-    $requirementsPanel.Child = $requirementsStack
-    [System.Windows.Controls.Grid]::SetColumn($requirementsPanel, 1)
-    [void]$detailsGrid.Children.Add($requirementsPanel)
-    [void]$content.Children.Add($detailsGrid)
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
 
-    [void]$content.Children.Add((New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources))
-    [void]$content.Children.Add((New-AxisStepStatusArea -Step $Step -Resources $Resources))
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources))
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
 
     $container.Child = $content
 
     return $container
+}
+
+function New-AxisStepAcknowledgementOverlay {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $overlay = [System.Windows.Controls.Border]::new()
+    $overlay.Tag = 'AxisFirstUseWizard.ConfirmationOverlay'
+    $overlay.Visibility = [System.Windows.Visibility]::Collapsed
+    $overlay.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString('#CC080808'))
+    $overlay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $overlay.Padding = New-AxisWizardThickness -Left 260 -Top 190 -Right 260 -Bottom 190
+
+    $card = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.ElevatedCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderStrong' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 22 -Top 22 -Right 22 -Bottom 20) `
+        -Elevation 'Card'
+    $card.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $card.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $card.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $stack = [System.Windows.Controls.StackPanel]::new()
+    $stack.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $stack.Orientation = [System.Windows.Controls.Orientation]::Vertical
+    $stack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $stack.Tag = 'AxisFirstUseWizard.ConfirmationRightAlignedGroup'
+
+    $acknowledgementText = [string](Get-AxisWizardMapValue -Map $Step -Name 'DocumentationAcknowledgementText' -DefaultValue (Get-AxisWizardArabicText -Name 'Acknowledgement'))
+    $checkbox = [System.Windows.Controls.CheckBox]::new()
+    $checkbox.IsChecked = $false
+    $checkbox.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $checkbox.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Right
+    $checkbox.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $checkbox.Margin = New-AxisWizardThickness -Left 0
+    $checkbox.Padding = New-AxisWizardThickness -Left 0
+    $checkbox.Width = 16
+    $checkbox.Height = 16
+    $checkbox.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextSecondary'
+    $checkbox.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+    $checkbox.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+    $checkbox.Style = Get-AxisWizardFilledSquareCheckboxStyle
+    $checkbox.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AcknowledgementBlueFilledSquareCheckbox')
+    $checkbox.Tag = 'AxisFirstUseWizard.ConfirmationAcknowledgement'
+
+    $acknowledgementRow = [System.Windows.Controls.StackPanel]::new()
+    $acknowledgementRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $acknowledgementRow.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $acknowledgementRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $acknowledgementRow.Tag = 'AxisFirstUseWizard.AcknowledgementRightAnchorRow'
+
+    $acknowledgementLabel = New-AxisWizardTextBlock `
+        -Text $acknowledgementText `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $acknowledgementLabel.Tag = 'AxisFirstUseWizard.ConfirmationAcknowledgementText'
+    $acknowledgementLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $acknowledgementLabel.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 8 -Bottom 0
+
+    [void]$acknowledgementRow.Children.Add($acknowledgementLabel)
+    [void]$acknowledgementRow.Children.Add($checkbox)
+
+    $confirmButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))) `
+        -Resources $Resources `
+        -Variant 'Primary' `
+        -Enabled $false `
+        -Width 124 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $confirmButton.Tag = 'AxisFirstUseWizard.ConfirmationOpenButton'
+    $confirmButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    $returnButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationReturnLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Return'))) `
+        -Resources $Resources `
+        -Variant 'Quiet' `
+        -Enabled $true `
+        -Width 104 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $returnButton.Tag = 'AxisFirstUseWizard.ConfirmationReturnButton'
+    $returnButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $returnButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ConfirmationReturnOnlyClosesOverlay')
+
+    $buttonRow = [System.Windows.Controls.StackPanel]::new()
+    $buttonRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $buttonRow.Tag = 'AxisFirstUseWizard.ConfirmationButtonArea'
+
+    $confirmButtonForHandler = $confirmButton
+    $primaryBackgroundForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+    $primaryBorderForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+    $primaryForegroundForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+    $primaryEffectForHandler = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+    $disabledBackgroundForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $disabledBorderForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $disabledForegroundForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $checkbox.Add_Checked({
+        $confirmButtonForHandler.IsEnabled = $true
+        $confirmButtonForHandler.Background = $primaryBackgroundForHandler
+        $confirmButtonForHandler.BorderBrush = $primaryBorderForHandler
+        $confirmButtonForHandler.Foreground = $primaryForegroundForHandler
+        $confirmButtonForHandler.Effect = $primaryEffectForHandler
+    }.GetNewClosure())
+    $checkbox.Add_Unchecked({
+        $confirmButtonForHandler.IsEnabled = $false
+        $confirmButtonForHandler.Background = $disabledBackgroundForHandler
+        $confirmButtonForHandler.BorderBrush = $disabledBorderForHandler
+        $confirmButtonForHandler.Foreground = $disabledForegroundForHandler
+        $confirmButtonForHandler.Effect = $null
+    }.GetNewClosure())
+    $overlayForReturnHandler = $overlay
+    $checkboxForReturnHandler = $checkbox
+    $returnButton.Add_Click({
+        $checkboxForReturnHandler.IsChecked = $false
+        $overlayForReturnHandler.Visibility = [System.Windows.Visibility]::Collapsed
+    }.GetNewClosure())
+
+    [void]$stack.Children.Add($acknowledgementRow)
+    [void]$stack.Children.Add((New-AxisWizardSpacer -Height 14 -Tag 'AxisFirstUseWizard.ConfirmationControlSpacer'))
+    [void]$buttonRow.Children.Add($confirmButton)
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 12 -Tag 'AxisFirstUseWizard.ConfirmationReturnButtonSpacer'))
+    [void]$buttonRow.Children.Add($returnButton)
+    [void]$stack.Children.Add($buttonRow)
+    $card.Child = $stack
+    $overlay.Child = $card
+
+    return $overlay
 }
 
 function New-AxisWizardStepContent {
@@ -882,6 +1595,7 @@ function New-AxisFirstUseWizardPrototype {
     $root.Background = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.Background'
     $root.ClipToBounds = $true
     $root.UseLayoutRounding = $true
+    $root.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     [void](Add-AxisResourcesToElement -Element $root -Resources $resources)
 
     foreach ($height in @(76, 50, 1, 72)) {
@@ -905,6 +1619,7 @@ function New-AxisFirstUseWizardPrototype {
     $header.Tag = 'AxisFirstUseWizard.Header'
 
     $headerGrid = [System.Windows.Controls.Grid]::new()
+    $headerGrid.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $leftColumn = [System.Windows.Controls.ColumnDefinition]::new()
     $leftColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -914,27 +1629,25 @@ function New-AxisFirstUseWizardPrototype {
 
     $brandStack = [System.Windows.Controls.StackPanel]::new()
     $brandStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $brandStack.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     [void]$brandStack.Children.Add((New-AxisWizardTextBlock `
         -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'BrandName' -DefaultValue 'AXIS')) `
         -Resources $resources `
         -FontSizeKey 'Axis.Type.Display.FontSize' `
         -FontWeightKey 'Axis.Type.Display.FontWeight' `
-        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary'))
-    [void]$brandStack.Children.Add((New-AxisWizardTextBlock `
-        -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'ModeLabel' -DefaultValue 'Guided setup')) `
-        -Resources $resources `
-        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
-        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
-        -Margin (New-AxisWizardThickness -Left 18 -Top 13 -Right 0 -Bottom 0)))
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
     [System.Windows.Controls.Grid]::SetColumn($brandStack, 0)
     [void]$headerGrid.Children.Add($brandStack)
 
     $stageText = New-AxisWizardTextBlock `
-        -Text ("Stage: {0}" -f [string](Get-AxisWizardMapValue -Map $SampleState -Name 'CurrentStageName' -DefaultValue 'Check')) `
+        -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'CurrentStageName' -DefaultValue 'Check')) `
         -Resources $resources `
         -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
         -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 13 -Right 0 -Bottom 0)
+        -Margin (New-AxisWizardThickness -Left 0 -Top 13 -Right 0 -Bottom 0) `
+        -TextAlignment ([System.Windows.TextAlignment]::Left) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
     [System.Windows.Controls.Grid]::SetColumn($stageText, 1)
     [void]$headerGrid.Children.Add($stageText)
     $header.Child = $headerGrid
@@ -951,8 +1664,10 @@ function New-AxisFirstUseWizardPrototype {
     $contentHost.Padding = New-AxisWizardThickness -Left 37 -Top 13 -Right 37 -Bottom 8
     $contentHost.Background = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.Background'
     $contentHost.ClipToBounds = $true
+    $contentHost.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $contentHost.Tag = 'AxisFirstUseWizard.StepContentHost'
-    $contentHost.Child = New-AxisWizardStepContent -SampleState $SampleState -Resources $resources
+    $step = Get-AxisWizardMapValue -Map $SampleState -Name 'Step'
+    $contentHost.Child = New-AxisBiosInformationStep -Step $step -Resources $resources
     [System.Windows.Controls.Grid]::SetRow($contentHost, 2)
     [void]$root.Children.Add($contentHost)
 
@@ -964,8 +1679,10 @@ function New-AxisFirstUseWizardPrototype {
         -Padding (New-AxisWizardThickness -Left 36 -Top 12 -Right 36 -Bottom 12) `
         -BorderThickness (New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 0)
     $bottom.Tag = 'AxisFirstUseWizard.BottomNavigation'
+    $bottom.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
 
     $bottomGrid = [System.Windows.Controls.Grid]::new()
+    $bottomGrid.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $bottomLeft = [System.Windows.Controls.ColumnDefinition]::new()
     $bottomLeft.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $bottomRight = [System.Windows.Controls.ColumnDefinition]::new()
@@ -973,47 +1690,143 @@ function New-AxisFirstUseWizardPrototype {
     [void]$bottomGrid.ColumnDefinitions.Add($bottomLeft)
     [void]$bottomGrid.ColumnDefinitions.Add($bottomRight)
 
-    $note = New-AxisWizardTextBlock `
-        -Text 'Prototype only. Buttons are visual and no setup step runs from this window.' `
-        -Resources $resources `
-        -FontSizeKey 'Axis.Type.Caption.FontSize' `
-        -ForegroundKey 'Axis.Brush.Wizard.TextMuted'
-    $note.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($note, 0)
-    [void]$bottomGrid.Children.Add($note)
-
     $buttons = [System.Windows.Controls.StackPanel]::new()
     $buttons.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttons.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $buttons.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $buttons.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $buttons.Tag = 'AxisFirstUseWizard.BottomButtons'
     [void]$buttons.Children.Add((New-AxisWizardButton `
-        -Text 'Back' `
+        -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'BackLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Back'))) `
         -Resources $resources `
         -Variant 'Quiet' `
-        -Width 82 `
+        -Width 92 `
         -Height 40 `
         -Margin (New-AxisWizardThickness -Left 0)))
-    [void]$buttons.Children.Add((New-AxisWizardButton `
-        -Text 'Continue' `
+    $continueEnabled = ([string](Get-AxisWizardMapValue -Map $step -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
+    $continueButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'ContinueLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Next'))) `
         -Resources $resources `
         -Variant 'Primary' `
-        -Width 102 `
+        -Enabled $continueEnabled `
+        -Width 96 `
         -Height 40 `
-        -Margin (New-AxisWizardThickness -Left 16 -Top 0 -Right 0 -Bottom 0)))
-    [void]$buttons.Children.Add((New-AxisWizardButton `
-        -Text 'Cancel' `
-        -Resources $resources `
-        -Variant 'Secondary' `
-        -Width 82 `
-        -Height 40 `
-        -Margin (New-AxisWizardThickness -Left 16 -Top 0 -Right 0 -Bottom 0)))
+        -Margin (New-AxisWizardThickness -Left 0)
+    $continueButton.Tag = 'AxisFirstUseWizard.ContinueButton'
+    if ($continueEnabled) {
+        Set-AxisWizardEnabledNextButtonBlue -Button $continueButton
+    }
+    [void]$buttons.Children.Add((New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.FooterButtonSpacer'))
+    [void]$buttons.Children.Add($continueButton)
     [System.Windows.Controls.Grid]::SetColumn($buttons, 1)
     [void]$bottomGrid.Children.Add($buttons)
 
     $bottom.Child = $bottomGrid
     [System.Windows.Controls.Grid]::SetRow($bottom, 3)
     [void]$root.Children.Add($bottom)
+
+    $overlay = New-AxisStepAcknowledgementOverlay -Step $step -Resources $resources
+    [System.Windows.Controls.Grid]::SetRowSpan($overlay, 4)
+    [void]$root.Children.Add($overlay)
+
+    $primaryButton = $null
+    $confirmButton = $null
+    $runtimeStatusHost = $null
+    $runtimeStatusSpacer = $null
+    $visited = [System.Collections.Generic.HashSet[int]]::new()
+    function Find-AxisWizardTaggedElement {
+        param(
+            [AllowNull()]
+            [object]$Node,
+            [Parameter(Mandatory)]
+            [string]$Tag
+        )
+
+        if ($null -eq $Node) {
+            return $null
+        }
+
+        $hash = [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode($Node)
+        if (-not $visited.Add($hash)) {
+            return $null
+        }
+
+        if ($Node -is [System.Windows.FrameworkElement] -and [string]$Node.Tag -eq $Tag) {
+            return $Node
+        }
+
+        if ($Node -is [System.Windows.Controls.ContentControl]) {
+            $match = Find-AxisWizardTaggedElement -Node $Node.Content -Tag $Tag
+            if ($null -ne $match) { return $match }
+        }
+        if ($Node -is [System.Windows.Controls.Panel]) {
+            foreach ($child in @($Node.Children)) {
+                $match = Find-AxisWizardTaggedElement -Node $child -Tag $Tag
+                if ($null -ne $match) { return $match }
+            }
+        }
+        if ($Node -is [System.Windows.Controls.Decorator]) {
+            $match = Find-AxisWizardTaggedElement -Node $Node.Child -Tag $Tag
+            if ($null -ne $match) { return $match }
+        }
+
+        return $null
+    }
+
+    $primaryButton = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton'
+    $visited.Clear()
+    $runtimeStatusHost = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.RuntimeStatusArea'
+    $visited.Clear()
+    $runtimeStatusSpacer = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer'
+    $visited.Clear()
+    $confirmButton = Find-AxisWizardTaggedElement -Node $overlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton'
+    $visited.Clear()
+    $confirmationAcknowledgement = Find-AxisWizardTaggedElement -Node $overlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement'
+
+    $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $step -Resources $resources
+    $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $step -Resources $resources
+    $completionDelayForHandler = [TimeSpan]::FromMilliseconds(950)
+    $overlayForHandler = $overlay
+    $runtimeStatusHostForHandler = $runtimeStatusHost
+    $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
+    $continueButtonForHandler = $continueButton
+    $continueEnabledBlueMarkerForHandler = 'AxisFirstUseWizard.EnabledNextButtonBlue'
+    $continueEnabledBlueBackgroundForHandler = New-AxisWizardColorBrush -Color '#2563EB'
+    $continueEnabledBlueBorderForHandler = New-AxisWizardColorBrush -Color '#60A5FA'
+    $continueEnabledBlueForegroundForHandler = New-AxisWizardColorBrush -Color '#FAF9F6'
+    $continueEnabledBlueEffectForHandler = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
+    $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
+    $completionTimerForHandler = [System.Windows.Threading.DispatcherTimer]::new()
+    $completionTimerForHandler.Interval = $completionDelayForHandler
+    $completionTimerForHandler.Add_Tick({
+        $completionTimerForHandler.Stop()
+        $runtimeStatusHostForHandler.Child = $completedRuntimeStatusForHandler
+        $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+        $continueButtonForHandler.IsEnabled = $true
+        $continueButtonForHandler.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, $continueEnabledBlueMarkerForHandler)
+        $continueButtonForHandler.Background = $continueEnabledBlueBackgroundForHandler
+        $continueButtonForHandler.BorderBrush = $continueEnabledBlueBorderForHandler
+        $continueButtonForHandler.Foreground = $continueEnabledBlueForegroundForHandler
+        $continueButtonForHandler.Effect = $continueEnabledBlueEffectForHandler
+    }.GetNewClosure())
+
+    if ($primaryButton -is [System.Windows.Controls.Button]) {
+        $primaryButton.Add_Click({
+            $confirmationAcknowledgementForHandler.IsChecked = $false
+            $overlayForHandler.Visibility = [System.Windows.Visibility]::Visible
+        }.GetNewClosure())
+    }
+
+    if ($confirmButton -is [System.Windows.Controls.Button]) {
+        $confirmButton.Add_Click({
+            $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+            $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
+            $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+            $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
+            $completionTimerForHandler.Stop()
+            $completionTimerForHandler.Start()
+        }.GetNewClosure())
+    }
 
     return $root
 }

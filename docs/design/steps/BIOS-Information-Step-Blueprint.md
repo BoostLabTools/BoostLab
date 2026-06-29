@@ -98,13 +98,16 @@ Do not expose `Analyze` as a customer-facing button for this step, even if it ex
 
 The following Arabic-first customer content is owner-approved by Yazan for this step.
 
+Phase 177E supersedes the earlier Phase 177C draft wording for subtitle/body, information-card text, support-panel body, and acknowledgement text.
+
 | Surface | Owner-approved value |
 | --- | --- |
 | Visible step title | `BIOS Drivers & Downloads` |
 | Visible stage label | `Check` |
-| Arabic short subtitle/body | `تحميل التعريفات من صفحة اللوحة الام الرسمي` |
+| Arabic short subtitle/body | `افتح صفحة الدعم الرسمية للوحة الأم لتحميل التعريفات الأساسية المطلوبة.` |
 | Primary visible button label | `افتح` |
 | Documentation button label | `التعليمات` |
+| Arabic Back label | `السابق` |
 | Arabic Continue/Next label | `التالي` |
 
 Primary purpose:
@@ -117,9 +120,9 @@ Show first information card: yes.
 
 | Surface | Owner-approved value |
 | --- | --- |
-| Card title | `ما هو عليك تحميله كالاتي` |
-| Card bullet 1 | `تعريف كرت الشبكة` |
-| Card bullet 2 | `تعريف كرت الصوت` |
+| Card title | `التعريفات المطلوبة` |
+| Card bullet 1 | `تعريف الشبكة` |
+| Card bullet 2 | `تعريف الصوت` |
 
 ## Requirements Panel
 
@@ -139,6 +142,16 @@ The documentation button visible label is `التعليمات`.
 
 The final documentation route, page, or behavior remains `PENDING_YAZAN_APPROVAL`.
 
+## Phase 177G Prototype Runtime Mapping Contract
+
+The isolated AXIS first-use wizard prototype simulates the primary action flow only.
+
+The prototype must not invoke the real BoostLab `Open` action, open motherboard pages, query BIOS/system state, or start runtime behavior.
+
+In the final integrated AXIS wizard, the visible Arabic primary action label recorded above must invoke the same internal `Open` behavior for `bios-information` that BoostLab currently runs when pressing Open.
+
+That real integration remains pending a later approved phase after the visual prototype is accepted.
+
 ## Back and Continue Behavior
 
 Back button appears on this step.
@@ -155,7 +168,7 @@ After the primary action flow completes, Continue/Next becomes enabled and takes
 
 After completion, do not auto-advance. Wait for the customer to press Continue/Next.
 
-The exact Arabic Back label remains `PENDING_YAZAN_APPROVAL`.
+The Arabic Back label is `السابق`.
 
 ## Global No-Cancel Rule
 
@@ -179,13 +192,23 @@ The customer cannot continue the primary action from that dialog until checking 
 
 Checkbox text exactly as provided by Yazan:
 
-`لقد قرات التعليمات`
+`لقد قرأت التعليمات`
+
+The checked checkbox visual uses a small blue inner square fill. The approved blue fill is `#2563EB`.
 
 The confirmation dialog must not include a Cancel button when implemented.
 
 The dialog should provide only the minimum required continue/confirm path after acknowledgement.
 
-The exact confirm/continue wording inside that dialog remains `PENDING_YAZAN_APPROVAL` unless Yazan separately approves it.
+The confirm/continue button inside that dialog uses the already-approved primary action label `افتح`.
+
+The confirmation dialog also includes `رجوع`.
+
+`رجوع` only closes the acknowledgement overlay and returns the customer to the main step screen so they can read `التعليمات`.
+
+`رجوع` is not Cancel, must not start checking, must not mark the step complete, and must not enable `التالي`.
+
+The global no-Cancel rule remains active.
 
 ## Owner-Approved Support Panel
 
@@ -196,7 +219,7 @@ For this step, the visible support panel content is:
 | Surface | Owner-approved value |
 | --- | --- |
 | Support panel title | `مساعدة` |
-| Support panel body | `يمكنك التواصل مع اخصائي الدعم من خلال خادم الدسكورد الخاص بالمتجر` |
+| Support panel body | `تحتاج مساعدة؟ يمكنك التواصل مع أخصائي الدعم عبر خادم Discord الخاص بالمتجر.` |
 
 Do not show the old visible `Ready` wording to the customer in Arabic for this step.
 
@@ -235,8 +258,8 @@ These fields remain pending owner approval:
 | English panel text | Pending future translation after Arabic approval |
 | English button labels | Pending future translation after Arabic approval |
 | English state titles | Pending future translation after Arabic approval |
-| Arabic Back label | `PENDING_YAZAN_APPROVAL` |
-| Confirmation dialog confirm/continue label | `PENDING_YAZAN_APPROVAL` |
+| Arabic Back label | `السابق` |
+| Confirmation dialog confirm/continue label | `افتح` |
 | Documentation route/page/behavior | `PENDING_YAZAN_APPROVAL` |
 | Final checking/completed animation placement | Pending later UI implementation |
 
@@ -349,7 +372,10 @@ Runtime checking/completed animations are allowed only as state effects, not dec
 - `Analyze` is not customer-facing for this step.
 - The support panel replaces the old visible Arabic Ready panel for this step.
 - The documentation acknowledgement checkbox appears only in a confirmation dialog after `افتح`.
-- The checkbox text is `لقد قرات التعليمات`.
+- The checkbox text is `لقد قرأت التعليمات`.
+- The checkbox checked visual uses a blue inner square fill.
+- The confirmation dialog includes `رجوع`.
+- `رجوع` only closes the acknowledgement overlay and is not Cancel.
 - The confirmation dialog has no Cancel button.
 - Continue/Next is disabled or visually inactive until the step primary action flow completes.
 - Continue/Next does not auto-advance after completion.
