@@ -583,7 +583,32 @@ function Get-AxisWizardArabicText {
             'Checking',
             'Back',
             'Next',
-            'Return'
+            'Return',
+            'Restart',
+            'BiosSettingsSubtitle',
+            'BiosSettingsInfoTitle',
+            'BiosSettingsInfoIntro',
+            'IntelTitle',
+            'IntelRam',
+            'IntelCStates',
+            'IntelRebar',
+            'IntelIgpu',
+            'AmdTitle',
+            'AmdRam',
+            'AmdPbo',
+            'AmdRebar',
+            'AmdIgpu',
+            'MotherboardTitle',
+            'MotherboardIntro',
+            'AsusUtility',
+            'MsiUtility',
+            'GigabyteUtility',
+            'AsrockUtility',
+            'RequirementsTitle',
+            'ReqNavigation',
+            'ReqSupport',
+            'RestartAcknowledgement',
+            'Restarting'
         )]
         [string]$Name
     )
@@ -663,6 +688,108 @@ function Get-AxisWizardArabicText {
         }
         'Return' {
             return ConvertFrom-AxisWizardCodePoints @(0x0631, 0x062C, 0x0648, 0x0639)
+        }
+        'Restart' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
+        }
+        'BiosSettingsSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0636, 0x0628, 0x0637, 0x0020,
+                0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020,
+                0x0042, 0x0049, 0x004F, 0x0053, 0x002F, 0x0055, 0x0045, 0x0046, 0x0049, 0x0020,
+                0x0627, 0x0644, 0x062E, 0x0627, 0x0635, 0x0629, 0x0020,
+                0x0628, 0x0627, 0x0644, 0x0644, 0x0648, 0x062D, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x0623, 0x0645, 0x0020,
+                0x0644, 0x062A, 0x062C, 0x0647, 0x064A, 0x0632, 0x0020,
+                0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x0020,
+                0x0644, 0x0644, 0x062E, 0x0637, 0x0648, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x0627, 0x0644, 0x064A, 0x0629, 0x002E
+            )
+        }
+        'BiosSettingsInfoTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0642, 0x062A, 0x0631, 0x062D, 0x0629, 0x0020,
+                0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x0643
+            )
+        }
+        'BiosSettingsInfoIntro' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x064A, 0x0639, 0x0631, 0x0636, 0x0020, 0x0041, 0x0058, 0x0049, 0x0053, 0x0020,
+                0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0646, 0x0627, 0x0633, 0x0628, 0x0629, 0x0020,
+                0x0641, 0x0642, 0x0637, 0x0020,
+                0x062D, 0x0633, 0x0628, 0x0020,
+                0x0646, 0x0648, 0x0639, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0639, 0x0627, 0x0644, 0x062C, 0x0020,
+                0x0648, 0x0627, 0x0644, 0x0644, 0x0648, 0x062D, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x0623, 0x0645, 0x0020,
+                0x0641, 0x064A, 0x0020,
+                0x062C, 0x0647, 0x0627, 0x0632, 0x0643, 0x002E
+            )
+        }
+        'IntelTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0645, 0x0639, 0x0627, 0x0644, 0x062C, 0x0020, 0x0049, 0x006E, 0x0074, 0x0065, 0x006C)
+        }
+        'IntelRam' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020, 0x0072, 0x0061, 0x006D, 0x0020, 0x0070, 0x0072, 0x006F, 0x0066, 0x0069, 0x006C, 0x0065, 0x003A, 0x0020, 0x0058, 0x004D, 0x0050, 0x0020, 0x002F, 0x0020, 0x0044, 0x004F, 0x0043, 0x0050, 0x0020, 0x002F, 0x0020, 0x0045, 0x0058, 0x0050, 0x004F)
+        }
+        'IntelCStates' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x0043, 0x002D, 0x0053, 0x0074, 0x0061, 0x0074, 0x0065, 0x0073)
+        }
+        'IntelRebar' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020, 0x0052, 0x0065, 0x0073, 0x0069, 0x007A, 0x0061, 0x0062, 0x006C, 0x0065, 0x0020, 0x0042, 0x0041, 0x0052, 0x003A, 0x0020, 0x0052, 0x0045, 0x0042, 0x0041, 0x0052, 0x0020, 0x002F, 0x0020, 0x0043, 0x002E, 0x0041, 0x002E, 0x004D)
+        }
+        'IntelIgpu' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x0069, 0x0047, 0x0050, 0x0055)
+        }
+        'AmdTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0645, 0x0639, 0x0627, 0x0644, 0x062C, 0x0020, 0x0041, 0x004D, 0x0044)
+        }
+        'AmdRam' {
+            return Get-AxisWizardArabicText -Name 'IntelRam'
+        }
+        'AmdPbo' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020, 0x0050, 0x0072, 0x0065, 0x0063, 0x0069, 0x0073, 0x0069, 0x006F, 0x006E, 0x0020, 0x0042, 0x006F, 0x006F, 0x0073, 0x0074, 0x0020, 0x004F, 0x0076, 0x0065, 0x0072, 0x0064, 0x0072, 0x0069, 0x0076, 0x0065, 0x003A, 0x0020, 0x0050, 0x0042, 0x004F)
+        }
+        'AmdRebar' {
+            return Get-AxisWizardArabicText -Name 'IntelRebar'
+        }
+        'AmdIgpu' {
+            return Get-AxisWizardArabicText -Name 'IntelIgpu'
+        }
+        'MotherboardTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020, 0x0627, 0x0644, 0x0644, 0x0648, 0x062D, 0x0629, 0x0020, 0x0627, 0x0644, 0x0623, 0x0645, 0x0020, 0x0064, 0x0072, 0x0069, 0x0076, 0x0065, 0x0072, 0x0020, 0x0069, 0x006E, 0x0073, 0x0074, 0x0061, 0x006C, 0x006C, 0x0065, 0x0072, 0x0020, 0x0073, 0x006F, 0x0066, 0x0074, 0x0077, 0x0061, 0x0072, 0x0065, 0x0020, 0x003A)
+        }
+        'MotherboardIntro' {
+            return ConvertFrom-AxisWizardCodePoints @(0x064A, 0x0639, 0x0631, 0x0636, 0x0020, 0x0041, 0x0058, 0x0049, 0x0053, 0x0020, 0x0627, 0x0644, 0x062E, 0x064A, 0x0627, 0x0631, 0x0020, 0x0627, 0x0644, 0x0645, 0x0646, 0x0627, 0x0633, 0x0628, 0x0020, 0x062D, 0x0633, 0x0628, 0x0020, 0x0627, 0x0644, 0x0634, 0x0631, 0x0643, 0x0629, 0x0020, 0x0627, 0x0644, 0x0645, 0x0635, 0x0646, 0x0639, 0x0629, 0x0020, 0x0644, 0x0644, 0x0648, 0x062D, 0x0629, 0x0020, 0x0627, 0x0644, 0x0623, 0x0645, 0x0020, 0x0641, 0x0642, 0x0637, 0x003A)
+        }
+        'AsusUtility' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x0041, 0x0053, 0x0055, 0x0053, 0x0020, 0x0041, 0x0072, 0x006D, 0x006F, 0x0075, 0x0072, 0x0079, 0x0020, 0x0043, 0x0072, 0x0061, 0x0074, 0x0065)
+        }
+        'MsiUtility' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x004D, 0x0053, 0x0049, 0x0020, 0x0044, 0x0072, 0x0069, 0x0076, 0x0065, 0x0072, 0x0020, 0x0055, 0x0074, 0x0069, 0x006C, 0x0069, 0x0074, 0x0079)
+        }
+        'GigabyteUtility' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x0047, 0x0069, 0x0067, 0x0061, 0x0062, 0x0079, 0x0074, 0x0065, 0x0020, 0x0055, 0x0070, 0x0064, 0x0061, 0x0074, 0x0065, 0x0020, 0x0055, 0x0074, 0x0069, 0x006C, 0x0069, 0x0074, 0x0079)
+        }
+        'AsrockUtility' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0639, 0x0637, 0x064A, 0x0644, 0x0020, 0x0041, 0x0053, 0x0052, 0x006F, 0x0063, 0x006B, 0x0020, 0x004D, 0x006F, 0x0074, 0x0068, 0x0065, 0x0072, 0x0062, 0x006F, 0x0061, 0x0072, 0x0064, 0x0020, 0x0055, 0x0074, 0x0069, 0x006C, 0x0069, 0x0074, 0x0079)
+        }
+        'RequirementsTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0645, 0x062A, 0x0637, 0x0644, 0x0628, 0x0627, 0x062A)
+        }
+        'ReqNavigation' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0661, 0x002E, 0x0020, 0x062A, 0x0623, 0x0643, 0x062F, 0x0020, 0x0645, 0x0646, 0x0020, 0x0641, 0x0647, 0x0645, 0x0020, 0x0637, 0x0631, 0x064A, 0x0642, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0646, 0x0642, 0x0644, 0x0020, 0x062F, 0x0627, 0x062E, 0x0644, 0x0020, 0x0634, 0x0627, 0x0634, 0x0629, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053, 0x002F, 0x0055, 0x0045, 0x0046, 0x0049, 0x0020, 0x0642, 0x0628, 0x0644, 0x0020, 0x0627, 0x0644, 0x0645, 0x062A, 0x0627, 0x0628, 0x0639, 0x0629, 0x002E)
+        }
+        'ReqSupport' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0662, 0x002E, 0x0020, 0x0625, 0x0630, 0x0627, 0x0020, 0x0644, 0x0645, 0x0020, 0x062A, 0x0643, 0x0646, 0x0020, 0x0645, 0x062A, 0x0623, 0x0643, 0x062F, 0x064B, 0x0627, 0x0020, 0x0645, 0x0646, 0x0020, 0x0637, 0x0631, 0x064A, 0x0642, 0x0629, 0x0020, 0x0636, 0x0628, 0x0637, 0x0020, 0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020, 0x062D, 0x062A, 0x0649, 0x0020, 0x0628, 0x0639, 0x062F, 0x0020, 0x0642, 0x0631, 0x0627, 0x0621, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0639, 0x0644, 0x064A, 0x0645, 0x0627, 0x062A, 0x060C, 0x0020, 0x062A, 0x0648, 0x0627, 0x0635, 0x0644, 0x0020, 0x0645, 0x0639, 0x0020, 0x0627, 0x0644, 0x062F, 0x0639, 0x0645, 0x0020, 0x0644, 0x064A, 0x062A, 0x0645, 0x0020, 0x0625, 0x0631, 0x0634, 0x0627, 0x062F, 0x0643, 0x0020, 0x062E, 0x0637, 0x0648, 0x0629, 0x0020, 0x0628, 0x062E, 0x0637, 0x0648, 0x0629, 0x002E)
+        }
+        'RestartAcknowledgement' {
+            return Get-AxisWizardArabicText -Name 'Acknowledgement'
+        }
+        'Restarting' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x0020, 0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
         }
     }
 }
@@ -806,6 +933,14 @@ function Get-AxisFirstUseWizardSampleState {
     [CmdletBinding()]
     param()
 
+    $mockHardwareProfile = [ordered]@{
+        Marker = 'AxisFirstUseWizard.MockHardwareProfile'
+        CpuVendor = 'Intel'
+        MotherboardVendor = 'MSI'
+        Summary = 'CPU=Intel; Motherboard=MSI'
+        PrototypeOnly = $true
+    }
+
     $biosStep = [ordered]@{
         Id = 'bios-information'
         Title = 'BIOS Drivers & Downloads'
@@ -836,6 +971,42 @@ function Get-AxisFirstUseWizardSampleState {
         CustomerVisibleActions = @('Open')
     }
 
+    $biosSettingsStep = [ordered]@{
+        Id = 'bios-settings'
+        Title = 'BIOS Settings'
+        StageName = 'Check'
+        State = 'Ready'
+        StateLabel = ''
+        PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'Restart')
+        RunningActionLabel = (Get-AxisWizardArabicText -Name 'Restart')
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'Completed')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'BiosSettingsSubtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'BiosSettingsInfoTitle')
+        VisibleProcessorItems = @(
+            (Get-AxisWizardArabicText -Name 'IntelRam')
+            (Get-AxisWizardArabicText -Name 'IntelCStates')
+            (Get-AxisWizardArabicText -Name 'IntelRebar')
+            (Get-AxisWizardArabicText -Name 'IntelIgpu')
+        )
+        VisibleMotherboardUtility = (Get-AxisWizardArabicText -Name 'MsiUtility')
+        ShowRequirements = $false
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $true
+        DocumentationAcknowledgementText = (Get-AxisWizardArabicText -Name 'RestartAcknowledgement')
+        ConfirmationActionLabel = (Get-AxisWizardArabicText -Name 'Restart')
+        ConfirmationReturnLabel = (Get-AxisWizardArabicText -Name 'Return')
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'Restarting')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'Completed')
+        CustomerAction = 'Open'
+        CustomerVisibleActions = @('Open')
+        MockHardwareProfile = $mockHardwareProfile
+        HardwareAwarePrototypeMarker = 'AxisFirstUseWizard.BiosSettingsHardwareAwarePrototype'
+        VisibleMotherboardUtilityMarker = 'BiosSettingsVisibleMsiUtility'
+    }
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -849,12 +1020,18 @@ function Get-AxisFirstUseWizardSampleState {
             Title = 'AXIS First-use wizard prototype'
         }
         Stages = @(Get-AxisFirstUseWizardCanonicalStages)
+        CurrentStepIndex = 0
+        Step = $biosStep
+        Steps = @(
+            $biosStep
+            $biosSettingsStep
+        )
+        MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
             'Ready'
             'Checking'
             'Completed'
         )
-        Step = $biosStep
         DangerousStepPattern = [ordered]@{
             Title = 'Sample protected step'
             PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'Open')
@@ -1079,13 +1256,20 @@ function New-AxisWizardRuntimeStatusContent {
     )
 
     $stateResources = Get-AxisWizardStepStateResourceKeys -State $State
+    $isBiosSettingsStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'Id') -eq 'bios-settings')
+    $contentWidth = if ($isBiosSettingsStep) { 228.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($isBiosSettingsStep) { 126.0 } else { 86.0 }
+
     $content = [System.Windows.Controls.Grid]::new()
-    $content.Width = 190
+    $content.Width = $contentWidth
     $content.MinHeight = 30
     $content.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $content.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $content.Tag = "AxisFirstUseWizard.RuntimeStatusContent.$State"
+    if ($isBiosSettingsStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
+    }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
     $effectColumn.Width = [System.Windows.GridLength]::Auto
@@ -1122,7 +1306,7 @@ function New-AxisWizardRuntimeStatusContent {
     $labelAnchor = New-AxisWizardRightAnchor `
         -Child $label `
         -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor' `
-        -MaxWidth 86
+        -MaxWidth $labelAnchorMaxWidth
     $labelAnchor.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     [System.Windows.Controls.Grid]::SetColumn($labelAnchor, 2)
     [void]$content.Children.Add($labelAnchor)
@@ -1141,6 +1325,7 @@ function New-AxisStepStatusArea {
 
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
     $stateResources = Get-AxisWizardStepStateResourceKeys -State $state
+    $isBiosSettingsStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'Id') -eq 'bios-settings')
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -1150,8 +1335,11 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = 214
+    $panel.Width = if ($isBiosSettingsStep) { 252 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
+    if ($isBiosSettingsStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
+    }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $panel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -1425,6 +1613,202 @@ function New-AxisBiosInformationStep {
     return $container
 }
 
+function New-AxisBiosSettingsStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'])[1]
+    }
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 14 -Right 34 -Bottom 10) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = 'AxisFirstUseWizard.BiosSettingsStep'
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsNoClippingLayout')
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = 'AxisFirstUseWizard.StepTextContent'
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Check')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue 'BIOS Settings')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    $descriptionText = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+        -Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag 'AxisFirstUseWizard.ArabicSubtitleRightAnchor' `
+        -MaxWidth 690))
+
+    $detailsGrid = [System.Windows.Controls.Grid]::new()
+    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 8
+    $detailsGrid.Tag = 'AxisFirstUseWizard.BiosSettingsDetails'
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsNoClippingLayout')
+    $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 11 -Top 7 -Right 11 -Bottom 7) `
+        -Elevation 'Soft'
+    $informationPanel.Height = 144
+    $informationPanel.Tag = 'AxisFirstUseWizard.BiosSettingsInformationCard'
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.Tag = 'AxisFirstUseWizard.BiosSettingsInformationCardContent'
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $informationContent.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsCompactInformationColumns')
+
+    $informationTopLines = [System.Collections.Generic.List[object]]::new()
+    $informationTopLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle')
+        Tag = 'AxisFirstUseWizard.BiosSettingsInformationTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+    })
+    $informationTopGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.BiosSettingsInformationIntroSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 650 `
+        -Lines $informationTopLines
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child (New-AxisWizardRightAnchor `
+        -Child $informationTopGroup `
+        -Tag 'AxisFirstUseWizard.BiosSettingsInformationIntroRightAnchor' `
+        -MaxWidth 650))
+
+    $hardwareGrid = [System.Windows.Controls.Grid]::new()
+    $hardwareGrid.Margin = New-AxisWizardThickness -Left 0 -Top 5 -Right 0 -Bottom 0
+    $hardwareGrid.Tag = 'AxisFirstUseWizard.BiosSettingsCompactHardwareGroups'
+    $hardwareGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $hardwareGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $motherboardColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $motherboardColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $hardwareSpacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $hardwareSpacerColumn.Width = [System.Windows.GridLength]::new(12.0)
+    $processorColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $processorColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$hardwareGrid.ColumnDefinitions.Add($motherboardColumn)
+    [void]$hardwareGrid.ColumnDefinitions.Add($hardwareSpacerColumn)
+    [void]$hardwareGrid.ColumnDefinitions.Add($processorColumn)
+
+    $processorLines = [System.Collections.Generic.List[object]]::new()
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'VisibleProcessorItems' -DefaultValue @())) {
+        $processorLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.BiosSettingsProcessorItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 1.0
+            Wrap = $true
+            MaxWidth = 300.0
+        })
+    }
+    $processorGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.BiosSettingsProcessorSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 300 `
+        -Lines $processorLines
+    [System.Windows.Controls.Grid]::SetColumn($processorGroup, 2)
+    [void]$hardwareGrid.Children.Add($processorGroup)
+
+    $motherboardLines = [System.Collections.Generic.List[object]]::new()
+    $motherboardLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'VisibleMotherboardUtility')
+        Tag = 'AxisFirstUseWizard.BiosSettingsVisibleMsiUtility'
+        FontSizeKey = 'Axis.Type.Caption.FontSize'
+        FontWeightKey = 'Axis.Type.Body.FontWeight'
+        FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+    })
+    $motherboardGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.BiosSettingsMotherboardSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 300 `
+        -Lines $motherboardLines
+    [System.Windows.Controls.Grid]::SetColumn($motherboardGroup, 0)
+    [void]$hardwareGrid.Children.Add($motherboardGroup)
+
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $hardwareGrid)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag 'AxisFirstUseWizard.BiosSettingsArabicInfoCardRightAnchor' `
+        -MaxWidth 650
+    [System.Windows.Controls.Grid]::SetColumn($informationPanel, 0)
+    [void]$detailsGrid.Children.Add($informationPanel)
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
+    $biosSettingsPrimaryAction = New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources
+    $biosSettingsPrimaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsActionRowSeparated')
+    [void](Add-AxisWizardGridRow -Grid $content -Child $biosSettingsPrimaryAction)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    $container.Child = $content
+
+    return $container
+}
+
+function New-AxisFirstUseWizardStepContent {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    if ($stepId -eq 'bios-settings') {
+        return New-AxisBiosSettingsStep -Step $Step -Resources $Resources
+    }
+
+    return New-AxisBiosInformationStep -Step $Step -Resources $Resources
+}
+
 function New-AxisStepAcknowledgementOverlay {
     [CmdletBinding()]
     param(
@@ -1574,7 +1958,7 @@ function New-AxisWizardStepContent {
     )
 
     $step = Get-AxisWizardMapValue -Map $SampleState -Name 'Step'
-    return New-AxisBiosInformationStep -Step $step -Resources $Resources
+    return New-AxisFirstUseWizardStepContent -Step $step -Resources $Resources
 }
 
 function New-AxisFirstUseWizardPrototype {
@@ -1666,8 +2050,25 @@ function New-AxisFirstUseWizardPrototype {
     $contentHost.ClipToBounds = $true
     $contentHost.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $contentHost.Tag = 'AxisFirstUseWizard.StepContentHost'
-    $step = Get-AxisWizardMapValue -Map $SampleState -Name 'Step'
-    $contentHost.Child = New-AxisBiosInformationStep -Step $step -Resources $resources
+    $steps = @(Get-AxisWizardMapValue -Map $SampleState -Name 'Steps' -DefaultValue @())
+    if ($steps.Count -eq 0) {
+        $steps = @((Get-AxisWizardMapValue -Map $SampleState -Name 'Step'))
+    }
+    $currentStepIndex = [int](Get-AxisWizardMapValue -Map $SampleState -Name 'CurrentStepIndex' -DefaultValue 0)
+    if ($currentStepIndex -lt 0 -or $currentStepIndex -ge $steps.Count) {
+        $currentStepIndex = 0
+    }
+    $step = $steps[$currentStepIndex]
+    $stepViews = [object[]]::new($steps.Count)
+    $stepOverlays = [object[]]::new($steps.Count)
+    $stepCompletedFlags = [bool[]]::new($steps.Count)
+    for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
+        $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
+        $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
+        $stepOverlays[$stepIndex] = New-AxisStepAcknowledgementOverlay -Step $stepMap -Resources $resources
+        $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
+    }
+    $contentHost.Child = $stepViews[$currentStepIndex]
     [System.Windows.Controls.Grid]::SetRow($contentHost, 2)
     [void]$root.Children.Add($contentHost)
 
@@ -1696,14 +2097,16 @@ function New-AxisFirstUseWizardPrototype {
     $buttons.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $buttons.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $buttons.Tag = 'AxisFirstUseWizard.BottomButtons'
-    [void]$buttons.Children.Add((New-AxisWizardButton `
+    $backButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'BackLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Back'))) `
         -Resources $resources `
         -Variant 'Quiet' `
         -Width 92 `
         -Height 40 `
-        -Margin (New-AxisWizardThickness -Left 0)))
-    $continueEnabled = ([string](Get-AxisWizardMapValue -Map $step -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
+        -Margin (New-AxisWizardThickness -Left 0)
+    $backButton.Tag = 'AxisFirstUseWizard.BackButton'
+    [void]$buttons.Children.Add($backButton)
+    $continueEnabled = [bool]$stepCompletedFlags[$currentStepIndex]
     $continueButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'ContinueLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Next'))) `
         -Resources $resources `
@@ -1725,9 +2128,10 @@ function New-AxisFirstUseWizardPrototype {
     [System.Windows.Controls.Grid]::SetRow($bottom, 3)
     [void]$root.Children.Add($bottom)
 
-    $overlay = New-AxisStepAcknowledgementOverlay -Step $step -Resources $resources
-    [System.Windows.Controls.Grid]::SetRowSpan($overlay, 4)
-    [void]$root.Children.Add($overlay)
+    foreach ($overlay in @($stepOverlays)) {
+        [System.Windows.Controls.Grid]::SetRowSpan($overlay, 4)
+        [void]$root.Children.Add($overlay)
+    }
 
     $primaryButton = $null
     $confirmButton = $null
@@ -1773,59 +2177,164 @@ function New-AxisFirstUseWizardPrototype {
         return $null
     }
 
-    $primaryButton = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton'
-    $visited.Clear()
-    $runtimeStatusHost = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.RuntimeStatusArea'
-    $visited.Clear()
-    $runtimeStatusSpacer = Find-AxisWizardTaggedElement -Node $contentHost.Child -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer'
-    $visited.Clear()
-    $confirmButton = Find-AxisWizardTaggedElement -Node $overlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton'
-    $visited.Clear()
-    $confirmationAcknowledgement = Find-AxisWizardTaggedElement -Node $overlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement'
+    $navigationStateForNavigation = [ordered]@{
+        CurrentStepIndex = $currentStepIndex
+    }
+    $contentHostForNavigation = $contentHost
+    $stepViewsForNavigation = $stepViews
+    $stepOverlaysForNavigation = $stepOverlays
+    $stepCompletedFlagsForNavigation = $stepCompletedFlags
+    $continueButtonForNavigation = $continueButton
+    $continueEnabledBlueMarkerForNavigation = 'AxisFirstUseWizard.EnabledNextButtonBlue'
+    $continueEnabledBlueBackgroundForNavigation = New-AxisWizardColorBrush -Color '#2563EB'
+    $continueEnabledBlueBorderForNavigation = New-AxisWizardColorBrush -Color '#60A5FA'
+    $continueEnabledBlueForegroundForNavigation = New-AxisWizardColorBrush -Color '#FAF9F6'
+    $continueEnabledBlueEffectForNavigation = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
+    $continueDisabledBackgroundForNavigation = $continueButton.Background
+    $continueDisabledBorderForNavigation = $continueButton.BorderBrush
+    $continueDisabledForegroundForNavigation = $continueButton.Foreground
+    $continueDisabledEffectForNavigation = $continueButton.Effect
+    $continueAutomationIdPropertyForNavigation = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
 
-    $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $step -Resources $resources
-    $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $step -Resources $resources
-    $completionDelayForHandler = [TimeSpan]::FromMilliseconds(950)
-    $overlayForHandler = $overlay
-    $runtimeStatusHostForHandler = $runtimeStatusHost
-    $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
-    $continueButtonForHandler = $continueButton
-    $continueEnabledBlueMarkerForHandler = 'AxisFirstUseWizard.EnabledNextButtonBlue'
-    $continueEnabledBlueBackgroundForHandler = New-AxisWizardColorBrush -Color '#2563EB'
-    $continueEnabledBlueBorderForHandler = New-AxisWizardColorBrush -Color '#60A5FA'
-    $continueEnabledBlueForegroundForHandler = New-AxisWizardColorBrush -Color '#FAF9F6'
-    $continueEnabledBlueEffectForHandler = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
-    $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
-    $completionTimerForHandler = [System.Windows.Threading.DispatcherTimer]::new()
-    $completionTimerForHandler.Interval = $completionDelayForHandler
-    $completionTimerForHandler.Add_Tick({
-        $completionTimerForHandler.Stop()
-        $runtimeStatusHostForHandler.Child = $completedRuntimeStatusForHandler
-        $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
-        $continueButtonForHandler.IsEnabled = $true
-        $continueButtonForHandler.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, $continueEnabledBlueMarkerForHandler)
-        $continueButtonForHandler.Background = $continueEnabledBlueBackgroundForHandler
-        $continueButtonForHandler.BorderBrush = $continueEnabledBlueBorderForHandler
-        $continueButtonForHandler.Foreground = $continueEnabledBlueForegroundForHandler
-        $continueButtonForHandler.Effect = $continueEnabledBlueEffectForHandler
-    }.GetNewClosure())
+    if ($backButton -is [System.Windows.Controls.Button]) {
+        $backButton.Add_Click({
+            $currentNavigationIndex = [int]$navigationStateForNavigation['CurrentStepIndex']
+            if ($currentNavigationIndex -le 0) {
+                return
+            }
 
-    if ($primaryButton -is [System.Windows.Controls.Button]) {
-        $primaryButton.Add_Click({
-            $confirmationAcknowledgementForHandler.IsChecked = $false
-            $overlayForHandler.Visibility = [System.Windows.Visibility]::Visible
+            foreach ($overlayForNavigation in @($stepOverlaysForNavigation)) {
+                $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+
+            $currentNavigationIndex = $currentNavigationIndex - 1
+            $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
+            if ($stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
+                $continueButtonForNavigation.IsEnabled = $true
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, $continueEnabledBlueMarkerForNavigation)
+                $continueButtonForNavigation.Background = $continueEnabledBlueBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueEnabledBlueBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueEnabledBlueForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueEnabledBlueEffectForNavigation
+            }
+            else {
+                $continueButtonForNavigation.IsEnabled = $false
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, '')
+                $continueButtonForNavigation.Background = $continueDisabledBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+            }
         }.GetNewClosure())
     }
 
-    if ($confirmButton -is [System.Windows.Controls.Button]) {
-        $confirmButton.Add_Click({
-            $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
-            $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
-            $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
-            $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
-            $completionTimerForHandler.Stop()
-            $completionTimerForHandler.Start()
+    if ($continueButton -is [System.Windows.Controls.Button]) {
+        $continueButton.Add_Click({
+            $currentNavigationIndex = [int]$navigationStateForNavigation['CurrentStepIndex']
+            if (-not $stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
+                return
+            }
+            if ($currentNavigationIndex -ge ($stepViewsForNavigation.Count - 1)) {
+                return
+            }
+
+            foreach ($overlayForNavigation in @($stepOverlaysForNavigation)) {
+                $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+
+            $currentNavigationIndex = $currentNavigationIndex + 1
+            $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
+            if ($stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
+                $continueButtonForNavigation.IsEnabled = $true
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, $continueEnabledBlueMarkerForNavigation)
+                $continueButtonForNavigation.Background = $continueEnabledBlueBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueEnabledBlueBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueEnabledBlueForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueEnabledBlueEffectForNavigation
+            }
+            else {
+                $continueButtonForNavigation.IsEnabled = $false
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, '')
+                $continueButtonForNavigation.Background = $continueDisabledBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+            }
         }.GetNewClosure())
+    }
+
+    for ($handlerStepIndex = 0; $handlerStepIndex -lt $steps.Count; $handlerStepIndex++) {
+        $handlerStep = [System.Collections.IDictionary]$steps[$handlerStepIndex]
+        $handlerContent = $stepViews[$handlerStepIndex]
+        $handlerOverlay = $stepOverlays[$handlerStepIndex]
+
+        $visited.Clear()
+        $primaryButton = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton'
+        $visited.Clear()
+        $runtimeStatusHost = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea'
+        $visited.Clear()
+        $runtimeStatusSpacer = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer'
+        $visited.Clear()
+        $confirmButton = Find-AxisWizardTaggedElement -Node $handlerOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton'
+        $visited.Clear()
+        $confirmationAcknowledgement = Find-AxisWizardTaggedElement -Node $handlerOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement'
+
+        $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $handlerStep -Resources $resources
+        $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $handlerStep -Resources $resources
+        $completionTimerForHandler = [System.Windows.Threading.DispatcherTimer]::new()
+        $completionTimerForHandler.Interval = [TimeSpan]::FromMilliseconds(950)
+        $handlerStepIndexForClosure = $handlerStepIndex
+        $handlerOverlayForClosure = $handlerOverlay
+        $runtimeStatusHostForHandler = $runtimeStatusHost
+        $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
+        $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
+        $stepOverlaysForHandler = $stepOverlays
+        $stepCompletedFlagsForHandler = $stepCompletedFlagsForNavigation
+        $continueButtonForHandler = $continueButton
+        $continueEnabledBlueMarkerForHandler = $continueEnabledBlueMarkerForNavigation
+        $continueEnabledBlueBackgroundForHandler = $continueEnabledBlueBackgroundForNavigation
+        $continueEnabledBlueBorderForHandler = $continueEnabledBlueBorderForNavigation
+        $continueEnabledBlueForegroundForHandler = $continueEnabledBlueForegroundForNavigation
+        $continueEnabledBlueEffectForHandler = $continueEnabledBlueEffectForNavigation
+        $continueAutomationIdPropertyForHandler = $continueAutomationIdPropertyForNavigation
+
+        $completionTimerForHandler.Add_Tick({
+            $completionTimerForHandler.Stop()
+            $stepCompletedFlagsForHandler[$handlerStepIndexForClosure] = $true
+            $runtimeStatusHostForHandler.Child = $completedRuntimeStatusForHandler
+            $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+            if ([int]$navigationStateForNavigation['CurrentStepIndex'] -eq $handlerStepIndexForClosure) {
+                $continueButtonForHandler.IsEnabled = $true
+                $continueButtonForHandler.SetValue($continueAutomationIdPropertyForHandler, $continueEnabledBlueMarkerForHandler)
+                $continueButtonForHandler.Background = $continueEnabledBlueBackgroundForHandler
+                $continueButtonForHandler.BorderBrush = $continueEnabledBlueBorderForHandler
+                $continueButtonForHandler.Foreground = $continueEnabledBlueForegroundForHandler
+                $continueButtonForHandler.Effect = $continueEnabledBlueEffectForHandler
+            }
+        }.GetNewClosure())
+
+        if ($primaryButton -is [System.Windows.Controls.Button]) {
+            $primaryButton.Add_Click({
+                foreach ($overlayForHandler in @($stepOverlaysForHandler)) {
+                    $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                $confirmationAcknowledgementForHandler.IsChecked = $false
+                $handlerOverlayForClosure.Visibility = [System.Windows.Visibility]::Visible
+            }.GetNewClosure())
+        }
+
+        if ($confirmButton -is [System.Windows.Controls.Button]) {
+            $confirmButton.Add_Click({
+                $handlerOverlayForClosure.Visibility = [System.Windows.Visibility]::Collapsed
+                $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
+                $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $completionTimerForHandler.Stop()
+                $completionTimerForHandler.Start()
+            }.GetNewClosure())
+        }
     }
 
     return $root

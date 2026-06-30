@@ -35,13 +35,13 @@ Record the following Arabic copy exactly as owner-approved.
 | Title | `BIOS Settings` |
 | Subtitle/body | `اضبط إعدادات BIOS/UEFI الخاصة باللوحة الأم لتجهيز الجهاز للخطوات التالية.` |
 | Information card title | `الإعدادات المقترحة لجهازك` |
-| Information card intro | `يعرض AXIS الإعدادات المناسبة فقط حسب نوع المعالج واللوحة الأم في جهازك.` |
-| Requirements card title | `المتطلبات` |
+| Information card intro | Removed from the normal customer-facing prototype in Phase 178D |
+| Requirements card title | Not shown in the normal customer-facing prototype as of Phase 178E |
 | Primary button | `إعادة التشغيل` |
 | Documentation button | `التعليمات` |
 | Confirmation overlay return button | `رجوع` |
 | Next button | `التالي` |
-| Confirmation checkbox | `لقد قرأت التعليمات وأعلم أنه سيتم إعادة تشغيل الجهاز إلى شاشة BIOS/UEFI.` |
+| Confirmation checkbox | `لقد قرأت التعليمات` |
 | Running state | `جاري إعادة التشغيل` |
 | Completed state | `مكتمل` |
 | Support panel title | `مساعدة` |
@@ -49,43 +49,49 @@ Record the following Arabic copy exactly as owner-approved.
 
 Important: `رجوع` is the confirmation overlay return button for this step blueprint. Do not infer that it replaces the global footer Back label unless Yazan explicitly approves that later.
 
-## Processor Groups
+## Phase 178E Prototype-Visible Settings
 
-### معالج Intel
+The isolated prototype uses a local mock profile only:
+
+- CPU: Intel
+- Motherboard: MSI
+
+The Phase 178D customer-facing prototype shows the settings directly without processor or motherboard group headings.
+
+Default prototype-visible settings:
 
 - `تفعيل ram profile: XMP / DOCP / EXPO`
-- `تعطيل C-States لمعالجات K فقط`
-- `تفعيل Resizable BAR: REBAR / C.A.M.`
+- `تعطيل C-States`
+- `تفعيل Resizable BAR: REBAR / C.A.M`
 - `تعطيل iGPU`
+- `تعطيل MSI Driver Utility`
 
-### معالج AMD
+Do not show the following labels or explanatory lines in the normal customer-facing BIOS Settings prototype:
 
-- `تفعيل ram profile: XMP / DOCP / EXPO`
-- `تفعيل Precision Boost Overdrive: PBO`
-- `تفعيل Resizable BAR: REBAR / C.A.M.`
-- `تعطيل iGPU`
+- `يعرض AXIS الإعدادات المناسبة فقط حسب نوع المعالج واللوحة الأم في جهازك.`
+- `معالج Intel`
+- `معالج AMD`
+- `إعدادات اللوحة الأم driver installer software :`
+- `يعرض AXIS الخيار المناسب حسب الشركة المصنعة للوحة الأم فقط:`
 
-## Motherboard Software Group
+Vendor-specific items remain hardware-aware. The Phase 178D prototype mock profile shows only:
 
-Title:
+- `تعطيل MSI Driver Utility`
 
-`إعدادات اللوحة الأم driver installer software :`
-
-Intro:
-
-`يعرض AXIS الخيار المناسب حسب الشركة المصنعة للوحة الأم فقط:`
-
-Vendor items:
+The normal customer-facing prototype must not show non-matching vendor items:
 
 - `تعطيل ASUS Armoury Crate`
-- `تعطيل MSI Driver Utility`
 - `تعطيل Gigabyte Update Utility`
 - `تعطيل ASRock Motherboard Utility`
 
 ## Requirements
 
-- `تأكد من فهم طريقة التنقل داخل شاشة BIOS/UEFI قبل المتابعة.`
-- `إذا لم تكن متأكدًا من طريقة ضبط الإعدادات حتى بعد قراءة التعليمات، تواصل مع الدعم ليتم إرشادك خطوة بخطوة.`
+Phase 178E removes the requirements card from the normal customer-facing BIOS Settings prototype.
+
+The following previous requirement copy is superseded and is not owner-approved visible UI for BIOS Settings:
+
+- `١. تأكد من فهم طريقة التنقل داخل شاشة BIOS/UEFI قبل المتابعة.`
+- `٢. إذا لم تكن متأكدًا من طريقة ضبط الإعدادات حتى بعد قراءة التعليمات، تواصل مع الدعم ليتم إرشادك خطوة بخطوة.`
 
 ## Hardware-Aware Display Contract
 
@@ -120,6 +126,22 @@ Pending fallback decision:
 
 If AXIS cannot detect CPU or motherboard vendor confidently, the customer-facing fallback content is pending Yazan approval. Do not invent fallback copy in this phase.
 
+## Hardware Correctness Contract
+
+The isolated first-use wizard prototype may use a mock hardware profile only for visual review.
+
+The final integrated AXIS implementation must remove static vendor assumptions before showing vendor-specific BIOS guidance.
+
+Final integrated AXIS must detect CPU and motherboard vendor from reliable system data before displaying vendor-specific guidance.
+
+AXIS must not show a vendor-specific motherboard utility item unless the motherboard vendor is confidently detected.
+
+If motherboard vendor detection is unknown, unavailable, ambiguous, or low-confidence, the customer-facing fallback remains pending Yazan approval.
+
+AXIS must not guess ASUS, MSI, Gigabyte, or ASRock when detection is not reliable.
+
+Vendor detection values, raw manufacturer strings, WMI/system data, and uncertainty details belong in diagnostics/developer reporting, not the normal customer UI.
+
 ## Restart And Resume Contract
 
 AXIS must remember where the customer stopped if a step triggers a restart.
@@ -151,7 +173,7 @@ Do not implement this persistence in this phase. Do not create files, registry k
 ## Confirmation Overlay Behavior
 
 - Pressing customer-facing `إعادة التشغيل` opens a confirmation overlay.
-- The overlay contains the checkbox text `لقد قرأت التعليمات وأعلم أنه سيتم إعادة تشغيل الجهاز إلى شاشة BIOS/UEFI.`
+- The overlay contains the checkbox text `لقد قرأت التعليمات`.
 - The overlay contains a primary confirm button using `إعادة التشغيل`.
 - The overlay contains a return button `رجوع`.
 - `رجوع` closes only the overlay.
@@ -197,7 +219,7 @@ Future implementation should preserve:
 - same AXIS first-use wizard shell
 - no decorative icons
 - information card with dynamic hardware-aware content
-- requirements card shown
+- requirements card not shown for BIOS Settings unless Yazan approves new visible requirement copy later
 - support panel separate from runtime status
 - runtime status near the primary action row
 - `التالي` disabled until the step flow completes
@@ -218,4 +240,3 @@ This phase does not include:
 - English translation
 - localization implementation
 - website/command-launch implementation
-
