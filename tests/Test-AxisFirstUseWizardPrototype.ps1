@@ -189,6 +189,19 @@ function Get-AxisFirstUseWizardTextValues {
     return @($values)
 }
 
+function ConvertTo-AxisFirstUseWizardNormalizedText {
+    param(
+        [AllowNull()]
+        [string]$Text
+    )
+
+    if ($null -eq $Text) {
+        return ''
+    }
+
+    return [regex]::Replace($Text, '\s+', ' ').Trim()
+}
+
 function Get-AxisFirstUseWizardTaggedElements {
     param(
         [Parameter(Mandatory)]
@@ -399,17 +412,20 @@ $stageConfigPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $blueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Information-Step-Blueprint.md'
 $biosSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Settings-Step-Blueprint.md'
 $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-Step-Blueprint.md'
+$autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnattend-Step-Blueprint.md'
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $blueprintPath -PathType Leaf) 'AXIS BIOS Information step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $biosSettingsBlueprintPath -PathType Leaf) 'AXIS BIOS Settings step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathType Leaf) 'AXIS Reinstall step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -PathType Leaf) 'AXIS AutoUnattend step blueprint is missing.'
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
 $biosSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $biosSettingsBlueprintPath
 $reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinstallBlueprintPath
+$autoUnattendBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $autoUnattendBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -422,6 +438,11 @@ foreach ($functionName in @(
     'New-AxisBiosInformationStep'
     'New-AxisBiosSettingsStep'
     'New-AxisReinstallStep'
+    'New-AxisAutoUnattendStep'
+    'New-AxisWizardMixedBidiTextBlock'
+    'Split-AxisAutoUnattendInformationText'
+    'New-AxisAutoUnattendInformationTextGroup'
+    'New-AxisAutoUnattendInputOverlay'
     'New-AxisFirstUseWizardStepContent'
     'New-AxisStepDocumentationButton'
     'New-AxisStepPrimaryActionArea'
@@ -492,6 +513,19 @@ $arabicReinstallRequirementNoData = Get-AxisWizardArabicText -Name 'ReinstallReq
 $arabicReinstallPrimaryAction = Get-AxisWizardArabicText -Name 'ReinstallPrimaryAction'
 $arabicReinstallRunning = Get-AxisWizardArabicText -Name 'ReinstallRunning'
 $arabicReinstallCompleted = Get-AxisWizardArabicText -Name 'ReinstallCompleted'
+$arabicAutoUnattendSubtitle = Get-AxisWizardArabicText -Name 'AutoUnattendSubtitle'
+$arabicAutoUnattendInfoTitle = Get-AxisWizardArabicText -Name 'AutoUnattendInfoTitle'
+$arabicAutoUnattendInfoBulletOobe = Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletOobe'
+$arabicAutoUnattendInfoBulletSetup = Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletSetup'
+$arabicAutoUnattendInfoBulletUsb = Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletUsb'
+$arabicAutoUnattendRequirementAccount = Get-AxisWizardArabicText -Name 'AutoUnattendRequirementAccount'
+$arabicAutoUnattendRequirementUsb = Get-AxisWizardArabicText -Name 'AutoUnattendRequirementUsb'
+$arabicAutoUnattendPrimaryAction = Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction'
+$arabicAutoUnattendInputTitle = Get-AxisWizardArabicText -Name 'AutoUnattendInputTitle'
+$arabicAutoUnattendAccountLabel = Get-AxisWizardArabicText -Name 'AutoUnattendAccountLabel'
+$arabicAutoUnattendUsbLabel = Get-AxisWizardArabicText -Name 'AutoUnattendUsbLabel'
+$arabicAutoUnattendRunning = Get-AxisWizardArabicText -Name 'AutoUnattendRunning'
+$arabicAutoUnattendCompleted = Get-AxisWizardArabicText -Name 'AutoUnattendCompleted'
 $oldArabicIntelRebar = ConvertFrom-AxisWizardCodePoints @(
     0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020,
     0x0052, 0x0065, 0x0073, 0x0069, 0x007A, 0x0061, 0x0062, 0x006C, 0x0065, 0x0020,
@@ -564,9 +598,9 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 3) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, and Reinstall steps.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, then Reinstall.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle") 'AXIS first-use wizard customer step title order changed.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 4) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, and AutoUnattend steps.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, then AutoUnattend.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend") 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
@@ -716,6 +750,7 @@ Assert-BoostLabCondition (-not ('BIOS Drivers & Downloads' -in $stripTexts)) 'AX
 $biosStep = $sampleSteps[0]
 $biosSettingsStep = $sampleSteps[1]
 $reinstallStep = $sampleSteps[2]
+$autoUnattendStep = $sampleSteps[3]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -754,6 +789,23 @@ Assert-BoostLabCondition (-not ('Open' -in @($reinstallStep['CustomerVisibleActi
 Assert-BoostLabCondition (-not ('Apply' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Apply as a customer action.'
 Assert-BoostLabCondition (-not ('Default' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Default as a customer action.'
 Assert-BoostLabCondition (-not ('Restore' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Restore as a customer action.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['Id'] -eq 'unattended') 'AXIS AutoUnattend internal tool id should be unattended.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['Title'] -eq 'AutoUnattend') 'AXIS AutoUnattend customer title changed.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['StageName'] -eq 'Refresh') 'AXIS AutoUnattend customer stage label should be Refresh.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['PrimaryActionLabel'] -eq $arabicAutoUnattendPrimaryAction) 'AXIS AutoUnattend primary action label changed.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['CheckingStatusTitle'] -eq $arabicAutoUnattendRunning) 'AXIS AutoUnattend running status label changed.'
+Assert-BoostLabCondition ([string]$autoUnattendStep['CompletedStatusTitle'] -eq $arabicAutoUnattendCompleted) 'AXIS AutoUnattend completed status label changed.'
+Assert-BoostLabCondition ([bool]$autoUnattendStep['ShowRequirements']) 'AXIS AutoUnattend should show the owner-approved requirements card.'
+Assert-BoostLabCondition (-not [bool]$autoUnattendStep['RequiresConfirmationAcknowledgement']) 'AXIS AutoUnattend must not require a confirmation acknowledgement overlay.'
+Assert-BoostLabCondition ([bool]$autoUnattendStep['RequiresInputWindow']) 'AXIS AutoUnattend should require the input-window prototype path.'
+Assert-BoostLabCondition ([bool]$autoUnattendStep['NoConfirmationOverlay']) 'AXIS AutoUnattend should carry the no-confirmation overlay marker.'
+Assert-BoostLabCondition ([bool]$autoUnattendStep['PrototypeOnlySimulation']) 'AXIS AutoUnattend should be marked as prototype-only simulation.'
+Assert-BoostLabCondition ((@($autoUnattendStep['CustomerVisibleActions']) -join '|') -eq $arabicAutoUnattendPrimaryAction) 'AXIS AutoUnattend should expose only the owner-approved Arabic customer action label.'
+Assert-BoostLabCondition (-not ('Analyze' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Analyze as a customer action.'
+Assert-BoostLabCondition (-not ('Open' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Open as a customer action.'
+Assert-BoostLabCondition (-not ('Apply' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Apply as a customer action.'
+Assert-BoostLabCondition (-not ('Default' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Default as a customer action.'
+Assert-BoostLabCondition (-not ('Restore' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Restore as a customer action.'
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -779,6 +831,7 @@ $taggedBottomButtons = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -
 $taggedFooterButtonSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.FooterButtonSpacer')
 $taggedContinueButtons = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ContinueButton')
 $taggedOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
+$taggedAutoUnattendInputOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay')
 $firstStepOverlay = $taggedOverlay[0]
 $taggedConfirmationRightAlignedGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $firstStepOverlay -Tag 'AxisFirstUseWizard.ConfirmationRightAlignedGroup')
 $taggedAcknowledgementRightAnchorRow = @(Get-AxisFirstUseWizardTaggedElements -Root $firstStepOverlay -Tag 'AxisFirstUseWizard.AcknowledgementRightAnchorRow')
@@ -883,6 +936,8 @@ foreach ($footerButton in $footerButtons) {
 }
 
 Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create confirmation overlays only for the two BIOS steps.'
+Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
+Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS first-step confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
@@ -1324,7 +1379,268 @@ Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetA
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS Reinstall enabled Continue/Next should use the approved blue fill.'
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS Reinstall should not auto-advance after simulated completion.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS Reinstall Continue/Next should not navigate past the last prototype step.'
+$autoUnattendVisibleContent = $taggedContentHost[0].Child
+$autoUnattendVisibleText = (Get-AxisFirstUseWizardTextValues -Root $autoUnattendVisibleContent) -join [Environment]::NewLine
+$autoUnattendVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $autoUnattendVisibleText
+$currentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS Continue/Next from completed Reinstall should move to AutoUnattend.'
+Assert-BoostLabCondition ($null -ne $currentStageHeader) 'AXIS current stage header should remain tagged for AutoUnattend navigation verification.'
+Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Refresh') 'AXIS AutoUnattend current stage header should show Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'AutoUnattend Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'AutoUnattend Refresh active')
+$activeStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
+)
+$completedStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressCompleted.') }
+)
+Assert-BoostLabCondition ($activeStageItems.Count -eq 1) 'AXIS AutoUnattend should expose exactly one active stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($activeStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressActive.Refresh') 'AXIS AutoUnattend active stage marker should be Refresh.'
+Assert-BoostLabCondition ($completedStageItems.Count -eq 1) 'AXIS AutoUnattend should expose exactly one completed previous stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($completedStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressCompleted.Check') 'AXIS AutoUnattend completed stage marker should be Check.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS AutoUnattend Continue/Next should start disabled.'
+foreach ($requiredAutoUnattendText in @(
+    'Refresh'
+    'AutoUnattend'
+    $arabicAutoUnattendSubtitle
+    $arabicAutoUnattendInfoTitle
+    $arabicAutoUnattendInfoBulletOobe
+    $arabicAutoUnattendInfoBulletSetup
+    $arabicAutoUnattendInfoBulletUsb
+    $arabicRequirementsTitle
+    $arabicAutoUnattendRequirementAccount
+    $arabicAutoUnattendRequirementUsb
+    $arabicAutoUnattendPrimaryAction
+    $arabicDocumentation
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    $requiredAutoUnattendTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $requiredAutoUnattendText
+    Assert-BoostLabCondition (
+        $autoUnattendVisibleText.Contains($requiredAutoUnattendText) -or
+        $autoUnattendVisibleTextNormalized.Contains($requiredAutoUnattendTextNormalized)
+    ) "AXIS AutoUnattend view is missing owner-approved text: $requiredAutoUnattendText"
+}
+foreach ($forbiddenAutoUnattendInternalText in @(
+    'Analyze'
+    'Open'
+    'Apply'
+    'Default'
+    'Restore'
+    'Cancel'
+)) {
+    Assert-BoostLabCondition (-not $autoUnattendVisibleText.Contains($forbiddenAutoUnattendInternalText)) "AXIS AutoUnattend view exposes forbidden internal/customer action text: $forbiddenAutoUnattendInternalText"
+}
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationOverlay').Count -eq 0) 'AXIS AutoUnattend content must not include a confirmation overlay.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS AutoUnattend content must not include a confirmation checkbox.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationCard').Count -eq 1) 'AXIS AutoUnattend should render one information card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsCard').Count -eq 1) 'AXIS AutoUnattend should render one requirements card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationItem').Count -eq 3) 'AXIS AutoUnattend should render all three owner-approved information items.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementItem').Count -eq 2) 'AXIS AutoUnattend should render both owner-approved requirements.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 1) 'AXIS AutoUnattend support panel should remain separate and visible.'
+$autoUnattendNoClippingMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $autoUnattendVisibleContent -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.AutoUnattendNoClippingLayout' }
+)
+Assert-BoostLabCondition ($autoUnattendNoClippingMarkers.Count -ge 2) 'AXIS AutoUnattend should expose no-clipping layout markers on the step and details region.'
+$autoUnattendStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendStep') | Select-Object -First 1
+$autoUnattendContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+$autoUnattendDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendDetails') | Select-Object -First 1
+$autoUnattendInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationCard') | Select-Object -First 1
+$autoUnattendRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsCard') | Select-Object -First 1
+$autoUnattendTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendTitleRightAligned') | Select-Object -First 1
+$autoUnattendInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationSharedPhysicalRightEdge') | Select-Object -First 1
+$autoUnattendRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
+$autoUnattendInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationRightAnchor') | Select-Object -First 1
+$autoUnattendRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsRightAnchor') | Select-Object -First 1
+$autoUnattendActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+$autoUnattendSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+Assert-BoostLabCondition ([double]$autoUnattendStepElement.Height -eq 382.0) 'AXIS AutoUnattend should fit inside the 900x650 preview client area without clipping.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($autoUnattendInformationCard) -eq 2) 'AXIS AutoUnattend information card should be assigned to the visual right-side column.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($autoUnattendRequirementsCard) -eq 0) 'AXIS AutoUnattend requirements card should be assigned to the visual left-side column.'
+Assert-BoostLabCondition ($autoUnattendTitleRightAnchor -is [System.Windows.Controls.Grid]) 'AXIS AutoUnattend title right anchor should be a full-width positioning Grid.'
+Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS AutoUnattend title right anchor should use physical LTR positioning.'
+Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS AutoUnattend title right anchor should span the available region.'
+Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.Children.Count -eq 1) 'AXIS AutoUnattend title right anchor should contain one right-aligned title.'
+Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.Children[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS AutoUnattend title should be physically anchored to the right.'
+Assert-BoostLabCondition ([double]$autoUnattendTitleRightAnchor.Children[0].MaxWidth -eq 690.0) 'AXIS AutoUnattend title should use the expected max width.'
+$autoUnattendTitleTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $autoUnattendTitleRightAnchor -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($autoUnattendTitleTextBlocks.Count -eq 1) 'AXIS AutoUnattend title right anchor should contain one title TextBlock.'
+Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $autoUnattendTitleTextBlocks[0]) -eq 'AutoUnattend') 'AXIS AutoUnattend right-aligned title text changed.'
+Assert-BoostLabCondition ($autoUnattendTitleTextBlocks[0].TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS AutoUnattend title should keep right text alignment.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $autoUnattendInformationRightAnchor -Name 'AutoUnattend information card' -ExpectedMaxWidth 320)
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $autoUnattendRequirementsRightAnchor -Name 'AutoUnattend requirements card' -ExpectedMaxWidth 320)
+$autoUnattendMixedBidiMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $autoUnattendInformationSharedRightEdge -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.AutoUnattendMixedBidiSafeInfoText' }
+)
+$autoUnattendInfoCardNoClippingMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $autoUnattendInformationCard -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.AutoUnattendInfoCardNoClipping' }
+)
+Assert-BoostLabCondition ($autoUnattendMixedBidiMarkers.Count -eq 1) 'AXIS AutoUnattend information card should expose the mixed BiDi-safe marker.'
+Assert-BoostLabCondition ($autoUnattendInfoCardNoClippingMarkers.Count -eq 1) 'AXIS AutoUnattend information card should expose the no-clipping marker.'
+Assert-BoostLabCondition ($autoUnattendInformationSharedRightEdge -is [System.Windows.Controls.Grid]) 'AXIS AutoUnattend information card should keep a shared right-origin grid.'
+Assert-BoostLabCondition ($autoUnattendInformationSharedRightEdge.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS AutoUnattend information card shared group should use physical LTR positioning.'
+Assert-BoostLabCondition ($autoUnattendInformationSharedRightEdge.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS AutoUnattend information card shared group should be physically anchored to the right.'
+Assert-BoostLabCondition ([double]$autoUnattendInformationSharedRightEdge.MaxWidth -eq 320.0) 'AXIS AutoUnattend information card shared group should use the expected max width.'
+$autoUnattendInfoTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $autoUnattendInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($autoUnattendInfoTextBlocks.Count -ge 8) 'AXIS AutoUnattend information card should split mixed Arabic/English copy into deterministic right-aligned lines.'
+foreach ($autoUnattendInfoTextBlock in $autoUnattendInfoTextBlocks) {
+    Assert-BoostLabCondition ($autoUnattendInfoTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS AutoUnattend mixed information text should use RTL flow.'
+    Assert-BoostLabCondition ($autoUnattendInfoTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS AutoUnattend mixed information text should stay right-aligned.'
+    Assert-BoostLabCondition ($autoUnattendInfoTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS AutoUnattend mixed information text should share the physical right edge.'
+    Assert-BoostLabCondition ($autoUnattendInfoTextBlock.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS AutoUnattend mixed information text should avoid WPF automatic BiDi wrapping.'
+}
+$autoUnattendInfoNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text ((Get-AxisFirstUseWizardTextValues -Root $autoUnattendInformationSharedRightEdge) -join [Environment]::NewLine)
+foreach ($requiredAutoUnattendInfoText in @(
+    $arabicAutoUnattendInfoTitle
+    $arabicAutoUnattendInfoBulletOobe
+    $arabicAutoUnattendInfoBulletSetup
+    $arabicAutoUnattendInfoBulletUsb
+)) {
+    Assert-BoostLabCondition ($autoUnattendInfoNormalized.Contains((ConvertTo-AxisFirstUseWizardNormalizedText -Text $requiredAutoUnattendInfoText))) "AXIS AutoUnattend information card should preserve approved text after line control: $requiredAutoUnattendInfoText"
+}
+$autoUnattendOobeLines = @(Split-AxisAutoUnattendInformationText -Name 'Oobe' -Text $arabicAutoUnattendInfoBulletOobe)
+$autoUnattendSetupLines = @(Split-AxisAutoUnattendInformationText -Name 'Setup' -Text $arabicAutoUnattendInfoBulletSetup)
+$autoUnattendWindowsInstallFragment = @($autoUnattendOobeLines | Where-Object { $_.Contains('Windows.') }) | Select-Object -First 1
+$arabicBeginningFragmentText = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0628, 0x062F, 0x0627, 0x064A, 0x0629, 0x002E)
+$autoUnattendBeginningFragment = @($autoUnattendSetupLines | Where-Object { $_.Contains($arabicBeginningFragmentText) }) | Select-Object -First 1
+foreach ($safeFragment in @($autoUnattendWindowsInstallFragment, $autoUnattendBeginningFragment)) {
+    Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($safeFragment)) 'AXIS AutoUnattend should keep the reviewed wrapped fragment in a deterministic line.'
+    $fragmentTextBlocks = @(Get-AxisFirstUseWizardTextBlocksByText -Root $autoUnattendInformationSharedRightEdge -Text $safeFragment)
+    Assert-BoostLabCondition ($fragmentTextBlocks.Count -eq 1) "AXIS AutoUnattend reviewed fragment should render as one safe right-aligned line: $safeFragment"
+    Assert-BoostLabCondition ([string]$fragmentTextBlocks[0].Tag -eq 'AxisFirstUseWizard.AutoUnattendInformationItemLine') "AXIS AutoUnattend reviewed fragment should use the mixed-line marker: $safeFragment"
+    Assert-BoostLabCondition ($fragmentTextBlocks[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS AutoUnattend reviewed fragment should not drift to the physical left: $safeFragment"
+}
+$autoUnattendEnglishRuns = @(
+    $autoUnattendInfoTextBlocks |
+        ForEach-Object { @($_.Inlines) } |
+        Where-Object { $_ -is [System.Windows.Documents.Run] -and $_.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight }
+)
+foreach ($requiredEnglishTerm in @('AutoUnattend', 'OOBE', 'Windows', 'Microsoft', 'USB')) {
+    Assert-BoostLabCondition (@($autoUnattendEnglishRuns | Where-Object { [string]$_.Text -eq $requiredEnglishTerm }).Count -ge 1) "AXIS AutoUnattend information card should isolate the English term in an LTR Run: $requiredEnglishTerm"
+}
+[void](Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup `
+    -Group $autoUnattendRequirementsSharedRightEdge `
+    -Name 'AutoUnattend requirements card' `
+    -ExpectedTexts @($arabicRequirementsTitle, $arabicAutoUnattendRequirementAccount, $arabicAutoUnattendRequirementUsb) `
+    -ExpectedMaxWidth 320)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendActionArea) -eq 'AxisFirstUseWizard.AutoUnattendInputActionRow') 'AXIS AutoUnattend action row should expose the input-window marker.'
+Assert-BoostLabCondition ($autoUnattendContentGrid.Children.IndexOf($autoUnattendDetails) -lt $autoUnattendContentGrid.Children.IndexOf($autoUnattendActionArea)) 'AXIS AutoUnattend details must appear before the action row.'
+Assert-BoostLabCondition ($autoUnattendContentGrid.Children.IndexOf($autoUnattendActionArea) -lt $autoUnattendContentGrid.Children.IndexOf($autoUnattendSupportPanel)) 'AXIS AutoUnattend action row must remain separated above the support panel.'
+Assert-BoostLabCondition ($autoUnattendSupportPanel.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS AutoUnattend support panel should be visible before the simulated flow.'
+$autoUnattendStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+$autoUnattendRowTotal = 0.0
+foreach ($autoUnattendRowChild in @($autoUnattendContentGrid.Children)) {
+    $autoUnattendRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+    $autoUnattendRowTotal += [double]$autoUnattendRowChild.DesiredSize.Height
+}
+$autoUnattendInnerHeight = [double]$autoUnattendStepElement.Height -
+    [double]$autoUnattendStepElement.Padding.Top -
+    [double]$autoUnattendStepElement.Padding.Bottom -
+    [double]$autoUnattendStepElement.BorderThickness.Top -
+    [double]$autoUnattendStepElement.BorderThickness.Bottom
+Assert-BoostLabCondition ($autoUnattendRowTotal -le $autoUnattendInnerHeight) 'AXIS AutoUnattend row content should fit inside the card without bottom clipping.'
+Assert-BoostLabCondition ([double]$autoUnattendInformationCard.Height -eq 152.0) 'AXIS AutoUnattend information card should reserve enough height for the approved copy.'
+Assert-BoostLabCondition ([double]$autoUnattendRequirementsCard.Height -eq 152.0) 'AXIS AutoUnattend requirements card should align with the information card height.'
+$autoUnattendInformationCard.Child.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
+$autoUnattendInformationCardInnerHeight = [double]$autoUnattendInformationCard.Height -
+    [double]$autoUnattendInformationCard.Padding.Top -
+    [double]$autoUnattendInformationCard.Padding.Bottom
+Assert-BoostLabCondition ([double]$autoUnattendInformationCard.Child.DesiredSize.Height -le $autoUnattendInformationCardInnerHeight) 'AXIS AutoUnattend information card content should fit without clipping inside its reserved card height.'
+$autoUnattendPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$autoUnattendRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$autoUnattendRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+Assert-BoostLabCondition ([string]$autoUnattendPrimaryButton.Content -eq $arabicAutoUnattendPrimaryAction) 'AXIS AutoUnattend primary button should use the owner-approved Arabic label.'
+Assert-BoostLabCondition ([double]$autoUnattendPrimaryButton.Width -ge 150.0) 'AXIS AutoUnattend primary button should be wide enough for the owner-approved label.'
+Assert-BoostLabCondition ($autoUnattendRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend runtime status should start hidden.'
+Assert-BoostLabCondition ([double]$autoUnattendRuntimeStatusArea.Width -eq 252.0) 'AXIS AutoUnattend runtime status should use a no-clipping width for the Arabic running state.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendRuntimeStatusArea) -eq 'AxisFirstUseWizard.AutoUnattendRuntimeStatusNoClipping') 'AXIS AutoUnattend runtime status should expose the no-clipping marker.'
+$autoUnattendInputOverlay = $taggedAutoUnattendInputOverlay[0]
+$autoUnattendInputText = (Get-AxisFirstUseWizardTextValues -Root $autoUnattendInputOverlay) -join [Environment]::NewLine
+foreach ($requiredAutoUnattendInputText in @(
+    $arabicAutoUnattendInputTitle
+    $arabicAutoUnattendAccountLabel
+    $arabicAutoUnattendUsbLabel
+    $arabicAutoUnattendPrimaryAction
+    $arabicReturn
+)) {
+    Assert-BoostLabCondition ($autoUnattendInputText.Contains($requiredAutoUnattendInputText)) "AXIS AutoUnattend input window is missing owner-approved text: $requiredAutoUnattendInputText"
+}
+$autoUnattendInputCardMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $autoUnattendInputOverlay -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.AutoUnattendInputWindowNoCheckbox' }
+)
+$autoUnattendAccountBox = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendAccountTextBox') | Select-Object -First 1
+$autoUnattendUsbSelector = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendUsbSelector') | Select-Object -First 1
+$autoUnattendInputCreateButton = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendInputCreateButton') | Select-Object -First 1
+$autoUnattendInputReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendInputReturnButton') | Select-Object -First 1
+Assert-BoostLabCondition ($autoUnattendInputCardMarkers.Count -eq 1) 'AXIS AutoUnattend input window should expose the no-checkbox marker.'
+Assert-BoostLabCondition ($autoUnattendAccountBox -is [System.Windows.Controls.TextBox]) 'AXIS AutoUnattend input window should include an account TextBox.'
+Assert-BoostLabCondition ($autoUnattendUsbSelector -is [System.Windows.Controls.ComboBox]) 'AXIS AutoUnattend input window should include a mock USB ComboBox.'
+Assert-BoostLabCondition ($autoUnattendInputCreateButton -is [System.Windows.Controls.Button]) 'AXIS AutoUnattend input window Create button is missing.'
+Assert-BoostLabCondition ($autoUnattendInputReturnButton -is [System.Windows.Controls.Button]) 'AXIS AutoUnattend input window Return button is missing.'
+Assert-BoostLabCondition ([string]$autoUnattendInputCreateButton.Content -eq $arabicAutoUnattendPrimaryAction) 'AXIS AutoUnattend input Create button label changed.'
+Assert-BoostLabCondition ([string]$autoUnattendInputReturnButton.Content -eq $arabicReturn) 'AXIS AutoUnattend input Return button label changed.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendInputReturnButton) -eq 'AxisFirstUseWizard.AutoUnattendInputReturnOnlyClosesOverlay') 'AXIS AutoUnattend input Return should be marked as overlay-only close behavior.'
+Assert-BoostLabCondition ($autoUnattendUsbSelector.Items.Count -eq 1) 'AXIS AutoUnattend prototype should expose exactly one safe mock USB item.'
+Assert-BoostLabCondition ([string]$autoUnattendUsbSelector.Items[0] -eq 'USB') 'AXIS AutoUnattend mock USB label should remain generic and local.'
+Assert-BoostLabCondition ($autoUnattendUsbSelector.SelectedIndex -eq -1) 'AXIS AutoUnattend mock USB selector should start unselected.'
+Assert-BoostLabCondition (-not [bool]$autoUnattendInputCreateButton.IsEnabled) 'AXIS AutoUnattend input Create should start disabled.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendInputCreateButton) -eq 'AxisFirstUseWizard.AutoUnattendInputCreateDisabledUntilValid') 'AXIS AutoUnattend input Create should expose the disabled-until-valid marker.'
+Invoke-AxisFirstUseWizardButtonClick -Button $autoUnattendPrimaryButton
+Assert-BoostLabCondition ($autoUnattendInputOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS AutoUnattend primary action should open the input window only.'
+Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend primary action must not reveal the BIOS Drivers confirmation overlay.'
+Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend primary action must not reveal the BIOS Settings confirmation overlay.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS AutoUnattend Continue/Next should remain disabled while the input window is open.'
+Assert-BoostLabCondition ($autoUnattendRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend primary action must not start runtime status before valid input.'
+$autoUnattendAccountBox.Text = 'Yazan User'
+$autoUnattendUsbSelector.SelectedIndex = 0
+Assert-BoostLabCondition (-not [bool]$autoUnattendInputCreateButton.IsEnabled) 'AXIS AutoUnattend input Create should reject account names containing spaces.'
+$autoUnattendAccountBox.Text = 'Yazan'
+Assert-BoostLabCondition ([bool]$autoUnattendInputCreateButton.IsEnabled) 'AXIS AutoUnattend input Create should enable for a valid account name and mock USB selection.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendInputCreateButton) -eq 'AxisFirstUseWizard.AutoUnattendInputCreateEnabledWithValidMockInput') 'AXIS AutoUnattend input Create should expose the valid mock input marker.'
+Invoke-AxisFirstUseWizardButtonClick -Button $autoUnattendInputReturnButton
+Assert-BoostLabCondition ($autoUnattendInputOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input Return should close only the input window.'
+Assert-BoostLabCondition ([string]$autoUnattendAccountBox.Text -eq '') 'AXIS AutoUnattend input Return should reset the account field.'
+Assert-BoostLabCondition ($autoUnattendUsbSelector.SelectedIndex -eq -1) 'AXIS AutoUnattend input Return should reset the mock USB selection.'
+Assert-BoostLabCondition (-not [bool]$autoUnattendInputCreateButton.IsEnabled) 'AXIS AutoUnattend input Return should leave Create disabled after reset.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS AutoUnattend input Return must not complete the step or enable Continue/Next.'
+Assert-BoostLabCondition ($autoUnattendRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input Return must not start create simulation.'
+Invoke-AxisFirstUseWizardButtonClick -Button $autoUnattendPrimaryButton
+Assert-BoostLabCondition ($autoUnattendInputOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS AutoUnattend primary action should reopen the input window after Return.'
+$autoUnattendAccountBox.Text = 'Yazan'
+$autoUnattendUsbSelector.SelectedIndex = 0
+Assert-BoostLabCondition ([bool]$autoUnattendInputCreateButton.IsEnabled) 'AXIS AutoUnattend input Create should enable after valid reopened input.'
+Invoke-AxisFirstUseWizardButtonClick -Button $autoUnattendInputCreateButton
+Assert-BoostLabCondition ($autoUnattendInputOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input Create should close the input window before simulated creation.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS AutoUnattend Continue/Next should remain disabled during the simulated creation state.'
+Assert-BoostLabCondition ($autoUnattendRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS AutoUnattend runtime status should become visible during the simulated creation flow.'
+Assert-BoostLabCondition ($autoUnattendRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS AutoUnattend runtime status spacer should become visible during the simulated creation flow.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) 'AXIS AutoUnattend simulated flow should use the runtime checking animation.'
+$autoUnattendRunningText = (Get-AxisFirstUseWizardTextValues -Root $autoUnattendVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($autoUnattendRunningText.Contains($arabicAutoUnattendRunning)) 'AXIS AutoUnattend simulated flow should show the owner-approved running state.'
+Assert-BoostLabCondition ($autoUnattendRunningText.Contains($arabicSupportBody)) 'AXIS AutoUnattend support panel should remain visible during the simulated flow.'
+$autoUnattendRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($autoUnattendRunningRuntimeStatusRightAnchor.Count -eq 1) 'AXIS AutoUnattend running status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $autoUnattendRunningRuntimeStatusRightAnchor[0] -Name 'AutoUnattend running runtime status' -ExpectedMaxWidth 126)
+$autoUnattendCompletedByTimer = Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000
+Assert-BoostLabCondition ([bool]$autoUnattendCompletedByTimer) 'AXIS AutoUnattend simulated flow should enable Continue/Next after completion.'
+$autoUnattendCompletedText = (Get-AxisFirstUseWizardTextValues -Root $autoUnattendVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($autoUnattendCompletedText.Contains($arabicAutoUnattendCompleted)) 'AXIS AutoUnattend simulated flow should end in the owner-approved completed state.'
+Assert-BoostLabCondition ($autoUnattendCompletedText.Contains($arabicSupportBody)) 'AXIS AutoUnattend support panel should remain visible after simulated completion.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) 'AXIS AutoUnattend completed state should render the completed runtime effect.'
+$autoUnattendCompletedRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($autoUnattendCompletedRuntimeStatusRightAnchor.Count -eq 1) 'AXIS AutoUnattend completed status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $autoUnattendCompletedRuntimeStatusRightAnchor[0] -Name 'AutoUnattend completed runtime status' -ExpectedMaxWidth 126)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS AutoUnattend Continue/Next should become blue after simulated completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS AutoUnattend enabled Continue/Next should use the approved blue fill.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS AutoUnattend should not auto-advance after simulated completion.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS AutoUnattend Continue/Next should not navigate past the last prototype step.'
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(
@@ -1384,6 +1700,21 @@ Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewS
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Reinstall stage header should become Refresh.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope Reinstall Check completed')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Reinstall Refresh active')
+$previewScopedReinstallPrimary = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedReinstallPrimary
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$previewScopedContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS preview-scope Reinstall simulation should enable Continue/Next.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedContinueButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS preview-scope Continue/Next should navigate to AutoUnattend without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope AutoUnattend stage header should remain Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope AutoUnattend Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope AutoUnattend Refresh active')
+Assert-BoostLabCondition (-not [bool]$previewScopedContinueButton.IsEnabled) 'AXIS preview-scope AutoUnattend Continue/Next should start disabled.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedBackButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS preview-scope Back should navigate from AutoUnattend to Reinstall without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Back to Reinstall should keep Refresh stage header.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope Back to Reinstall Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Back to Reinstall Refresh active')
+Assert-BoostLabCondition ([bool]$previewScopedContinueButton.IsEnabled) 'AXIS preview-scope Back to completed Reinstall should restore enabled Continue/Next.'
 Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedBackButton
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.BiosSettingsStep').Count -eq 1) 'AXIS preview-scope Back should navigate from Reinstall to BIOS Settings without a missing helper crash.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope Back to BIOS Settings should restore Check stage header.'
@@ -1398,6 +1729,7 @@ $completedSampleState['Steps'] = @(
     $completedStep
     $biosSettingsStep
     $reinstallStep
+    $autoUnattendStep
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -1532,6 +1864,10 @@ Assert-BoostLabCondition (-not $prototypeSource.Contains('Cancel')) 'AXIS first-
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Set-AxisWizardButtonVisualVariant')) 'AXIS checkbox event path must not call the removed helper that crashed the preview.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Set-AxisStageProgressStripActiveStage')) 'AXIS navigation event path must not call the unavailable stage-strip helper that crashed the preview.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.ReinstallTitleRightAligned')) 'AXIS Reinstall title should expose the right-aligned title marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputOverlay')) 'AXIS AutoUnattend should expose the input overlay marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputCreateDisabledUntilValid')) 'AXIS AutoUnattend input Create button should expose the disabled-until-valid marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputCreateEnabledWithValidMockInput')) 'AXIS AutoUnattend input Create button should expose the valid mock input marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputReturnOnlyClosesOverlay')) 'AXIS AutoUnattend Return should be overlay-only.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageStripNoPartialProgress')) 'AXIS stage strip should expose the no-partial-progress marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineActiveFullWhite')) 'AXIS stage strip should expose the active full-white line marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
@@ -1560,6 +1896,7 @@ foreach ($eventHandlerBlock in $eventHandlerBlocks) {
 }
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Invoke-BoostLabToolAction')) 'AXIS first-use wizard must not call runtime tool actions.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Start-Process')) 'AXIS first-use wizard must not open real pages or processes.'
+Assert-BoostLabCondition (-not $prototypeSource.Contains('autounattend.xml')) 'AXIS first-use wizard prototype must not create or reference a real autounattend.xml output path.'
 foreach ($blockedRuntimeText in @(
     'New-BoostLabActionPlan'
     'Set-ItemProperty'
@@ -1577,6 +1914,7 @@ foreach ($blockedRuntimeText in @(
     'Win32_Processor'
     'Win32_BaseBoard'
     'MediaCreationTool'
+    'Get-PSDrive'
     'Get-Disk'
     'Clear-Disk'
     'Initialize-Disk'
@@ -1661,6 +1999,42 @@ foreach ($requiredReinstallBlueprintText in @(
     $arabicReinstallCompleted
 )) {
     Assert-BoostLabCondition ($reinstallBlueprintSource.Contains($requiredReinstallBlueprintText)) "AXIS Reinstall blueprint is missing owner-approved contract text: $requiredReinstallBlueprintText"
+}
+
+foreach ($requiredAutoUnattendBlueprintText in @(
+    'Internal tool ID | `unattended`'
+    'Stage | `Refresh`'
+    'Pressing the customer-facing primary button'
+    'This is not a confirmation checkbox window.'
+    'No confirmation checkbox is required for this step.'
+    'The input-window'
+    'button should remain disabled until the required fields are valid.'
+    'Do not create `autounattend.xml`.'
+    'Do not write to USB.'
+    'Do not detect real removable media.'
+    'Do not implement persistence in this phase.'
+    $arabicAutoUnattendSubtitle
+    $arabicAutoUnattendInfoTitle
+    $arabicAutoUnattendInfoBulletOobe
+    $arabicAutoUnattendInfoBulletSetup
+    $arabicAutoUnattendInfoBulletUsb
+    $arabicRequirementsTitle
+    $arabicAutoUnattendRequirementAccount
+    $arabicAutoUnattendRequirementUsb
+    $arabicAutoUnattendInputTitle
+    $arabicAutoUnattendAccountLabel
+    $arabicAutoUnattendUsbLabel
+    $arabicAutoUnattendPrimaryAction
+    $arabicDocumentation
+    $arabicReturn
+    $arabicBack
+    $arabicNext
+    $arabicAutoUnattendRunning
+    $arabicAutoUnattendCompleted
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    Assert-BoostLabCondition ($autoUnattendBlueprintSource.Contains($requiredAutoUnattendBlueprintText)) "AXIS AutoUnattend blueprint is missing owner-approved contract text: $requiredAutoUnattendBlueprintText"
 }
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath

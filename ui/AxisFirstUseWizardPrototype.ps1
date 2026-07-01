@@ -188,6 +188,191 @@ function New-AxisWizardPhysicalRightEdgeTextGroup {
     return $group
 }
 
+function New-AxisWizardMixedBidiTextBlock {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [string]$Tag = '',
+        [string]$FontSizeKey = 'Axis.Type.Caption.FontSize',
+        [string]$FontWeightKey = 'Axis.Type.Body.FontWeight',
+        [string]$FontFamilyKey = 'Axis.Type.Caption.FontFamily',
+        [string]$ForegroundKey = 'Axis.Brush.Wizard.TextSecondary',
+        [System.Windows.Thickness]$Margin = (New-AxisWizardThickness -Left 0),
+        [double]$MaxWidth = 0.0
+    )
+
+    $textBlock = New-AxisWizardTextBlock `
+        -Text $Text `
+        -Resources $Resources `
+        -FontSizeKey $FontSizeKey `
+        -FontWeightKey $FontWeightKey `
+        -FontFamilyKey $FontFamilyKey `
+        -ForegroundKey $ForegroundKey `
+        -Margin $Margin `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $textBlock.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+    $textBlock.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    if ($MaxWidth -gt 0.0) {
+        $textBlock.MaxWidth = $MaxWidth
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Tag)) {
+        $textBlock.Tag = $Tag
+    }
+
+    $textBlock.Inlines.Clear()
+    $englishTermPattern = 'AutoUnattend|Microsoft|Windows|OOBE|USB|XML'
+    $currentIndex = 0
+    foreach ($match in [regex]::Matches($Text, $englishTermPattern)) {
+        if ($match.Index -gt $currentIndex) {
+            $arabicRun = [System.Windows.Documents.Run]::new($Text.Substring($currentIndex, $match.Index - $currentIndex))
+            $arabicRun.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+            [void]$textBlock.Inlines.Add($arabicRun)
+        }
+
+        $englishRun = [System.Windows.Documents.Run]::new($match.Value)
+        $englishRun.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        [void]$textBlock.Inlines.Add($englishRun)
+        $currentIndex = $match.Index + $match.Length
+    }
+
+    if ($currentIndex -lt $Text.Length) {
+        $arabicTailRun = [System.Windows.Documents.Run]::new($Text.Substring($currentIndex))
+        $arabicTailRun.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+        [void]$textBlock.Inlines.Add($arabicTailRun)
+    }
+
+    return $textBlock
+}
+
+function Split-AxisAutoUnattendInformationText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Title', 'Oobe', 'Setup', 'Usb')]
+        [string]$Name,
+
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    if ($Name -eq 'Title') {
+        return @($Text)
+    }
+
+    if ($Name -eq 'Oobe') {
+        $marker = ' OOBE '
+        $markerIndex = $Text.IndexOf($marker, [System.StringComparison]::Ordinal)
+        if ($markerIndex -ge 0) {
+            return @(
+                $Text.Substring(0, $markerIndex + $marker.Trim().Length + 1).Trim()
+                $Text.Substring($markerIndex + $marker.Length).Trim()
+            )
+        }
+    }
+
+    if ($Name -eq 'Setup') {
+        $arabicComma = [string][char]0x060C
+        $parts = $Text.Split([char]0x060C)
+        if ($parts.Count -eq 3) {
+            return @(
+                ($parts[0].Trim() + $arabicComma)
+                ($parts[1].Trim() + $arabicComma)
+                $parts[2].Trim()
+            )
+        }
+    }
+
+    if ($Name -eq 'Usb') {
+        $marker = 'Windows '
+        $markerIndex = $Text.IndexOf($marker, [System.StringComparison]::Ordinal)
+        if ($markerIndex -ge 0) {
+            return @(
+                $Text.Substring(0, $markerIndex + 'Windows'.Length).Trim()
+                $Text.Substring($markerIndex + $marker.Length).Trim()
+            )
+        }
+    }
+
+    return @($Text)
+}
+
+function New-AxisAutoUnattendInformationTextGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [double]$MaxWidth = 320.0
+    )
+
+    $group = [System.Windows.Controls.Grid]::new()
+    $group.Tag = 'AxisFirstUseWizard.AutoUnattendInformationSharedPhysicalRightEdge'
+    $group.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $group.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $group.MaxWidth = $MaxWidth
+    $group.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendMixedBidiSafeInfoText')
+
+    $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $rightColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$group.ColumnDefinitions.Add($rightColumn)
+
+    $titleLines = Split-AxisAutoUnattendInformationText `
+        -Name 'Title' `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'AutoUnattendInfoTitle')))
+    foreach ($line in $titleLines) {
+        [void](Add-AxisWizardGridRow -Grid $group -Child (New-AxisWizardMixedBidiTextBlock `
+            -Text $line `
+            -Resources $Resources `
+            -Tag 'AxisFirstUseWizard.AutoUnattendInformationTitle' `
+            -FontSizeKey 'Axis.Type.Caption.FontSize' `
+            -FontWeightKey 'Axis.Type.CardTitle.FontWeight' `
+            -FontFamilyKey 'Axis.Type.Caption.FontFamily' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+            -MaxWidth $MaxWidth))
+    }
+
+    $itemNames = @('Oobe', 'Setup', 'Usb')
+    $items = @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())
+    for ($itemIndex = 0; $itemIndex -lt $items.Count; $itemIndex++) {
+        $itemContainer = [System.Windows.Controls.Grid]::new()
+        $itemContainer.Tag = 'AxisFirstUseWizard.AutoUnattendInformationItem'
+        $itemContainer.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $itemContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $itemContainer.MaxWidth = $MaxWidth
+        $itemContainer.Margin = New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 0
+
+        $itemColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $itemColumn.Width = [System.Windows.GridLength]::Auto
+        [void]$itemContainer.ColumnDefinitions.Add($itemColumn)
+
+        $splitName = if ($itemIndex -lt $itemNames.Count) { $itemNames[$itemIndex] } else { 'Oobe' }
+        foreach ($line in @(Split-AxisAutoUnattendInformationText -Name $splitName -Text ([string]$items[$itemIndex]))) {
+            [void](Add-AxisWizardGridRow -Grid $itemContainer -Child (New-AxisWizardMixedBidiTextBlock `
+                -Text $line `
+                -Resources $Resources `
+                -Tag 'AxisFirstUseWizard.AutoUnattendInformationItemLine' `
+                -FontSizeKey 'Axis.Type.Caption.FontSize' `
+                -FontWeightKey 'Axis.Type.Body.FontWeight' `
+                -FontFamilyKey 'Axis.Type.Caption.FontFamily' `
+                -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+                -MaxWidth $MaxWidth))
+        }
+
+        [void](Add-AxisWizardGridRow -Grid $group -Child $itemContainer)
+    }
+
+    return $group
+}
+
 function Get-AxisFirstUseWizardCanonicalStageNames {
     [CmdletBinding()]
     param()
@@ -617,7 +802,20 @@ function Get-AxisWizardArabicText {
             'ReinstallRequirementNoData',
             'ReinstallPrimaryAction',
             'ReinstallRunning',
-            'ReinstallCompleted'
+            'ReinstallCompleted',
+            'AutoUnattendSubtitle',
+            'AutoUnattendInfoTitle',
+            'AutoUnattendInfoBulletOobe',
+            'AutoUnattendInfoBulletSetup',
+            'AutoUnattendInfoBulletUsb',
+            'AutoUnattendRequirementAccount',
+            'AutoUnattendRequirementUsb',
+            'AutoUnattendPrimaryAction',
+            'AutoUnattendInputTitle',
+            'AutoUnattendAccountLabel',
+            'AutoUnattendUsbLabel',
+            'AutoUnattendRunning',
+            'AutoUnattendCompleted'
         )]
         [string]$Name
     )
@@ -877,6 +1075,98 @@ function Get-AxisWizardArabicText {
         'ReinstallCompleted' {
             return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0647, 0x0632)
         }
+        'AutoUnattendSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020, 0x0645, 0x0644, 0x0641, 0x0020,
+                0x0058, 0x004D, 0x004C, 0x0020,
+                0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020,
+                0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020,
+                0x062A, 0x0644, 0x0642, 0x0627, 0x0626, 0x064A, 0x064B, 0x0627, 0x002E
+            )
+        }
+        'AutoUnattendInfoTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0645, 0x0644, 0x0641, 0x0020,
+                0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020,
+                0x062A, 0x0644, 0x0642, 0x0627, 0x0626, 0x064A, 0x0020,
+                0x0644, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073
+            )
+        }
+        'AutoUnattendInfoBulletOobe' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x064A, 0x0633, 0x0627, 0x0639, 0x062F, 0x0020,
+                0x0645, 0x0644, 0x0641, 0x0020,
+                0x0041, 0x0075, 0x0074, 0x006F, 0x0055, 0x006E, 0x0061, 0x0074, 0x0074, 0x0065, 0x006E, 0x0064, 0x0020,
+                0x0639, 0x0644, 0x0649, 0x0020,
+                0x062A, 0x062E, 0x0637, 0x064A, 0x0020,
+                0x0645, 0x0631, 0x062D, 0x0644, 0x0629, 0x0020,
+                0x004F, 0x004F, 0x0042, 0x0045, 0x0020,
+                0x0623, 0x062B, 0x0646, 0x0627, 0x0621, 0x0020,
+                0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x002E
+            )
+        }
+        'AutoUnattendInfoBulletSetup' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x064A, 0x062A, 0x062C, 0x0627, 0x0648, 0x0632, 0x0020,
+                0x062E, 0x0637, 0x0648, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020,
+                0x0627, 0x0644, 0x0623, 0x0648, 0x0644, 0x0649, 0x0020,
+                0x0645, 0x062B, 0x0644, 0x0020,
+                0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x062E, 0x0635, 0x0648, 0x0635, 0x064A, 0x0629, 0x060C, 0x0020,
+                0x062A, 0x0633, 0x062C, 0x064A, 0x0644, 0x0020,
+                0x0627, 0x0644, 0x062F, 0x062E, 0x0648, 0x0644, 0x0020,
+                0x0628, 0x062D, 0x0633, 0x0627, 0x0628, 0x0020,
+                0x004D, 0x0069, 0x0063, 0x0072, 0x006F, 0x0073, 0x006F, 0x0066, 0x0074, 0x060C, 0x0020,
+                0x0648, 0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020,
+                0x0628, 0x0639, 0x0636, 0x0020,
+                0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020,
+                0x0627, 0x0644, 0x0628, 0x062F, 0x0627, 0x064A, 0x0629, 0x002E
+            )
+        }
+        'AutoUnattendInfoBulletUsb' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x064A, 0x062A, 0x0645, 0x0020,
+                0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020,
+                0x0627, 0x0644, 0x0645, 0x0644, 0x0641, 0x0020,
+                0x062F, 0x0627, 0x062E, 0x0644, 0x0020,
+                0x0055, 0x0053, 0x0042, 0x0020,
+                0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020,
+                0x0644, 0x064A, 0x062A, 0x0645, 0x0020,
+                0x0627, 0x0633, 0x062A, 0x062E, 0x062F, 0x0627, 0x0645, 0x0647, 0x0020,
+                0x0623, 0x062B, 0x0646, 0x0627, 0x0621, 0x0020,
+                0x0639, 0x0645, 0x0644, 0x064A, 0x0629, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x002E
+            )
+        }
+        'AutoUnattendRequirementAccount' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020, 0x0627, 0x0633, 0x0645, 0x0020, 0x0627, 0x0644, 0x062D, 0x0633, 0x0627, 0x0628, 0x002E)
+        }
+        'AutoUnattendRequirementUsb' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020, 0x0055, 0x0053, 0x0042, 0x0020, 0x0627, 0x0644, 0x0635, 0x062D, 0x064A, 0x062D, 0x002E)
+        }
+        'AutoUnattendPrimaryAction' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020, 0x0627, 0x0644, 0x0645, 0x0644, 0x0641)
+        }
+        'AutoUnattendInputTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0646, 0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020, 0x0627, 0x0644, 0x0645, 0x0644, 0x0641)
+        }
+        'AutoUnattendAccountLabel' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0623, 0x062F, 0x062E, 0x0644, 0x0020, 0x0627, 0x0633, 0x0645, 0x0020, 0x0627, 0x0644, 0x062D, 0x0633, 0x0627, 0x0628, 0x0020, 0x0628, 0x062F, 0x0648, 0x0646, 0x0020, 0x0645, 0x0633, 0x0627, 0x0641, 0x0627, 0x062A, 0x002E)
+        }
+        'AutoUnattendUsbLabel' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x0631, 0x0020, 0x0055, 0x0053, 0x0042, 0x002E)
+        }
+        'AutoUnattendRunning' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x0020, 0x0627, 0x0644, 0x0625, 0x0646, 0x0634, 0x0627, 0x0621)
+        }
+        'AutoUnattendCompleted' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0645, 0x0020, 0x0627, 0x0644, 0x0625, 0x0646, 0x0634, 0x0627, 0x0621)
+        }
     }
 }
 
@@ -1127,6 +1417,50 @@ function Get-AxisFirstUseWizardSampleState {
         NoConfirmationOverlay = $true
     }
 
+    $autoUnattendStep = [ordered]@{
+        Id = 'unattended'
+        Title = 'AutoUnattend'
+        StageName = 'Refresh'
+        State = 'Ready'
+        StateLabel = ''
+        PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction')
+        RunningActionLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction')
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendCompleted')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'AutoUnattendSubtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'AutoUnattendInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletOobe')
+            (Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletSetup')
+            (Get-AxisWizardArabicText -Name 'AutoUnattendInfoBulletUsb')
+        )
+        ShowRequirements = $true
+        RequirementsTitle = (Get-AxisWizardArabicText -Name 'RequirementsTitle')
+        RequirementsItems = @(
+            (Get-AxisWizardArabicText -Name 'AutoUnattendRequirementAccount')
+            (Get-AxisWizardArabicText -Name 'AutoUnattendRequirementUsb')
+        )
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $false
+        RequiresInputWindow = $true
+        InputWindowTitle = (Get-AxisWizardArabicText -Name 'AutoUnattendInputTitle')
+        InputAccountLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendAccountLabel')
+        InputUsbLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendUsbLabel')
+        InputCreateLabel = (Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction')
+        InputReturnLabel = (Get-AxisWizardArabicText -Name 'Return')
+        MockUsbItems = @('USB')
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'AutoUnattendRunning')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'AutoUnattendCompleted')
+        CustomerAction = 'CreateAutoUnattendFile'
+        FutureInternalAction = 'Apply'
+        CustomerVisibleActions = @((Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction'))
+        PrototypeOnlySimulation = $true
+        NoConfirmationOverlay = $true
+        InputWindowPrototypeOnly = $true
+    }
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -1146,6 +1480,7 @@ function Get-AxisFirstUseWizardSampleState {
             $biosStep
             $biosSettingsStep
             $reinstallStep
+            $autoUnattendStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -1388,8 +1723,9 @@ function New-AxisWizardRuntimeStatusContent {
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $isBiosSettingsStep = ($stepId -eq 'bios-settings')
     $isReinstallStep = ($stepId -eq 'reinstall')
-    $contentWidth = if ($isBiosSettingsStep) { 228.0 } elseif ($isReinstallStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($isBiosSettingsStep) { 126.0 } elseif ($isReinstallStep) { 106.0 } else { 86.0 }
+    $isAutoUnattendStep = ($stepId -eq 'unattended')
+    $contentWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 228.0 } elseif ($isReinstallStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 126.0 } elseif ($isReinstallStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -1403,6 +1739,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isReinstallStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallRuntimeStatusNoClipping')
+    }
+    elseif ($isAutoUnattendStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendRuntimeStatusNoClipping')
     }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -1462,6 +1801,7 @@ function New-AxisStepStatusArea {
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $isBiosSettingsStep = ($stepId -eq 'bios-settings')
     $isReinstallStep = ($stepId -eq 'reinstall')
+    $isAutoUnattendStep = ($stepId -eq 'unattended')
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -1471,13 +1811,16 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($isBiosSettingsStep) { 252 } elseif ($isReinstallStep) { 234 } else { 214 }
+    $panel.Width = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 252 } elseif ($isReinstallStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
     }
     elseif ($isReinstallStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallRuntimeStatusNoClipping')
+    }
+    elseif ($isAutoUnattendStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendRuntimeStatusNoClipping')
     }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
@@ -1572,7 +1915,7 @@ function New-AxisStepPrimaryActionArea {
     $primaryEnabled = ($state -eq 'Ready')
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
-    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } else { 142.0 }
+    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
 
     $panel = [System.Windows.Controls.Grid]::new()
     $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -2130,6 +2473,399 @@ function New-AxisReinstallStep {
     return $container
 }
 
+function New-AxisAutoUnattendStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'])[3]
+    }
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 12 -Right 34 -Bottom 8) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = 'AxisFirstUseWizard.AutoUnattendStep'
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendNoClippingLayout')
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = 'AxisFirstUseWizard.StepTextContent'
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Refresh')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+
+    $titleText = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue 'AutoUnattend')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
+    $titleText.Tag = 'AxisFirstUseWizard.AutoUnattendTitleText'
+    $titleAnchor = New-AxisWizardRightAnchor `
+        -Child $titleText `
+        -Tag 'AxisFirstUseWizard.AutoUnattendTitleRightAligned' `
+        -MaxWidth 690
+    $titleText.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    [void](Add-AxisWizardGridRow -Grid $content -Child $titleAnchor)
+
+    $descriptionText = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+        -Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag 'AxisFirstUseWizard.ArabicSubtitleRightAnchor' `
+        -MaxWidth 690))
+
+    $detailsGrid = [System.Windows.Controls.Grid]::new()
+    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 5 -Right 0 -Bottom 5
+    $detailsGrid.Tag = 'AxisFirstUseWizard.AutoUnattendDetails'
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendNoClippingLayout')
+    $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $spacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $spacerColumn.Width = [System.Windows.GridLength]::new(12.0)
+    $requirementsColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $requirementsColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($spacerColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($requirementsColumn)
+
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 2 -Right 10 -Bottom 2) `
+        -Elevation 'Soft'
+    $informationPanel.Height = 152
+    $informationPanel.Tag = 'AxisFirstUseWizard.AutoUnattendInformationCard'
+    $informationPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInformationRightCard')
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $informationGroup = New-AxisAutoUnattendInformationTextGroup `
+        -Step $Step `
+        -Resources $Resources `
+        -MaxWidth 320
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $informationContent.MaxWidth = 320
+    $informationContent.Tag = 'AxisFirstUseWizard.AutoUnattendInformationCardContent'
+    $informationContent.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInfoCardNoClipping')
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $informationGroup)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag 'AxisFirstUseWizard.AutoUnattendInformationRightAnchor' `
+        -MaxWidth 320
+    [System.Windows.Controls.Grid]::SetColumn($informationPanel, 2)
+    [void]$detailsGrid.Children.Add($informationPanel)
+
+    $requirementsPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 7 -Right 10 -Bottom 7) `
+        -Elevation 'Soft'
+    $requirementsPanel.Height = 152
+    $requirementsPanel.Tag = 'AxisFirstUseWizard.AutoUnattendRequirementsCard'
+    $requirementsPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendRequirementsLeftCard')
+    $requirementsPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $requirementsLines = [System.Collections.Generic.List[object]]::new()
+    $requirementsLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'RequirementsTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'RequirementsTitle'))
+        Tag = 'AxisFirstUseWizard.AutoUnattendRequirementsTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'RequirementsItems' -DefaultValue @())) {
+        $requirementsLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.AutoUnattendRequirementItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 3.0
+            Wrap = $true
+            MaxWidth = 320.0
+        })
+    }
+    $requirementsGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 320 `
+        -Lines $requirementsLines
+    $requirementsGroup.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendSharedPhysicalRightEdge')
+    $requirementsContent = [System.Windows.Controls.Grid]::new()
+    $requirementsContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $requirementsContent.MaxWidth = 320
+    $requirementsContent.Tag = 'AxisFirstUseWizard.AutoUnattendRequirementsCardContent'
+    [void](Add-AxisWizardGridRow -Grid $requirementsContent -Child $requirementsGroup)
+    $requirementsPanel.Child = New-AxisWizardRightAnchor `
+        -Child $requirementsContent `
+        -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsRightAnchor' `
+        -MaxWidth 320
+    [System.Windows.Controls.Grid]::SetColumn($requirementsPanel, 0)
+    [void]$detailsGrid.Children.Add($requirementsPanel)
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
+    $autoUnattendPrimaryAction = New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources
+    $autoUnattendPrimaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInputActionRow')
+    [void](Add-AxisWizardGridRow -Grid $content -Child $autoUnattendPrimaryAction)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    $container.Child = $content
+
+    return $container
+}
+
+function New-AxisAutoUnattendInputOverlay {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $overlay = [System.Windows.Controls.Border]::new()
+    $overlay.Tag = 'AxisFirstUseWizard.AutoUnattendInputOverlay'
+    $overlay.Visibility = [System.Windows.Visibility]::Collapsed
+    $overlay.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString('#CC080808'))
+    $overlay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $overlay.Padding = New-AxisWizardThickness -Left 250 -Top 150 -Right 250 -Bottom 150
+
+    $card = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.ElevatedCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderStrong' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 22 -Top 20 -Right 22 -Bottom 20) `
+        -Elevation 'Card'
+    $card.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $card.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $card.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $card.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInputWindowNoCheckbox')
+
+    $stack = [System.Windows.Controls.Grid]::new()
+    $stack.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $stack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $stack.Tag = 'AxisFirstUseWizard.AutoUnattendInputWindowContent'
+
+    $title = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InputWindowTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'AutoUnattendInputTitle'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.SectionTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.SectionTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $title.Tag = 'AxisFirstUseWizard.AutoUnattendInputTitle'
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $title `
+        -Tag 'AxisFirstUseWizard.AutoUnattendInputTitleRightAnchor' `
+        -MaxWidth 360))
+
+    $accountLabel = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InputAccountLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'AutoUnattendAccountLabel'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 14 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $accountLabel.Tag = 'AxisFirstUseWizard.AutoUnattendAccountLabel'
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $accountLabel `
+        -Tag 'AxisFirstUseWizard.AutoUnattendAccountLabelRightAnchor' `
+        -MaxWidth 360))
+
+    $accountBox = [System.Windows.Controls.TextBox]::new()
+    $accountBox.Tag = 'AxisFirstUseWizard.AutoUnattendAccountTextBox'
+    $accountBox.Width = 300
+    $accountBox.Height = 34
+    $accountBox.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $accountBox.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $accountBox.TextAlignment = [System.Windows.TextAlignment]::Right
+    $accountBox.Padding = New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6
+    $accountBox.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+    $accountBox.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+    $accountBox.Background = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $accountBox.BorderBrush = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong'
+    $accountBox.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $accountBox `
+        -Tag 'AxisFirstUseWizard.AutoUnattendAccountInputRightAnchor' `
+        -MaxWidth 360))
+    $accountBox.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+
+    $usbLabel = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InputUsbLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'AutoUnattendUsbLabel'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 12 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $usbLabel.Tag = 'AxisFirstUseWizard.AutoUnattendUsbLabel'
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $usbLabel `
+        -Tag 'AxisFirstUseWizard.AutoUnattendUsbLabelRightAnchor' `
+        -MaxWidth 360))
+
+    $usbSelector = [System.Windows.Controls.ComboBox]::new()
+    $usbSelector.Tag = 'AxisFirstUseWizard.AutoUnattendUsbSelector'
+    $usbSelector.Width = 300
+    $usbSelector.Height = 34
+    $usbSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $usbSelector.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $usbSelector.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+    $usbSelector.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+    $usbSelector.Background = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $usbSelector.BorderBrush = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong'
+    $usbSelector.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
+    foreach ($mockUsbItem in @(Get-AxisWizardMapValue -Map $Step -Name 'MockUsbItems' -DefaultValue @('USB'))) {
+        [void]$usbSelector.Items.Add([string]$mockUsbItem)
+    }
+    $usbSelector.SelectedIndex = -1
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $usbSelector `
+        -Tag 'AxisFirstUseWizard.AutoUnattendUsbSelectorRightAnchor' `
+        -MaxWidth 360))
+
+    $buttonRow = [System.Windows.Controls.StackPanel]::new()
+    $buttonRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $buttonRow.Margin = New-AxisWizardThickness -Left 0 -Top 16 -Right 0 -Bottom 0
+    $buttonRow.Tag = 'AxisFirstUseWizard.AutoUnattendInputButtonArea'
+
+    $createButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InputCreateLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'AutoUnattendPrimaryAction'))) `
+        -Resources $Resources `
+        -Variant 'Primary' `
+        -Enabled $false `
+        -Width 132 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $createButton.Tag = 'AxisFirstUseWizard.AutoUnattendInputCreateButton'
+    $createButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInputCreateDisabledUntilValid')
+
+    $returnButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InputReturnLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Return'))) `
+        -Resources $Resources `
+        -Variant 'Quiet' `
+        -Enabled $true `
+        -Width 104 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $returnButton.Tag = 'AxisFirstUseWizard.AutoUnattendInputReturnButton'
+    $returnButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AutoUnattendInputReturnOnlyClosesOverlay')
+
+    [void]$buttonRow.Children.Add($createButton)
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 12 -Tag 'AxisFirstUseWizard.AutoUnattendInputReturnButtonSpacer'))
+    [void]$buttonRow.Children.Add($returnButton)
+    [void](Add-AxisWizardGridRow -Grid $stack -Child $buttonRow)
+
+    $primaryBackgroundForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+    $primaryBorderForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+    $primaryForegroundForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+    $primaryEffectForInput = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+    $disabledBackgroundForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $disabledBorderForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $disabledForegroundForInput = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $accountBoxForInput = $accountBox
+    $usbSelectorForInput = $usbSelector
+    $createButtonForInput = $createButton
+    $inputCreateAutomationProperty = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+    $refreshInputCreateState = {
+        $accountName = [string]$accountBoxForInput.Text
+        $accountIsValid = (
+            -not [string]::IsNullOrWhiteSpace($accountName) -and
+            -not $accountName.Contains(' ') -and
+            [regex]::IsMatch($accountName, '^[A-Za-z][A-Za-z0-9_-]{0,19}$')
+        )
+        $usbIsSelected = ([int]$usbSelectorForInput.SelectedIndex -ge 0)
+        if ($accountIsValid -and $usbIsSelected) {
+            $createButtonForInput.IsEnabled = $true
+            $createButtonForInput.Background = $primaryBackgroundForInput
+            $createButtonForInput.BorderBrush = $primaryBorderForInput
+            $createButtonForInput.Foreground = $primaryForegroundForInput
+            $createButtonForInput.Effect = $primaryEffectForInput
+            $createButtonForInput.SetValue($inputCreateAutomationProperty, 'AxisFirstUseWizard.AutoUnattendInputCreateEnabledWithValidMockInput')
+        }
+        else {
+            $createButtonForInput.IsEnabled = $false
+            $createButtonForInput.Background = $disabledBackgroundForInput
+            $createButtonForInput.BorderBrush = $disabledBorderForInput
+            $createButtonForInput.Foreground = $disabledForegroundForInput
+            $createButtonForInput.Effect = $null
+            $createButtonForInput.SetValue($inputCreateAutomationProperty, 'AxisFirstUseWizard.AutoUnattendInputCreateDisabledUntilValid')
+        }
+    }.GetNewClosure()
+
+    $refreshInputCreateStateForAccount = $refreshInputCreateState
+    $accountBox.Add_TextChanged({
+        & $refreshInputCreateStateForAccount
+    }.GetNewClosure())
+
+    $refreshInputCreateStateForUsb = $refreshInputCreateState
+    $usbSelector.Add_SelectionChanged({
+        & $refreshInputCreateStateForUsb
+    }.GetNewClosure())
+
+    $overlayForReturn = $overlay
+    $accountBoxForReturn = $accountBox
+    $usbSelectorForReturn = $usbSelector
+    $refreshInputCreateStateForReturn = $refreshInputCreateState
+    $returnButton.Add_Click({
+        $accountBoxForReturn.Text = ''
+        $usbSelectorForReturn.SelectedIndex = -1
+        & $refreshInputCreateStateForReturn
+        $overlayForReturn.Visibility = [System.Windows.Visibility]::Collapsed
+    }.GetNewClosure())
+
+    & $refreshInputCreateState
+
+    $card.Child = $stack
+    $overlay.Child = $card
+
+    return $overlay
+}
+
 function New-AxisFirstUseWizardStepContent {
     [CmdletBinding()]
     param(
@@ -2140,6 +2876,10 @@ function New-AxisFirstUseWizardStepContent {
     )
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    if ($stepId -eq 'unattended') {
+        return New-AxisAutoUnattendStep -Step $Step -Resources $Resources
+    }
+
     if ($stepId -eq 'reinstall') {
         return New-AxisReinstallStep -Step $Step -Resources $Resources
     }
@@ -2477,6 +3217,7 @@ function New-AxisFirstUseWizardPrototype {
     $step = $steps[$currentStepIndex]
     $stepViews = [object[]]::new($steps.Count)
     $stepOverlays = [object[]]::new($steps.Count)
+    $stepInputOverlays = [object[]]::new($steps.Count)
     $stepCompletedFlags = [bool[]]::new($steps.Count)
     $stepStageNames = [string[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
@@ -2488,6 +3229,13 @@ function New-AxisFirstUseWizardPrototype {
         }
         else {
             $stepOverlays[$stepIndex] = $null
+        }
+        $requiresInputWindow = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'RequiresInputWindow' -DefaultValue $false)
+        if ($requiresInputWindow) {
+            $stepInputOverlays[$stepIndex] = New-AxisAutoUnattendInputOverlay -Step $stepMap -Resources $resources
+        }
+        else {
+            $stepInputOverlays[$stepIndex] = $null
         }
         $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
         $stepStageNames[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'StageName' -DefaultValue 'Check')
@@ -2562,6 +3310,14 @@ function New-AxisFirstUseWizardPrototype {
         [System.Windows.Controls.Grid]::SetRowSpan($overlay, 4)
         [void]$root.Children.Add($overlay)
     }
+    foreach ($inputOverlay in @($stepInputOverlays)) {
+        if ($null -eq $inputOverlay) {
+            continue
+        }
+
+        [System.Windows.Controls.Grid]::SetRowSpan($inputOverlay, 4)
+        [void]$root.Children.Add($inputOverlay)
+    }
 
     $primaryButton = $null
     $confirmButton = $null
@@ -2613,6 +3369,7 @@ function New-AxisFirstUseWizardPrototype {
     $contentHostForNavigation = $contentHost
     $stepViewsForNavigation = $stepViews
     $stepOverlaysForNavigation = $stepOverlays
+    $stepInputOverlaysForNavigation = $stepInputOverlays
     $stepCompletedFlagsForNavigation = $stepCompletedFlags
     $stageTextForNavigation = $stageText
     $stepStageNamesForNavigation = $stepStageNames
@@ -2642,6 +3399,13 @@ function New-AxisFirstUseWizardPrototype {
                 }
 
                 $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            foreach ($inputOverlayForNavigation in @($stepInputOverlaysForNavigation)) {
+                if ($null -eq $inputOverlayForNavigation) {
+                    continue
+                }
+
+                $inputOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
 
             $currentNavigationIndex = $currentNavigationIndex - 1
@@ -2685,6 +3449,13 @@ function New-AxisFirstUseWizardPrototype {
 
                 $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
+            foreach ($inputOverlayForNavigation in @($stepInputOverlaysForNavigation)) {
+                if ($null -eq $inputOverlayForNavigation) {
+                    continue
+                }
+
+                $inputOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
 
             $currentNavigationIndex = $currentNavigationIndex + 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
@@ -2714,6 +3485,7 @@ function New-AxisFirstUseWizardPrototype {
         $handlerStep = [System.Collections.IDictionary]$steps[$handlerStepIndex]
         $handlerContent = $stepViews[$handlerStepIndex]
         $handlerOverlay = $stepOverlays[$handlerStepIndex]
+        $handlerInputOverlay = $stepInputOverlays[$handlerStepIndex]
 
         $visited.Clear()
         $primaryButton = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton'
@@ -2725,6 +3497,12 @@ function New-AxisFirstUseWizardPrototype {
         $confirmButton = Find-AxisWizardTaggedElement -Node $handlerOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton'
         $visited.Clear()
         $confirmationAcknowledgement = Find-AxisWizardTaggedElement -Node $handlerOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement'
+        $visited.Clear()
+        $inputCreateButton = Find-AxisWizardTaggedElement -Node $handlerInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendInputCreateButton'
+        $visited.Clear()
+        $inputAccountBox = Find-AxisWizardTaggedElement -Node $handlerInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendAccountTextBox'
+        $visited.Clear()
+        $inputUsbSelector = Find-AxisWizardTaggedElement -Node $handlerInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendUsbSelector'
 
         $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $handlerStep -Resources $resources
         $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $handlerStep -Resources $resources
@@ -2732,11 +3510,17 @@ function New-AxisFirstUseWizardPrototype {
         $completionTimerForHandler.Interval = [TimeSpan]::FromMilliseconds(950)
         $handlerStepIndexForClosure = $handlerStepIndex
         $handlerOverlayForClosure = $handlerOverlay
+        $handlerInputOverlayForClosure = $handlerInputOverlay
         $runtimeStatusHostForHandler = $runtimeStatusHost
         $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
         $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
         $stepOverlaysForHandler = $stepOverlays
+        $stepInputOverlaysForHandler = $stepInputOverlays
         $hasConfirmationOverlayForHandler = ($null -ne $handlerOverlay)
+        $hasInputOverlayForHandler = ($null -ne $handlerInputOverlay)
+        $inputCreateButtonForHandler = $inputCreateButton
+        $inputAccountBoxForHandler = $inputAccountBox
+        $inputUsbSelectorForHandler = $inputUsbSelector
         $stepCompletedFlagsForHandler = $stepCompletedFlagsForNavigation
         $continueButtonForHandler = $continueButton
         $continueEnabledBlueMarkerForHandler = $continueEnabledBlueMarkerForNavigation
@@ -2770,6 +3554,26 @@ function New-AxisFirstUseWizardPrototype {
 
                     $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
                 }
+                foreach ($inputOverlayForHandler in @($stepInputOverlaysForHandler)) {
+                    if ($null -eq $inputOverlayForHandler) {
+                        continue
+                    }
+
+                    $inputOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                if ($hasInputOverlayForHandler) {
+                    if ($inputAccountBoxForHandler -is [System.Windows.Controls.TextBox]) {
+                        $inputAccountBoxForHandler.Text = ''
+                    }
+                    if ($inputUsbSelectorForHandler -is [System.Windows.Controls.ComboBox]) {
+                        $inputUsbSelectorForHandler.SelectedIndex = -1
+                    }
+                    if ($inputCreateButtonForHandler -is [System.Windows.Controls.Button]) {
+                        $inputCreateButtonForHandler.IsEnabled = $false
+                    }
+                    $handlerInputOverlayForClosure.Visibility = [System.Windows.Visibility]::Visible
+                    return
+                }
                 if (-not $hasConfirmationOverlayForHandler) {
                     $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
                     $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
@@ -2787,6 +3591,26 @@ function New-AxisFirstUseWizardPrototype {
         if ($confirmButton -is [System.Windows.Controls.Button]) {
             $confirmButton.Add_Click({
                 $handlerOverlayForClosure.Visibility = [System.Windows.Visibility]::Collapsed
+                $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
+                $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $completionTimerForHandler.Stop()
+                $completionTimerForHandler.Start()
+            }.GetNewClosure())
+        }
+
+        if ($inputCreateButton -is [System.Windows.Controls.Button]) {
+            $inputCreateButton.Add_Click({
+                if (-not [bool]$inputCreateButtonForHandler.IsEnabled) {
+                    return
+                }
+                foreach ($inputOverlayForHandler in @($stepInputOverlaysForHandler)) {
+                    if ($null -eq $inputOverlayForHandler) {
+                        continue
+                    }
+
+                    $inputOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
                 $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
                 $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
                 $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
