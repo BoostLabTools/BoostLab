@@ -324,6 +324,32 @@ function Assert-AxisFirstUseWizardRightAnchor {
     return $child
 }
 
+function Assert-AxisFirstUseWizardStageLineState {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Fill,
+
+        [Parameter(Mandatory)]
+        [string]$ExpectedAutomationId,
+
+        [Parameter(Mandatory)]
+        [string]$ExpectedColor,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    Assert-BoostLabCondition ($Fill -is [System.Windows.Controls.Border]) "AXIS $Name stage line should be a Border."
+    Assert-BoostLabCondition ([double]$Fill.Width -eq 104.0) "AXIS $Name stage line should use the full-line width."
+    Assert-BoostLabCondition (
+        [System.Windows.Automation.AutomationProperties]::GetAutomationId($Fill) -eq $ExpectedAutomationId
+    ) "AXIS $Name stage line state marker changed."
+    Assert-BoostLabCondition ($Fill.Background -is [System.Windows.Media.SolidColorBrush]) "AXIS $Name stage line should use a solid brush."
+    Assert-BoostLabCondition (
+        [string]([System.Windows.Media.SolidColorBrush]$Fill.Background).Color -eq $ExpectedColor
+    ) "AXIS $Name stage line color changed."
+}
+
 function Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup {
     param(
         [Parameter(Mandatory)]
@@ -372,15 +398,18 @@ $mainWindowPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $stageConfigPath = Join-Path $ProjectRoot 'config\Stages.psd1'
 $blueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Information-Step-Blueprint.md'
 $biosSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Settings-Step-Blueprint.md'
+$reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-Step-Blueprint.md'
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $blueprintPath -PathType Leaf) 'AXIS BIOS Information step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $biosSettingsBlueprintPath -PathType Leaf) 'AXIS BIOS Settings step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathType Leaf) 'AXIS Reinstall step blueprint is missing.'
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
 $biosSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $biosSettingsBlueprintPath
+$reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinstallBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -392,6 +421,7 @@ foreach ($functionName in @(
     'New-AxisWizardStepContent'
     'New-AxisBiosInformationStep'
     'New-AxisBiosSettingsStep'
+    'New-AxisReinstallStep'
     'New-AxisFirstUseWizardStepContent'
     'New-AxisStepDocumentationButton'
     'New-AxisStepPrimaryActionArea'
@@ -453,6 +483,15 @@ $arabicReqNavigation = Get-AxisWizardArabicText -Name 'ReqNavigation'
 $arabicReqSupport = Get-AxisWizardArabicText -Name 'ReqSupport'
 $arabicRestartAcknowledgement = Get-AxisWizardArabicText -Name 'RestartAcknowledgement'
 $arabicRestarting = Get-AxisWizardArabicText -Name 'Restarting'
+$arabicReinstallTitle = Get-AxisWizardArabicText -Name 'ReinstallTitle'
+$arabicReinstallSubtitle = Get-AxisWizardArabicText -Name 'ReinstallSubtitle'
+$arabicReinstallInfoTitle = Get-AxisWizardArabicText -Name 'ReinstallInfoTitle'
+$arabicReinstallInfoBullet = Get-AxisWizardArabicText -Name 'ReinstallInfoBullet'
+$arabicReinstallRequirementUsbSize = Get-AxisWizardArabicText -Name 'ReinstallRequirementUsbSize'
+$arabicReinstallRequirementNoData = Get-AxisWizardArabicText -Name 'ReinstallRequirementNoData'
+$arabicReinstallPrimaryAction = Get-AxisWizardArabicText -Name 'ReinstallPrimaryAction'
+$arabicReinstallRunning = Get-AxisWizardArabicText -Name 'ReinstallRunning'
+$arabicReinstallCompleted = Get-AxisWizardArabicText -Name 'ReinstallCompleted'
 $oldArabicIntelRebar = ConvertFrom-AxisWizardCodePoints @(
     0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020,
     0x0052, 0x0065, 0x0073, 0x0069, 0x007A, 0x0061, 0x0062, 0x006C, 0x0065, 0x0020,
@@ -525,9 +564,9 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 2) 'AXIS first-use wizard sample state should include BIOS Drivers and BIOS Settings steps.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings') 'AXIS first-use wizard step order should be BIOS Drivers then BIOS Settings.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq 'BIOS Drivers & Downloads|BIOS Settings') 'AXIS first-use wizard customer step title order changed.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 3) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, and Reinstall steps.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, then Reinstall.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle") 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
@@ -641,11 +680,32 @@ foreach ($stageName in $expectedStageNames) {
 $strip = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressStrip') | Select-Object -First 1
 $stripGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressGrid') | Select-Object -First 1
 $stripItems = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressItem')
+$initialCurrentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+$stageProgressCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
+$stageProgressRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $strip) 'AXIS first-use wizard stage progress strip is missing.'
 Assert-BoostLabCondition ($null -ne $stripGrid) 'AXIS first-use wizard stage progress grid is missing.'
+Assert-BoostLabCondition ($null -ne $initialCurrentStageHeader) 'AXIS first-use wizard current stage header is missing.'
+Assert-BoostLabCondition ([string]$initialCurrentStageHeader.Text -eq 'Check') 'AXIS BIOS Drivers initial current stage header should be Check.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($strip) -eq 'AxisFirstUseWizard.StageStripNoPartialProgress') 'AXIS stage strip should expose the no-partial-progress marker.'
 Assert-BoostLabCondition ($strip.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS stage strip should be mirrored for RTL.'
 Assert-BoostLabCondition ($stripGrid.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS stage grid should be mirrored for RTL.'
 Assert-BoostLabCondition ($stripItems.Count -eq $expectedStageNames.Count) 'AXIS stage progress should show canonical stage names only.'
+Assert-BoostLabCondition ($null -ne $stageProgressCheckFill) 'AXIS stage progress Check fill marker is missing.'
+Assert-BoostLabCondition ($null -ne $stageProgressRefreshFill) 'AXIS stage progress Refresh fill marker is missing.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'BIOS Drivers Check active')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Refresh inactive')
+$activeStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
+)
+$completedStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressCompleted.') }
+)
+Assert-BoostLabCondition ($activeStageItems.Count -eq 1) 'AXIS stage strip should expose exactly one active stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($activeStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressActive.Check') 'AXIS BIOS Drivers active stage marker should be Check.'
+Assert-BoostLabCondition ($completedStageItems.Count -eq 0) 'AXIS BIOS Drivers should not mark a completed stage before Check is complete.'
 $stripTexts = @(Get-AxisFirstUseWizardTextValues -Root $strip)
 $stripStageOrder = @($stripTexts | Where-Object { $_ -in $expectedStageNames })
 Assert-BoostLabCondition (
@@ -655,6 +715,7 @@ Assert-BoostLabCondition (-not ('BIOS Drivers & Downloads' -in $stripTexts)) 'AX
 
 $biosStep = $sampleSteps[0]
 $biosSettingsStep = $sampleSteps[1]
+$reinstallStep = $sampleSteps[2]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -677,6 +738,22 @@ Assert-BoostLabCondition (-not $biosSettingsStep.Contains('RequirementsItems')) 
 Assert-BoostLabCondition ([string]$biosSettingsStep['HardwareAwarePrototypeMarker'] -eq 'AxisFirstUseWizard.BiosSettingsHardwareAwarePrototype') 'AXIS BIOS Settings should carry the hardware-aware prototype marker.'
 Assert-BoostLabCondition (-not $biosSettingsStep.Contains('VisibleProcessorGroupMarker')) 'AXIS BIOS Settings should not expose an Intel group header marker after Phase 178D copy trimming.'
 Assert-BoostLabCondition ([string]$biosSettingsStep['VisibleMotherboardUtilityMarker'] -eq 'BiosSettingsVisibleMsiUtility') 'AXIS BIOS Settings should mark the visible MSI utility.'
+Assert-BoostLabCondition ([string]$reinstallStep['Id'] -eq 'reinstall') 'AXIS Reinstall internal tool id should be reinstall.'
+Assert-BoostLabCondition ([string]$reinstallStep['Title'] -eq $arabicReinstallTitle) 'AXIS Reinstall customer title changed.'
+Assert-BoostLabCondition ([string]$reinstallStep['StageName'] -eq 'Refresh') 'AXIS Reinstall customer stage label should be Refresh.'
+Assert-BoostLabCondition ([string]$reinstallStep['PrimaryActionLabel'] -eq $arabicReinstallPrimaryAction) 'AXIS Reinstall primary action label changed.'
+Assert-BoostLabCondition ([string]$reinstallStep['CheckingStatusTitle'] -eq $arabicReinstallRunning) 'AXIS Reinstall running status label changed.'
+Assert-BoostLabCondition ([string]$reinstallStep['CompletedStatusTitle'] -eq $arabicReinstallCompleted) 'AXIS Reinstall completed status label changed.'
+Assert-BoostLabCondition ([bool]$reinstallStep['ShowRequirements']) 'AXIS Reinstall should show the owner-approved requirements card.'
+Assert-BoostLabCondition (-not [bool]$reinstallStep['RequiresConfirmationAcknowledgement']) 'AXIS Reinstall must not require a confirmation acknowledgement overlay.'
+Assert-BoostLabCondition ([bool]$reinstallStep['NoConfirmationOverlay']) 'AXIS Reinstall should carry the no-confirmation overlay marker.'
+Assert-BoostLabCondition ([bool]$reinstallStep['PrototypeOnlySimulation']) 'AXIS Reinstall should be marked as prototype-only simulation.'
+Assert-BoostLabCondition ((@($reinstallStep['CustomerVisibleActions']) -join '|') -eq $arabicReinstallPrimaryAction) 'AXIS Reinstall should expose only the owner-approved Arabic customer action label.'
+Assert-BoostLabCondition (-not ('Analyze' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Analyze as a customer action.'
+Assert-BoostLabCondition (-not ('Open' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Open as a customer action.'
+Assert-BoostLabCondition (-not ('Apply' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Apply as a customer action.'
+Assert-BoostLabCondition (-not ('Default' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Default as a customer action.'
+Assert-BoostLabCondition (-not ('Restore' -in @($reinstallStep['CustomerVisibleActions']))) 'AXIS Reinstall must not expose Restore as a customer action.'
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -805,7 +882,7 @@ foreach ($footerButton in $footerButtons) {
     Assert-BoostLabCondition ([double]$footerButton.Margin.Bottom -ge 0.0) 'AXIS first-use wizard footer buttons must not use negative bottom margins.'
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create one confirmation overlay per prototype step.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create confirmation overlays only for the two BIOS steps.'
 Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS first-step confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
@@ -909,6 +986,20 @@ Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
 $biosSettingsVisibleContent = $taggedContentHost[0].Child
 $biosSettingsVisibleText = (Get-AxisFirstUseWizardTextValues -Root $biosSettingsVisibleContent) -join [Environment]::NewLine
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.BiosSettingsStep').Count -eq 1) 'AXIS Continue/Next from completed BIOS Drivers should move to BIOS Settings.'
+Assert-BoostLabCondition ([string]$initialCurrentStageHeader.Text -eq 'Check') 'AXIS BIOS Settings current stage header should remain Check.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'BIOS Settings Check active')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'BIOS Settings Refresh inactive')
+$activeStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
+)
+$completedStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressCompleted.') }
+)
+Assert-BoostLabCondition ($activeStageItems.Count -eq 1) 'AXIS BIOS Settings should still expose exactly one active stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($activeStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressActive.Check') 'AXIS BIOS Settings active stage marker should remain Check.'
+Assert-BoostLabCondition ($completedStageItems.Count -eq 0) 'AXIS BIOS Settings should not mark Check completed while still on Check.'
 Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS BIOS Settings Continue/Next should start disabled.'
 foreach ($requiredBiosSettingsText in @(
     'BIOS Settings'
@@ -1074,6 +1165,231 @@ Assert-BoostLabCondition ($biosSettingsCompletedRuntimeStatusRightAnchor.Count -
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS BIOS Settings Continue/Next should become blue after simulated completion.'
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS BIOS Settings enabled Continue/Next should use the approved blue fill.'
 
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+$reinstallVisibleContent = $taggedContentHost[0].Child
+$reinstallVisibleText = (Get-AxisFirstUseWizardTextValues -Root $reinstallVisibleContent) -join [Environment]::NewLine
+$currentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS Continue/Next from completed BIOS Settings should move to Reinstall.'
+Assert-BoostLabCondition ($null -ne $currentStageHeader) 'AXIS current stage header should be tagged for step navigation verification.'
+Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Refresh') 'AXIS Reinstall current stage header should show Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'Reinstall Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'Reinstall Refresh active')
+$activeStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
+)
+$completedStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressCompleted.') }
+)
+Assert-BoostLabCondition ($activeStageItems.Count -eq 1) 'AXIS Reinstall should expose exactly one active stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($activeStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressActive.Refresh') 'AXIS Reinstall active stage marker should be Refresh.'
+Assert-BoostLabCondition ($completedStageItems.Count -eq 1) 'AXIS Reinstall should expose exactly one completed previous stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($completedStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressCompleted.Check') 'AXIS Reinstall completed stage marker should be Check.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Reinstall Continue/Next should start disabled.'
+foreach ($requiredReinstallText in @(
+    'Refresh'
+    $arabicReinstallTitle
+    $arabicReinstallSubtitle
+    $arabicReinstallInfoTitle
+    $arabicReinstallInfoBullet
+    $arabicRequirementsTitle
+    $arabicReinstallRequirementUsbSize
+    $arabicReinstallRequirementNoData
+    $arabicReinstallPrimaryAction
+    $arabicDocumentation
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    Assert-BoostLabCondition ($reinstallVisibleText.Contains($requiredReinstallText)) "AXIS Reinstall view is missing owner-approved text: $requiredReinstallText"
+}
+foreach ($forbiddenReinstallInternalText in @(
+    'Analyze'
+    'Open'
+    'Apply'
+    'Default'
+    'Restore'
+    'Cancel'
+)) {
+    Assert-BoostLabCondition (-not $reinstallVisibleText.Contains($forbiddenReinstallInternalText)) "AXIS Reinstall view exposes forbidden internal/customer action text: $forbiddenReinstallInternalText"
+}
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationOverlay').Count -eq 0) 'AXIS Reinstall content must not include a confirmation overlay.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS Reinstall content must not include a confirmation checkbox.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationReturnButton').Count -eq 0) 'AXIS Reinstall content must not include an overlay Return button.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationCard').Count -eq 1) 'AXIS Reinstall should render one information card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsCard').Count -eq 1) 'AXIS Reinstall should render one requirements card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementItem').Count -eq 2) 'AXIS Reinstall should render both owner-approved requirements.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 1) 'AXIS Reinstall support panel should remain separate and visible.'
+$reinstallNoClippingMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallNoClippingLayout' }
+)
+Assert-BoostLabCondition ($reinstallNoClippingMarkers.Count -ge 2) 'AXIS Reinstall should expose no-clipping layout markers on the step and details region.'
+$reinstallStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallStep') | Select-Object -First 1
+$reinstallContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+$reinstallDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallDetails') | Select-Object -First 1
+$reinstallInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationCard') | Select-Object -First 1
+$reinstallRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsCard') | Select-Object -First 1
+$reinstallTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallTitleRightAligned') | Select-Object -First 1
+$reinstallInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationSharedPhysicalRightEdge') | Select-Object -First 1
+$reinstallRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
+$reinstallInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationRightAnchor') | Select-Object -First 1
+$reinstallRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsRightAnchor') | Select-Object -First 1
+$reinstallActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+$reinstallSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+Assert-BoostLabCondition ([double]$reinstallStepElement.Height -eq 382.0) 'AXIS Reinstall should fit inside the 900x650 preview client area without clipping.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($reinstallInformationCard) -eq 2) 'AXIS Reinstall information card should be assigned to the visual right-side column.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($reinstallRequirementsCard) -eq 0) 'AXIS Reinstall requirements card should be assigned to the visual left-side column.'
+$reinstallInformationRightMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallInformationRightCard' }
+)
+$reinstallRequirementsLeftMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallRequirementsLeftCard' }
+)
+$reinstallSharedRightEdgeMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallSharedPhysicalRightEdge' }
+)
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $reinstallTitleRightAnchor -Name 'Reinstall title' -ExpectedMaxWidth 690)
+$reinstallTitleTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $reinstallTitleRightAnchor -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($reinstallTitleTextBlocks.Count -eq 1) 'AXIS Reinstall title right anchor should contain one title TextBlock.'
+Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $reinstallTitleTextBlocks[0]) -eq $arabicReinstallTitle) 'AXIS Reinstall right-aligned title text changed.'
+Assert-BoostLabCondition ($reinstallTitleTextBlocks[0].TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Reinstall title should keep right text alignment.'
+Assert-BoostLabCondition ($reinstallInformationRightMarkers.Count -eq 1) 'AXIS Reinstall information card should expose the right-card marker.'
+Assert-BoostLabCondition ($reinstallRequirementsLeftMarkers.Count -eq 1) 'AXIS Reinstall requirements card should expose the left-card marker.'
+Assert-BoostLabCondition ($reinstallSharedRightEdgeMarkers.Count -eq 2) 'AXIS Reinstall information and requirements groups should expose shared physical right-edge markers.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $reinstallInformationRightAnchor -Name 'Reinstall information card' -ExpectedMaxWidth 320)
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $reinstallRequirementsRightAnchor -Name 'Reinstall requirements card' -ExpectedMaxWidth 320)
+[void](Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup `
+    -Group $reinstallInformationSharedRightEdge `
+    -Name 'Reinstall information card' `
+    -ExpectedTexts @($arabicReinstallInfoTitle, $arabicReinstallInfoBullet) `
+    -ExpectedMaxWidth 320)
+[void](Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup `
+    -Group $reinstallRequirementsSharedRightEdge `
+    -Name 'Reinstall requirements card' `
+    -ExpectedTexts @($arabicRequirementsTitle, $arabicReinstallRequirementUsbSize, $arabicReinstallRequirementNoData) `
+    -ExpectedMaxWidth 320)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($reinstallActionArea) -eq 'AxisFirstUseWizard.ReinstallDirectSimulationActionRow') 'AXIS Reinstall action row should expose the direct simulation marker.'
+Assert-BoostLabCondition ($reinstallContentGrid.Children.IndexOf($reinstallDetails) -lt $reinstallContentGrid.Children.IndexOf($reinstallActionArea)) 'AXIS Reinstall details must appear before the action row.'
+Assert-BoostLabCondition ($reinstallContentGrid.Children.IndexOf($reinstallActionArea) -lt $reinstallContentGrid.Children.IndexOf($reinstallSupportPanel)) 'AXIS Reinstall action row must remain separated above the support panel.'
+Assert-BoostLabCondition ($reinstallSupportPanel.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Reinstall support panel should be visible before the simulated flow.'
+$reinstallStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+$reinstallRowTotal = 0.0
+foreach ($reinstallRowChild in @($reinstallContentGrid.Children)) {
+    $reinstallRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+    $reinstallRowTotal += [double]$reinstallRowChild.DesiredSize.Height
+}
+$reinstallInnerHeight = [double]$reinstallStepElement.Height -
+    [double]$reinstallStepElement.Padding.Top -
+    [double]$reinstallStepElement.Padding.Bottom -
+    [double]$reinstallStepElement.BorderThickness.Top -
+    [double]$reinstallStepElement.BorderThickness.Bottom
+Assert-BoostLabCondition ($reinstallRowTotal -le $reinstallInnerHeight) 'AXIS Reinstall row content should fit inside the card without bottom clipping.'
+Assert-BoostLabCondition ([double]$reinstallInformationCard.Height -eq 118.0) 'AXIS Reinstall information card should use the compact no-clipping height.'
+Assert-BoostLabCondition ([double]$reinstallRequirementsCard.Height -eq 118.0) 'AXIS Reinstall requirements card should use the compact no-clipping height.'
+$reinstallPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$reinstallRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$reinstallRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+Assert-BoostLabCondition ([string]$reinstallPrimaryButton.Content -eq $arabicReinstallPrimaryAction) 'AXIS Reinstall primary button should use the owner-approved Arabic label.'
+Assert-BoostLabCondition ([double]$reinstallPrimaryButton.Width -ge 300.0) 'AXIS Reinstall primary button should be wide enough for the owner-approved label.'
+Assert-BoostLabCondition ($reinstallRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Reinstall runtime status should start hidden.'
+Assert-BoostLabCondition ([double]$reinstallRuntimeStatusArea.Width -eq 234.0) 'AXIS Reinstall runtime status should use a no-clipping width for the Arabic running state.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($reinstallRuntimeStatusArea) -eq 'AxisFirstUseWizard.ReinstallRuntimeStatusNoClipping') 'AXIS Reinstall runtime status should expose the no-clipping marker.'
+Invoke-AxisFirstUseWizardButtonClick -Button $reinstallPrimaryButton
+Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Reinstall primary action must not reveal the BIOS Drivers confirmation overlay.'
+Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Reinstall primary action must not reveal the BIOS Settings confirmation overlay.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Reinstall Continue/Next should remain disabled during the simulated running state.'
+Assert-BoostLabCondition ($reinstallRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Reinstall runtime status should become visible during the simulated flow.'
+Assert-BoostLabCondition ($reinstallRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Reinstall runtime status spacer should become visible during the simulated flow.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) 'AXIS Reinstall simulated flow should use the runtime checking animation.'
+$reinstallRunningText = (Get-AxisFirstUseWizardTextValues -Root $reinstallVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($reinstallRunningText.Contains($arabicReinstallRunning)) 'AXIS Reinstall simulated flow should show the owner-approved running state.'
+Assert-BoostLabCondition ($reinstallRunningText.Contains($arabicSupportBody)) 'AXIS Reinstall support panel should remain visible during the simulated flow.'
+$reinstallRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($reinstallRunningRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Reinstall running status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $reinstallRunningRuntimeStatusRightAnchor[0] -Name 'Reinstall running runtime status' -ExpectedMaxWidth 106)
+$reinstallCompletedByTimer = Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000
+Assert-BoostLabCondition ([bool]$reinstallCompletedByTimer) 'AXIS Reinstall simulated flow should enable Continue/Next after completion.'
+$reinstallCompletedText = (Get-AxisFirstUseWizardTextValues -Root $reinstallVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($reinstallCompletedText.Contains($arabicReinstallCompleted)) 'AXIS Reinstall simulated flow should end in the owner-approved ready state.'
+Assert-BoostLabCondition ($reinstallCompletedText.Contains($arabicSupportBody)) 'AXIS Reinstall support panel should remain visible after simulated completion.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reinstallRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) 'AXIS Reinstall completed state should render the completed runtime effect.'
+$reinstallCompletedRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($reinstallCompletedRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Reinstall completed status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $reinstallCompletedRuntimeStatusRightAnchor[0] -Name 'Reinstall completed runtime status' -ExpectedMaxWidth 106)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS Reinstall Continue/Next should become blue after simulated completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS Reinstall enabled Continue/Next should use the approved blue fill.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS Reinstall should not auto-advance after simulated completion.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS Reinstall Continue/Next should not navigate past the last prototype step.'
+
+function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
+    param(
+        [Parameter(Mandatory)]
+        [string]$PrototypeScriptPath
+    )
+
+    . $PrototypeScriptPath
+    return New-AxisFirstUseWizardPrototype -SampleState (Get-AxisFirstUseWizardSampleState)
+}
+
+if ($null -ne (Get-Command -Name 'Set-AxisStageProgressStripActiveStage' -CommandType Function -ErrorAction SilentlyContinue)) {
+    Remove-Item -LiteralPath 'Function:\Set-AxisStageProgressStripActiveStage' -Force
+}
+
+$previewScopedPrototype = New-AxisFirstUseWizardPreviewScopedPrototypeForTest -PrototypeScriptPath $prototypePath
+Assert-BoostLabCondition (
+    $null -eq (Get-Command -Name 'Set-AxisStageProgressStripActiveStage' -CommandType Function -ErrorAction SilentlyContinue)
+) 'AXIS preview-scope navigation smoke test should run without a global stage-strip helper function.'
+$previewScopedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$previewScopedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+$previewScopedBackButton = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.BackButton') | Select-Object -First 1
+$previewScopedStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+$previewScopedCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
+$previewScopedRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
+$previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
+Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
+Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
+Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 2) 'AXIS preview-scope smoke test should have only the two BIOS confirmation overlays.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
+
+$previewScopedFirstPrimary = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$previewScopedFirstAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedOverlays[0] -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+$previewScopedFirstConfirm = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedOverlays[0] -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedFirstPrimary
+$previewScopedFirstAcknowledgement.IsChecked = $true
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedFirstConfirm
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$previewScopedContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS preview-scope BIOS Drivers simulation should enable Continue/Next.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedContinueButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.BiosSettingsStep').Count -eq 1) 'AXIS preview-scope Continue/Next should navigate to BIOS Settings without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope BIOS Settings stage header should remain Check.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope BIOS Settings Check active')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope BIOS Settings Refresh inactive')
+
+$previewScopedSettingsPrimary = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$previewScopedSettingsAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedOverlays[1] -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+$previewScopedSettingsConfirm = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedOverlays[1] -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedSettingsPrimary
+$previewScopedSettingsAcknowledgement.IsChecked = $true
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedSettingsConfirm
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$previewScopedContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS preview-scope BIOS Settings simulation should enable Continue/Next.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedContinueButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS preview-scope Continue/Next should navigate to Reinstall without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Reinstall stage header should become Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope Reinstall Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Reinstall Refresh active')
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedBackButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.BiosSettingsStep').Count -eq 1) 'AXIS preview-scope Back should navigate from Reinstall to BIOS Settings without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope Back to BIOS Settings should restore Check stage header.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Back Check active')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Back Refresh inactive')
+
 $completedSampleState = Copy-AxisWizardMap -Map $sampleState
 $completedStep = Copy-AxisWizardMap -Map $biosStep
 $completedStep['State'] = 'Completed'
@@ -1081,6 +1397,7 @@ $completedSampleState['Step'] = $completedStep
 $completedSampleState['Steps'] = @(
     $completedStep
     $biosSettingsStep
+    $reinstallStep
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -1213,6 +1530,13 @@ foreach ($forbiddenVisibleText in @(
 
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Cancel')) 'AXIS first-use wizard source must not contain a Cancel button path.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Set-AxisWizardButtonVisualVariant')) 'AXIS checkbox event path must not call the removed helper that crashed the preview.'
+Assert-BoostLabCondition (-not $prototypeSource.Contains('Set-AxisStageProgressStripActiveStage')) 'AXIS navigation event path must not call the unavailable stage-strip helper that crashed the preview.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.ReinstallTitleRightAligned')) 'AXIS Reinstall title should expose the right-aligned title marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageStripNoPartialProgress')) 'AXIS stage strip should expose the no-partial-progress marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineActiveFullWhite')) 'AXIS stage strip should expose the active full-white line marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
+Assert-BoostLabCondition (-not $prototypeSource.Contains('87.36')) 'AXIS stage strip must not keep the old partial active underline width.'
+Assert-BoostLabCondition (-not $prototypeSource.Contains('0.84')) 'AXIS stage strip must not keep the old partial progress value.'
 $eventHandlerBlocks = [System.Collections.Generic.List[string]]::new()
 foreach ($eventName in @('Add_Checked', 'Add_Unchecked', 'Add_Click', 'Add_Tick')) {
     foreach ($match in [regex]::Matches($prototypeSource, "(?s)\.$eventName\(\s*\{(?<Body>.*?)\}\.GetNewClosure\(\)\s*\)")) {
@@ -1225,6 +1549,7 @@ foreach ($eventHandlerBlock in $eventHandlerBlocks) {
         'New-AxisWizardShadowEffect'
         'Set-AxisWizardButtonVisualVariant'
         'Set-AxisWizardEnabledNextButtonBlue'
+        'Set-AxisStageProgressStripActiveStage'
         'Copy-AxisWizardMap'
         'New-AxisBiosInformationStep'
         'New-AxisStep'
@@ -1245,10 +1570,26 @@ foreach ($blockedRuntimeText in @(
     'Invoke-WebRequest'
     'Invoke-RestMethod'
     'Start-BitsTransfer'
+    'DownloadFile'
+    'System.Net.WebClient'
     'Get-CimInstance'
     'Get-WmiObject'
     'Win32_Processor'
     'Win32_BaseBoard'
+    'MediaCreationTool'
+    'Get-Disk'
+    'Clear-Disk'
+    'Initialize-Disk'
+    'Set-Disk'
+    'New-Partition'
+    'Remove-Partition'
+    'Set-Partition'
+    'Get-Partition'
+    'Get-Volume'
+    'Format-Volume'
+    'Set-Volume'
+    'Win32_LogicalDisk'
+    'DriveType'
     'manage-bde'
     'pnputil'
     'bcdedit'
@@ -1300,6 +1641,27 @@ Assert-BoostLabCondition ($biosSettingsBlueprintSource.Contains($arabicIntelReba
 Assert-BoostLabCondition (-not $biosSettingsBlueprintSource.Contains($oldArabicIntelRebar)) 'AXIS BIOS Settings blueprint should not retain the old dotted Resizable BAR label.'
 Assert-BoostLabCondition ($biosSettingsBlueprintSource.Contains($arabicRestartAcknowledgement)) 'AXIS BIOS Settings blueprint should record the shortened confirmation checkbox text.'
 Assert-BoostLabCondition (-not $biosSettingsBlueprintSource.Contains($oldArabicRestartAcknowledgement)) 'AXIS BIOS Settings blueprint should not retain the old long confirmation checkbox text.'
+
+foreach ($requiredReinstallBlueprintText in @(
+    'Internal tool ID | `reinstall`'
+    'Stage | `Refresh`'
+    'Pressing the primary button should start the customer-facing flow directly.'
+    'No confirmation overlay appears for this step.'
+    'No checkbox appears for this step.'
+    'The isolated prototype must not create, format, erase, or modify any USB device.'
+    'Do not implement persistence in this phase.'
+    $arabicReinstallTitle
+    $arabicReinstallSubtitle
+    $arabicReinstallInfoTitle
+    $arabicReinstallInfoBullet
+    $arabicReinstallRequirementUsbSize
+    $arabicReinstallRequirementNoData
+    $arabicReinstallPrimaryAction
+    $arabicReinstallRunning
+    $arabicReinstallCompleted
+)) {
+    Assert-BoostLabCondition ($reinstallBlueprintSource.Contains($requiredReinstallBlueprintText)) "AXIS Reinstall blueprint is missing owner-approved contract text: $requiredReinstallBlueprintText"
+}
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath
 Assert-BoostLabCondition (-not $mainWindowSource.Contains('AxisFirstUseWizardPrototype')) 'MainWindow should not be wired to the AXIS first-use wizard prototype.'

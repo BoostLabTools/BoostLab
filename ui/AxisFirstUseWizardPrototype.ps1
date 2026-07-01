@@ -273,7 +273,7 @@ function Get-AxisFirstUseWizardCanonicalStages {
             [ordered]@{
                 Name = $stageNames[$index]
                 State = $(if ($index -eq 0) { 'Current' } else { 'Future' })
-                Progress = $(if ($index -eq 0) { 0.84 } else { 0.0 })
+                Progress = $(if ($index -eq 0) { 1.0 } else { 0.0 })
             }
         }
     )
@@ -324,7 +324,7 @@ function Resolve-AxisFirstUseWizardStageItems {
                     [double](Get-AxisWizardMapValue -Map $sourceStage -Name 'Progress' -DefaultValue 0.0)
                 }
                 elseif ($index -eq 0) {
-                    0.84
+                    1.0
                 }
                 else {
                     0.0
@@ -608,7 +608,16 @@ function Get-AxisWizardArabicText {
             'ReqNavigation',
             'ReqSupport',
             'RestartAcknowledgement',
-            'Restarting'
+            'Restarting',
+            'ReinstallTitle',
+            'ReinstallSubtitle',
+            'ReinstallInfoTitle',
+            'ReinstallInfoBullet',
+            'ReinstallRequirementUsbSize',
+            'ReinstallRequirementNoData',
+            'ReinstallPrimaryAction',
+            'ReinstallRunning',
+            'ReinstallCompleted'
         )]
         [string]$Name
     )
@@ -790,6 +799,83 @@ function Get-AxisWizardArabicText {
         }
         'Restarting' {
             return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x0020, 0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
+        }
+        'ReinstallTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x062C, 0x0647, 0x064A, 0x0632, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073)
+        }
+        'ReinstallSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x062A, 0x062C, 0x0647, 0x064A, 0x0632, 0x0020,
+                0x0055, 0x0053, 0x0042, 0x0020,
+                0x0628, 0x0627, 0x0633, 0x062A, 0x062E, 0x062F, 0x0627, 0x0645, 0x0020,
+                0x062D, 0x0632, 0x0645, 0x0629, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020,
+                0x0031, 0x0031, 0x0020,
+                0x0627, 0x0644, 0x0631, 0x0633, 0x0645, 0x064A, 0x0629, 0x002E
+            )
+        }
+        'ReinstallInfoTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0625, 0x062C, 0x0631, 0x0627, 0x0621, 0x0020,
+                0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020,
+                0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0644, 0x0646, 0x0638, 0x0627, 0x0645, 0x0020,
+                0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020,
+                0x0031, 0x0031
+            )
+        }
+        'ReinstallInfoBullet' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x062A, 0x0646, 0x0632, 0x064A, 0x0644, 0x0020,
+                0x0623, 0x062F, 0x0627, 0x0629, 0x0020,
+                0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020,
+                0x0627, 0x0644, 0x0648, 0x0633, 0x0627, 0x0626, 0x0637, 0x0020,
+                0x0627, 0x0644, 0x0631, 0x0633, 0x0645, 0x064A, 0x0629, 0x0020,
+                0x0644, 0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020,
+                0x0055, 0x0053, 0x0042, 0x0020,
+                0x0642, 0x0627, 0x0628, 0x0644, 0x0020,
+                0x0644, 0x0644, 0x062A, 0x0645, 0x0647, 0x064A, 0x062F, 0x002E
+            )
+        }
+        'ReinstallRequirementUsbSize' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0633, 0x062A, 0x062E, 0x062F, 0x0627, 0x0645, 0x0020,
+                0x0055, 0x0053, 0x0042, 0x0020,
+                0x0628, 0x0633, 0x0639, 0x0629, 0x0020,
+                0x0644, 0x0627, 0x0020,
+                0x062A, 0x0642, 0x0644, 0x0020,
+                0x0639, 0x0646, 0x0020,
+                0x0038, 0x0047, 0x0042, 0x002E
+            )
+        }
+        'ReinstallRequirementNoData' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0627, 0x0644, 0x062A, 0x0623, 0x0643, 0x062F, 0x0020,
+                0x0645, 0x0646, 0x0020,
+                0x0639, 0x062F, 0x0645, 0x0020,
+                0x0648, 0x062C, 0x0648, 0x062F, 0x0020,
+                0x0628, 0x064A, 0x0627, 0x0646, 0x0627, 0x062A, 0x0020,
+                0x0645, 0x0647, 0x0645, 0x0629, 0x0020,
+                0x062F, 0x0627, 0x062E, 0x0644, 0x0020,
+                0x0627, 0x0644, 0x0640, 0x0020,
+                0x0055, 0x0053, 0x0042, 0x002E
+            )
+        }
+        'ReinstallPrimaryAction' {
+            return ConvertFrom-AxisWizardCodePoints @(
+                0x0625, 0x0646, 0x0634, 0x0627, 0x0621, 0x0020,
+                0x0648, 0x0633, 0x0627, 0x0626, 0x0637, 0x0020,
+                0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020,
+                0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020,
+                0x0031, 0x0031
+            )
+        }
+        'ReinstallRunning' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x0020, 0x0627, 0x0644, 0x062A, 0x062C, 0x0647, 0x064A, 0x0632)
+        }
+        'ReinstallCompleted' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0647, 0x0632)
         }
     }
 }
@@ -1007,6 +1093,40 @@ function Get-AxisFirstUseWizardSampleState {
         VisibleMotherboardUtilityMarker = 'BiosSettingsVisibleMsiUtility'
     }
 
+    $reinstallStep = [ordered]@{
+        Id = 'reinstall'
+        Title = (Get-AxisWizardArabicText -Name 'ReinstallTitle')
+        StageName = 'Refresh'
+        State = 'Ready'
+        StateLabel = ''
+        PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'ReinstallPrimaryAction')
+        RunningActionLabel = (Get-AxisWizardArabicText -Name 'ReinstallPrimaryAction')
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'ReinstallCompleted')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'ReinstallSubtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'ReinstallInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardArabicText -Name 'ReinstallInfoBullet')
+        )
+        ShowRequirements = $true
+        RequirementsTitle = (Get-AxisWizardArabicText -Name 'RequirementsTitle')
+        RequirementsItems = @(
+            (Get-AxisWizardArabicText -Name 'ReinstallRequirementUsbSize')
+            (Get-AxisWizardArabicText -Name 'ReinstallRequirementNoData')
+        )
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $false
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'ReinstallRunning')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'ReinstallCompleted')
+        CustomerAction = 'CreateInstallationMedia'
+        FutureInternalAction = 'Apply'
+        CustomerVisibleActions = @((Get-AxisWizardArabicText -Name 'ReinstallPrimaryAction'))
+        PrototypeOnlySimulation = $true
+        NoConfirmationOverlay = $true
+    }
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -1025,6 +1145,7 @@ function Get-AxisFirstUseWizardSampleState {
         Steps = @(
             $biosStep
             $biosSettingsStep
+            $reinstallStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -1059,6 +1180,7 @@ function New-AxisStageProgressStrip {
         -Padding (New-AxisWizardThickness -Left 37 -Top 8 -Right 37 -Bottom 7) `
         -BorderThickness (New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 1)
     $strip.Tag = 'AxisFirstUseWizard.StageProgressStrip'
+    $strip.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.StageStripNoPartialProgress')
     $strip.ClipToBounds = $true
     $strip.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
 
@@ -1078,11 +1200,6 @@ function New-AxisStageProgressStrip {
         $stage = $stageItems[$index]
         $stageName = [string](Get-AxisWizardMapValue -Map $stage -Name 'Name')
         $stageState = [string](Get-AxisWizardMapValue -Map $stage -Name 'State' -DefaultValue 'Future')
-        $progress = [double](Get-AxisWizardMapValue -Map $stage -Name 'Progress' -DefaultValue 0.0)
-
-        if ($stageState -eq 'Complete') {
-            $progress = 1.0
-        }
 
         $item = [System.Windows.Controls.StackPanel]::new()
         $item.Orientation = [System.Windows.Controls.Orientation]::Vertical
@@ -1095,6 +1212,7 @@ function New-AxisStageProgressStrip {
         $item.MinWidth = 0
         $item.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
         $item.Tag = 'AxisFirstUseWizard.StageProgressItem'
+        $item.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageProgressItem.$stageName")
 
         $labelForeground = if ($stageState -eq 'Current') {
             'Axis.Brush.Wizard.AccentText'
@@ -1115,28 +1233,39 @@ function New-AxisStageProgressStrip {
         $label.TextAlignment = [System.Windows.TextAlignment]::Center
         $label.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $label.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+        $label.Tag = "AxisFirstUseWizard.StageProgressLabel.$stageName"
         [void]$item.Children.Add($label)
 
         $barBackground = [System.Windows.Controls.Border]::new()
         $barBackground.Height = 3
         $barBackground.Margin = New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 0
         $barBackground.CornerRadius = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Radius.Small'
-        $barBackground.Background = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+        $barBackground.Background = [System.Windows.Media.Brushes]::Transparent
         $barBackground.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-        $barBackground.ClipToBounds = $true
+        $barBackground.ClipToBounds = $false
 
         $fill = [System.Windows.Controls.Border]::new()
-        $fill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-        $fill.Width = [Math]::Max(0, [Math]::Min(1, $progress)) * 104
+        $fill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+        $fill.Width = 104.0
+        $fill.Tag = "AxisFirstUseWizard.StageProgressFill.$stageName"
         $fill.CornerRadius = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Radius.Small'
         $fill.Background = if ($stageState -eq 'Complete') {
-            Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.StateCompleted.Border'
+            New-AxisWizardColorBrush -Color '#22C55E'
         }
         elseif ($stageState -eq 'Current') {
             Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.Accent'
         }
         else {
             Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+        }
+        if ($stageState -eq 'Complete') {
+            $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineCompletedFullGreen.$stageName")
+        }
+        elseif ($stageState -eq 'Current') {
+            $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineActiveFullWhite.$stageName")
+        }
+        else {
+            $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineInactiveDim.$stageName")
         }
         $barBackground.Child = $fill
 
@@ -1256,9 +1385,11 @@ function New-AxisWizardRuntimeStatusContent {
     )
 
     $stateResources = Get-AxisWizardStepStateResourceKeys -State $State
-    $isBiosSettingsStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'Id') -eq 'bios-settings')
-    $contentWidth = if ($isBiosSettingsStep) { 228.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($isBiosSettingsStep) { 126.0 } else { 86.0 }
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    $isBiosSettingsStep = ($stepId -eq 'bios-settings')
+    $isReinstallStep = ($stepId -eq 'reinstall')
+    $contentWidth = if ($isBiosSettingsStep) { 228.0 } elseif ($isReinstallStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($isBiosSettingsStep) { 126.0 } elseif ($isReinstallStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -1269,6 +1400,9 @@ function New-AxisWizardRuntimeStatusContent {
     $content.Tag = "AxisFirstUseWizard.RuntimeStatusContent.$State"
     if ($isBiosSettingsStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
+    }
+    elseif ($isReinstallStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallRuntimeStatusNoClipping')
     }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -1325,7 +1459,9 @@ function New-AxisStepStatusArea {
 
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
     $stateResources = Get-AxisWizardStepStateResourceKeys -State $state
-    $isBiosSettingsStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'Id') -eq 'bios-settings')
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    $isBiosSettingsStep = ($stepId -eq 'bios-settings')
+    $isReinstallStep = ($stepId -eq 'reinstall')
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -1335,10 +1471,13 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($isBiosSettingsStep) { 252 } else { 214 }
+    $panel.Width = if ($isBiosSettingsStep) { 252 } elseif ($isReinstallStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
+    }
+    elseif ($isReinstallStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallRuntimeStatusNoClipping')
     }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
@@ -1432,6 +1571,8 @@ function New-AxisStepPrimaryActionArea {
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
     $primaryEnabled = ($state -eq 'Ready')
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } else { 142.0 }
 
     $panel = [System.Windows.Controls.Grid]::new()
     $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -1460,7 +1601,7 @@ function New-AxisStepPrimaryActionArea {
         -Resources $Resources `
         -Variant 'Primary' `
         -Enabled $primaryEnabled `
-        -Width 142 `
+        -Width $primaryButtonWidth `
         -Height 42 `
         -Margin (New-AxisWizardThickness -Left 0)
     $primaryButton.Tag = 'AxisFirstUseWizard.PrimaryOpenButton'
@@ -1792,6 +1933,203 @@ function New-AxisBiosSettingsStep {
     return $container
 }
 
+function New-AxisReinstallStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'])[2]
+    }
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 14 -Right 34 -Bottom 10) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = 'AxisFirstUseWizard.ReinstallStep'
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallNoClippingLayout')
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = 'AxisFirstUseWizard.StepTextContent'
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Refresh')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    $reinstallTitleText = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue (Get-AxisWizardArabicText -Name 'ReinstallTitle'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $reinstallTitleText.Tag = 'AxisFirstUseWizard.ReinstallTitleText'
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $reinstallTitleText `
+        -Tag 'AxisFirstUseWizard.ReinstallTitleRightAligned' `
+        -MaxWidth 690))
+    $descriptionText = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+        -Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag 'AxisFirstUseWizard.ArabicSubtitleRightAnchor' `
+        -MaxWidth 690))
+
+    $detailsGrid = [System.Windows.Controls.Grid]::new()
+    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 8
+    $detailsGrid.Tag = 'AxisFirstUseWizard.ReinstallDetails'
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallNoClippingLayout')
+    $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $spacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $spacerColumn.Width = [System.Windows.GridLength]::new(12.0)
+    $requirementsColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $requirementsColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($spacerColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($requirementsColumn)
+
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 11 -Top 8 -Right 11 -Bottom 8) `
+        -Elevation 'Soft'
+    $informationPanel.Height = 118
+    $informationPanel.Tag = 'AxisFirstUseWizard.ReinstallInformationCard'
+    $informationPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallInformationRightCard')
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $informationLines = [System.Collections.Generic.List[object]]::new()
+    $informationLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'ReinstallInfoTitle'))
+        Tag = 'AxisFirstUseWizard.ReinstallInformationTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+        $informationLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.ReinstallInformationItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 3.0
+            Wrap = $true
+            MaxWidth = 320.0
+        })
+    }
+    $informationGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.ReinstallInformationSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 320 `
+        -Lines $informationLines
+    $informationGroup.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallSharedPhysicalRightEdge')
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $informationContent.MaxWidth = 320
+    $informationContent.Tag = 'AxisFirstUseWizard.ReinstallInformationCardContent'
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $informationGroup)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag 'AxisFirstUseWizard.ReinstallInformationRightAnchor' `
+        -MaxWidth 320
+    [System.Windows.Controls.Grid]::SetColumn($informationPanel, 2)
+    [void]$detailsGrid.Children.Add($informationPanel)
+
+    $requirementsPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 11 -Top 8 -Right 11 -Bottom 8) `
+        -Elevation 'Soft'
+    $requirementsPanel.Height = 118
+    $requirementsPanel.Tag = 'AxisFirstUseWizard.ReinstallRequirementsCard'
+    $requirementsPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallRequirementsLeftCard')
+    $requirementsPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $requirementsLines = [System.Collections.Generic.List[object]]::new()
+    $requirementsLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'RequirementsTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'RequirementsTitle'))
+        Tag = 'AxisFirstUseWizard.ReinstallRequirementsTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'RequirementsItems' -DefaultValue @())) {
+        $requirementsLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.ReinstallRequirementItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 3.0
+            Wrap = $true
+            MaxWidth = 320.0
+        })
+    }
+    $requirementsGroup = New-AxisWizardPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.ReinstallRequirementsSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth 320 `
+        -Lines $requirementsLines
+    $requirementsGroup.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallSharedPhysicalRightEdge')
+    $requirementsContent = [System.Windows.Controls.Grid]::new()
+    $requirementsContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $requirementsContent.MaxWidth = 320
+    $requirementsContent.Tag = 'AxisFirstUseWizard.ReinstallRequirementsCardContent'
+    [void](Add-AxisWizardGridRow -Grid $requirementsContent -Child $requirementsGroup)
+    $requirementsPanel.Child = New-AxisWizardRightAnchor `
+        -Child $requirementsContent `
+        -Tag 'AxisFirstUseWizard.ReinstallRequirementsRightAnchor' `
+        -MaxWidth 320
+    [System.Windows.Controls.Grid]::SetColumn($requirementsPanel, 0)
+    [void]$detailsGrid.Children.Add($requirementsPanel)
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
+    $reinstallPrimaryAction = New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources
+    $reinstallPrimaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ReinstallDirectSimulationActionRow')
+    [void](Add-AxisWizardGridRow -Grid $content -Child $reinstallPrimaryAction)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    $container.Child = $content
+
+    return $container
+}
+
 function New-AxisFirstUseWizardStepContent {
     [CmdletBinding()]
     param(
@@ -1802,6 +2140,10 @@ function New-AxisFirstUseWizardStepContent {
     )
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    if ($stepId -eq 'reinstall') {
+        return New-AxisReinstallStep -Step $Step -Resources $Resources
+    }
+
     if ($stepId -eq 'bios-settings') {
         return New-AxisBiosSettingsStep -Step $Step -Resources $Resources
     }
@@ -2032,6 +2374,7 @@ function New-AxisFirstUseWizardPrototype {
         -Margin (New-AxisWizardThickness -Left 0 -Top 13 -Right 0 -Bottom 0) `
         -TextAlignment ([System.Windows.TextAlignment]::Left) `
         -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
+    $stageText.Tag = 'AxisFirstUseWizard.CurrentStageHeader'
     [System.Windows.Controls.Grid]::SetColumn($stageText, 1)
     [void]$headerGrid.Children.Add($stageText)
     $header.Child = $headerGrid
@@ -2043,6 +2386,79 @@ function New-AxisFirstUseWizardPrototype {
         -Resources $resources
     [System.Windows.Controls.Grid]::SetRow($progress, 1)
     [void]$root.Children.Add($progress)
+    $stageProgressActiveTextBrush = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.AccentText'
+    $stageProgressMutedTextBrush = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $stageProgressActiveFillBrush = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.Accent'
+    $stageProgressCompletedTextBrush = New-AxisWizardColorBrush -Color '#22C55E'
+    $stageProgressCompletedFillBrush = New-AxisWizardColorBrush -Color '#22C55E'
+    $stageProgressInactiveFillBrush = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $stageProgressFullLineWidth = 104.0
+    $setStageProgressActiveForNavigation = {
+        param(
+            [Parameter(Mandatory)]
+            [string]$StageName
+        )
+
+        $progressGrid = $progress.Child
+        if ($progressGrid -isnot [System.Windows.Controls.Grid]) {
+            return
+        }
+
+        $stageItemsForProgress = @()
+        foreach ($candidateItem in @($progressGrid.Children)) {
+            if ($candidateItem -isnot [System.Windows.Controls.StackPanel] -or $candidateItem.Children.Count -lt 2) {
+                continue
+            }
+
+            $stageItemsForProgress += $candidateItem
+        }
+
+        $stageNamesForProgress = @()
+        foreach ($item in $stageItemsForProgress) {
+            $label = $item.Children[0]
+            if ($label -is [System.Windows.Controls.TextBlock]) {
+                $stageNamesForProgress += [string]$label.Text
+            }
+        }
+
+        $currentStageIndex = [Array]::IndexOf([string[]]$stageNamesForProgress, $StageName)
+        foreach ($item in $stageItemsForProgress) {
+            $label = $item.Children[0]
+            $barBackground = $item.Children[1]
+            if ($label -isnot [System.Windows.Controls.TextBlock] -or $barBackground -isnot [System.Windows.Controls.Border]) {
+                continue
+            }
+
+            $fill = $barBackground.Child
+            if ($fill -isnot [System.Windows.Controls.Border]) {
+                continue
+            }
+
+            $itemStageName = [string]$label.Text
+            $itemStageIndex = [Array]::IndexOf([string[]]$stageNamesForProgress, $itemStageName)
+            $isCurrent = ($itemStageName -eq $StageName)
+            $isCompleted = ($currentStageIndex -gt 0 -and $itemStageIndex -ge 0 -and $itemStageIndex -lt $currentStageIndex)
+            $fill.Width = $stageProgressFullLineWidth
+            if ($isCurrent) {
+                $label.Foreground = $stageProgressActiveTextBrush
+                $fill.Background = $stageProgressActiveFillBrush
+                $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineActiveFullWhite.$itemStageName")
+                $item.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageProgressActive.$itemStageName")
+            }
+            elseif ($isCompleted) {
+                $label.Foreground = $stageProgressCompletedTextBrush
+                $fill.Background = $stageProgressCompletedFillBrush
+                $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineCompletedFullGreen.$itemStageName")
+                $item.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageProgressCompleted.$itemStageName")
+            }
+            else {
+                $label.Foreground = $stageProgressMutedTextBrush
+                $fill.Background = $stageProgressInactiveFillBrush
+                $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineInactiveDim.$itemStageName")
+                $item.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageProgressInactive.$itemStageName")
+            }
+        }
+    }.GetNewClosure()
 
     $contentHost = [System.Windows.Controls.Border]::new()
     $contentHost.Padding = New-AxisWizardThickness -Left 37 -Top 13 -Right 37 -Bottom 8
@@ -2062,12 +2478,22 @@ function New-AxisFirstUseWizardPrototype {
     $stepViews = [object[]]::new($steps.Count)
     $stepOverlays = [object[]]::new($steps.Count)
     $stepCompletedFlags = [bool[]]::new($steps.Count)
+    $stepStageNames = [string[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
         $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
         $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
-        $stepOverlays[$stepIndex] = New-AxisStepAcknowledgementOverlay -Step $stepMap -Resources $resources
+        $requiresConfirmationAcknowledgement = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'RequiresConfirmationAcknowledgement' -DefaultValue $false)
+        if ($requiresConfirmationAcknowledgement) {
+            $stepOverlays[$stepIndex] = New-AxisStepAcknowledgementOverlay -Step $stepMap -Resources $resources
+        }
+        else {
+            $stepOverlays[$stepIndex] = $null
+        }
         $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
+        $stepStageNames[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'StageName' -DefaultValue 'Check')
     }
+    $stageText.Text = $stepStageNames[$currentStepIndex]
+    & $setStageProgressActiveForNavigation $stepStageNames[$currentStepIndex]
     $contentHost.Child = $stepViews[$currentStepIndex]
     [System.Windows.Controls.Grid]::SetRow($contentHost, 2)
     [void]$root.Children.Add($contentHost)
@@ -2129,6 +2555,10 @@ function New-AxisFirstUseWizardPrototype {
     [void]$root.Children.Add($bottom)
 
     foreach ($overlay in @($stepOverlays)) {
+        if ($null -eq $overlay) {
+            continue
+        }
+
         [System.Windows.Controls.Grid]::SetRowSpan($overlay, 4)
         [void]$root.Children.Add($overlay)
     }
@@ -2184,6 +2614,9 @@ function New-AxisFirstUseWizardPrototype {
     $stepViewsForNavigation = $stepViews
     $stepOverlaysForNavigation = $stepOverlays
     $stepCompletedFlagsForNavigation = $stepCompletedFlags
+    $stageTextForNavigation = $stageText
+    $stepStageNamesForNavigation = $stepStageNames
+    $setStageProgressActiveForNavigationClosure = $setStageProgressActiveForNavigation
     $continueButtonForNavigation = $continueButton
     $continueEnabledBlueMarkerForNavigation = 'AxisFirstUseWizard.EnabledNextButtonBlue'
     $continueEnabledBlueBackgroundForNavigation = New-AxisWizardColorBrush -Color '#2563EB'
@@ -2204,12 +2637,18 @@ function New-AxisFirstUseWizardPrototype {
             }
 
             foreach ($overlayForNavigation in @($stepOverlaysForNavigation)) {
+                if ($null -eq $overlayForNavigation) {
+                    continue
+                }
+
                 $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
 
             $currentNavigationIndex = $currentNavigationIndex - 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
             $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
+            $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
+            & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
             if ($stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
                 $continueButtonForNavigation.IsEnabled = $true
                 $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, $continueEnabledBlueMarkerForNavigation)
@@ -2240,12 +2679,18 @@ function New-AxisFirstUseWizardPrototype {
             }
 
             foreach ($overlayForNavigation in @($stepOverlaysForNavigation)) {
+                if ($null -eq $overlayForNavigation) {
+                    continue
+                }
+
                 $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
 
             $currentNavigationIndex = $currentNavigationIndex + 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
             $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
+            $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
+            & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
             if ($stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
                 $continueButtonForNavigation.IsEnabled = $true
                 $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, $continueEnabledBlueMarkerForNavigation)
@@ -2291,6 +2736,7 @@ function New-AxisFirstUseWizardPrototype {
         $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
         $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
         $stepOverlaysForHandler = $stepOverlays
+        $hasConfirmationOverlayForHandler = ($null -ne $handlerOverlay)
         $stepCompletedFlagsForHandler = $stepCompletedFlagsForNavigation
         $continueButtonForHandler = $continueButton
         $continueEnabledBlueMarkerForHandler = $continueEnabledBlueMarkerForNavigation
@@ -2318,8 +2764,21 @@ function New-AxisFirstUseWizardPrototype {
         if ($primaryButton -is [System.Windows.Controls.Button]) {
             $primaryButton.Add_Click({
                 foreach ($overlayForHandler in @($stepOverlaysForHandler)) {
+                    if ($null -eq $overlayForHandler) {
+                        continue
+                    }
+
                     $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
                 }
+                if (-not $hasConfirmationOverlayForHandler) {
+                    $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
+                    $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+                    $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
+                    $completionTimerForHandler.Stop()
+                    $completionTimerForHandler.Start()
+                    return
+                }
+
                 $confirmationAcknowledgementForHandler.IsChecked = $false
                 $handlerOverlayForClosure.Visibility = [System.Windows.Visibility]::Visible
             }.GetNewClosure())
