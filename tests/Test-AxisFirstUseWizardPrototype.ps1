@@ -274,6 +274,55 @@ function Get-AxisFirstUseWizardTextBlocksContainingText {
     )
 }
 
+function Get-AxisFirstUseWizardSolidBrushHex {
+    param(
+        [AllowNull()]
+        [object]$Brush
+    )
+
+    if ($Brush -is [System.Windows.Media.SolidColorBrush]) {
+        return [string]([System.Windows.Media.SolidColorBrush]$Brush).Color
+    }
+
+    return ''
+}
+
+function Assert-AxisFirstUseWizardForegroundColor {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Element,
+
+        [Parameter(Mandatory)]
+        [string]$ExpectedColor,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    Assert-BoostLabCondition ($Element -is [System.Windows.Controls.Control] -or $Element -is [System.Windows.Controls.TextBlock]) "AXIS $Name should expose a foreground property."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Element.Foreground) -eq $ExpectedColor
+    ) "AXIS $Name foreground should use $ExpectedColor."
+}
+
+function Assert-AxisFirstUseWizardForegroundNotColor {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Element,
+
+        [Parameter(Mandatory)]
+        [string]$RejectedColor,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    Assert-BoostLabCondition ($Element -is [System.Windows.Controls.Control] -or $Element -is [System.Windows.Controls.TextBlock]) "AXIS $Name should expose a foreground property."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Element.Foreground) -ne $RejectedColor
+    ) "AXIS $Name foreground should not use rejected color $RejectedColor."
+}
+
 function Invoke-AxisFirstUseWizardButtonClick {
     param(
         [Parameter(Mandatory)]
@@ -526,6 +575,12 @@ $arabicAutoUnattendAccountLabel = Get-AxisWizardArabicText -Name 'AutoUnattendAc
 $arabicAutoUnattendUsbLabel = Get-AxisWizardArabicText -Name 'AutoUnattendUsbLabel'
 $arabicAutoUnattendRunning = Get-AxisWizardArabicText -Name 'AutoUnattendRunning'
 $arabicAutoUnattendCompleted = Get-AxisWizardArabicText -Name 'AutoUnattendCompleted'
+$axisDocumentationAccentForeground = '#FFE65F2B'
+$axisDefaultAcknowledgementForeground = '#FFEDEDED'
+$axisDefaultCardTitleForeground = '#FFFAF9F6'
+$axisRejectedAcknowledgementAccentForeground = '#FFE65F2B'
+$axisRejectedInformationCardTitleForeground = '#FF8A2BE2'
+$axisRejectedRequirementsCardTitleForeground = '#FFD9A74A'
 $oldArabicIntelRebar = ConvertFrom-AxisWizardCodePoints @(
     0x062A, 0x0641, 0x0639, 0x064A, 0x0644, 0x0020,
     0x0052, 0x0065, 0x0073, 0x0069, 0x007A, 0x0061, 0x0062, 0x006C, 0x0065, 0x0020,
@@ -871,6 +926,8 @@ $informationCardPhysicalRightLines = Assert-AxisFirstUseWizardSharedPhysicalRigh
     -ExpectedMaxWidth 650
 Assert-BoostLabCondition (@($taggedInformationCardContent[0].Children) -contains $taggedInformationCardSharedPhysicalRightEdge[0]) 'AXIS information card shared physical right-edge group should be a direct child of the existing shared container.'
 Assert-BoostLabCondition ($informationCardPhysicalRightLines[0].FontWeight -eq (Get-AxisWizardResource -Resources $prototype.Resources -Name 'Axis.Type.CardTitle.FontWeight')) 'AXIS information card title should keep the title weight.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $informationCardPhysicalRightLines[0] -ExpectedColor $axisDefaultCardTitleForeground -Name 'BIOS Drivers & Downloads information card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $informationCardPhysicalRightLines[0] -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'BIOS Drivers & Downloads information card title')
 foreach ($informationCardLine in $informationCardPhysicalRightLines) {
     Assert-BoostLabCondition ([double]$informationCardLine.Margin.Right -eq [double]$informationCardPhysicalRightLines[0].Margin.Right) 'AXIS information card lines should share the same physical right coordinate margin.'
     Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($informationCardLine) -eq [System.Windows.Controls.Grid]::GetColumn($informationCardPhysicalRightLines[0])) 'AXIS information card lines should share the same physical right coordinate column.'
@@ -893,6 +950,8 @@ Assert-BoostLabCondition ($taggedDocumentationButton.Count -eq 1) 'AXIS BIOS Dri
 Assert-BoostLabCondition ($taggedPrimaryOpenButton.Count -eq 1) 'AXIS BIOS Drivers & Downloads primary Open button is missing.'
 Assert-BoostLabCondition ([string]$taggedPrimaryOpenButton[0].Content -eq $arabicOpen) 'AXIS primary action label should be owner-approved Arabic Open.'
 Assert-BoostLabCondition ([string]$taggedDocumentationButton[0].Content -eq $arabicDocumentation) 'AXIS documentation action label should be owner-approved Arabic text.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $taggedDocumentationButton[0] -ExpectedColor $axisDocumentationAccentForeground -Name 'BIOS Drivers & Downloads documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedDocumentationButton[0]) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS documentation button should expose the documentation accent marker.'
 Assert-BoostLabCondition ([double]$taggedDocumentationButton[0].Margin.Right -eq 0.0) 'AXIS documentation button should not rely on RTL margin behavior for spacing.'
 Assert-BoostLabCondition ($taggedSupportPanel.Count -eq 1) 'AXIS BIOS Drivers & Downloads support panel is missing.'
 Assert-BoostLabCondition ($taggedSupportPanel[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS support panel should stretch so Arabic starts from the right.'
@@ -933,6 +992,62 @@ Assert-BoostLabCondition ([double]$taggedContinueButtons[0].Margin.Right -eq 0.0
 foreach ($footerButton in $footerButtons) {
     Assert-BoostLabCondition ([double]$footerButton.Height -eq 40.0) 'AXIS first-use wizard footer buttons should use the polished height to avoid bottom clipping.'
     Assert-BoostLabCondition ([double]$footerButton.Margin.Bottom -ge 0.0) 'AXIS first-use wizard footer buttons must not use negative bottom margins.'
+    Assert-BoostLabCondition ($null -ne $footerButton.Style) 'AXIS first-use wizard footer buttons should use the shared interactive button style.'
+    Assert-BoostLabCondition ([bool]$footerButton.Focusable) 'AXIS first-use wizard footer buttons should remain focusable for the focus visual.'
+}
+$buttonStyleSource = [regex]::Match(
+    $prototypeSource,
+    '(?s)function Get-AxisWizardButtonStyle.*?function Get-AxisWizardFilledSquareCheckboxStyle'
+).Value
+Assert-BoostLabCondition (-not [string]::IsNullOrWhiteSpace($buttonStyleSource)) 'AXIS first-use wizard button style source should be statically inspectable.'
+foreach ($requiredButtonInteractionMarker in @(
+    'AxisFirstUseWizard.ButtonHoverInteractiveEffect'
+    'AxisFirstUseWizard.ButtonHoverCrispEffect'
+    'AxisFirstUseWizard.ButtonHoverPointerAffordance'
+    'AxisFirstUseWizard.ButtonHoverCrispGlow'
+    'AxisFirstUseWizard.ButtonHoverCrispNoScale'
+    'AxisFirstUseWizard.NoHoverScaleTransform'
+    'AxisFirstUseWizard.NoHoverGrowScale'
+    'AxisFirstUseWizard.ButtonPressedInteractiveEffect'
+    'AxisFirstUseWizard.ButtonPressedInEffect'
+    'AxisFirstUseWizard.DisabledButtonsNoHoverEffect'
+    'AxisFirstUseWizard.DisabledButtonsNoPressedEffect'
+    'Set-AxisWizardButtonHoverResources'
+    'AxisFirstUseWizard.ButtonHoverBackground'
+    'AxisFirstUseWizard.ButtonHoverBorder'
+    'AxisFirstUseWizard.EnabledNextButtonHoverReadable'
+    'BlueHoverKeepsReadableText'
+    '#1D4ED8'
+    '#93C5FD'
+    '<Setter Property="Cursor" Value="Hand" />'
+    '<Setter Property="Cursor" Value="Arrow" />'
+    'Property="Background" Value="{DynamicResource AxisFirstUseWizard.ButtonHoverBackground}"'
+    'Property="BorderBrush" Value="{DynamicResource AxisFirstUseWizard.ButtonHoverBorder}"'
+    'IsMouseOver'
+    'IsKeyboardFocusWithin'
+    'IsPressed'
+    'DropShadowEffect'
+    'UseLayoutRounding'
+    'SnapsToDevicePixels'
+    'Property="Margin" Value="1"'
+    'Property="Margin" Value="0"'
+    '<Condition Property="IsEnabled" Value="True" />'
+    '<Trigger Property="IsEnabled" Value="False">'
+)) {
+    Assert-BoostLabCondition ($prototypeSource.Contains($requiredButtonInteractionMarker)) "AXIS first-use wizard button interaction style is missing: $requiredButtonInteractionMarker"
+}
+Assert-BoostLabCondition (-not $buttonStyleSource.Contains('<ScaleTransform')) 'AXIS crisp button hover should not scale the full button or text.'
+Assert-BoostLabCondition (-not $buttonStyleSource.Contains('ScaleX')) 'AXIS pressed-in effect should not grow or scale the text layer.'
+Assert-BoostLabCondition (-not $buttonStyleSource.Contains('ScaleY')) 'AXIS pressed-in effect should not grow or scale the text layer.'
+foreach ($rejectedPhase180DPrototypeText in @(
+    'AxisFirstUseWizard.AcknowledgementAccentForeground'
+    'Axis.Brush.Wizard.AcknowledgementAccentForeground'
+    'Axis.Brush.Wizard.InformationCardTitleForeground'
+    'Axis.Brush.Wizard.RequirementsCardTitleForeground'
+    '#8A2BE2'
+    '#D9A74A'
+)) {
+    Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
 Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create confirmation overlays only for the two BIOS steps.'
@@ -950,6 +1065,9 @@ Assert-BoostLabCondition ($taggedAcknowledgementRightAnchorRow[0].HorizontalAlig
 Assert-BoostLabCondition ($taggedAcknowledgementRightAnchorRow[0].FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS confirmation acknowledgement row should use physical LTR ordering so the checkbox stays rightmost.'
 Assert-BoostLabCondition ($taggedAcknowledgementRightAnchorRow[0].Children.Count -eq 2) 'AXIS confirmation acknowledgement row should contain only the label and checkbox.'
 Assert-BoostLabCondition ($taggedOverlayAcknowledgementText.Count -eq 1) 'AXIS confirmation acknowledgement text block is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $taggedOverlayAcknowledgementText[0] -ExpectedColor $axisDefaultAcknowledgementForeground -Name 'BIOS Drivers & Downloads acknowledgement text')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $taggedOverlayAcknowledgementText[0] -RejectedColor $axisRejectedAcknowledgementAccentForeground -Name 'BIOS Drivers & Downloads acknowledgement text')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedOverlayAcknowledgementText[0]) -ne 'AxisFirstUseWizard.AcknowledgementAccentForeground') 'AXIS acknowledgement text should not expose the rejected acknowledgement accent marker.'
 Assert-BoostLabCondition ([string]$taggedOverlayAcknowledgementText[0].Text -eq $arabicAcknowledgement) 'AXIS confirmation checkbox text changed.'
 Assert-BoostLabCondition ($taggedOverlayAcknowledgementText[0].FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS confirmation acknowledgement text should use RTL flow.'
 Assert-BoostLabCondition ($taggedOverlayAcknowledgementText[0].TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS confirmation acknowledgement text should be right-aligned.'
@@ -1036,6 +1154,11 @@ Assert-BoostLabCondition (@($interactiveCompletedGlow | Where-Object { $null -ne
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS Continue/Next should expose the enabled blue marker after completion.'
 Assert-BoostLabCondition ($taggedContinueButtons[0].Background -is [System.Windows.Media.SolidColorBrush]) 'AXIS enabled Continue/Next should use a solid blue fill.'
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS enabled Continue/Next should become blue after completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Foreground).Color -eq '#FFFAF9F6') 'AXIS enabled Continue/Next should keep readable off-white text.'
+Assert-BoostLabCondition ([string]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.EnabledNextButtonHoverReadable'] -eq 'BlueHoverKeepsReadableText') 'AXIS enabled Continue/Next should expose the readable hover marker after completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBackground']).Color -eq '#FF1D4ED8') 'AXIS enabled Continue/Next hover should stay blue instead of switching to the light primary hover.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBorder']).Color -eq '#FF93C5FD') 'AXIS enabled Continue/Next hover border should keep readable blue-family contrast.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBackground']).Color -ne '#FFF5F5F5') 'AXIS enabled Continue/Next hover must not become white/light with off-white text.'
 
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
 $biosSettingsVisibleContent = $taggedContentHost[0].Child
@@ -1114,10 +1237,18 @@ $biosSettingsStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSet
 $biosSettingsContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
 $biosSettingsDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.BiosSettingsDetails') | Select-Object -First 1
 $biosSettingsInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.BiosSettingsInformationCard') | Select-Object -First 1
+$biosSettingsInformationTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.BiosSettingsInformationTitle') | Select-Object -First 1
 $biosSettingsActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
 $biosSettingsSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$biosSettingsDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $biosSettingsVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
 Assert-BoostLabCondition ([double]$biosSettingsStepElement.Height -eq 382.0) 'AXIS BIOS Settings should fit inside the 900x650 preview client area without clipping.'
 Assert-BoostLabCondition ([double]$taggedBiosInformationStep[0].Height -eq 382.0) 'AXIS BIOS Drivers & Downloads card height should remain unchanged by BIOS Settings clipping fix.'
+Assert-BoostLabCondition ($null -ne $biosSettingsInformationTitle) 'AXIS BIOS Settings information title is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsInformationTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'BIOS Settings information card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $biosSettingsInformationTitle -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'BIOS Settings information card title')
+Assert-BoostLabCondition ($null -ne $biosSettingsDocumentationButton) 'AXIS BIOS Settings documentation button is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'BIOS Settings documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS BIOS Settings documentation button should expose the documentation accent marker.'
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsActionArea) -eq 'AxisFirstUseWizard.BiosSettingsActionRowSeparated') 'AXIS BIOS Settings action row should expose the separated action-row marker.'
 Assert-BoostLabCondition ($biosSettingsContentGrid.Children.IndexOf($biosSettingsDetails) -lt $biosSettingsContentGrid.Children.IndexOf($biosSettingsActionArea)) 'AXIS BIOS Settings details must appear before the action row.'
 Assert-BoostLabCondition ($biosSettingsContentGrid.Children.IndexOf($biosSettingsActionArea) -lt $biosSettingsContentGrid.Children.IndexOf($biosSettingsSupportPanel)) 'AXIS BIOS Settings action row must remain separated above the support panel.'
@@ -1150,6 +1281,8 @@ Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
 $returnedFirstStepText = (Get-AxisFirstUseWizardTextValues -Root $taggedContentHost[0].Child) -join [Environment]::NewLine
 Assert-BoostLabCondition ($returnedFirstStepText.Contains('BIOS Drivers & Downloads')) 'AXIS Back from BIOS Settings should return to BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ([bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Continue/Next should remain enabled when returning to the completed first step.'
+Assert-BoostLabCondition ([string]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.EnabledNextButtonHoverReadable'] -eq 'BlueHoverKeepsReadableText') 'AXIS Continue/Next readable hover marker should be restored when navigating back to a completed step.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBackground']).Color -eq '#FF1D4ED8') 'AXIS Continue/Next hover should stay blue when restored by navigation.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
 $biosSettingsVisibleContent = $taggedContentHost[0].Child
 $biosSettingsOverlay = $taggedOverlay[1]
@@ -1170,6 +1303,9 @@ Assert-BoostLabCondition ($biosSettingsSupportPanel.Visibility -eq [System.Windo
 Assert-BoostLabCondition ([string]$biosSettingsOverlayAcknowledgementText.Text -eq $arabicRestartAcknowledgement) 'AXIS BIOS Settings confirmation checkbox text changed.'
 Assert-BoostLabCondition ([string]$biosSettingsOverlayAcknowledgementText.Text -eq $arabicAcknowledgement) 'AXIS BIOS Settings confirmation checkbox should use the shortened acknowledgement text.'
 Assert-BoostLabCondition (-not ([string]$biosSettingsOverlayAcknowledgementText.Text).Contains($oldArabicRestartAcknowledgement)) 'AXIS BIOS Settings confirmation checkbox should not include the old long reboot acknowledgement.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsOverlayAcknowledgementText -ExpectedColor $axisDefaultAcknowledgementForeground -Name 'BIOS Settings acknowledgement text')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $biosSettingsOverlayAcknowledgementText -RejectedColor $axisRejectedAcknowledgementAccentForeground -Name 'BIOS Settings acknowledgement text')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsOverlayAcknowledgementText) -ne 'AxisFirstUseWizard.AcknowledgementAccentForeground') 'AXIS BIOS Settings acknowledgement text should not expose the rejected acknowledgement accent marker.'
 Assert-BoostLabCondition ([string]$biosSettingsOverlayOpenButton.Content -eq $arabicRestart) 'AXIS BIOS Settings confirmation button should use restart label.'
 Assert-BoostLabCondition ([string]$biosSettingsOverlayReturnButton.Content -eq $arabicReturn) 'AXIS BIOS Settings confirmation Return button should use owner-approved Arabic Return.'
 Assert-BoostLabCondition (-not [bool]$biosSettingsOverlayOpenButton.IsEnabled) 'AXIS BIOS Settings confirm button should start disabled until acknowledgement.'
@@ -1285,6 +1421,8 @@ $reinstallContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallV
 $reinstallDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallDetails') | Select-Object -First 1
 $reinstallInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationCard') | Select-Object -First 1
 $reinstallRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsCard') | Select-Object -First 1
+$reinstallInformationTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationTitle') | Select-Object -First 1
+$reinstallRequirementsTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsTitle') | Select-Object -First 1
 $reinstallTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallTitleRightAligned') | Select-Object -First 1
 $reinstallInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallInformationSharedPhysicalRightEdge') | Select-Object -First 1
 $reinstallRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
@@ -1292,9 +1430,19 @@ $reinstallInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root 
 $reinstallRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.ReinstallRequirementsRightAnchor') | Select-Object -First 1
 $reinstallActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
 $reinstallSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$reinstallDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $reinstallVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
 Assert-BoostLabCondition ([double]$reinstallStepElement.Height -eq 382.0) 'AXIS Reinstall should fit inside the 900x650 preview client area without clipping.'
 Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($reinstallInformationCard) -eq 2) 'AXIS Reinstall information card should be assigned to the visual right-side column.'
 Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($reinstallRequirementsCard) -eq 0) 'AXIS Reinstall requirements card should be assigned to the visual left-side column.'
+Assert-BoostLabCondition ($null -ne $reinstallInformationTitle) 'AXIS Reinstall information title is missing.'
+Assert-BoostLabCondition ($null -ne $reinstallRequirementsTitle) 'AXIS Reinstall requirements title is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallInformationTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'Reinstall information card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $reinstallInformationTitle -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'Reinstall information card title')
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallRequirementsTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'Reinstall requirements card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $reinstallRequirementsTitle -RejectedColor $axisRejectedRequirementsCardTitleForeground -Name 'Reinstall requirements card title')
+Assert-BoostLabCondition ($null -ne $reinstallDocumentationButton) 'AXIS Reinstall documentation button is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'Reinstall documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($reinstallDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS Reinstall documentation button should expose the documentation accent marker.'
 $reinstallInformationRightMarkers = @(
     Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
         Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallInformationRightCard' }
@@ -1450,6 +1598,8 @@ $autoUnattendContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUna
 $autoUnattendDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendDetails') | Select-Object -First 1
 $autoUnattendInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationCard') | Select-Object -First 1
 $autoUnattendRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsCard') | Select-Object -First 1
+$autoUnattendInformationTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationTitle') | Select-Object -First 1
+$autoUnattendRequirementsTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsTitle') | Select-Object -First 1
 $autoUnattendTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendTitleRightAligned') | Select-Object -First 1
 $autoUnattendInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInformationSharedPhysicalRightEdge') | Select-Object -First 1
 $autoUnattendRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
@@ -1457,9 +1607,19 @@ $autoUnattendInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Ro
 $autoUnattendRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendRequirementsRightAnchor') | Select-Object -First 1
 $autoUnattendActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
 $autoUnattendSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$autoUnattendDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $autoUnattendVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
 Assert-BoostLabCondition ([double]$autoUnattendStepElement.Height -eq 382.0) 'AXIS AutoUnattend should fit inside the 900x650 preview client area without clipping.'
 Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($autoUnattendInformationCard) -eq 2) 'AXIS AutoUnattend information card should be assigned to the visual right-side column.'
 Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($autoUnattendRequirementsCard) -eq 0) 'AXIS AutoUnattend requirements card should be assigned to the visual left-side column.'
+Assert-BoostLabCondition ($null -ne $autoUnattendInformationTitle) 'AXIS AutoUnattend information title is missing.'
+Assert-BoostLabCondition ($null -ne $autoUnattendRequirementsTitle) 'AXIS AutoUnattend requirements title is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendInformationTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'AutoUnattend information card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $autoUnattendInformationTitle -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'AutoUnattend information card title')
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendRequirementsTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'AutoUnattend requirements card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $autoUnattendRequirementsTitle -RejectedColor $axisRejectedRequirementsCardTitleForeground -Name 'AutoUnattend requirements card title')
+Assert-BoostLabCondition ($null -ne $autoUnattendDocumentationButton) 'AXIS AutoUnattend documentation button is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'AutoUnattend documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS AutoUnattend documentation button should expose the documentation accent marker.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor -is [System.Windows.Controls.Grid]) 'AXIS AutoUnattend title right anchor should be a full-width positioning Grid.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS AutoUnattend title right anchor should use physical LTR positioning.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS AutoUnattend title right anchor should span the available region.'

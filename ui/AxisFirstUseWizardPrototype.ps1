@@ -561,6 +561,23 @@ function New-AxisWizardSuccessGlowEffect {
     return $effect
 }
 
+function Set-AxisWizardButtonHoverResources {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Button]$Button,
+
+        [Parameter(Mandatory)]
+        [System.Windows.Media.Brush]$HoverBackground,
+
+        [Parameter(Mandatory)]
+        [System.Windows.Media.Brush]$HoverBorder
+    )
+
+    $Button.Resources['AxisFirstUseWizard.ButtonHoverBackground'] = $HoverBackground
+    $Button.Resources['AxisFirstUseWizard.ButtonHoverBorder'] = $HoverBorder
+}
+
 function Set-AxisWizardEnabledNextButtonBlue {
     [CmdletBinding()]
     param(
@@ -573,6 +590,11 @@ function Set-AxisWizardEnabledNextButtonBlue {
     $Button.BorderBrush = New-AxisWizardColorBrush -Color '#60A5FA'
     $Button.Foreground = New-AxisWizardColorBrush -Color '#FAF9F6'
     $Button.Effect = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
+    $Button.Resources['AxisFirstUseWizard.EnabledNextButtonHoverReadable'] = 'BlueHoverKeepsReadableText'
+    Set-AxisWizardButtonHoverResources `
+        -Button $Button `
+        -HoverBackground (New-AxisWizardColorBrush -Color '#1D4ED8') `
+        -HoverBorder (New-AxisWizardColorBrush -Color '#93C5FD')
 }
 
 function Get-AxisWizardButtonStyle {
@@ -585,6 +607,9 @@ function Get-AxisWizardButtonStyle {
        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
        TargetType="{x:Type Button}">
   <Setter Property="MinHeight" Value="36" />
+  <Setter Property="Cursor" Value="Hand" />
+  <Setter Property="SnapsToDevicePixels" Value="True" />
+  <Setter Property="UseLayoutRounding" Value="True" />
   <Setter Property="Template">
     <Setter.Value>
       <ControlTemplate TargetType="{x:Type Button}">
@@ -593,20 +618,82 @@ function Get-AxisWizardButtonStyle {
                 BorderBrush="{TemplateBinding BorderBrush}"
                 BorderThickness="{TemplateBinding BorderThickness}"
                 CornerRadius="14"
+                Margin="0"
                 Padding="{TemplateBinding Padding}"
-                SnapsToDevicePixels="True">
+                SnapsToDevicePixels="True"
+                UseLayoutRounding="True">
           <ContentPresenter HorizontalAlignment="Center"
                             VerticalAlignment="Center"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True"
                             RecognizesAccessKey="True" />
         </Border>
         <ControlTemplate.Triggers>
+          <!-- AxisFirstUseWizard.ButtonHoverInteractiveEffect -->
+          <!-- AxisFirstUseWizard.ButtonHoverCrispEffect -->
+          <!-- AxisFirstUseWizard.ButtonHoverPointerAffordance -->
+          <!-- AxisFirstUseWizard.ButtonHoverCrispGlow -->
+          <!-- AxisFirstUseWizard.ButtonHoverCrispNoScale -->
+          <!-- AxisFirstUseWizard.NoHoverScaleTransform -->
+          <!-- AxisFirstUseWizard.NoHoverGrowScale -->
+          <MultiTrigger>
+            <MultiTrigger.Conditions>
+              <Condition Property="IsEnabled" Value="True" />
+              <Condition Property="IsMouseOver" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource AxisFirstUseWizard.ButtonHoverBackground}" />
+            <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AxisFirstUseWizard.ButtonHoverBorder}" />
+            <Setter TargetName="Chrome" Property="Opacity" Value="1" />
+            <Setter TargetName="Chrome" Property="Effect">
+              <Setter.Value>
+                <DropShadowEffect Color="#080808" Opacity="0.30" BlurRadius="12" ShadowDepth="2" />
+              </Setter.Value>
+            </Setter>
+          </MultiTrigger>
+          <MultiTrigger>
+            <MultiTrigger.Conditions>
+              <Condition Property="IsEnabled" Value="True" />
+              <Condition Property="IsKeyboardFocusWithin" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter TargetName="Chrome" Property="Opacity" Value="1" />
+            <Setter TargetName="Chrome" Property="Effect">
+              <Setter.Value>
+                <DropShadowEffect Color="#080808" Opacity="0.22" BlurRadius="9" ShadowDepth="1" />
+              </Setter.Value>
+            </Setter>
+          </MultiTrigger>
+          <!-- AxisFirstUseWizard.ButtonPressedInteractiveEffect -->
+          <!-- AxisFirstUseWizard.ButtonPressedInEffect -->
+          <MultiTrigger>
+            <MultiTrigger.Conditions>
+              <Condition Property="IsEnabled" Value="True" />
+              <Condition Property="IsPressed" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter TargetName="Chrome" Property="Margin" Value="1" />
+            <Setter TargetName="Chrome" Property="Opacity" Value="0.92" />
+            <Setter TargetName="Chrome" Property="Effect">
+              <Setter.Value>
+                <DropShadowEffect Color="#080808" Opacity="0.14" BlurRadius="6" ShadowDepth="0" />
+              </Setter.Value>
+            </Setter>
+          </MultiTrigger>
+          <!-- AxisFirstUseWizard.DisabledButtonsNoHoverEffect -->
+          <!-- AxisFirstUseWizard.DisabledButtonsNoPressedEffect -->
           <Trigger Property="IsEnabled" Value="False">
+            <Setter Property="Cursor" Value="Arrow" />
+            <Setter TargetName="Chrome" Property="Margin" Value="0" />
             <Setter TargetName="Chrome" Property="Opacity" Value="0.62" />
+            <Setter TargetName="Chrome" Property="Effect" Value="{x:Null}" />
           </Trigger>
         </ControlTemplate.Triggers>
-      </ControlTemplate>
+        </ControlTemplate>
     </Setter.Value>
   </Setter>
+  <Style.Triggers>
+    <Trigger Property="IsEnabled" Value="False">
+      <Setter Property="Cursor" Value="Arrow" />
+    </Trigger>
+  </Style.Triggers>
 </Style>
 '@
         $script:AxisFirstUseWizardButtonStyle = [System.Windows.Markup.XamlReader]::Parse($styleXaml)
@@ -1233,11 +1320,13 @@ function New-AxisWizardButton {
     $button.FontWeight = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.Micro.FontWeight'
     $button.Height = $Height
     $button.MinHeight = $Height
+    $button.SnapsToDevicePixels = $true
+    $button.UseLayoutRounding = $true
     if ($Width -gt 0) {
         $button.Width = $Width
     }
     $button.Style = Get-AxisWizardButtonStyle
-    $button.Focusable = $false
+    $button.Focusable = $true
     $button.IsHitTestVisible = $true
     $button.IsEnabled = $Enabled
     $button.Tag = 'AxisFirstUseWizard.VisualButton'
@@ -1263,6 +1352,19 @@ function New-AxisWizardButton {
         $button.BorderBrush = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.Border'
         $button.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
         $button.Effect = New-AxisWizardShadowEffect -Opacity 0.08 -BlurRadius 12 -ShadowDepth 2
+    }
+
+    if ($Variant -eq 'Primary') {
+        Set-AxisWizardButtonHoverResources `
+            -Button $button `
+            -HoverBackground (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover') `
+            -HoverBorder (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextHighlight')
+    }
+    else {
+        Set-AxisWizardButtonHoverResources `
+            -Button $button `
+            -HoverBackground (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SecondaryButtonHover') `
+            -HoverBorder (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong')
     }
 
     return $button
@@ -1630,6 +1732,8 @@ function New-AxisStepDocumentationButton {
         -Height 42 `
         -Margin (New-AxisWizardThickness -Left 0 -Top 0 -Right 24 -Bottom 0)
     $button.Tag = 'AxisFirstUseWizard.DocumentationButton'
+    $button.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.DocumentationAccentForeground'
+    $button.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.DocumentationAccentForeground')
     return $button
 }
 
@@ -3380,6 +3484,12 @@ function New-AxisFirstUseWizardPrototype {
     $continueEnabledBlueBorderForNavigation = New-AxisWizardColorBrush -Color '#60A5FA'
     $continueEnabledBlueForegroundForNavigation = New-AxisWizardColorBrush -Color '#FAF9F6'
     $continueEnabledBlueEffectForNavigation = New-AxisWizardShadowEffect -Opacity 0.20 -BlurRadius 18 -ShadowDepth 3
+    $continueEnabledHoverReadableMarkerKeyForNavigation = 'AxisFirstUseWizard.EnabledNextButtonHoverReadable'
+    $continueEnabledHoverReadableMarkerValueForNavigation = 'BlueHoverKeepsReadableText'
+    $continueEnabledHoverBackgroundResourceKeyForNavigation = 'AxisFirstUseWizard.ButtonHoverBackground'
+    $continueEnabledHoverBorderResourceKeyForNavigation = 'AxisFirstUseWizard.ButtonHoverBorder'
+    $continueEnabledBlueHoverBackgroundForNavigation = New-AxisWizardColorBrush -Color '#1D4ED8'
+    $continueEnabledBlueHoverBorderForNavigation = New-AxisWizardColorBrush -Color '#93C5FD'
     $continueDisabledBackgroundForNavigation = $continueButton.Background
     $continueDisabledBorderForNavigation = $continueButton.BorderBrush
     $continueDisabledForegroundForNavigation = $continueButton.Foreground
@@ -3420,6 +3530,9 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.BorderBrush = $continueEnabledBlueBorderForNavigation
                 $continueButtonForNavigation.Foreground = $continueEnabledBlueForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueEnabledBlueEffectForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverReadableMarkerKeyForNavigation] = $continueEnabledHoverReadableMarkerValueForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBackgroundResourceKeyForNavigation] = $continueEnabledBlueHoverBackgroundForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBorderResourceKeyForNavigation] = $continueEnabledBlueHoverBorderForNavigation
             }
             else {
                 $continueButtonForNavigation.IsEnabled = $false
@@ -3469,6 +3582,9 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.BorderBrush = $continueEnabledBlueBorderForNavigation
                 $continueButtonForNavigation.Foreground = $continueEnabledBlueForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueEnabledBlueEffectForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverReadableMarkerKeyForNavigation] = $continueEnabledHoverReadableMarkerValueForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBackgroundResourceKeyForNavigation] = $continueEnabledBlueHoverBackgroundForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBorderResourceKeyForNavigation] = $continueEnabledBlueHoverBorderForNavigation
             }
             else {
                 $continueButtonForNavigation.IsEnabled = $false
@@ -3528,6 +3644,12 @@ function New-AxisFirstUseWizardPrototype {
         $continueEnabledBlueBorderForHandler = $continueEnabledBlueBorderForNavigation
         $continueEnabledBlueForegroundForHandler = $continueEnabledBlueForegroundForNavigation
         $continueEnabledBlueEffectForHandler = $continueEnabledBlueEffectForNavigation
+        $continueEnabledHoverReadableMarkerKeyForHandler = $continueEnabledHoverReadableMarkerKeyForNavigation
+        $continueEnabledHoverReadableMarkerValueForHandler = $continueEnabledHoverReadableMarkerValueForNavigation
+        $continueEnabledHoverBackgroundResourceKeyForHandler = $continueEnabledHoverBackgroundResourceKeyForNavigation
+        $continueEnabledHoverBorderResourceKeyForHandler = $continueEnabledHoverBorderResourceKeyForNavigation
+        $continueEnabledBlueHoverBackgroundForHandler = $continueEnabledBlueHoverBackgroundForNavigation
+        $continueEnabledBlueHoverBorderForHandler = $continueEnabledBlueHoverBorderForNavigation
         $continueAutomationIdPropertyForHandler = $continueAutomationIdPropertyForNavigation
 
         $completionTimerForHandler.Add_Tick({
@@ -3542,6 +3664,9 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForHandler.BorderBrush = $continueEnabledBlueBorderForHandler
                 $continueButtonForHandler.Foreground = $continueEnabledBlueForegroundForHandler
                 $continueButtonForHandler.Effect = $continueEnabledBlueEffectForHandler
+                $continueButtonForHandler.Resources[$continueEnabledHoverReadableMarkerKeyForHandler] = $continueEnabledHoverReadableMarkerValueForHandler
+                $continueButtonForHandler.Resources[$continueEnabledHoverBackgroundResourceKeyForHandler] = $continueEnabledBlueHoverBackgroundForHandler
+                $continueButtonForHandler.Resources[$continueEnabledHoverBorderResourceKeyForHandler] = $continueEnabledBlueHoverBorderForHandler
             }
         }.GetNewClosure())
 

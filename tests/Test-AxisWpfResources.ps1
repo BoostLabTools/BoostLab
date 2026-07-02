@@ -117,6 +117,10 @@ $approvedWizardDarkPremiumNaturalPalette = @(
     '#C9C9C9'
     '#9A9A9A'
 )
+$approvedWizardPhase180DAccentPalette = @(
+    '#E65F2B'
+)
+$approvedWizardColorPalette = @($approvedWizardDarkPremiumNaturalPalette + $approvedWizardPhase180DAccentPalette)
 $expectedWizardDarkPremiumNaturalColors = [ordered]@{
     'Axis.Color.Wizard.Background' = '#080808'
     'Axis.Color.Wizard.WindowSurface' = '#080808'
@@ -144,6 +148,7 @@ $expectedWizardDarkPremiumNaturalColors = [ordered]@{
     'Axis.Color.Wizard.TextSecondary' = '#EDEDED'
     'Axis.Color.Wizard.TextMuted' = '#C9C9C9'
     'Axis.Color.Wizard.TextDim' = '#9A9A9A'
+    'Axis.Color.Wizard.DocumentationAccentForeground' = '#E65F2B'
     'Axis.Color.Wizard.Accent' = '#F0F2F5'
     'Axis.Color.Wizard.AccentHover' = '#F5F5F5'
     'Axis.Color.Wizard.AccentPressed' = '#EDEDED'
@@ -183,8 +188,28 @@ foreach ($wizardColorKey in $expectedWizardDarkPremiumNaturalColors.Keys) {
 
 foreach ($wizardColorKey in @($tokens.Colors.Keys | Where-Object { [string]$_ -like 'Axis.Color.Wizard.*' })) {
     Assert-BoostLabCondition (
-        [string]$tokens.Colors[$wizardColorKey] -in $approvedWizardDarkPremiumNaturalPalette
-    ) "AXIS wizard token must use the Phase 176N dark premium natural palette family only: $wizardColorKey"
+        [string]$tokens.Colors[$wizardColorKey] -in $approvedWizardColorPalette
+    ) "AXIS wizard token must use the approved Phase 176N dark premium natural or Phase 180D accent palette only: $wizardColorKey"
+}
+Assert-BoostLabCondition ([string]$tokens.Colors['Axis.Color.Wizard.DocumentationAccentForeground'] -eq '#E65F2B') 'AXIS wizard documentation button text should use the approved Phase 180D orange accent.'
+foreach ($rejectedPhase180DColorToken in @(
+    'Axis.Color.Wizard.AcknowledgementAccentForeground'
+    'Axis.Color.Wizard.InformationCardTitleForeground'
+    'Axis.Color.Wizard.RequirementsCardTitleForeground'
+)) {
+    Assert-BoostLabCondition (-not $tokens.Colors.Contains($rejectedPhase180DColorToken)) "AXIS wizard rejected Phase 180D color token should be removed: $rejectedPhase180DColorToken"
+}
+foreach ($rejectedPhase180DBrushToken in @(
+    'Axis.Brush.Wizard.AcknowledgementAccentForeground'
+    'Axis.Brush.Wizard.InformationCardTitleForeground'
+    'Axis.Brush.Wizard.RequirementsCardTitleForeground'
+)) {
+    Assert-BoostLabCondition (-not $tokens.Brushes.Contains($rejectedPhase180DBrushToken)) "AXIS wizard rejected Phase 180D brush token should be removed: $rejectedPhase180DBrushToken"
+}
+foreach ($rejectedPhase180DAccentColor in @('#8A2BE2', '#D9A74A')) {
+    Assert-BoostLabCondition (
+        $rejectedPhase180DAccentColor -notin @($tokens.Colors.Keys | Where-Object { [string]$_ -like 'Axis.Color.Wizard.*' } | ForEach-Object { [string]$tokens.Colors[$_] })
+    ) "AXIS wizard tokens must not use rejected Phase 180D title accent color: $rejectedPhase180DAccentColor"
 }
 Assert-BoostLabCondition ([string]$tokens.Colors['Axis.Color.Wizard.WarmAccent'] -eq '#F0F2F5') 'AXIS wizard warm accent should stay in the polished soft off-white family.'
 Assert-BoostLabCondition ([string]$tokens.Colors['Axis.Color.Wizard.PrimaryButton'] -eq '#F0F2F5') 'AXIS wizard primary button should use the polished soft off-white fill.'
@@ -225,6 +250,7 @@ $requiredResourceKeys = @(
     'Axis.Color.Wizard.TextSecondary'
     'Axis.Color.Wizard.TextMuted'
     'Axis.Color.Wizard.TextDim'
+    'Axis.Color.Wizard.DocumentationAccentForeground'
     'Axis.Color.Wizard.Accent'
     'Axis.Color.Wizard.AccentHover'
     'Axis.Color.Wizard.AccentPressed'
@@ -265,6 +291,7 @@ $requiredResourceKeys = @(
     'Axis.Brush.Wizard.TextSecondary'
     'Axis.Brush.Wizard.TextMuted'
     'Axis.Brush.Wizard.TextDim'
+    'Axis.Brush.Wizard.DocumentationAccentForeground'
     'Axis.Brush.Wizard.Accent'
     'Axis.Brush.Wizard.AccentHover'
     'Axis.Brush.Wizard.AccentPressed'
@@ -319,6 +346,13 @@ $dictionary = New-AxisWpfResourceDictionary -Tokens $tokens
 Assert-BoostLabCondition ($dictionary -is [System.Windows.ResourceDictionary]) 'AXIS WPF resources did not create a ResourceDictionary.'
 foreach ($resourceKey in $requiredResourceKeys) {
     Assert-BoostLabCondition ($dictionary.Contains($resourceKey)) "AXIS WPF resource key is missing: $resourceKey"
+}
+foreach ($rejectedPhase180DBrushToken in @(
+    'Axis.Brush.Wizard.AcknowledgementAccentForeground'
+    'Axis.Brush.Wizard.InformationCardTitleForeground'
+    'Axis.Brush.Wizard.RequirementsCardTitleForeground'
+)) {
+    Assert-BoostLabCondition (-not $dictionary.Contains($rejectedPhase180DBrushToken)) "AXIS wizard rejected Phase 180D brush resource should be absent: $rejectedPhase180DBrushToken"
 }
 
 foreach ($brushKey in @(
