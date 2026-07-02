@@ -57,6 +57,19 @@ The normal first-use UI may use only the step-specific approved copy plus global
 
 If a step needs new visible text later, that text must be explicitly owner-approved and recorded before appearing in the normal customer-facing UI.
 
+## Global Support Panel Default
+
+Yazan's Phase 181A standing decision: do not ask again in future step questionnaires whether the support panel uses the same text.
+
+Default support panel for all future AXIS first-use wizard steps:
+
+| Surface | Default value |
+| --- | --- |
+| Support panel title | `مساعدة` |
+| Support panel body | `تحتاج مساعدة؟ يمكنك التواصل مع أخصائي الدعم عبر خادم Discord الخاص بالمتجر.` |
+
+Only ask about support text again if Yazan explicitly says he wants a different support message for a specific step.
+
 ## Boundaries
 
 This document does not approve or implement:
