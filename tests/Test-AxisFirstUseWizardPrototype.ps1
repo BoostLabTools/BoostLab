@@ -463,6 +463,7 @@ $biosSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Sett
 $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-Step-Blueprint.md'
 $autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnattend-Step-Blueprint.md'
 $updatesDriversBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Updates-Drivers-Block-Step-Blueprint.md'
+$toBiosBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\To-BIOS-Step-Blueprint.md'
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
@@ -471,6 +472,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $biosSettingsBlueprintPath -Pat
 Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathType Leaf) 'AXIS Reinstall step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -PathType Leaf) 'AXIS AutoUnattend step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $updatesDriversBlueprintPath -PathType Leaf) 'AXIS Updates Drivers Block step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $toBiosBlueprintPath -PathType Leaf) 'AXIS To BIOS step blueprint is missing.'
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
@@ -478,6 +480,7 @@ $biosSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $bio
 $reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinstallBlueprintPath
 $autoUnattendBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $autoUnattendBlueprintPath
 $updatesDriversBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $updatesDriversBlueprintPath
+$toBiosBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $toBiosBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -492,11 +495,15 @@ foreach ($functionName in @(
     'New-AxisReinstallStep'
     'New-AxisAutoUnattendStep'
     'New-AxisUpdatesDriversBlockStep'
+    'New-AxisToBiosStep'
     'New-AxisWizardMixedBidiTextBlock'
+    'New-AxisWizardToBiosTitleRightAnchor'
     'Split-AxisAutoUnattendInformationText'
     'New-AxisAutoUnattendInformationTextGroup'
     'Split-AxisUpdatesDriversInformationText'
     'New-AxisUpdatesDriversInformationTextGroup'
+    'Split-AxisToBiosInformationText'
+    'New-AxisToBiosInformationTextGroup'
     'New-AxisAutoUnattendInputOverlay'
     'New-AxisWizardUsbComboBoxItemStyle'
     'New-AxisFirstUseWizardStepContent'
@@ -593,6 +600,14 @@ $arabicUpdatesDriversUsbLabel = Get-AxisWizardArabicText -Name 'UpdatesDriversUs
 $arabicUpdatesDriversInputCreate = Get-AxisWizardArabicText -Name 'UpdatesDriversInputCreate'
 $arabicUpdatesDriversRunning = Get-AxisWizardArabicText -Name 'UpdatesDriversRunning'
 $arabicUpdatesDriversCompleted = Get-AxisWizardArabicText -Name 'UpdatesDriversCompleted'
+$arabicToBiosTitle = Get-AxisWizardArabicText -Name 'ToBiosTitle'
+$arabicToBiosSubtitle = Get-AxisWizardArabicText -Name 'ToBiosSubtitle'
+$arabicToBiosInfoTitle = Get-AxisWizardArabicText -Name 'ToBiosInfoTitle'
+$arabicToBiosInfoBulletRestart = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletRestart'
+$arabicToBiosInfoBulletUsbBoot = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletUsbBoot'
+$arabicToBiosInfoBulletInstall = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletInstall'
+$arabicToBiosPrimaryAction = Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction'
+$oldArabicToBiosTitle = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0627, 0x0646, 0x062A, 0x0642, 0x0627, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
 $axisDefaultDocumentationForeground = '#FFEDEDED'
 $axisDefaultAcknowledgementForeground = '#FFEDEDED'
 $axisDefaultCardTitleForeground = '#FFFAF9F6'
@@ -671,9 +686,9 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 5) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, and Updates Drivers Block steps.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended|updates-drivers-block') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, then Updates Drivers Block.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend|Updates Drivers Block") 'AXIS first-use wizard customer step title order changed.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 6) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, Updates Drivers Block, and To BIOS steps.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended|updates-drivers-block|to-bios') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, Updates Drivers Block, then To BIOS.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend|Updates Drivers Block|$arabicToBiosTitle") 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
@@ -825,6 +840,7 @@ $biosSettingsStep = $sampleSteps[1]
 $reinstallStep = $sampleSteps[2]
 $autoUnattendStep = $sampleSteps[3]
 $updatesDriversStep = $sampleSteps[4]
+$toBiosStep = $sampleSteps[5]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -898,6 +914,27 @@ Assert-BoostLabCondition (-not ('Open' -in @($updatesDriversStep['CustomerVisibl
 Assert-BoostLabCondition (-not ('Apply' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Apply as a customer action.'
 Assert-BoostLabCondition (-not ('Default' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Default as a customer action.'
 Assert-BoostLabCondition (-not ('Restore' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Restore as a customer action.'
+Assert-BoostLabCondition ([string]$arabicToBiosTitle -eq 'To BIOS') 'AXIS To BIOS customer title should now be English-only.'
+Assert-BoostLabCondition ([string]$toBiosStep['Id'] -eq 'to-bios') 'AXIS To BIOS internal tool id should be to-bios.'
+Assert-BoostLabCondition ([string]$toBiosStep['Title'] -eq $arabicToBiosTitle) 'AXIS To BIOS customer title changed.'
+Assert-BoostLabCondition ([string]$toBiosStep['StageName'] -eq 'Refresh') 'AXIS To BIOS customer stage label should be Refresh.'
+Assert-BoostLabCondition ([string]$toBiosStep['PrimaryActionLabel'] -eq $arabicToBiosPrimaryAction) 'AXIS To BIOS primary action label changed.'
+Assert-BoostLabCondition ([string]$toBiosStep['CheckingStatusTitle'] -eq $arabicRestarting) 'AXIS To BIOS running status label changed.'
+Assert-BoostLabCondition ([string]$toBiosStep['CompletedStatusTitle'] -eq $arabicCompleted) 'AXIS To BIOS completed status label changed.'
+Assert-BoostLabCondition (-not [bool]$toBiosStep['ShowRequirements']) 'AXIS To BIOS must not show a requirements card.'
+Assert-BoostLabCondition (-not $toBiosStep.Contains('RequirementsTitle')) 'AXIS To BIOS sample state should not carry a visible requirements title.'
+Assert-BoostLabCondition (-not $toBiosStep.Contains('RequirementsItems')) 'AXIS To BIOS sample state should not carry visible requirements items.'
+Assert-BoostLabCondition ([bool]$toBiosStep['RequiresConfirmationAcknowledgement']) 'AXIS To BIOS should require the confirmation acknowledgement overlay.'
+Assert-BoostLabCondition (-not [bool]$toBiosStep['RequiresInputWindow']) 'AXIS To BIOS must not use an input window.'
+Assert-BoostLabCondition ([bool]$toBiosStep['PrototypeOnlySimulation']) 'AXIS To BIOS should be marked as prototype-only simulation.'
+Assert-BoostLabCondition ([string]$toBiosStep['CustomerAction'] -eq 'Open') 'AXIS To BIOS should retain the future internal Open mapping as data.'
+Assert-BoostLabCondition ([string]$toBiosStep['FutureInternalAction'] -eq 'Open') 'AXIS To BIOS should record future internal Open mapping only.'
+Assert-BoostLabCondition ((@($toBiosStep['CustomerVisibleActions']) -join '|') -eq $arabicToBiosPrimaryAction) 'AXIS To BIOS should expose only the owner-approved Arabic customer action label.'
+Assert-BoostLabCondition (-not ('Analyze' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Analyze as a customer action.'
+Assert-BoostLabCondition (-not ('Open' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Open as customer-facing action text.'
+Assert-BoostLabCondition (-not ('Apply' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Apply as a customer action.'
+Assert-BoostLabCondition (-not ('Default' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Default as a customer action.'
+Assert-BoostLabCondition (-not ('Restore' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Restore as a customer action.'
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -1089,13 +1126,14 @@ foreach ($rejectedPhase180DPrototypeText in @(
     Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create confirmation overlays only for the two BIOS steps.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 3) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, and To BIOS only.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS first-step confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[2].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0] -is [System.Windows.Controls.StackPanel]) 'AXIS confirmation right-aligned group should be a StackPanel.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS confirmation inner group should be right-aligned without resizing the overlay.'
@@ -2059,9 +2097,180 @@ Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetA
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS Updates Drivers Block enabled Continue/Next should use the approved blue fill.'
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Updates Drivers Block should not auto-advance after simulated completion.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Updates Drivers Block Continue/Next should not navigate past the last prototype step.'
+$toBiosVisibleContent = $taggedContentHost[0].Child
+$toBiosVisibleText = (Get-AxisFirstUseWizardTextValues -Root $toBiosVisibleContent) -join [Environment]::NewLine
+$toBiosVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $toBiosVisibleText
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosStep').Count -eq 1) 'AXIS Continue/Next from completed Updates Drivers Block should move to To BIOS.'
+Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Refresh') 'AXIS To BIOS current stage header should show Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'To BIOS Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'To BIOS Refresh active')
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS To BIOS Continue/Next should start disabled.'
+foreach ($requiredToBiosText in @(
+    'Refresh'
+    $arabicToBiosTitle
+    $arabicToBiosSubtitle
+    $arabicToBiosInfoTitle
+    $arabicToBiosInfoBulletRestart
+    $arabicToBiosInfoBulletUsbBoot
+    $arabicToBiosInfoBulletInstall
+    $arabicToBiosPrimaryAction
+    $arabicDocumentation
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    $requiredToBiosTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $requiredToBiosText
+    Assert-BoostLabCondition (
+        $toBiosVisibleText.Contains($requiredToBiosText) -or
+        $toBiosVisibleTextNormalized.Contains($requiredToBiosTextNormalized)
+    ) "AXIS To BIOS view is missing owner-approved text: $requiredToBiosText"
+}
+foreach ($forbiddenToBiosInternalText in @(
+    'Analyze'
+    'Open'
+    'Apply'
+    'Default'
+    'Restore'
+    'Cancel'
+)) {
+    Assert-BoostLabCondition (-not $toBiosVisibleText.Contains($forbiddenToBiosInternalText)) "AXIS To BIOS view exposes forbidden internal/customer action text: $forbiddenToBiosInternalText"
+}
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosInformationCard').Count -eq 1) 'AXIS To BIOS should render one information card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosInformationItem').Count -eq 3) 'AXIS To BIOS should render all three owner-approved information items.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosRequirementsCard').Count -eq 0) 'AXIS To BIOS must not render a requirements card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $toBiosVisibleContent -Type ([System.Windows.Controls.ComboBox])).Count -eq 0) 'AXIS To BIOS must not render a USB selector or input window control.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 1) 'AXIS To BIOS support panel should remain separate and visible.'
+$toBiosStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosStep') | Select-Object -First 1
+$toBiosContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+$toBiosInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosInformationCard') | Select-Object -First 1
+$toBiosInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosInformationSharedPhysicalRightEdge') | Select-Object -First 1
+$toBiosActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+$toBiosSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$toBiosPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$toBiosDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
+$toBiosRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$toBiosRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+$toBiosTitleAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleRightAnchor') | Select-Object -First 1
+$toBiosEnglishOnlyTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleEnglishOnlyText') | Select-Object -First 1
+$toBiosTitleGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleExplicitVisualGroup')
+$toBiosTitleArabicSegment = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleArabicSegment')
+$toBiosTitleEnglishSegment = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleEnglishSegment')
+$toBiosSingleMixedTitleBlocks = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosVisibleContent -Tag 'AxisFirstUseWizard.ToBiosTitleBidiSafeRuns')
+Assert-BoostLabCondition ([double]$toBiosStepElement.Height -eq 382.0) 'AXIS To BIOS should fit inside the 900x650 preview client area without clipping.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosStepElement) -eq 'AxisFirstUseWizard.ToBiosNoClippingLayout') 'AXIS To BIOS step should expose the fixed no-clipping layout marker.'
+Assert-BoostLabCondition ($toBiosContentGrid.Children.IndexOf($toBiosActionArea) -lt $toBiosContentGrid.Children.IndexOf($toBiosSupportPanel)) 'AXIS To BIOS action row must remain separated above the support panel.'
+Assert-BoostLabCondition ($null -ne $toBiosTitleAnchor) 'AXIS To BIOS title should use a physical right anchor.'
+Assert-BoostLabCondition ($toBiosTitleAnchor.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS To BIOS title anchor should use physical LTR positioning.'
+Assert-BoostLabCondition ($toBiosTitleAnchor.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS To BIOS title anchor should span the content width.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosTitleAnchor) -eq 'AxisFirstUseWizard.ToBiosTitleRightAnchoredEnglishOnly') 'AXIS To BIOS title anchor should expose the English-only marker.'
+Assert-BoostLabCondition ($toBiosSingleMixedTitleBlocks.Count -eq 0) 'AXIS To BIOS title must not regress to a single mixed BiDi title TextBlock.'
+Assert-BoostLabCondition ($toBiosTitleGroup.Count -eq 0) 'AXIS To BIOS English-only title should not use the old explicit mixed visual group.'
+Assert-BoostLabCondition ($toBiosTitleArabicSegment.Count -eq 0 -and $toBiosTitleEnglishSegment.Count -eq 0) 'AXIS To BIOS English-only title should not render old Arabic/BIOS title segment controls.'
+Assert-BoostLabCondition ($null -ne $toBiosEnglishOnlyTitle) 'AXIS To BIOS title should render as a dedicated English-only TextBlock.'
+Assert-BoostLabCondition ($toBiosTitleAnchor.Children.Count -eq 1 -and $toBiosTitleAnchor.Children[0] -eq $toBiosEnglishOnlyTitle) 'AXIS To BIOS title anchor should contain only the English-only title TextBlock.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosEnglishOnlyTitle) -eq 'AxisFirstUseWizard.ToBiosTitleEnglishOnlyLtr') 'AXIS To BIOS title TextBlock should expose the English-only LTR marker.'
+Assert-BoostLabCondition ([string]$toBiosEnglishOnlyTitle.Text -eq 'To BIOS') 'AXIS To BIOS visible title should be exactly To BIOS.'
+Assert-BoostLabCondition ([string]$toBiosEnglishOnlyTitle.Text -eq $arabicToBiosTitle) 'AXIS To BIOS title TextBlock should preserve the owner-approved title value.'
+Assert-BoostLabCondition (-not $toBiosVisibleText.Contains($oldArabicToBiosTitle)) 'AXIS To BIOS visible title should not show the old mixed Arabic/English title.'
+Assert-BoostLabCondition ($toBiosEnglishOnlyTitle.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS To BIOS English-only title should render LTR.'
+Assert-BoostLabCondition ($toBiosEnglishOnlyTitle.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS To BIOS English-only title should remain right-aligned within the AXIS title area.'
+Assert-BoostLabCondition ($toBiosEnglishOnlyTitle.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS To BIOS English-only title should remain physically anchored to the right.'
+Assert-BoostLabCondition ($toBiosEnglishOnlyTitle.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS To BIOS English-only title should not wrap.'
+Assert-BoostLabCondition ($toBiosInformationCard.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS To BIOS information card should stretch so Arabic starts from the right.'
+Assert-BoostLabCondition ($toBiosInformationSharedRightEdge -is [System.Windows.Controls.Grid]) 'AXIS To BIOS information text should use a shared physical right-edge group.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosInformationSharedRightEdge) -eq 'AxisFirstUseWizard.ToBiosMixedBidiSafeInfoText') 'AXIS To BIOS information card should expose the mixed BiDi-safe marker.'
+$toBiosInfoTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $toBiosInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($toBiosInfoTextBlocks.Count -ge 6) 'AXIS To BIOS information card should split mixed Arabic/English copy into deterministic right-aligned lines.'
+foreach ($toBiosInfoTextBlock in $toBiosInfoTextBlocks) {
+    Assert-BoostLabCondition ($toBiosInfoTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS To BIOS mixed information text should use RTL flow.'
+    Assert-BoostLabCondition ($toBiosInfoTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS To BIOS mixed information text should stay right-aligned.'
+    Assert-BoostLabCondition ($toBiosInfoTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS To BIOS mixed information text should share the physical right edge.'
+    Assert-BoostLabCondition ($toBiosInfoTextBlock.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS To BIOS mixed information text should avoid WPF automatic BiDi wrapping.'
+}
+$toBiosEnglishRuns = @(
+    $toBiosInfoTextBlocks |
+        ForEach-Object { @($_.Inlines) } |
+        Where-Object { $_ -is [System.Windows.Documents.Run] -and $_.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight }
+)
+foreach ($requiredToBiosEnglishTerm in @('BIOS', 'USB', 'Windows')) {
+    Assert-BoostLabCondition (@($toBiosEnglishRuns | Where-Object { [string]$_.Text -eq $requiredToBiosEnglishTerm }).Count -ge 1) "AXIS To BIOS information card should isolate the English term in an LTR Run: $requiredToBiosEnglishTerm"
+}
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosSupportPanel) -eq 'AxisFirstUseWizard.ToBiosSupportCardNoClipping') 'AXIS To BIOS support panel should expose the no-clipping marker.'
+Assert-BoostLabCondition ([double]$toBiosSupportPanel.MinHeight -eq 54.0) 'AXIS To BIOS support panel should use the compact no-clipping support height.'
+Assert-BoostLabCondition ([double]$toBiosSupportPanel.Padding.Top -eq 7.0 -and [double]$toBiosSupportPanel.Padding.Bottom -eq 7.0) 'AXIS To BIOS support panel should keep enough internal padding without clipping.'
+$toBiosStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+$toBiosRowTotal = 0.0
+foreach ($toBiosRowChild in @($toBiosContentGrid.Children)) {
+    $toBiosRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+    $toBiosRowTotal += [double]$toBiosRowChild.DesiredSize.Height
+}
+$toBiosInnerHeight = [double]$toBiosStepElement.Height -
+    [double]$toBiosStepElement.Padding.Top -
+    [double]$toBiosStepElement.Padding.Bottom -
+    [double]$toBiosStepElement.BorderThickness.Top -
+    [double]$toBiosStepElement.BorderThickness.Bottom
+Assert-BoostLabCondition ($toBiosRowTotal -le $toBiosInnerHeight) 'AXIS To BIOS row content should fit inside the card without bottom support clipping.'
+$toBiosSupportText = (Get-AxisFirstUseWizardTextValues -Root $toBiosSupportPanel) -join [Environment]::NewLine
+Assert-BoostLabCondition ($toBiosSupportText.Contains($arabicSupportTitle) -and $toBiosSupportText.Contains($arabicSupportBody)) 'AXIS To BIOS support card should show the full approved support title and body.'
+Assert-BoostLabCondition ([string]$toBiosPrimaryButton.Content -eq $arabicToBiosPrimaryAction) 'AXIS To BIOS primary button should use the owner-approved Arabic label.'
+Assert-BoostLabCondition ([double]$toBiosPrimaryButton.Width -ge 200.0) 'AXIS To BIOS primary button should be wide enough for the owner-approved label.'
+Assert-BoostLabCondition ($null -ne $toBiosDocumentationButton) 'AXIS To BIOS documentation button is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $toBiosDocumentationButton -ExpectedColor $axisDefaultDocumentationForeground -Name 'To BIOS documentation button')
+Assert-BoostLabCondition ($toBiosRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS runtime status should start hidden.'
+Assert-BoostLabCondition ([double]$toBiosRuntimeStatusArea.Width -eq 252.0) 'AXIS To BIOS runtime status should use a no-clipping width for the Arabic running state.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($toBiosRuntimeStatusArea) -eq 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping') 'AXIS To BIOS runtime status should expose the no-clipping marker.'
+$toBiosOverlay = $taggedOverlay[2]
+$toBiosOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+$toBiosOverlayAcknowledgementText = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgementText') | Select-Object -First 1
+$toBiosOverlayActionButton = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+$toBiosOverlayReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationReturnButton') | Select-Object -First 1
+Assert-BoostLabCondition ([string]$toBiosOverlayAcknowledgementText.Text -eq $arabicAcknowledgement) 'AXIS To BIOS confirmation checkbox text changed.'
+Assert-BoostLabCondition ([string]$toBiosOverlayActionButton.Content -eq $arabicRestart) 'AXIS To BIOS confirmation action button should use restart label.'
+Assert-BoostLabCondition ([string]$toBiosOverlayReturnButton.Content -eq $arabicReturn) 'AXIS To BIOS confirmation Return button should use owner-approved Arabic Return.'
+Assert-BoostLabCondition (-not [bool]$toBiosOverlayActionButton.IsEnabled) 'AXIS To BIOS confirmation action should start disabled until acknowledgement.'
+Invoke-AxisFirstUseWizardButtonClick -Button $toBiosPrimaryButton
+Assert-BoostLabCondition ($toBiosOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS To BIOS primary action should reveal the confirmation overlay only.'
+Assert-BoostLabCondition ($toBiosRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS primary action must not start restart simulation before confirmation.'
+$toBiosOverlayAcknowledgement.IsChecked = $true
+Assert-BoostLabCondition ([bool]$toBiosOverlayActionButton.IsEnabled) 'AXIS To BIOS confirm should enable after acknowledgement.'
+Invoke-AxisFirstUseWizardButtonClick -Button $toBiosOverlayReturnButton
+Assert-BoostLabCondition ($toBiosOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS Return should close only the overlay.'
+Assert-BoostLabCondition (-not [bool]$toBiosOverlayAcknowledgement.IsChecked) 'AXIS To BIOS Return should reset acknowledgement.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS To BIOS Return must not complete the step or enable Continue/Next.'
+Assert-BoostLabCondition ($toBiosRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS Return must not start restart simulation.'
+Invoke-AxisFirstUseWizardButtonClick -Button $toBiosPrimaryButton
+$toBiosOverlayAcknowledgement.IsChecked = $true
+Invoke-AxisFirstUseWizardButtonClick -Button $toBiosOverlayActionButton
+Assert-BoostLabCondition ($toBiosOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS confirm should close the overlay.'
+$toBiosRunningText = (Get-AxisFirstUseWizardTextValues -Root $toBiosVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($toBiosRunningText.Contains($arabicRestarting)) 'AXIS To BIOS confirm should show the Arabic restarting simulation state.'
+Assert-BoostLabCondition ($toBiosRunningText.Contains($arabicSupportBody)) 'AXIS To BIOS support panel should remain visible during restart simulation.'
+Assert-BoostLabCondition ($toBiosRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS To BIOS runtime status should become visible during restart simulation.'
+Assert-BoostLabCondition ($toBiosRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS To BIOS runtime status spacer should become visible during restart simulation.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) 'AXIS To BIOS restart simulation should use the runtime checking animation.'
+$toBiosRuntimeNoClippingMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $toBiosRuntimeStatusArea -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping' }
+)
+Assert-BoostLabCondition ($toBiosRuntimeNoClippingMarkers.Count -ge 2) 'AXIS To BIOS runtime status should mark both the host and content as no-clipping.'
+$toBiosRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($toBiosRunningRuntimeStatusRightAnchor.Count -eq 1) 'AXIS To BIOS running status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $toBiosRunningRuntimeStatusRightAnchor[0] -Name 'To BIOS running runtime status' -ExpectedMaxWidth 126)
+$toBiosCompletedByTimer = Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000
+Assert-BoostLabCondition ([bool]$toBiosCompletedByTimer) 'AXIS To BIOS simulated flow should enable Continue/Next after completion.'
+$toBiosCompletedText = (Get-AxisFirstUseWizardTextValues -Root $toBiosVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($toBiosCompletedText.Contains($arabicCompleted)) 'AXIS To BIOS simulated flow should end in the owner-approved completed state.'
+Assert-BoostLabCondition ($toBiosCompletedText.Contains($arabicSupportBody)) 'AXIS To BIOS support panel should remain visible after simulated completion.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $toBiosRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) 'AXIS To BIOS completed state should render the completed runtime effect.'
+$toBiosCompletedRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $toBiosRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($toBiosCompletedRuntimeStatusRightAnchor.Count -eq 1) 'AXIS To BIOS completed status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $toBiosCompletedRuntimeStatusRightAnchor[0] -Name 'To BIOS completed runtime status' -ExpectedMaxWidth 126)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS To BIOS Continue/Next should become blue after simulated completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS To BIOS enabled Continue/Next should use the approved blue fill.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ToBiosStep').Count -eq 1) 'AXIS To BIOS should not auto-advance after simulated completion.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ToBiosStep').Count -eq 1) 'AXIS To BIOS Continue/Next should not navigate past the last prototype step.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS Back from Updates Drivers Block should return to AutoUnattend.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Back from To BIOS should return to Updates Drivers Block.'
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(
@@ -2091,7 +2300,7 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
-Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 2) 'AXIS preview-scope smoke test should have only the two BIOS confirmation overlays.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 3) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, and To BIOS confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
@@ -2172,6 +2381,7 @@ $completedSampleState['Steps'] = @(
     $reinstallStep
     $autoUnattendStep
     $updatesDriversStep
+    $toBiosStep
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -2535,6 +2745,39 @@ foreach ($requiredUpdatesDriversBlueprintText in @(
     $arabicSupportBody
 )) {
     Assert-BoostLabCondition ($updatesDriversBlueprintSource.Contains($requiredUpdatesDriversBlueprintText)) "AXIS Updates Drivers Block blueprint is missing owner-approved contract text: $requiredUpdatesDriversBlueprintText"
+}
+
+foreach ($requiredToBiosBlueprintText in @(
+    'Internal tool ID | `to-bios`'
+    'Stage | `Refresh`'
+    'The `to-bios` step is the next Refresh-stage first-use wizard step after Updates Drivers Block.'
+    'No requirements card should be shown for this step.'
+    'Pressing customer-facing'
+    $arabicToBiosPrimaryAction
+    'opens a confirmation overlay.'
+    'The confirmation primary button stays disabled until the checkbox is checked.'
+    'The real `Open` behavior must not execute in this docs/prototype phase.'
+    'The prototype may simulate the confirmation flow'
+    'Do not implement persistence in this phase.'
+    $arabicToBiosTitle
+    $arabicToBiosSubtitle
+    $arabicToBiosInfoTitle
+    $arabicToBiosInfoBulletRestart
+    $arabicToBiosInfoBulletUsbBoot
+    $arabicToBiosInfoBulletInstall
+    $arabicToBiosPrimaryAction
+    $arabicDocumentation
+    $arabicAcknowledgement
+    $arabicRestart
+    $arabicReturn
+    $arabicBack
+    $arabicNext
+    $arabicRestarting
+    $arabicCompleted
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    Assert-BoostLabCondition ($toBiosBlueprintSource.Contains($requiredToBiosBlueprintText)) "AXIS To BIOS blueprint is missing owner-approved contract text: $requiredToBiosBlueprintText"
 }
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath

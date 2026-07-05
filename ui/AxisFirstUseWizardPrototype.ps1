@@ -226,7 +226,7 @@ function New-AxisWizardMixedBidiTextBlock {
     }
 
     $textBlock.Inlines.Clear()
-    $englishTermPattern = 'setupcomplete\.cmd|Windows Update|AutoUnattend|Microsoft|Windows|OOBE|USB|XML'
+    $englishTermPattern = 'setupcomplete\.cmd|Windows Update|AutoUnattend|Microsoft|Windows|BIOS|OOBE|USB|XML'
     $currentIndex = 0
     foreach ($match in [regex]::Matches($Text, $englishTermPattern)) {
         if ($match.Index -gt $currentIndex) {
@@ -248,6 +248,41 @@ function New-AxisWizardMixedBidiTextBlock {
     }
 
     return $textBlock
+}
+
+function New-AxisWizardToBiosTitleRightAnchor {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [object]$Resources
+    )
+
+    $titleText = New-AxisWizardTextBlock `
+        -Text $Text `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 6) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
+    $titleText.Tag = 'AxisFirstUseWizard.ToBiosTitleEnglishOnlyText'
+    $titleText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $titleText.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+    $titleText.MaxWidth = 690
+    $titleText.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosTitleEnglishOnlyLtr')
+
+    $anchor = [System.Windows.Controls.Grid]::new()
+    $anchor.Tag = 'AxisFirstUseWizard.ToBiosTitleRightAnchor'
+    $anchor.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $anchor.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $anchor.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosTitleRightAnchoredEnglishOnly')
+    [void]$anchor.Children.Add($titleText)
+
+    return $anchor
 }
 
 function Split-AxisAutoUnattendInformationText {
@@ -468,6 +503,114 @@ function New-AxisUpdatesDriversInformationTextGroup {
                 -Text $line `
                 -Resources $Resources `
                 -Tag 'AxisFirstUseWizard.UpdatesDriversInformationItemLine' `
+                -FontSizeKey 'Axis.Type.Caption.FontSize' `
+                -FontWeightKey 'Axis.Type.Body.FontWeight' `
+                -FontFamilyKey 'Axis.Type.Caption.FontFamily' `
+                -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+                -MaxWidth $MaxWidth))
+        }
+
+        [void](Add-AxisWizardGridRow -Grid $group -Child $itemContainer)
+    }
+
+    return $group
+}
+
+function Split-AxisToBiosInformationText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Title', 'Restart', 'UsbBoot', 'Install')]
+        [string]$Name,
+
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    if ($Name -in @('Title', 'Restart')) {
+        return @($Text)
+    }
+
+    if ($Name -eq 'UsbBoot') {
+        $marker = ' Windows '
+        $markerIndex = $Text.IndexOf($marker, [System.StringComparison]::Ordinal)
+        if ($markerIndex -ge 0) {
+            return @(
+                $Text.Substring(0, $markerIndex + ' Windows'.Length).Trim()
+                $Text.Substring($markerIndex + $marker.Length).Trim()
+            )
+        }
+    }
+
+    if ($Name -eq 'Install') {
+        $arabicComma = [string][char]0x060C
+        $commaIndex = $Text.IndexOf($arabicComma, [System.StringComparison]::Ordinal)
+        if ($commaIndex -ge 0) {
+            return @(
+                $Text.Substring(0, $commaIndex + 1).Trim()
+                $Text.Substring($commaIndex + 1).Trim()
+            )
+        }
+    }
+
+    return @($Text)
+}
+
+function New-AxisToBiosInformationTextGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [double]$MaxWidth = 650.0
+    )
+
+    $group = [System.Windows.Controls.Grid]::new()
+    $group.Tag = 'AxisFirstUseWizard.ToBiosInformationSharedPhysicalRightEdge'
+    $group.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $group.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $group.MaxWidth = $MaxWidth
+    $group.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosMixedBidiSafeInfoText')
+
+    $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $rightColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$group.ColumnDefinitions.Add($rightColumn)
+
+    foreach ($line in @(Split-AxisToBiosInformationText -Name 'Title' -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'ToBiosInfoTitle'))))) {
+        [void](Add-AxisWizardGridRow -Grid $group -Child (New-AxisWizardMixedBidiTextBlock `
+            -Text $line `
+            -Resources $Resources `
+            -Tag 'AxisFirstUseWizard.ToBiosInformationTitle' `
+            -FontSizeKey 'Axis.Type.CardTitle.FontSize' `
+            -FontWeightKey 'Axis.Type.CardTitle.FontWeight' `
+            -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+            -MaxWidth $MaxWidth))
+    }
+
+    $itemNames = @('Restart', 'UsbBoot', 'Install')
+    $items = @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())
+    for ($itemIndex = 0; $itemIndex -lt $items.Count; $itemIndex++) {
+        $itemContainer = [System.Windows.Controls.Grid]::new()
+        $itemContainer.Tag = 'AxisFirstUseWizard.ToBiosInformationItem'
+        $itemContainer.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $itemContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $itemContainer.MaxWidth = $MaxWidth
+        $itemContainer.Margin = New-AxisWizardThickness -Left 0 -Top 2 -Right 0 -Bottom 0
+
+        $itemColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $itemColumn.Width = [System.Windows.GridLength]::Auto
+        [void]$itemContainer.ColumnDefinitions.Add($itemColumn)
+
+        $splitName = if ($itemIndex -lt $itemNames.Count) { $itemNames[$itemIndex] } else { 'Restart' }
+        foreach ($line in @(Split-AxisToBiosInformationText -Name $splitName -Text ([string]$items[$itemIndex]))) {
+            [void](Add-AxisWizardGridRow -Grid $itemContainer -Child (New-AxisWizardMixedBidiTextBlock `
+                -Text $line `
+                -Resources $Resources `
+                -Tag 'AxisFirstUseWizard.ToBiosInformationItemLine' `
                 -FontSizeKey 'Axis.Type.Caption.FontSize' `
                 -FontWeightKey 'Axis.Type.Body.FontWeight' `
                 -FontFamilyKey 'Axis.Type.Caption.FontFamily' `
@@ -1045,7 +1188,14 @@ function Get-AxisWizardArabicText {
             'UpdatesDriversUsbLabel',
             'UpdatesDriversInputCreate',
             'UpdatesDriversRunning',
-            'UpdatesDriversCompleted'
+            'UpdatesDriversCompleted',
+            'ToBiosTitle',
+            'ToBiosSubtitle',
+            'ToBiosInfoTitle',
+            'ToBiosInfoBulletRestart',
+            'ToBiosInfoBulletUsbBoot',
+            'ToBiosInfoBulletInstall',
+            'ToBiosPrimaryAction'
         )]
         [string]$Name
     )
@@ -1430,6 +1580,27 @@ function Get-AxisWizardArabicText {
         'UpdatesDriversCompleted' {
             return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0647, 0x0632)
         }
+        'ToBiosTitle' {
+            return 'To BIOS'
+        }
+        'ToBiosSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0648, 0x0627, 0x0644, 0x062F, 0x062E, 0x0648, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053, 0x002E)
+        }
+        'ToBiosInfoTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x062F, 0x062E, 0x0648, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
+        }
+        'ToBiosInfoBulletRestart' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0633, 0x064A, 0x062A, 0x0645, 0x0020, 0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x0020, 0x0648, 0x0627, 0x0644, 0x062F, 0x062E, 0x0648, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0634, 0x0627, 0x0634, 0x0629, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053, 0x002E)
+        }
+        'ToBiosInfoBulletUsbBoot' {
+            return ConvertFrom-AxisWizardCodePoints @(0x064A, 0x0645, 0x0643, 0x0646, 0x0643, 0x0020, 0x0628, 0x0639, 0x062F, 0x0647, 0x0627, 0x0020, 0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020, 0x0627, 0x0644, 0x0625, 0x0642, 0x0644, 0x0627, 0x0639, 0x0020, 0x0645, 0x0646, 0x0020, 0x0055, 0x0053, 0x0042, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020, 0x0627, 0x0644, 0x0630, 0x064A, 0x0020, 0x062A, 0x0645, 0x0020, 0x062A, 0x062C, 0x0647, 0x064A, 0x0632, 0x0647, 0x0020, 0x0645, 0x0633, 0x0628, 0x0642, 0x064B, 0x0627, 0x002E)
+        }
+        'ToBiosInfoBulletInstall' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x0627, 0x0644, 0x0625, 0x0642, 0x0644, 0x0627, 0x0639, 0x0020, 0x0645, 0x0646, 0x0020, 0x0055, 0x0053, 0x0042, 0x060C, 0x0020, 0x064A, 0x0645, 0x0643, 0x0646, 0x0643, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0057, 0x0069, 0x006E, 0x0064, 0x006F, 0x0077, 0x0073, 0x0020, 0x0639, 0x0644, 0x0649, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x002E)
+        }
+        'ToBiosPrimaryAction' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
+        }
     }
 }
 
@@ -1797,6 +1968,39 @@ function Get-AxisFirstUseWizardSampleState {
         InputWindowPrototypeOnly = $true
     }
 
+    $toBiosStep = [ordered]@{
+        Id = 'to-bios'
+        Title = (Get-AxisWizardArabicText -Name 'ToBiosTitle')
+        StageName = 'Refresh'
+        State = 'Ready'
+        StateLabel = ''
+        PrimaryActionLabel = (Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction')
+        RunningActionLabel = (Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction')
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'Completed')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'ToBiosSubtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'ToBiosInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardArabicText -Name 'ToBiosInfoBulletRestart')
+            (Get-AxisWizardArabicText -Name 'ToBiosInfoBulletUsbBoot')
+            (Get-AxisWizardArabicText -Name 'ToBiosInfoBulletInstall')
+        )
+        ShowRequirements = $false
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $true
+        DocumentationAcknowledgementText = (Get-AxisWizardArabicText -Name 'Acknowledgement')
+        ConfirmationActionLabel = (Get-AxisWizardArabicText -Name 'Restart')
+        ConfirmationReturnLabel = (Get-AxisWizardArabicText -Name 'Return')
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'Restarting')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'Completed')
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        CustomerVisibleActions = @((Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction'))
+        PrototypeOnlySimulation = $true
+    }
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -1818,6 +2022,7 @@ function Get-AxisFirstUseWizardSampleState {
             $reinstallStep
             $autoUnattendStep
             $updatesDriversBlockStep
+            $toBiosStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -2063,8 +2268,9 @@ function New-AxisWizardRuntimeStatusContent {
     $isReinstallStep = ($stepId -eq 'reinstall')
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
-    $contentWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
+    $isToBiosStep = ($stepId -eq 'to-bios')
+    $contentWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -2084,6 +2290,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isUpdatesDriversStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.UpdatesDriversRuntimeStatusNoClipping')
+    }
+    elseif ($isToBiosStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
     }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -2145,6 +2354,7 @@ function New-AxisStepStatusArea {
     $isReinstallStep = ($stepId -eq 'reinstall')
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
+    $isToBiosStep = ($stepId -eq 'to-bios')
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -2154,7 +2364,7 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($isBiosSettingsStep -or $isAutoUnattendStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
+    $panel.Width = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
@@ -2167,6 +2377,9 @@ function New-AxisStepStatusArea {
     }
     elseif ($isUpdatesDriversStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.UpdatesDriversRuntimeStatusNoClipping')
+    }
+    elseif ($isToBiosStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
     }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
@@ -2196,18 +2409,36 @@ function New-AxisStepSupportPanel {
         [object]$Resources = (New-AxisWpfResourceDictionary)
     )
 
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    $isToBiosStep = ($stepId -eq 'to-bios')
+    $supportPadding = if ($isToBiosStep) {
+        New-AxisWizardThickness -Left 14 -Top 7 -Right 14 -Bottom 7
+    }
+    else {
+        New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8
+    }
+    $supportMargin = if ($isToBiosStep) {
+        New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 0
+    }
+    else {
+        New-AxisWizardThickness -Left 0 -Top 8 -Right 0 -Bottom 0
+    }
+
     $stateResources = Get-AxisWizardStepStateResourceKeys -State 'Ready'
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
         -BackgroundKey ([string]$stateResources['Background']) `
         -BorderBrushKey ([string]$stateResources['Border']) `
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
-        -Padding (New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8) `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 8 -Right 0 -Bottom 0)
-    $panel.MinHeight = 58
+        -Padding $supportPadding `
+        -Margin $supportMargin
+    $panel.MinHeight = if ($isToBiosStep) { 54 } else { 58 }
     $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    if ($isToBiosStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosSupportCardNoClipping')
+    }
 
     $support = [System.Windows.Controls.Grid]::new()
     $support.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
@@ -2261,7 +2492,7 @@ function New-AxisStepPrimaryActionArea {
     $primaryEnabled = ($state -eq 'Ready')
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
-    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
+    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'to-bios') { 210.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
 
     $panel = [System.Windows.Controls.Grid]::new()
     $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -2329,16 +2560,45 @@ function New-AxisBiosInformationStep {
         $Step = (Get-AxisFirstUseWizardSampleState)['Step']
     }
 
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id' -DefaultValue 'bios-information')
+    $isToBiosStep = ($stepId -eq 'to-bios')
+    $stepTag = if ($isToBiosStep) { 'AxisFirstUseWizard.ToBiosStep' } else { 'AxisFirstUseWizard.BiosInformationStep' }
+    $defaultStage = if ($isToBiosStep) { 'Refresh' } else { 'Check' }
+    $defaultTitle = if ($isToBiosStep) { Get-AxisWizardArabicText -Name 'ToBiosTitle' } else { 'BIOS Drivers & Downloads' }
+    $informationCardTag = if ($isToBiosStep) { 'AxisFirstUseWizard.ToBiosInformationCard' } else { 'AxisFirstUseWizard.InformationCard' }
+    $containerPadding = if ($isToBiosStep) {
+        New-AxisWizardThickness -Left 34 -Top 14 -Right 34 -Bottom 10
+    }
+    else {
+        New-AxisWizardThickness -Left 34 -Top 20 -Right 34 -Bottom 16
+    }
+    $descriptionFontSizeKey = if ($isToBiosStep) { 'Axis.Type.BodySmall.FontSize' } else { 'Axis.Type.Body.FontSize' }
+    $detailsMargin = if ($isToBiosStep) {
+        New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 5
+    }
+    else {
+        New-AxisWizardThickness -Left 0 -Top 10 -Right 0 -Bottom 8
+    }
+    $informationCardPadding = if ($isToBiosStep) {
+        New-AxisWizardThickness -Left 13 -Top 8 -Right 13 -Bottom 8
+    }
+    else {
+        New-AxisWizardThickness -Left 15 -Top 10 -Right 15 -Bottom 10
+    }
+
     $container = New-AxisWizardPanel `
         -Resources $Resources `
         -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
         -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
         -RadiusKey 'Axis.Radius.Wizard.MainCard' `
-        -Padding (New-AxisWizardThickness -Left 34 -Top 20 -Right 34 -Bottom 16) `
+        -Padding $containerPadding `
         -Elevation 'Card'
     $container.Height = 382
-    $container.Tag = 'AxisFirstUseWizard.BiosInformationStep'
+    $container.Tag = $stepTag
     $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    if ($isToBiosStep) {
+        $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosNoClippingLayout')
+    }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
@@ -2346,26 +2606,34 @@ function New-AxisBiosInformationStep {
     $content.Tag = 'AxisFirstUseWizard.StepTextContent'
 
     [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
-        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Check')) `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue $defaultStage)) `
         -Resources $Resources `
         -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
         -FontWeightKey 'Axis.Type.Micro.FontWeight' `
         -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
         -TextAlignment ([System.Windows.TextAlignment]::Right) `
         -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
-    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
-        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue 'BIOS Drivers & Downloads')) `
-        -Resources $Resources `
-        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
-        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
-        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 8) `
-        -TextAlignment ([System.Windows.TextAlignment]::Right) `
-        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    $titleText = [string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue $defaultTitle)
+    if ($isToBiosStep) {
+        [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardToBiosTitleRightAnchor `
+            -Text $titleText `
+            -Resources $Resources))
+    }
+    else {
+        [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+            -Text $titleText `
+            -Resources $Resources `
+            -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+            -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+            -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 8) `
+            -TextAlignment ([System.Windows.TextAlignment]::Right) `
+            -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+    }
     $descriptionText = New-AxisWizardTextBlock `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
         -Resources $Resources `
-        -FontSizeKey 'Axis.Type.Body.FontSize' `
+        -FontSizeKey $descriptionFontSizeKey `
         -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
         -TextAlignment ([System.Windows.TextAlignment]::Right) `
         -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
@@ -2376,7 +2644,7 @@ function New-AxisBiosInformationStep {
         -MaxWidth 690))
 
     $detailsGrid = [System.Windows.Controls.Grid]::new()
-    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 10 -Right 0 -Bottom 8
+    $detailsGrid.Margin = $detailsMargin
     $detailsGrid.Tag = 'AxisFirstUseWizard.StepDetails'
     $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
@@ -2389,10 +2657,10 @@ function New-AxisBiosInformationStep {
         -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
         -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
         -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
-        -Padding (New-AxisWizardThickness -Left 15 -Top 10 -Right 15 -Bottom 10) `
+        -Padding $informationCardPadding `
         -Elevation 'Soft'
-    $checksPanel.MinHeight = 96
-    $checksPanel.Tag = 'AxisFirstUseWizard.InformationCard'
+    $checksPanel.MinHeight = if ($isToBiosStep) { 90 } else { 96 }
+    $checksPanel.Tag = $informationCardTag
     $checksPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $checksPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     $checksStack = [System.Windows.Controls.Grid]::new()
@@ -2400,31 +2668,39 @@ function New-AxisBiosInformationStep {
     $checksStack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $checksStack.MaxWidth = 650
     $checksStack.Tag = 'AxisFirstUseWizard.InformationCardContent'
-    $informationLines = [System.Collections.Generic.List[object]]::new()
-    $informationLines.Add([ordered]@{
-        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'InformationCardTitle'))
-        Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightTitle'
-        FontSizeKey = 'Axis.Type.CardTitle.FontSize'
-        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
-        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
-        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
-    })
-    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
-        $informationLines.Add([ordered]@{
-            Text = [string]$item
-            Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightItem'
-            FontSizeKey = 'Axis.Type.BodySmall.FontSize'
-            FontWeightKey = 'Axis.Type.Body.FontWeight'
-            FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
-            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
-            TopMargin = 3.0
-        })
+    if ($isToBiosStep) {
+        $informationPhysicalRightEdge = New-AxisToBiosInformationTextGroup `
+            -Step $Step `
+            -Resources $Resources `
+            -MaxWidth 650
     }
-    $informationPhysicalRightEdge = New-AxisWizardPhysicalRightEdgeTextGroup `
-        -Tag 'AxisFirstUseWizard.InformationCardSharedPhysicalRightEdge' `
-        -Resources $Resources `
-        -MaxWidth 650 `
-        -Lines $informationLines
+    else {
+        $informationLines = [System.Collections.Generic.List[object]]::new()
+        $informationLines.Add([ordered]@{
+            Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'InformationCardTitle'))
+            Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightTitle'
+            FontSizeKey = 'Axis.Type.CardTitle.FontSize'
+            FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+            FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+        })
+        foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+            $informationLines.Add([ordered]@{
+                Text = [string]$item
+                Tag = 'AxisFirstUseWizard.InformationCardPhysicalRightItem'
+                FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+                FontWeightKey = 'Axis.Type.Body.FontWeight'
+                FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+                ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+                TopMargin = 3.0
+            })
+        }
+        $informationPhysicalRightEdge = New-AxisWizardPhysicalRightEdgeTextGroup `
+            -Tag 'AxisFirstUseWizard.InformationCardSharedPhysicalRightEdge' `
+            -Resources $Resources `
+            -MaxWidth 650 `
+            -Lines $informationLines
+    }
     [void](Add-AxisWizardGridRow -Grid $checksStack -Child $informationPhysicalRightEdge)
     $checksPanel.Child = New-AxisWizardRightAnchor `
         -Child $checksStack `
@@ -3028,6 +3304,21 @@ function New-AxisUpdatesDriversBlockStep {
     return New-AxisAutoUnattendStep -Step $Step -Resources $Resources
 }
 
+function New-AxisToBiosStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'])[5]
+    }
+
+    return New-AxisBiosInformationStep -Step $Step -Resources $Resources
+}
+
 function New-AxisAutoUnattendInputOverlay {
     [CmdletBinding()]
     param(
@@ -3303,6 +3594,10 @@ function New-AxisFirstUseWizardStepContent {
 
     if ($stepId -eq 'updates-drivers-block') {
         return New-AxisUpdatesDriversBlockStep -Step $Step -Resources $Resources
+    }
+
+    if ($stepId -eq 'to-bios') {
+        return New-AxisToBiosStep -Step $Step -Resources $Resources
     }
 
     if ($stepId -eq 'reinstall') {

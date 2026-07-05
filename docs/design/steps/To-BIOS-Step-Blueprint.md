@@ -9,14 +9,14 @@ This document records Yazan-approved Arabic-first customer-facing content for th
 
 This phase is documentation-only. It does not implement UI behavior, run Open, restart the device, enter BIOS/UEFI, execute the original To BIOS tool, wire the step into `ui/MainWindow.ps1`, or change runtime contracts.
 
-English customer-facing copy is pending future translation after Arabic approval. Do not treat any English implementation text as final customer-facing copy for this step.
+Except for the owner-approved step title `To BIOS`, English customer-facing copy is pending future translation after Arabic approval. Do not treat any other English implementation text as final customer-facing copy for this step.
 
 ## Step Identity
 
 | Field | Value |
 | --- | --- |
 | Internal tool ID | `to-bios` |
-| Customer-facing step title | `الانتقال إلى BIOS` |
+| Customer-facing step title | `To BIOS` |
 | Stage | `Refresh` |
 | Visible stage label | `Refresh` |
 | Customer-facing primary action | `إعادة التشغيل إلى BIOS` |
@@ -34,7 +34,7 @@ Record the following Arabic copy exactly as owner-approved.
 
 | Surface | Owner-approved value |
 | --- | --- |
-| Title | `الانتقال إلى BIOS` |
+| Title | `To BIOS` |
 | Subtitle/body | `إعادة التشغيل والدخول إلى إعدادات BIOS.` |
 | Information card title | `الدخول إلى إعدادات BIOS` |
 | Information card bullet 1 | `سيتم إعادة تشغيل الجهاز والدخول إلى شاشة BIOS.` |
@@ -53,7 +53,7 @@ Record the following Arabic copy exactly as owner-approved.
 | Support panel title | `مساعدة` |
 | Support panel body | `تحتاج مساعدة؟ يمكنك التواصل مع أخصائي الدعم عبر خادم Discord الخاص بالمتجر.` |
 
-English copy is pending future translation after Arabic approval. Do not add final English copy in this phase.
+Except for the owner-approved step title `To BIOS`, English copy is pending future translation after Arabic approval. Do not add other final English copy in this phase.
 
 ## Requirements Card
 
