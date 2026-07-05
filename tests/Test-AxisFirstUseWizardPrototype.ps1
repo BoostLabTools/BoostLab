@@ -462,6 +462,7 @@ $blueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Information-Step
 $biosSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Settings-Step-Blueprint.md'
 $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-Step-Blueprint.md'
 $autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnattend-Step-Blueprint.md'
+$updatesDriversBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Updates-Drivers-Block-Step-Blueprint.md'
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
@@ -469,12 +470,14 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $blueprintPath -PathType Leaf) 
 Assert-BoostLabCondition (Test-Path -LiteralPath $biosSettingsBlueprintPath -PathType Leaf) 'AXIS BIOS Settings step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathType Leaf) 'AXIS Reinstall step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -PathType Leaf) 'AXIS AutoUnattend step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $updatesDriversBlueprintPath -PathType Leaf) 'AXIS Updates Drivers Block step blueprint is missing.'
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
 $biosSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $biosSettingsBlueprintPath
 $reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinstallBlueprintPath
 $autoUnattendBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $autoUnattendBlueprintPath
+$updatesDriversBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $updatesDriversBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -488,10 +491,14 @@ foreach ($functionName in @(
     'New-AxisBiosSettingsStep'
     'New-AxisReinstallStep'
     'New-AxisAutoUnattendStep'
+    'New-AxisUpdatesDriversBlockStep'
     'New-AxisWizardMixedBidiTextBlock'
     'Split-AxisAutoUnattendInformationText'
     'New-AxisAutoUnattendInformationTextGroup'
+    'Split-AxisUpdatesDriversInformationText'
+    'New-AxisUpdatesDriversInformationTextGroup'
     'New-AxisAutoUnattendInputOverlay'
+    'New-AxisWizardUsbComboBoxItemStyle'
     'New-AxisFirstUseWizardStepContent'
     'New-AxisStepDocumentationButton'
     'New-AxisStepPrimaryActionArea'
@@ -575,7 +582,18 @@ $arabicAutoUnattendAccountLabel = Get-AxisWizardArabicText -Name 'AutoUnattendAc
 $arabicAutoUnattendUsbLabel = Get-AxisWizardArabicText -Name 'AutoUnattendUsbLabel'
 $arabicAutoUnattendRunning = Get-AxisWizardArabicText -Name 'AutoUnattendRunning'
 $arabicAutoUnattendCompleted = Get-AxisWizardArabicText -Name 'AutoUnattendCompleted'
-$axisDocumentationAccentForeground = '#FFE65F2B'
+$arabicUpdatesDriversSubtitle = Get-AxisWizardArabicText -Name 'UpdatesDriversSubtitle'
+$arabicUpdatesDriversInfoTitle = Get-AxisWizardArabicText -Name 'UpdatesDriversInfoTitle'
+$arabicUpdatesDriversInfoBulletSetupcomplete = Get-AxisWizardArabicText -Name 'UpdatesDriversInfoBulletSetupcomplete'
+$arabicUpdatesDriversInfoBulletWindowsUpdate = Get-AxisWizardArabicText -Name 'UpdatesDriversInfoBulletWindowsUpdate'
+$arabicUpdatesDriversRequirementUsb = Get-AxisWizardArabicText -Name 'UpdatesDriversRequirementUsb'
+$arabicUpdatesDriversPrimaryAction = Get-AxisWizardArabicText -Name 'UpdatesDriversPrimaryAction'
+$arabicUpdatesDriversInputTitle = Get-AxisWizardArabicText -Name 'UpdatesDriversInputTitle'
+$arabicUpdatesDriversUsbLabel = Get-AxisWizardArabicText -Name 'UpdatesDriversUsbLabel'
+$arabicUpdatesDriversInputCreate = Get-AxisWizardArabicText -Name 'UpdatesDriversInputCreate'
+$arabicUpdatesDriversRunning = Get-AxisWizardArabicText -Name 'UpdatesDriversRunning'
+$arabicUpdatesDriversCompleted = Get-AxisWizardArabicText -Name 'UpdatesDriversCompleted'
+$axisDefaultDocumentationForeground = '#FFEDEDED'
 $axisDefaultAcknowledgementForeground = '#FFEDEDED'
 $axisDefaultCardTitleForeground = '#FFFAF9F6'
 $axisRejectedAcknowledgementAccentForeground = '#FFE65F2B'
@@ -653,9 +671,9 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 4) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, and AutoUnattend steps.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, then AutoUnattend.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend") 'AXIS first-use wizard customer step title order changed.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 5) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, and Updates Drivers Block steps.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended|updates-drivers-block') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, then Updates Drivers Block.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend|Updates Drivers Block") 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
@@ -806,6 +824,7 @@ $biosStep = $sampleSteps[0]
 $biosSettingsStep = $sampleSteps[1]
 $reinstallStep = $sampleSteps[2]
 $autoUnattendStep = $sampleSteps[3]
+$updatesDriversStep = $sampleSteps[4]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -861,6 +880,24 @@ Assert-BoostLabCondition (-not ('Open' -in @($autoUnattendStep['CustomerVisibleA
 Assert-BoostLabCondition (-not ('Apply' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Apply as a customer action.'
 Assert-BoostLabCondition (-not ('Default' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Default as a customer action.'
 Assert-BoostLabCondition (-not ('Restore' -in @($autoUnattendStep['CustomerVisibleActions']))) 'AXIS AutoUnattend must not expose Restore as a customer action.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['Id'] -eq 'updates-drivers-block') 'AXIS Updates Drivers Block internal tool id should be updates-drivers-block.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['Title'] -eq 'Updates Drivers Block') 'AXIS Updates Drivers Block customer title changed.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['StageName'] -eq 'Refresh') 'AXIS Updates Drivers Block customer stage label should be Refresh.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['PrimaryActionLabel'] -eq $arabicUpdatesDriversPrimaryAction) 'AXIS Updates Drivers Block primary action label changed.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['CheckingStatusTitle'] -eq $arabicUpdatesDriversRunning) 'AXIS Updates Drivers Block running status label changed.'
+Assert-BoostLabCondition ([string]$updatesDriversStep['CompletedStatusTitle'] -eq $arabicUpdatesDriversCompleted) 'AXIS Updates Drivers Block completed status label changed.'
+Assert-BoostLabCondition ([bool]$updatesDriversStep['ShowRequirements']) 'AXIS Updates Drivers Block should show the owner-approved requirements card.'
+Assert-BoostLabCondition (-not [bool]$updatesDriversStep['RequiresConfirmationAcknowledgement']) 'AXIS Updates Drivers Block must not require a confirmation acknowledgement overlay.'
+Assert-BoostLabCondition ([bool]$updatesDriversStep['RequiresInputWindow']) 'AXIS Updates Drivers Block should require the input-window prototype path.'
+Assert-BoostLabCondition (-not [bool]$updatesDriversStep['RequiresAccountName']) 'AXIS Updates Drivers Block input window should be USB-only.'
+Assert-BoostLabCondition ([bool]$updatesDriversStep['NoConfirmationOverlay']) 'AXIS Updates Drivers Block should carry the no-confirmation overlay marker.'
+Assert-BoostLabCondition ([bool]$updatesDriversStep['PrototypeOnlySimulation']) 'AXIS Updates Drivers Block should be marked as prototype-only simulation.'
+Assert-BoostLabCondition ((@($updatesDriversStep['CustomerVisibleActions']) -join '|') -eq $arabicUpdatesDriversPrimaryAction) 'AXIS Updates Drivers Block should expose only the owner-approved Arabic customer action label.'
+Assert-BoostLabCondition (-not ('Analyze' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Analyze as a customer action.'
+Assert-BoostLabCondition (-not ('Open' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Open as a customer action.'
+Assert-BoostLabCondition (-not ('Apply' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Apply as a customer action.'
+Assert-BoostLabCondition (-not ('Default' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Default as a customer action.'
+Assert-BoostLabCondition (-not ('Restore' -in @($updatesDriversStep['CustomerVisibleActions']))) 'AXIS Updates Drivers Block must not expose Restore as a customer action.'
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -887,6 +924,7 @@ $taggedFooterButtonSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $protot
 $taggedContinueButtons = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ContinueButton')
 $taggedOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
 $taggedAutoUnattendInputOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay')
+$taggedUpdatesDriversInputOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.UpdatesDriversInputOverlay')
 $firstStepOverlay = $taggedOverlay[0]
 $taggedConfirmationRightAlignedGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $firstStepOverlay -Tag 'AxisFirstUseWizard.ConfirmationRightAlignedGroup')
 $taggedAcknowledgementRightAnchorRow = @(Get-AxisFirstUseWizardTaggedElements -Root $firstStepOverlay -Tag 'AxisFirstUseWizard.AcknowledgementRightAnchorRow')
@@ -950,8 +988,9 @@ Assert-BoostLabCondition ($taggedDocumentationButton.Count -eq 1) 'AXIS BIOS Dri
 Assert-BoostLabCondition ($taggedPrimaryOpenButton.Count -eq 1) 'AXIS BIOS Drivers & Downloads primary Open button is missing.'
 Assert-BoostLabCondition ([string]$taggedPrimaryOpenButton[0].Content -eq $arabicOpen) 'AXIS primary action label should be owner-approved Arabic Open.'
 Assert-BoostLabCondition ([string]$taggedDocumentationButton[0].Content -eq $arabicDocumentation) 'AXIS documentation action label should be owner-approved Arabic text.'
-[void](Assert-AxisFirstUseWizardForegroundColor -Element $taggedDocumentationButton[0] -ExpectedColor $axisDocumentationAccentForeground -Name 'BIOS Drivers & Downloads documentation button')
-Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedDocumentationButton[0]) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS documentation button should expose the documentation accent marker.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $taggedDocumentationButton[0] -ExpectedColor $axisDefaultDocumentationForeground -Name 'BIOS Drivers & Downloads documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedDocumentationButton[0]) -eq 'AxisFirstUseWizard.DocumentationDefaultForeground') 'AXIS documentation button should expose the default foreground marker.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedDocumentationButton[0].Foreground).Color -ne '#FFE65F2B') 'AXIS documentation button must not use the rejected orange accent.'
 Assert-BoostLabCondition ([double]$taggedDocumentationButton[0].Margin.Right -eq 0.0) 'AXIS documentation button should not rely on RTL margin behavior for spacing.'
 Assert-BoostLabCondition ($taggedSupportPanel.Count -eq 1) 'AXIS BIOS Drivers & Downloads support panel is missing.'
 Assert-BoostLabCondition ($taggedSupportPanel[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS support panel should stretch so Arabic starts from the right.'
@@ -1053,6 +1092,8 @@ foreach ($rejectedPhase180DPrototypeText in @(
 Assert-BoostLabCondition ($taggedOverlay.Count -eq 2) 'AXIS first-use wizard should create confirmation overlays only for the two BIOS steps.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
+Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
+Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS first-step confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
@@ -1247,8 +1288,8 @@ Assert-BoostLabCondition ($null -ne $biosSettingsInformationTitle) 'AXIS BIOS Se
 [void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsInformationTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'BIOS Settings information card title')
 [void](Assert-AxisFirstUseWizardForegroundNotColor -Element $biosSettingsInformationTitle -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'BIOS Settings information card title')
 Assert-BoostLabCondition ($null -ne $biosSettingsDocumentationButton) 'AXIS BIOS Settings documentation button is missing.'
-[void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'BIOS Settings documentation button')
-Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS BIOS Settings documentation button should expose the documentation accent marker.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $biosSettingsDocumentationButton -ExpectedColor $axisDefaultDocumentationForeground -Name 'BIOS Settings documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationDefaultForeground') 'AXIS BIOS Settings documentation button should expose the default foreground marker.'
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($biosSettingsActionArea) -eq 'AxisFirstUseWizard.BiosSettingsActionRowSeparated') 'AXIS BIOS Settings action row should expose the separated action-row marker.'
 Assert-BoostLabCondition ($biosSettingsContentGrid.Children.IndexOf($biosSettingsDetails) -lt $biosSettingsContentGrid.Children.IndexOf($biosSettingsActionArea)) 'AXIS BIOS Settings details must appear before the action row.'
 Assert-BoostLabCondition ($biosSettingsContentGrid.Children.IndexOf($biosSettingsActionArea) -lt $biosSettingsContentGrid.Children.IndexOf($biosSettingsSupportPanel)) 'AXIS BIOS Settings action row must remain separated above the support panel.'
@@ -1441,8 +1482,8 @@ Assert-BoostLabCondition ($null -ne $reinstallRequirementsTitle) 'AXIS Reinstall
 [void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallRequirementsTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'Reinstall requirements card title')
 [void](Assert-AxisFirstUseWizardForegroundNotColor -Element $reinstallRequirementsTitle -RejectedColor $axisRejectedRequirementsCardTitleForeground -Name 'Reinstall requirements card title')
 Assert-BoostLabCondition ($null -ne $reinstallDocumentationButton) 'AXIS Reinstall documentation button is missing.'
-[void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'Reinstall documentation button')
-Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($reinstallDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS Reinstall documentation button should expose the documentation accent marker.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $reinstallDocumentationButton -ExpectedColor $axisDefaultDocumentationForeground -Name 'Reinstall documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($reinstallDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationDefaultForeground') 'AXIS Reinstall documentation button should expose the default foreground marker.'
 $reinstallInformationRightMarkers = @(
     Get-AxisFirstUseWizardTypedElements -Root $reinstallVisibleContent -Type ([System.Windows.FrameworkElement]) |
         Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.ReinstallInformationRightCard' }
@@ -1618,8 +1659,8 @@ Assert-BoostLabCondition ($null -ne $autoUnattendRequirementsTitle) 'AXIS AutoUn
 [void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendRequirementsTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'AutoUnattend requirements card title')
 [void](Assert-AxisFirstUseWizardForegroundNotColor -Element $autoUnattendRequirementsTitle -RejectedColor $axisRejectedRequirementsCardTitleForeground -Name 'AutoUnattend requirements card title')
 Assert-BoostLabCondition ($null -ne $autoUnattendDocumentationButton) 'AXIS AutoUnattend documentation button is missing.'
-[void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendDocumentationButton -ExpectedColor $axisDocumentationAccentForeground -Name 'AutoUnattend documentation button')
-Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationAccentForeground') 'AXIS AutoUnattend documentation button should expose the documentation accent marker.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $autoUnattendDocumentationButton -ExpectedColor $axisDefaultDocumentationForeground -Name 'AutoUnattend documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($autoUnattendDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationDefaultForeground') 'AXIS AutoUnattend documentation button should expose the default foreground marker.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor -is [System.Windows.Controls.Grid]) 'AXIS AutoUnattend title right anchor should be a full-width positioning Grid.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS AutoUnattend title right anchor should use physical LTR positioning.'
 Assert-BoostLabCondition ($autoUnattendTitleRightAnchor.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS AutoUnattend title right anchor should span the available region.'
@@ -1800,7 +1841,227 @@ Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetA
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS AutoUnattend enabled Continue/Next should use the approved blue fill.'
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS AutoUnattend should not auto-advance after simulated completion.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS AutoUnattend Continue/Next should not navigate past the last prototype step.'
+$updatesDriversVisibleContent = $taggedContentHost[0].Child
+$updatesDriversVisibleText = (Get-AxisFirstUseWizardTextValues -Root $updatesDriversVisibleContent) -join [Environment]::NewLine
+$updatesDriversVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $updatesDriversVisibleText
+$currentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Continue/Next from completed AutoUnattend should move to Updates Drivers Block.'
+Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Refresh') 'AXIS Updates Drivers Block current stage header should show Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'Updates Drivers Block Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'Updates Drivers Block Refresh active')
+$activeStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
+)
+$completedStageItems = @(
+    $stripItems |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressCompleted.') }
+)
+Assert-BoostLabCondition ($activeStageItems.Count -eq 1) 'AXIS Updates Drivers Block should expose exactly one active stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($activeStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressActive.Refresh') 'AXIS Updates Drivers Block active stage marker should be Refresh.'
+Assert-BoostLabCondition ($completedStageItems.Count -eq 1) 'AXIS Updates Drivers Block should expose exactly one completed previous stage marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($completedStageItems[0]) -eq 'AxisFirstUseWizard.StageProgressCompleted.Check') 'AXIS Updates Drivers Block completed stage marker should be Check.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Updates Drivers Block Continue/Next should start disabled.'
+foreach ($requiredUpdatesDriversText in @(
+    'Refresh'
+    'Updates Drivers Block'
+    $arabicUpdatesDriversSubtitle
+    $arabicUpdatesDriversInfoTitle
+    $arabicUpdatesDriversInfoBulletSetupcomplete
+    $arabicUpdatesDriversInfoBulletWindowsUpdate
+    $arabicRequirementsTitle
+    $arabicUpdatesDriversRequirementUsb
+    $arabicUpdatesDriversPrimaryAction
+    $arabicDocumentation
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    $requiredUpdatesDriversTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $requiredUpdatesDriversText
+    Assert-BoostLabCondition (
+        $updatesDriversVisibleText.Contains($requiredUpdatesDriversText) -or
+        $updatesDriversVisibleTextNormalized.Contains($requiredUpdatesDriversTextNormalized)
+    ) "AXIS Updates Drivers Block view is missing owner-approved text: $requiredUpdatesDriversText"
+}
+foreach ($forbiddenUpdatesDriversInternalText in @(
+    'Analyze'
+    'Open'
+    'Apply'
+    'Default'
+    'Restore'
+    'Cancel'
+)) {
+    Assert-BoostLabCondition (-not $updatesDriversVisibleText.Contains($forbiddenUpdatesDriversInternalText)) "AXIS Updates Drivers Block view exposes forbidden internal/customer action text: $forbiddenUpdatesDriversInternalText"
+}
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationOverlay').Count -eq 0) 'AXIS Updates Drivers Block content must not include a confirmation overlay.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS Updates Drivers Block content must not include a confirmation checkbox.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationCard').Count -eq 1) 'AXIS Updates Drivers Block should render one information card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementsCard').Count -eq 1) 'AXIS Updates Drivers Block should render one requirements card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationItem').Count -eq 2) 'AXIS Updates Drivers Block should render both owner-approved information items.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementItem').Count -eq 1) 'AXIS Updates Drivers Block should render the owner-approved USB requirement.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 1) 'AXIS Updates Drivers Block support panel should remain separate and visible.'
+$updatesDriversStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversStep') | Select-Object -First 1
+$updatesDriversContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+$updatesDriversDetails = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversDetails') | Select-Object -First 1
+$updatesDriversInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationCard') | Select-Object -First 1
+$updatesDriversRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementsCard') | Select-Object -First 1
+$updatesDriversInformationTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationTitle') | Select-Object -First 1
+$updatesDriversRequirementsTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementsTitle') | Select-Object -First 1
+$updatesDriversTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversTitleRightAligned') | Select-Object -First 1
+$updatesDriversInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationSharedPhysicalRightEdge') | Select-Object -First 1
+$updatesDriversRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
+$updatesDriversInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversInformationRightAnchor') | Select-Object -First 1
+$updatesDriversRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.UpdatesDriversRequirementsRightAnchor') | Select-Object -First 1
+$updatesDriversActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+$updatesDriversSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$updatesDriversDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
+Assert-BoostLabCondition ([double]$updatesDriversStepElement.Height -eq 382.0) 'AXIS Updates Drivers Block should fit inside the 900x650 preview client area without clipping.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($updatesDriversInformationCard) -eq 2) 'AXIS Updates Drivers Block information card should be assigned to the visual right-side column.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($updatesDriversRequirementsCard) -eq 0) 'AXIS Updates Drivers Block requirements card should be assigned to the visual left-side column.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $updatesDriversInformationTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'Updates Drivers Block information card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $updatesDriversInformationTitle -RejectedColor $axisRejectedInformationCardTitleForeground -Name 'Updates Drivers Block information card title')
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $updatesDriversRequirementsTitle -ExpectedColor $axisDefaultCardTitleForeground -Name 'Updates Drivers Block requirements card title')
+[void](Assert-AxisFirstUseWizardForegroundNotColor -Element $updatesDriversRequirementsTitle -RejectedColor $axisRejectedRequirementsCardTitleForeground -Name 'Updates Drivers Block requirements card title')
+Assert-BoostLabCondition ($null -ne $updatesDriversDocumentationButton) 'AXIS Updates Drivers Block documentation button is missing.'
+[void](Assert-AxisFirstUseWizardForegroundColor -Element $updatesDriversDocumentationButton -ExpectedColor $axisDefaultDocumentationForeground -Name 'Updates Drivers Block documentation button')
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversDocumentationButton) -eq 'AxisFirstUseWizard.DocumentationDefaultForeground') 'AXIS Updates Drivers Block documentation button should expose the default foreground marker.'
+Assert-BoostLabCondition ($updatesDriversTitleRightAnchor -is [System.Windows.Controls.Grid]) 'AXIS Updates Drivers Block title right anchor should be a full-width positioning Grid.'
+Assert-BoostLabCondition ($updatesDriversTitleRightAnchor.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) 'AXIS Updates Drivers Block title right anchor should use physical LTR positioning.'
+Assert-BoostLabCondition ($updatesDriversTitleRightAnchor.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Stretch) 'AXIS Updates Drivers Block title right anchor should span the available region.'
+Assert-BoostLabCondition ($updatesDriversTitleRightAnchor.Children.Count -eq 1) 'AXIS Updates Drivers Block title right anchor should contain one right-aligned title.'
+Assert-BoostLabCondition ($updatesDriversTitleRightAnchor.Children[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Updates Drivers Block title should be physically anchored to the right.'
+Assert-BoostLabCondition ([double]$updatesDriversTitleRightAnchor.Children[0].MaxWidth -eq 690.0) 'AXIS Updates Drivers Block title should use the expected max width.'
+$updatesDriversTitleTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $updatesDriversTitleRightAnchor -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($updatesDriversTitleTextBlocks.Count -eq 1) 'AXIS Updates Drivers Block title right anchor should contain one title TextBlock.'
+Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $updatesDriversTitleTextBlocks[0]) -eq 'Updates Drivers Block') 'AXIS Updates Drivers Block right-aligned title text changed.'
+Assert-BoostLabCondition ($updatesDriversTitleTextBlocks[0].TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Updates Drivers Block title should keep right text alignment.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $updatesDriversInformationRightAnchor -Name 'Updates Drivers Block information card' -ExpectedMaxWidth 320)
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $updatesDriversRequirementsRightAnchor -Name 'Updates Drivers Block requirements card' -ExpectedMaxWidth 320)
+$updatesDriversMixedBidiMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $updatesDriversInformationSharedRightEdge -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.UpdatesDriversMixedBidiSafeInfoText' }
+)
+Assert-BoostLabCondition ($updatesDriversMixedBidiMarkers.Count -eq 1) 'AXIS Updates Drivers Block information card should expose the mixed BiDi-safe marker.'
+$updatesDriversInfoTextBlocks = @(Get-AxisFirstUseWizardTypedElements -Root $updatesDriversInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]))
+Assert-BoostLabCondition ($updatesDriversInfoTextBlocks.Count -ge 5) 'AXIS Updates Drivers Block information card should split mixed Arabic/English copy into deterministic right-aligned lines.'
+foreach ($updatesDriversInfoTextBlock in $updatesDriversInfoTextBlocks) {
+    Assert-BoostLabCondition ($updatesDriversInfoTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS Updates Drivers Block mixed information text should use RTL flow.'
+    Assert-BoostLabCondition ($updatesDriversInfoTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Updates Drivers Block mixed information text should stay right-aligned.'
+    Assert-BoostLabCondition ($updatesDriversInfoTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Updates Drivers Block mixed information text should share the physical right edge.'
+    Assert-BoostLabCondition ($updatesDriversInfoTextBlock.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS Updates Drivers Block mixed information text should avoid WPF automatic BiDi wrapping.'
+}
+$updatesDriversEnglishRuns = @(
+    $updatesDriversInfoTextBlocks |
+        ForEach-Object { @($_.Inlines) } |
+        Where-Object { $_ -is [System.Windows.Documents.Run] -and $_.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight }
+)
+foreach ($requiredUpdatesEnglishTerm in @('setupcomplete.cmd', 'USB', 'Windows', 'Windows Update')) {
+    Assert-BoostLabCondition (@($updatesDriversEnglishRuns | Where-Object { [string]$_.Text -eq $requiredUpdatesEnglishTerm }).Count -ge 1) "AXIS Updates Drivers Block information card should isolate the English term in an LTR Run: $requiredUpdatesEnglishTerm"
+}
+[void](Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup `
+    -Group $updatesDriversRequirementsSharedRightEdge `
+    -Name 'Updates Drivers Block requirements card' `
+    -ExpectedTexts @($arabicRequirementsTitle, $arabicUpdatesDriversRequirementUsb) `
+    -ExpectedMaxWidth 320)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversActionArea) -eq 'AxisFirstUseWizard.UpdatesDriversInputActionRow') 'AXIS Updates Drivers Block action row should expose the input-window marker.'
+Assert-BoostLabCondition ($updatesDriversContentGrid.Children.IndexOf($updatesDriversDetails) -lt $updatesDriversContentGrid.Children.IndexOf($updatesDriversActionArea)) 'AXIS Updates Drivers Block details must appear before the action row.'
+Assert-BoostLabCondition ($updatesDriversContentGrid.Children.IndexOf($updatesDriversActionArea) -lt $updatesDriversContentGrid.Children.IndexOf($updatesDriversSupportPanel)) 'AXIS Updates Drivers Block action row must remain separated above the support panel.'
+$updatesDriversPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$updatesDriversRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$updatesDriversRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+Assert-BoostLabCondition ([string]$updatesDriversPrimaryButton.Content -eq $arabicUpdatesDriversPrimaryAction) 'AXIS Updates Drivers Block primary button should use the owner-approved Arabic label.'
+Assert-BoostLabCondition ([double]$updatesDriversPrimaryButton.Width -ge 250.0) 'AXIS Updates Drivers Block primary button should be wide enough for the owner-approved label.'
+Assert-BoostLabCondition ($updatesDriversRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block runtime status should start hidden.'
+Assert-BoostLabCondition ([double]$updatesDriversRuntimeStatusArea.Width -eq 234.0) 'AXIS Updates Drivers Block runtime status should use a no-clipping width for the Arabic running state.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversRuntimeStatusArea) -eq 'AxisFirstUseWizard.UpdatesDriversRuntimeStatusNoClipping') 'AXIS Updates Drivers Block runtime status should expose the no-clipping marker.'
+$updatesDriversInputOverlay = $taggedUpdatesDriversInputOverlay[0]
+$updatesDriversInputText = (Get-AxisFirstUseWizardTextValues -Root $updatesDriversInputOverlay) -join [Environment]::NewLine
+foreach ($requiredUpdatesInputText in @(
+    $arabicUpdatesDriversInputTitle
+    $arabicUpdatesDriversUsbLabel
+    $arabicUpdatesDriversInputCreate
+    $arabicReturn
+)) {
+    Assert-BoostLabCondition ($updatesDriversInputText.Contains($requiredUpdatesInputText)) "AXIS Updates Drivers Block input window is missing owner-approved text: $requiredUpdatesInputText"
+}
+Assert-BoostLabCondition (-not $updatesDriversInputText.Contains($arabicAutoUnattendAccountLabel)) 'AXIS Updates Drivers Block input window must not show the AutoUnattend account field label.'
+$updatesDriversInputCardMarkers = @(
+    Get-AxisFirstUseWizardTypedElements -Root $updatesDriversInputOverlay -Type ([System.Windows.FrameworkElement]) |
+        Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq 'AxisFirstUseWizard.UpdatesDriversInputWindowNoCheckbox' }
+)
+$updatesDriversAccountBox = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversInputOverlay -Tag 'AxisFirstUseWizard.AutoUnattendAccountTextBox') | Select-Object -First 1
+$updatesDriversUsbSelector = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversInputOverlay -Tag 'AxisFirstUseWizard.UpdatesDriversUsbSelector') | Select-Object -First 1
+$updatesDriversInputCreateButton = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversInputOverlay -Tag 'AxisFirstUseWizard.UpdatesDriversInputCreateButton') | Select-Object -First 1
+$updatesDriversInputReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversInputOverlay -Tag 'AxisFirstUseWizard.UpdatesDriversInputReturnButton') | Select-Object -First 1
+Assert-BoostLabCondition ($updatesDriversInputCardMarkers.Count -eq 1) 'AXIS Updates Drivers Block input window should expose the no-checkbox marker.'
+Assert-BoostLabCondition ($null -eq $updatesDriversAccountBox) 'AXIS Updates Drivers Block input window should be USB-only with no account TextBox.'
+Assert-BoostLabCondition ($updatesDriversUsbSelector -is [System.Windows.Controls.ComboBox]) 'AXIS Updates Drivers Block input window should include a mock USB ComboBox.'
+Assert-BoostLabCondition ($updatesDriversInputCreateButton -is [System.Windows.Controls.Button]) 'AXIS Updates Drivers Block input window Create button is missing.'
+Assert-BoostLabCondition ($updatesDriversInputReturnButton -is [System.Windows.Controls.Button]) 'AXIS Updates Drivers Block input window Return button is missing.'
+Assert-BoostLabCondition ([string]$updatesDriversInputCreateButton.Content -eq $arabicUpdatesDriversInputCreate) 'AXIS Updates Drivers Block input Create button label changed.'
+Assert-BoostLabCondition ([string]$updatesDriversInputReturnButton.Content -eq $arabicReturn) 'AXIS Updates Drivers Block input Return button label changed.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversInputReturnButton) -eq 'AxisFirstUseWizard.UpdatesDriversInputReturnOnlyClosesOverlay') 'AXIS Updates Drivers Block input Return should be marked as overlay-only close behavior.'
+Assert-BoostLabCondition ($updatesDriversUsbSelector.Items.Count -eq 1) 'AXIS Updates Drivers Block prototype should expose exactly one safe mock USB item.'
+Assert-BoostLabCondition ([string]$updatesDriversUsbSelector.Items[0] -eq 'USB') 'AXIS Updates Drivers Block mock USB label should remain generic and local.'
+Assert-BoostLabCondition ($updatesDriversUsbSelector.SelectedIndex -eq -1) 'AXIS Updates Drivers Block mock USB selector should start unselected.'
+Assert-BoostLabCondition (-not [bool]$updatesDriversInputCreateButton.IsEnabled) 'AXIS Updates Drivers Block input Create should start disabled.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversInputCreateButton) -eq 'AxisFirstUseWizard.UpdatesDriversInputCreateDisabledUntilValid') 'AXIS Updates Drivers Block input Create should expose the disabled-until-valid marker.'
+foreach ($usbSelectorUnderTest in @($autoUnattendUsbSelector, $updatesDriversUsbSelector)) {
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($usbSelectorUnderTest) -eq 'AxisFirstUseWizard.UsbSelectorReadableDarkStyle') 'AXIS USB selector should expose the readable dark style marker.'
+    Assert-BoostLabCondition ([bool]$usbSelectorUnderTest.Resources['AxisFirstUseWizard.UsbSelectorReadableDarkStyle']) 'AXIS USB selector should carry the readable dark style resource marker.'
+    Assert-BoostLabCondition ([bool]$usbSelectorUnderTest.Resources['AxisFirstUseWizard.UsbSelectorMockOnly']) 'AXIS USB selector should carry the mock-only resource marker.'
+    Assert-BoostLabCondition ([bool]$usbSelectorUnderTest.Resources['AxisFirstUseWizard.UsbInputWindowNoRealDriveDetection']) 'AXIS USB selector should carry the no-real-drive-detection marker.'
+    Assert-BoostLabCondition ($usbSelectorUnderTest.Background -eq (Get-AxisWizardResource -Resources $prototype.Resources -Name 'Axis.Brush.Wizard.SurfaceSoft')) 'AXIS USB selector should use the dark wizard surface fill.'
+    Assert-BoostLabCondition ($usbSelectorUnderTest.Foreground -eq (Get-AxisWizardResource -Resources $prototype.Resources -Name 'Axis.Brush.Wizard.TextPrimary')) 'AXIS USB selector selected value should be readable on the dark surface.'
+}
+Invoke-AxisFirstUseWizardButtonClick -Button $updatesDriversPrimaryButton
+Assert-BoostLabCondition ($updatesDriversInputOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Updates Drivers Block primary action should open the input window only.'
+Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block primary action must not reveal the BIOS Drivers confirmation overlay.'
+Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block primary action must not reveal the BIOS Settings confirmation overlay.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Updates Drivers Block Continue/Next should remain disabled while the input window is open.'
+Assert-BoostLabCondition ($updatesDriversRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block primary action must not start runtime status before valid input.'
+$updatesDriversUsbSelector.SelectedIndex = 0
+Assert-BoostLabCondition ([bool]$updatesDriversInputCreateButton.IsEnabled) 'AXIS Updates Drivers Block input Create should enable for mock USB selection.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($updatesDriversInputCreateButton) -eq 'AxisFirstUseWizard.UpdatesDriversInputCreateEnabledWithMockUsbSelection') 'AXIS Updates Drivers Block input Create should expose the mock USB selection marker.'
+Invoke-AxisFirstUseWizardButtonClick -Button $updatesDriversInputReturnButton
+Assert-BoostLabCondition ($updatesDriversInputOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block input Return should close only the input window.'
+Assert-BoostLabCondition ($updatesDriversUsbSelector.SelectedIndex -eq -1) 'AXIS Updates Drivers Block input Return should reset the mock USB selection.'
+Assert-BoostLabCondition (-not [bool]$updatesDriversInputCreateButton.IsEnabled) 'AXIS Updates Drivers Block input Return should leave Create disabled after reset.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Updates Drivers Block input Return must not complete the step or enable Continue/Next.'
+Assert-BoostLabCondition ($updatesDriversRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block input Return must not start create simulation.'
+Invoke-AxisFirstUseWizardButtonClick -Button $updatesDriversPrimaryButton
+Assert-BoostLabCondition ($updatesDriversInputOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Updates Drivers Block primary action should reopen the input window after Return.'
+Assert-BoostLabCondition ($updatesDriversUsbSelector.SelectedIndex -eq -1) 'AXIS Updates Drivers Block reopened input window should reset the mock USB selection.'
+Assert-BoostLabCondition (-not [bool]$updatesDriversInputCreateButton.IsEnabled) 'AXIS Updates Drivers Block reopened input window should keep Create disabled until mock USB selection.'
+$updatesDriversUsbSelector.SelectedIndex = 0
+Assert-BoostLabCondition ([bool]$updatesDriversInputCreateButton.IsEnabled) 'AXIS Updates Drivers Block input Create should enable after valid reopened input.'
+Invoke-AxisFirstUseWizardButtonClick -Button $updatesDriversInputCreateButton
+Assert-BoostLabCondition ($updatesDriversInputOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Drivers Block input Create should close the input window before simulated creation.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Updates Drivers Block Continue/Next should remain disabled during the simulated creation state.'
+Assert-BoostLabCondition ($updatesDriversRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Updates Drivers Block runtime status should become visible during the simulated flow.'
+Assert-BoostLabCondition ($updatesDriversRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Updates Drivers Block runtime status spacer should become visible during the simulated flow.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) 'AXIS Updates Drivers Block simulated flow should use the runtime checking animation.'
+$updatesDriversRunningText = (Get-AxisFirstUseWizardTextValues -Root $updatesDriversVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($updatesDriversRunningText.Contains($arabicUpdatesDriversRunning)) 'AXIS Updates Drivers Block simulated flow should show the owner-approved running state.'
+Assert-BoostLabCondition ($updatesDriversRunningText.Contains($arabicSupportBody)) 'AXIS Updates Drivers Block support panel should remain visible during the simulated flow.'
+$updatesDriversRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($updatesDriversRunningRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Updates Drivers Block running status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $updatesDriversRunningRuntimeStatusRightAnchor[0] -Name 'Updates Drivers Block running runtime status' -ExpectedMaxWidth 106)
+$updatesDriversCompletedByTimer = Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000
+Assert-BoostLabCondition ([bool]$updatesDriversCompletedByTimer) 'AXIS Updates Drivers Block simulated flow should enable Continue/Next after completion.'
+$updatesDriversCompletedText = (Get-AxisFirstUseWizardTextValues -Root $updatesDriversVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($updatesDriversCompletedText.Contains($arabicUpdatesDriversCompleted)) 'AXIS Updates Drivers Block simulated flow should end in the owner-approved completed state.'
+Assert-BoostLabCondition ($updatesDriversCompletedText.Contains($arabicSupportBody)) 'AXIS Updates Drivers Block support panel should remain visible after simulated completion.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) 'AXIS Updates Drivers Block completed state should render the completed runtime effect.'
+$updatesDriversCompletedRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $updatesDriversRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($updatesDriversCompletedRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Updates Drivers Block completed status should keep the runtime text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $updatesDriversCompletedRuntimeStatusRightAnchor[0] -Name 'Updates Drivers Block completed runtime status' -ExpectedMaxWidth 106)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS Updates Drivers Block Continue/Next should become blue after simulated completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS Updates Drivers Block enabled Continue/Next should use the approved blue fill.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Updates Drivers Block should not auto-advance after simulated completion.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Updates Drivers Block Continue/Next should not navigate past the last prototype step.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS Back from Updates Drivers Block should return to AutoUnattend.'
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(
@@ -1869,6 +2130,26 @@ Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope AutoUnattend Check completed')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope AutoUnattend Refresh active')
 Assert-BoostLabCondition (-not [bool]$previewScopedContinueButton.IsEnabled) 'AXIS preview-scope AutoUnattend Continue/Next should start disabled.'
+$previewScopedAutoPrimary = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$previewScopedAutoOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedPrototype -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay') | Select-Object -First 1
+$previewScopedAutoAccount = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedAutoOverlay -Tag 'AxisFirstUseWizard.AutoUnattendAccountTextBox') | Select-Object -First 1
+$previewScopedAutoUsb = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedAutoOverlay -Tag 'AxisFirstUseWizard.AutoUnattendUsbSelector') | Select-Object -First 1
+$previewScopedAutoCreate = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedAutoOverlay -Tag 'AxisFirstUseWizard.AutoUnattendInputCreateButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedAutoPrimary
+$previewScopedAutoAccount.Text = 'Yazan'
+$previewScopedAutoUsb.SelectedIndex = 0
+Assert-BoostLabCondition ([bool]$previewScopedAutoCreate.IsEnabled) 'AXIS preview-scope AutoUnattend input Create should enable for valid mock input.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedAutoCreate
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$previewScopedContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS preview-scope AutoUnattend simulation should enable Continue/Next.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedContinueButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS preview-scope Continue/Next should navigate to Updates Drivers Block without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Updates Drivers Block stage header should remain Refresh.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'preview-scope Updates Drivers Block Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Refresh' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Updates Drivers Block Refresh active')
+Assert-BoostLabCondition (-not [bool]$previewScopedContinueButton.IsEnabled) 'AXIS preview-scope Updates Drivers Block Continue/Next should start disabled.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedBackButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.AutoUnattendStep').Count -eq 1) 'AXIS preview-scope Back should navigate from Updates Drivers Block to AutoUnattend without a missing helper crash.'
+Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Back to AutoUnattend should keep Refresh stage header.'
 Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedBackButton
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.ReinstallStep').Count -eq 1) 'AXIS preview-scope Back should navigate from AutoUnattend to Reinstall without a missing helper crash.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Refresh') 'AXIS preview-scope Back to Reinstall should keep Refresh stage header.'
@@ -1890,6 +2171,7 @@ $completedSampleState['Steps'] = @(
     $biosSettingsStep
     $reinstallStep
     $autoUnattendStep
+    $updatesDriversStep
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -2028,6 +2310,15 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnat
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputCreateDisabledUntilValid')) 'AXIS AutoUnattend input Create button should expose the disabled-until-valid marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputCreateEnabledWithValidMockInput')) 'AXIS AutoUnattend input Create button should expose the valid mock input marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AutoUnattendInputReturnOnlyClosesOverlay')) 'AXIS AutoUnattend Return should be overlay-only.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversStep')) 'AXIS Updates Drivers Block should expose the step marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversInputOverlay')) 'AXIS Updates Drivers Block should expose the input overlay marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversInputCreateDisabledUntilValid')) 'AXIS Updates Drivers Block input Create button should expose the disabled-until-valid marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversInputCreateEnabledWithMockUsbSelection')) 'AXIS Updates Drivers Block input Create button should expose the mock USB selection marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversInputReturnOnlyClosesOverlay')) 'AXIS Updates Drivers Block Return should be overlay-only.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbSelectorReadableDarkStyle')) 'AXIS shared USB selector should expose the readable dark style marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbSelectorMockOnly')) 'AXIS shared USB selector should expose the mock-only marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbInputWindowNoRealDriveDetection')) 'AXIS shared USB selector should expose the no-real-drive-detection marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversMixedBidiSafeInfoText')) 'AXIS Updates Drivers Block should expose the mixed BiDi-safe marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageStripNoPartialProgress')) 'AXIS stage strip should expose the no-partial-progress marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineActiveFullWhite')) 'AXIS stage strip should expose the active full-white line marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
@@ -2057,6 +2348,7 @@ foreach ($eventHandlerBlock in $eventHandlerBlocks) {
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Invoke-BoostLabToolAction')) 'AXIS first-use wizard must not call runtime tool actions.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Start-Process')) 'AXIS first-use wizard must not open real pages or processes.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('autounattend.xml')) 'AXIS first-use wizard prototype must not create or reference a real autounattend.xml output path.'
+Assert-BoostLabCondition (-not $prototypeSource.Contains('setupcomplete.cmd')) 'AXIS first-use wizard prototype must not create or reference a real setupcomplete.cmd output path.'
 foreach ($blockedRuntimeText in @(
     'New-BoostLabActionPlan'
     'Set-ItemProperty'
@@ -2069,6 +2361,11 @@ foreach ($blockedRuntimeText in @(
     'Start-BitsTransfer'
     'DownloadFile'
     'System.Net.WebClient'
+    'Set-Content'
+    'Add-Content'
+    'Out-File'
+    'New-Item'
+    'Copy-Item'
     'Get-CimInstance'
     'Get-WmiObject'
     'Win32_Processor'
@@ -2088,6 +2385,7 @@ foreach ($blockedRuntimeText in @(
     'Set-Volume'
     'Win32_LogicalDisk'
     'DriveType'
+    'Removable'
     'manage-bde'
     'pnputil'
     'bcdedit'
@@ -2098,6 +2396,7 @@ foreach ($blockedRuntimeText in @(
     'Remove-AppxPackage'
     'Add-AppxPackage'
     'Set-MpPreference'
+    'sources\$OEM$'
 )) {
     Assert-BoostLabCondition (-not $prototypeSource.Contains($blockedRuntimeText)) "AXIS first-use wizard must not contain runtime/system mutation text: $blockedRuntimeText"
 }
@@ -2195,6 +2494,47 @@ foreach ($requiredAutoUnattendBlueprintText in @(
     $arabicSupportBody
 )) {
     Assert-BoostLabCondition ($autoUnattendBlueprintSource.Contains($requiredAutoUnattendBlueprintText)) "AXIS AutoUnattend blueprint is missing owner-approved contract text: $requiredAutoUnattendBlueprintText"
+}
+
+foreach ($requiredUpdatesDriversBlueprintText in @(
+    'Internal tool ID | `updates-drivers-block`'
+    'Stage | `Refresh`'
+    'USB selection'
+    'USB selection label'
+    'button should remain disabled until a USB option is selected.'
+    'use mock/input-only simulation and do not touch USB.'
+    'USB selector should not look like a harsh plain white system control.'
+    'Selected USB value must be clearly visible.'
+    'Future UI implementation must use BiDi-safe rendering, deterministic line breaks, or explicit LTR runs'
+    'Do not run `Apply`.'
+    'Do not write `setupcomplete.cmd`.'
+    'Do not detect real removable media.'
+    'Do not create backups.'
+    'Do not open directories.'
+    'Do not mutate the host.'
+    'Do not keep `#E65F2B` for documentation button text.'
+    'Do not auto-advance.'
+    'input window has USB selection only'
+    $arabicUpdatesDriversSubtitle
+    $arabicUpdatesDriversInfoTitle
+    $arabicUpdatesDriversInfoBulletSetupcomplete
+    $arabicUpdatesDriversInfoBulletWindowsUpdate
+    $arabicRequirementsTitle
+    $arabicUpdatesDriversRequirementUsb
+    $arabicUpdatesDriversInputTitle
+    $arabicUpdatesDriversUsbLabel
+    $arabicUpdatesDriversPrimaryAction
+    $arabicUpdatesDriversInputCreate
+    $arabicDocumentation
+    $arabicReturn
+    $arabicBack
+    $arabicNext
+    $arabicUpdatesDriversRunning
+    $arabicUpdatesDriversCompleted
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    Assert-BoostLabCondition ($updatesDriversBlueprintSource.Contains($requiredUpdatesDriversBlueprintText)) "AXIS Updates Drivers Block blueprint is missing owner-approved contract text: $requiredUpdatesDriversBlueprintText"
 }
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath

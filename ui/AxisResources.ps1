@@ -45,7 +45,6 @@ function Get-AxisDesignTokens {
         'Axis.Color.Wizard.TextSecondary' = '#EDEDED'
         'Axis.Color.Wizard.TextMuted' = '#C9C9C9'
         'Axis.Color.Wizard.TextDim' = '#9A9A9A'
-        'Axis.Color.Wizard.DocumentationAccentForeground' = '#E65F2B'
         'Axis.Color.Wizard.Accent' = '#F0F2F5'
         'Axis.Color.Wizard.AccentHover' = '#F5F5F5'
         'Axis.Color.Wizard.AccentPressed' = '#EDEDED'
