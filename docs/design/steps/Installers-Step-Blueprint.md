@@ -96,30 +96,49 @@ After simulated completion, show `ØªÙ… Ø§Ù„ØªØ«Ø¨ÙŠØª`.
 
 After completion, show no additional general customer-facing text. Only enable the Next button.
 
-## Epic Games Launcher Special UI Note
+## Epic Games Instructional Overlay
 
-If and only if the selected catalog item is Epic Games Launcher, show an additional Epic-specific guidance block.
+Selecting Epic Games must keep the normal Installers page layout, the same as any other selected program.
 
-Epic guidance title:
+Do not show an inline Epic guidance card.
 
-`Ø®Ø·ÙˆØ© Ø¥Ø¶Ø§ÙÙŠØ© Ù„Ù€ Epic Games`
+Do not show an inline Epic checkbox.
 
-Epic guidance text:
+Do not push or clip the support card because of Epic-specific content.
 
-- `Ø¨Ø¹Ø¯ Ø§ÙƒØªÙ…Ø§Ù„ Ø§Ù„ØªØ«Ø¨ÙŠØª ÙˆØ¸Ù‡ÙˆØ± Ù†Ø§ÙØ°Ø© Epic Games LauncherØŒ Ø£ØºÙ„Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø© Ø£ÙˆÙ„Ù‹Ø§.`
-- `Ø¨Ø¹Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©ØŒ Ø£ÙƒÙ…Ù„ Ø®Ø·ÙˆØ© Ø¥Ø²Ø§Ù„Ø© Ø®Ø¯Ù…Ø© Epic Games ØºÙŠØ± Ø§Ù„Ø¶Ø±ÙˆØ±ÙŠØ© Ù„ØªØ­Ø³ÙŠÙ† ØªØ¬Ø±Ø¨Ø© Ø§Ù„ØªØ´ØºÙŠÙ„.`
+When Epic Games is selected and the customer presses the main `Install` button, show an instructional overlay before starting the simulated install.
 
-Epic checkbox text:
+The overlay appears only after pressing `Install` while Epic Games is selected.
 
-`ØªÙ… Ø¥ØºÙ„Ø§Ù‚ Ù†Ø§ÙØ°Ø© Epic Games Launcher`
+The overlay is informational only.
 
-Epic checkbox behavior:
+Overlay title:
 
-- This checkbox appears only when Epic Games Launcher is selected.
-- This checkbox does not appear for any other program.
+`خطوة إضافية لـ Epic Games`
+
+Overlay body:
+
+- `بعد اكتمال تثبيت Epic Games Launcher وظهور نافذته، أغلق نافذة Epic Games Launcher أولًا.`
+- `بعد ذلك ستظهر نافذة إزالة خدمة Epic Games غير الضرورية من مثبت Epic Games.`
+- `اختر الإزالة أو الموافقة من النافذة لإكمال تحسين تجربة التشغيل.`
+
+Overlay buttons:
+
+- `Install`
+- `رجوع`
+
+Overlay behavior:
+
+- The overlay has no checkbox.
+- The overlay has no Cancel button.
+- `رجوع` closes the overlay only and returns to the Installers page.
+- `Install` inside the overlay starts the normal prototype simulated install flow.
+- Non-Epic selected apps do not show the Epic overlay and start simulated install directly.
 - In the prototype, this is guidance/simulation only.
+- Do not launch Epic Games Launcher.
 - Do not delete any real Epic Games service.
 - Do not modify Services.
+- Do not modify Registry.
 - Do not add new real runtime behavior beyond what the existing BoostLab script already supports.
 
 ## Customer-Facing Restrictions

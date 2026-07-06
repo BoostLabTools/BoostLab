@@ -464,6 +464,7 @@ $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-St
 $autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnattend-Step-Blueprint.md'
 $updatesDriversBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Updates-Drivers-Block-Step-Blueprint.md'
 $toBiosBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\To-BIOS-Step-Blueprint.md'
+$installersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Step-Blueprint.md'
 $setupBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\BitLocker-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Convert-Home-To-Pro-Step-Blueprint.md'
@@ -485,6 +486,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathTy
 Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -PathType Leaf) 'AXIS AutoUnattend step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $updatesDriversBlueprintPath -PathType Leaf) 'AXIS Updates Drivers Block step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $toBiosBlueprintPath -PathType Leaf) 'AXIS To BIOS step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $installersBlueprintPath -PathType Leaf) 'AXIS Installers step blueprint is missing.'
 foreach ($setupBlueprintPath in $setupBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $setupBlueprintPath -PathType Leaf) "AXIS Setup step blueprint is missing: $setupBlueprintPath"
 }
@@ -496,10 +498,12 @@ $reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinst
 $autoUnattendBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $autoUnattendBlueprintPath
 $updatesDriversBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $updatesDriversBlueprintPath
 $toBiosBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $toBiosBlueprintPath
+$installersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
     'Get-AxisFirstUseWizardSampleState'
+    'Get-AxisFirstUseWizardInstallersCatalogNames'
     'Get-AxisWizardArabicText'
     'Get-AxisWizardSetupText'
     'New-AxisFirstUseWizardPrototype'
@@ -513,6 +517,10 @@ foreach ($functionName in @(
     'New-AxisUpdatesDriversBlockStep'
     'New-AxisToBiosStep'
     'New-AxisSetupStep'
+    'New-AxisInstallersStep'
+    'Split-AxisInstallersEpicInstructionVisualLines'
+    'New-AxisInstallersEpicInstructionBodyGroup'
+    'New-AxisInstallersEpicInstructionOverlay'
     'New-AxisSetupPhysicalRightEdgeTextGroup'
     'New-AxisWizardMixedBidiTextBlock'
     'New-AxisWizardToBiosTitleRightAnchor'
@@ -523,6 +531,9 @@ foreach ($functionName in @(
     'Split-AxisToBiosInformationText'
     'New-AxisToBiosInformationTextGroup'
     'New-AxisAutoUnattendInputOverlay'
+    'Get-AxisWizardSelectorComboBoxStyle'
+    'New-AxisWizardSelectorComboBoxItemStyle'
+    'Set-AxisWizardSelectorComboBoxStyle'
     'New-AxisWizardUsbComboBoxItemStyle'
     'New-AxisFirstUseWizardStepContent'
     'New-AxisStepDocumentationButton'
@@ -625,6 +636,31 @@ $arabicToBiosInfoBulletRestart = Get-AxisWizardArabicText -Name 'ToBiosInfoBulle
 $arabicToBiosInfoBulletUsbBoot = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletUsbBoot'
 $arabicToBiosInfoBulletInstall = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletInstall'
 $arabicToBiosPrimaryAction = Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction'
+$arabicInstallersTitle = Get-AxisWizardArabicText -Name 'InstallersTitle'
+$arabicInstallersSubtitle = Get-AxisWizardArabicText -Name 'InstallersSubtitle'
+$arabicInstallersSelectorLabel = Get-AxisWizardArabicText -Name 'InstallersSelectorLabel'
+$arabicInstallersSelectorPlaceholder = Get-AxisWizardArabicText -Name 'InstallersSelectorPlaceholder'
+$arabicInstallersInfoTitle = Get-AxisWizardArabicText -Name 'InstallersInfoTitle'
+$arabicInstallersInfoBullet1 = Get-AxisWizardArabicText -Name 'InstallersInfoBullet1'
+$arabicInstallersInfoBullet2 = Get-AxisWizardArabicText -Name 'InstallersInfoBullet2'
+$arabicInstallersInfoBullet3 = Get-AxisWizardArabicText -Name 'InstallersInfoBullet3'
+$arabicInstallersRequirement1 = Get-AxisWizardArabicText -Name 'InstallersRequirementsBullet1'
+$arabicInstallersRequirement2 = Get-AxisWizardArabicText -Name 'InstallersRequirementsBullet2'
+$arabicInstallersRunning = Get-AxisWizardArabicText -Name 'InstallersRunning'
+$arabicInstallersCompleted = Get-AxisWizardArabicText -Name 'InstallersCompleted'
+$arabicInstallersSelectedProgramPrefix = Get-AxisWizardArabicText -Name 'InstallersSelectedProgramPrefix'
+$arabicInstallersEpicOverlayTitle = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayTitle'
+$arabicInstallersEpicOverlayBody1 = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody1'
+$arabicInstallersEpicOverlayBody2 = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody2'
+$arabicInstallersEpicOverlayBody3 = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody3'
+$arabicInstallersEpicOverlayReturn = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayReturn'
+$arabicInstallersRemovedEpicCheckbox = -join ([char[]]@(
+    0x062A, 0x0645, 0x0020, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0646,
+    0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020,
+    0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x0020, 0x004C, 0x0061, 0x0075, 0x006E,
+    0x0063, 0x0068, 0x0065, 0x0072
+))
+$expectedInstallersCatalogNames = @(Get-AxisFirstUseWizardInstallersCatalogNames)
 $setupStepSpecs = @(
     [ordered]@{
         Id = 'bitlocker'
@@ -919,7 +955,7 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 16) 'AXIS first-use wizard sample state should include the six approved Check/Refresh steps plus the ten Setup steps.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 17) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, and the Installers step.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -927,8 +963,8 @@ $expectedStepOrder = @(
     'unattended'
     'updates-drivers-block'
     'to-bios'
-) + $setupStepOrder
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep the approved Check/Refresh steps, then the full Setup batch after To BIOS.'
+) + $setupStepOrder + @('installers')
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers after Updates Pause.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
     'BIOS Settings'
@@ -936,7 +972,7 @@ $expectedStepTitles = @(
     'AutoUnattend'
     'Updates Drivers Block'
     $arabicToBiosTitle
-) + $setupStepTitles
+) + $setupStepTitles + @($arabicInstallersTitle)
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
@@ -1055,6 +1091,7 @@ $initialCurrentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $proto
 $stageProgressCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
 $stageProgressRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
 $stageProgressSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
+$stageProgressInstallersFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Installers') | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $strip) 'AXIS first-use wizard stage progress strip is missing.'
 Assert-BoostLabCondition ($null -ne $stripGrid) 'AXIS first-use wizard stage progress grid is missing.'
 Assert-BoostLabCondition ($null -ne $initialCurrentStageHeader) 'AXIS first-use wizard current stage header is missing.'
@@ -1066,9 +1103,11 @@ Assert-BoostLabCondition ($stripItems.Count -eq $expectedStageNames.Count) 'AXIS
 Assert-BoostLabCondition ($null -ne $stageProgressCheckFill) 'AXIS stage progress Check fill marker is missing.'
 Assert-BoostLabCondition ($null -ne $stageProgressRefreshFill) 'AXIS stage progress Refresh fill marker is missing.'
 Assert-BoostLabCondition ($null -ne $stageProgressSetupFill) 'AXIS stage progress Setup fill marker is missing.'
+Assert-BoostLabCondition ($null -ne $stageProgressInstallersFill) 'AXIS stage progress Installers fill marker is missing.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'BIOS Drivers Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Refresh inactive')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Setup' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Setup inactive')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Installers' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Installers inactive')
 $activeStageItems = @(
     $stripItems |
         Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
@@ -1094,6 +1133,7 @@ $autoUnattendStep = $sampleSteps[3]
 $updatesDriversStep = $sampleSteps[4]
 $toBiosStep = $sampleSteps[5]
 $setupSteps = @($sampleSteps[6..15])
+$installersStep = [System.Collections.IDictionary]$sampleSteps[16]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -1240,6 +1280,40 @@ for ($setupIndex = 0; $setupIndex -lt $setupStepSpecs.Count; $setupIndex++) {
     if ([bool](Get-AxisWizardMapValue -Map $setupSpec -Name 'OpenMappedPrototypeOnly' -DefaultValue $false)) {
         Assert-BoostLabCondition ([bool]$setupStep['OpenMappedPrototypeOnly']) "AXIS Setup Open-mapped step should be prototype-only: $setupName"
     }
+}
+
+Assert-BoostLabCondition ([string]$installersStep['Id'] -eq 'installers') 'AXIS Installers internal tool id should be installers.'
+Assert-BoostLabCondition ([string]$installersStep['Title'] -eq $arabicInstallersTitle) 'AXIS Installers customer title changed.'
+Assert-BoostLabCondition ([string]$installersStep['StageName'] -eq 'Installers') 'AXIS Installers customer stage label should be Installers.'
+Assert-BoostLabCondition ([string]$installersStep['PrimaryActionLabel'] -eq 'Install') 'AXIS Installers primary action label should be English-only Install.'
+Assert-BoostLabCondition ([string]$installersStep['Description'] -eq $arabicInstallersSubtitle) 'AXIS Installers subtitle changed.'
+Assert-BoostLabCondition ([string]$installersStep['InformationCardTitle'] -eq $arabicInstallersInfoTitle) 'AXIS Installers information title changed.'
+Assert-BoostLabCondition ((@($installersStep['InformationItems']) -join '|') -eq (@($arabicInstallersInfoBullet1, $arabicInstallersInfoBullet2, $arabicInstallersInfoBullet3) -join '|')) 'AXIS Installers information bullets changed.'
+Assert-BoostLabCondition ([bool]$installersStep['ShowRequirements']) 'AXIS Installers should show the owner-approved requirements card.'
+Assert-BoostLabCondition ((@($installersStep['RequirementsItems']) -join '|') -eq (@($arabicInstallersRequirement1, $arabicInstallersRequirement2) -join '|')) 'AXIS Installers requirements bullets changed.'
+Assert-BoostLabCondition ([string]$installersStep['CheckingStatusTitle'] -eq $arabicInstallersRunning) 'AXIS Installers running status label changed.'
+Assert-BoostLabCondition ([string]$installersStep['CompletedStatusTitle'] -eq $arabicInstallersCompleted) 'AXIS Installers completed status label changed.'
+Assert-BoostLabCondition (-not [bool]$installersStep['RequiresConfirmationAcknowledgement']) 'AXIS Installers must not require a confirmation acknowledgement overlay.'
+Assert-BoostLabCondition (-not [bool]$installersStep['RequiresInputWindow']) 'AXIS Installers must not use an input window.'
+Assert-BoostLabCondition ([bool]$installersStep['NoConfirmationOverlay']) 'AXIS Installers should carry the no-confirmation overlay marker.'
+Assert-BoostLabCondition ([bool]$installersStep['PrimaryActionRequiresSelection']) 'AXIS Installers Install button should require a program selection.'
+Assert-BoostLabCondition ([bool]$installersStep['PrototypeOnlySimulation']) 'AXIS Installers should be marked as prototype-only simulation.'
+Assert-BoostLabCondition ([string]$installersStep['NoRealActionMarker'] -eq 'AxisFirstUseWizard.InstallersPrototypeOnlyNoRuntimeAction') 'AXIS Installers should expose the prototype-only no-real-action marker.'
+Assert-BoostLabCondition ([string]$installersStep['CustomerAction'] -eq 'Apply') 'AXIS Installers should retain the future internal Apply mapping as data.'
+Assert-BoostLabCondition ([string]$installersStep['FutureInternalAction'] -eq 'Apply') 'AXIS Installers should record future internal Apply mapping only.'
+Assert-BoostLabCondition ((@($installersStep['CustomerVisibleActions']) -join '|') -eq 'Install') 'AXIS Installers should expose only the owner-approved Install action.'
+Assert-BoostLabCondition ([string]$installersStep['InstallerEpicInstructionOverlayTitle'] -eq $arabicInstallersEpicOverlayTitle) 'AXIS Installers Epic overlay title changed.'
+Assert-BoostLabCondition ((@($installersStep['InstallerEpicInstructionOverlayItems']) -join '|') -eq (@($arabicInstallersEpicOverlayBody1, $arabicInstallersEpicOverlayBody2, $arabicInstallersEpicOverlayBody3) -join '|')) 'AXIS Installers Epic overlay body changed.'
+Assert-BoostLabCondition ([string]$installersStep['InstallerEpicInstructionOverlayReturnLabel'] -eq $arabicInstallersEpicOverlayReturn) 'AXIS Installers Epic overlay return label changed.'
+Assert-BoostLabCondition ([string]$installersStep['InstallerEpicInstructionOverlayMarker'] -eq 'AxisFirstUseWizard.InstallersEpicInstructionOverlayPrototypeOnly') 'AXIS Installers Epic overlay should remain prototype-only.'
+foreach ($forbiddenInstallersCustomerAction in @('Analyze', 'Apply', 'Open', 'Default', 'Restore')) {
+    Assert-BoostLabCondition (-not ($forbiddenInstallersCustomerAction -in @($installersStep['CustomerVisibleActions']))) "AXIS Installers must not expose internal action text as customer-visible action: $forbiddenInstallersCustomerAction"
+}
+Assert-BoostLabCondition ((@($installersStep['InstallerCatalogNames']) -join '|') -eq ($expectedInstallersCatalogNames -join '|')) 'AXIS Installers selector catalog should use the current BoostLab retained installer catalog names.'
+Assert-BoostLabCondition ($expectedInstallersCatalogNames.Count -ge 16) 'AXIS Installers catalog should include the retained installer app names.'
+Assert-BoostLabCondition ('Epic Games' -in @($installersStep['InstallerCatalogNames'])) 'AXIS Installers catalog should include the current Epic Games retained catalog item.'
+foreach ($removedInstallerName in @('Escape From Tarkov', 'Frame View', 'GOG launcher', 'Notepad ++', 'Nvidia App', 'Onboard Memory Manager', 'Pot Player', 'Exit')) {
+    Assert-BoostLabCondition (-not ($removedInstallerName -in @($installersStep['InstallerCatalogNames']))) "AXIS Installers selector must not include removed/non-selectable catalog item: $removedInstallerName"
 }
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
@@ -2788,12 +2862,281 @@ for ($setupIndex = 0; $setupIndex -lt $setupStepSpecs.Count; $setupIndex++) {
         Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag "AxisFirstUseWizard.${nextTagRoot}Step").Count -eq 1) "AXIS Setup Continue/Next should navigate to the next Setup step after $setupId."
     }
     else {
-        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag "AxisFirstUseWizard.${tagRoot}Step").Count -eq 1) 'AXIS final Setup step should not navigate past the last prototype step.'
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Updates Pause Continue/Next should navigate to the Installers step.'
     }
 }
 
+$installersVisibleContent = $taggedContentHost[0].Child
+$installersVisibleText = (Get-AxisFirstUseWizardTextValues -Root $installersVisibleContent) -join [Environment]::NewLine
+$installersVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $installersVisibleText
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Installers step should render immediately after Updates Pause.'
+Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Installers') 'AXIS Installers current stage header should show Installers.'
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'Installers Check completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Refresh' -ExpectedColor '#FF22C55E' -Name 'Installers Refresh completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Setup' -ExpectedColor '#FF22C55E' -Name 'Installers Setup completed')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Installers' -ExpectedColor '#FFF0F2F5' -Name 'Installers active')
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Installers Continue/Next should start disabled.'
+Assert-BoostLabCondition (-not $installersVisibleText.Contains([string][char]0xFFFD)) 'AXIS Installers visible copy must not contain a replacement glyph.'
+
+foreach ($requiredInstallersText in @(
+    'Installers'
+    $arabicInstallersTitle
+    $arabicInstallersSubtitle
+    $arabicInstallersSelectorLabel
+    $arabicInstallersInfoTitle
+    $arabicInstallersInfoBullet1
+    $arabicInstallersInfoBullet2
+    $arabicInstallersInfoBullet3
+    $arabicRequirementsTitle
+    $arabicInstallersRequirement1
+    $arabicInstallersRequirement2
+    'Install'
+    $arabicDocumentation
+    $arabicSupportTitle
+    $arabicSupportBody
+)) {
+    $requiredInstallersTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $requiredInstallersText
+    Assert-BoostLabCondition (
+        $installersVisibleText.Contains($requiredInstallersText) -or
+        $installersVisibleTextNormalized.Contains($requiredInstallersTextNormalized)
+    ) "AXIS Installers view is missing owner-approved text: $requiredInstallersText"
+}
+foreach ($forbiddenInstallersVisibleText in @('Analyze', 'Apply', 'Default', 'Restore', 'Cancel')) {
+    Assert-BoostLabCondition (-not $installersVisibleText.Contains($forbiddenInstallersVisibleText)) "AXIS Installers view exposes forbidden internal/customer action text: $forbiddenInstallersVisibleText"
+}
+foreach ($removedInstallerVisibleName in @('Escape From Tarkov', 'Frame View', 'GOG launcher', 'Notepad ++', 'Nvidia App', 'Onboard Memory Manager', 'Pot Player', 'Exit')) {
+    Assert-BoostLabCondition (-not $installersVisibleText.Contains($removedInstallerVisibleName)) "AXIS Installers visible selector must not expose removed/non-selectable app: $removedInstallerVisibleName"
+}
+
+$installersStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersStep') | Select-Object -First 1
+$installersContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+$installersTitleText = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersTitleText') | Select-Object -First 1
+$installersTitleRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersTitleRightAnchor') | Select-Object -First 1
+$installersDetailsGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersStepDetails') | Select-Object -First 1
+$installersInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersInformationCard') | Select-Object -First 1
+$installersRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersRequirementsCard') | Select-Object -First 1
+$installersInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersInformationSharedPhysicalRightEdge') | Select-Object -First 1
+$installersRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersRequirementsSharedPhysicalRightEdge') | Select-Object -First 1
+$installersInformationRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersInformationRightAnchor') | Select-Object -First 1
+$installersRequirementsRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersRequirementsRightAnchor') | Select-Object -First 1
+$installersActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+$installersSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+$installersRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$installersRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+$installersPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$installersSelector = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersProgramSelector') | Select-Object -First 1
+$installersSelectedProgramDisplay = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersSelectedProgramDisplay') | Select-Object -First 1
+$installersSelectedProgramName = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersSelectedProgramName') | Select-Object -First 1
+$installersSelectedProgramPrefix = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersSelectedProgramPrefix') | Select-Object -First 1
+$installersInlineEpicGuidanceBlocks = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersEpicGuidanceBlock')
+$installersInlineEpicCheckboxes = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersEpicCheckbox')
+$installersInlineEpicCheckboxTexts = @(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersEpicCheckboxText')
+$installersEpicInstructionOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.InstallersEpicInstructionOverlay') | Select-Object -First 1
+$installersEpicInstructionTitle = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionTitle') | Select-Object -First 1
+$installersEpicInstructionBodyItems = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionBodyItem')
+$installersEpicInstructionBodyGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionBodySharedPhysicalRightEdge') | Select-Object -First 1
+$installersEpicInstructionBodyVisualLines = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionBodyVisualLine')
+$installersEpicInstructionInstallButton = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionInstallButton') | Select-Object -First 1
+$installersEpicInstructionReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionReturnButton') | Select-Object -First 1
+Assert-BoostLabCondition ([double]$installersStepElement.Height -eq 382.0) 'AXIS Installers should use the normal 900x650 content row height after removing inline Epic content.'
+Assert-BoostLabCondition ($installersTitleRightAnchor -is [System.Windows.Controls.Grid]) 'AXIS Installers title right anchor should be a full-width positioning Grid.'
+Assert-BoostLabCondition ($installersTitleText.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS Installers Arabic title should render RTL.'
+Assert-BoostLabCondition ($installersTitleText.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Installers title should be physically anchored right.'
+Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $installersTitleText) -eq $arabicInstallersTitle) 'AXIS Installers title text changed.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersDetailsGrid) -eq 'AxisFirstUseWizard.InstallersCardsPhysicalOrderInfoRightRequirementsLeft') 'AXIS Installers two-card grid should expose the info-right requirements-left marker.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($installersInformationCard) -eq 2) 'AXIS Installers information card should stay in the physical right column.'
+Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($installersRequirementsCard) -eq 0) 'AXIS Installers requirements card should stay in the physical left column.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersInformationItem').Count -eq 3) 'AXIS Installers should render all three information bullets.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.InstallersRequirementItem').Count -eq 2) 'AXIS Installers should render both requirements bullets.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $installersInformationRightAnchor -Name 'Installers information card' -ExpectedMaxWidth 340)
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $installersRequirementsRightAnchor -Name 'Installers requirements card' -ExpectedMaxWidth 340)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersInformationSharedRightEdge) -eq 'AxisFirstUseWizard.InstallersMixedBidiSafeInfoText') 'AXIS Installers information card should expose the mixed BiDi-safe marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersRequirementsSharedRightEdge) -eq 'AxisFirstUseWizard.InstallersMixedBidiSafeRequirementsText') 'AXIS Installers requirements card should expose the mixed BiDi-safe marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersSupportPanel) -eq 'AxisFirstUseWizard.InstallersSupportCardNoClipping') 'AXIS Installers support panel should expose the no-clipping marker.'
+Assert-BoostLabCondition ([double]$installersSupportPanel.MinHeight -eq 54.0) 'AXIS Installers support card should use the shared compact no-clipping support height.'
+Assert-BoostLabCondition ([double]$installersSupportPanel.Padding.Top -eq 7.0 -and [double]$installersSupportPanel.Padding.Bottom -eq 7.0) 'AXIS Installers support card should use shared compact internal padding without clipping.'
+Assert-BoostLabCondition ($installersContentGrid.Children.IndexOf($installersDetailsGrid) -lt $installersContentGrid.Children.IndexOf($installersActionArea)) 'AXIS Installers details must appear before the action row.'
+Assert-BoostLabCondition ($installersContentGrid.Children.IndexOf($installersActionArea) -lt $installersContentGrid.Children.IndexOf($installersSupportPanel)) 'AXIS Installers action row must stay separated above the support panel.'
+Assert-BoostLabCondition ($installersSelector -is [System.Windows.Controls.ComboBox]) 'AXIS Installers should render a ComboBox selector.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersSelector) -eq 'AxisFirstUseWizard.InstallersSingleSelectCatalogSelector') 'AXIS Installers selector should expose the single-select marker.'
+Assert-BoostLabCondition ($installersSelector.Style -eq (Get-AxisWizardSelectorComboBoxStyle)) 'AXIS Installers selector should use the shared AXIS dark selector style.'
+Assert-BoostLabCondition ($null -ne $installersSelector.ItemContainerStyle) 'AXIS Installers selector should have a dark item container style for generated dropdown items.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.SharedDarkSelectorStyle']) 'AXIS Installers selector should carry the shared dark selector marker.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.InstallersSelectorUsesSharedDarkAxisStyle']) 'AXIS Installers selector should use the shared AXIS selector styling path.'
+Assert-BoostLabCondition ([string]$installersSelector.Resources['AxisFirstUseWizard.SelectorPopupNotNativeWhite'] -eq '#121212') 'AXIS Installers selector popup should be marked as non-native-white.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.SelectorClosedFieldDarkStyle']) 'AXIS Installers closed selector field should use dark AXIS styling.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.SelectorHoverSelectedStates']) 'AXIS Installers selector should expose hover/selected state styling.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.FutureGpuBloatwareSelectorStyleReady']) 'AXIS shared selector style should be ready for future GPU/Bloatware selectors.'
+Assert-BoostLabCondition ((Get-AxisFirstUseWizardSolidBrushHex -Brush $installersSelector.Background) -ne '#FFFFFFFF') 'AXIS Installers selector background must not be native bright white.'
+Assert-BoostLabCondition ((Get-AxisFirstUseWizardSolidBrushHex -Brush $installersSelector.Foreground) -ne '#FF000000') 'AXIS Installers selector text must not use low-contrast native black.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.InstallersSelectorSingleSelect']) 'AXIS Installers selector should carry the single-select resource marker.'
+Assert-BoostLabCondition ([bool]$installersSelector.Resources['AxisFirstUseWizard.InstallersSelectorNoRuntimeAction']) 'AXIS Installers selector should carry the no-runtime-action marker.'
+Assert-BoostLabCondition ([string]$installersSelector.Resources['AxisFirstUseWizard.InstallersCatalogSource'] -eq 'modules/Installers/installers.psm1') 'AXIS Installers selector should document the read-only catalog source.'
+Assert-BoostLabCondition ($installersSelector.Items.Count -eq ($expectedInstallersCatalogNames.Count + 1)) 'AXIS Installers selector should expose the placeholder plus current retained catalog names.'
+Assert-BoostLabCondition ($installersSelector.Items[0] -is [System.Windows.Controls.ComboBoxItem]) 'AXIS Installers selector placeholder should be a ComboBoxItem.'
+Assert-BoostLabCondition ([string]$installersSelector.Items[0].Content -eq $arabicInstallersSelectorPlaceholder) 'AXIS Installers selector placeholder changed.'
+Assert-BoostLabCondition (-not [bool]$installersSelector.Items[0].IsEnabled) 'AXIS Installers selector placeholder should not count as a selectable program.'
+Assert-BoostLabCondition ($null -ne $installersSelector.Items[0].Style) 'AXIS Installers selector placeholder should use the shared dark item style.'
+$actualInstallersCatalogNames = @(
+    for ($catalogIndex = 1; $catalogIndex -lt $installersSelector.Items.Count; $catalogIndex++) {
+        [string]$installersSelector.Items[$catalogIndex].Content
+    }
+)
+Assert-BoostLabCondition (($actualInstallersCatalogNames -join '|') -eq ($expectedInstallersCatalogNames -join '|')) 'AXIS Installers selector items should match the current retained BoostLab installers catalog names.'
+foreach ($programItem in @($installersSelector.Items | Select-Object -Skip 1)) {
+    Assert-BoostLabCondition ($programItem -is [System.Windows.Controls.ComboBoxItem]) 'AXIS Installers catalog item should be a ComboBoxItem.'
+    Assert-BoostLabCondition ($programItem.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Installers English app names should render LTR: $($programItem.Content)"
+    Assert-BoostLabCondition ($programItem.HorizontalContentAlignment -eq [System.Windows.HorizontalAlignment]::Left) "AXIS Installers English app names should stay visually LTR-aligned inside the selector: $($programItem.Content)"
+    Assert-BoostLabCondition ($null -ne $programItem.Style) "AXIS Installers catalog item should use the shared dark dropdown item style: $($programItem.Content)"
+}
+Assert-BoostLabCondition ([string]$installersPrimaryButton.Content -eq 'Install') 'AXIS Installers primary button should use the owner-approved Install label.'
+Assert-BoostLabCondition (-not [bool]$installersPrimaryButton.IsEnabled) 'AXIS Installers Install button should start disabled until a program is selected.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersPrimaryButton) -eq 'AxisFirstUseWizard.InstallersInstallDisabledUntilProgramSelected') 'AXIS Installers Install button should expose the disabled-until-selection marker.'
+Assert-BoostLabCondition ($installersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers runtime status should start hidden.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersRuntimeStatusArea) -eq 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping') 'AXIS Installers runtime status should expose the no-clipping marker.'
+Assert-BoostLabCondition ($installersSelectedProgramDisplay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers selected program display should start hidden.'
+Assert-BoostLabCondition ($installersInlineEpicGuidanceBlocks.Count -eq 0) 'AXIS Installers must not render an inline Epic guidance block.'
+Assert-BoostLabCondition ($installersInlineEpicCheckboxes.Count -eq 0) 'AXIS Installers must not render an inline Epic checkbox.'
+Assert-BoostLabCondition ($installersInlineEpicCheckboxTexts.Count -eq 0) 'AXIS Installers must not render inline Epic checkbox text.'
+Assert-BoostLabCondition (-not $installersVisibleText.Contains($arabicInstallersRemovedEpicCheckbox)) 'AXIS Installers visible page must not contain the removed inline Epic checkbox text.'
+Assert-BoostLabCondition ($installersEpicInstructionOverlay -is [System.Windows.Controls.Border]) 'AXIS Installers should create a root-level Epic instructional overlay.'
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic instructional overlay should start hidden.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersEpicInstructionOverlay) -eq 'AxisFirstUseWizard.InstallersEpicInstructionOverlayNoCheckbox') 'AXIS Installers Epic overlay should expose the no-checkbox marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersEpicInstructionBodyGroup) -eq 'AxisFirstUseWizard.InstallersEpicInstructionMixedBidiSafeVisualLines') 'AXIS Installers Epic overlay body should expose mixed BiDi-safe visual line rendering.'
+Assert-BoostLabCondition ([bool]$installersEpicInstructionBodyGroup.Resources['AxisFirstUseWizard.InstallersEpicInstructionVisualLinesRightAligned']) 'AXIS Installers Epic overlay body should mark right-aligned visual lines.'
+Assert-BoostLabCondition ([bool]$installersEpicInstructionBodyGroup.Resources['AxisFirstUseWizard.InstallersEpicInstructionNoOrphanEnglishTokens']) 'AXIS Installers Epic overlay body should guard against orphan English tokens.'
+Assert-BoostLabCondition ([bool]$installersEpicInstructionBodyGroup.Resources['AxisFirstUseWizard.InstallersEpicInstructionNoLeftFloatingWrappedArabicLines']) 'AXIS Installers Epic overlay body should guard against left-floating wrapped Arabic lines.'
+$installersEpicInstructionOverlayText = (Get-AxisFirstUseWizardTextValues -Root $installersEpicInstructionOverlay) -join [Environment]::NewLine
+foreach ($requiredEpicInstructionText in @($arabicInstallersEpicOverlayTitle, 'Install', $arabicInstallersEpicOverlayReturn)) {
+    Assert-BoostLabCondition ($installersEpicInstructionOverlayText.Contains($requiredEpicInstructionText)) "AXIS Installers Epic instructional overlay is missing owner-approved text: $requiredEpicInstructionText"
+}
+Assert-BoostLabCondition (-not $installersEpicInstructionOverlayText.Contains([string][char]0xFFFD)) 'AXIS Installers Epic overlay text must not contain replacement glyphs.'
+Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $installersEpicInstructionTitle) -eq $arabicInstallersEpicOverlayTitle) 'AXIS Installers Epic overlay title changed.'
+Assert-BoostLabCondition ($installersEpicInstructionBodyItems.Count -eq 3) 'AXIS Installers Epic overlay should render exactly three instruction groups.'
+Assert-BoostLabCondition ($installersEpicInstructionBodyVisualLines.Count -eq 5) 'AXIS Installers Epic overlay should render body copy as five explicit visual lines.'
+$expectedEpicInstructionBodies = @(
+    $arabicInstallersEpicOverlayBody1
+    $arabicInstallersEpicOverlayBody2
+    $arabicInstallersEpicOverlayBody3
+)
+for ($epicInstructionIndex = 0; $epicInstructionIndex -lt $expectedEpicInstructionBodies.Count; $epicInstructionIndex++) {
+    $epicInstructionItemText = (Get-AxisFirstUseWizardTextValues -Root $installersEpicInstructionBodyItems[$epicInstructionIndex]) -join ' '
+    Assert-BoostLabCondition (
+        (ConvertTo-AxisFirstUseWizardNormalizedText -Text $epicInstructionItemText) -eq
+        (ConvertTo-AxisFirstUseWizardNormalizedText -Text $expectedEpicInstructionBodies[$epicInstructionIndex])
+    ) "AXIS Installers Epic overlay visual line group should preserve approved body text at index $epicInstructionIndex."
+}
+foreach ($epicInstructionVisualLine in $installersEpicInstructionBodyVisualLines) {
+    $epicInstructionVisualLineText = Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $epicInstructionVisualLine
+    Assert-BoostLabCondition ($epicInstructionVisualLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS Installers Epic overlay visual lines should not rely on WPF wrapping.'
+    Assert-BoostLabCondition ($epicInstructionVisualLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Installers Epic overlay visual lines should be physically right-aligned.'
+    Assert-BoostLabCondition ($epicInstructionVisualLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Installers Epic overlay visual line text should be right-aligned.'
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($epicInstructionVisualLine) -eq 'AxisFirstUseWizard.InstallersEpicInstructionRightAlignedNoWrapMixedBidiLine') 'AXIS Installers Epic overlay visual lines should use the no-wrap mixed BiDi renderer.'
+    Assert-BoostLabCondition (-not ([regex]::IsMatch($epicInstructionVisualLineText, '^(Launcher|Games|Epic Games|Epic Games Launcher)$'))) "AXIS Installers Epic overlay should not orphan an English token on its own visual line: $epicInstructionVisualLineText"
+}
+Assert-BoostLabCondition ([string]$installersEpicInstructionInstallButton.Content -eq 'Install') 'AXIS Installers Epic overlay primary button should be Install.'
+Assert-BoostLabCondition ([string]$installersEpicInstructionReturnButton.Content -eq $arabicInstallersEpicOverlayReturn) 'AXIS Installers Epic overlay return button changed.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersEpicInstructionOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS Installers Epic overlay must not include a checkbox.'
+Assert-BoostLabCondition (-not $installersEpicInstructionOverlayText.Contains('Cancel')) 'AXIS Installers Epic overlay must not include a Cancel button.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationOverlay').Count -eq 0) 'AXIS Installers content must not include a confirmation overlay.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS Installers content must not include a confirmation checkbox overlay.'
+Invoke-AxisFirstUseWizardButtonClick -Button $installersPrimaryButton
+Assert-BoostLabCondition ($installersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers disabled Install button must not start simulation before a program is selected.'
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers disabled Install button must not open the Epic overlay before a program is selected.'
+
+$discordSelectorIndex = [Array]::IndexOf($actualInstallersCatalogNames, 'Discord') + 1
+$epicSelectorIndex = [Array]::IndexOf($actualInstallersCatalogNames, 'Epic Games') + 1
+Assert-BoostLabCondition ($discordSelectorIndex -gt 0) 'AXIS Installers selector should include Discord from the retained catalog.'
+Assert-BoostLabCondition ($epicSelectorIndex -gt 0) 'AXIS Installers selector should include Epic Games from the retained catalog.'
+$installersSelector.SelectedIndex = $epicSelectorIndex
+Assert-BoostLabCondition ([bool]$installersPrimaryButton.IsEnabled) 'AXIS Installers Install button should enable after Epic Games is selected.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersPrimaryButton) -eq 'AxisFirstUseWizard.InstallersInstallEnabledWithProgramSelection') 'AXIS Installers enabled Install button should expose the selected-program marker.'
+Assert-BoostLabCondition ($installersSelectedProgramDisplay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers selected program micro-row should remain visible for Epic Games like any other app.'
+Assert-BoostLabCondition ([string]$installersSelectedProgramName.Text -eq 'Epic Games') 'AXIS Installers selected app display should show the selected Epic catalog item.'
+Assert-BoostLabCondition ([string]$installersSelectedProgramPrefix.Text -eq $arabicInstallersSelectedProgramPrefix) 'AXIS Installers selected app display prefix changed.'
+Assert-BoostLabCondition ([bool]$installersPrimaryButton.Resources['AxisFirstUseWizard.InstallersEpicSelected']) 'AXIS Installers should mark Epic Games as the overlay-gated selection.'
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay should remain hidden until the main Install button is pressed.'
+Invoke-AxisFirstUseWizardButtonClick -Button $installersPrimaryButton
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers Epic overlay should open after pressing Install with Epic Games selected.'
+Assert-BoostLabCondition ($installersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay should not start simulation before overlay Install is pressed.'
+Assert-BoostLabCondition ($installersRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay should not show runtime spacing before overlay Install is pressed.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Installers Continue/Next should remain disabled while the Epic overlay is informational.'
+Invoke-AxisFirstUseWizardButtonClick -Button $installersEpicInstructionReturnButton
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay return button should close the overlay only.'
+Assert-BoostLabCondition ($installersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay return should not start the simulated install.'
+
+$installersStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+$installersRowTotal = 0.0
+foreach ($installersRowChild in @($installersContentGrid.Children)) {
+    $installersRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+    $installersRowTotal += [double]$installersRowChild.DesiredSize.Height
+}
+$installersInnerHeight = [double]$installersStepElement.Height -
+    [double]$installersStepElement.Padding.Top -
+    [double]$installersStepElement.Padding.Bottom -
+    [double]$installersStepElement.BorderThickness.Top -
+    [double]$installersStepElement.BorderThickness.Bottom
+Assert-BoostLabCondition ($installersRowTotal -le $installersInnerHeight) 'AXIS Installers row content should fit inside the card without support clipping.'
+
+Invoke-AxisFirstUseWizardButtonClick -Button $installersPrimaryButton
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers Epic overlay should open again from the main Install button.'
+Invoke-AxisFirstUseWizardButtonClick -Button $installersEpicInstructionInstallButton
+Assert-BoostLabCondition ($installersEpicInstructionOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers Epic overlay Install should close the overlay before simulation.'
+Assert-BoostLabCondition ($installersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers runtime status should become visible during simulated install.'
+Assert-BoostLabCondition ($installersRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers runtime status spacer should become visible during simulation.'
+Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Installers Continue/Next should remain disabled during simulated install.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) 'AXIS Installers simulated flow should use the runtime checking animation.'
+$installersRunningText = (Get-AxisFirstUseWizardTextValues -Root $installersVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($installersRunningText.Contains($arabicInstallersRunning)) 'AXIS Installers simulated flow should show the owner-approved running state.'
+Assert-BoostLabCondition ($installersRunningText.Contains($arabicSupportBody)) 'AXIS Installers support panel should remain visible during the simulated flow.'
+$installersRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $installersRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($installersRunningRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Installers running status should keep text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $installersRunningRuntimeStatusRightAnchor[0] -Name 'Installers running runtime status' -ExpectedMaxWidth 110)
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000) 'AXIS Installers simulated flow should enable Continue/Next after completion.'
+$installersCompletedText = (Get-AxisFirstUseWizardTextValues -Root $installersVisibleContent) -join [Environment]::NewLine
+Assert-BoostLabCondition ($installersCompletedText.Contains($arabicInstallersCompleted)) 'AXIS Installers simulated flow should end in the owner-approved completed state.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $installersRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) 'AXIS Installers completed state should render the completed runtime effect.'
+$installersCompletedRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $installersRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+Assert-BoostLabCondition ($installersCompletedRuntimeStatusRightAnchor.Count -eq 1) 'AXIS Installers completed status should keep text near the action row.'
+[void](Assert-AxisFirstUseWizardRightAnchor -Anchor $installersCompletedRuntimeStatusRightAnchor[0] -Name 'Installers completed runtime status' -ExpectedMaxWidth 110)
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS Installers Continue/Next should become blue after simulated completion.'
+Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS Installers enabled Continue/Next should use the approved blue fill.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Installers should not auto-advance after simulated completion.'
+
+$nonEpicInstallersSampleState = Get-AxisFirstUseWizardSampleState
+$nonEpicStepIds = @($nonEpicInstallersSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
+$nonEpicInstallersIndex = [Array]::IndexOf($nonEpicStepIds, 'installers')
+Assert-BoostLabCondition ($nonEpicInstallersIndex -ge 0) 'AXIS Installers non-Epic regression guard should find the Installers step.'
+$nonEpicInstallersSampleState['CurrentStepIndex'] = $nonEpicInstallersIndex
+$nonEpicInstallersPrototype = New-AxisFirstUseWizardPrototype -SampleState $nonEpicInstallersSampleState
+$nonEpicInstallersContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$nonEpicInstallersContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+$nonEpicInstallersContent = $nonEpicInstallersContentHost.Child
+$nonEpicInstallersSelector = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersContent -Tag 'AxisFirstUseWizard.InstallersProgramSelector') | Select-Object -First 1
+$nonEpicInstallersPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$nonEpicInstallersRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$nonEpicInstallersEpicOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $nonEpicInstallersPrototype -Tag 'AxisFirstUseWizard.InstallersEpicInstructionOverlay') | Select-Object -First 1
+$nonEpicActualInstallersCatalogNames = @(
+    for ($catalogIndex = 1; $catalogIndex -lt $nonEpicInstallersSelector.Items.Count; $catalogIndex++) {
+        [string]$nonEpicInstallersSelector.Items[$catalogIndex].Content
+    }
+)
+$nonEpicDiscordSelectorIndex = [Array]::IndexOf($nonEpicActualInstallersCatalogNames, 'Discord') + 1
+Assert-BoostLabCondition ($nonEpicDiscordSelectorIndex -gt 0) 'AXIS Installers non-Epic regression guard should include Discord.'
+$nonEpicInstallersSelector.SelectedIndex = $nonEpicDiscordSelectorIndex
+Assert-BoostLabCondition (-not [bool]$nonEpicInstallersPrimaryButton.Resources['AxisFirstUseWizard.InstallersEpicSelected']) 'AXIS Installers should not mark non-Epic apps as Epic overlay selections.'
+Invoke-AxisFirstUseWizardButtonClick -Button $nonEpicInstallersPrimaryButton
+Assert-BoostLabCondition ($nonEpicInstallersEpicOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers non-Epic app should not show the Epic instructional overlay.'
+Assert-BoostLabCondition ($nonEpicInstallersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers non-Epic app should start simulated install directly.'
+Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$nonEpicInstallersContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS Installers non-Epic direct simulation should still complete.'
+
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Installers Continue/Next should not navigate past the last implemented prototype step.'
+
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupStoreSettingsStep').Count -eq 1) 'AXIS Back from final Setup step should return to Store Settings.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupUpdatesPauseStep').Count -eq 1) 'AXIS Back from Installers should return to Updates Pause.'
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupStoreSettingsStep').Count -eq 1) 'AXIS Back from Updates Pause should return to Store Settings.'
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(

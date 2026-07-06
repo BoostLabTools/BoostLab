@@ -4,6 +4,7 @@ $script:AxisFirstUseWizardResourcePath = Join-Path $PSScriptRoot 'AxisResources.
 . $script:AxisFirstUseWizardResourcePath
 $script:AxisFirstUseWizardButtonStyle = $null
 $script:AxisFirstUseWizardFilledSquareCheckboxStyle = $null
+$script:AxisFirstUseWizardSelectorComboBoxStyle = $null
 
 function Get-AxisWizardMapValue {
     [CmdletBinding()]
@@ -230,7 +231,7 @@ function New-AxisWizardMixedBidiTextBlock {
     }
 
     $textBlock.Inlines.Clear()
-    $englishTermPattern = 'setupcomplete\.cmd|Memory Compression|Microsoft Edge|Microsoft Store|Windows Update|Task Manager|Windows Home|Windows Pro|Resizable BAR|BitLocker|AutoUnattend|Ctrl \+ V|Microsoft|Windows|BIOS|OOBE|USB|XML'
+    $englishTermPattern = 'setupcomplete\.cmd|Epic Games Launcher|Epic Games|Memory Compression|Microsoft Edge|Microsoft Store|Windows Update|Task Manager|Windows Home|Windows Pro|Resizable BAR|BitLocker|AutoUnattend|Ctrl \+ V|Microsoft|Windows|BIOS|OOBE|USB|XML'
     $currentIndex = 0
     foreach ($match in [regex]::Matches($Text, $englishTermPattern)) {
         if ($match.Index -gt $currentIndex) {
@@ -628,6 +629,232 @@ function New-AxisToBiosInformationTextGroup {
     return $group
 }
 
+function Get-AxisWizardSelectorComboBoxStyle {
+    [CmdletBinding()]
+    param()
+
+    if ($null -eq $script:AxisFirstUseWizardSelectorComboBoxStyle) {
+        $styleXaml = @'
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="{x:Type ComboBox}">
+  <Setter Property="Background" Value="{DynamicResource Axis.Brush.Wizard.SurfaceSoft}" />
+  <Setter Property="Foreground" Value="{DynamicResource Axis.Brush.Wizard.TextPrimary}" />
+  <Setter Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.BorderStrong}" />
+  <Setter Property="BorderThickness" Value="1" />
+  <Setter Property="Padding" Value="12,6,12,6" />
+  <Setter Property="SnapsToDevicePixels" Value="True" />
+  <Setter Property="UseLayoutRounding" Value="True" />
+  <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+  <Setter Property="Template">
+    <Setter.Value>
+      <ControlTemplate TargetType="{x:Type ComboBox}">
+        <!-- AxisFirstUseWizard.SharedDarkSelectorStyle -->
+        <!-- AxisFirstUseWizard.SelectorPopupNotNativeWhite -->
+        <!-- AxisFirstUseWizard.SelectorHoverSelectedStates -->
+        <Grid SnapsToDevicePixels="True" UseLayoutRounding="True">
+          <ToggleButton x:Name="ToggleButton"
+                        Focusable="False"
+                        ClickMode="Press"
+                        IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+            <ToggleButton.Template>
+              <ControlTemplate TargetType="{x:Type ToggleButton}">
+                <ContentPresenter />
+              </ControlTemplate>
+            </ToggleButton.Template>
+            <Border x:Name="Chrome"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="12"
+                    Padding="{TemplateBinding Padding}"
+                    SnapsToDevicePixels="True"
+                    UseLayoutRounding="True">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="22" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter x:Name="ContentSite"
+                                  Content="{TemplateBinding SelectionBoxItem}"
+                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalAlignment="Center"
+                                  IsHitTestVisible="False"
+                                  Margin="0"
+                                  RecognizesAccessKey="True"
+                                  SnapsToDevicePixels="True"
+                                  UseLayoutRounding="True" />
+                <Path Grid.Column="1"
+                      Data="M 0 0 L 4 4 L 8 0 Z"
+                      Fill="{DynamicResource Axis.Brush.Wizard.TextSecondary}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Stretch="Uniform"
+                      Width="8"
+                      Height="5" />
+              </Grid>
+            </Border>
+          </ToggleButton>
+          <Popup x:Name="PART_Popup"
+                 AllowsTransparency="True"
+                 Focusable="False"
+                 IsOpen="{TemplateBinding IsDropDownOpen}"
+                 Placement="Bottom"
+                 PopupAnimation="Fade">
+            <Grid MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                  MaxHeight="{TemplateBinding MaxDropDownHeight}">
+              <Border Background="{DynamicResource Axis.Brush.Wizard.ElevatedCard}"
+                      BorderBrush="{DynamicResource Axis.Brush.Wizard.BorderStrong}"
+                      BorderThickness="1"
+                      CornerRadius="12"
+                      Margin="0,4,0,0"
+                      Padding="4"
+                      SnapsToDevicePixels="True"
+                      UseLayoutRounding="True">
+                <ScrollViewer SnapsToDevicePixels="True"
+                              UseLayoutRounding="True"
+                              CanContentScroll="True"
+                              VerticalScrollBarVisibility="Auto">
+                  <ItemsPresenter />
+                </ScrollViewer>
+              </Border>
+            </Grid>
+          </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True">
+            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource Axis.Brush.Wizard.SecondaryButtonHover}" />
+            <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.BorderStrong}" />
+          </Trigger>
+          <Trigger Property="IsKeyboardFocusWithin" Value="True">
+            <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.TextHighlight}" />
+          </Trigger>
+          <Trigger Property="IsDropDownOpen" Value="True">
+            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource Axis.Brush.Wizard.SecondaryButtonHover}" />
+            <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.TextHighlight}" />
+          </Trigger>
+          <Trigger Property="IsEnabled" Value="False">
+            <Setter TargetName="Chrome" Property="Opacity" Value="0.62" />
+          </Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate>
+    </Setter.Value>
+  </Setter>
+</Style>
+'@
+        $script:AxisFirstUseWizardSelectorComboBoxStyle = [System.Windows.Markup.XamlReader]::Parse($styleXaml)
+    }
+
+    return $script:AxisFirstUseWizardSelectorComboBoxStyle
+}
+
+function New-AxisWizardSelectorComboBoxItemStyle {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [System.Windows.HorizontalAlignment]$HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Right
+    )
+
+    $alignment = $HorizontalContentAlignment.ToString()
+    $styleXaml = @"
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="{x:Type ComboBoxItem}">
+  <Setter Property="Background" Value="{DynamicResource Axis.Brush.Wizard.ElevatedCard}" />
+  <Setter Property="Foreground" Value="{DynamicResource Axis.Brush.Wizard.TextPrimary}" />
+  <Setter Property="BorderBrush" Value="Transparent" />
+  <Setter Property="BorderThickness" Value="1" />
+  <Setter Property="Padding" Value="12,7,12,7" />
+  <Setter Property="HorizontalContentAlignment" Value="$alignment" />
+  <Setter Property="Template">
+    <Setter.Value>
+      <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+        <Border x:Name="ItemChrome"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="8"
+                Padding="{TemplateBinding Padding}"
+                SnapsToDevicePixels="True"
+                UseLayoutRounding="True">
+          <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="Center"
+                            RecognizesAccessKey="True"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True" />
+        </Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsHighlighted" Value="True">
+            <Setter TargetName="ItemChrome" Property="Background" Value="{DynamicResource Axis.Brush.Wizard.SecondaryButtonHover}" />
+            <Setter TargetName="ItemChrome" Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.BorderStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource Axis.Brush.Wizard.TextHighlight}" />
+          </Trigger>
+          <Trigger Property="IsSelected" Value="True">
+            <Setter TargetName="ItemChrome" Property="Background" Value="{DynamicResource Axis.Brush.Wizard.SurfaceSoft}" />
+            <Setter TargetName="ItemChrome" Property="BorderBrush" Value="{DynamicResource Axis.Brush.Wizard.TextHighlight}" />
+            <Setter Property="Foreground" Value="{DynamicResource Axis.Brush.Wizard.TextPrimary}" />
+          </Trigger>
+          <Trigger Property="IsEnabled" Value="False">
+            <Setter TargetName="ItemChrome" Property="Opacity" Value="0.56" />
+            <Setter Property="Foreground" Value="{DynamicResource Axis.Brush.Wizard.TextMuted}" />
+          </Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate>
+    </Setter.Value>
+  </Setter>
+</Style>
+"@
+
+    return [System.Windows.Markup.XamlReader]::Parse($styleXaml)
+}
+
+function Set-AxisWizardSelectorComboBoxStyle {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.ComboBox]$Selector,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [System.Windows.FlowDirection]$FlowDirection = [System.Windows.FlowDirection]::RightToLeft,
+
+        [System.Windows.HorizontalAlignment]$HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Right,
+
+        [System.Windows.Thickness]$Padding = (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6)
+    )
+
+    [void](Add-AxisResourcesToElement -Element $Selector -Resources $Resources)
+    $Selector.Style = Get-AxisWizardSelectorComboBoxStyle
+    $Selector.ItemContainerStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment $HorizontalContentAlignment
+    $Selector.FlowDirection = $FlowDirection
+    $Selector.HorizontalContentAlignment = $HorizontalContentAlignment
+    $Selector.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $Selector.SnapsToDevicePixels = $true
+    $Selector.UseLayoutRounding = $true
+    $Selector.Padding = $Padding
+    $Selector.Background = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $Selector.BorderBrush = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong'
+    $Selector.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
+    $Selector.BorderThickness = New-AxisWizardThickness -Left 1
+    $Selector.Resources[[System.Windows.SystemColors]::WindowBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.ElevatedCard'
+    $Selector.Resources[[System.Windows.SystemColors]::ControlBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $Selector.Resources[[System.Windows.SystemColors]::HighlightBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SecondaryButtonHover'
+    $Selector.Resources[[System.Windows.SystemColors]::HighlightTextBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextHighlight'
+    $Selector.Resources[[System.Windows.SystemColors]::ControlTextBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
+    $Selector.Resources[[System.Windows.SystemColors]::InactiveSelectionHighlightBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $Selector.Resources[[System.Windows.SystemColors]::InactiveSelectionHighlightTextBrushKey] = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
+    $Selector.Resources['AxisFirstUseWizard.SharedDarkSelectorStyle'] = $true
+    $Selector.Resources['AxisFirstUseWizard.SelectorPopupNotNativeWhite'] = '#121212'
+    $Selector.Resources['AxisFirstUseWizard.SelectorClosedFieldDarkStyle'] = $true
+    $Selector.Resources['AxisFirstUseWizard.SelectorHoverSelectedStates'] = $true
+    $Selector.Resources['AxisFirstUseWizard.FutureGpuBloatwareSelectorStyleReady'] = $true
+}
+
 function New-AxisWizardUsbComboBoxItemStyle {
     [CmdletBinding()]
     param(
@@ -635,21 +862,7 @@ function New-AxisWizardUsbComboBoxItemStyle {
         [object]$Resources
     )
 
-    $style = [System.Windows.Style]::new([System.Windows.Controls.ComboBoxItem])
-    [void]$style.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::BackgroundProperty, (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft')))
-    [void]$style.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::ForegroundProperty, (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary')))
-    [void]$style.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::BorderBrushProperty, (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong')))
-    [void]$style.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::PaddingProperty, (New-AxisWizardThickness -Left 12 -Top 7 -Right 12 -Bottom 7)))
-    [void]$style.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::HorizontalContentAlignmentProperty, [System.Windows.HorizontalAlignment]::Right))
-
-    $highlightTrigger = [System.Windows.Trigger]::new()
-    $highlightTrigger.Property = [System.Windows.Controls.ComboBoxItem]::IsHighlightedProperty
-    $highlightTrigger.Value = $true
-    [void]$highlightTrigger.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::BackgroundProperty, (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SecondaryButtonHover')))
-    [void]$highlightTrigger.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Control]::ForegroundProperty, (Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextHighlight')))
-    [void]$style.Triggers.Add($highlightTrigger)
-
-    return $style
+    return New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Right)
 }
 
 function Get-AxisFirstUseWizardCanonicalStageNames {
@@ -1322,7 +1535,25 @@ function Get-AxisWizardArabicText {
             'ToBiosInfoBulletRestart',
             'ToBiosInfoBulletUsbBoot',
             'ToBiosInfoBulletInstall',
-            'ToBiosPrimaryAction'
+            'ToBiosPrimaryAction',
+            'InstallersTitle',
+            'InstallersSubtitle',
+            'InstallersSelectorLabel',
+            'InstallersSelectorPlaceholder',
+            'InstallersInfoTitle',
+            'InstallersInfoBullet1',
+            'InstallersInfoBullet2',
+            'InstallersInfoBullet3',
+            'InstallersRequirementsBullet1',
+            'InstallersRequirementsBullet2',
+            'InstallersRunning',
+            'InstallersCompleted',
+            'InstallersSelectedProgramPrefix',
+            'InstallersEpicOverlayTitle',
+            'InstallersEpicOverlayBody1',
+            'InstallersEpicOverlayBody2',
+            'InstallersEpicOverlayBody3',
+            'InstallersEpicOverlayReturn'
         )]
         [string]$Name
     )
@@ -1728,7 +1959,114 @@ function Get-AxisWizardArabicText {
         'ToBiosPrimaryAction' {
             return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
         }
+        'InstallersTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0627, 0x0645, 0x062C)
+        }
+        'InstallersSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020, 0x0648, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0623, 0x0633, 0x0627, 0x0633, 0x064A, 0x0629, 0x0020, 0x0639, 0x0644, 0x0649, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x002E)
+        }
+        'InstallersSelectorLabel' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x0631, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C)
+        }
+        'InstallersSelectorPlaceholder' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x0631, 0x0020, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x064B, 0x0627, 0x0020, 0x0645, 0x0646, 0x0020, 0x0627, 0x0644, 0x0642, 0x0627, 0x0626, 0x0645, 0x0629)
+        }
+        'InstallersInfoTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x064A, 0x0627, 0x0631, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C)
+        }
+        'InstallersInfoBullet1' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x0631, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x0637, 0x0644, 0x0648, 0x0628, 0x0020, 0x0645, 0x0646, 0x0020, 0x0627, 0x0644, 0x0642, 0x0627, 0x0626, 0x0645, 0x0629, 0x002E)
+        }
+        'InstallersInfoBullet2' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0633, 0x064A, 0x062A, 0x0645, 0x0020, 0x062A, 0x062C, 0x0647, 0x064A, 0x0632, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x062D, 0x062F, 0x062F, 0x0020, 0x0639, 0x0644, 0x0649, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x002E)
+        }
+        'InstallersInfoBullet3' {
+            return ConvertFrom-AxisWizardCodePoints @(0x064A, 0x0638, 0x0647, 0x0631, 0x0020, 0x0627, 0x0633, 0x0645, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x062D, 0x062F, 0x062F, 0x0020, 0x0623, 0x062B, 0x0646, 0x0627, 0x0621, 0x0020, 0x0639, 0x0645, 0x0644, 0x064A, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x002E)
+        }
+        'InstallersRequirementsBullet1' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0642, 0x0645, 0x0020, 0x0628, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x0641, 0x062A, 0x0648, 0x062D, 0x0629, 0x0020, 0x0642, 0x0628, 0x0644, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x002E)
+        }
+        'InstallersRequirementsBullet2' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0646, 0x062A, 0x0638, 0x0631, 0x0020, 0x062D, 0x062A, 0x0649, 0x0020, 0x062A, 0x0643, 0x062A, 0x0645, 0x0644, 0x0020, 0x0639, 0x0645, 0x0644, 0x064A, 0x0629, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x062D, 0x062F, 0x062F, 0x002E)
+        }
+        'InstallersRunning' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062C, 0x0627, 0x0631, 0x064A, 0x0020, 0x0627, 0x0644, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A)
+        }
+        'InstallersCompleted' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0645, 0x0020, 0x0627, 0x0644, 0x062A, 0x062B, 0x064A, 0x062A)
+        }
+        'InstallersSelectedProgramPrefix' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0628, 0x0631, 0x0646, 0x0627, 0x0645, 0x062C, 0x0020, 0x0627, 0x0644, 0x0645, 0x062D, 0x062F, 0x062F, 0x003A)
+        }
+        'InstallersEpicOverlayTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062E, 0x0637, 0x0648, 0x0629, 0x0020, 0x0625, 0x0636, 0x0627, 0x0641, 0x064A, 0x0629, 0x0020, 0x0644, 0x0640, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073)
+        }
+        'InstallersEpicOverlayBody1' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x0627, 0x0643, 0x062A, 0x0645, 0x0627, 0x0644, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x0020, 0x004C, 0x0061, 0x0075, 0x006E, 0x0063, 0x0068, 0x0065, 0x0072, 0x0020, 0x0648, 0x0638, 0x0647, 0x0648, 0x0631, 0x0020, 0x0646, 0x0627, 0x0641, 0x0630, 0x062A, 0x0647, 0x060C, 0x0020, 0x0623, 0x063A, 0x0644, 0x0642, 0x0020, 0x0646, 0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x0020, 0x004C, 0x0061, 0x0075, 0x006E, 0x0063, 0x0068, 0x0065, 0x0072, 0x0020, 0x0623, 0x0648, 0x0644, 0x064B, 0x0627, 0x002E)
+        }
+        'InstallersEpicOverlayBody2' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x0630, 0x0644, 0x0643, 0x0020, 0x0633, 0x062A, 0x0638, 0x0647, 0x0631, 0x0020, 0x0646, 0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0625, 0x0632, 0x0627, 0x0644, 0x0629, 0x0020, 0x062E, 0x062F, 0x0645, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x0020, 0x063A, 0x064A, 0x0631, 0x0020, 0x0627, 0x0644, 0x0636, 0x0631, 0x0648, 0x0631, 0x064A, 0x0629, 0x0020, 0x0645, 0x0646, 0x0020, 0x0645, 0x062B, 0x0628, 0x062A, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x002E)
+        }
+        'InstallersEpicOverlayBody3' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0627, 0x062E, 0x062A, 0x0631, 0x0020, 0x0627, 0x0644, 0x0625, 0x0632, 0x0627, 0x0644, 0x0629, 0x0020, 0x0623, 0x0648, 0x0020, 0x0627, 0x0644, 0x0645, 0x0648, 0x0627, 0x0641, 0x0642, 0x0629, 0x0020, 0x0645, 0x0646, 0x0020, 0x0627, 0x0644, 0x0646, 0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0644, 0x0625, 0x0643, 0x0645, 0x0627, 0x0644, 0x0020, 0x062A, 0x062D, 0x0633, 0x064A, 0x0646, 0x0020, 0x062A, 0x062C, 0x0631, 0x0628, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x002E)
+        }
+        'InstallersEpicOverlayReturn' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0631, 0x062C, 0x0648, 0x0639)
+        }
     }
+}
+
+function Get-AxisFirstUseWizardInstallersCatalogNames {
+    [CmdletBinding()]
+    param(
+        [string]$ProjectRoot = (Get-AxisFirstUseWizardProjectRoot)
+    )
+
+    $modulePath = Join-Path $ProjectRoot 'modules\Installers\installers.psm1'
+    $fallbackCatalogNames = @(
+        'Discord',
+        'Roblox',
+        '7-Zip',
+        'Battle.net',
+        'Brave',
+        'Electronic Arts',
+        'Epic Games',
+        'Firefox',
+        'Google Chrome',
+        'League Of Legends',
+        'OBS Studio',
+        'Rockstar Games',
+        'Spotify',
+        'Steam',
+        'Ubisoft Connect',
+        'Valorant'
+    )
+
+    if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+        return $fallbackCatalogNames
+    }
+
+    $moduleSource = Get-Content -Raw -LiteralPath $modulePath
+    $catalogItems = [System.Collections.Generic.List[object]]::new()
+    foreach ($match in [regex]::Matches($moduleSource, "(?m)^\s*New-BoostLabInstallersAppDescriptor\s+-SourceMenuNumber\s+(?<Number>\d+)\s+-AppId\s+'(?<AppId>[^']+)'\s+-DisplayName\s+'(?<DisplayName>[^']+)'")) {
+        $catalogItems.Add([pscustomobject]@{
+            Number = [int]$match.Groups['Number'].Value
+            AppId = [string]$match.Groups['AppId'].Value
+            DisplayName = [string]$match.Groups['DisplayName'].Value
+        })
+    }
+
+    $displayNames = @(
+        $catalogItems |
+            Sort-Object Number |
+            ForEach-Object { [string]$_.DisplayName } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+    if ($displayNames.Count -eq 0) {
+        return $fallbackCatalogNames
+    }
+
+    return $displayNames
 }
 
 function New-AxisWizardPanel {
@@ -2453,6 +2791,64 @@ function Get-AxisFirstUseWizardSampleState {
         -PrimaryActionWidth 210.0 `
         -ConfirmationActionWidth 148.0
 
+    $installersStep = [ordered]@{
+        Id = 'installers'
+        Title = (Get-AxisWizardArabicText -Name 'InstallersTitle')
+        StageName = 'Installers'
+        State = 'Ready'
+        StateLabel = ''
+        PrimaryActionLabel = 'Install'
+        RunningActionLabel = 'Install'
+        CompletionStateLabel = (Get-AxisWizardArabicText -Name 'InstallersCompleted')
+        CompletedStatusText = ''
+        Description = (Get-AxisWizardArabicText -Name 'InstallersSubtitle')
+        InformationCardTitle = (Get-AxisWizardArabicText -Name 'InstallersInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardArabicText -Name 'InstallersInfoBullet1')
+            (Get-AxisWizardArabicText -Name 'InstallersInfoBullet2')
+            (Get-AxisWizardArabicText -Name 'InstallersInfoBullet3')
+        )
+        ShowRequirements = $true
+        RequirementsTitle = (Get-AxisWizardArabicText -Name 'RequirementsTitle')
+        RequirementsItems = @(
+            (Get-AxisWizardArabicText -Name 'InstallersRequirementsBullet1')
+            (Get-AxisWizardArabicText -Name 'InstallersRequirementsBullet2')
+        )
+        DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+        RequiresConfirmationAcknowledgement = $false
+        NoConfirmationOverlay = $true
+        RequiresInputWindow = $false
+        SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+        SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+        CheckingStatusTitle = (Get-AxisWizardArabicText -Name 'InstallersRunning')
+        CompletedStatusTitle = (Get-AxisWizardArabicText -Name 'InstallersCompleted')
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        CustomerVisibleActions = @('Install')
+        PrototypeOnlySimulation = $true
+        NoRealActionMarker = 'AxisFirstUseWizard.InstallersPrototypeOnlyNoRuntimeAction'
+        TagRoot = 'Installers'
+        PrimaryActionWidth = 112.0
+        PrimaryActionRequiresSelection = $true
+        RuntimeStatusWidth = 234.0
+        RuntimeStatusContentWidth = 214.0
+        RuntimeStatusTextMaxWidth = 110.0
+        InstallerCatalogNames = @(Get-AxisFirstUseWizardInstallersCatalogNames)
+        InstallerSelectorLabel = (Get-AxisWizardArabicText -Name 'InstallersSelectorLabel')
+        InstallerSelectorPlaceholder = (Get-AxisWizardArabicText -Name 'InstallersSelectorPlaceholder')
+        InstallerSelectedProgramPrefix = (Get-AxisWizardArabicText -Name 'InstallersSelectedProgramPrefix')
+        InstallerEpicCatalogDisplayName = 'Epic Games'
+        InstallerEpicInstructionOverlayTitle = (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayTitle')
+        InstallerEpicInstructionOverlayItems = @(
+            (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody1')
+            (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody2')
+            (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody3')
+        )
+        InstallerEpicInstructionOverlayReturnLabel = (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayReturn')
+        InstallerEpicInstructionOverlayMarker = 'AxisFirstUseWizard.InstallersEpicInstructionOverlayPrototypeOnly'
+        InstallersStagePrototypeMarker = 'AxisFirstUseWizard.InstallersStagePrototypeOnly'
+    }
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -2485,6 +2881,7 @@ function Get-AxisFirstUseWizardSampleState {
             $edgeSettingsStep
             $storeSettingsStep
             $updatesPauseStep
+            $installersStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -2731,6 +3128,7 @@ function New-AxisWizardRuntimeStatusContent {
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
+    $isInstallersStep = ($stepId -eq 'installers')
     $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
     $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
     $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
@@ -2757,6 +3155,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isToBiosStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
+    }
+    elseif ($isInstallersStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -2822,6 +3223,7 @@ function New-AxisStepStatusArea {
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
+    $isInstallersStep = ($stepId -eq 'installers')
     $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
@@ -2848,6 +3250,9 @@ function New-AxisStepStatusArea {
     }
     elseif ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
+    }
+    elseif ($isInstallersStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -2882,8 +3287,9 @@ function New-AxisStepSupportPanel {
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $isToBiosStep = ($stepId -eq 'to-bios')
+    $isInstallersStep = ($stepId -eq 'installers')
     $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
-    $usesCompactSupport = ($isToBiosStep -or $isSetupStep)
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStep)
     $supportPadding = if ($usesCompactSupport) {
         New-AxisWizardThickness -Left 14 -Top 7 -Right 14 -Bottom 7
     }
@@ -2911,6 +3317,9 @@ function New-AxisStepSupportPanel {
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     if ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosSupportCardNoClipping')
+    }
+    elseif ($isInstallersStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSupportCardNoClipping')
     }
     elseif ($isSetupStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupSupportCardNoClipping')
@@ -2966,6 +3375,9 @@ function New-AxisStepPrimaryActionArea {
 
     $state = [string](Get-AxisWizardMapValue -Map $Step -Name 'State' -DefaultValue 'Ready')
     $primaryEnabled = ($state -eq 'Ready')
+    if ([bool](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionRequiresSelection' -DefaultValue $false)) {
+        $primaryEnabled = $false
+    }
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $configuredPrimaryButtonWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionWidth' -DefaultValue 0.0)
@@ -3437,6 +3849,649 @@ function New-AxisSetupStep {
     $container.Child = $content
 
     return $container
+}
+
+function New-AxisInstallersStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'] | Where-Object { [string]$_['Id'] -eq 'installers' })[0]
+    }
+
+    $tagRoot = [string](Get-AxisWizardMapValue -Map $Step -Name 'TagRoot' -DefaultValue 'Installers')
+    $catalogNames = @(Get-AxisWizardMapValue -Map $Step -Name 'InstallerCatalogNames' -DefaultValue @())
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 4 -Right 34 -Bottom 2) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = 'AxisFirstUseWizard.InstallersStep'
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersNoClippingLayout')
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = 'AxisFirstUseWizard.StepTextContent'
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Installers')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+
+    $title = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersTitle'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 2 -Right 0 -Bottom 4) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $title.Tag = 'AxisFirstUseWizard.InstallersTitleText'
+    $title.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $title.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $title `
+        -Tag 'AxisFirstUseWizard.InstallersTitleRightAnchor' `
+        -MaxWidth 690))
+
+    $descriptionText = New-AxisWizardMixedBidiTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -Tag 'AxisFirstUseWizard.InstallersSubtitle' `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -MaxWidth 690
+    $descriptionText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag 'AxisFirstUseWizard.InstallersSubtitleRightAnchor' `
+        -MaxWidth 690))
+
+    $selectorGrid = [System.Windows.Controls.Grid]::new()
+    $selectorGrid.Margin = New-AxisWizardThickness -Left 0 -Top 3 -Right 0 -Bottom 2
+    $selectorGrid.Tag = 'AxisFirstUseWizard.InstallersSelectorRow'
+    $selectorGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $selectorGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $selectorGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersCatalogSelectorFromModuleSource')
+    $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $selectorControlColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectorControlColumn.Width = [System.Windows.GridLength]::Auto
+    $selectorLabelColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectorLabelColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+    [void]$selectorGrid.ColumnDefinitions.Add($selectorControlColumn)
+    [void]$selectorGrid.ColumnDefinitions.Add($selectorLabelColumn)
+
+    $selectorLabel = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerSelectorLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersSelectorLabel'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $selectorLabel.Tag = 'AxisFirstUseWizard.InstallersSelectorLabel'
+    $selectorLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $selectorLabel.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 12 -Bottom 0
+    [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 2)
+    [void]$selectorGrid.Children.Add($selectorLabel)
+
+    $programSelector = [System.Windows.Controls.ComboBox]::new()
+    $programSelector.Tag = 'AxisFirstUseWizard.InstallersProgramSelector'
+    $programSelector.Width = 318
+    $programSelector.Height = 36
+    $programSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $programSelector.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $programSelector.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $programSelector.IsEditable = $false
+    $programSelector.MaxDropDownHeight = 190
+    $programSelector.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+    $programSelector.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+    Set-AxisWizardSelectorComboBoxStyle `
+        -Selector $programSelector `
+        -Resources $Resources `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight) `
+        -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left) `
+        -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6)
+    $programSelector.Resources['AxisFirstUseWizard.InstallersSelectorSingleSelect'] = $true
+    $programSelector.Resources['AxisFirstUseWizard.InstallersCatalogSource'] = 'modules/Installers/installers.psm1'
+    $programSelector.Resources['AxisFirstUseWizard.InstallersSelectorNoRuntimeAction'] = $true
+    $programSelector.Resources['AxisFirstUseWizard.InstallersSelectorUsesSharedDarkAxisStyle'] = $true
+    $programSelector.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSingleSelectCatalogSelector')
+    $installersPlaceholderItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Right)
+    $installersProgramItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left)
+
+    $placeholderItem = [System.Windows.Controls.ComboBoxItem]::new()
+    $placeholderItem.Content = [string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerSelectorPlaceholder' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersSelectorPlaceholder'))
+    $placeholderItem.Tag = 'AxisFirstUseWizard.InstallersSelectorPlaceholderItem'
+    $placeholderItem.IsEnabled = $false
+    $placeholderItem.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $placeholderItem.Style = $installersPlaceholderItemStyle
+    [void]$programSelector.Items.Add($placeholderItem)
+    foreach ($catalogName in @($catalogNames)) {
+        $programItem = [System.Windows.Controls.ComboBoxItem]::new()
+        $programItem.Content = [string]$catalogName
+        $programItem.Tag = [string]$catalogName
+        $programItem.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $programItem.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Left
+        $programItem.Style = $installersProgramItemStyle
+        [void]$programSelector.Items.Add($programItem)
+    }
+    $programSelector.SelectedIndex = 0
+    [System.Windows.Controls.Grid]::SetColumn($programSelector, 1)
+    [void]$selectorGrid.Children.Add($programSelector)
+    [void](Add-AxisWizardGridRow -Grid $content -Child $selectorGrid)
+
+    $detailsGrid = [System.Windows.Controls.Grid]::new()
+    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 2 -Right 0 -Bottom 3
+    $detailsGrid.Tag = 'AxisFirstUseWizard.InstallersStepDetails'
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersCardsPhysicalOrderInfoRightRequirementsLeft')
+    $requirementsColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $requirementsColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $spacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $spacerColumn.Width = [System.Windows.GridLength]::new(12.0)
+    $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$detailsGrid.ColumnDefinitions.Add($requirementsColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($spacerColumn)
+    [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+
+    $cardTextMaxWidth = 340.0
+    $cardHeight = 100.0
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 4 -Right 10 -Bottom 4) `
+        -Elevation 'Soft'
+    $informationPanel.Height = $cardHeight
+    $informationPanel.Tag = 'AxisFirstUseWizard.InstallersInformationCard'
+    $informationPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersInformationNoClipping')
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $informationLines = [System.Collections.Generic.List[object]]::new()
+    $informationLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle')
+        Tag = 'AxisFirstUseWizard.InstallersInformationTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+        Wrap = $true
+        MaxWidth = $cardTextMaxWidth
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+        $informationLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.InstallersInformationItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 2.0
+            Wrap = $true
+            MaxWidth = $cardTextMaxWidth
+        })
+    }
+    $informationGroup = New-AxisSetupPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.InstallersInformationSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth $cardTextMaxWidth `
+        -Lines $informationLines `
+        -AutomationId 'AxisFirstUseWizard.InstallersMixedBidiSafeInfoText'
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $informationContent.MaxWidth = $cardTextMaxWidth
+    $informationContent.Tag = 'AxisFirstUseWizard.InstallersInformationCardContent'
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $informationGroup)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag 'AxisFirstUseWizard.InstallersInformationRightAnchor' `
+        -MaxWidth $cardTextMaxWidth
+    [System.Windows.Controls.Grid]::SetColumn($informationPanel, 2)
+    [void]$detailsGrid.Children.Add($informationPanel)
+
+    $requirementsPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 4 -Right 10 -Bottom 4) `
+        -Elevation 'Soft'
+    $requirementsPanel.Height = $cardHeight
+    $requirementsPanel.Tag = 'AxisFirstUseWizard.InstallersRequirementsCard'
+    $requirementsPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRequirementsNoClipping')
+    $requirementsPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $requirementsLines = [System.Collections.Generic.List[object]]::new()
+    $requirementsLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'RequirementsTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'RequirementsTitle'))
+        Tag = 'AxisFirstUseWizard.InstallersRequirementsTitle'
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+        Wrap = $true
+        MaxWidth = $cardTextMaxWidth
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'RequirementsItems' -DefaultValue @())) {
+        $requirementsLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = 'AxisFirstUseWizard.InstallersRequirementItem'
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 2.0
+            Wrap = $true
+            MaxWidth = $cardTextMaxWidth
+        })
+    }
+    $requirementsGroup = New-AxisSetupPhysicalRightEdgeTextGroup `
+        -Tag 'AxisFirstUseWizard.InstallersRequirementsSharedPhysicalRightEdge' `
+        -Resources $Resources `
+        -MaxWidth $cardTextMaxWidth `
+        -Lines $requirementsLines `
+        -AutomationId 'AxisFirstUseWizard.InstallersMixedBidiSafeRequirementsText'
+    $requirementsContent = [System.Windows.Controls.Grid]::new()
+    $requirementsContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $requirementsContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $requirementsContent.MaxWidth = $cardTextMaxWidth
+    $requirementsContent.Tag = 'AxisFirstUseWizard.InstallersRequirementsCardContent'
+    [void](Add-AxisWizardGridRow -Grid $requirementsContent -Child $requirementsGroup)
+    $requirementsPanel.Child = New-AxisWizardRightAnchor `
+        -Child $requirementsContent `
+        -Tag 'AxisFirstUseWizard.InstallersRequirementsRightAnchor' `
+        -MaxWidth $cardTextMaxWidth
+    [System.Windows.Controls.Grid]::SetColumn($requirementsPanel, 0)
+    [void]$detailsGrid.Children.Add($requirementsPanel)
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
+
+    $selectedProgramDisplay = [System.Windows.Controls.Grid]::new()
+    $selectedProgramDisplay.Tag = 'AxisFirstUseWizard.InstallersSelectedProgramDisplay'
+    $selectedProgramDisplay.Visibility = [System.Windows.Visibility]::Collapsed
+    $selectedProgramDisplay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $selectedProgramDisplay.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $selectedProgramDisplay.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 0 -Bottom 1
+    $selectedProgramDisplay.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSelectedProgramBidiSafeDisplay')
+    $selectedProgramNameColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectedProgramNameColumn.Width = [System.Windows.GridLength]::Auto
+    $selectedProgramSpacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectedProgramSpacerColumn.Width = [System.Windows.GridLength]::new(8.0)
+    $selectedProgramPrefixColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectedProgramPrefixColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$selectedProgramDisplay.ColumnDefinitions.Add($selectedProgramNameColumn)
+    [void]$selectedProgramDisplay.ColumnDefinitions.Add($selectedProgramSpacerColumn)
+    [void]$selectedProgramDisplay.ColumnDefinitions.Add($selectedProgramPrefixColumn)
+
+    $selectedProgramName = New-AxisWizardTextBlock `
+        -Text ' ' `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.Caption.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Left) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
+    $selectedProgramName.Tag = 'AxisFirstUseWizard.InstallersSelectedProgramName'
+    $selectedProgramName.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    [System.Windows.Controls.Grid]::SetColumn($selectedProgramName, 0)
+    [void]$selectedProgramDisplay.Children.Add($selectedProgramName)
+
+    $selectedProgramPrefix = New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerSelectedProgramPrefix' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersSelectedProgramPrefix'))) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.Caption.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $selectedProgramPrefix.Tag = 'AxisFirstUseWizard.InstallersSelectedProgramPrefix'
+    [System.Windows.Controls.Grid]::SetColumn($selectedProgramPrefix, 2)
+    [void]$selectedProgramDisplay.Children.Add($selectedProgramPrefix)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $selectedProgramDisplay `
+        -Tag 'AxisFirstUseWizard.InstallersSelectedProgramRightAnchor' `
+        -MaxWidth 690 `
+        -PreserveChildFlowDirection))
+
+    $installersPrimaryAction = New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources
+    $installersPrimaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSimulationOnlyActionRow')
+    [void](Add-AxisWizardGridRow -Grid $content -Child $installersPrimaryAction)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    $installersPrimaryButton = $null
+    foreach ($actionChild in @($installersPrimaryAction.Children)) {
+        if ($actionChild -is [System.Windows.Controls.StackPanel] -and [string]$actionChild.Tag -eq 'AxisFirstUseWizard.PrimaryActionButtonRow') {
+            foreach ($buttonCandidate in @($actionChild.Children)) {
+                if ($buttonCandidate -is [System.Windows.Controls.Button] -and [string]$buttonCandidate.Tag -eq 'AxisFirstUseWizard.PrimaryOpenButton') {
+                    $installersPrimaryButton = $buttonCandidate
+                    break
+                }
+            }
+        }
+    }
+
+    $installersPrimaryBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+    $installersPrimaryBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+    $installersPrimaryForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+    $installersPrimaryEffect = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+    $installersDisabledBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $installersDisabledBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $installersDisabledForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $installersPrimaryAutomationProperty = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+    $installersEnabledAutomationId = 'AxisFirstUseWizard.InstallersInstallEnabledWithProgramSelection'
+    $installersDisabledAutomationId = 'AxisFirstUseWizard.InstallersInstallDisabledUntilProgramSelected'
+    $epicCatalogDisplayName = [string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerEpicCatalogDisplayName' -DefaultValue 'Epic Games')
+    if ($installersPrimaryButton -is [System.Windows.Controls.Button]) {
+        $installersPrimaryButton.SetValue($installersPrimaryAutomationProperty, $installersDisabledAutomationId)
+    }
+
+    $primaryButtonForSelector = $installersPrimaryButton
+    $selectedProgramDisplayForSelector = $selectedProgramDisplay
+    $selectedProgramNameForSelector = $selectedProgramName
+    $programSelectorForSelector = $programSelector
+    $enabledBackgroundForSelector = $installersPrimaryBackground
+    $enabledBorderForSelector = $installersPrimaryBorder
+    $enabledForegroundForSelector = $installersPrimaryForeground
+    $enabledEffectForSelector = $installersPrimaryEffect
+    $disabledBackgroundForSelector = $installersDisabledBackground
+    $disabledBorderForSelector = $installersDisabledBorder
+    $disabledForegroundForSelector = $installersDisabledForeground
+    $automationPropertyForSelector = $installersPrimaryAutomationProperty
+    $enabledAutomationIdForSelector = $installersEnabledAutomationId
+    $disabledAutomationIdForSelector = $installersDisabledAutomationId
+    $epicCatalogDisplayNameForSelector = $epicCatalogDisplayName
+    $refreshInstallersSelectionState = {
+        $selectedItem = $programSelectorForSelector.SelectedItem
+        $selectedProgramNameValue = ''
+        if ($selectedItem -is [System.Windows.Controls.ComboBoxItem]) {
+            $selectedProgramNameValue = [string]$selectedItem.Tag
+        }
+        $hasProgramSelection = (
+            -not [string]::IsNullOrWhiteSpace($selectedProgramNameValue) -and
+            $selectedProgramNameValue -ne 'AxisFirstUseWizard.InstallersSelectorPlaceholderItem'
+        )
+
+        if ($hasProgramSelection) {
+            $selectedProgramNameForSelector.Text = $selectedProgramNameValue
+            $selectedProgramDisplayForSelector.Visibility = [System.Windows.Visibility]::Visible
+            $isEpicProgramSelection = ($selectedProgramNameValue -eq $epicCatalogDisplayNameForSelector -or $selectedProgramNameValue -eq 'Epic Games Launcher')
+            if ($primaryButtonForSelector -is [System.Windows.Controls.Button]) {
+                $primaryButtonForSelector.IsEnabled = $true
+                $primaryButtonForSelector.Background = $enabledBackgroundForSelector
+                $primaryButtonForSelector.BorderBrush = $enabledBorderForSelector
+                $primaryButtonForSelector.Foreground = $enabledForegroundForSelector
+                $primaryButtonForSelector.Effect = $enabledEffectForSelector
+                $primaryButtonForSelector.SetValue($automationPropertyForSelector, $enabledAutomationIdForSelector)
+                $primaryButtonForSelector.Resources['AxisFirstUseWizard.InstallersSelectedProgram'] = $selectedProgramNameValue
+                $primaryButtonForSelector.Resources['AxisFirstUseWizard.InstallersEpicSelected'] = [bool]$isEpicProgramSelection
+            }
+        }
+        else {
+            $selectedProgramNameForSelector.Text = ''
+            $selectedProgramDisplayForSelector.Visibility = [System.Windows.Visibility]::Collapsed
+            if ($primaryButtonForSelector -is [System.Windows.Controls.Button]) {
+                $primaryButtonForSelector.IsEnabled = $false
+                $primaryButtonForSelector.Background = $disabledBackgroundForSelector
+                $primaryButtonForSelector.BorderBrush = $disabledBorderForSelector
+                $primaryButtonForSelector.Foreground = $disabledForegroundForSelector
+                $primaryButtonForSelector.Effect = $null
+                $primaryButtonForSelector.SetValue($automationPropertyForSelector, $disabledAutomationIdForSelector)
+                $primaryButtonForSelector.Resources['AxisFirstUseWizard.InstallersSelectedProgram'] = ''
+                $primaryButtonForSelector.Resources['AxisFirstUseWizard.InstallersEpicSelected'] = $false
+            }
+        }
+    }.GetNewClosure()
+
+    $programSelector.Add_SelectionChanged({
+        & $refreshInstallersSelectionState
+    }.GetNewClosure())
+    & $refreshInstallersSelectionState
+
+    $container.Child = $content
+
+    return $container
+}
+
+function Split-AxisInstallersEpicInstructionVisualLines {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$Text,
+
+        [int]$InstructionIndex = 0
+    )
+
+    $lineText = [string]$Text
+    if ([string]::IsNullOrWhiteSpace($lineText)) {
+        return @()
+    }
+
+    if ($InstructionIndex -eq 0) {
+        $arabicComma = [string][char]0x060C
+        $commaIndex = $lineText.IndexOf($arabicComma, [System.StringComparison]::Ordinal)
+        if ($commaIndex -gt 0 -and $commaIndex -lt ($lineText.Length - 1)) {
+            return @(
+                $lineText.Substring(0, $commaIndex + 1).Trim()
+                $lineText.Substring($commaIndex + 1).Trim()
+            )
+        }
+    }
+    elseif ($InstructionIndex -eq 1) {
+        $breakPhrase = ConvertFrom-AxisWizardCodePoints @(0x0645, 0x0646, 0x0020, 0x0645, 0x062B, 0x0628, 0x062A, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020, 0x0047, 0x0061, 0x006D, 0x0065, 0x0073, 0x002E)
+        $breakIndex = $lineText.IndexOf($breakPhrase, [System.StringComparison]::Ordinal)
+        if ($breakIndex -gt 0) {
+            return @(
+                $lineText.Substring(0, $breakIndex).Trim()
+                $lineText.Substring($breakIndex).Trim()
+            )
+        }
+    }
+
+    return @($lineText.Trim())
+}
+
+function New-AxisInstallersEpicInstructionBodyGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [double]$MaxWidth = 560.0
+    )
+
+    $group = [System.Windows.Controls.Grid]::new()
+    $group.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionBodySharedPhysicalRightEdge'
+    $group.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $group.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $group.MaxWidth = $MaxWidth
+    $group.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionMixedBidiSafeVisualLines')
+    $group.Resources['AxisFirstUseWizard.InstallersEpicInstructionVisualLinesRightAligned'] = $true
+    $group.Resources['AxisFirstUseWizard.InstallersEpicInstructionNoOrphanEnglishTokens'] = $true
+    $group.Resources['AxisFirstUseWizard.InstallersEpicInstructionNoLeftFloatingWrappedArabicLines'] = $true
+
+    $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $rightColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$group.ColumnDefinitions.Add($rightColumn)
+
+    $instructionItems = @(Get-AxisWizardMapValue -Map $Step -Name 'InstallerEpicInstructionOverlayItems' -DefaultValue @())
+    for ($instructionIndex = 0; $instructionIndex -lt $instructionItems.Count; $instructionIndex++) {
+        $instructionItemText = [string]$instructionItems[$instructionIndex]
+        if ([string]::IsNullOrWhiteSpace($instructionItemText)) {
+            continue
+        }
+
+        $itemContainer = [System.Windows.Controls.Grid]::new()
+        $itemContainer.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionBodyItem'
+        $itemContainer.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $itemContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $itemContainer.MaxWidth = $MaxWidth
+        $itemContainer.Margin = New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 0
+        $itemContainer.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionBodyItemVisualLineGroup')
+        $itemContainer.Resources['AxisFirstUseWizard.InstallersEpicInstructionOriginalText'] = $instructionItemText
+
+        $itemColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $itemColumn.Width = [System.Windows.GridLength]::Auto
+        [void]$itemContainer.ColumnDefinitions.Add($itemColumn)
+
+        foreach ($visualLine in @(Split-AxisInstallersEpicInstructionVisualLines -Text $instructionItemText -InstructionIndex $instructionIndex)) {
+            $visualLineText = [string]$visualLine
+            if ([string]::IsNullOrWhiteSpace($visualLineText)) {
+                continue
+            }
+
+            $textBlock = New-AxisWizardMixedBidiTextBlock `
+                -Text $visualLineText `
+                -Resources $Resources `
+                -Tag 'AxisFirstUseWizard.InstallersEpicInstructionBodyVisualLine' `
+                -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+                -FontWeightKey 'Axis.Type.Body.FontWeight' `
+                -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+                -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+                -MaxWidth $MaxWidth
+            $textBlock.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+            $textBlock.TextAlignment = [System.Windows.TextAlignment]::Right
+            $textBlock.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+            $textBlock.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionRightAlignedNoWrapMixedBidiLine')
+            [System.Windows.Controls.Grid]::SetColumn($textBlock, 0)
+            [void](Add-AxisWizardGridRow -Grid $itemContainer -Child $textBlock)
+        }
+
+        [System.Windows.Controls.Grid]::SetColumn($itemContainer, 0)
+        [void](Add-AxisWizardGridRow -Grid $group -Child $itemContainer)
+    }
+
+    return $group
+}
+
+function New-AxisInstallersEpicInstructionOverlay {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $overlay = [System.Windows.Controls.Border]::new()
+    $overlay.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionOverlay'
+    $overlay.Visibility = [System.Windows.Visibility]::Collapsed
+    $overlay.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString('#CC080808'))
+    $overlay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $overlay.Padding = New-AxisWizardThickness -Left 140 -Top 116 -Right 140 -Bottom 116
+    $overlay.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionOverlayNoCheckbox')
+
+    $card = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.ElevatedCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderStrong' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 24 -Top 22 -Right 24 -Bottom 20) `
+        -Elevation 'Card'
+    $card.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $card.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $card.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $card.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionCardFits900x650')
+
+    $stack = [System.Windows.Controls.Grid]::new()
+    $stack.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $stack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $stack.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionContent'
+
+    $title = New-AxisWizardMixedBidiTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerEpicInstructionOverlayTitle' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayTitle'))) `
+        -Resources $Resources `
+        -Tag 'AxisFirstUseWizard.InstallersEpicInstructionTitle' `
+        -FontSizeKey 'Axis.Type.SectionTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.SectionTitle.FontWeight' `
+        -FontFamilyKey 'Axis.Type.SectionTitle.FontFamily' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -MaxWidth 500
+    $title.TextAlignment = [System.Windows.TextAlignment]::Right
+    $title.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $title `
+        -Tag 'AxisFirstUseWizard.InstallersEpicInstructionTitleRightAnchor' `
+        -MaxWidth 500))
+
+    $bodyGroup = New-AxisInstallersEpicInstructionBodyGroup `
+        -Step $Step `
+        -Resources $Resources `
+        -MaxWidth 560
+    $bodyContent = [System.Windows.Controls.Grid]::new()
+    $bodyContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $bodyContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $bodyContent.MaxWidth = 560
+    $bodyContent.Margin = New-AxisWizardThickness -Left 0 -Top 8 -Right 0 -Bottom 0
+    $bodyContent.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionBodyContent'
+    [void](Add-AxisWizardGridRow -Grid $bodyContent -Child $bodyGroup)
+    [void](Add-AxisWizardGridRow -Grid $stack -Child (New-AxisWizardRightAnchor `
+        -Child $bodyContent `
+        -Tag 'AxisFirstUseWizard.InstallersEpicInstructionBodyRightAnchor' `
+        -MaxWidth 560))
+
+    $buttonRow = [System.Windows.Controls.StackPanel]::new()
+    $buttonRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $buttonRow.Margin = New-AxisWizardThickness -Left 0 -Top 18 -Right 0 -Bottom 0
+    $buttonRow.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionButtonArea'
+
+    $installButton = New-AxisWizardButton `
+        -Text 'Install' `
+        -Resources $Resources `
+        -Variant 'Primary' `
+        -Enabled $true `
+        -Width 118 `
+        -Height 40 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $installButton.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionInstallButton'
+    $installButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionInstallStartsSimulationOnly')
+
+    $returnButton = New-AxisWizardButton `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerEpicInstructionOverlayReturnLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersEpicOverlayReturn'))) `
+        -Resources $Resources `
+        -Variant 'Quiet' `
+        -Enabled $true `
+        -Width 104 `
+        -Height 40 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $returnButton.Tag = 'AxisFirstUseWizard.InstallersEpicInstructionReturnButton'
+    $returnButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersEpicInstructionReturnOnlyClosesOverlay')
+
+    [void]$buttonRow.Children.Add($installButton)
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 12 -Tag 'AxisFirstUseWizard.InstallersEpicInstructionButtonSpacer'))
+    [void]$buttonRow.Children.Add($returnButton)
+    [void](Add-AxisWizardGridRow -Grid $stack -Child $buttonRow)
+
+    $card.Child = $stack
+    $overlay.Child = $card
+
+    return $overlay
 }
 
 function New-AxisBiosInformationStep {
@@ -4336,19 +5391,19 @@ function New-AxisAutoUnattendInputOverlay {
     $usbSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $usbSelector.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $usbSelector.IsEditable = $false
-    $usbSelector.SnapsToDevicePixels = $true
-    $usbSelector.UseLayoutRounding = $true
-    $usbSelector.Padding = New-AxisWizardThickness -Left 10 -Top 6 -Right 12 -Bottom 6
     $usbSelector.MaxDropDownHeight = 160
     $usbSelector.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
     $usbSelector.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
-    $usbSelector.Background = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
-    $usbSelector.BorderBrush = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderStrong'
-    $usbSelector.Foreground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextPrimary'
-    $usbSelector.ItemContainerStyle = New-AxisWizardUsbComboBoxItemStyle -Resources $Resources
+    Set-AxisWizardSelectorComboBoxStyle `
+        -Selector $usbSelector `
+        -Resources $Resources `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft) `
+        -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Right) `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 6 -Right 12 -Bottom 6)
     $usbSelector.Resources['AxisFirstUseWizard.UsbSelectorReadableDarkStyle'] = $true
     $usbSelector.Resources['AxisFirstUseWizard.UsbSelectorMockOnly'] = $true
     $usbSelector.Resources['AxisFirstUseWizard.UsbInputWindowNoRealDriveDetection'] = $true
+    $usbSelector.Resources['AxisFirstUseWizard.UsbSelectorUsesSharedDarkAxisStyle'] = $true
     $usbSelector.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.UsbSelectorReadableDarkStyle')
     foreach ($mockUsbItem in @(Get-AxisWizardMapValue -Map $Step -Name 'MockUsbItems' -DefaultValue @('USB'))) {
         [void]$usbSelector.Items.Add([string]$mockUsbItem)
@@ -4504,6 +5559,10 @@ function New-AxisFirstUseWizardStepContent {
 
     if ($stepId -eq 'to-bios') {
         return New-AxisToBiosStep -Step $Step -Resources $Resources
+    }
+
+    if ($stepId -eq 'installers') {
+        return New-AxisInstallersStep -Step $Step -Resources $Resources
     }
 
     if ($stepId -eq 'reinstall') {
@@ -4847,11 +5906,13 @@ function New-AxisFirstUseWizardPrototype {
     $stepViews = [object[]]::new($steps.Count)
     $stepOverlays = [object[]]::new($steps.Count)
     $stepInputOverlays = [object[]]::new($steps.Count)
+    $stepEpicInstructionOverlays = [object[]]::new($steps.Count)
     $stepCompletedFlags = [bool[]]::new($steps.Count)
     $stepStageNames = [string[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
         $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
         $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
+        $stepIdForOverlay = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'Id')
         $requiresConfirmationAcknowledgement = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'RequiresConfirmationAcknowledgement' -DefaultValue $false)
         if ($requiresConfirmationAcknowledgement) {
             $stepOverlays[$stepIndex] = New-AxisStepAcknowledgementOverlay -Step $stepMap -Resources $resources
@@ -4865,6 +5926,12 @@ function New-AxisFirstUseWizardPrototype {
         }
         else {
             $stepInputOverlays[$stepIndex] = $null
+        }
+        if ($stepIdForOverlay -eq 'installers') {
+            $stepEpicInstructionOverlays[$stepIndex] = New-AxisInstallersEpicInstructionOverlay -Step $stepMap -Resources $resources
+        }
+        else {
+            $stepEpicInstructionOverlays[$stepIndex] = $null
         }
         $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
         $stepStageNames[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'StageName' -DefaultValue 'Check')
@@ -4947,6 +6014,14 @@ function New-AxisFirstUseWizardPrototype {
         [System.Windows.Controls.Grid]::SetRowSpan($inputOverlay, 4)
         [void]$root.Children.Add($inputOverlay)
     }
+    foreach ($epicInstructionOverlay in @($stepEpicInstructionOverlays)) {
+        if ($null -eq $epicInstructionOverlay) {
+            continue
+        }
+
+        [System.Windows.Controls.Grid]::SetRowSpan($epicInstructionOverlay, 4)
+        [void]$root.Children.Add($epicInstructionOverlay)
+    }
 
     $primaryButton = $null
     $confirmButton = $null
@@ -4999,6 +6074,7 @@ function New-AxisFirstUseWizardPrototype {
     $stepViewsForNavigation = $stepViews
     $stepOverlaysForNavigation = $stepOverlays
     $stepInputOverlaysForNavigation = $stepInputOverlays
+    $stepEpicInstructionOverlaysForNavigation = $stepEpicInstructionOverlays
     $stepCompletedFlagsForNavigation = $stepCompletedFlags
     $stageTextForNavigation = $stageText
     $stepStageNamesForNavigation = $stepStageNames
@@ -5041,6 +6117,13 @@ function New-AxisFirstUseWizardPrototype {
                 }
 
                 $inputOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            foreach ($epicInstructionOverlayForNavigation in @($stepEpicInstructionOverlaysForNavigation)) {
+                if ($null -eq $epicInstructionOverlayForNavigation) {
+                    continue
+                }
+
+                $epicInstructionOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
 
             $currentNavigationIndex = $currentNavigationIndex - 1
@@ -5094,6 +6177,13 @@ function New-AxisFirstUseWizardPrototype {
 
                 $inputOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
             }
+            foreach ($epicInstructionOverlayForNavigation in @($stepEpicInstructionOverlaysForNavigation)) {
+                if ($null -eq $epicInstructionOverlayForNavigation) {
+                    continue
+                }
+
+                $epicInstructionOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
 
             $currentNavigationIndex = $currentNavigationIndex + 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
@@ -5127,6 +6217,7 @@ function New-AxisFirstUseWizardPrototype {
         $handlerContent = $stepViews[$handlerStepIndex]
         $handlerOverlay = $stepOverlays[$handlerStepIndex]
         $handlerInputOverlay = $stepInputOverlays[$handlerStepIndex]
+        $handlerEpicInstructionOverlay = $stepEpicInstructionOverlays[$handlerStepIndex]
 
         $visited.Clear()
         $primaryButton = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton'
@@ -5147,6 +6238,10 @@ function New-AxisFirstUseWizardPrototype {
         $inputAccountBox = Find-AxisWizardTaggedElement -Node $handlerInputOverlay -Tag $inputAccountTextBoxTagForLookup
         $visited.Clear()
         $inputUsbSelector = Find-AxisWizardTaggedElement -Node $handlerInputOverlay -Tag $inputUsbSelectorTagForLookup
+        $visited.Clear()
+        $epicInstructionInstallButton = Find-AxisWizardTaggedElement -Node $handlerEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionInstallButton'
+        $visited.Clear()
+        $epicInstructionReturnButton = Find-AxisWizardTaggedElement -Node $handlerEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionReturnButton'
 
         $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $handlerStep -Resources $resources
         $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $handlerStep -Resources $resources
@@ -5155,11 +6250,14 @@ function New-AxisFirstUseWizardPrototype {
         $handlerStepIndexForClosure = $handlerStepIndex
         $handlerOverlayForClosure = $handlerOverlay
         $handlerInputOverlayForClosure = $handlerInputOverlay
+        $handlerEpicInstructionOverlayForClosure = $handlerEpicInstructionOverlay
         $runtimeStatusHostForHandler = $runtimeStatusHost
         $runtimeStatusSpacerForHandler = $runtimeStatusSpacer
+        $primaryButtonForHandler = $primaryButton
         $confirmationAcknowledgementForHandler = $confirmationAcknowledgement
         $stepOverlaysForHandler = $stepOverlays
         $stepInputOverlaysForHandler = $stepInputOverlays
+        $stepEpicInstructionOverlaysForHandler = $stepEpicInstructionOverlays
         $hasConfirmationOverlayForHandler = ($null -ne $handlerOverlay)
         $hasInputOverlayForHandler = ($null -ne $handlerInputOverlay)
         $inputCreateButtonForHandler = $inputCreateButton
@@ -5200,6 +6298,9 @@ function New-AxisFirstUseWizardPrototype {
 
         if ($primaryButton -is [System.Windows.Controls.Button]) {
             $primaryButton.Add_Click({
+                if ($primaryButtonForHandler -is [System.Windows.Controls.Button] -and -not [bool]$primaryButtonForHandler.IsEnabled) {
+                    return
+                }
                 foreach ($overlayForHandler in @($stepOverlaysForHandler)) {
                     if ($null -eq $overlayForHandler) {
                         continue
@@ -5214,6 +6315,13 @@ function New-AxisFirstUseWizardPrototype {
 
                     $inputOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
                 }
+                foreach ($epicInstructionOverlayForHandler in @($stepEpicInstructionOverlaysForHandler)) {
+                    if ($null -eq $epicInstructionOverlayForHandler) {
+                        continue
+                    }
+
+                    $epicInstructionOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
                 if ($hasInputOverlayForHandler) {
                     if ($inputAccountBoxForHandler -is [System.Windows.Controls.TextBox]) {
                         $inputAccountBoxForHandler.Text = ''
@@ -5225,6 +6333,14 @@ function New-AxisFirstUseWizardPrototype {
                         $inputCreateButtonForHandler.IsEnabled = $false
                     }
                     $handlerInputOverlayForClosure.Visibility = [System.Windows.Visibility]::Visible
+                    return
+                }
+                if (
+                    $handlerEpicInstructionOverlayForClosure -is [System.Windows.Controls.Border] -and
+                    $primaryButtonForHandler -is [System.Windows.Controls.Button] -and
+                    [bool]$primaryButtonForHandler.Resources['AxisFirstUseWizard.InstallersEpicSelected']
+                ) {
+                    $handlerEpicInstructionOverlayForClosure.Visibility = [System.Windows.Visibility]::Visible
                     return
                 }
                 if (-not $hasConfirmationOverlayForHandler) {
@@ -5244,6 +6360,23 @@ function New-AxisFirstUseWizardPrototype {
         if ($confirmButton -is [System.Windows.Controls.Button]) {
             $confirmButton.Add_Click({
                 $handlerOverlayForClosure.Visibility = [System.Windows.Visibility]::Collapsed
+                $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
+                $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
+                $completionTimerForHandler.Stop()
+                $completionTimerForHandler.Start()
+            }.GetNewClosure())
+        }
+
+        if ($epicInstructionReturnButton -is [System.Windows.Controls.Button]) {
+            $epicInstructionReturnButton.Add_Click({
+                $handlerEpicInstructionOverlayForClosure.Visibility = [System.Windows.Visibility]::Collapsed
+            }.GetNewClosure())
+        }
+
+        if ($epicInstructionInstallButton -is [System.Windows.Controls.Button]) {
+            $epicInstructionInstallButton.Add_Click({
+                $handlerEpicInstructionOverlayForClosure.Visibility = [System.Windows.Visibility]::Collapsed
                 $runtimeStatusHostForHandler.Child = $checkingRuntimeStatusForHandler
                 $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
                 $runtimeStatusSpacerForHandler.Visibility = [System.Windows.Visibility]::Visible
