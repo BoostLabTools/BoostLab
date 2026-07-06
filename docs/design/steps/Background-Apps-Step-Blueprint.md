@@ -16,7 +16,7 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Field | Value |
 | --- | --- |
 | Internal tool ID | `background-apps` |
-| Customer-facing step title | `ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ø§Ù„Ø®Ù„ÙÙŠØ©` |
+| Customer-facing step title | `Background Apps` |
 | Stage | `Setup` |
 | Visible stage label | `Setup` |
 | Production action mapping | customer-facing `ØªØ¹Ø·ÙŠÙ„ ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ø§Ù„Ø®Ù„ÙÙŠØ©` maps later to internal `Apply` for `background-apps` |
@@ -28,7 +28,7 @@ Internal runtime actions may include Apply and Default according to config/runti
 
 | Surface | Owner-approved value |
 | --- | --- |
-| Title | `ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ø§Ù„Ø®Ù„ÙÙŠØ©` |
+| Title | `Background Apps` |
 | Subtitle | `ØªØ¹Ø·ÙŠÙ„ Ø¹Ù…Ù„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª ÙÙŠ Ø§Ù„Ø®Ù„ÙÙŠØ©.` |
 | Primary action button | `ØªØ¹Ø·ÙŠÙ„ ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ø§Ù„Ø®Ù„ÙÙŠØ©` |
 | Information card title | `ØªÙ‚Ù„ÙŠÙ„ Ù†Ø´Ø§Ø· Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª` |

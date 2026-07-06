@@ -109,7 +109,9 @@ function New-AxisWizardRightAnchor {
         [Parameter(Mandatory)]
         [string]$Tag,
 
-        [double]$MaxWidth = 0.0
+        [double]$MaxWidth = 0.0,
+
+        [switch]$PreserveChildFlowDirection
     )
 
     $anchor = [System.Windows.Controls.Grid]::new()
@@ -118,7 +120,9 @@ function New-AxisWizardRightAnchor {
     $anchor.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
 
     $Child.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-    $Child.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    if (-not $PreserveChildFlowDirection) {
+        $Child.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    }
     if ($MaxWidth -gt 0.0) {
         $Child.MaxWidth = $MaxWidth
     }
@@ -226,7 +230,7 @@ function New-AxisWizardMixedBidiTextBlock {
     }
 
     $textBlock.Inlines.Clear()
-    $englishTermPattern = 'setupcomplete\.cmd|Windows Update|AutoUnattend|Microsoft|Windows|BIOS|OOBE|USB|XML'
+    $englishTermPattern = 'setupcomplete\.cmd|Memory Compression|Microsoft Edge|Microsoft Store|Windows Update|Task Manager|Windows Home|Windows Pro|Resizable BAR|BitLocker|AutoUnattend|Ctrl \+ V|Microsoft|Windows|BIOS|OOBE|USB|XML'
     $currentIndex = 0
     foreach ($match in [regex]::Matches($Text, $englishTermPattern)) {
         if ($match.Index -gt $currentIndex) {
@@ -1112,6 +1116,129 @@ function ConvertFrom-AxisWizardCodePoints {
     return [string]::Concat(@($CodePoints | ForEach-Object { [char]$_ }))
 }
 
+function ConvertFrom-AxisWizardBase64Text {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Value
+    )
+
+    return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Value))
+}
+
+function Get-AxisWizardSetupText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $values = @{
+        BitLockerSubtitle = '2KrYudi32YrZhCDYqti02YHZitixIEJpdExvY2tlciDYudmE2Ykg2KfZhNmC2LHYtS4='
+        BitLockerPrimaryAction = '2KXZitmC2KfZgSBCaXRMb2NrZXI='
+        BitLockerInfoTitle = '2KrYudi32YrZhCDYqti02YHZitixINin2YTZgtix2LU='
+        BitLockerInfoBullet1 = '2KrYudi32YrZhCDYqtmC2YbZitipIEJpdExvY2tlciDYudmE2Ykg2KfZhNmC2LHYtS4='
+        BitLockerInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINil2LLYp9mE2Kkg2KfZhNiq2LTZgdmK2LEg2YXZhiDYp9mE2YLYsdi1INmC2KjZhCDZhdiq2KfYqNi52Kkg2KXYudiv2KfYryDYp9mE2YbYuNin2YUu'
+        BitLockerInfoBullet3 = '2KjYudivINin2YPYqtmF2KfZhCDYp9mE2K7Yt9mI2KnYjCDZiti12KjYrSDYp9mE2YLYsdi1INis2KfZh9iy2YvYpyDZhNmE2YXYqtin2KjYudipINio2K/ZiNmGINiq2LTZgdmK2LEgQml0TG9ja2VyLg=='
+        BitLockerRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        BitLockerCompleted = '2YXZg9iq2YXZhA=='
+        ConvertHomeToProSubtitle = '2KfZhNiq2K3ZiNmK2YQg2YXZhiDYpdi12K/Yp9ixIFdpbmRvd3MgSG9tZSDYpdmE2YkgV2luZG93cyBQcm8u'
+        ConvertHomeToProPrimaryAction = '2KfZhNiq2LHZgtmK2Kkg2KXZhNmJIFdpbmRvd3MgUHJv'
+        ConvertHomeToProInfoTitle = '2KrYsdmC2YrYqSDYpdi12K/Yp9ixIFdpbmRvd3M='
+        ConvertHomeToProInfoBullet1 = '2KrYrNmH2YrYsiDYp9mE2KrYrdmI2YrZhCDZhdmGINil2LXYr9in2LEgV2luZG93cyBIb21lINil2YTZiSBXaW5kb3dzIFByby4='
+        ConvertHomeToProInfoBullet2 = '2LPZitiq2YUg2YHYqtitINmG2KfZgdiw2Kkg2KXYr9iu2KfZhCDZhdmB2KrYp9itINin2YTZhdmG2KrYrCDYr9in2K7ZhCBXaW5kb3dzLg=='
+        ConvertHomeToProInfoBullet3 = '2KjYudivINmB2KrYrSDYp9mE2YbYp9mB2LDYqdiMINmK2YXZg9mG2YMg2YTYtdmCINin2YTZhdmB2KrYp9itINmF2KjYp9i02LHYqSDZhNmE2YXYqtin2KjYudipLg=='
+        ConvertHomeToProRequirementsTitle = '2KfZhNmF2KrYt9mE2KjYp9iq'
+        ConvertHomeToProRequirement1 = '2LPZitiq2YUg2YbYs9iuINin2YTZhdmB2KrYp9itINiq2YTZgtin2KbZitmL2Kcu'
+        ConvertHomeToProRequirement2 = '2LnZhtivINi42YfZiNixINmG2KfZgdiw2Kkg2KXYr9iu2KfZhCDYp9mE2YXZgdiq2KfYrdiMINin2LPYqtiu2K/ZhSBDdHJsICsgViDZhNmE2LXZgiDYp9mE2YXZgdiq2KfYrS4='
+        ConvertHomeToProRunning = '2YrYqtmFINin2YTYqtis2YfZitiy'
+        ConvertHomeToProCompleted = '2KzYp9mH2LIg2YTZhNi12YI='
+        MemoryCompressionSubtitle = '2KrYudi32YrZhCDZhdmK2LLYqSBNZW1vcnkgQ29tcHJlc3Npb24g2YXZhiDYp9mE2YbYuNin2YUu'
+        MemoryCompressionPrimaryAction = '2KrYudi32YrZhCBNZW1vcnkgQ29tcHJlc3Npb24='
+        MemoryCompressionInfoTitle = '2KrYudi32YrZhCDYtti62Lcg2KfZhNiw2KfZg9ix2Kk='
+        MemoryCompressionInfoBullet1 = '2KrYudi32YrZhCDZhdmK2LLYqSBNZW1vcnkgQ29tcHJlc3Npb24g2YHZiiBXaW5kb3dzLg=='
+        MemoryCompressionInfoBullet2 = '2KrYs9in2LnYryDZh9iw2Ycg2KfZhNiu2LfZiNipINi52YTZiSDYrNi52YQg2KXYr9in2LHYqSDYp9mE2LDYp9mD2LHYqSDYo9mD2KvYsSDZhdio2KfYtNix2Kkg2KPYq9mG2KfYoSDYp9mE2KfYs9iq2K7Yr9in2YUu'
+        MemoryCompressionInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K8g2KrZhNmC2KfYptmK2YvYpyDYqNiv2YjZhiDYo9mKINiu2LfZiNin2Kog2KXYttin2YHZitipINmF2YYg2KfZhNi52YXZitmELg=='
+        MemoryCompressionRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        MemoryCompressionCompleted = '2YXZg9iq2YXZhA=='
+        DateLanguageRegionTimeTitle = '2KfZhNiq2KfYsdmK2K4g2YjYp9mE2YjZgtiq'
+        DateLanguageRegionTimeSubtitle = '2LbYqNi3INil2LnYr9in2K/Yp9iqIFdpbmRvd3Mg2YrYr9mI2YrZi9inLg=='
+        DateLanguageRegionTimePrimaryAction = '2KfZgdiq2K0='
+        DateLanguageRegionTimeInfoTitle = '2YXYsdin2KzYudipINil2LnYr9in2K/Yp9iqINin2YTZhdmG2LfZgtipINmI2KfZhNmI2YLYqg=='
+        DateLanguageRegionTimeInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2KfZhNiq2KfYsdmK2K4g2YjYp9mE2YjZgtiqINiv2KfYrtmEIFdpbmRvd3Mu'
+        DateLanguageRegionTimeInfoBullet2 = '2LHYp9is2Lkg2KfZhNmE2LrYqSDZiNin2YTZhdmG2LfZgtipINit2LPYqCDYqtmB2LbZitmE2KfYqtmDLg=='
+        DateLanguageRegionTimeInfoBullet3 = '2KrYo9mD2K8g2KPZhiDYp9mE2YjZgtiqINmI2KfZhNmF2YbYt9mC2Kkg2YXYttio2YjYt9mK2YYg2YLYqNmEINmF2KrYp9io2LnYqSDYp9mE2KXYudiv2KfYry4='
+        DateLanguageRegionTimeRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        DateLanguageRegionTimeCompleted = '2YXZg9iq2YXZhA=='
+        StartupAppsSettingsSubtitle = '2KXYudiv2KfYr9in2Kog2KrYt9io2YrZgtin2Kog2KjYr9ihINin2YTYqti02LrZitmELg=='
+        StartupAppsSettingsPrimaryAction = '2KfZgdiq2K0='
+        StartupAppsSettingsInfoTitle = '2KrYt9io2YrZgtin2Kog2KjYr9ihINin2YTYqti02LrZitmE'
+        StartupAppsSettingsInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2KrYt9io2YrZgtin2Kog2KjYr9ihINin2YTYqti02LrZitmEINiv2KfYrtmEIFdpbmRvd3Mu'
+        StartupAppsSettingsInfoBullet2 = '2LHYp9is2Lkg2KfZhNiq2LfYqNmK2YLYp9iqINin2YTYqtmKINiq2LnZhdmEINiq2YTZgtin2KbZitmL2Kcg2LnZhtivINiq2LTYutmK2YQg2KfZhNis2YfYp9iyLg=='
+        StartupAppsSettingsInfoBullet3 = '2KrYudi32YrZhCDYp9mE2KrYt9io2YrZgtin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kkg2YrYs9in2LnYryDYudmE2Ykg2KrYrdiz2YrZhiDYs9ix2LnYqSDYp9mE2KXZgtmE2KfYuS4='
+        StartupAppsSettingsRequirementsTitle = '2KfZhNmF2KrYt9mE2KjYp9iq'
+        StartupAppsSettingsRequirement1 = '2YLZhSDYqNil2LrZhNin2YIg2KzZhdmK2Lkg2KfZhNiq2LfYqNmK2YLYp9iqINmC2KjZhCDYp9mE2YXYqtin2KjYudipLg=='
+        StartupAppsSettingsRequirement2 = '2YfYsNmHINin2YTYrti32YjYqSDZhdmI2LXZiSDYqNmH2Kcg2YTZhNit2LXZiNmEINi52YTZiSDZhdix2KfYrNi52Kkg2KPZiNi22K0g2YTYqti32KjZitmC2KfYqiDYqNiv2KEg2KfZhNiq2LTYutmK2YQu'
+        StartupAppsSettingsRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        StartupAppsSettingsCompleted = '2YXZg9iq2YXZhA=='
+        StartupAppsTaskManagerSubtitle = '2KXYudiv2KfYr9in2Kog2KjYr9ihINin2YTYqti02LrZitmEINmF2YYgVGFzayBNYW5hZ2VyLg=='
+        StartupAppsTaskManagerPrimaryAction = '2KfZgdiq2K0='
+        StartupAppsTaskManagerInfoTitle = '2YXYsdin2KzYudipINio2K/YoSDYp9mE2KrYtNi62YrZhA=='
+        StartupAppsTaskManagerInfoBullet1 = '2KfZgdiq2K0gVGFzayBNYW5hZ2VyINi52YTZiSDZgtiz2YUg2KrYt9io2YrZgtin2Kog2KjYr9ihINin2YTYqti02LrZitmELg=='
+        StartupAppsTaskManagerInfoBullet2 = '2LHYp9is2Lkg2KfZhNiq2LfYqNmK2YLYp9iqINin2YTYqtmKINiq2LnZhdmEINiq2YTZgtin2KbZitmL2Kcg2LnZhtivINil2YLZhNin2LkgV2luZG93cy4='
+        StartupAppsTaskManagerInfoBullet3 = '2YfYsNmHINin2YTZhdix2KfYrNi52Kkg2KrYs9in2LnYr9mDINi52YTZiSDYqti52LfZitmEINin2YTYudmG2KfYtdixINi62YrYsSDYp9mE2LbYsdmI2LHZitipLg=='
+        StartupAppsTaskManagerRequirementsTitle = '2KfZhNmF2KrYt9mE2KjYp9iq'
+        StartupAppsTaskManagerRequirement1 = '2YLZhSDYqNil2LrZhNin2YIg2KzZhdmK2Lkg2KfZhNiq2LfYqNmK2YLYp9iqINmC2KjZhCDYp9mE2YXYqtin2KjYudipLg=='
+        StartupAppsTaskManagerRequirement2 = '2YfYsNmHINin2YTYrti32YjYqSDZhdmI2LXZiSDYqNmH2Kcg2YLYqNmEINmF2LHYp9is2LnYqSDYqti32KjZitmC2KfYqiDYqNiv2KEg2KfZhNiq2LTYutmK2YQu'
+        StartupAppsTaskManagerRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        StartupAppsTaskManagerCompleted = '2YXZg9iq2YXZhA=='
+        BackgroundAppsTitle = '2KrYt9io2YrZgtin2Kog2KfZhNiu2YTZgdmK2Kk='
+        BackgroundAppsSubtitle = '2KrYudi32YrZhCDYudmF2YQg2KfZhNiq2LfYqNmK2YLYp9iqINmB2Yog2KfZhNiu2YTZgdmK2Kku'
+        BackgroundAppsPrimaryAction = '2KrYudi32YrZhCDYqti32KjZitmC2KfYqiDYp9mE2K7ZhNmB2YrYqQ=='
+        BackgroundAppsInfoTitle = '2KrZgtmE2YrZhCDZhti02KfYtyDYp9mE2KrYt9io2YrZgtin2Ko='
+        BackgroundAppsInfoBullet1 = '2KrYudi32YrZhCDYudmF2YQg2KfZhNiq2LfYqNmK2YLYp9iqINi62YrYsSDYp9mE2LbYsdmI2LHZitipINmB2Yog2KfZhNiu2YTZgdmK2Kku'
+        BackgroundAppsInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YLZhNmK2YQg2KfYs9iq2YfZhNin2YMg2KfZhNmF2YjYp9ix2K8g2KPYq9mG2KfYoSDYp9iz2KrYrtiv2KfZhSDYp9mE2KzZh9in2LIu'
+        BackgroundAppsInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K8g2KrZhNmC2KfYptmK2YvYpyDYqNiv2YjZhiDYp9mE2K3Yp9is2Kkg2KXZhNmJINiu2LfZiNin2Kog2KXYttin2YHZitipLg=='
+        BackgroundAppsRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        BackgroundAppsCompleted = '2YXZg9iq2YXZhA=='
+        EdgeSettingsSubtitle = '2LbYqNi3IE1pY3Jvc29mdCBFZGdlINmI2KrZgtmE2YrZhCDYp9mE2KXYudiv2KfYr9in2Kog2LrZitixINin2YTYttix2YjYsdmK2Kku'
+        EdgeSettingsPrimaryAction = 'T3B0aW1pemUgTWljcm9zb2Z0IEVkZ2U='
+        EdgeSettingsInfoTitle = '2KrYrdiz2YrZhiDYpdi52K/Yp9iv2KfYqiDYp9mE2YXYqti12YHYrQ=='
+        EdgeSettingsInfoBullet1 = '2LbYqNi3INil2LnYr9in2K/Yp9iqIE1pY3Jvc29mdCBFZGdlINmE2KrYrNix2KjYqSDYp9iz2KrYrtiv2KfZhSDYo9mG2LjZgS4='
+        EdgeSettingsInfoBullet2 = '2KrZgtmE2YrZhCDYp9mE2LnZhtin2LXYsSDZiNin2YTYpdi52K/Yp9iv2KfYqiDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDYr9in2K7ZhCDYp9mE2YXYqti12YHYrS4='
+        EdgeSettingsInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        EdgeSettingsRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        EdgeSettingsCompleted = '2YXZg9iq2YXZhA=='
+        StoreSettingsSubtitle = '2LbYqNi3IE1pY3Jvc29mdCBTdG9yZSDZiNiq2YLZhNmK2YQg2KfZhNil2LnYr9in2K/Yp9iqINi62YrYsSDYp9mE2LbYsdmI2LHZitipLg=='
+        StoreSettingsPrimaryAction = 'T3B0aW1pemUgTWljcm9zb2Z0IFN0b3Jl'
+        StoreSettingsInfoTitle = '2KrYrdiz2YrZhiDYpdi52K/Yp9iv2KfYqiDYp9mE2YXYqtis2LE='
+        StoreSettingsInfoBullet1 = '2LbYqNi3INil2LnYr9in2K/Yp9iqIE1pY3Jvc29mdCBTdG9yZSDZhNiq2KzYsdio2Kkg2KfYs9iq2K7Yr9in2YUg2KPZhti42YEu'
+        StoreSettingsInfoBullet2 = '2KrZgtmE2YrZhCDYp9mE2LnZhtin2LXYsSDZiNin2YTYpdi52K/Yp9iv2KfYqiDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDYr9in2K7ZhCDYp9mE2YXYqtis2LEu'
+        StoreSettingsInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        StoreSettingsRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        StoreSettingsCompleted = '2YXZg9iq2YXZhA=='
+        UpdatesPauseSubtitle = '2KXZitmC2KfZgSDZhdik2YLYqiDZhNiq2K3Yr9mK2KvYp9iqIFdpbmRvd3Mu'
+        UpdatesPausePrimaryAction = '2KXZitmC2KfZgSDYp9mE2KrYrdiv2YrYq9in2Ko='
+        UpdatesPauseInfoTitle = '2KXZitmC2KfZgSDYqtit2K/Zitir2KfYqiBXaW5kb3dzINmF2KTZgtiq2YvYpw=='
+        UpdatesPauseInfoBullet1 = '2KXZitmC2KfZgSDYqtit2K/Zitir2KfYqiBXaW5kb3dzINmF2KTZgtiq2YvYpyDZhNiq2YLZhNmK2YQg2KfZhNmF2YLYp9i32LnYp9iqINij2KvZhtin2KEg2KfYs9iq2K7Yr9in2YUg2KfZhNis2YfYp9iyLg=='
+        UpdatesPauseInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YjZgdmK2LEg2KrYrNix2KjYqSDYo9mD2KvYsSDZh9iv2YjYodmL2Kcg2KjYr9mI2YYg2KfZhti02LrYp9mEINmF2LPYqtmF2LEg2KjYp9mE2KrYrdiv2YrYq9in2Kou'
+        UpdatesPauseInfoBullet3 = '2YrZhdmD2YYg2YXYqtin2KjYudipINil2LnYr9in2K8g2KfZhNmG2LjYp9mFINio2LnYryDYp9mD2KrZhdin2YQg2YfYsNmHINin2YTYrti32YjYqS4='
+        UpdatesPauseRequirementsTitle = '2KfZhNmF2KrYt9mE2KjYp9iq'
+        UpdatesPauseRequirement1 = '2KfZgtix2KMg2KfZhNiq2LnZhNmK2YXYp9iqINmC2KjZhCDYpdmK2YLYp9mBINin2YTYqtit2K/Zitir2KfYqi4='
+        UpdatesPauseConfirmationCheckbox = '2YTZgtivINmC2LHYo9iqINin2YTYqti52YTZitmF2KfYqg=='
+        UpdatesPauseConfirmationPrimary = '2KXZitmC2KfZgSDYp9mE2KrYrdiv2YrYq9in2Ko='
+        UpdatesPauseConfirmationReturn = '2LHYrNmI2Lk='
+        UpdatesPauseRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        UpdatesPauseCompleted = '2YXZg9iq2YXZhA=='
+    }
+
+    if (-not $values.ContainsKey($Name)) {
+        throw "Unknown AXIS Setup text resource: $Name"
+    }
+
+    return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
+}
+
 function Get-AxisWizardArabicText {
     [CmdletBinding()]
     param(
@@ -1766,6 +1893,124 @@ function Get-AxisFirstUseWizardSampleState {
         PrototypeOnly = $true
     }
 
+    function New-AxisSetupWizardStepState {
+        param(
+            [Parameter(Mandatory)]
+            [string]$Id,
+
+            [Parameter(Mandatory)]
+            [string]$Title,
+
+            [Parameter(Mandatory)]
+            [string]$Description,
+
+            [Parameter(Mandatory)]
+            [string]$PrimaryActionLabel,
+
+            [Parameter(Mandatory)]
+            [string]$InformationCardTitle,
+
+            [Parameter(Mandatory)]
+            [string[]]$InformationItems,
+
+            [Parameter(Mandatory)]
+            [string]$CheckingStatusTitle,
+
+            [Parameter(Mandatory)]
+            [string]$CompletedStatusTitle,
+
+            [Parameter(Mandatory)]
+            [string]$CustomerAction,
+
+            [Parameter(Mandatory)]
+            [string]$FutureInternalAction,
+
+            [Parameter(Mandatory)]
+            [string]$TagRoot,
+
+            [string[]]$RequirementsItems = @(),
+
+            [string]$RequirementsTitle = '',
+
+            [bool]$RequiresConfirmationAcknowledgement = $false,
+
+            [string]$DocumentationAcknowledgementText = '',
+
+            [string]$ConfirmationActionLabel = '',
+
+            [string]$ConfirmationReturnLabel = '',
+
+            [bool]$OpenMappedPrototypeOnly = $false,
+
+            [double]$PrimaryActionWidth = 142.0,
+
+            [double]$RuntimeStatusWidth = 234.0,
+
+            [double]$RuntimeStatusContentWidth = 210.0,
+
+            [double]$RuntimeStatusTextMaxWidth = 106.0,
+
+            [double]$ConfirmationActionWidth = 124.0
+        )
+
+        $step = [ordered]@{
+            Id = $Id
+            Title = $Title
+            StageName = 'Setup'
+            State = 'Ready'
+            StateLabel = ''
+            PrimaryActionLabel = $PrimaryActionLabel
+            RunningActionLabel = $PrimaryActionLabel
+            CompletionStateLabel = $CompletedStatusTitle
+            CompletedStatusText = ''
+            Description = $Description
+            InformationCardTitle = $InformationCardTitle
+            InformationItems = @($InformationItems)
+            ShowRequirements = ($RequirementsItems.Count -gt 0)
+            DocumentationLabel = (Get-AxisWizardArabicText -Name 'Documentation')
+            RequiresConfirmationAcknowledgement = $RequiresConfirmationAcknowledgement
+            SupportTitle = (Get-AxisWizardArabicText -Name 'SupportTitle')
+            SupportBody = (Get-AxisWizardArabicText -Name 'SupportBody')
+            CheckingStatusTitle = $CheckingStatusTitle
+            CompletedStatusTitle = $CompletedStatusTitle
+            CustomerAction = $CustomerAction
+            FutureInternalAction = $FutureInternalAction
+            CustomerVisibleActions = @($PrimaryActionLabel)
+            PrototypeOnlySimulation = $true
+            SetupStageBatchMarker = 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
+            NoRealActionMarker = 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction'
+            TagRoot = $TagRoot
+            PrimaryActionWidth = $PrimaryActionWidth
+            RuntimeStatusWidth = $RuntimeStatusWidth
+            RuntimeStatusContentWidth = $RuntimeStatusContentWidth
+            RuntimeStatusTextMaxWidth = $RuntimeStatusTextMaxWidth
+        }
+
+        if ($RequirementsItems.Count -gt 0) {
+            $step['RequirementsTitle'] = $RequirementsTitle
+            $step['RequirementsItems'] = @($RequirementsItems)
+        }
+        else {
+            $step['NoRequirementsCard'] = $true
+        }
+
+        if ($RequiresConfirmationAcknowledgement) {
+            $step['DocumentationAcknowledgementText'] = $DocumentationAcknowledgementText
+            $step['ConfirmationActionLabel'] = $ConfirmationActionLabel
+            $step['ConfirmationReturnLabel'] = $ConfirmationReturnLabel
+            $step['ConfirmationActionWidth'] = $ConfirmationActionWidth
+        }
+        else {
+            $step['NoConfirmationOverlay'] = $true
+        }
+
+        if ($OpenMappedPrototypeOnly) {
+            $step['OpenMappedPrototypeOnly'] = $true
+        }
+
+        return $step
+    }
+
     $biosStep = [ordered]@{
         Id = 'bios-information'
         Title = 'BIOS Drivers & Downloads'
@@ -2001,6 +2246,213 @@ function Get-AxisFirstUseWizardSampleState {
         PrototypeOnlySimulation = $true
     }
 
+    $bitLockerStep = New-AxisSetupWizardStepState `
+        -Id 'bitlocker' `
+        -Title 'BitLocker' `
+        -Description (Get-AxisWizardSetupText -Name 'BitLockerSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'BitLockerPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'BitLockerInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'BitLockerInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'BitLockerInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'BitLockerInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'BitLockerRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'BitLockerCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupBitLocker' `
+        -PrimaryActionWidth 190.0
+
+    $convertHomeToProStep = New-AxisSetupWizardStepState `
+        -Id 'convert-home-to-pro' `
+        -Title 'Convert Home to Pro' `
+        -Description (Get-AxisWizardSetupText -Name 'ConvertHomeToProSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'ConvertHomeToProPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'ConvertHomeToProRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'ConvertHomeToProRequirement1')
+            (Get-AxisWizardSetupText -Name 'ConvertHomeToProRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'ConvertHomeToProRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'ConvertHomeToProCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupConvertHomeToPro' `
+        -PrimaryActionWidth 238.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0
+
+    $memoryCompressionStep = New-AxisSetupWizardStepState `
+        -Id 'memory-compression' `
+        -Title 'Memory Compression' `
+        -Description (Get-AxisWizardSetupText -Name 'MemoryCompressionSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'MemoryCompressionPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'MemoryCompressionInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'MemoryCompressionRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'MemoryCompressionCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupMemoryCompression' `
+        -PrimaryActionWidth 260.0
+
+    $dateLanguageRegionTimeStep = New-AxisSetupWizardStepState `
+        -Id 'date-language-region-time' `
+        -Title (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeTitle') `
+        -Description (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimePrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeCompleted') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'SetupDateLanguageRegionTime' `
+        -OpenMappedPrototypeOnly $true
+
+    $startupAppsSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'startup-apps-settings' `
+        -Title 'Startup Apps Settings' `
+        -Description (Get-AxisWizardSetupText -Name 'StartupAppsSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'StartupAppsSettingsPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsCompleted') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'SetupStartupAppsSettings' `
+        -OpenMappedPrototypeOnly $true
+
+    $startupAppsTaskManagerStep = New-AxisSetupWizardStepState `
+        -Id 'startup-apps-task-manager' `
+        -Title 'Startup Apps Task Manager' `
+        -Description (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerCompleted') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'SetupStartupAppsTaskManager' `
+        -OpenMappedPrototypeOnly $true
+
+    $backgroundAppsStep = New-AxisSetupWizardStepState `
+        -Id 'background-apps' `
+        -Title 'Background Apps' `
+        -Description (Get-AxisWizardSetupText -Name 'BackgroundAppsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'BackgroundAppsPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'BackgroundAppsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'BackgroundAppsRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'BackgroundAppsCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupBackgroundApps' `
+        -PrimaryActionWidth 220.0
+
+    $edgeSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'edge-settings' `
+        -Title 'Microsoft Edge Settings' `
+        -Description (Get-AxisWizardSetupText -Name 'EdgeSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'EdgeSettingsPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'EdgeSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'EdgeSettingsRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'EdgeSettingsCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupEdgeSettings' `
+        -PrimaryActionWidth 238.0
+
+    $storeSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'store-settings' `
+        -Title 'Microsoft Store Settings' `
+        -Description (Get-AxisWizardSetupText -Name 'StoreSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'StoreSettingsPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'StoreSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'StoreSettingsRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'StoreSettingsCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupStoreSettings' `
+        -PrimaryActionWidth 238.0
+
+    $updatesPauseStep = New-AxisSetupWizardStepState `
+        -Id 'updates-pause' `
+        -Title 'Pause Windows Updates' `
+        -Description (Get-AxisWizardSetupText -Name 'UpdatesPauseSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'UpdatesPausePrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'UpdatesPauseInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'UpdatesPauseRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'UpdatesPauseRequirement1')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'UpdatesPauseRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'UpdatesPauseCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'SetupUpdatesPause' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationCheckbox') `
+        -ConfirmationActionLabel (Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationPrimary') `
+        -ConfirmationReturnLabel (Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationReturn') `
+        -PrimaryActionWidth 210.0 `
+        -ConfirmationActionWidth 148.0
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -2023,6 +2475,16 @@ function Get-AxisFirstUseWizardSampleState {
             $autoUnattendStep
             $updatesDriversBlockStep
             $toBiosStep
+            $bitLockerStep
+            $convertHomeToProStep
+            $memoryCompressionStep
+            $dateLanguageRegionTimeStep
+            $startupAppsSettingsStep
+            $startupAppsTaskManagerStep
+            $backgroundAppsStep
+            $edgeSettingsStep
+            $storeSettingsStep
+            $updatesPauseStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -2269,8 +2731,10 @@ function New-AxisWizardRuntimeStatusContent {
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
-    $contentWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
+    $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
+    $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
+    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -2293,6 +2757,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isToBiosStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
+    }
+    elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
     }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -2355,6 +2822,7 @@ function New-AxisStepStatusArea {
     $isAutoUnattendStep = ($stepId -eq 'unattended')
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
+    $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
         -Resources $Resources `
@@ -2364,7 +2832,7 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
+    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
@@ -2380,6 +2848,9 @@ function New-AxisStepStatusArea {
     }
     elseif ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
+    }
+    elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
     }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
@@ -2411,13 +2882,15 @@ function New-AxisStepSupportPanel {
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $isToBiosStep = ($stepId -eq 'to-bios')
-    $supportPadding = if ($isToBiosStep) {
+    $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep)
+    $supportPadding = if ($usesCompactSupport) {
         New-AxisWizardThickness -Left 14 -Top 7 -Right 14 -Bottom 7
     }
     else {
         New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8
     }
-    $supportMargin = if ($isToBiosStep) {
+    $supportMargin = if ($usesCompactSupport) {
         New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 0
     }
     else {
@@ -2432,12 +2905,15 @@ function New-AxisStepSupportPanel {
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
         -Padding $supportPadding `
         -Margin $supportMargin
-    $panel.MinHeight = if ($isToBiosStep) { 54 } else { 58 }
+    $panel.MinHeight = if ($usesCompactSupport) { 54 } else { 58 }
     $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     if ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosSupportCardNoClipping')
+    }
+    elseif ($isSetupStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupSupportCardNoClipping')
     }
 
     $support = [System.Windows.Controls.Grid]::new()
@@ -2492,7 +2968,8 @@ function New-AxisStepPrimaryActionArea {
     $primaryEnabled = ($state -eq 'Ready')
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
-    $primaryButtonWidth = if ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'to-bios') { 210.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
+    $configuredPrimaryButtonWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionWidth' -DefaultValue 0.0)
+    $primaryButtonWidth = if ($configuredPrimaryButtonWidth -gt 0.0) { $configuredPrimaryButtonWidth } elseif ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'to-bios') { 210.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
 
     $panel = [System.Windows.Controls.Grid]::new()
     $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -2546,6 +3023,420 @@ function New-AxisStepPrimaryActionArea {
     [void]$panel.Children.Add($buttonRow)
 
     return $panel
+}
+
+function Split-AxisSetupRightAlignedVisualLines {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$Text,
+
+        [System.Collections.IEnumerable]$BreakBeforePhrases = @()
+    )
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $remaining = [string]$Text
+    foreach ($phrase in @($BreakBeforePhrases)) {
+        $breakPhrase = [string]$phrase
+        if ([string]::IsNullOrWhiteSpace($breakPhrase)) {
+            continue
+        }
+
+        $breakIndex = $remaining.IndexOf($breakPhrase, [System.StringComparison]::Ordinal)
+        if ($breakIndex -le 0) {
+            continue
+        }
+
+        $before = $remaining.Substring(0, $breakIndex).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($before)) {
+            $lines.Add($before)
+        }
+        $remaining = $remaining.Substring($breakIndex).Trim()
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($remaining)) {
+        $lines.Add($remaining)
+    }
+
+    if ($lines.Count -eq 0) {
+        $lines.Add([string]$Text)
+    }
+
+    return @($lines)
+}
+
+function Get-AxisSetupRightAlignedVisualBreakPhrases {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$StepId,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Information', 'Requirements')]
+        [string]$CardKind,
+
+        [AllowNull()]
+        [string]$Text
+    )
+
+    $phrases = [System.Collections.Generic.List[string]]::new()
+    if ($StepId -eq 'startup-apps-settings' -and $CardKind -eq 'Requirements') {
+        $phrases.Add((ConvertFrom-AxisWizardCodePoints @(0x0644, 0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0627, 0x062A, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x002E)))
+    }
+    elseif ($StepId -eq 'updates-pause' -and $CardKind -eq 'Information') {
+        $phrases.Add((ConvertFrom-AxisWizardCodePoints @(0x0644, 0x062A, 0x0642, 0x0644, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x0645, 0x0642, 0x0627, 0x0637, 0x0639, 0x0627, 0x062A)))
+        $phrases.Add((ConvertFrom-AxisWizardCodePoints @(0x0628, 0x062F, 0x0648, 0x0646, 0x0020, 0x0627, 0x0646, 0x0634, 0x063A, 0x0627, 0x0644, 0x0020, 0x0645, 0x0633, 0x062A, 0x0645, 0x0631, 0x0020, 0x0628, 0x0627, 0x0644, 0x062A, 0x062D, 0x062F, 0x064A, 0x062B, 0x0627, 0x062A, 0x002E)))
+    }
+
+    return @(
+        $phrases |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and ([string]$Text).Contains([string]$_) }
+    )
+}
+
+function New-AxisSetupPhysicalRightEdgeTextGroup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Tag,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IEnumerable]$Lines,
+
+        [double]$MaxWidth = 0.0,
+
+        [string]$AutomationId = ''
+    )
+
+    $group = [System.Windows.Controls.Grid]::new()
+    $group.Tag = $Tag
+    $group.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $group.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    if ($MaxWidth -gt 0.0) {
+        $group.MaxWidth = $MaxWidth
+    }
+    if (-not [string]::IsNullOrWhiteSpace($AutomationId)) {
+        $group.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, $AutomationId)
+    }
+
+    $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $rightColumn.Width = [System.Windows.GridLength]::Auto
+    [void]$group.ColumnDefinitions.Add($rightColumn)
+
+    foreach ($line in @($Lines)) {
+        if ($line -isnot [System.Collections.IDictionary]) {
+            continue
+        }
+
+        $lineText = [string](Get-AxisWizardMapValue -Map $line -Name 'Text')
+        $lineTag = [string](Get-AxisWizardMapValue -Map $line -Name 'Tag')
+        $lineMaxWidth = [double](Get-AxisWizardMapValue -Map $line -Name 'MaxWidth' -DefaultValue $MaxWidth)
+        $lineTopMargin = [double](Get-AxisWizardMapValue -Map $line -Name 'TopMargin' -DefaultValue 0.0)
+        $visualBreakBeforePhrases = @(Get-AxisWizardMapValue -Map $line -Name 'VisualBreakBeforePhrases' -DefaultValue @())
+        $visualLines = @(Split-AxisSetupRightAlignedVisualLines -Text $lineText -BreakBeforePhrases $visualBreakBeforePhrases)
+        $usesRightAlignedVisualLineRenderer = ($visualLines.Count -gt 1)
+
+        for ($visualLineIndex = 0; $visualLineIndex -lt $visualLines.Count; $visualLineIndex++) {
+            $visualLineTag = if ($visualLineIndex -eq 0) {
+                $lineTag
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($lineTag)) {
+                "$lineTag.VisualLine"
+            }
+            else {
+                'AxisFirstUseWizard.SetupRightAlignedVisualLine'
+            }
+            $visualLineTopMargin = if ($visualLineIndex -eq 0) { $lineTopMargin } else { 1.0 }
+            $textBlock = New-AxisWizardMixedBidiTextBlock `
+                -Text ([string]$visualLines[$visualLineIndex]) `
+                -Resources $Resources `
+                -Tag $visualLineTag `
+                -FontSizeKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontSizeKey' -DefaultValue 'Axis.Type.Caption.FontSize')) `
+                -FontWeightKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontWeightKey' -DefaultValue 'Axis.Type.Body.FontWeight')) `
+                -FontFamilyKey ([string](Get-AxisWizardMapValue -Map $line -Name 'FontFamilyKey' -DefaultValue 'Axis.Type.Caption.FontFamily')) `
+                -ForegroundKey ([string](Get-AxisWizardMapValue -Map $line -Name 'ForegroundKey' -DefaultValue 'Axis.Brush.Wizard.TextSecondary')) `
+                -Margin (New-AxisWizardThickness -Left 0 -Top $visualLineTopMargin -Right 0 -Bottom 0) `
+                -MaxWidth $lineMaxWidth
+            if ($usesRightAlignedVisualLineRenderer) {
+                $textBlock.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+                $textBlock.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines')
+            }
+            elseif ([bool](Get-AxisWizardMapValue -Map $line -Name 'Wrap' -DefaultValue $true)) {
+                $textBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
+            }
+            else {
+                $textBlock.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+            }
+            [System.Windows.Controls.Grid]::SetColumn($textBlock, 0)
+            [void](Add-AxisWizardGridRow -Grid $group -Child $textBlock)
+        }
+    }
+
+    return $group
+}
+
+function New-AxisSetupStep {
+    [CmdletBinding()]
+    param(
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    if ($null -eq $Step) {
+        $Step = @((Get-AxisFirstUseWizardSampleState)['Steps'])[6]
+    }
+
+    $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id' -DefaultValue '')
+    $tagRoot = [string](Get-AxisWizardMapValue -Map $Step -Name 'TagRoot' -DefaultValue 'SetupStep')
+    $showRequirements = [bool](Get-AxisWizardMapValue -Map $Step -Name 'ShowRequirements' -DefaultValue $false)
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 10 -Right 34 -Bottom 6) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = "AxisFirstUseWizard.${tagRoot}Step"
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly')
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = 'AxisFirstUseWizard.StepTextContent'
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Setup')) `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.AccentText' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)))
+
+    $titleText = [string](Get-AxisWizardMapValue -Map $Step -Name 'Title')
+    $titleFlow = if ([regex]::IsMatch($titleText, '^[\x00-\x7F]+$')) {
+        [System.Windows.FlowDirection]::LeftToRight
+    }
+    else {
+        [System.Windows.FlowDirection]::RightToLeft
+    }
+    $title = New-AxisWizardTextBlock `
+        -Text $titleText `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 3 -Right 0 -Bottom 5) `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection $titleFlow
+    $title.Tag = "AxisFirstUseWizard.${tagRoot}TitleText"
+    $title.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $title.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+    $title.MaxWidth = 690
+    if ($titleFlow -eq [System.Windows.FlowDirection]::LeftToRight) {
+        $title.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.EnglishOnlyTitleRightAnchored.${tagRoot}")
+    }
+    else {
+        $title.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}TitleRightAnchoredBidiSafe")
+    }
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $title `
+        -Tag "AxisFirstUseWizard.${tagRoot}TitleRightAnchor" `
+        -MaxWidth 690 `
+        -PreserveChildFlowDirection))
+
+    $descriptionText = New-AxisWizardMixedBidiTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -Tag "AxisFirstUseWizard.${tagRoot}Subtitle" `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -MaxWidth 690
+    $descriptionText.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $descriptionText `
+        -Tag "AxisFirstUseWizard.${tagRoot}SubtitleRightAnchor" `
+        -MaxWidth 690))
+
+    $detailsGrid = [System.Windows.Controls.Grid]::new()
+    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 5 -Right 0 -Bottom 5
+    $detailsGrid.Tag = "AxisFirstUseWizard.${tagRoot}StepDetails"
+    $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    if ($showRequirements) {
+        $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupCardsPhysicalOrderInfoRightRequirementsLeft')
+    }
+
+    $setupTwoCardTextMaxWidth = 340.0
+    $setupSingleCardTextMaxWidth = 650.0
+    $setupCardHeight = if ($showRequirements) { 146.0 } else { 128.0 }
+
+    if ($showRequirements) {
+        $requirementsColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $requirementsColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $spacerColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $spacerColumn.Width = [System.Windows.GridLength]::new(12.0)
+        $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        [void]$detailsGrid.ColumnDefinitions.Add($requirementsColumn)
+        [void]$detailsGrid.ColumnDefinitions.Add($spacerColumn)
+        [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+    }
+    else {
+        $informationColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $informationColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        [void]$detailsGrid.ColumnDefinitions.Add($informationColumn)
+    }
+
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6) `
+        -Elevation 'Soft'
+    $informationPanel.Height = $setupCardHeight
+    $informationPanel.Tag = "AxisFirstUseWizard.${tagRoot}InformationCard"
+    $informationPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}InformationNoClipping")
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $informationLines = [System.Collections.Generic.List[object]]::new()
+    $informationLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle')
+        Tag = "AxisFirstUseWizard.${tagRoot}InformationTitle"
+        FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+        Wrap = $true
+        MaxWidth = if ($showRequirements) { $setupTwoCardTextMaxWidth } else { $setupSingleCardTextMaxWidth }
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+        $informationItemText = [string]$item
+        $informationLine = [ordered]@{
+            Text = $informationItemText
+            Tag = "AxisFirstUseWizard.${tagRoot}InformationItem"
+            FontSizeKey = 'Axis.Type.Caption.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 3.0
+            Wrap = $true
+            MaxWidth = if ($showRequirements) { $setupTwoCardTextMaxWidth } else { $setupSingleCardTextMaxWidth }
+        }
+        $informationVisualBreakBeforePhrases = @(Get-AxisSetupRightAlignedVisualBreakPhrases -StepId $stepId -CardKind 'Information' -Text $informationItemText)
+        if ($informationVisualBreakBeforePhrases.Count -gt 0) {
+            $informationLine['VisualBreakBeforePhrases'] = $informationVisualBreakBeforePhrases
+        }
+        $informationLines.Add($informationLine)
+    }
+    $informationMaxWidth = if ($showRequirements) { $setupTwoCardTextMaxWidth } else { $setupSingleCardTextMaxWidth }
+    $informationGroup = New-AxisSetupPhysicalRightEdgeTextGroup `
+        -Tag "AxisFirstUseWizard.${tagRoot}InformationSharedPhysicalRightEdge" `
+        -Resources $Resources `
+        -MaxWidth $informationMaxWidth `
+        -Lines $informationLines `
+        -AutomationId "AxisFirstUseWizard.${tagRoot}MixedBidiSafeInfoText"
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $informationContent.MaxWidth = $informationMaxWidth
+    $informationContent.Tag = "AxisFirstUseWizard.${tagRoot}InformationCardContent"
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $informationGroup)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag "AxisFirstUseWizard.${tagRoot}InformationRightAnchor" `
+        -MaxWidth $informationMaxWidth
+    if ($showRequirements) {
+        [System.Windows.Controls.Grid]::SetColumn($informationPanel, 2)
+    }
+    else {
+        [System.Windows.Controls.Grid]::SetColumn($informationPanel, 0)
+    }
+    [void]$detailsGrid.Children.Add($informationPanel)
+
+    if ($showRequirements) {
+        $requirementsPanel = New-AxisWizardPanel `
+            -Resources $Resources `
+            -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+            -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+            -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+            -Padding (New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6) `
+            -Elevation 'Soft'
+        $requirementsPanel.Height = $setupCardHeight
+        $requirementsPanel.Tag = "AxisFirstUseWizard.${tagRoot}RequirementsCard"
+        $requirementsPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}RequirementsNoClipping")
+        $requirementsPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+        $requirementsPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+        $requirementsLines = [System.Collections.Generic.List[object]]::new()
+        $requirementsLines.Add([ordered]@{
+            Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'RequirementsTitle')
+            Tag = "AxisFirstUseWizard.${tagRoot}RequirementsTitle"
+            FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+            FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+            FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+            Wrap = $true
+            MaxWidth = $setupTwoCardTextMaxWidth
+        })
+        foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'RequirementsItems' -DefaultValue @())) {
+            $requirementsItemText = [string]$item
+            $requirementsLine = [ordered]@{
+                Text = $requirementsItemText
+                Tag = "AxisFirstUseWizard.${tagRoot}RequirementItem"
+                FontSizeKey = 'Axis.Type.Caption.FontSize'
+                FontWeightKey = 'Axis.Type.Body.FontWeight'
+                FontFamilyKey = 'Axis.Type.Caption.FontFamily'
+                ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+                TopMargin = 3.0
+                Wrap = $true
+                MaxWidth = $setupTwoCardTextMaxWidth
+            }
+            $requirementsVisualBreakBeforePhrases = @(Get-AxisSetupRightAlignedVisualBreakPhrases -StepId $stepId -CardKind 'Requirements' -Text $requirementsItemText)
+            if ($requirementsVisualBreakBeforePhrases.Count -gt 0) {
+                $requirementsLine['VisualBreakBeforePhrases'] = $requirementsVisualBreakBeforePhrases
+            }
+            $requirementsLines.Add($requirementsLine)
+        }
+        $requirementsGroup = New-AxisSetupPhysicalRightEdgeTextGroup `
+            -Tag "AxisFirstUseWizard.${tagRoot}RequirementsSharedPhysicalRightEdge" `
+            -Resources $Resources `
+            -MaxWidth $setupTwoCardTextMaxWidth `
+            -Lines $requirementsLines `
+            -AutomationId "AxisFirstUseWizard.${tagRoot}MixedBidiSafeRequirementsText"
+        $requirementsContent = [System.Windows.Controls.Grid]::new()
+        $requirementsContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+        $requirementsContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $requirementsContent.MaxWidth = $setupTwoCardTextMaxWidth
+        $requirementsContent.Tag = "AxisFirstUseWizard.${tagRoot}RequirementsCardContent"
+        [void](Add-AxisWizardGridRow -Grid $requirementsContent -Child $requirementsGroup)
+        $requirementsPanel.Child = New-AxisWizardRightAnchor `
+            -Child $requirementsContent `
+            -Tag "AxisFirstUseWizard.${tagRoot}RequirementsRightAnchor" `
+            -MaxWidth $setupTwoCardTextMaxWidth
+        [System.Windows.Controls.Grid]::SetColumn($requirementsPanel, 0)
+        [void]$detailsGrid.Children.Add($requirementsPanel)
+    }
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child $detailsGrid)
+    $primaryAction = New-AxisStepPrimaryActionArea -Step $Step -Resources $Resources
+    $primaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}SimulationOnlyActionRow")
+    [void](Add-AxisWizardGridRow -Grid $content -Child $primaryAction)
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    $container.Child = $content
+
+    return $container
 }
 
 function New-AxisBiosInformationStep {
@@ -3588,6 +4479,21 @@ function New-AxisFirstUseWizardStepContent {
     )
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    if ($stepId -in @(
+        'bitlocker',
+        'convert-home-to-pro',
+        'memory-compression',
+        'date-language-region-time',
+        'startup-apps-settings',
+        'startup-apps-task-manager',
+        'background-apps',
+        'edge-settings',
+        'store-settings',
+        'updates-pause'
+    )) {
+        return New-AxisSetupStep -Step $Step -Resources $Resources
+    }
+
     if ($stepId -eq 'unattended') {
         return New-AxisAutoUnattendStep -Step $Step -Resources $Resources
     }
@@ -3681,12 +4587,15 @@ function New-AxisStepAcknowledgementOverlay {
     [void]$acknowledgementRow.Children.Add($acknowledgementLabel)
     [void]$acknowledgementRow.Children.Add($checkbox)
 
+    $confirmationActionWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationActionWidth' -DefaultValue 124.0)
+    $confirmationReturnWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationReturnWidth' -DefaultValue 104.0)
+
     $confirmButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))) `
         -Resources $Resources `
         -Variant 'Primary' `
         -Enabled $false `
-        -Width 124 `
+        -Width $confirmationActionWidth `
         -Height 42 `
         -Margin (New-AxisWizardThickness -Left 0)
     $confirmButton.Tag = 'AxisFirstUseWizard.ConfirmationOpenButton'
@@ -3697,7 +4606,7 @@ function New-AxisStepAcknowledgementOverlay {
         -Resources $Resources `
         -Variant 'Quiet' `
         -Enabled $true `
-        -Width 104 `
+        -Width $confirmationReturnWidth `
         -Height 42 `
         -Margin (New-AxisWizardThickness -Left 0)
     $returnButton.Tag = 'AxisFirstUseWizard.ConfirmationReturnButton'

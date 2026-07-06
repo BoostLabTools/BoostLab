@@ -464,6 +464,18 @@ $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-St
 $autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnattend-Step-Blueprint.md'
 $updatesDriversBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Updates-Drivers-Block-Step-Blueprint.md'
 $toBiosBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\To-BIOS-Step-Blueprint.md'
+$setupBlueprintPaths = @(
+    Join-Path $ProjectRoot 'docs\design\steps\BitLocker-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Convert-Home-To-Pro-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Memory-Compression-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Date-Language-Region-Time-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Startup-Apps-Settings-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Startup-Apps-Task-Manager-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Background-Apps-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Edge-Settings-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Store-Settings-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Updates-Pause-Step-Blueprint.md'
+)
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
@@ -473,6 +485,9 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathTy
 Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -PathType Leaf) 'AXIS AutoUnattend step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $updatesDriversBlueprintPath -PathType Leaf) 'AXIS Updates Drivers Block step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $toBiosBlueprintPath -PathType Leaf) 'AXIS To BIOS step blueprint is missing.'
+foreach ($setupBlueprintPath in $setupBlueprintPaths) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $setupBlueprintPath -PathType Leaf) "AXIS Setup step blueprint is missing: $setupBlueprintPath"
+}
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
@@ -486,6 +501,7 @@ $toBiosBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $toBiosBlu
 foreach ($functionName in @(
     'Get-AxisFirstUseWizardSampleState'
     'Get-AxisWizardArabicText'
+    'Get-AxisWizardSetupText'
     'New-AxisFirstUseWizardPrototype'
     'New-AxisFirstUseWizardPrototypeWindow'
     'New-AxisStageProgressStrip'
@@ -496,6 +512,8 @@ foreach ($functionName in @(
     'New-AxisAutoUnattendStep'
     'New-AxisUpdatesDriversBlockStep'
     'New-AxisToBiosStep'
+    'New-AxisSetupStep'
+    'New-AxisSetupPhysicalRightEdgeTextGroup'
     'New-AxisWizardMixedBidiTextBlock'
     'New-AxisWizardToBiosTitleRightAnchor'
     'Split-AxisAutoUnattendInformationText'
@@ -607,7 +625,222 @@ $arabicToBiosInfoBulletRestart = Get-AxisWizardArabicText -Name 'ToBiosInfoBulle
 $arabicToBiosInfoBulletUsbBoot = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletUsbBoot'
 $arabicToBiosInfoBulletInstall = Get-AxisWizardArabicText -Name 'ToBiosInfoBulletInstall'
 $arabicToBiosPrimaryAction = Get-AxisWizardArabicText -Name 'ToBiosPrimaryAction'
+$setupStepSpecs = @(
+    [ordered]@{
+        Id = 'bitlocker'
+        TagRoot = 'SetupBitLocker'
+        Title = 'BitLocker'
+        Primary = Get-AxisWizardSetupText -Name 'BitLockerPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'BitLockerSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'BitLockerInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'BitLockerInfoBullet1'
+            Get-AxisWizardSetupText -Name 'BitLockerInfoBullet2'
+            Get-AxisWizardSetupText -Name 'BitLockerInfoBullet3'
+        )
+        Running = Get-AxisWizardSetupText -Name 'BitLockerRunning'
+        Completed = Get-AxisWizardSetupText -Name 'BitLockerCompleted'
+        Requirements = @()
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'convert-home-to-pro'
+        TagRoot = 'SetupConvertHomeToPro'
+        Title = 'Convert Home to Pro'
+        Primary = Get-AxisWizardSetupText -Name 'ConvertHomeToProPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'ConvertHomeToProSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet1'
+            Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet2'
+            Get-AxisWizardSetupText -Name 'ConvertHomeToProInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'ConvertHomeToProRequirement1'
+            Get-AxisWizardSetupText -Name 'ConvertHomeToProRequirement2'
+        )
+        Running = Get-AxisWizardSetupText -Name 'ConvertHomeToProRunning'
+        Completed = Get-AxisWizardSetupText -Name 'ConvertHomeToProCompleted'
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'memory-compression'
+        TagRoot = 'SetupMemoryCompression'
+        Title = 'Memory Compression'
+        Primary = Get-AxisWizardSetupText -Name 'MemoryCompressionPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'MemoryCompressionSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'MemoryCompressionInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet1'
+            Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet2'
+            Get-AxisWizardSetupText -Name 'MemoryCompressionInfoBullet3'
+        )
+        Requirements = @()
+        Running = Get-AxisWizardSetupText -Name 'MemoryCompressionRunning'
+        Completed = Get-AxisWizardSetupText -Name 'MemoryCompressionCompleted'
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'date-language-region-time'
+        TagRoot = 'SetupDateLanguageRegionTime'
+        Title = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeTitle'
+        Primary = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimePrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet1'
+            Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet2'
+            Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeInfoBullet3'
+        )
+        Requirements = @()
+        Running = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeRunning'
+        Completed = Get-AxisWizardSetupText -Name 'DateLanguageRegionTimeCompleted'
+        Overlay = $false
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        OpenMappedPrototypeOnly = $true
+    }
+    [ordered]@{
+        Id = 'startup-apps-settings'
+        TagRoot = 'SetupStartupAppsSettings'
+        Title = 'Startup Apps Settings'
+        Primary = Get-AxisWizardSetupText -Name 'StartupAppsSettingsPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'StartupAppsSettingsSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet1'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet2'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement1'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement2'
+        )
+        Running = Get-AxisWizardSetupText -Name 'StartupAppsSettingsRunning'
+        Completed = Get-AxisWizardSetupText -Name 'StartupAppsSettingsCompleted'
+        Overlay = $false
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        OpenMappedPrototypeOnly = $true
+    }
+    [ordered]@{
+        Id = 'startup-apps-task-manager'
+        TagRoot = 'SetupStartupAppsTaskManager'
+        Title = 'Startup Apps Task Manager'
+        Primary = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet1'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet2'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement1'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement2'
+        )
+        Running = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRunning'
+        Completed = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerCompleted'
+        Overlay = $false
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        OpenMappedPrototypeOnly = $true
+    }
+    [ordered]@{
+        Id = 'background-apps'
+        TagRoot = 'SetupBackgroundApps'
+        Title = 'Background Apps'
+        Primary = Get-AxisWizardSetupText -Name 'BackgroundAppsPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'BackgroundAppsSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'BackgroundAppsInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet1'
+            Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet2'
+            Get-AxisWizardSetupText -Name 'BackgroundAppsInfoBullet3'
+        )
+        Requirements = @()
+        Running = Get-AxisWizardSetupText -Name 'BackgroundAppsRunning'
+        Completed = Get-AxisWizardSetupText -Name 'BackgroundAppsCompleted'
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'edge-settings'
+        TagRoot = 'SetupEdgeSettings'
+        Title = 'Microsoft Edge Settings'
+        Primary = Get-AxisWizardSetupText -Name 'EdgeSettingsPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'EdgeSettingsSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'EdgeSettingsInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet1'
+            Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet2'
+            Get-AxisWizardSetupText -Name 'EdgeSettingsInfoBullet3'
+        )
+        Requirements = @()
+        Running = Get-AxisWizardSetupText -Name 'EdgeSettingsRunning'
+        Completed = Get-AxisWizardSetupText -Name 'EdgeSettingsCompleted'
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'store-settings'
+        TagRoot = 'SetupStoreSettings'
+        Title = 'Microsoft Store Settings'
+        Primary = Get-AxisWizardSetupText -Name 'StoreSettingsPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'StoreSettingsSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'StoreSettingsInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet1'
+            Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet2'
+            Get-AxisWizardSetupText -Name 'StoreSettingsInfoBullet3'
+        )
+        Requirements = @()
+        Running = Get-AxisWizardSetupText -Name 'StoreSettingsRunning'
+        Completed = Get-AxisWizardSetupText -Name 'StoreSettingsCompleted'
+        Overlay = $false
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+    [ordered]@{
+        Id = 'updates-pause'
+        TagRoot = 'SetupUpdatesPause'
+        Title = 'Pause Windows Updates'
+        Primary = Get-AxisWizardSetupText -Name 'UpdatesPausePrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'UpdatesPauseSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'UpdatesPauseInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet1'
+            Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet2'
+            Get-AxisWizardSetupText -Name 'UpdatesPauseInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'UpdatesPauseRequirement1'
+        )
+        Running = Get-AxisWizardSetupText -Name 'UpdatesPauseRunning'
+        Completed = Get-AxisWizardSetupText -Name 'UpdatesPauseCompleted'
+        Overlay = $true
+        Checkbox = Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationCheckbox'
+        ConfirmationPrimary = Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationPrimary'
+        ConfirmationReturn = Get-AxisWizardSetupText -Name 'UpdatesPauseConfirmationReturn'
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+    }
+)
+$setupStepOrder = @($setupStepSpecs | ForEach-Object { [string]$_['Id'] })
+$setupStepTitles = @($setupStepSpecs | ForEach-Object { [string]$_['Title'] })
+$axisSetupRightAlignedVisualLineRendererAutomationId = 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines'
 $oldArabicToBiosTitle = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0627, 0x0646, 0x062A, 0x0642, 0x0627, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
+$arabicStartupAppsStartupPhrase = ConvertFrom-AxisWizardCodePoints @(0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
+$arabicUpdatesPauseDeviceOrphan = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x002E)
+$arabicUpdatesPauseUpdatesOrphan = ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0627, 0x0644, 0x062A, 0x062D, 0x062F, 0x064A, 0x062B, 0x0627, 0x062A, 0x002E)
 $axisDefaultDocumentationForeground = '#FFEDEDED'
 $axisDefaultAcknowledgementForeground = '#FFEDEDED'
 $axisDefaultCardTitleForeground = '#FFFAF9F6'
@@ -686,9 +919,25 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 6) 'AXIS first-use wizard sample state should include BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, Updates Drivers Block, and To BIOS steps.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq 'bios-information|bios-settings|reinstall|unattended|updates-drivers-block|to-bios') 'AXIS first-use wizard step order should be BIOS Drivers, BIOS Settings, Reinstall, AutoUnattend, Updates Drivers Block, then To BIOS.'
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq "BIOS Drivers & Downloads|BIOS Settings|$arabicReinstallTitle|AutoUnattend|Updates Drivers Block|$arabicToBiosTitle") 'AXIS first-use wizard customer step title order changed.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 16) 'AXIS first-use wizard sample state should include the six approved Check/Refresh steps plus the ten Setup steps.'
+$expectedStepOrder = @(
+    'bios-information'
+    'bios-settings'
+    'reinstall'
+    'unattended'
+    'updates-drivers-block'
+    'to-bios'
+) + $setupStepOrder
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep the approved Check/Refresh steps, then the full Setup batch after To BIOS.'
+$expectedStepTitles = @(
+    'BIOS Drivers & Downloads'
+    'BIOS Settings'
+    $arabicReinstallTitle
+    'AutoUnattend'
+    'Updates Drivers Block'
+    $arabicToBiosTitle
+) + $setupStepTitles
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
@@ -805,6 +1054,7 @@ $stripItems = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'Axis
 $initialCurrentStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
 $stageProgressCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
 $stageProgressRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
+$stageProgressSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $strip) 'AXIS first-use wizard stage progress strip is missing.'
 Assert-BoostLabCondition ($null -ne $stripGrid) 'AXIS first-use wizard stage progress grid is missing.'
 Assert-BoostLabCondition ($null -ne $initialCurrentStageHeader) 'AXIS first-use wizard current stage header is missing.'
@@ -815,8 +1065,10 @@ Assert-BoostLabCondition ($stripGrid.FlowDirection -eq [System.Windows.FlowDirec
 Assert-BoostLabCondition ($stripItems.Count -eq $expectedStageNames.Count) 'AXIS stage progress should show canonical stage names only.'
 Assert-BoostLabCondition ($null -ne $stageProgressCheckFill) 'AXIS stage progress Check fill marker is missing.'
 Assert-BoostLabCondition ($null -ne $stageProgressRefreshFill) 'AXIS stage progress Refresh fill marker is missing.'
+Assert-BoostLabCondition ($null -ne $stageProgressSetupFill) 'AXIS stage progress Setup fill marker is missing.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'BIOS Drivers Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Refresh inactive')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Setup' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Setup inactive')
 $activeStageItems = @(
     $stripItems |
         Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
@@ -841,6 +1093,7 @@ $reinstallStep = $sampleSteps[2]
 $autoUnattendStep = $sampleSteps[3]
 $updatesDriversStep = $sampleSteps[4]
 $toBiosStep = $sampleSteps[5]
+$setupSteps = @($sampleSteps[6..15])
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -935,6 +1188,59 @@ Assert-BoostLabCondition (-not ('Open' -in @($toBiosStep['CustomerVisibleActions
 Assert-BoostLabCondition (-not ('Apply' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Apply as a customer action.'
 Assert-BoostLabCondition (-not ('Default' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Default as a customer action.'
 Assert-BoostLabCondition (-not ('Restore' -in @($toBiosStep['CustomerVisibleActions']))) 'AXIS To BIOS must not expose Restore as a customer action.'
+
+Assert-BoostLabCondition ($setupSteps.Count -eq $setupStepSpecs.Count) 'AXIS Setup batch should include exactly ten steps after To BIOS.'
+for ($setupIndex = 0; $setupIndex -lt $setupStepSpecs.Count; $setupIndex++) {
+    $setupSpec = [System.Collections.IDictionary]$setupStepSpecs[$setupIndex]
+    $setupStep = [System.Collections.IDictionary]$setupSteps[$setupIndex]
+    $setupName = [string]$setupSpec['Id']
+    Assert-BoostLabCondition ([string]$setupStep['Id'] -eq [string]$setupSpec['Id']) "AXIS Setup step order changed at index $setupIndex."
+    Assert-BoostLabCondition ([string]$setupStep['Title'] -eq [string]$setupSpec['Title']) "AXIS Setup title changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['StageName'] -eq 'Setup') "AXIS Setup step should be in Setup stage: $setupName"
+    Assert-BoostLabCondition ([string]$setupStep['PrimaryActionLabel'] -eq [string]$setupSpec['Primary']) "AXIS Setup primary action changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['Description'] -eq [string]$setupSpec['Subtitle']) "AXIS Setup subtitle changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['InformationCardTitle'] -eq [string]$setupSpec['InfoTitle']) "AXIS Setup information title changed for $setupName."
+    Assert-BoostLabCondition ((@($setupStep['InformationItems']) -join '|') -eq (@($setupSpec['InfoItems']) -join '|')) "AXIS Setup information bullets changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['CheckingStatusTitle'] -eq [string]$setupSpec['Running']) "AXIS Setup running status changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['CompletedStatusTitle'] -eq [string]$setupSpec['Completed']) "AXIS Setup completed status changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['CompletionStateLabel'] -eq [string]$setupSpec['Completed']) "AXIS Setup completion label changed for $setupName."
+    Assert-BoostLabCondition ([bool]$setupStep['PrototypeOnlySimulation']) "AXIS Setup step should be prototype-only simulation: $setupName"
+    Assert-BoostLabCondition ([string]$setupStep['SetupStageBatchMarker'] -eq 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly') "AXIS Setup step should expose the batch prototype-only marker: $setupName"
+    Assert-BoostLabCondition ([string]$setupStep['NoRealActionMarker'] -eq 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction') "AXIS Setup step should expose the no-real-action marker: $setupName"
+    Assert-BoostLabCondition ([string]$setupStep['CustomerAction'] -eq [string]$setupSpec['CustomerAction']) "AXIS Setup internal action mapping changed for $setupName."
+    Assert-BoostLabCondition ([string]$setupStep['FutureInternalAction'] -eq [string]$setupSpec['FutureInternalAction']) "AXIS Setup future internal action changed for $setupName."
+    Assert-BoostLabCondition ((@($setupStep['CustomerVisibleActions']) -join '|') -eq [string]$setupSpec['Primary']) "AXIS Setup customer-visible action should be the owner-approved label only: $setupName"
+    foreach ($forbiddenSetupCustomerAction in @('Analyze', 'Apply', 'Default', 'Restore')) {
+        Assert-BoostLabCondition (-not ($forbiddenSetupCustomerAction -in @($setupStep['CustomerVisibleActions']))) "AXIS Setup step must not expose internal action text $forbiddenSetupCustomerAction as customer-visible action: $setupName"
+    }
+    if ([string]$setupSpec['CustomerAction'] -ne 'Open') {
+        Assert-BoostLabCondition (-not ('Open' -in @($setupStep['CustomerVisibleActions']))) "AXIS Setup non-Open step must not expose Open as customer-facing action text: $setupName"
+    }
+
+    if (@($setupSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([bool]$setupStep['ShowRequirements']) "AXIS Setup requirements card should be present for $setupName."
+        Assert-BoostLabCondition ((@($setupStep['RequirementsItems']) -join '|') -eq (@($setupSpec['Requirements']) -join '|')) "AXIS Setup requirements copy changed for $setupName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$setupStep['ShowRequirements']) "AXIS Setup requirements card should be absent for $setupName."
+        Assert-BoostLabCondition (-not $setupStep.Contains('RequirementsItems')) "AXIS Setup no-requirements step should not carry requirements items: $setupName"
+    }
+
+    if ([bool]$setupSpec['Overlay']) {
+        Assert-BoostLabCondition ([bool]$setupStep['RequiresConfirmationAcknowledgement']) "AXIS Setup overlay should be enabled for $setupName."
+        Assert-BoostLabCondition ([string]$setupStep['DocumentationAcknowledgementText'] -eq [string]$setupSpec['Checkbox']) "AXIS Setup overlay checkbox text changed for $setupName."
+        Assert-BoostLabCondition ([string]$setupStep['ConfirmationActionLabel'] -eq [string]$setupSpec['ConfirmationPrimary']) "AXIS Setup overlay primary text changed for $setupName."
+        Assert-BoostLabCondition ([string]$setupStep['ConfirmationReturnLabel'] -eq [string]$setupSpec['ConfirmationReturn']) "AXIS Setup overlay return text changed for $setupName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$setupStep['RequiresConfirmationAcknowledgement']) "AXIS Setup overlay should be absent for $setupName."
+        Assert-BoostLabCondition ([bool]$setupStep['NoConfirmationOverlay']) "AXIS Setup no-overlay marker should be present for $setupName."
+    }
+
+    if ([bool](Get-AxisWizardMapValue -Map $setupSpec -Name 'OpenMappedPrototypeOnly' -DefaultValue $false)) {
+        Assert-BoostLabCondition ([bool]$setupStep['OpenMappedPrototypeOnly']) "AXIS Setup Open-mapped step should be prototype-only: $setupName"
+    }
+}
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -1126,7 +1432,7 @@ foreach ($rejectedPhase180DPrototypeText in @(
     Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 3) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, and To BIOS only.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 4) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, and Updates Pause only.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
@@ -1134,6 +1440,7 @@ Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay[0].Visibility -eq [S
 Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS first-step confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[2].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[3].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0] -is [System.Windows.Controls.StackPanel]) 'AXIS confirmation right-aligned group should be a StackPanel.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS confirmation inner group should be right-aligned without resizing the overlay.'
@@ -2268,9 +2575,225 @@ Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetA
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Background).Color -eq '#FF2563EB') 'AXIS To BIOS enabled Continue/Next should use the approved blue fill.'
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ToBiosStep').Count -eq 1) 'AXIS To BIOS should not auto-advance after simulated completion.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.ToBiosStep').Count -eq 1) 'AXIS To BIOS Continue/Next should not navigate past the last prototype step.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupBitLockerStep').Count -eq 1) 'AXIS To BIOS Continue/Next should navigate to the first Setup step, BitLocker.'
+
+for ($setupIndex = 0; $setupIndex -lt $setupStepSpecs.Count; $setupIndex++) {
+    $setupSpec = [System.Collections.IDictionary]$setupStepSpecs[$setupIndex]
+    $setupStep = [System.Collections.IDictionary]$setupSteps[$setupIndex]
+    $tagRoot = [string]$setupSpec['TagRoot']
+    $setupId = [string]$setupSpec['Id']
+    $setupVisibleContent = $taggedContentHost[0].Child
+    $setupVisibleText = (Get-AxisFirstUseWizardTextValues -Root $setupVisibleContent) -join [Environment]::NewLine
+    $setupVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $setupVisibleText
+
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}Step").Count -eq 1) "AXIS Setup step should render the expected step card: $setupId"
+    Assert-BoostLabCondition ([string]$currentStageHeader.Text -eq 'Setup') "AXIS Setup current stage header should show Setup for $setupId."
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name "$setupId Check completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Refresh' -ExpectedColor '#FF22C55E' -Name "$setupId Refresh completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Setup' -ExpectedColor '#FFF0F2F5' -Name "$setupId Setup active")
+    Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) "AXIS Setup Continue/Next should start disabled for $setupId."
+    Assert-BoostLabCondition (-not $setupVisibleText.Contains([string][char]0xFFFD)) "AXIS Setup visible copy must not contain a replacement glyph for $setupId."
+    Assert-BoostLabCondition (-not $setupVisibleText.Contains('?')) "AXIS Setup visible copy must not contain a stray ASCII question mark for $setupId."
+
+    $setupTitleTextBlock = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}TitleText") | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $setupTitleTextBlock) "AXIS Setup title TextBlock is missing for $setupId."
+    Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $setupTitleTextBlock) -eq [string]$setupSpec['Title']) "AXIS Setup title changed for $setupId."
+    Assert-BoostLabCondition ($setupTitleTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Setup title should remain physically anchored right for $setupId."
+    Assert-BoostLabCondition ($setupTitleTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Setup title should remain right-aligned for $setupId."
+    if ([regex]::IsMatch([string]$setupSpec['Title'], '^[\x00-\x7F]+$')) {
+        Assert-BoostLabCondition ($setupTitleTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Setup English-only title should render LTR for $setupId."
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupTitleTextBlock) -eq "AxisFirstUseWizard.EnglishOnlyTitleRightAnchored.${tagRoot}") "AXIS Setup English-only title should expose the right-anchored LTR marker for $setupId."
+    }
+    else {
+        Assert-BoostLabCondition ($setupTitleTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Setup Arabic title should render RTL for $setupId."
+    }
+    if ($setupId -eq 'background-apps') {
+        Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $setupTitleTextBlock) -eq 'Background Apps') 'AXIS Background Apps visible title should use the owner-approved English-only title.'
+    }
+
+    foreach ($requiredSetupText in @(
+        'Setup'
+        [string]$setupSpec['Title']
+        [string]$setupSpec['Subtitle']
+        [string]$setupSpec['InfoTitle']
+        @($setupSpec['InfoItems'])
+        @($setupSpec['Requirements'])
+        [string]$setupSpec['Primary']
+        $arabicDocumentation
+        $arabicSupportTitle
+        $arabicSupportBody
+    )) {
+        foreach ($requiredSetupTextItem in @($requiredSetupText)) {
+            if ([string]::IsNullOrWhiteSpace([string]$requiredSetupTextItem)) {
+                continue
+            }
+            $requiredSetupTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text ([string]$requiredSetupTextItem)
+            Assert-BoostLabCondition (
+                $setupVisibleText.Contains([string]$requiredSetupTextItem) -or
+                $setupVisibleTextNormalized.Contains($requiredSetupTextNormalized)
+            ) "AXIS Setup view is missing owner-approved text for ${setupId}: $requiredSetupTextItem"
+        }
+    }
+
+    foreach ($forbiddenSetupVisibleText in @('Analyze', 'Apply', 'Default', 'Restore', 'Cancel')) {
+        Assert-BoostLabCondition (-not $setupVisibleText.Contains($forbiddenSetupVisibleText)) "AXIS Setup view exposes forbidden internal/customer action text for ${setupId}: $forbiddenSetupVisibleText"
+    }
+
+    $setupDetailsGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}StepDetails") | Select-Object -First 1
+    $setupInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}InformationCard") | Select-Object -First 1
+    $setupInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}InformationSharedPhysicalRightEdge") | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $setupDetailsGrid) "AXIS Setup details grid is missing for $setupId."
+    Assert-BoostLabCondition ($null -ne $setupInformationCard) "AXIS Setup should render one information card for $setupId."
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}InformationItem").Count -eq @($setupSpec['InfoItems']).Count) "AXIS Setup information item count changed for $setupId."
+    Assert-BoostLabCondition ($null -ne $setupInformationSharedRightEdge) "AXIS Setup information should use one shared physical right edge for $setupId."
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupInformationSharedRightEdge) -eq "AxisFirstUseWizard.${tagRoot}MixedBidiSafeInfoText") "AXIS Setup information should expose the mixed BiDi-safe marker for $setupId."
+    foreach ($setupInformationTextBlock in @(Get-AxisFirstUseWizardTypedElements -Root $setupInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]))) {
+        Assert-BoostLabCondition ($setupInformationTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Setup information text should stay RTL for $setupId."
+        Assert-BoostLabCondition ($setupInformationTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Setup information text should stay right-aligned for $setupId."
+        Assert-BoostLabCondition ($setupInformationTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Setup information text should share the physical right edge for $setupId."
+    }
+    if ($setupId -eq 'updates-pause') {
+        $updatesPauseRightAlignedVisualLines = @(
+            Get-AxisFirstUseWizardTypedElements -Root $setupInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]) |
+                Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq $axisSetupRightAlignedVisualLineRendererAutomationId }
+        )
+        Assert-BoostLabCondition ($updatesPauseRightAlignedVisualLines.Count -ge 4) 'AXIS Updates Pause information should use right-aligned visual lines for wrapped Arabic phrases.'
+        foreach ($updatesPauseRightAlignedVisualLine in $updatesPauseRightAlignedVisualLines) {
+            Assert-BoostLabCondition ($updatesPauseRightAlignedVisualLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS Updates Pause right-aligned visual lines should bypass automatic WPF wrapping.'
+            Assert-BoostLabCondition ($updatesPauseRightAlignedVisualLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Updates Pause right-aligned visual lines should stay right-aligned.'
+            Assert-BoostLabCondition ($updatesPauseRightAlignedVisualLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Updates Pause right-aligned visual lines should stay physically anchored right.'
+        }
+        $updatesPauseRightAlignedVisualLineText = @($updatesPauseRightAlignedVisualLines | ForEach-Object { [string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $_).Trim() })
+        Assert-BoostLabCondition (-not ($updatesPauseRightAlignedVisualLineText -contains $arabicUpdatesPauseDeviceOrphan)) 'AXIS Updates Pause information must not leave device text as an orphan left-floating word.'
+        Assert-BoostLabCondition (-not ($updatesPauseRightAlignedVisualLineText -contains $arabicUpdatesPauseUpdatesOrphan)) 'AXIS Updates Pause information must not leave updates text as an orphan left-floating word.'
+    }
+    if (@($setupSpec['Requirements']).Count -gt 0) {
+        $setupRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}RequirementsCard") | Select-Object -First 1
+        $setupRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}RequirementsSharedPhysicalRightEdge") | Select-Object -First 1
+        Assert-BoostLabCondition ($setupDetailsGrid.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Setup two-card grid should use physical LTR column placement for $setupId."
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupDetailsGrid) -eq 'AxisFirstUseWizard.SetupCardsPhysicalOrderInfoRightRequirementsLeft') "AXIS Setup two-card grid should expose the info-right requirements-left marker for $setupId."
+        Assert-BoostLabCondition ($null -ne $setupRequirementsCard) "AXIS Setup should render a requirements card for $setupId."
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($setupRequirementsCard) -eq 0) "AXIS Setup requirements card should stay in the physical left column for $setupId."
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($setupInformationCard) -eq 2) "AXIS Setup information card should stay in the physical right column for $setupId."
+        Assert-BoostLabCondition ([double]$setupInformationCard.Height -le 146.0 -and [double]$setupRequirementsCard.Height -le 146.0) "AXIS Setup two-card rows should leave support room inside 900x650 for $setupId."
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}RequirementItem").Count -eq @($setupSpec['Requirements']).Count) "AXIS Setup requirement item count changed for $setupId."
+        Assert-BoostLabCondition ($null -ne $setupRequirementsSharedRightEdge) "AXIS Setup requirements should use one shared physical right edge for $setupId."
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupRequirementsSharedRightEdge) -eq "AxisFirstUseWizard.${tagRoot}MixedBidiSafeRequirementsText") "AXIS Setup requirements should expose the mixed BiDi-safe marker for $setupId."
+        foreach ($setupRequirementTextBlock in @(Get-AxisFirstUseWizardTypedElements -Root $setupRequirementsSharedRightEdge -Type ([System.Windows.Controls.TextBlock]))) {
+            Assert-BoostLabCondition ($setupRequirementTextBlock.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Setup requirements text should stay RTL for $setupId."
+            Assert-BoostLabCondition ($setupRequirementTextBlock.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Setup requirements text should stay right-aligned for $setupId."
+            Assert-BoostLabCondition ($setupRequirementTextBlock.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Setup requirements text should share the physical right edge for $setupId."
+        }
+        if ($setupId -eq 'startup-apps-settings') {
+            $startupAppsSettingsRightAlignedVisualLines = @(
+                Get-AxisFirstUseWizardTypedElements -Root $setupRequirementsSharedRightEdge -Type ([System.Windows.Controls.TextBlock]) |
+                    Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_) -eq $axisSetupRightAlignedVisualLineRendererAutomationId }
+            )
+            Assert-BoostLabCondition ($startupAppsSettingsRightAlignedVisualLines.Count -ge 2) 'AXIS Startup Apps Settings requirements should use right-aligned visual lines for wrapped Arabic phrases.'
+            foreach ($startupAppsSettingsRightAlignedVisualLine in $startupAppsSettingsRightAlignedVisualLines) {
+                Assert-BoostLabCondition ($startupAppsSettingsRightAlignedVisualLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) 'AXIS Startup Apps Settings right-aligned visual lines should bypass automatic WPF wrapping.'
+                Assert-BoostLabCondition ($startupAppsSettingsRightAlignedVisualLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) 'AXIS Startup Apps Settings right-aligned visual lines should stay right-aligned.'
+                Assert-BoostLabCondition ($startupAppsSettingsRightAlignedVisualLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS Startup Apps Settings right-aligned visual lines should stay physically anchored right.'
+            }
+            $startupAppsSettingsRightAlignedVisualLineText = @($startupAppsSettingsRightAlignedVisualLines | ForEach-Object { [string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $_).Trim() })
+            Assert-BoostLabCondition (@($startupAppsSettingsRightAlignedVisualLineText | Where-Object { $_.Contains($arabicStartupAppsStartupPhrase) }).Count -ge 1) 'AXIS Startup Apps Settings requirements should keep the startup phrase in a right-aligned visual line.'
+        }
+    }
+    else {
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($setupInformationCard) -eq 0) "AXIS Setup single information card should stay in its only column for $setupId."
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}RequirementsCard").Count -eq 0) "AXIS Setup should not render a requirements card for $setupId."
+    }
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $setupVisibleContent -Type ([System.Windows.Controls.ComboBox])).Count -eq 0) "AXIS Setup step should not render an input selector for $setupId."
+    $setupSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+    $setupActionArea = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.PrimaryActionArea') | Select-Object -First 1
+    $setupContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+    Assert-BoostLabCondition ($null -ne $setupSupportPanel) "AXIS Setup support panel should remain separate for $setupId."
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupSupportPanel) -eq 'AxisFirstUseWizard.SetupSupportCardNoClipping') "AXIS Setup support panel should expose the no-clipping marker for $setupId."
+    Assert-BoostLabCondition ([double]$setupSupportPanel.MinHeight -eq 54.0) "AXIS Setup support panel should use compact no-clipping support height for $setupId."
+    Assert-BoostLabCondition ([double]$setupSupportPanel.Padding.Top -eq 7.0 -and [double]$setupSupportPanel.Padding.Bottom -eq 7.0) "AXIS Setup support panel should keep enough compact internal padding for $setupId."
+    Assert-BoostLabCondition ($setupContentGrid.Children.IndexOf($setupActionArea) -lt $setupContentGrid.Children.IndexOf($setupSupportPanel)) "AXIS Setup action row must remain separated above the support panel for $setupId."
+    $setupStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag "AxisFirstUseWizard.${tagRoot}Step") | Select-Object -First 1
+    $setupStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+    $setupRowTotal = 0.0
+    foreach ($setupRowChild in @($setupContentGrid.Children)) {
+        $setupRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+        $setupRowTotal += [double]$setupRowChild.DesiredSize.Height
+    }
+    $setupInnerHeight = [double]$setupStepElement.Height -
+        [double]$setupStepElement.Padding.Top -
+        [double]$setupStepElement.Padding.Bottom -
+        [double]$setupStepElement.BorderThickness.Top -
+        [double]$setupStepElement.BorderThickness.Bottom
+    Assert-BoostLabCondition ($setupRowTotal -le $setupInnerHeight) "AXIS Setup row content should fit inside the card without support clipping for $setupId."
+
+    $setupPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+    $setupRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+    $setupRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $setupVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+    Assert-BoostLabCondition ([string]$setupPrimaryButton.Content -eq [string]$setupSpec['Primary']) "AXIS Setup primary button text changed for $setupId."
+    Assert-BoostLabCondition ($setupRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Setup runtime status should start hidden for $setupId."
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($setupRuntimeStatusArea) -eq 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping') "AXIS Setup runtime status should expose the no-clipping marker for $setupId."
+
+    if ([bool]$setupSpec['Overlay']) {
+        $setupOverlay = $taggedOverlay[3]
+        $setupOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $setupOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+        $setupOverlayAcknowledgementText = @(Get-AxisFirstUseWizardTaggedElements -Root $setupOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgementText') | Select-Object -First 1
+        $setupOverlayActionButton = @(Get-AxisFirstUseWizardTaggedElements -Root $setupOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+        $setupOverlayReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $setupOverlay -Tag 'AxisFirstUseWizard.ConfirmationReturnButton') | Select-Object -First 1
+        Assert-BoostLabCondition ([string]$setupOverlayAcknowledgementText.Text -eq [string]$setupSpec['Checkbox']) 'AXIS Updates Pause confirmation checkbox text changed.'
+        Assert-BoostLabCondition ([string]$setupOverlayActionButton.Content -eq [string]$setupSpec['ConfirmationPrimary']) 'AXIS Updates Pause confirmation primary text changed.'
+        Assert-BoostLabCondition ([string]$setupOverlayReturnButton.Content -eq [string]$setupSpec['ConfirmationReturn']) 'AXIS Updates Pause confirmation return text changed.'
+        Assert-BoostLabCondition (-not [bool]$setupOverlayActionButton.IsEnabled) 'AXIS Updates Pause confirmation primary should start disabled.'
+        Invoke-AxisFirstUseWizardButtonClick -Button $setupPrimaryButton
+        Assert-BoostLabCondition ($setupOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Updates Pause primary action should reveal the confirmation overlay only.'
+        Assert-BoostLabCondition ($setupRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause primary action must not start simulation before acknowledgement.'
+        $setupOverlayAcknowledgement.IsChecked = $true
+        Assert-BoostLabCondition ([bool]$setupOverlayActionButton.IsEnabled) 'AXIS Updates Pause confirmation primary should enable after acknowledgement.'
+        Invoke-AxisFirstUseWizardButtonClick -Button $setupOverlayReturnButton
+        Assert-BoostLabCondition ($setupOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause Return should close only the overlay.'
+        Assert-BoostLabCondition (-not [bool]$setupOverlayAcknowledgement.IsChecked) 'AXIS Updates Pause Return should reset acknowledgement.'
+        Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Updates Pause Return must not complete the step.'
+        Invoke-AxisFirstUseWizardButtonClick -Button $setupPrimaryButton
+        $setupOverlayAcknowledgement.IsChecked = $true
+        Invoke-AxisFirstUseWizardButtonClick -Button $setupOverlayActionButton
+        Assert-BoostLabCondition ($setupOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause confirmation should close the overlay.'
+    }
+    else {
+        Invoke-AxisFirstUseWizardButtonClick -Button $setupPrimaryButton
+        Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Setup direct action must not reveal BIOS Drivers overlay for $setupId."
+        Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Setup direct action must not reveal BIOS Settings overlay for $setupId."
+        Assert-BoostLabCondition ($taggedOverlay[2].Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Setup direct action must not reveal To BIOS overlay for $setupId."
+        Assert-BoostLabCondition ($taggedOverlay[3].Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Setup direct action must not reveal Updates Pause overlay for $setupId."
+    }
+
+    $setupRunningText = (Get-AxisFirstUseWizardTextValues -Root $setupVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($setupRunningText.Contains([string]$setupSpec['Running'])) "AXIS Setup should show the owner-approved running text for $setupId."
+    Assert-BoostLabCondition ($setupRunningText.Contains($arabicSupportBody)) "AXIS Setup support panel should remain visible during simulation for $setupId."
+    Assert-BoostLabCondition ($setupRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Setup runtime status should become visible during simulation for $setupId."
+    Assert-BoostLabCondition ($setupRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Setup runtime status spacer should become visible during simulation for $setupId."
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupRuntimeStatusArea -Tag 'AxisFirstUseWizard.CheckingAnimation').Count -eq 1) "AXIS Setup simulated flow should use the runtime checking animation for $setupId."
+    $setupRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $setupRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+    Assert-BoostLabCondition ($setupRuntimeStatusRightAnchor.Count -eq 1) "AXIS Setup running status should keep text near the action row for $setupId."
+    [void](Assert-AxisFirstUseWizardRightAnchor -Anchor $setupRuntimeStatusRightAnchor[0] -Name "$setupId running runtime status" -ExpectedMaxWidth ([double]$setupStep['RuntimeStatusTextMaxWidth']))
+
+    Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$taggedContinueButtons[0].IsEnabled } -TimeoutMilliseconds 3000) "AXIS Setup simulated flow should enable Continue/Next for $setupId."
+    $setupCompletedText = (Get-AxisFirstUseWizardTextValues -Root $setupVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($setupCompletedText.Contains([string]$setupSpec['Completed'])) "AXIS Setup should show the owner-approved completed text for $setupId."
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $setupRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) "AXIS Setup completed state should render the completed runtime effect for $setupId."
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedContinueButtons[0]) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') "AXIS Setup Continue/Next should become blue after simulated completion for $setupId."
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag "AxisFirstUseWizard.${tagRoot}Step").Count -eq 1) "AXIS Setup should not auto-advance after simulated completion for $setupId."
+
+    Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
+    if ($setupIndex -lt ($setupStepSpecs.Count - 1)) {
+        $nextTagRoot = [string]([System.Collections.IDictionary]$setupStepSpecs[$setupIndex + 1])['TagRoot']
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag "AxisFirstUseWizard.${nextTagRoot}Step").Count -eq 1) "AXIS Setup Continue/Next should navigate to the next Setup step after $setupId."
+    }
+    else {
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag "AxisFirstUseWizard.${tagRoot}Step").Count -eq 1) 'AXIS final Setup step should not navigate past the last prototype step.'
+    }
+}
+
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS Back from To BIOS should return to Updates Drivers Block.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupStoreSettingsStep').Count -eq 1) 'AXIS Back from final Setup step should return to Store Settings.'
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(
@@ -2300,7 +2823,7 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
-Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 3) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, and To BIOS confirmation overlays only.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 4) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, and Updates Pause confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
@@ -2382,6 +2905,7 @@ $completedSampleState['Steps'] = @(
     $autoUnattendStep
     $updatesDriversStep
     $toBiosStep
+    $setupSteps
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -2529,6 +3053,15 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbSelec
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbSelectorMockOnly')) 'AXIS shared USB selector should expose the mock-only marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UsbInputWindowNoRealDriveDetection')) 'AXIS shared USB selector should expose the no-real-drive-detection marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.UpdatesDriversMixedBidiSafeInfoText')) 'AXIS Updates Drivers Block should expose the mixed BiDi-safe marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupStageBatchPrototypeOnly')) 'AXIS Setup batch should expose the prototype-only batch marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction')) 'AXIS Setup batch should expose the no-real-action marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupRuntimeStatusNoClipping')) 'AXIS Setup runtime status should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupSupportCardNoClipping')) 'AXIS Setup support card should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Setup two-card layout should expose the physical info-right requirements-left marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.EnglishOnlyTitleRightAnchored')) 'AXIS English-only Setup titles should expose the LTR right-anchored marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Split-AxisSetupRightAlignedVisualLines')) 'AXIS Setup cards should expose the shared right-aligned visual line renderer.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Get-AxisSetupRightAlignedVisualBreakPhrases')) 'AXIS Setup cards should expose phrase-specific right-aligned visual break hints.'
+Assert-BoostLabCondition ($prototypeSource.Contains($axisSetupRightAlignedVisualLineRendererAutomationId)) 'AXIS Setup cards should expose the no-left-floating wrapped Arabic line marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageStripNoPartialProgress')) 'AXIS stage strip should expose the no-partial-progress marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineActiveFullWhite')) 'AXIS stage strip should expose the active full-white line marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
