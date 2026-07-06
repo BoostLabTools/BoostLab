@@ -33,6 +33,26 @@ The AXIS UI must reflect the existing one-app-at-a-time behavior.
 
 Internal runtime actions may include Analyze, Open, Apply, Default, or Restore according to config/runtime state, but the normal customer-facing AXIS first-use wizard exposes only the owner-approved selector and `Install` action recorded here.
 
+## Installers Stage Extension Sequence
+
+After the Installers-stage extension, the AXIS first-use wizard Installers stage sequence is:
+
+1. `installers`
+2. `installers-startup-apps-settings`
+3. `installers-startup-apps-task-manager`
+4. `restart-after-installers`
+
+The two startup app steps are Installers-stage copies, not moves.
+
+The original Setup-stage steps remain exactly where they are:
+
+- `startup-apps-settings`
+- `startup-apps-task-manager`
+
+The Installers-stage copies appear after installing apps so the customer can disable newly installed startup entries before the Installers-stage restart step.
+
+The `restart-after-installers` step is an AXIS custom future restart step. It is not an existing BoostLab runtime tool and must not be wired without a later approved implementation phase.
+
 ## Owner-Approved Customer-Facing Copy
 
 | Surface | Owner-approved value |
