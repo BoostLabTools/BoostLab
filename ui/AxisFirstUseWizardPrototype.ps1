@@ -1553,7 +1553,12 @@ function Get-AxisWizardArabicText {
             'InstallersEpicOverlayBody1',
             'InstallersEpicOverlayBody2',
             'InstallersEpicOverlayBody3',
-            'InstallersEpicOverlayReturn'
+            'InstallersEpicOverlayReturn',
+            'RestartAfterInstallersTitle',
+            'RestartAfterInstallersSubtitle',
+            'RestartAfterInstallersInfoBullet1',
+            'RestartAfterInstallersInfoBullet2',
+            'RestartAfterInstallersInfoBullet3'
         )]
         [string]$Name
     )
@@ -2013,6 +2018,21 @@ function Get-AxisWizardArabicText {
         'InstallersEpicOverlayReturn' {
             return ConvertFrom-AxisWizardCodePoints @(0x0631, 0x062C, 0x0648, 0x0639)
         }
+        'RestartAfterInstallersTitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632)
+        }
+        'RestartAfterInstallersSubtitle' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x0020, 0x0628, 0x0639, 0x062F, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0627, 0x0645, 0x062C, 0x0020, 0x0648, 0x0645, 0x0631, 0x0627, 0x062C, 0x0639, 0x0629, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x002E)
+        }
+        'RestartAfterInstallersInfoBullet1' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x0628, 0x0631, 0x0627, 0x0645, 0x062C, 0x0020, 0x0648, 0x0645, 0x0631, 0x0627, 0x062C, 0x0639, 0x0629, 0x0020, 0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0627, 0x062A, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x060C, 0x0020, 0x0623, 0x0639, 0x062F, 0x0020, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x0020, 0x0644, 0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0020, 0x0627, 0x0644, 0x062A, 0x0631, 0x062A, 0x064A, 0x0628, 0x0020, 0x0627, 0x0644, 0x062C, 0x062F, 0x064A, 0x062F, 0x002E)
+        }
+        'RestartAfterInstallersInfoBullet2' {
+            return ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0633, 0x0627, 0x0639, 0x062F, 0x0020, 0x0625, 0x0639, 0x0627, 0x062F, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x0020, 0x0639, 0x0644, 0x0649, 0x0020, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0627, 0x0644, 0x0639, 0x0645, 0x0644, 0x064A, 0x0627, 0x062A, 0x0020, 0x0627, 0x0644, 0x062C, 0x062F, 0x064A, 0x062F, 0x0629, 0x0020, 0x0648, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x0646, 0x0638, 0x0627, 0x0645, 0x0020, 0x0628, 0x0634, 0x0643, 0x0644, 0x0020, 0x0646, 0x0638, 0x064A, 0x0641, 0x002E)
+        }
+        'RestartAfterInstallersInfoBullet3' {
+            return ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x0627, 0x0643, 0x062A, 0x0645, 0x0627, 0x0644, 0x0020, 0x0647, 0x0630, 0x0647, 0x0020, 0x0627, 0x0644, 0x062E, 0x0637, 0x0648, 0x0629, 0x060C, 0x0020, 0x064A, 0x0645, 0x0643, 0x0646, 0x0643, 0x0020, 0x0645, 0x062A, 0x0627, 0x0628, 0x0639, 0x0629, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0041, 0x0058, 0x0049, 0x0053, 0x002E)
+        }
     }
 }
 
@@ -2288,13 +2308,19 @@ function Get-AxisFirstUseWizardSampleState {
 
             [double]$RuntimeStatusTextMaxWidth = 106.0,
 
-            [double]$ConfirmationActionWidth = 124.0
+            [double]$ConfirmationActionWidth = 124.0,
+
+            [string]$StageName = 'Setup',
+
+            [string]$StageBatchMarker = 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly',
+
+            [string]$NoRealActionMarker = 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction'
         )
 
         $step = [ordered]@{
             Id = $Id
             Title = $Title
-            StageName = 'Setup'
+            StageName = $StageName
             State = 'Ready'
             StateLabel = ''
             PrimaryActionLabel = $PrimaryActionLabel
@@ -2315,13 +2341,17 @@ function Get-AxisFirstUseWizardSampleState {
             FutureInternalAction = $FutureInternalAction
             CustomerVisibleActions = @($PrimaryActionLabel)
             PrototypeOnlySimulation = $true
-            SetupStageBatchMarker = 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
-            NoRealActionMarker = 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction'
+            SetupStageBatchMarker = $StageBatchMarker
+            NoRealActionMarker = $NoRealActionMarker
             TagRoot = $TagRoot
             PrimaryActionWidth = $PrimaryActionWidth
             RuntimeStatusWidth = $RuntimeStatusWidth
             RuntimeStatusContentWidth = $RuntimeStatusContentWidth
             RuntimeStatusTextMaxWidth = $RuntimeStatusTextMaxWidth
+        }
+
+        if ($StageName -eq 'Installers') {
+            $step['InstallersStageExtensionMarker'] = $StageBatchMarker
         }
 
         if ($RequirementsItems.Count -gt 0) {
@@ -2849,6 +2879,85 @@ function Get-AxisFirstUseWizardSampleState {
         InstallersStagePrototypeMarker = 'AxisFirstUseWizard.InstallersStagePrototypeOnly'
     }
 
+    $installersStartupAppsSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'installers-startup-apps-settings' `
+        -Title 'Startup Apps Settings' `
+        -Description (Get-AxisWizardSetupText -Name 'StartupAppsSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'StartupAppsSettingsPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsSettingsCompleted') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'InstallersStartupAppsSettings' `
+        -OpenMappedPrototypeOnly $true `
+        -StageName 'Installers' `
+        -StageBatchMarker 'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.InstallersStartupAppsSettingsPrototypeOnlyNoRuntimeAction'
+
+    $installersStartupAppsTaskManagerStep = New-AxisSetupWizardStepState `
+        -Id 'installers-startup-apps-task-manager' `
+        -Title 'Startup Apps Task Manager' `
+        -Description (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerPrimaryAction') `
+        -InformationCardTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet2')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement1')
+            (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRunning') `
+        -CompletedStatusTitle (Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerCompleted') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'InstallersStartupAppsTaskManager' `
+        -OpenMappedPrototypeOnly $true `
+        -StageName 'Installers' `
+        -StageBatchMarker 'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.InstallersStartupAppsTaskManagerPrototypeOnlyNoRuntimeAction'
+
+    $restartAfterInstallersStep = New-AxisSetupWizardStepState `
+        -Id 'restart-after-installers' `
+        -Title (Get-AxisWizardArabicText -Name 'RestartAfterInstallersTitle') `
+        -Description (Get-AxisWizardArabicText -Name 'RestartAfterInstallersSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardArabicText -Name 'Restart') `
+        -InformationCardTitle (Get-AxisWizardArabicText -Name 'RestartAfterInstallersTitle') `
+        -InformationItems @(
+            (Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet1')
+            (Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet2')
+            (Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardArabicText -Name 'Restarting') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Restart' `
+        -FutureInternalAction 'Restart' `
+        -TagRoot 'RestartAfterInstallers' `
+        -StageName 'Installers' `
+        -StageBatchMarker 'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.RestartAfterInstallersPrototypeOnlyNoRuntimeAction' `
+        -PrimaryActionWidth 166.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0
+
+    $restartAfterInstallersStep['AxisCustomStepOrigin'] = 'AXIS custom future restart step'
+    $restartAfterInstallersStep['NoExistingBoostLabTool'] = $true
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -2882,6 +2991,9 @@ function Get-AxisFirstUseWizardSampleState {
             $storeSettingsStep
             $updatesPauseStep
             $installersStep
+            $installersStartupAppsSettingsStep
+            $installersStartupAppsTaskManagerStep
+            $restartAfterInstallersStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -3129,6 +3241,7 @@ function New-AxisWizardRuntimeStatusContent {
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
+    $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
     $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
     $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
@@ -3156,7 +3269,7 @@ function New-AxisWizardRuntimeStatusContent {
     elseif ($isToBiosStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
     }
-    elseif ($isInstallersStep) {
+    elseif ($isInstallersStageStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
@@ -3224,6 +3337,7 @@ function New-AxisStepStatusArea {
     $isUpdatesDriversStep = ($stepId -eq 'updates-drivers-block')
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
+    $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
@@ -3251,7 +3365,7 @@ function New-AxisStepStatusArea {
     elseif ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosRuntimeStatusNoClipping')
     }
-    elseif ($isInstallersStep) {
+    elseif ($isInstallersStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
@@ -3288,8 +3402,9 @@ function New-AxisStepSupportPanel {
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
+    $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
-    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStep)
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep)
     $supportPadding = if ($usesCompactSupport) {
         New-AxisWizardThickness -Left 14 -Top 7 -Right 14 -Bottom 7
     }
@@ -3318,7 +3433,7 @@ function New-AxisStepSupportPanel {
     if ($isToBiosStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosSupportCardNoClipping')
     }
-    elseif ($isInstallersStep) {
+    elseif ($isInstallersStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSupportCardNoClipping')
     }
     elseif ($isSetupStep) {
@@ -3492,7 +3607,7 @@ function Get-AxisSetupRightAlignedVisualBreakPhrases {
     )
 
     $phrases = [System.Collections.Generic.List[string]]::new()
-    if ($StepId -eq 'startup-apps-settings' -and $CardKind -eq 'Requirements') {
+    if ($StepId -in @('startup-apps-settings', 'installers-startup-apps-settings') -and $CardKind -eq 'Requirements') {
         $phrases.Add((ConvertFrom-AxisWizardCodePoints @(0x0644, 0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0627, 0x062A, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644, 0x002E)))
     }
     elseif ($StepId -eq 'updates-pause' -and $CardKind -eq 'Information') {
@@ -3605,6 +3720,8 @@ function New-AxisSetupStep {
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id' -DefaultValue '')
     $tagRoot = [string](Get-AxisWizardMapValue -Map $Step -Name 'TagRoot' -DefaultValue 'SetupStep')
     $showRequirements = [bool](Get-AxisWizardMapValue -Map $Step -Name 'ShowRequirements' -DefaultValue $false)
+    $stageName = [string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Setup')
+    $isInstallersExtensionStep = ($stageName -eq 'Installers' -and $stepId -ne 'installers')
 
     $container = New-AxisWizardPanel `
         -Resources $Resources `
@@ -3616,7 +3733,13 @@ function New-AxisSetupStep {
     $container.Height = 382
     $container.Tag = "AxisFirstUseWizard.${tagRoot}Step"
     $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
-    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly')
+    $containerAutomationId = if ($isInstallersExtensionStep) {
+        'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly'
+    }
+    else {
+        'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
+    }
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, $containerAutomationId)
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
@@ -3685,6 +3808,9 @@ function New-AxisSetupStep {
     $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     if ($showRequirements) {
         $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupCardsPhysicalOrderInfoRightRequirementsLeft')
+        if ($isInstallersExtensionStep) {
+            $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersExtensionCardsPhysicalOrderInfoRightRequirementsLeft')
+        }
     }
 
     $setupTwoCardTextMaxWidth = 340.0
@@ -5544,7 +5670,10 @@ function New-AxisFirstUseWizardStepContent {
         'background-apps',
         'edge-settings',
         'store-settings',
-        'updates-pause'
+        'updates-pause',
+        'installers-startup-apps-settings',
+        'installers-startup-apps-task-manager',
+        'restart-after-installers'
     )) {
         return New-AxisSetupStep -Step $Step -Resources $Resources
     }

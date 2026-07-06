@@ -465,6 +465,9 @@ $autoUnattendBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\AutoUnatt
 $updatesDriversBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Updates-Drivers-Block-Step-Blueprint.md'
 $toBiosBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\To-BIOS-Step-Blueprint.md'
 $installersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Step-Blueprint.md'
+$installersStartupAppsSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Settings-Step-Blueprint.md'
+$installersStartupAppsTaskManagerBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Task-Manager-Step-Blueprint.md'
+$restartAfterInstallersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Restart-After-Installers-Step-Blueprint.md'
 $setupBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\BitLocker-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Convert-Home-To-Pro-Step-Blueprint.md'
@@ -487,6 +490,9 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $autoUnattendBlueprintPath -Pat
 Assert-BoostLabCondition (Test-Path -LiteralPath $updatesDriversBlueprintPath -PathType Leaf) 'AXIS Updates Drivers Block step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $toBiosBlueprintPath -PathType Leaf) 'AXIS To BIOS step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersBlueprintPath -PathType Leaf) 'AXIS Installers step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsSettingsBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Settings extension blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsTaskManagerBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Task Manager extension blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $restartAfterInstallersBlueprintPath -PathType Leaf) 'AXIS Restart After Installers extension blueprint is missing.'
 foreach ($setupBlueprintPath in $setupBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $setupBlueprintPath -PathType Leaf) "AXIS Setup step blueprint is missing: $setupBlueprintPath"
 }
@@ -499,6 +505,9 @@ $autoUnattendBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $aut
 $updatesDriversBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $updatesDriversBlueprintPath
 $toBiosBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $toBiosBlueprintPath
 $installersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersBlueprintPath
+$installersStartupAppsSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersStartupAppsSettingsBlueprintPath
+$installersStartupAppsTaskManagerBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersStartupAppsTaskManagerBlueprintPath
+$restartAfterInstallersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $restartAfterInstallersBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -654,6 +663,11 @@ $arabicInstallersEpicOverlayBody1 = Get-AxisWizardArabicText -Name 'InstallersEp
 $arabicInstallersEpicOverlayBody2 = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody2'
 $arabicInstallersEpicOverlayBody3 = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayBody3'
 $arabicInstallersEpicOverlayReturn = Get-AxisWizardArabicText -Name 'InstallersEpicOverlayReturn'
+$arabicRestartAfterInstallersTitle = Get-AxisWizardArabicText -Name 'RestartAfterInstallersTitle'
+$arabicRestartAfterInstallersSubtitle = Get-AxisWizardArabicText -Name 'RestartAfterInstallersSubtitle'
+$arabicRestartAfterInstallersInfoBullet1 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet1'
+$arabicRestartAfterInstallersInfoBullet2 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet2'
+$arabicRestartAfterInstallersInfoBullet3 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet3'
 $arabicInstallersRemovedEpicCheckbox = -join ([char[]]@(
     0x062A, 0x0645, 0x0020, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0646,
     0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020,
@@ -872,6 +886,79 @@ $setupStepSpecs = @(
 )
 $setupStepOrder = @($setupStepSpecs | ForEach-Object { [string]$_['Id'] })
 $setupStepTitles = @($setupStepSpecs | ForEach-Object { [string]$_['Title'] })
+$installersExtensionStepSpecs = @(
+    [ordered]@{
+        Id = 'installers-startup-apps-settings'
+        SourceSetupId = 'startup-apps-settings'
+        TagRoot = 'InstallersStartupAppsSettings'
+        Title = 'Startup Apps Settings'
+        Primary = Get-AxisWizardSetupText -Name 'StartupAppsSettingsPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'StartupAppsSettingsSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet1'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet2'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement1'
+            Get-AxisWizardSetupText -Name 'StartupAppsSettingsRequirement2'
+        )
+        Running = Get-AxisWizardSetupText -Name 'StartupAppsSettingsRunning'
+        Completed = Get-AxisWizardSetupText -Name 'StartupAppsSettingsCompleted'
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        NoRealActionMarker = 'AxisFirstUseWizard.InstallersStartupAppsSettingsPrototypeOnlyNoRuntimeAction'
+        OpenMappedPrototypeOnly = $true
+    }
+    [ordered]@{
+        Id = 'installers-startup-apps-task-manager'
+        SourceSetupId = 'startup-apps-task-manager'
+        TagRoot = 'InstallersStartupAppsTaskManager'
+        Title = 'Startup Apps Task Manager'
+        Primary = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerPrimaryAction'
+        Subtitle = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerSubtitle'
+        InfoTitle = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoTitle'
+        InfoItems = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet1'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet2'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerInfoBullet3'
+        )
+        Requirements = @(
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement1'
+            Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRequirement2'
+        )
+        Running = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerRunning'
+        Completed = Get-AxisWizardSetupText -Name 'StartupAppsTaskManagerCompleted'
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        NoRealActionMarker = 'AxisFirstUseWizard.InstallersStartupAppsTaskManagerPrototypeOnlyNoRuntimeAction'
+        OpenMappedPrototypeOnly = $true
+    }
+    [ordered]@{
+        Id = 'restart-after-installers'
+        SourceSetupId = ''
+        TagRoot = 'RestartAfterInstallers'
+        Title = $arabicRestartAfterInstallersTitle
+        Primary = $arabicRestart
+        Subtitle = $arabicRestartAfterInstallersSubtitle
+        InfoTitle = $arabicRestartAfterInstallersTitle
+        InfoItems = @(
+            $arabicRestartAfterInstallersInfoBullet1
+            $arabicRestartAfterInstallersInfoBullet2
+            $arabicRestartAfterInstallersInfoBullet3
+        )
+        Requirements = @()
+        Running = $arabicRestarting
+        Completed = $arabicCompleted
+        CustomerAction = 'Restart'
+        FutureInternalAction = 'Restart'
+        NoRealActionMarker = 'AxisFirstUseWizard.RestartAfterInstallersPrototypeOnlyNoRuntimeAction'
+        OpenMappedPrototypeOnly = $false
+    }
+)
+$installersExtensionStepOrder = @($installersExtensionStepSpecs | ForEach-Object { [string]$_['Id'] })
+$installersExtensionStepTitles = @($installersExtensionStepSpecs | ForEach-Object { [string]$_['Title'] })
 $axisSetupRightAlignedVisualLineRendererAutomationId = 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines'
 $oldArabicToBiosTitle = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0627, 0x0646, 0x062A, 0x0642, 0x0627, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
 $arabicStartupAppsStartupPhrase = ConvertFrom-AxisWizardCodePoints @(0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
@@ -955,7 +1042,7 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 17) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, and the Installers step.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 20) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, and the four Installers-stage steps.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -963,7 +1050,7 @@ $expectedStepOrder = @(
     'unattended'
     'updates-drivers-block'
     'to-bios'
-) + $setupStepOrder + @('installers')
+) + $setupStepOrder + @('installers') + $installersExtensionStepOrder
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers after Updates Pause.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
@@ -972,7 +1059,7 @@ $expectedStepTitles = @(
     'AutoUnattend'
     'Updates Drivers Block'
     $arabicToBiosTitle
-) + $setupStepTitles + @($arabicInstallersTitle)
+) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
@@ -1134,6 +1221,10 @@ $updatesDriversStep = $sampleSteps[4]
 $toBiosStep = $sampleSteps[5]
 $setupSteps = @($sampleSteps[6..15])
 $installersStep = [System.Collections.IDictionary]$sampleSteps[16]
+$installersExtensionSteps = @($sampleSteps[17..19])
+$installersStartupAppsSettingsStep = [System.Collections.IDictionary]$sampleSteps[17]
+$installersStartupAppsTaskManagerStep = [System.Collections.IDictionary]$sampleSteps[18]
+$restartAfterInstallersStep = [System.Collections.IDictionary]$sampleSteps[19]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -1315,6 +1406,70 @@ Assert-BoostLabCondition ('Epic Games' -in @($installersStep['InstallerCatalogNa
 foreach ($removedInstallerName in @('Escape From Tarkov', 'Frame View', 'GOG launcher', 'Notepad ++', 'Nvidia App', 'Onboard Memory Manager', 'Pot Player', 'Exit')) {
     Assert-BoostLabCondition (-not ($removedInstallerName -in @($installersStep['InstallerCatalogNames']))) "AXIS Installers selector must not include removed/non-selectable catalog item: $removedInstallerName"
 }
+
+$expectedInstallersStageOrder = @(
+    'installers'
+    'installers-startup-apps-settings'
+    'installers-startup-apps-task-manager'
+    'restart-after-installers'
+)
+$actualInstallersStageOrder = @($sampleSteps | Where-Object { [string]$_['StageName'] -eq 'Installers' } | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition (($actualInstallersStageOrder -join '|') -eq ($expectedInstallersStageOrder -join '|')) 'AXIS Installers stage order should be installers, startup apps settings, startup apps task manager, restart after installers.'
+Assert-BoostLabCondition (@($setupSteps | Where-Object { [string]$_['Id'] -eq 'startup-apps-settings' }).Count -eq 1) 'AXIS original Setup startup-apps-settings step must remain in Setup.'
+Assert-BoostLabCondition (@($setupSteps | Where-Object { [string]$_['Id'] -eq 'startup-apps-task-manager' }).Count -eq 1) 'AXIS original Setup startup-apps-task-manager step must remain in Setup.'
+Assert-BoostLabCondition ($installersExtensionSteps.Count -eq 3) 'AXIS Installers extension should add exactly three steps after installers.'
+for ($extensionIndex = 0; $extensionIndex -lt $installersExtensionStepSpecs.Count; $extensionIndex++) {
+    $extensionSpec = [System.Collections.IDictionary]$installersExtensionStepSpecs[$extensionIndex]
+    $extensionStep = [System.Collections.IDictionary]$installersExtensionSteps[$extensionIndex]
+    $extensionName = [string]$extensionSpec['Id']
+    Assert-BoostLabCondition ([string]$extensionStep['Id'] -eq $extensionName) "AXIS Installers extension step order changed at index $extensionIndex."
+    Assert-BoostLabCondition ([string]$extensionStep['Title'] -eq [string]$extensionSpec['Title']) "AXIS Installers extension title changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['StageName'] -eq 'Installers') "AXIS Installers extension step should be in Installers stage: $extensionName"
+    Assert-BoostLabCondition ([string]$extensionStep['PrimaryActionLabel'] -eq [string]$extensionSpec['Primary']) "AXIS Installers extension primary action changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['Description'] -eq [string]$extensionSpec['Subtitle']) "AXIS Installers extension subtitle changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['InformationCardTitle'] -eq [string]$extensionSpec['InfoTitle']) "AXIS Installers extension information title changed for $extensionName."
+    Assert-BoostLabCondition ((@($extensionStep['InformationItems']) -join '|') -eq (@($extensionSpec['InfoItems']) -join '|')) "AXIS Installers extension information bullets changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['CheckingStatusTitle'] -eq [string]$extensionSpec['Running']) "AXIS Installers extension running status changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['CompletedStatusTitle'] -eq [string]$extensionSpec['Completed']) "AXIS Installers extension completed status changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['CompletionStateLabel'] -eq [string]$extensionSpec['Completed']) "AXIS Installers extension completion label changed for $extensionName."
+    Assert-BoostLabCondition ([bool]$extensionStep['PrototypeOnlySimulation']) "AXIS Installers extension step should be prototype-only simulation: $extensionName"
+    Assert-BoostLabCondition ([string]$extensionStep['InstallersStageExtensionMarker'] -eq 'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly') "AXIS Installers extension marker missing for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['NoRealActionMarker'] -eq [string]$extensionSpec['NoRealActionMarker']) "AXIS Installers extension no-real-action marker changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['CustomerAction'] -eq [string]$extensionSpec['CustomerAction']) "AXIS Installers extension internal action mapping changed for $extensionName."
+    Assert-BoostLabCondition ([string]$extensionStep['FutureInternalAction'] -eq [string]$extensionSpec['FutureInternalAction']) "AXIS Installers extension future internal action changed for $extensionName."
+    Assert-BoostLabCondition ((@($extensionStep['CustomerVisibleActions']) -join '|') -eq [string]$extensionSpec['Primary']) "AXIS Installers extension customer-visible action should be the owner-approved label only: $extensionName"
+    Assert-BoostLabCondition (-not [bool]$extensionStep['RequiresConfirmationAcknowledgement']) "AXIS Installers extension must not show a confirmation overlay: $extensionName"
+    Assert-BoostLabCondition (-not [bool]$extensionStep['RequiresInputWindow']) "AXIS Installers extension must not show an input window: $extensionName"
+    Assert-BoostLabCondition ([bool]$extensionStep['NoConfirmationOverlay']) "AXIS Installers extension no-overlay marker should be present for $extensionName."
+    foreach ($forbiddenExtensionCustomerAction in @('Analyze', 'Apply', 'Open', 'Default', 'Restore')) {
+        Assert-BoostLabCondition (-not ($forbiddenExtensionCustomerAction -in @($extensionStep['CustomerVisibleActions']))) "AXIS Installers extension must not expose internal action text $forbiddenExtensionCustomerAction as customer-visible action: $extensionName"
+    }
+
+    if (@($extensionSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([bool]$extensionStep['ShowRequirements']) "AXIS Installers extension requirements card should be present for $extensionName."
+        Assert-BoostLabCondition ((@($extensionStep['RequirementsItems']) -join '|') -eq (@($extensionSpec['Requirements']) -join '|')) "AXIS Installers extension requirements copy changed for $extensionName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$extensionStep['ShowRequirements']) "AXIS Installers extension requirements card should be absent for $extensionName."
+        Assert-BoostLabCondition (-not $extensionStep.Contains('RequirementsItems')) "AXIS Installers extension no-requirements step should not carry requirements items: $extensionName"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$extensionSpec['SourceSetupId'])) {
+        $sourceSetupStep = [System.Collections.IDictionary](@($setupSteps | Where-Object { [string]$_['Id'] -eq [string]$extensionSpec['SourceSetupId'] })[0])
+        Assert-BoostLabCondition ($null -ne $sourceSetupStep) "AXIS Installers extension source Setup step missing for $extensionName."
+        Assert-BoostLabCondition ([string]$extensionStep['Title'] -eq [string]$sourceSetupStep['Title']) "AXIS Installers duplicate title should match source Setup step for $extensionName."
+        Assert-BoostLabCondition ([string]$extensionStep['Description'] -eq [string]$sourceSetupStep['Description']) "AXIS Installers duplicate subtitle should match source Setup step for $extensionName."
+        Assert-BoostLabCondition ([string]$extensionStep['InformationCardTitle'] -eq [string]$sourceSetupStep['InformationCardTitle']) "AXIS Installers duplicate information title should match source Setup step for $extensionName."
+        Assert-BoostLabCondition ((@($extensionStep['InformationItems']) -join '|') -eq (@($sourceSetupStep['InformationItems']) -join '|')) "AXIS Installers duplicate information bullets should match source Setup step for $extensionName."
+        Assert-BoostLabCondition ((@($extensionStep['RequirementsItems']) -join '|') -eq (@($sourceSetupStep['RequirementsItems']) -join '|')) "AXIS Installers duplicate requirements should match source Setup step for $extensionName."
+        Assert-BoostLabCondition ([bool]$extensionStep['OpenMappedPrototypeOnly']) "AXIS Installers duplicated Open step should be marked prototype-only: $extensionName."
+    }
+}
+Assert-BoostLabCondition (-not [bool]$restartAfterInstallersStep['ShowRequirements']) 'AXIS restart-after-installers should not show a requirements card.'
+Assert-BoostLabCondition (-not $restartAfterInstallersStep.Contains('RequirementsTitle')) 'AXIS restart-after-installers sample state should not carry a visible requirements title.'
+Assert-BoostLabCondition (-not $restartAfterInstallersStep.Contains('RequirementsItems')) 'AXIS restart-after-installers sample state should not carry visible requirements items.'
+Assert-BoostLabCondition ([bool]$restartAfterInstallersStep['NoExistingBoostLabTool']) 'AXIS restart-after-installers should be marked as not an existing BoostLab tool.'
+Assert-BoostLabCondition ([string]$restartAfterInstallersStep['AxisCustomStepOrigin'] -eq 'AXIS custom future restart step') 'AXIS restart-after-installers should record custom AXIS origin.'
 
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
@@ -3131,12 +3286,81 @@ Assert-BoostLabCondition ($nonEpicInstallersRuntimeStatusArea.Visibility -eq [Sy
 Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$nonEpicInstallersContinueButton.IsEnabled } -TimeoutMilliseconds 3000) 'AXIS Installers non-Epic direct simulation should still complete.'
 
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
-Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Installers Continue/Next should not navigate past the last implemented prototype step.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStartupAppsSettingsStep').Count -eq 1) 'AXIS Installers Continue/Next should navigate to the Installers Startup Apps Settings extension step.'
 
+Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.InstallersStep').Count -eq 1) 'AXIS Back from Installers Startup Apps Settings should return to Installers.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupUpdatesPauseStep').Count -eq 1) 'AXIS Back from Installers should return to Updates Pause.'
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedBackButtons[0]
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $taggedContentHost[0].Child -Tag 'AxisFirstUseWizard.SetupStoreSettingsStep').Count -eq 1) 'AXIS Back from Updates Pause should return to Store Settings.'
+
+foreach ($extensionSpec in $installersExtensionStepSpecs) {
+    $extensionStepId = [string]$extensionSpec['Id']
+    $extensionTagRoot = [string]$extensionSpec['TagRoot']
+    $extensionSampleState = Get-AxisFirstUseWizardSampleState
+    $extensionStepIds = @($extensionSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
+    $extensionStepIndex = [Array]::IndexOf($extensionStepIds, $extensionStepId)
+    Assert-BoostLabCondition ($extensionStepIndex -ge 0) "AXIS extension render test should find step: $extensionStepId"
+    $extensionSampleState['CurrentStepIndex'] = $extensionStepIndex
+    $extensionPrototype = New-AxisFirstUseWizardPrototype -SampleState $extensionSampleState
+    $extensionContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+    $extensionContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+    $extensionVisibleContent = $extensionContentHost.Child
+    $extensionStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}Step") | Select-Object -First 1
+    $extensionTitleText = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}TitleText") | Select-Object -First 1
+    $extensionDetailsGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}StepDetails") | Select-Object -First 1
+    $extensionInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}InformationCard") | Select-Object -First 1
+    $extensionRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}RequirementsCard") | Select-Object -First 1
+    $extensionInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag "AxisFirstUseWizard.${extensionTagRoot}InformationSharedPhysicalRightEdge") | Select-Object -First 1
+    $extensionSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+    $extensionRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+    $extensionRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+    $extensionPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+    $extensionVisibleText = (Get-AxisFirstUseWizardTextValues -Root $extensionVisibleContent) -join [Environment]::NewLine
+
+    Assert-BoostLabCondition ($extensionStepElement -is [System.Windows.Controls.Border]) "AXIS Installers extension should render a step card: $extensionStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionStepElement) -eq 'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly') "AXIS Installers extension should expose prototype-only automation marker: $extensionStepId"
+    Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $extensionTitleText) -eq [string]$extensionSpec['Title']) "AXIS Installers extension visible title changed: $extensionStepId"
+    Assert-BoostLabCondition ([string]$extensionPrimaryButton.Content -eq [string]$extensionSpec['Primary']) "AXIS Installers extension primary button text changed: $extensionStepId"
+    Assert-BoostLabCondition (-not [bool]$extensionContinueButton.IsEnabled) "AXIS Installers extension Next should start disabled until simulated completion: $extensionStepId"
+    Assert-BoostLabCondition ($extensionRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Installers extension runtime status should start hidden: $extensionStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionRuntimeStatusArea) -eq 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping') "AXIS Installers extension runtime status should expose no-clipping marker: $extensionStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionSupportPanel) -eq 'AxisFirstUseWizard.InstallersSupportCardNoClipping') "AXIS Installers extension support panel should expose the no-clipping marker: $extensionStepId"
+    Assert-BoostLabCondition ([double]$extensionSupportPanel.MinHeight -eq 54.0) "AXIS Installers extension support panel should use compact no-clipping height: $extensionStepId"
+    Assert-BoostLabCondition ($extensionVisibleText.Contains($arabicSupportTitle) -and $extensionVisibleText.Contains($arabicSupportBody)) "AXIS Installers extension support card should remain visible: $extensionStepId"
+    Assert-BoostLabCondition (-not $extensionVisibleText.Contains([string][char]0xFFFD)) "AXIS Installers extension visible copy must not contain replacement glyphs: $extensionStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationOverlay').Count -eq 0) "AXIS Installers extension content must not include a confirmation overlay: $extensionStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) "AXIS Installers extension content must not include a confirmation checkbox: $extensionStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay').Count -eq 0) "AXIS Installers extension content must not include an input overlay: $extensionStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionInformationSharedRightEdge) -eq "AxisFirstUseWizard.${extensionTagRoot}MixedBidiSafeInfoText") "AXIS Installers extension information card should use mixed BiDi-safe text grouping: $extensionStepId"
+
+    if (@($extensionSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionDetailsGrid) -eq 'AxisFirstUseWizard.InstallersExtensionCardsPhysicalOrderInfoRightRequirementsLeft') "AXIS Installers extension should mark physical info-right requirements-left order: $extensionStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($extensionInformationCard) -eq 2) "AXIS Installers extension information card should be physical right: $extensionStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($extensionRequirementsCard) -eq 0) "AXIS Installers extension requirements card should be physical left: $extensionStepId"
+    }
+    else {
+        Assert-BoostLabCondition ($null -eq $extensionRequirementsCard) "AXIS Installers extension restart step must not render a requirements card: $extensionStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($extensionInformationCard) -eq 0) "AXIS Installers extension single information card should use the only details column: $extensionStepId"
+    }
+
+    Invoke-AxisFirstUseWizardButtonClick -Button $extensionPrimaryButton
+    Assert-BoostLabCondition ($extensionRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Installers extension simulated action should show runtime status: $extensionStepId"
+    Assert-BoostLabCondition ($extensionRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Installers extension runtime spacer should be visible during simulation: $extensionStepId"
+    $extensionRunningText = (Get-AxisFirstUseWizardTextValues -Root $extensionVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($extensionRunningText.Contains([string]$extensionSpec['Running'])) "AXIS Installers extension should show owner-approved running status: $extensionStepId"
+    Assert-BoostLabCondition ($extensionRunningText.Contains($arabicSupportBody)) "AXIS Installers extension support panel should remain visible during simulation: $extensionStepId"
+    Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$extensionContinueButton.IsEnabled } -TimeoutMilliseconds 3000) "AXIS Installers extension should enable Next after simulated completion: $extensionStepId"
+    $extensionCompletedText = (Get-AxisFirstUseWizardTextValues -Root $extensionVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($extensionCompletedText.Contains([string]$extensionSpec['Completed'])) "AXIS Installers extension should end in owner-approved completed status: $extensionStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($extensionContinueButton) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') "AXIS Installers extension Next should become blue after simulated completion: $extensionStepId"
+
+    if ($extensionStepId -eq 'restart-after-installers') {
+        Invoke-AxisFirstUseWizardButtonClick -Button $extensionContinueButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionContentHost.Child -Tag 'AxisFirstUseWizard.RestartAfterInstallersStep').Count -eq 1) 'AXIS restart-after-installers should not auto-advance or navigate past the last implemented extension step.'
+    }
+}
 
 function New-AxisFirstUseWizardPreviewScopedPrototypeForTest {
     param(
