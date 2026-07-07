@@ -1452,6 +1452,74 @@ function Get-AxisWizardSetupText {
     return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
 }
 
+function Get-AxisWizardGraphicsText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $values = @{
+        DriverCleanTitle = 'RHJpdmVyIENsZWFu'
+        DriverCleanSubtitle = '2KrZhti42YrZgSDYqti52LHZitmB2KfYqiDZg9ix2Kog2KfZhNi02KfYtNipINmC2KjZhCDYqtir2KjZitiqINin2YTYqti52LHZitmBINin2YTYrNiv2YrYry4='
+        DriverCleanPrimary = '2KrZhti42YrZgSDYp9mE2KrYudix2YrZgdin2Ko='
+        DriverCleanInfoTitle = '2KrZhti42YrZgSDYqti52LHZitmB2KfYqiDZg9ix2Kog2KfZhNi02KfYtNip'
+        DriverCleanInfoBullet1 = '2KrZhti42YrZgSDYqti52LHZitmB2KfYqiDZg9ix2Kog2KfZhNi02KfYtNipINin2YTZgtiv2YrZhdipINmC2KjZhCDYqtir2KjZitiqINin2YTYqti52LHZitmBINin2YTYrNiv2YrYry4='
+        DriverCleanInfoBullet2 = '2YrYqtmFINiq2YbZgdmK2LAg2K7Yt9mI2Kkg2KfZhNiq2YbYuNmK2YEg2KrZhNmC2KfYptmK2YvYpyDYrdiz2Kgg2KfZhNmF2LPYp9ixINin2YTZhdi52KrZhdivLg=='
+        DriverCleanInfoBullet3 = '2KjYudivINin2YPYqtmF2KfZhCDYp9mE2KrZhti42YrZgdiMINmK2YXZg9mG2YMg2YXYqtin2KjYudipINil2LnYr9in2K8g2KfZhNiq2LnYsdmK2YEg2KfZhNis2K/ZitivLg=='
+        DriverCleanRequirement1 = '2KfZgtix2KMg2KfZhNiq2LnZhNmK2YXYp9iqINmC2KjZhCDYqNiv2KEg2KrZhti42YrZgSDYp9mE2KrYudix2YrZgdin2Kou'
+        DriverCleanRequirement2 = '2KfYrdmB2Lgg2KPZiiDYudmF2YQg2YXZgdiq2YjYrSDZgtio2YQg2KfZhNmF2KrYp9io2LnYqS4='
+        DriverCleanRequirement3 = '2KfZhtiq2LjYsSDYrdiq2Ykg2KrZg9iq2YXZhCDYp9mE2LnZhdmE2YrYqSDYqNin2YTZg9in2YXZhC4='
+        DriverCleanRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        GpuSetupSelectorLabel = '2KfYrtiq2LEg2YbZiNi5INmD2LHYqiDYp9mE2LTYp9i02Kk='
+        GpuSetupAmdLater = 'QU1EIOKAlCDZhNin2K3ZgtmL2Kc='
+        GpuSetupIntelLater = 'SW50ZWwg4oCUINmE2KfYrdmC2YvYpw=='
+        GpuSetupSubtitle = '2KrYq9io2YrYqiDZiNi22KjYtyDYqti52LHZitmBINmD2LHYqiDYp9mE2LTYp9i02Kku'
+        GpuSetupPrimary = '2KrYq9io2YrYqiDZiNi22KjYtyDYp9mE2KrYudix2YrZgQ=='
+        GpuSetupInfoTitle = '2KrYq9io2YrYqiDZiNi22KjYtyDYqti52LHZitmBINmD2LHYqiDYp9mE2LTYp9i02Kk='
+        GpuSetupInfoBullet1 = '2YrYqtmFINmB2KrYrSDYtdmB2K3YqSBOVklESUEg2KfZhNix2LPZhdmK2Kkg2YTYqtit2YXZitmEINin2YTYqti52LHZitmBINin2YTZhdmG2KfYs9ioINit2LPYqCDZhtmI2Lkg2YPYsdiqINin2YTYtNin2LTYqS4='
+        GpuSetupInfoBullet2 = '2KjYudivINiq2K3ZhdmK2YQg2KfZhNiq2LnYsdmK2YHYjCDYp9iu2KrYsSDZhdmE2YEg2KfZhNiq2LnYsdmK2YEg2YXZhiDZhtin2YHYsNipINin2K7YqtmK2KfYsSDYp9mE2KrYudix2YrZgS4='
+        GpuSetupInfoBullet3 = '2KjYudivINin2K7YqtmK2KfYsSDYp9mE2YXZhNmB2Iwg2YrYqtmFINiq2KvYqNmK2Kog2KfZhNiq2LnYsdmK2YEg2YjYttio2Lcg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpy4='
+        GpuSetupRequirement1 = '2KfZgtix2KMg2KfZhNiq2LnZhNmK2YXYp9iqINmC2KjZhCDYqNiv2KEg2KrYq9io2YrYqiDZiNi22KjYtyDYp9mE2KrYudix2YrZgS4='
+        GpuSetupRequirement2 = '2KfYrtiq2LEg2YbZiNi5INmD2LHYqiDYp9mE2LTYp9i02Kkg2KfZhNi12K3ZititINmC2KjZhCDYp9mE2YXYqtin2KjYudipLg=='
+        GpuSetupRequirement3 = '2KfYqtio2Lkg2YbYp9mB2LDYqSDYp9iu2KrZitin2LEg2KfZhNiq2LnYsdmK2YEg2LnZhtivINi42YfZiNix2YfYpy4='
+        GpuSetupRunning = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        NvidiaAppSubtitle = '2KrYq9io2YrYqiDYqti32KjZitmCIE5WSURJQSDZhNmE2K3YtdmI2YQg2LnZhNmJINmF2YrYstin2Kog2KfZhNiq2LfYqNmK2YIu'
+        NvidiaAppOptionalContinuation = '2YXYqtin2KjYudipINio2K/ZiNmGIE5WSURJQSBBcHA='
+        NvidiaAppInfoTitle = '2KrYq9io2YrYqiDYqti32KjZitmCIE5WSURJQQ=='
+        NvidiaAppInfoBullet1 = '2KrYq9io2YrYqiBOVklESUEgQXBwINmE2YXZhiDZitix2YrYryDZhdmK2LLYp9iqINin2YTYqti32KjZitmCINmF2KvZhCDYp9mE2KrYs9is2YrZhCDZiNin2YTYqti12YjZitixLg=='
+        NvidiaAppInfoBullet2 = '2YrZhdmD2YYg2YXYqtin2KjYudipINin2YTYpdi52K/Yp9ivINio2K/ZiNmGINiq2KvYqNmK2Kog2KfZhNiq2LfYqNmK2YIg2KXYsNinINmE2YUg2KrZg9mGINiq2K3Yqtin2Kwg2YfYsNmHINin2YTZhdmK2LLYp9iqLg=='
+        NvidiaAppInfoBullet3 = '2KrYudix2YrZgSDZg9ix2Kog2KfZhNi02KfYtNipINmK2YPZiNmGINmF2KvYqNiq2YvYpyDZiNmF2LbYqNmI2LfZi9inINmF2YYg2KfZhNiu2LfZiNipINin2YTYs9in2KjZgtipLg=='
+        NvidiaAppRunning = '2KzYp9ix2Yog2KfZhNiq2KvYqNmK2Ko='
+        NvidiaAppCompleted = '2KrZhSDYp9mE2KrYq9io2YrYqg=='
+        DirectXSubtitle = '2KrYq9io2YrYqiDZhdmD2YjZhtin2KogRGlyZWN0WCDYp9mE2YXYt9mE2YjYqNipINmE2YTYo9mE2LnYp9ioINmI2KfZhNio2LHYp9mF2Kwu'
+        DirectXPrimary = '2KrYq9io2YrYqiBEaXJlY3RY'
+        DirectXInfoTitle = '2YXZg9mI2YbYp9iqINiq2LTYutmK2YQg2KfZhNij2YTYudin2Kgg2YjYp9mE2KjYsdin2YXYrA=='
+        DirectXInfoBullet1 = '2KrYq9io2YrYqiDZhdmD2YjZhtin2KogRGlyZWN0WCDYp9mE2LbYsdmI2LHZitipINmE2KrYtNi62YrZhCDYp9mE2LnYr9mK2K8g2YXZhiDYp9mE2KPZhNi52KfYqCDZiNin2YTYqNix2KfZhdisLg=='
+        DirectXInfoBullet2 = '2KrYs9in2LnYryDZh9iw2Ycg2KfZhNmF2YPZiNmG2KfYqiDYudmE2Ykg2KrYrdiz2YrZhiDYqtmI2KfZgdmCINin2YTYo9mE2LnYp9ioINmI2KfZhNio2LHYp9mF2Kwg2YXYuSBXaW5kb3dzLg=='
+        DirectXInfoBullet3 = '2YrYqtmFINiq2KzZh9mK2LIg2KfZhNmF2YPZiNmG2KfYqiDZiNiq2KvYqNmK2KrZh9inINiq2YTZgtin2KbZitmL2Kcg2KPYq9mG2KfYoSDZh9iw2Ycg2KfZhNiu2LfZiNipLg=='
+        DirectXRunning = '2KzYp9ix2Yog2KfZhNiq2K3ZhdmK2YQ='
+        VisualCppSubtitle = '2KrYq9io2YrYqiDZhdmD2YjZhtin2Kog2KrYtNi62YrZhCDYttix2YjYsdmK2Kkg2YTZhNij2YTYudin2Kgg2YjYp9mE2KjYsdin2YXYrC4='
+        VisualCppPrimary = '2KrYq9io2YrYqiDZhdmD2YjZhtin2KogVmlzdWFsIEMrKw=='
+        VisualCppInfoTitle = '2YXZg9mI2YbYp9iqINiq2LTYutmK2YQg2KfZhNij2YTYudin2Kgg2YjYp9mE2KjYsdin2YXYrA=='
+        VisualCppInfoBullet1 = '2KrYq9io2YrYqiDZhdmD2YjZhtin2KogVmlzdWFsIEMrKyDYp9mE2LbYsdmI2LHZitipINmE2KrYtNi62YrZhCDYp9mE2LnYr9mK2K8g2YXZhiDYp9mE2KPZhNi52KfYqCDZiNin2YTYqNix2KfZhdisLg=='
+        VisualCppInfoBullet2 = '2KrYs9in2LnYryDZh9iw2Ycg2KfZhNmF2YPZiNmG2KfYqiDYudmE2Ykg2KrYrdiz2YrZhiDYqtmI2KfZgdmCINin2YTYqNix2KfZhdisINin2YTYqtmKINiq2K3Yqtin2Kwg2YXZg9iq2KjYp9iqINiq2LTYutmK2YQg2KXYttin2YHZitipLg=='
+        VisualCppInfoBullet3 = '2YrYqtmFINiq2KzZh9mK2LIg2KfZhNmF2YPZiNmG2KfYqiDZiNiq2KvYqNmK2KrZh9inINiq2YTZgtin2KbZitmL2Kcg2KPYq9mG2KfYoSDZh9iw2Ycg2KfZhNiu2LfZiNipLg=='
+        GraphicsConfigSubtitle = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTYsdiz2YjZhdin2Kog2YTZhNmF2LHYp9is2LnYqS4='
+        GraphicsConfigPrimary = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTYsdiz2YjZhdin2Ko='
+        GraphicsConfigInfoTitle = '2YXYsdin2KzYudipINil2LnYr9in2K/Yp9iqINin2YTYsdiz2YjZhdin2Ko='
+        GraphicsConfigInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2KfZhNix2LPZiNmF2KfYqiDYr9in2K7ZhCBXaW5kb3dzINmE2YXYsdin2KzYudipINiu2YrYp9ix2KfYqiDYp9mE2KPYr9in2KEu'
+        GraphicsConfigInfoBullet2 = '2KrYo9mD2K8g2KPZhiDYrtmK2KfYsSBPcHRpbWl6YXRpb25zIGZvciB3aW5kb3dlZCBnYW1lcyDZhdi22KjZiNi3INi52YTZiSBPTi4='
+        GraphicsConfigInfoBullet3 = '2KrYo9mD2K8g2KPZhiDYrtmK2KfYsSBIYXJkd2FyZS1hY2NlbGVyYXRlZCBHUFUgc2NoZWR1bGluZyDZhdi22KjZiNi3INi52YTZiSBPTi4='
+    }
+
+    if (-not $values.ContainsKey($Name)) {
+        throw "Unknown AXIS Graphics text resource: $Name"
+    }
+
+    return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
+}
+
 function Get-AxisWizardArabicText {
     [CmdletBinding()]
     param(
@@ -2314,7 +2382,17 @@ function Get-AxisFirstUseWizardSampleState {
 
             [string]$StageBatchMarker = 'AxisFirstUseWizard.SetupStageBatchPrototypeOnly',
 
-            [string]$NoRealActionMarker = 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction'
+            [string]$NoRealActionMarker = 'AxisFirstUseWizard.SetupPrototypeOnlyNoRuntimeAction',
+
+            [bool]$RequiresGpuSelector = $false,
+
+            [string]$GpuSelectorLabel = '',
+
+            [string[]]$GpuSelectorOptions = @(),
+
+            [string[]]$GpuSelectorEnabledOptions = @(),
+
+            [string]$OptionalContinuationLabel = ''
         )
 
         $step = [ordered]@{
@@ -2353,6 +2431,9 @@ function Get-AxisFirstUseWizardSampleState {
         if ($StageName -eq 'Installers') {
             $step['InstallersStageExtensionMarker'] = $StageBatchMarker
         }
+        elseif ($StageName -eq 'Graphics') {
+            $step['GraphicsStageBatchMarker'] = $StageBatchMarker
+        }
 
         if ($RequirementsItems.Count -gt 0) {
             $step['RequirementsTitle'] = $RequirementsTitle
@@ -2374,6 +2455,21 @@ function Get-AxisFirstUseWizardSampleState {
 
         if ($OpenMappedPrototypeOnly) {
             $step['OpenMappedPrototypeOnly'] = $true
+        }
+
+        if ($RequiresGpuSelector) {
+            $step['RequiresGpuSelector'] = $true
+            $step['GpuSelectorLabel'] = $GpuSelectorLabel
+            $step['GpuSelectorOptions'] = @($GpuSelectorOptions)
+            $step['GpuSelectorEnabledOptions'] = @($GpuSelectorEnabledOptions)
+            $step['PrimaryActionRequiresSelection'] = $true
+            $step['GpuSelectorPrototypeOnly'] = $true
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($OptionalContinuationLabel)) {
+            $step['OptionalContinuationLabel'] = $OptionalContinuationLabel
+            $step['OptionalContinuationNoRuntimeAction'] = $true
+            $step['OptionalContinuationAutomationId'] = 'AxisFirstUseWizard.NvidiaAppOptionalContinuationNoApplySimulation'
         }
 
         return $step
@@ -2958,6 +3054,178 @@ function Get-AxisFirstUseWizardSampleState {
     $restartAfterInstallersStep['AxisCustomStepOrigin'] = 'AXIS custom future restart step'
     $restartAfterInstallersStep['NoExistingBoostLabTool'] = $true
 
+    $driverCleanStep = New-AxisSetupWizardStepState `
+        -Id 'driver-clean' `
+        -Title (Get-AxisWizardGraphicsText -Name 'DriverCleanTitle') `
+        -Description (Get-AxisWizardGraphicsText -Name 'DriverCleanSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardGraphicsText -Name 'DriverCleanPrimary') `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'DriverCleanInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardArabicText -Name 'RequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement1')
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement2')
+            (Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'DriverCleanRunning') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'GraphicsDriverClean' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel (Get-AxisWizardGraphicsText -Name 'DriverCleanPrimary') `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 170.0 `
+        -ConfirmationActionWidth 170.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.DriverCleanPrototypeOnlyNoRuntimeAction'
+
+    $gpuDriverSetupStep = New-AxisSetupWizardStepState `
+        -Id 'driver-install-debloat-settings' `
+        -Title 'GPU Driver Setup' `
+        -Description (Get-AxisWizardGraphicsText -Name 'GpuSetupSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardGraphicsText -Name 'GpuSetupPrimary') `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'GpuSetupInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardArabicText -Name 'RequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement1')
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement2')
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'GpuSetupRunning') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'GraphicsGpuDriverSetup' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel (Get-AxisWizardGraphicsText -Name 'GpuSetupPrimary') `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 190.0 `
+        -ConfirmationActionWidth 190.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.GpuDriverSetupPrototypeOnlyNoRuntimeAction' `
+        -RequiresGpuSelector $true `
+        -GpuSelectorLabel (Get-AxisWizardGraphicsText -Name 'GpuSetupSelectorLabel') `
+        -GpuSelectorOptions @(
+            'NVIDIA'
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupAmdLater')
+            (Get-AxisWizardGraphicsText -Name 'GpuSetupIntelLater')
+        ) `
+        -GpuSelectorEnabledOptions @('NVIDIA')
+
+    $nvidiaAppInstallStep = New-AxisSetupWizardStepState `
+        -Id 'nvidia-app-install' `
+        -Title 'NVIDIA App Install' `
+        -Description (Get-AxisWizardGraphicsText -Name 'NvidiaAppSubtitle') `
+        -PrimaryActionLabel 'Install NVIDIA App' `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'NvidiaAppRunning') `
+        -CompletedStatusTitle (Get-AxisWizardGraphicsText -Name 'NvidiaAppCompleted') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'GraphicsNvidiaAppInstall' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel 'Install NVIDIA App' `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 176.0 `
+        -ConfirmationActionWidth 176.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.NvidiaAppInstallPrototypeOnlyNoRuntimeAction' `
+        -OptionalContinuationLabel (Get-AxisWizardGraphicsText -Name 'NvidiaAppOptionalContinuation')
+
+    $directXStep = New-AxisSetupWizardStepState `
+        -Id 'directx' `
+        -Title 'DirectX' `
+        -Description (Get-AxisWizardGraphicsText -Name 'DirectXSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardGraphicsText -Name 'DirectXPrimary') `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'DirectXInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'DirectXRunning') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'GraphicsDirectX' `
+        -PrimaryActionWidth 150.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.DirectXPrototypeOnlyNoRuntimeAction'
+
+    $visualCppStep = New-AxisSetupWizardStepState `
+        -Id 'visual-cpp' `
+        -Title 'Visual C++ Runtimes' `
+        -Description (Get-AxisWizardGraphicsText -Name 'VisualCppSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardGraphicsText -Name 'VisualCppPrimary') `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'VisualCppInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'DirectXRunning') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'GraphicsVisualCpp' `
+        -PrimaryActionWidth 220.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.VisualCppPrototypeOnlyNoRuntimeAction'
+
+    $graphicsConfigurationCenterStep = New-AxisSetupWizardStepState `
+        -Id 'graphics-configuration-center' `
+        -Title 'Graphics Configuration Center' `
+        -Description (Get-AxisWizardGraphicsText -Name 'GraphicsConfigSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardGraphicsText -Name 'GraphicsConfigPrimary') `
+        -InformationCardTitle (Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet1')
+            (Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet2')
+            (Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardGraphicsText -Name 'GraphicsConfigPrimary') `
+        -CompletedStatusTitle (Get-AxisWizardArabicText -Name 'Completed') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'GraphicsConfigurationCenter' `
+        -OpenMappedPrototypeOnly $true `
+        -PrimaryActionWidth 190.0 `
+        -RuntimeStatusWidth 286.0 `
+        -RuntimeStatusContentWidth 260.0 `
+        -RuntimeStatusTextMaxWidth 158.0 `
+        -StageName 'Graphics' `
+        -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.GraphicsConfigurationCenterPrototypeOnlyNoRuntimeAction'
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -2994,6 +3262,12 @@ function Get-AxisFirstUseWizardSampleState {
             $installersStartupAppsSettingsStep
             $installersStartupAppsTaskManagerStep
             $restartAfterInstallersStep
+            $driverCleanStep
+            $gpuDriverSetupStep
+            $nvidiaAppInstallStep
+            $directXStep
+            $visualCppStep
+            $graphicsConfigurationCenterStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -3242,10 +3516,11 @@ function New-AxisWizardRuntimeStatusContent {
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
+    $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
     $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
-    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
+    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -3271,6 +3546,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isInstallersStageStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
+    }
+    elseif ($isGraphicsStageStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -3338,6 +3616,7 @@ function New-AxisStepStatusArea {
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
+    $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
@@ -3348,7 +3627,7 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
+    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
@@ -3367,6 +3646,9 @@ function New-AxisStepStatusArea {
     }
     elseif ($isInstallersStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersRuntimeStatusNoClipping')
+    }
+    elseif ($isGraphicsStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -3403,15 +3685,22 @@ function New-AxisStepSupportPanel {
     $isToBiosStep = ($stepId -eq 'to-bios')
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
+    $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
-    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep)
-    $supportPadding = if ($usesCompactSupport) {
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep -or $isGraphicsStageStep)
+    $supportPadding = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 14 -Top 6 -Right 14 -Bottom 6
+    }
+    elseif ($usesCompactSupport) {
         New-AxisWizardThickness -Left 14 -Top 7 -Right 14 -Bottom 7
     }
     else {
         New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8
     }
-    $supportMargin = if ($usesCompactSupport) {
+    $supportMargin = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 0
+    }
+    elseif ($usesCompactSupport) {
         New-AxisWizardThickness -Left 0 -Top 6 -Right 0 -Bottom 0
     }
     else {
@@ -3426,7 +3715,7 @@ function New-AxisStepSupportPanel {
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
         -Padding $supportPadding `
         -Margin $supportMargin
-    $panel.MinHeight = if ($usesCompactSupport) { 54 } else { 58 }
+    $panel.MinHeight = if ($isGraphicsStageStep) { 52 } elseif ($usesCompactSupport) { 54 } else { 58 }
     $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
@@ -3435,6 +3724,9 @@ function New-AxisStepSupportPanel {
     }
     elseif ($isInstallersStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersSupportCardNoClipping')
+    }
+    elseif ($isGraphicsStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsSupportCardNoClipping')
     }
     elseif ($isSetupStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupSupportCardNoClipping')
@@ -3558,7 +3850,9 @@ function Split-AxisSetupRightAlignedVisualLines {
         [AllowNull()]
         [string]$Text,
 
-        [System.Collections.IEnumerable]$BreakBeforePhrases = @()
+        [System.Collections.IEnumerable]$BreakBeforePhrases = @(),
+
+        [int]$MaxVisualLineLength = 0
     )
 
     $lines = [System.Collections.Generic.List[string]]::new()
@@ -3587,6 +3881,50 @@ function Split-AxisSetupRightAlignedVisualLines {
 
     if ($lines.Count -eq 0) {
         $lines.Add([string]$Text)
+    }
+
+    if ($MaxVisualLineLength -gt 0) {
+        $splitLines = [System.Collections.Generic.List[string]]::new()
+        foreach ($line in @($lines)) {
+            $lineRemainder = ([string]$line).Trim()
+            while ($lineRemainder.Length -gt $MaxVisualLineLength) {
+                $splitIndex = $lineRemainder.LastIndexOf(' ', [Math]::Min($MaxVisualLineLength, $lineRemainder.Length - 1))
+                if ($splitIndex -lt [Math]::Floor($MaxVisualLineLength * 0.55)) {
+                    $forwardIndex = $lineRemainder.IndexOf(' ', [Math]::Min($MaxVisualLineLength, $lineRemainder.Length - 1))
+                    if ($forwardIndex -gt 0) {
+                        $splitIndex = $forwardIndex
+                    }
+                }
+
+                if ($splitIndex -le 0) {
+                    break
+                }
+
+                $candidateLine = $lineRemainder.Substring(0, $splitIndex).Trim()
+                if (-not [string]::IsNullOrWhiteSpace($candidateLine)) {
+                    $splitLines.Add($candidateLine)
+                }
+                $lineRemainder = $lineRemainder.Substring($splitIndex).Trim()
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($lineRemainder)) {
+                $splitLines.Add($lineRemainder)
+            }
+        }
+
+        if ($splitLines.Count -gt 1) {
+            $lastIndex = $splitLines.Count - 1
+            $lastLine = [string]$splitLines[$lastIndex]
+            $previousLine = [string]$splitLines[$lastIndex - 1]
+            if ($lastLine.Length -lt 10 -and ($previousLine.Length + 1 + $lastLine.Length) -le ($MaxVisualLineLength + 16)) {
+                $splitLines[$lastIndex - 1] = "$previousLine $lastLine"
+                $splitLines.RemoveAt($lastIndex)
+            }
+        }
+
+        if ($splitLines.Count -gt 0) {
+            $lines = $splitLines
+        }
     }
 
     return @($lines)
@@ -3648,6 +3986,10 @@ function New-AxisSetupPhysicalRightEdgeTextGroup {
     if (-not [string]::IsNullOrWhiteSpace($AutomationId)) {
         $group.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, $AutomationId)
     }
+    $group.Resources['AxisFirstUseWizard.SharedCardBodyTextRenderer'] = 'RightAlignedVisualLines'
+    $group.Resources['AxisFirstUseWizard.SharedCardBodyNoLeftFloatingWrappedArabic'] = $true
+    $group.Resources['AxisFirstUseWizard.SharedCardBodyMixedBidiSafeVisualLines'] = $true
+    $group.Resources['AxisFirstUseWizard.SharedCardBodyFutureStageGuard'] = 'GraphicsWindowsAdvanced'
 
     $rightColumn = [System.Windows.Controls.ColumnDefinition]::new()
     $rightColumn.Width = [System.Windows.GridLength]::Auto
@@ -3663,8 +4005,11 @@ function New-AxisSetupPhysicalRightEdgeTextGroup {
         $lineMaxWidth = [double](Get-AxisWizardMapValue -Map $line -Name 'MaxWidth' -DefaultValue $MaxWidth)
         $lineTopMargin = [double](Get-AxisWizardMapValue -Map $line -Name 'TopMargin' -DefaultValue 0.0)
         $visualBreakBeforePhrases = @(Get-AxisWizardMapValue -Map $line -Name 'VisualBreakBeforePhrases' -DefaultValue @())
-        $visualLines = @(Split-AxisSetupRightAlignedVisualLines -Text $lineText -BreakBeforePhrases $visualBreakBeforePhrases)
-        $usesRightAlignedVisualLineRenderer = ($visualLines.Count -gt 1)
+        $useSafeVisualLineRenderer = [bool](Get-AxisWizardMapValue -Map $line -Name 'UseSafeVisualLineRenderer' -DefaultValue $false)
+        $maxVisualLineLength = [int](Get-AxisWizardMapValue -Map $line -Name 'MaxVisualLineLength' -DefaultValue 0)
+        $visualLineAdditionalTopMargin = [double](Get-AxisWizardMapValue -Map $line -Name 'VisualLineTopMargin' -DefaultValue 1.0)
+        $visualLines = @(Split-AxisSetupRightAlignedVisualLines -Text $lineText -BreakBeforePhrases $visualBreakBeforePhrases -MaxVisualLineLength $maxVisualLineLength)
+        $usesRightAlignedVisualLineRenderer = ($useSafeVisualLineRenderer -or $visualLines.Count -gt 1)
 
         for ($visualLineIndex = 0; $visualLineIndex -lt $visualLines.Count; $visualLineIndex++) {
             $visualLineTag = if ($visualLineIndex -eq 0) {
@@ -3676,7 +4021,7 @@ function New-AxisSetupPhysicalRightEdgeTextGroup {
             else {
                 'AxisFirstUseWizard.SetupRightAlignedVisualLine'
             }
-            $visualLineTopMargin = if ($visualLineIndex -eq 0) { $lineTopMargin } else { 1.0 }
+            $visualLineTopMargin = if ($visualLineIndex -eq 0) { $lineTopMargin } else { $visualLineAdditionalTopMargin }
             $textBlock = New-AxisWizardMixedBidiTextBlock `
                 -Text ([string]$visualLines[$visualLineIndex]) `
                 -Resources $Resources `
@@ -3722,19 +4067,29 @@ function New-AxisSetupStep {
     $showRequirements = [bool](Get-AxisWizardMapValue -Map $Step -Name 'ShowRequirements' -DefaultValue $false)
     $stageName = [string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Setup')
     $isInstallersExtensionStep = ($stageName -eq 'Installers' -and $stepId -ne 'installers')
+    $isGraphicsStageStep = ($stageName -eq 'Graphics')
+    $cardContainerPadding = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 34 -Top 6 -Right 34 -Bottom 3
+    }
+    else {
+        New-AxisWizardThickness -Left 34 -Top 10 -Right 34 -Bottom 6
+    }
 
     $container = New-AxisWizardPanel `
         -Resources $Resources `
         -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
         -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
         -RadiusKey 'Axis.Radius.Wizard.MainCard' `
-        -Padding (New-AxisWizardThickness -Left 34 -Top 10 -Right 34 -Bottom 6) `
+        -Padding $cardContainerPadding `
         -Elevation 'Card'
     $container.Height = 382
     $container.Tag = "AxisFirstUseWizard.${tagRoot}Step"
     $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $containerAutomationId = if ($isInstallersExtensionStep) {
         'AxisFirstUseWizard.InstallersStageExtensionPrototypeOnly'
+    }
+    elseif ($isGraphicsStageStep) {
+        'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly'
     }
     else {
         'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
@@ -3762,13 +4117,19 @@ function New-AxisSetupStep {
     else {
         [System.Windows.FlowDirection]::RightToLeft
     }
+    $titleMargin = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 3
+    }
+    else {
+        New-AxisWizardThickness -Left 0 -Top 3 -Right 0 -Bottom 5
+    }
     $title = New-AxisWizardTextBlock `
         -Text $titleText `
         -Resources $Resources `
         -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
         -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
         -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
-        -Margin (New-AxisWizardThickness -Left 0 -Top 3 -Right 0 -Bottom 5) `
+        -Margin $titleMargin `
         -TextAlignment ([System.Windows.TextAlignment]::Right) `
         -FlowDirection $titleFlow
     $title.Tag = "AxisFirstUseWizard.${tagRoot}TitleText"
@@ -3801,8 +4162,87 @@ function New-AxisSetupStep {
         -Tag "AxisFirstUseWizard.${tagRoot}SubtitleRightAnchor" `
         -MaxWidth 690))
 
+    $graphicsGpuSelector = $null
+    if ([bool](Get-AxisWizardMapValue -Map $Step -Name 'RequiresGpuSelector' -DefaultValue $false)) {
+        $selectorGrid = [System.Windows.Controls.Grid]::new()
+        $selectorGrid.Margin = New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 1
+        $selectorGrid.Tag = 'AxisFirstUseWizard.GraphicsGpuSelectorRow'
+        $selectorGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $selectorGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+        $selectorGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly')
+        $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $selectorControlColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $selectorControlColumn.Width = [System.Windows.GridLength]::Auto
+        $selectorLabelColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $selectorLabelColumn.Width = [System.Windows.GridLength]::Auto
+        [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+        [void]$selectorGrid.ColumnDefinitions.Add($selectorControlColumn)
+        [void]$selectorGrid.ColumnDefinitions.Add($selectorLabelColumn)
+
+        $selectorLabel = New-AxisWizardTextBlock `
+            -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'GpuSelectorLabel')) `
+            -Resources $Resources `
+            -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+            -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+            -TextAlignment ([System.Windows.TextAlignment]::Right) `
+            -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+        $selectorLabel.Tag = 'AxisFirstUseWizard.GraphicsGpuSelectorLabel'
+        $selectorLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $selectorLabel.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 12 -Bottom 0
+        [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 2)
+        [void]$selectorGrid.Children.Add($selectorLabel)
+
+        $graphicsGpuSelector = [System.Windows.Controls.ComboBox]::new()
+        $graphicsGpuSelector.Tag = 'AxisFirstUseWizard.GraphicsGpuSelector'
+        $graphicsGpuSelector.Width = 270
+        $graphicsGpuSelector.Height = 34
+        $graphicsGpuSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $graphicsGpuSelector.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $graphicsGpuSelector.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $graphicsGpuSelector.IsEditable = $false
+        $graphicsGpuSelector.MaxDropDownHeight = 150
+        $graphicsGpuSelector.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+        $graphicsGpuSelector.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+        Set-AxisWizardSelectorComboBoxStyle `
+            -Selector $graphicsGpuSelector `
+            -Resources $Resources `
+            -FlowDirection ([System.Windows.FlowDirection]::LeftToRight) `
+            -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left) `
+            -Padding (New-AxisWizardThickness -Left 12 -Top 5 -Right 12 -Bottom 5)
+        $graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly'] = $true
+        $graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorAmdIntelDisabled'] = $true
+        $graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorNoRuntimeAction'] = $true
+        $graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorUsesSharedDarkAxisStyle'] = $true
+        $graphicsGpuSelector.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly')
+        $graphicsEnabledItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left)
+        $graphicsDisabledItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left)
+        $gpuSelectorOptions = @(Get-AxisWizardMapValue -Map $Step -Name 'GpuSelectorOptions' -DefaultValue @())
+        $gpuSelectorEnabledOptions = @(Get-AxisWizardMapValue -Map $Step -Name 'GpuSelectorEnabledOptions' -DefaultValue @())
+        foreach ($gpuSelectorOption in $gpuSelectorOptions) {
+            $gpuItem = [System.Windows.Controls.ComboBoxItem]::new()
+            $gpuItem.Content = [string]$gpuSelectorOption
+            $gpuItem.Tag = [string]$gpuSelectorOption
+            $gpuItem.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+            $gpuItem.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Left
+            $gpuItem.IsEnabled = ([string]$gpuSelectorOption -in [string[]]$gpuSelectorEnabledOptions)
+            $gpuItem.Style = if ([bool]$gpuItem.IsEnabled) { $graphicsEnabledItemStyle } else { $graphicsDisabledItemStyle }
+            [void]$graphicsGpuSelector.Items.Add($gpuItem)
+        }
+        $graphicsGpuSelector.SelectedIndex = -1
+        [System.Windows.Controls.Grid]::SetColumn($graphicsGpuSelector, 1)
+        [void]$selectorGrid.Children.Add($graphicsGpuSelector)
+        [void](Add-AxisWizardGridRow -Grid $content -Child $selectorGrid)
+    }
+
     $detailsGrid = [System.Windows.Controls.Grid]::new()
-    $detailsGrid.Margin = New-AxisWizardThickness -Left 0 -Top 5 -Right 0 -Bottom 5
+    $detailsGrid.Margin = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 0 -Top 2 -Right 0 -Bottom 3
+    }
+    else {
+        New-AxisWizardThickness -Left 0 -Top 5 -Right 0 -Bottom 5
+    }
     $detailsGrid.Tag = "AxisFirstUseWizard.${tagRoot}StepDetails"
     $detailsGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     $detailsGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
@@ -3811,11 +4251,33 @@ function New-AxisSetupStep {
         if ($isInstallersExtensionStep) {
             $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersExtensionCardsPhysicalOrderInfoRightRequirementsLeft')
         }
+        elseif ($isGraphicsStageStep) {
+            $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsCardsPhysicalOrderInfoRightRequirementsLeft')
+        }
     }
 
     $setupTwoCardTextMaxWidth = 340.0
     $setupSingleCardTextMaxWidth = 650.0
-    $setupCardHeight = if ($showRequirements) { 146.0 } else { 128.0 }
+    $setupCardHeight = if ($showRequirements) {
+        if ($isGraphicsStageStep) { 144.0 } else { 146.0 }
+    }
+    else {
+        if ($isGraphicsStageStep) { 126.0 } else { 128.0 }
+    }
+    $setupCardPadding = if ($isGraphicsStageStep) {
+        New-AxisWizardThickness -Left 10 -Top 5 -Right 10 -Bottom 5
+    }
+    else {
+        New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6
+    }
+    $setupCardItemTopMargin = if ($isGraphicsStageStep) { 1.0 } else { 3.0 }
+    $setupCardVisualLineTopMargin = if ($isGraphicsStageStep) { 0.0 } else { 1.0 }
+    $setupCardItemMaxVisualLineLength = if ($showRequirements) {
+        if ($isGraphicsStageStep) { 58 } else { 62 }
+    }
+    else {
+        if ($isGraphicsStageStep) { 94 } else { 100 }
+    }
 
     if ($showRequirements) {
         $requirementsColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -3839,7 +4301,7 @@ function New-AxisSetupStep {
         -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
         -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
         -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
-        -Padding (New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6) `
+        -Padding $setupCardPadding `
         -Elevation 'Soft'
     $informationPanel.Height = $setupCardHeight
     $informationPanel.Tag = "AxisFirstUseWizard.${tagRoot}InformationCard"
@@ -3867,9 +4329,12 @@ function New-AxisSetupStep {
             FontWeightKey = 'Axis.Type.Body.FontWeight'
             FontFamilyKey = 'Axis.Type.Caption.FontFamily'
             ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
-            TopMargin = 3.0
+            TopMargin = $setupCardItemTopMargin
             Wrap = $true
             MaxWidth = if ($showRequirements) { $setupTwoCardTextMaxWidth } else { $setupSingleCardTextMaxWidth }
+            UseSafeVisualLineRenderer = $true
+            MaxVisualLineLength = $setupCardItemMaxVisualLineLength
+            VisualLineTopMargin = $setupCardVisualLineTopMargin
         }
         $informationVisualBreakBeforePhrases = @(Get-AxisSetupRightAlignedVisualBreakPhrases -StepId $stepId -CardKind 'Information' -Text $informationItemText)
         if ($informationVisualBreakBeforePhrases.Count -gt 0) {
@@ -3908,7 +4373,7 @@ function New-AxisSetupStep {
             -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
             -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
             -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
-            -Padding (New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6) `
+            -Padding $setupCardPadding `
             -Elevation 'Soft'
         $requirementsPanel.Height = $setupCardHeight
         $requirementsPanel.Tag = "AxisFirstUseWizard.${tagRoot}RequirementsCard"
@@ -3936,9 +4401,12 @@ function New-AxisSetupStep {
                 FontWeightKey = 'Axis.Type.Body.FontWeight'
                 FontFamilyKey = 'Axis.Type.Caption.FontFamily'
                 ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
-                TopMargin = 3.0
+                TopMargin = $setupCardItemTopMargin
                 Wrap = $true
                 MaxWidth = $setupTwoCardTextMaxWidth
+                UseSafeVisualLineRenderer = $true
+                MaxVisualLineLength = $setupCardItemMaxVisualLineLength
+                VisualLineTopMargin = $setupCardVisualLineTopMargin
             }
             $requirementsVisualBreakBeforePhrases = @(Get-AxisSetupRightAlignedVisualBreakPhrases -StepId $stepId -CardKind 'Requirements' -Text $requirementsItemText)
             if ($requirementsVisualBreakBeforePhrases.Count -gt 0) {
@@ -3971,6 +4439,82 @@ function New-AxisSetupStep {
     $primaryAction.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}SimulationOnlyActionRow")
     [void](Add-AxisWizardGridRow -Grid $content -Child $primaryAction)
     [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisStepSupportPanel -Step $Step -Resources $Resources))
+
+    if ($graphicsGpuSelector -is [System.Windows.Controls.ComboBox]) {
+        $graphicsPrimaryButton = $null
+        foreach ($actionChild in @($primaryAction.Children)) {
+            if ($actionChild -is [System.Windows.Controls.StackPanel] -and [string]$actionChild.Tag -eq 'AxisFirstUseWizard.PrimaryActionButtonRow') {
+                foreach ($buttonCandidate in @($actionChild.Children)) {
+                    if ($buttonCandidate -is [System.Windows.Controls.Button] -and [string]$buttonCandidate.Tag -eq 'AxisFirstUseWizard.PrimaryOpenButton') {
+                        $graphicsPrimaryButton = $buttonCandidate
+                        break
+                    }
+                }
+            }
+        }
+
+        $graphicsPrimaryBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+        $graphicsPrimaryBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+        $graphicsPrimaryForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+        $graphicsPrimaryEffect = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+        $graphicsDisabledBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+        $graphicsDisabledBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+        $graphicsDisabledForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextMuted'
+        $graphicsPrimaryAutomationProperty = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+        $graphicsEnabledAutomationId = 'AxisFirstUseWizard.GraphicsGpuSetupPrimaryEnabledWithNvidiaSelection'
+        $graphicsDisabledAutomationId = 'AxisFirstUseWizard.GraphicsGpuSetupPrimaryDisabledUntilNvidiaSelected'
+        if ($graphicsPrimaryButton -is [System.Windows.Controls.Button]) {
+            $graphicsPrimaryButton.SetValue($graphicsPrimaryAutomationProperty, $graphicsDisabledAutomationId)
+            $graphicsPrimaryButton.Resources['AxisFirstUseWizard.GraphicsGpuSetupSelectedGpu'] = ''
+        }
+
+        $graphicsPrimaryButtonForSelector = $graphicsPrimaryButton
+        $graphicsGpuSelectorForSelector = $graphicsGpuSelector
+        $graphicsEnabledBackgroundForSelector = $graphicsPrimaryBackground
+        $graphicsEnabledBorderForSelector = $graphicsPrimaryBorder
+        $graphicsEnabledForegroundForSelector = $graphicsPrimaryForeground
+        $graphicsEnabledEffectForSelector = $graphicsPrimaryEffect
+        $graphicsDisabledBackgroundForSelector = $graphicsDisabledBackground
+        $graphicsDisabledBorderForSelector = $graphicsDisabledBorder
+        $graphicsDisabledForegroundForSelector = $graphicsDisabledForeground
+        $graphicsAutomationPropertyForSelector = $graphicsPrimaryAutomationProperty
+        $graphicsEnabledAutomationIdForSelector = $graphicsEnabledAutomationId
+        $graphicsDisabledAutomationIdForSelector = $graphicsDisabledAutomationId
+        $refreshGraphicsGpuSelectionState = {
+            $selectedItem = $graphicsGpuSelectorForSelector.SelectedItem
+            $selectedGpuName = ''
+            if ($selectedItem -is [System.Windows.Controls.ComboBoxItem]) {
+                $selectedGpuName = [string]$selectedItem.Tag
+            }
+            $hasNvidiaSelection = ($selectedGpuName -eq 'NVIDIA')
+
+            if ($graphicsPrimaryButtonForSelector -is [System.Windows.Controls.Button]) {
+                if ($hasNvidiaSelection) {
+                    $graphicsPrimaryButtonForSelector.IsEnabled = $true
+                    $graphicsPrimaryButtonForSelector.Background = $graphicsEnabledBackgroundForSelector
+                    $graphicsPrimaryButtonForSelector.BorderBrush = $graphicsEnabledBorderForSelector
+                    $graphicsPrimaryButtonForSelector.Foreground = $graphicsEnabledForegroundForSelector
+                    $graphicsPrimaryButtonForSelector.Effect = $graphicsEnabledEffectForSelector
+                    $graphicsPrimaryButtonForSelector.SetValue($graphicsAutomationPropertyForSelector, $graphicsEnabledAutomationIdForSelector)
+                    $graphicsPrimaryButtonForSelector.Resources['AxisFirstUseWizard.GraphicsGpuSetupSelectedGpu'] = $selectedGpuName
+                }
+                else {
+                    $graphicsPrimaryButtonForSelector.IsEnabled = $false
+                    $graphicsPrimaryButtonForSelector.Background = $graphicsDisabledBackgroundForSelector
+                    $graphicsPrimaryButtonForSelector.BorderBrush = $graphicsDisabledBorderForSelector
+                    $graphicsPrimaryButtonForSelector.Foreground = $graphicsDisabledForegroundForSelector
+                    $graphicsPrimaryButtonForSelector.Effect = $null
+                    $graphicsPrimaryButtonForSelector.SetValue($graphicsAutomationPropertyForSelector, $graphicsDisabledAutomationIdForSelector)
+                    $graphicsPrimaryButtonForSelector.Resources['AxisFirstUseWizard.GraphicsGpuSetupSelectedGpu'] = ''
+                }
+            }
+        }.GetNewClosure()
+
+        $graphicsGpuSelector.Add_SelectionChanged({
+            & $refreshGraphicsGpuSelectionState
+        }.GetNewClosure())
+        & $refreshGraphicsGpuSelectionState
+    }
 
     $container.Child = $content
 
@@ -5673,7 +6217,13 @@ function New-AxisFirstUseWizardStepContent {
         'updates-pause',
         'installers-startup-apps-settings',
         'installers-startup-apps-task-manager',
-        'restart-after-installers'
+        'restart-after-installers',
+        'driver-clean',
+        'driver-install-debloat-settings',
+        'nvidia-app-install',
+        'directx',
+        'visual-cpp',
+        'graphics-configuration-center'
     )) {
         return New-AxisSetupStep -Step $Step -Resources $Resources
     }
@@ -6038,6 +6588,7 @@ function New-AxisFirstUseWizardPrototype {
     $stepEpicInstructionOverlays = [object[]]::new($steps.Count)
     $stepCompletedFlags = [bool[]]::new($steps.Count)
     $stepStageNames = [string[]]::new($steps.Count)
+    $stepOptionalContinuationLabels = [string[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
         $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
         $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
@@ -6064,6 +6615,7 @@ function New-AxisFirstUseWizardPrototype {
         }
         $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
         $stepStageNames[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'StageName' -DefaultValue 'Check')
+        $stepOptionalContinuationLabels[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'OptionalContinuationLabel' -DefaultValue '')
     }
     $stageText.Text = $stepStageNames[$currentStepIndex]
     & $setStageProgressActiveForNavigation $stepStageNames[$currentStepIndex]
@@ -6105,6 +6657,21 @@ function New-AxisFirstUseWizardPrototype {
         -Margin (New-AxisWizardThickness -Left 0)
     $backButton.Tag = 'AxisFirstUseWizard.BackButton'
     [void]$buttons.Children.Add($backButton)
+    $optionalContinuationButton = New-AxisWizardButton `
+        -Text (Get-AxisWizardGraphicsText -Name 'NvidiaAppOptionalContinuation') `
+        -Resources $resources `
+        -Variant 'Quiet' `
+        -Enabled $false `
+        -Width 244 `
+        -Height 40 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $optionalContinuationButton.Tag = 'AxisFirstUseWizard.OptionalContinuationButton'
+    $optionalContinuationButton.Visibility = [System.Windows.Visibility]::Collapsed
+    $optionalContinuationButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.NvidiaAppOptionalContinuationNoApplySimulation')
+    $optionalContinuationSpacer = New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.OptionalContinuationFooterSpacer'
+    $optionalContinuationSpacer.Visibility = [System.Windows.Visibility]::Collapsed
+    [void]$buttons.Children.Add($optionalContinuationSpacer)
+    [void]$buttons.Children.Add($optionalContinuationButton)
     $continueEnabled = [bool]$stepCompletedFlags[$currentStepIndex]
     $continueButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'ContinueLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Next'))) `
@@ -6225,6 +6792,33 @@ function New-AxisFirstUseWizardPrototype {
     $continueDisabledForegroundForNavigation = $continueButton.Foreground
     $continueDisabledEffectForNavigation = $continueButton.Effect
     $continueAutomationIdPropertyForNavigation = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+    $optionalContinuationButtonForNavigation = $optionalContinuationButton
+    $optionalContinuationSpacerForNavigation = $optionalContinuationSpacer
+    $stepOptionalContinuationLabelsForNavigation = $stepOptionalContinuationLabels
+    $updateOptionalContinuationForNavigation = {
+        param(
+            [int]$Index
+        )
+
+        $optionalLabel = ''
+        if ($Index -ge 0 -and $Index -lt $stepOptionalContinuationLabelsForNavigation.Count) {
+            $optionalLabel = [string]$stepOptionalContinuationLabelsForNavigation[$Index]
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($optionalLabel)) {
+            $optionalContinuationButtonForNavigation.Content = $optionalLabel
+            $optionalContinuationButtonForNavigation.IsEnabled = $true
+            $optionalContinuationButtonForNavigation.Visibility = [System.Windows.Visibility]::Visible
+            $optionalContinuationSpacerForNavigation.Visibility = [System.Windows.Visibility]::Visible
+        }
+        else {
+            $optionalContinuationButtonForNavigation.IsEnabled = $false
+            $optionalContinuationButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $optionalContinuationSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }.GetNewClosure()
+    $updateOptionalContinuationForNavigationClosure = $updateOptionalContinuationForNavigation
+    & $updateOptionalContinuationForNavigationClosure $currentStepIndex
 
     if ($backButton -is [System.Windows.Controls.Button]) {
         $backButton.Add_Click({
@@ -6279,6 +6873,7 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
             }
+            & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
         }.GetNewClosure())
     }
 
@@ -6338,6 +6933,70 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
             }
+            & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
+        }.GetNewClosure())
+    }
+
+    if ($optionalContinuationButton -is [System.Windows.Controls.Button]) {
+        $optionalContinuationButton.Add_Click({
+            $currentNavigationIndex = [int]$navigationStateForNavigation['CurrentStepIndex']
+            if ($currentNavigationIndex -lt 0 -or $currentNavigationIndex -ge $stepOptionalContinuationLabelsForNavigation.Count) {
+                return
+            }
+            if ([string]::IsNullOrWhiteSpace([string]$stepOptionalContinuationLabelsForNavigation[$currentNavigationIndex])) {
+                return
+            }
+            if ($currentNavigationIndex -ge ($stepViewsForNavigation.Count - 1)) {
+                return
+            }
+
+            foreach ($overlayForNavigation in @($stepOverlaysForNavigation)) {
+                if ($null -eq $overlayForNavigation) {
+                    continue
+                }
+
+                $overlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            foreach ($inputOverlayForNavigation in @($stepInputOverlaysForNavigation)) {
+                if ($null -eq $inputOverlayForNavigation) {
+                    continue
+                }
+
+                $inputOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            foreach ($epicInstructionOverlayForNavigation in @($stepEpicInstructionOverlaysForNavigation)) {
+                if ($null -eq $epicInstructionOverlayForNavigation) {
+                    continue
+                }
+
+                $epicInstructionOverlayForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+
+            $currentNavigationIndex = $currentNavigationIndex + 1
+            $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
+            $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
+            & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
+            if ($stepCompletedFlagsForNavigation[$currentNavigationIndex]) {
+                $continueButtonForNavigation.IsEnabled = $true
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, $continueEnabledBlueMarkerForNavigation)
+                $continueButtonForNavigation.Background = $continueEnabledBlueBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueEnabledBlueBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueEnabledBlueForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueEnabledBlueEffectForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverReadableMarkerKeyForNavigation] = $continueEnabledHoverReadableMarkerValueForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBackgroundResourceKeyForNavigation] = $continueEnabledBlueHoverBackgroundForNavigation
+                $continueButtonForNavigation.Resources[$continueEnabledHoverBorderResourceKeyForNavigation] = $continueEnabledBlueHoverBorderForNavigation
+            }
+            else {
+                $continueButtonForNavigation.IsEnabled = $false
+                $continueButtonForNavigation.SetValue($continueAutomationIdPropertyForNavigation, '')
+                $continueButtonForNavigation.Background = $continueDisabledBackgroundForNavigation
+                $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
+                $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
+                $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+            }
+            & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
         }.GetNewClosure())
     }
 

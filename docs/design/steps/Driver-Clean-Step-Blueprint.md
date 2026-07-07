@@ -31,9 +31,9 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Subtitle | `ØªÙ†Ø¸ÙŠÙ ØªØ¹Ø±ÙŠÙØ§Øª ÙƒØ±Øª Ø§Ù„Ø´Ø§Ø´Ø© Ù‚Ø¨Ù„ ØªØ«Ø¨ÙŠØª Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¬Ø¯ÙŠØ¯.` |
 | Primary action button | `ØªÙ†Ø¸ÙŠÙ Ø§Ù„ØªØ¹Ø±ÙŠÙØ§Øª` |
 | Information card title | `ØªÙ†Ø¸ÙŠÙ ØªØ¹Ø±ÙŠÙØ§Øª ÙƒØ±Øª Ø§Ù„Ø´Ø§Ø´Ø©` |
-| Information card bullet 1 | `ØªØ³ØªØ®Ø¯Ù… Ù‡Ø°Ù‡ Ø§Ù„Ø®Ø·ÙˆØ© Ø£Ø¯Ø§Ø© DDU Ù„ØªÙ†Ø¸ÙŠÙ ØªØ¹Ø±ÙŠÙØ§Øª ÙƒØ±Øª Ø§Ù„Ø´Ø§Ø´Ø© Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø©.` |
-| Information card bullet 2 | `ÙŠØªÙ… ØªÙ†ÙÙŠØ° Ø§Ù„Ù…Ø³Ø§Ø± ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ØŒ Ø¨Ù…Ø§ ÙÙŠ Ø°Ù„Ùƒ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ´ØºÙŠÙ„ ÙˆØ§Ù„Ø¯Ø®ÙˆÙ„ Ø¥Ù„Ù‰ Safe Mode Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø§Ø¬Ø©.` |
-| Information card bullet 3 | `Ø¨Ø¹Ø¯ Ø§ÙƒØªÙ…Ø§Ù„ Ø§Ù„ØªÙ†Ø¸ÙŠÙØŒ ÙŠØ¹ÙˆØ¯ Ø§Ù„Ø¬Ù‡Ø§Ø² Ù„Ù„ÙˆØ¶Ø¹ Ø§Ù„Ø·Ø¨ÙŠØ¹ÙŠ Ù„Ø§Ø³ØªÙƒÙ…Ø§Ù„ Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„ØªØ¹Ø±ÙŠÙ Ø§Ù„Ø¬Ø¯ÙŠØ¯.` |
+| Information card bullet 1 | `تنظيف تعريفات كرت الشاشة القديمة قبل تثبيت التعريف الجديد.` |
+| Information card bullet 2 | `يتم تنفيذ خطوة التنظيف تلقائيًا حسب المسار المعتمد.` |
+| Information card bullet 3 | `بعد اكتمال التنظيف، يمكنك متابعة إعداد التعريف الجديد.` |
 | Requirements card title | `Ø§Ù„Ù…ØªØ·Ù„Ø¨Ø§Øª` |
 | Requirements bullet 1 | `Ø§Ù‚Ø±Ø£ Ø§Ù„ØªØ¹Ù„ÙŠÙ…Ø§Øª Ù‚Ø¨Ù„ Ø¨Ø¯Ø¡ ØªÙ†Ø¸ÙŠÙ Ø§Ù„ØªØ¹Ø±ÙŠÙØ§Øª.` |
 | Requirements bullet 2 | `Ø§Ø­ÙØ¸ Ø£ÙŠ Ø¹Ù…Ù„ Ù…ÙØªÙˆØ­ Ù‚Ø¨Ù„ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©.` |
@@ -43,6 +43,10 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Confirmation return button | `Ø±Ø¬ÙˆØ¹` |
 | Running state | `Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙ†ÙÙŠØ°` |
 | Completed state | `Ù…ÙƒØªÙ…Ù„` |
+
+## Information Card Scope
+
+The normal in-app information card intentionally uses short, readable copy. Detailed instructional content belongs behind the Instructions flow and the future AXIS website, not in the normal customer-facing card. Do not add a URL in this blueprint.
 
 ## Requirements Card
 
@@ -111,7 +115,7 @@ Enabled buttons use hand cursor. Disabled buttons do not hover, do not press, an
 
 Title is English-only and should render LTR while remaining physically right-anchored.
 
-`DDU` and `Safe Mode` inside Arabic lines must be rendered safely.
+If future detailed instructional content mentions `DDU` or `Safe Mode`, those English tokens must be rendered safely. They are not part of the normal in-card copy.
 
 ## Non-Goals
 

@@ -468,6 +468,14 @@ $installersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-
 $installersStartupAppsSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Settings-Step-Blueprint.md'
 $installersStartupAppsTaskManagerBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Task-Manager-Step-Blueprint.md'
 $restartAfterInstallersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Restart-After-Installers-Step-Blueprint.md'
+$graphicsBlueprintPaths = @(
+    Join-Path $ProjectRoot 'docs\design\steps\Driver-Clean-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Driver-Install-Debloat-Settings-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\NVIDIA-App-Install-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\DirectX-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Visual-Cpp-Step-Blueprint.md'
+    Join-Path $ProjectRoot 'docs\design\steps\Graphics-Configuration-Center-Step-Blueprint.md'
+)
 $setupBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\BitLocker-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Convert-Home-To-Pro-Step-Blueprint.md'
@@ -493,6 +501,9 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $installersBlueprintPath -PathT
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsSettingsBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Settings extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsTaskManagerBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Task Manager extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $restartAfterInstallersBlueprintPath -PathType Leaf) 'AXIS Restart After Installers extension blueprint is missing.'
+foreach ($graphicsBlueprintPath in $graphicsBlueprintPaths) {
+    Assert-BoostLabCondition (Test-Path -LiteralPath $graphicsBlueprintPath -PathType Leaf) "AXIS Graphics step blueprint is missing: $graphicsBlueprintPath"
+}
 foreach ($setupBlueprintPath in $setupBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $setupBlueprintPath -PathType Leaf) "AXIS Setup step blueprint is missing: $setupBlueprintPath"
 }
@@ -515,6 +526,7 @@ foreach ($functionName in @(
     'Get-AxisFirstUseWizardInstallersCatalogNames'
     'Get-AxisWizardArabicText'
     'Get-AxisWizardSetupText'
+    'Get-AxisWizardGraphicsText'
     'New-AxisFirstUseWizardPrototype'
     'New-AxisFirstUseWizardPrototypeWindow'
     'New-AxisStageProgressStrip'
@@ -668,6 +680,63 @@ $arabicRestartAfterInstallersSubtitle = Get-AxisWizardArabicText -Name 'RestartA
 $arabicRestartAfterInstallersInfoBullet1 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet1'
 $arabicRestartAfterInstallersInfoBullet2 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet2'
 $arabicRestartAfterInstallersInfoBullet3 = Get-AxisWizardArabicText -Name 'RestartAfterInstallersInfoBullet3'
+$graphicsDriverCleanTitle = Get-AxisWizardGraphicsText -Name 'DriverCleanTitle'
+$graphicsDriverCleanSubtitle = Get-AxisWizardGraphicsText -Name 'DriverCleanSubtitle'
+$graphicsDriverCleanPrimary = Get-AxisWizardGraphicsText -Name 'DriverCleanPrimary'
+$graphicsDriverCleanInfoTitle = Get-AxisWizardGraphicsText -Name 'DriverCleanInfoTitle'
+$graphicsDriverCleanInfoBullet1 = Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet1'
+$graphicsDriverCleanInfoBullet2 = Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet2'
+$graphicsDriverCleanInfoBullet3 = Get-AxisWizardGraphicsText -Name 'DriverCleanInfoBullet3'
+$graphicsDriverCleanShortInfoBullet1 = ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0646, 0x0638, 0x064A, 0x0641, 0x0020, 0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0627, 0x062A, 0x0020, 0x0643, 0x0631, 0x062A, 0x0020, 0x0627, 0x0644, 0x0634, 0x0627, 0x0634, 0x0629, 0x0020, 0x0627, 0x0644, 0x0642, 0x062F, 0x064A, 0x0645, 0x0629, 0x0020, 0x0642, 0x0628, 0x0644, 0x0020, 0x062A, 0x062B, 0x0628, 0x064A, 0x062A, 0x0020, 0x0627, 0x0644, 0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0020, 0x0627, 0x0644, 0x062C, 0x062F, 0x064A, 0x062F, 0x002E)
+$graphicsDriverCleanShortInfoBullet2 = ConvertFrom-AxisWizardCodePoints @(0x064A, 0x062A, 0x0645, 0x0020, 0x062A, 0x0646, 0x0641, 0x064A, 0x0630, 0x0020, 0x062E, 0x0637, 0x0648, 0x0629, 0x0020, 0x0627, 0x0644, 0x062A, 0x0646, 0x0638, 0x064A, 0x0641, 0x0020, 0x062A, 0x0644, 0x0642, 0x0627, 0x0626, 0x064A, 0x064B, 0x0627, 0x0020, 0x062D, 0x0633, 0x0628, 0x0020, 0x0627, 0x0644, 0x0645, 0x0633, 0x0627, 0x0631, 0x0020, 0x0627, 0x0644, 0x0645, 0x0639, 0x062A, 0x0645, 0x062F, 0x002E)
+$graphicsDriverCleanShortInfoBullet3 = ConvertFrom-AxisWizardCodePoints @(0x0628, 0x0639, 0x062F, 0x0020, 0x0627, 0x0643, 0x062A, 0x0645, 0x0627, 0x0644, 0x0020, 0x0627, 0x0644, 0x062A, 0x0646, 0x0638, 0x064A, 0x0641, 0x060C, 0x0020, 0x064A, 0x0645, 0x0643, 0x0646, 0x0643, 0x0020, 0x0645, 0x062A, 0x0627, 0x0628, 0x0639, 0x0629, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0627, 0x0644, 0x062A, 0x0639, 0x0631, 0x064A, 0x0641, 0x0020, 0x0627, 0x0644, 0x062C, 0x062F, 0x064A, 0x062F, 0x002E)
+Assert-BoostLabCondition ($graphicsDriverCleanInfoBullet1 -eq $graphicsDriverCleanShortInfoBullet1) 'AXIS Driver Clean information bullet 1 should use the shortened owner-approved in-card copy.'
+Assert-BoostLabCondition ($graphicsDriverCleanInfoBullet2 -eq $graphicsDriverCleanShortInfoBullet2) 'AXIS Driver Clean information bullet 2 should use the shortened owner-approved in-card copy.'
+Assert-BoostLabCondition ($graphicsDriverCleanInfoBullet3 -eq $graphicsDriverCleanShortInfoBullet3) 'AXIS Driver Clean information bullet 3 should use the shortened owner-approved in-card copy.'
+$graphicsDriverCleanRequirement1 = Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement1'
+$graphicsDriverCleanRequirement2 = Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement2'
+$graphicsDriverCleanRequirement3 = Get-AxisWizardGraphicsText -Name 'DriverCleanRequirement3'
+$graphicsDriverCleanRunning = Get-AxisWizardGraphicsText -Name 'DriverCleanRunning'
+$graphicsGpuSetupSelectorLabel = Get-AxisWizardGraphicsText -Name 'GpuSetupSelectorLabel'
+$graphicsGpuSetupAmdLater = Get-AxisWizardGraphicsText -Name 'GpuSetupAmdLater'
+$graphicsGpuSetupIntelLater = Get-AxisWizardGraphicsText -Name 'GpuSetupIntelLater'
+$graphicsGpuSetupSubtitle = Get-AxisWizardGraphicsText -Name 'GpuSetupSubtitle'
+$graphicsGpuSetupPrimary = Get-AxisWizardGraphicsText -Name 'GpuSetupPrimary'
+$graphicsGpuSetupInfoTitle = Get-AxisWizardGraphicsText -Name 'GpuSetupInfoTitle'
+$graphicsGpuSetupInfoBullet1 = Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet1'
+$graphicsGpuSetupInfoBullet2 = Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet2'
+$graphicsGpuSetupInfoBullet3 = Get-AxisWizardGraphicsText -Name 'GpuSetupInfoBullet3'
+$graphicsGpuSetupRequirement1 = Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement1'
+$graphicsGpuSetupRequirement2 = Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement2'
+$graphicsGpuSetupRequirement3 = Get-AxisWizardGraphicsText -Name 'GpuSetupRequirement3'
+$graphicsGpuSetupRunning = Get-AxisWizardGraphicsText -Name 'GpuSetupRunning'
+$graphicsNvidiaAppSubtitle = Get-AxisWizardGraphicsText -Name 'NvidiaAppSubtitle'
+$graphicsNvidiaAppOptionalContinuation = Get-AxisWizardGraphicsText -Name 'NvidiaAppOptionalContinuation'
+$graphicsNvidiaAppInfoTitle = Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoTitle'
+$graphicsNvidiaAppInfoBullet1 = Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet1'
+$graphicsNvidiaAppInfoBullet2 = Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet2'
+$graphicsNvidiaAppInfoBullet3 = Get-AxisWizardGraphicsText -Name 'NvidiaAppInfoBullet3'
+$graphicsNvidiaAppRunning = Get-AxisWizardGraphicsText -Name 'NvidiaAppRunning'
+$graphicsNvidiaAppCompleted = Get-AxisWizardGraphicsText -Name 'NvidiaAppCompleted'
+$graphicsDirectXSubtitle = Get-AxisWizardGraphicsText -Name 'DirectXSubtitle'
+$graphicsDirectXPrimary = Get-AxisWizardGraphicsText -Name 'DirectXPrimary'
+$graphicsDirectXInfoTitle = Get-AxisWizardGraphicsText -Name 'DirectXInfoTitle'
+$graphicsDirectXInfoBullet1 = Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet1'
+$graphicsDirectXInfoBullet2 = Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet2'
+$graphicsDirectXInfoBullet3 = Get-AxisWizardGraphicsText -Name 'DirectXInfoBullet3'
+$graphicsDirectXRunning = Get-AxisWizardGraphicsText -Name 'DirectXRunning'
+$graphicsVisualCppSubtitle = Get-AxisWizardGraphicsText -Name 'VisualCppSubtitle'
+$graphicsVisualCppPrimary = Get-AxisWizardGraphicsText -Name 'VisualCppPrimary'
+$graphicsVisualCppInfoTitle = Get-AxisWizardGraphicsText -Name 'VisualCppInfoTitle'
+$graphicsVisualCppInfoBullet1 = Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet1'
+$graphicsVisualCppInfoBullet2 = Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet2'
+$graphicsVisualCppInfoBullet3 = Get-AxisWizardGraphicsText -Name 'VisualCppInfoBullet3'
+$graphicsConfigSubtitle = Get-AxisWizardGraphicsText -Name 'GraphicsConfigSubtitle'
+$graphicsConfigPrimary = Get-AxisWizardGraphicsText -Name 'GraphicsConfigPrimary'
+$graphicsConfigInfoTitle = Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoTitle'
+$graphicsConfigInfoBullet1 = Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet1'
+$graphicsConfigInfoBullet2 = Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet2'
+$graphicsConfigInfoBullet3 = Get-AxisWizardGraphicsText -Name 'GraphicsConfigInfoBullet3'
 $arabicInstallersRemovedEpicCheckbox = -join ([char[]]@(
     0x062A, 0x0645, 0x0020, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0646,
     0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020,
@@ -959,7 +1028,129 @@ $installersExtensionStepSpecs = @(
 )
 $installersExtensionStepOrder = @($installersExtensionStepSpecs | ForEach-Object { [string]$_['Id'] })
 $installersExtensionStepTitles = @($installersExtensionStepSpecs | ForEach-Object { [string]$_['Title'] })
+$graphicsStepSpecs = @(
+    [ordered]@{
+        Id = 'driver-clean'
+        TagRoot = 'GraphicsDriverClean'
+        Title = $graphicsDriverCleanTitle
+        Primary = $graphicsDriverCleanPrimary
+        Subtitle = $graphicsDriverCleanSubtitle
+        InfoTitle = $graphicsDriverCleanInfoTitle
+        InfoItems = @($graphicsDriverCleanInfoBullet1, $graphicsDriverCleanInfoBullet2, $graphicsDriverCleanInfoBullet3)
+        Requirements = @($graphicsDriverCleanRequirement1, $graphicsDriverCleanRequirement2, $graphicsDriverCleanRequirement3)
+        Running = $graphicsDriverCleanRunning
+        Completed = $arabicCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.DriverCleanPrototypeOnlyNoRuntimeAction'
+        Overlay = $true
+        Selector = $false
+        OptionalContinuation = ''
+        OpenMappedPrototypeOnly = $false
+    }
+    [ordered]@{
+        Id = 'driver-install-debloat-settings'
+        TagRoot = 'GraphicsGpuDriverSetup'
+        Title = 'GPU Driver Setup'
+        Primary = $graphicsGpuSetupPrimary
+        Subtitle = $graphicsGpuSetupSubtitle
+        InfoTitle = $graphicsGpuSetupInfoTitle
+        InfoItems = @($graphicsGpuSetupInfoBullet1, $graphicsGpuSetupInfoBullet2, $graphicsGpuSetupInfoBullet3)
+        Requirements = @($graphicsGpuSetupRequirement1, $graphicsGpuSetupRequirement2, $graphicsGpuSetupRequirement3)
+        Running = $graphicsGpuSetupRunning
+        Completed = $arabicCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.GpuDriverSetupPrototypeOnlyNoRuntimeAction'
+        Overlay = $true
+        Selector = $true
+        OptionalContinuation = ''
+        OpenMappedPrototypeOnly = $false
+    }
+    [ordered]@{
+        Id = 'nvidia-app-install'
+        TagRoot = 'GraphicsNvidiaAppInstall'
+        Title = 'NVIDIA App Install'
+        Primary = 'Install NVIDIA App'
+        Subtitle = $graphicsNvidiaAppSubtitle
+        InfoTitle = $graphicsNvidiaAppInfoTitle
+        InfoItems = @($graphicsNvidiaAppInfoBullet1, $graphicsNvidiaAppInfoBullet2, $graphicsNvidiaAppInfoBullet3)
+        Requirements = @()
+        Running = $graphicsNvidiaAppRunning
+        Completed = $graphicsNvidiaAppCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.NvidiaAppInstallPrototypeOnlyNoRuntimeAction'
+        Overlay = $true
+        Selector = $false
+        OptionalContinuation = $graphicsNvidiaAppOptionalContinuation
+        OpenMappedPrototypeOnly = $false
+    }
+    [ordered]@{
+        Id = 'directx'
+        TagRoot = 'GraphicsDirectX'
+        Title = 'DirectX'
+        Primary = $graphicsDirectXPrimary
+        Subtitle = $graphicsDirectXSubtitle
+        InfoTitle = $graphicsDirectXInfoTitle
+        InfoItems = @($graphicsDirectXInfoBullet1, $graphicsDirectXInfoBullet2, $graphicsDirectXInfoBullet3)
+        Requirements = @()
+        Running = $graphicsDirectXRunning
+        Completed = $arabicCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.DirectXPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OptionalContinuation = ''
+        OpenMappedPrototypeOnly = $false
+    }
+    [ordered]@{
+        Id = 'visual-cpp'
+        TagRoot = 'GraphicsVisualCpp'
+        Title = 'Visual C++ Runtimes'
+        Primary = $graphicsVisualCppPrimary
+        Subtitle = $graphicsVisualCppSubtitle
+        InfoTitle = $graphicsVisualCppInfoTitle
+        InfoItems = @($graphicsVisualCppInfoBullet1, $graphicsVisualCppInfoBullet2, $graphicsVisualCppInfoBullet3)
+        Requirements = @()
+        Running = $graphicsDirectXRunning
+        Completed = $arabicCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.VisualCppPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OptionalContinuation = ''
+        OpenMappedPrototypeOnly = $false
+    }
+    [ordered]@{
+        Id = 'graphics-configuration-center'
+        TagRoot = 'GraphicsConfigurationCenter'
+        Title = 'Graphics Configuration Center'
+        Primary = $graphicsConfigPrimary
+        Subtitle = $graphicsConfigSubtitle
+        InfoTitle = $graphicsConfigInfoTitle
+        InfoItems = @($graphicsConfigInfoBullet1, $graphicsConfigInfoBullet2, $graphicsConfigInfoBullet3)
+        Requirements = @()
+        Running = $graphicsConfigPrimary
+        Completed = $arabicCompleted
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        NoRealActionMarker = 'AxisFirstUseWizard.GraphicsConfigurationCenterPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OptionalContinuation = ''
+        OpenMappedPrototypeOnly = $true
+    }
+)
+$graphicsStepOrder = @($graphicsStepSpecs | ForEach-Object { [string]$_['Id'] })
+$graphicsStepTitles = @($graphicsStepSpecs | ForEach-Object { [string]$_['Title'] })
 $axisSetupRightAlignedVisualLineRendererAutomationId = 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines'
+$axisSharedCardBodyTextRendererMarker = 'AxisFirstUseWizard.SharedCardBodyTextRenderer'
+$axisSharedCardBodyNoLeftFloatingMarker = 'AxisFirstUseWizard.SharedCardBodyNoLeftFloatingWrappedArabic'
+$axisSharedCardBodyMixedBidiMarker = 'AxisFirstUseWizard.SharedCardBodyMixedBidiSafeVisualLines'
+$axisSharedCardBodyFutureGuardMarker = 'AxisFirstUseWizard.SharedCardBodyFutureStageGuard'
 $oldArabicToBiosTitle = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x0627, 0x0646, 0x062A, 0x0642, 0x0627, 0x0644, 0x0020, 0x0625, 0x0644, 0x0649, 0x0020, 0x0042, 0x0049, 0x004F, 0x0053)
 $arabicStartupAppsStartupPhrase = ConvertFrom-AxisWizardCodePoints @(0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x062A, 0x0634, 0x063A, 0x064A, 0x0644)
 $arabicUpdatesPauseDeviceOrphan = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0644, 0x062C, 0x0647, 0x0627, 0x0632, 0x002E)
@@ -1042,7 +1233,7 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 20) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, and the four Installers-stage steps.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 26) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, and the six Graphics-stage steps.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -1050,8 +1241,8 @@ $expectedStepOrder = @(
     'unattended'
     'updates-drivers-block'
     'to-bios'
-) + $setupStepOrder + @('installers') + $installersExtensionStepOrder
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers after Updates Pause.'
+) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, then Graphics after restart-after-installers.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
     'BIOS Settings'
@@ -1059,7 +1250,7 @@ $expectedStepTitles = @(
     'AutoUnattend'
     'Updates Drivers Block'
     $arabicToBiosTitle
-) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles
+) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
@@ -1179,6 +1370,7 @@ $stageProgressCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototyp
 $stageProgressRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
 $stageProgressSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
 $stageProgressInstallersFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Installers') | Select-Object -First 1
+$stageProgressGraphicsFill = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressFill.Graphics') | Select-Object -First 1
 Assert-BoostLabCondition ($null -ne $strip) 'AXIS first-use wizard stage progress strip is missing.'
 Assert-BoostLabCondition ($null -ne $stripGrid) 'AXIS first-use wizard stage progress grid is missing.'
 Assert-BoostLabCondition ($null -ne $initialCurrentStageHeader) 'AXIS first-use wizard current stage header is missing.'
@@ -1191,10 +1383,12 @@ Assert-BoostLabCondition ($null -ne $stageProgressCheckFill) 'AXIS stage progres
 Assert-BoostLabCondition ($null -ne $stageProgressRefreshFill) 'AXIS stage progress Refresh fill marker is missing.'
 Assert-BoostLabCondition ($null -ne $stageProgressSetupFill) 'AXIS stage progress Setup fill marker is missing.'
 Assert-BoostLabCondition ($null -ne $stageProgressInstallersFill) 'AXIS stage progress Installers fill marker is missing.'
+Assert-BoostLabCondition ($null -ne $stageProgressGraphicsFill) 'AXIS stage progress Graphics fill marker is missing.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'BIOS Drivers Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Refresh inactive')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Setup' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Setup inactive')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Installers' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Installers inactive')
+[void](Assert-AxisFirstUseWizardStageLineState -Fill $stageProgressGraphicsFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Graphics' -ExpectedColor '#FF242424' -Name 'BIOS Drivers Graphics inactive')
 $activeStageItems = @(
     $stripItems |
         Where-Object { [System.Windows.Automation.AutomationProperties]::GetAutomationId($_).StartsWith('AxisFirstUseWizard.StageProgressActive.') }
@@ -1225,6 +1419,13 @@ $installersExtensionSteps = @($sampleSteps[17..19])
 $installersStartupAppsSettingsStep = [System.Collections.IDictionary]$sampleSteps[17]
 $installersStartupAppsTaskManagerStep = [System.Collections.IDictionary]$sampleSteps[18]
 $restartAfterInstallersStep = [System.Collections.IDictionary]$sampleSteps[19]
+$graphicsSteps = @($sampleSteps[20..25])
+$driverCleanStep = [System.Collections.IDictionary]$sampleSteps[20]
+$gpuDriverSetupStep = [System.Collections.IDictionary]$sampleSteps[21]
+$nvidiaAppInstallStep = [System.Collections.IDictionary]$sampleSteps[22]
+$directXStep = [System.Collections.IDictionary]$sampleSteps[23]
+$visualCppStep = [System.Collections.IDictionary]$sampleSteps[24]
+$graphicsConfigurationCenterStep = [System.Collections.IDictionary]$sampleSteps[25]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -1471,6 +1672,77 @@ Assert-BoostLabCondition (-not $restartAfterInstallersStep.Contains('Requirement
 Assert-BoostLabCondition ([bool]$restartAfterInstallersStep['NoExistingBoostLabTool']) 'AXIS restart-after-installers should be marked as not an existing BoostLab tool.'
 Assert-BoostLabCondition ([string]$restartAfterInstallersStep['AxisCustomStepOrigin'] -eq 'AXIS custom future restart step') 'AXIS restart-after-installers should record custom AXIS origin.'
 
+$actualGraphicsStageOrder = @($sampleSteps | Where-Object { [string]$_['StageName'] -eq 'Graphics' } | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition (($actualGraphicsStageOrder -join '|') -eq ($graphicsStepOrder -join '|')) 'AXIS Graphics stage order should be Driver Clean, GPU Driver Setup, NVIDIA App Install, DirectX, Visual C++, Graphics Configuration Center.'
+Assert-BoostLabCondition ($graphicsSteps.Count -eq 6) 'AXIS Graphics stage should add exactly six isolated prototype steps.'
+for ($graphicsIndex = 0; $graphicsIndex -lt $graphicsStepSpecs.Count; $graphicsIndex++) {
+    $graphicsSpec = [System.Collections.IDictionary]$graphicsStepSpecs[$graphicsIndex]
+    $graphicsStep = [System.Collections.IDictionary]$graphicsSteps[$graphicsIndex]
+    $graphicsName = [string]$graphicsSpec['Id']
+    Assert-BoostLabCondition ([string]$graphicsStep['Id'] -eq $graphicsName) "AXIS Graphics step order changed at index $graphicsIndex."
+    Assert-BoostLabCondition ([string]$graphicsStep['Title'] -eq [string]$graphicsSpec['Title']) "AXIS Graphics title changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['StageName'] -eq 'Graphics') "AXIS Graphics step should be in Graphics stage: $graphicsName"
+    Assert-BoostLabCondition ([string]$graphicsStep['PrimaryActionLabel'] -eq [string]$graphicsSpec['Primary']) "AXIS Graphics primary action changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['Description'] -eq [string]$graphicsSpec['Subtitle']) "AXIS Graphics subtitle changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['InformationCardTitle'] -eq [string]$graphicsSpec['InfoTitle']) "AXIS Graphics information title changed for $graphicsName."
+    Assert-BoostLabCondition ((@($graphicsStep['InformationItems']) -join '|') -eq (@($graphicsSpec['InfoItems']) -join '|')) "AXIS Graphics information bullets changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['CheckingStatusTitle'] -eq [string]$graphicsSpec['Running']) "AXIS Graphics running status changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['CompletedStatusTitle'] -eq [string]$graphicsSpec['Completed']) "AXIS Graphics completed status changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['CompletionStateLabel'] -eq [string]$graphicsSpec['Completed']) "AXIS Graphics completion label changed for $graphicsName."
+    Assert-BoostLabCondition ([bool]$graphicsStep['PrototypeOnlySimulation']) "AXIS Graphics step should be prototype-only simulation: $graphicsName"
+    Assert-BoostLabCondition ([string]$graphicsStep['GraphicsStageBatchMarker'] -eq 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly') "AXIS Graphics batch marker missing for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['NoRealActionMarker'] -eq [string]$graphicsSpec['NoRealActionMarker']) "AXIS Graphics no-real-action marker changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['CustomerAction'] -eq [string]$graphicsSpec['CustomerAction']) "AXIS Graphics internal action mapping changed for $graphicsName."
+    Assert-BoostLabCondition ([string]$graphicsStep['FutureInternalAction'] -eq [string]$graphicsSpec['FutureInternalAction']) "AXIS Graphics future internal action changed for $graphicsName."
+    Assert-BoostLabCondition ((@($graphicsStep['CustomerVisibleActions']) -join '|') -eq [string]$graphicsSpec['Primary']) "AXIS Graphics customer-visible action should be the owner-approved label only: $graphicsName"
+    foreach ($forbiddenGraphicsCustomerAction in @('Analyze', 'Apply', 'Open', 'Default', 'Restore')) {
+        Assert-BoostLabCondition (-not ($forbiddenGraphicsCustomerAction -in @($graphicsStep['CustomerVisibleActions']))) "AXIS Graphics must not expose internal action text $forbiddenGraphicsCustomerAction as customer-visible action: $graphicsName"
+    }
+
+    if ([bool]$graphicsSpec['Overlay']) {
+        Assert-BoostLabCondition ([bool]$graphicsStep['RequiresConfirmationAcknowledgement']) "AXIS Graphics confirmation overlay should be present for $graphicsName."
+        Assert-BoostLabCondition ([string]$graphicsStep['DocumentationAcknowledgementText'] -eq $arabicAcknowledgement) "AXIS Graphics confirmation checkbox copy changed for $graphicsName."
+        Assert-BoostLabCondition ([string]$graphicsStep['ConfirmationActionLabel'] -eq [string]$graphicsSpec['Primary']) "AXIS Graphics confirmation primary copy changed for $graphicsName."
+        Assert-BoostLabCondition ([string]$graphicsStep['ConfirmationReturnLabel'] -eq $arabicReturn) "AXIS Graphics confirmation return copy changed for $graphicsName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$graphicsStep['RequiresConfirmationAcknowledgement']) "AXIS Graphics confirmation overlay should be absent for $graphicsName."
+        Assert-BoostLabCondition ([bool]$graphicsStep['NoConfirmationOverlay']) "AXIS Graphics no-overlay marker should be present for $graphicsName."
+    }
+
+    if (@($graphicsSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([bool]$graphicsStep['ShowRequirements']) "AXIS Graphics requirements card should be present for $graphicsName."
+        Assert-BoostLabCondition ((@($graphicsStep['RequirementsItems']) -join '|') -eq (@($graphicsSpec['Requirements']) -join '|')) "AXIS Graphics requirements copy changed for $graphicsName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$graphicsStep['ShowRequirements']) "AXIS Graphics requirements card should be absent for $graphicsName."
+        Assert-BoostLabCondition (-not $graphicsStep.Contains('RequirementsItems')) "AXIS Graphics no-requirements step should not carry requirements items: $graphicsName"
+    }
+
+    Assert-BoostLabCondition ([bool]$graphicsStep['RequiresInputWindow'] -eq $false) "AXIS Graphics step must not show an input window: $graphicsName"
+    if ([bool]$graphicsSpec['Selector']) {
+        Assert-BoostLabCondition ([bool]$graphicsStep['RequiresGpuSelector']) 'AXIS GPU Driver Setup should require the NVIDIA-only GPU selector.'
+        Assert-BoostLabCondition ([bool]$graphicsStep['PrimaryActionRequiresSelection']) 'AXIS GPU Driver Setup primary action should remain disabled until NVIDIA is selected.'
+        Assert-BoostLabCondition ((@($graphicsStep['GpuSelectorOptions']) -join '|') -eq "NVIDIA|$graphicsGpuSetupAmdLater|$graphicsGpuSetupIntelLater") 'AXIS GPU selector options changed.'
+        Assert-BoostLabCondition ((@($graphicsStep['GpuSelectorEnabledOptions']) -join '|') -eq 'NVIDIA') 'AXIS GPU selector should only enable NVIDIA.'
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$graphicsStep['RequiresGpuSelector']) "AXIS Graphics step should not require a GPU selector: $graphicsName"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$graphicsSpec['OptionalContinuation'])) {
+        Assert-BoostLabCondition ([string]$graphicsStep['OptionalContinuationLabel'] -eq [string]$graphicsSpec['OptionalContinuation']) 'AXIS NVIDIA App optional continuation label changed.'
+        Assert-BoostLabCondition ([bool]$graphicsStep['OptionalContinuationNoRuntimeAction']) 'AXIS NVIDIA App optional continuation should be marked no-runtime.'
+    }
+    else {
+        Assert-BoostLabCondition (-not $graphicsStep.Contains('OptionalContinuationLabel')) "AXIS Graphics step should not expose optional continuation: $graphicsName"
+    }
+
+    if ([bool]$graphicsSpec['OpenMappedPrototypeOnly']) {
+        Assert-BoostLabCondition ([bool]$graphicsStep['OpenMappedPrototypeOnly']) "AXIS Graphics Open-mapped step should be marked prototype-only: $graphicsName"
+    }
+}
+
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
 $taggedStepTextContent = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepTextContent')
@@ -1493,6 +1765,8 @@ $taggedSupportSharedPhysicalRightEdge = @(Get-AxisFirstUseWizardTaggedElements -
 $taggedBottomNavigation = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BottomNavigation')
 $taggedBottomButtons = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BottomButtons')
 $taggedFooterButtonSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.FooterButtonSpacer')
+$taggedOptionalContinuationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.OptionalContinuationButton')
+$taggedOptionalContinuationFooterSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.OptionalContinuationFooterSpacer')
 $taggedContinueButtons = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ContinueButton')
 $taggedOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
 $taggedAutoUnattendInputOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay')
@@ -1592,8 +1866,15 @@ Assert-BoostLabCondition (-not [bool]$taggedBottomNavigation[0].ClipToBounds) 'A
 Assert-BoostLabCondition ($taggedBottomButtons.Count -eq 1) 'AXIS first-use wizard footer button row is missing.'
 Assert-BoostLabCondition ($taggedBottomButtons[0].FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS footer buttons should use RTL flow.'
 $footerButtons = @(Get-AxisFirstUseWizardTypedElements -Root $taggedBottomButtons[0] -Type ([System.Windows.Controls.Button]))
-Assert-BoostLabCondition ($footerButtons.Count -eq 2) 'AXIS first-use wizard footer should include only Back and Continue.'
-Assert-BoostLabCondition ((@($footerButtons | ForEach-Object { [string]$_.Content }) -join '|') -eq "$arabicBack|$arabicNext") 'AXIS first-use wizard footer button labels changed.'
+Assert-BoostLabCondition ($footerButtons.Count -eq 3) 'AXIS first-use wizard footer should include Back, NVIDIA App optional continuation, and Continue.'
+Assert-BoostLabCondition ((@($footerButtons | ForEach-Object { [string]$_.Content }) -join '|') -eq "$arabicBack|$graphicsNvidiaAppOptionalContinuation|$arabicNext") 'AXIS first-use wizard footer button labels changed.'
+Assert-BoostLabCondition ($taggedOptionalContinuationButton.Count -eq 1) 'AXIS NVIDIA App optional continuation footer button is missing.'
+Assert-BoostLabCondition ($taggedOptionalContinuationButton[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS NVIDIA App optional continuation footer button should start hidden before its step.'
+Assert-BoostLabCondition (-not [bool]$taggedOptionalContinuationButton[0].IsEnabled) 'AXIS NVIDIA App optional continuation footer button should start disabled before its step.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedOptionalContinuationButton[0]) -eq 'AxisFirstUseWizard.NvidiaAppOptionalContinuationNoApplySimulation') 'AXIS NVIDIA App optional continuation should be marked as no-runtime simulation.'
+Assert-BoostLabCondition ([double]$taggedOptionalContinuationButton[0].Width -ge 244.0) 'AXIS NVIDIA App optional continuation footer button should be wide enough for the approved mixed Arabic/English label.'
+Assert-BoostLabCondition ($taggedOptionalContinuationFooterSpacer.Count -eq 1) 'AXIS optional continuation footer spacer is missing.'
+Assert-BoostLabCondition ($taggedOptionalContinuationFooterSpacer[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS optional continuation footer spacer should start hidden.'
 Assert-BoostLabCondition ($taggedFooterButtonSpacer.Count -eq 1) 'AXIS footer buttons should use an explicit spacer.'
 Assert-BoostLabCondition ([double]$taggedFooterButtonSpacer[0].Width -ge 12.0 -and [double]$taggedFooterButtonSpacer[0].Width -le 20.0) 'AXIS footer spacer should provide a clear 12-20px gap.'
 Assert-BoostLabCondition ($taggedContinueButtons.Count -eq 1) 'AXIS first-use wizard Continue button is missing.'
@@ -1661,7 +1942,7 @@ foreach ($rejectedPhase180DPrototypeText in @(
     Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 4) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, and Updates Pause only.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 7) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, and NVIDIA App Install only.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
@@ -1670,6 +1951,9 @@ Assert-BoostLabCondition ($taggedOverlay[0].Visibility -eq [System.Windows.Visib
 Assert-BoostLabCondition ($taggedOverlay[1].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[2].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[3].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[4].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Driver Clean confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[5].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS GPU Driver Setup confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[6].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS NVIDIA App Install confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0] -is [System.Windows.Controls.StackPanel]) 'AXIS confirmation right-aligned group should be a StackPanel.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS confirmation inner group should be right-aligned without resizing the overlay.'
@@ -3358,7 +3642,282 @@ foreach ($extensionSpec in $installersExtensionStepSpecs) {
 
     if ($extensionStepId -eq 'restart-after-installers') {
         Invoke-AxisFirstUseWizardButtonClick -Button $extensionContinueButton
-        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionContentHost.Child -Tag 'AxisFirstUseWizard.RestartAfterInstallersStep').Count -eq 1) 'AXIS restart-after-installers should not auto-advance or navigate past the last implemented extension step.'
+        $extensionGraphicsStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+        $extensionCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
+        $extensionRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
+        $extensionSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
+        $extensionInstallersFill = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Installers') | Select-Object -First 1
+        $extensionGraphicsFill = @(Get-AxisFirstUseWizardTaggedElements -Root $extensionPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Graphics') | Select-Object -First 1
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $extensionContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsDriverCleanStep').Count -eq 1) 'AXIS restart-after-installers Continue/Next should navigate to Driver Clean.'
+        Assert-BoostLabCondition ([string]$extensionGraphicsStageHeader.Text -eq 'Graphics') 'AXIS Driver Clean current stage header should show Graphics.'
+        [void](Assert-AxisFirstUseWizardStageLineState -Fill $extensionCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name 'Driver Clean Check completed')
+        [void](Assert-AxisFirstUseWizardStageLineState -Fill $extensionRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Refresh' -ExpectedColor '#FF22C55E' -Name 'Driver Clean Refresh completed')
+        [void](Assert-AxisFirstUseWizardStageLineState -Fill $extensionSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Setup' -ExpectedColor '#FF22C55E' -Name 'Driver Clean Setup completed')
+        [void](Assert-AxisFirstUseWizardStageLineState -Fill $extensionInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Installers' -ExpectedColor '#FF22C55E' -Name 'Driver Clean Installers completed')
+        [void](Assert-AxisFirstUseWizardStageLineState -Fill $extensionGraphicsFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Graphics' -ExpectedColor '#FFF0F2F5' -Name 'Driver Clean Graphics active')
+    }
+}
+
+foreach ($graphicsSpec in $graphicsStepSpecs) {
+    $graphicsStepId = [string]$graphicsSpec['Id']
+    $graphicsTagRoot = [string]$graphicsSpec['TagRoot']
+    $graphicsSampleState = Get-AxisFirstUseWizardSampleState
+    $graphicsStepIds = @($graphicsSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
+    $graphicsStepIndex = [Array]::IndexOf($graphicsStepIds, $graphicsStepId)
+    Assert-BoostLabCondition ($graphicsStepIndex -ge 0) "AXIS Graphics render test should find step: $graphicsStepId"
+    $graphicsSampleState['CurrentStepIndex'] = $graphicsStepIndex
+    $graphicsPrototype = New-AxisFirstUseWizardPrototype -SampleState $graphicsSampleState
+    $graphicsContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+    $graphicsContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+    $graphicsOptionalContinuationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.OptionalContinuationButton') | Select-Object -First 1
+    $graphicsVisibleContent = $graphicsContentHost.Child
+    $graphicsVisibleText = (Get-AxisFirstUseWizardTextValues -Root $graphicsVisibleContent) -join [Environment]::NewLine
+    $graphicsStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}Step") | Select-Object -First 1
+    $graphicsTitleText = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}TitleText") | Select-Object -First 1
+    $graphicsDetailsGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}StepDetails") | Select-Object -First 1
+    $graphicsInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}InformationCard") | Select-Object -First 1
+    $graphicsRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}RequirementsCard") | Select-Object -First 1
+    $graphicsInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}InformationSharedPhysicalRightEdge") | Select-Object -First 1
+    $graphicsRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag "AxisFirstUseWizard.${graphicsTagRoot}RequirementsSharedPhysicalRightEdge") | Select-Object -First 1
+    $graphicsPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+    $graphicsRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+    $graphicsRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+    $graphicsSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+    $graphicsDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
+    $graphicsStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+    $graphicsCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
+    $graphicsRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
+    $graphicsSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
+    $graphicsInstallersFill = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Installers') | Select-Object -First 1
+    $graphicsGraphicsFill = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Graphics') | Select-Object -First 1
+
+    Assert-BoostLabCondition ($graphicsStepElement -is [System.Windows.Controls.Border]) "AXIS Graphics step should render a step card: $graphicsStepId"
+    Assert-BoostLabCondition ([double]$graphicsStepElement.Height -eq 382.0) "AXIS Graphics step should fit inside the 900x650 preview client area: $graphicsStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsStepElement) -eq 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly') "AXIS Graphics step should expose prototype-only batch marker: $graphicsStepId"
+    Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $graphicsTitleText) -eq [string]$graphicsSpec['Title']) "AXIS Graphics visible title changed: $graphicsStepId"
+    Assert-BoostLabCondition ($graphicsTitleText.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Graphics English title should render LTR while right-anchored: $graphicsStepId"
+    Assert-BoostLabCondition ([string]$graphicsPrimaryButton.Content -eq [string]$graphicsSpec['Primary']) "AXIS Graphics primary button text changed: $graphicsStepId"
+    Assert-BoostLabCondition (-not [bool]$graphicsContinueButton.IsEnabled) "AXIS Graphics Next should start disabled until simulated completion: $graphicsStepId"
+    Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Graphics runtime status should start hidden: $graphicsStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsRuntimeStatusArea) -eq 'AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping') "AXIS Graphics runtime status should expose no-clipping marker: $graphicsStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsSupportPanel) -eq 'AxisFirstUseWizard.GraphicsSupportCardNoClipping') "AXIS Graphics support panel should expose no-clipping marker: $graphicsStepId"
+    Assert-BoostLabCondition ([double]$graphicsSupportPanel.MinHeight -eq 52.0) "AXIS Graphics support panel should use compact no-clipping height: $graphicsStepId"
+    Assert-BoostLabCondition ([double]$graphicsSupportPanel.Padding.Top -eq 6.0 -and [double]$graphicsSupportPanel.Padding.Bottom -eq 6.0) "AXIS Graphics support panel should keep compact internal padding: $graphicsStepId"
+    Assert-BoostLabCondition ([double]$graphicsSupportPanel.Margin.Top -eq 4.0) "AXIS Graphics support panel should avoid bottom clipping with a compact top margin: $graphicsStepId"
+    Assert-BoostLabCondition ([string]$graphicsStageHeader.Text -eq 'Graphics') "AXIS Graphics current stage header should show Graphics: $graphicsStepId"
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $graphicsCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name "$graphicsStepId Check completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $graphicsRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Refresh' -ExpectedColor '#FF22C55E' -Name "$graphicsStepId Refresh completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $graphicsSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Setup' -ExpectedColor '#FF22C55E' -Name "$graphicsStepId Setup completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $graphicsInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Installers' -ExpectedColor '#FF22C55E' -Name "$graphicsStepId Installers completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $graphicsGraphicsFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Graphics' -ExpectedColor '#FFF0F2F5' -Name "$graphicsStepId Graphics active")
+
+    foreach ($requiredGraphicsText in @(
+        'Graphics'
+        [string]$graphicsSpec['Title']
+        [string]$graphicsSpec['Subtitle']
+        [string]$graphicsSpec['InfoTitle']
+        @($graphicsSpec['InfoItems'])
+        @($graphicsSpec['Requirements'])
+        [string]$graphicsSpec['Primary']
+        $arabicDocumentation
+        $arabicSupportTitle
+        $arabicSupportBody
+    )) {
+        foreach ($requiredGraphicsTextItem in @($requiredGraphicsText)) {
+            if ([string]::IsNullOrWhiteSpace([string]$requiredGraphicsTextItem)) {
+                continue
+            }
+            $requiredGraphicsTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text ([string]$requiredGraphicsTextItem)
+            $graphicsVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $graphicsVisibleText
+            Assert-BoostLabCondition (
+                $graphicsVisibleText.Contains([string]$requiredGraphicsTextItem) -or
+                $graphicsVisibleTextNormalized.Contains($requiredGraphicsTextNormalized)
+            ) "AXIS Graphics view is missing owner-approved text for ${graphicsStepId}: $requiredGraphicsTextItem"
+        }
+    }
+    Assert-BoostLabCondition (-not $graphicsVisibleText.Contains([string][char]0xFFFD)) "AXIS Graphics visible copy must not contain replacement glyphs: $graphicsStepId"
+    foreach ($forbiddenGraphicsVisibleText in @('Analyze', 'Apply', 'Default', 'Restore', 'Cancel', 'Skip', 'Skipped', 'Completed with notes')) {
+        Assert-BoostLabCondition (-not $graphicsVisibleText.Contains($forbiddenGraphicsVisibleText)) "AXIS Graphics view exposes forbidden customer text for ${graphicsStepId}: $forbiddenGraphicsVisibleText"
+    }
+    Assert-BoostLabCondition ($graphicsRuntimeStatusArea -ne $graphicsSupportPanel) "AXIS Graphics runtime status must remain separate from support panel: $graphicsStepId"
+    Assert-BoostLabCondition ($null -ne $graphicsDocumentationButton) "AXIS Graphics documentation button is missing: $graphicsStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay').Count -eq 0) "AXIS Graphics content must not include an input overlay: $graphicsStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $graphicsVisibleContent -Type ([System.Windows.Controls.Image])).Count -eq 0) "AXIS Graphics content must not render image icons: $graphicsStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $graphicsVisibleContent -Type ([System.Windows.Shapes.Shape])).Count -eq 0) "AXIS Graphics content must not render vector icons: $graphicsStepId"
+    Assert-BoostLabCondition ($null -ne $graphicsInformationSharedRightEdge) "AXIS Graphics information card should use the shared physical right-edge text renderer: $graphicsStepId"
+    Assert-BoostLabCondition ([string]$graphicsInformationSharedRightEdge.Resources[$axisSharedCardBodyTextRendererMarker] -eq 'RightAlignedVisualLines') "AXIS Graphics information cards should use shared right-aligned visual lines: $graphicsStepId"
+    Assert-BoostLabCondition ([bool]$graphicsInformationSharedRightEdge.Resources[$axisSharedCardBodyNoLeftFloatingMarker]) "AXIS Graphics information cards should prevent left-floating wrapped Arabic lines: $graphicsStepId"
+    Assert-BoostLabCondition ([bool]$graphicsInformationSharedRightEdge.Resources[$axisSharedCardBodyMixedBidiMarker]) "AXIS Graphics information cards should use the mixed BiDi-safe visual-line path: $graphicsStepId"
+    Assert-BoostLabCondition ([string]$graphicsInformationSharedRightEdge.Resources[$axisSharedCardBodyFutureGuardMarker] -eq 'GraphicsWindowsAdvanced') "AXIS shared card renderer should guard future Graphics/Windows/Advanced batches: $graphicsStepId"
+    $graphicsInformationBodyLines = @(
+        Get-AxisFirstUseWizardTypedElements -Root $graphicsInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]) |
+            Where-Object { [string]$_.Tag -like "AxisFirstUseWizard.${graphicsTagRoot}InformationItem*" }
+    )
+    Assert-BoostLabCondition ($graphicsInformationBodyLines.Count -ge @($graphicsSpec['InfoItems']).Count) "AXIS Graphics information body lines should render approved bullets: $graphicsStepId"
+    foreach ($graphicsInformationBodyLine in $graphicsInformationBodyLines) {
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsInformationBodyLine) -eq $axisSetupRightAlignedVisualLineRendererAutomationId) "AXIS Graphics information body line should use the safe no-left-floating marker: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsInformationBodyLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) "AXIS Graphics information body line should bypass automatic WPF wrapping: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsInformationBodyLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Graphics information body line should stay right-aligned: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsInformationBodyLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Graphics information body line should stay physically anchored right: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsInformationBodyLine.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Graphics information body line should remain RTL-shaped: $graphicsStepId"
+    }
+    if ($graphicsStepId -eq 'driver-install-debloat-settings') {
+        Assert-BoostLabCondition (@($graphicsInformationBodyLines | Where-Object { [string]$_.Tag -like '*.VisualLine' }).Count -ge 1) "AXIS Graphics long mixed information text should use explicit visual split lines: $graphicsStepId"
+    }
+    $graphicsInformationSharedRightEdge.Measure([System.Windows.Size]::new(340.0, [double]::PositiveInfinity))
+    $graphicsInformationInnerHeight = [double]$graphicsInformationCard.Height -
+        [double]$graphicsInformationCard.Padding.Top -
+        [double]$graphicsInformationCard.Padding.Bottom -
+        [double]$graphicsInformationCard.BorderThickness.Top -
+        [double]$graphicsInformationCard.BorderThickness.Bottom
+    Assert-BoostLabCondition ([double]$graphicsInformationSharedRightEdge.DesiredSize.Height -le $graphicsInformationInnerHeight) "AXIS Graphics information card text should fit without top/bottom clipping: $graphicsStepId"
+
+    $graphicsContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+    $graphicsStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+    $graphicsRowTotal = 0.0
+    foreach ($graphicsRowChild in @($graphicsContentGrid.Children)) {
+        $graphicsRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+        $graphicsRowTotal += [double]$graphicsRowChild.DesiredSize.Height
+    }
+    $graphicsInnerHeight = [double]$graphicsStepElement.Height -
+        [double]$graphicsStepElement.Padding.Top -
+        [double]$graphicsStepElement.Padding.Bottom -
+        [double]$graphicsStepElement.BorderThickness.Top -
+        [double]$graphicsStepElement.BorderThickness.Bottom
+    Assert-BoostLabCondition ($graphicsRowTotal -le $graphicsInnerHeight) "AXIS Graphics row content should fit without clipped information/support/footer content: $graphicsStepId"
+
+    if (@($graphicsSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsDetailsGrid) -eq 'AxisFirstUseWizard.GraphicsCardsPhysicalOrderInfoRightRequirementsLeft') "AXIS Graphics should mark physical info-right requirements-left order: $graphicsStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($graphicsInformationCard) -eq 2) "AXIS Graphics information card should be physical right: $graphicsStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($graphicsRequirementsCard) -eq 0) "AXIS Graphics requirements card should be physical left: $graphicsStepId"
+        Assert-BoostLabCondition ($null -ne $graphicsRequirementsSharedRightEdge) "AXIS Graphics requirements card should use the shared physical right-edge text renderer: $graphicsStepId"
+        Assert-BoostLabCondition ([string]$graphicsRequirementsSharedRightEdge.Resources[$axisSharedCardBodyTextRendererMarker] -eq 'RightAlignedVisualLines') "AXIS Graphics requirements cards should use shared right-aligned visual lines: $graphicsStepId"
+        Assert-BoostLabCondition ([bool]$graphicsRequirementsSharedRightEdge.Resources[$axisSharedCardBodyNoLeftFloatingMarker]) "AXIS Graphics requirements cards should prevent left-floating wrapped Arabic lines: $graphicsStepId"
+        Assert-BoostLabCondition ([bool]$graphicsRequirementsSharedRightEdge.Resources[$axisSharedCardBodyMixedBidiMarker]) "AXIS Graphics requirements cards should use the mixed BiDi-safe visual-line path: $graphicsStepId"
+        $graphicsRequirementBodyLines = @(
+            Get-AxisFirstUseWizardTypedElements -Root $graphicsRequirementsSharedRightEdge -Type ([System.Windows.Controls.TextBlock]) |
+                Where-Object { [string]$_.Tag -like "AxisFirstUseWizard.${graphicsTagRoot}RequirementItem*" }
+        )
+        Assert-BoostLabCondition ($graphicsRequirementBodyLines.Count -ge @($graphicsSpec['Requirements']).Count) "AXIS Graphics requirements body lines should render approved bullets: $graphicsStepId"
+        foreach ($graphicsRequirementBodyLine in $graphicsRequirementBodyLines) {
+            Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsRequirementBodyLine) -eq $axisSetupRightAlignedVisualLineRendererAutomationId) "AXIS Graphics requirements body line should use the safe no-left-floating marker: $graphicsStepId"
+            Assert-BoostLabCondition ($graphicsRequirementBodyLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) "AXIS Graphics requirements body line should bypass automatic WPF wrapping: $graphicsStepId"
+            Assert-BoostLabCondition ($graphicsRequirementBodyLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Graphics requirements body line should stay right-aligned: $graphicsStepId"
+            Assert-BoostLabCondition ($graphicsRequirementBodyLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Graphics requirements body line should stay physically anchored right: $graphicsStepId"
+            Assert-BoostLabCondition ($graphicsRequirementBodyLine.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Graphics requirements body line should remain RTL-shaped: $graphicsStepId"
+        }
+        $graphicsRequirementsSharedRightEdge.Measure([System.Windows.Size]::new(340.0, [double]::PositiveInfinity))
+        $graphicsRequirementsInnerHeight = [double]$graphicsRequirementsCard.Height -
+            [double]$graphicsRequirementsCard.Padding.Top -
+            [double]$graphicsRequirementsCard.Padding.Bottom -
+            [double]$graphicsRequirementsCard.BorderThickness.Top -
+            [double]$graphicsRequirementsCard.BorderThickness.Bottom
+        Assert-BoostLabCondition ([double]$graphicsRequirementsSharedRightEdge.DesiredSize.Height -le $graphicsRequirementsInnerHeight) "AXIS Graphics requirements card text should fit without top/bottom clipping: $graphicsStepId"
+    }
+    else {
+        Assert-BoostLabCondition ($null -eq $graphicsRequirementsCard) "AXIS Graphics no-requirements step must not render a requirements card: $graphicsStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($graphicsInformationCard) -eq 0) "AXIS Graphics single information card should use the only details column: $graphicsStepId"
+    }
+
+    if ([bool]$graphicsSpec['Selector']) {
+        $graphicsGpuSelector = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.GraphicsGpuSelector') | Select-Object -First 1
+        Assert-BoostLabCondition ($graphicsGpuSelector -is [System.Windows.Controls.ComboBox]) 'AXIS GPU Driver Setup should render the GPU selector.'
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsGpuSelector) -eq 'AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly') 'AXIS GPU selector should expose the NVIDIA-only marker.'
+        Assert-BoostLabCondition ([bool]$graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorUsesSharedDarkAxisStyle']) 'AXIS GPU selector should use the shared dark AXIS selector style.'
+        Assert-BoostLabCondition ([bool]$graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorNoRuntimeAction']) 'AXIS GPU selector should be marked no-runtime.'
+        Assert-BoostLabCondition ([bool]$graphicsGpuSelector.Resources['AxisFirstUseWizard.GraphicsGpuSelectorAmdIntelDisabled']) 'AXIS GPU selector should mark AMD/Intel as disabled.'
+        Assert-BoostLabCondition ($graphicsGpuSelector.Items.Count -eq 3) 'AXIS GPU selector should expose exactly NVIDIA, AMD later, and Intel later.'
+        Assert-BoostLabCondition ([string]$graphicsGpuSelector.Items[0].Content -eq 'NVIDIA') 'AXIS GPU selector first option should be NVIDIA.'
+        Assert-BoostLabCondition ([string]$graphicsGpuSelector.Items[1].Content -eq $graphicsGpuSetupAmdLater) 'AXIS GPU selector AMD option text changed.'
+        Assert-BoostLabCondition ([string]$graphicsGpuSelector.Items[2].Content -eq $graphicsGpuSetupIntelLater) 'AXIS GPU selector Intel option text changed.'
+        Assert-BoostLabCondition ([bool]$graphicsGpuSelector.Items[0].IsEnabled) 'AXIS GPU selector NVIDIA should be selectable.'
+        Assert-BoostLabCondition (-not [bool]$graphicsGpuSelector.Items[1].IsEnabled) 'AXIS GPU selector AMD should be disabled.'
+        Assert-BoostLabCondition (-not [bool]$graphicsGpuSelector.Items[2].IsEnabled) 'AXIS GPU selector Intel should be disabled.'
+        Assert-BoostLabCondition (-not [bool]$graphicsPrimaryButton.IsEnabled) 'AXIS GPU Driver Setup primary should start disabled until NVIDIA is selected.'
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsPrimaryButton
+        Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS GPU Driver Setup disabled primary should not start simulation.'
+        $graphicsGpuSelector.SelectedIndex = 0
+        Assert-BoostLabCondition ([bool]$graphicsPrimaryButton.IsEnabled) 'AXIS GPU Driver Setup primary should enable after NVIDIA is selected.'
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsPrimaryButton) -eq 'AxisFirstUseWizard.GraphicsGpuSetupPrimaryEnabledWithNvidiaSelection') 'AXIS GPU Driver Setup enabled primary should expose NVIDIA selection marker.'
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$graphicsSpec['OptionalContinuation'])) {
+        Assert-BoostLabCondition ([string]$graphicsOptionalContinuationButton.Content -eq [string]$graphicsSpec['OptionalContinuation']) 'AXIS NVIDIA App optional continuation label changed in the footer.'
+        Assert-BoostLabCondition ($graphicsOptionalContinuationButton.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS NVIDIA App optional continuation should be visible on the NVIDIA App step.'
+        Assert-BoostLabCondition ([bool]$graphicsOptionalContinuationButton.IsEnabled) 'AXIS NVIDIA App optional continuation should be enabled on the NVIDIA App step.'
+        Assert-BoostLabCondition ([double]$graphicsOptionalContinuationButton.Width -ge 244.0) 'AXIS NVIDIA App optional continuation should keep enough width for the full mixed Arabic/English label.'
+        $graphicsOptionalContinuationButton.Measure([System.Windows.Size]::new([double]$graphicsOptionalContinuationButton.Width, [double]$graphicsOptionalContinuationButton.Height))
+        Assert-BoostLabCondition ([double]$graphicsOptionalContinuationButton.DesiredSize.Width -le ([double]$graphicsOptionalContinuationButton.Width + 1.0)) 'AXIS NVIDIA App optional continuation label should not be clipped or truncated.'
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsOptionalContinuationButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $graphicsContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsDirectXStep').Count -eq 1) 'AXIS NVIDIA App optional continuation should advance to DirectX.'
+        Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS NVIDIA App optional continuation must not start runtime status.'
+        Assert-BoostLabCondition (-not [bool]$graphicsContinueButton.IsEnabled) 'AXIS DirectX Next should start disabled after optional NVIDIA App continuation.'
+
+        $graphicsSampleState = Get-AxisFirstUseWizardSampleState
+        $graphicsSampleState['CurrentStepIndex'] = $graphicsStepIndex
+        $graphicsPrototype = New-AxisFirstUseWizardPrototype -SampleState $graphicsSampleState
+        $graphicsContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+        $graphicsContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+        $graphicsVisibleContent = $graphicsContentHost.Child
+        $graphicsPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+        $graphicsRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+        $graphicsRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+    }
+    else {
+        Assert-BoostLabCondition ($graphicsOptionalContinuationButton.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS optional continuation should stay hidden outside NVIDIA App step: $graphicsStepId"
+    }
+
+    $graphicsOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsPrototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
+    if ([bool]$graphicsSpec['Overlay']) {
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsPrimaryButton
+        $visibleGraphicsOverlays = @($graphicsOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        Assert-BoostLabCondition ($visibleGraphicsOverlays.Count -eq 1) "AXIS Graphics primary should reveal one confirmation overlay only: $graphicsStepId"
+        $graphicsOverlay = $visibleGraphicsOverlays[0]
+        $graphicsOverlayText = (Get-AxisFirstUseWizardTextValues -Root $graphicsOverlay) -join [Environment]::NewLine
+        Assert-BoostLabCondition ($graphicsOverlayText.Contains($arabicAcknowledgement)) "AXIS Graphics overlay should show acknowledgement copy: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsOverlayText.Contains([string]$graphicsSpec['Primary'])) "AXIS Graphics overlay should show matching primary copy: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsOverlayText.Contains($arabicReturn)) "AXIS Graphics overlay should show Return copy: $graphicsStepId"
+        $graphicsOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+        $graphicsOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+        $graphicsOverlayReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationReturnButton') | Select-Object -First 1
+        Assert-BoostLabCondition (-not [bool]$graphicsOverlayOpenButton.IsEnabled) "AXIS Graphics confirmation should start disabled until acknowledgement: $graphicsStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsOverlayReturnButton
+        Assert-BoostLabCondition ($graphicsOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Graphics Return should close only the overlay: $graphicsStepId"
+        Assert-BoostLabCondition (-not [bool]$graphicsContinueButton.IsEnabled) "AXIS Graphics Return must not enable Next: $graphicsStepId"
+        Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Graphics Return must not start runtime status: $graphicsStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsPrimaryButton
+        $visibleGraphicsOverlays = @($graphicsOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        $graphicsOverlay = $visibleGraphicsOverlays[0]
+        $graphicsOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+        $graphicsOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+        $graphicsOverlayAcknowledgement.IsChecked = $true
+        Assert-BoostLabCondition ([bool]$graphicsOverlayOpenButton.IsEnabled) "AXIS Graphics confirmation should enable after acknowledgement: $graphicsStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsOverlayOpenButton
+        Assert-BoostLabCondition ($graphicsOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Graphics confirmation should close before simulation: $graphicsStepId"
+    }
+    else {
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $graphicsVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) "AXIS Graphics content must not include a confirmation checkbox: $graphicsStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsPrimaryButton
+        $visibleGraphicsOverlays = @($graphicsOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        Assert-BoostLabCondition ($visibleGraphicsOverlays.Count -eq 0) "AXIS Graphics no-overlay step should not reveal a confirmation overlay: $graphicsStepId"
+    }
+
+    Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Graphics simulated action should show runtime status: $graphicsStepId"
+    Assert-BoostLabCondition ($graphicsRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Graphics runtime spacer should be visible during simulation: $graphicsStepId"
+    $graphicsRunningText = (Get-AxisFirstUseWizardTextValues -Root $graphicsVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($graphicsRunningText.Contains([string]$graphicsSpec['Running'])) "AXIS Graphics should show owner-approved running status: $graphicsStepId"
+    Assert-BoostLabCondition ($graphicsRunningText.Contains($arabicSupportBody)) "AXIS Graphics support panel should remain visible during simulation: $graphicsStepId"
+    $graphicsRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+    Assert-BoostLabCondition ($graphicsRunningRuntimeStatusRightAnchor.Count -eq 1) "AXIS Graphics running status should keep text near the action row: $graphicsStepId"
+    Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$graphicsContinueButton.IsEnabled } -TimeoutMilliseconds 3000) "AXIS Graphics should enable Next after simulated completion: $graphicsStepId"
+    $graphicsCompletedText = (Get-AxisFirstUseWizardTextValues -Root $graphicsVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($graphicsCompletedText.Contains([string]$graphicsSpec['Completed'])) "AXIS Graphics should end in owner-approved completed status: $graphicsStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $graphicsRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) "AXIS Graphics completed state should render the completed runtime effect: $graphicsStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsContinueButton) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') "AXIS Graphics Next should become blue after simulated completion: $graphicsStepId"
+
+    if ($graphicsStepId -eq 'graphics-configuration-center') {
+        Invoke-AxisFirstUseWizardButtonClick -Button $graphicsContinueButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $graphicsContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsConfigurationCenterStep').Count -eq 1) 'AXIS Graphics Configuration Center should not navigate beyond the last implemented Graphics step.'
     }
 }
 
@@ -3390,7 +3949,7 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
-Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 4) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, and Updates Pause confirmation overlays only.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 7) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, and NVIDIA App Install confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
@@ -3626,9 +4185,23 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupRun
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupSupportCardNoClipping')) 'AXIS Setup support card should expose the no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SetupCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Setup two-card layout should expose the physical info-right requirements-left marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.EnglishOnlyTitleRightAnchored')) 'AXIS English-only Setup titles should expose the LTR right-anchored marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Get-AxisWizardGraphicsText')) 'AXIS Graphics batch should expose a dedicated approved-copy text resource helper.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly')) 'AXIS Graphics batch should expose the prototype-only batch marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping')) 'AXIS Graphics runtime status should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsSupportCardNoClipping')) 'AXIS Graphics support card should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Graphics two-card layout should expose the physical info-right requirements-left marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly')) 'AXIS GPU Driver Setup should expose the NVIDIA-only selector marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsGpuSelectorAmdIntelDisabled')) 'AXIS GPU Driver Setup should expose disabled AMD/Intel selector marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.GraphicsGpuSetupPrimaryDisabledUntilNvidiaSelected')) 'AXIS GPU Driver Setup should keep primary disabled until NVIDIA is selected.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.NvidiaAppOptionalContinuationNoApplySimulation')) 'AXIS NVIDIA App optional continuation should be marked no-runtime.'
 Assert-BoostLabCondition ($prototypeSource.Contains('Split-AxisSetupRightAlignedVisualLines')) 'AXIS Setup cards should expose the shared right-aligned visual line renderer.'
 Assert-BoostLabCondition ($prototypeSource.Contains('Get-AxisSetupRightAlignedVisualBreakPhrases')) 'AXIS Setup cards should expose phrase-specific right-aligned visual break hints.'
 Assert-BoostLabCondition ($prototypeSource.Contains($axisSetupRightAlignedVisualLineRendererAutomationId)) 'AXIS Setup cards should expose the no-left-floating wrapped Arabic line marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains($axisSharedCardBodyTextRendererMarker)) 'AXIS shared card body renderer marker should be present for future stage batches.'
+Assert-BoostLabCondition ($prototypeSource.Contains($axisSharedCardBodyNoLeftFloatingMarker)) 'AXIS shared card body renderer should guard against left-floating wrapped Arabic lines.'
+Assert-BoostLabCondition ($prototypeSource.Contains($axisSharedCardBodyMixedBidiMarker)) 'AXIS shared card body renderer should guard mixed Arabic/English visual lines.'
+Assert-BoostLabCondition ($prototypeSource.Contains($axisSharedCardBodyFutureGuardMarker)) 'AXIS shared card body renderer should guard future Graphics/Windows/Advanced batches.'
+Assert-BoostLabCondition ($prototypeSource.Contains('MaxVisualLineLength')) 'AXIS shared card body renderer should expose bounded visual line splitting.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageStripNoPartialProgress')) 'AXIS stage strip should expose the no-partial-progress marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineActiveFullWhite')) 'AXIS stage strip should expose the active full-white line marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
