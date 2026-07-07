@@ -1671,6 +1671,40 @@ function Get-AxisWizardWindowsText {
     return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
 }
 
+function Get-AxisWizardAdvancedText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $values = @{
+        TimerResolutionSubtitle = '2LbYqNi3IFRpbWVyIFJlc29sdXRpb24g2YTYqtit2LPZitmGINin2LPYqtis2KfYqNipINin2YTZhti42KfZhS4='
+        TimerResolutionPrimary = '2KrZgdi52YrZhCBUaW1lciBSZXNvbHV0aW9u'
+        TimerResolutionInfoTitle = '2KrYrdiz2YrZhiDYp9iz2KrYrNin2KjYqSDYp9mE2YbYuNin2YU='
+        TimerResolutionInfoBullet1 = '2KrZgdi52YrZhCDYpdi52K/Yp9ivIFRpbWVyIFJlc29sdXRpb24g2YTYqtit2LPZitmGINin2LPYqtis2KfYqNipINin2YTZhti42KfZhSDYo9ir2YbYp9ihINin2YTYp9iz2KrYrtiv2KfZhS4='
+        TimerResolutionInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINis2LnZhCDYp9mE2KrZgdin2LnZhCDZhdi5INin2YTZhti42KfZhSDYo9mD2KvYsSDYs9mE2KfYs9ipLg=='
+        TimerResolutionInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K8g2KfZhNmF2YbYp9iz2Kgg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        DefenderOptimizeSubtitle = '2LbYqNi3INil2LnYr9in2K/Yp9iqIERlZmVuZGVyINmE2KrYrdiz2YrZhiDYp9mE2KrYrNix2KjYqS4='
+        DefenderOptimizeInfoTitle = '2KrYrdiz2YrZhiDYpdi52K/Yp9iv2KfYqiBEZWZlbmRlcg=='
+        DefenderOptimizeInfoBullet1 = '2KrYt9io2YrZgiDYp9mE2YXYs9in2LEg2KfZhNmF2LnYqtmF2K8g2YTYttio2Lcg2KXYudiv2KfYr9in2KogRGVmZW5kZXIu'
+        DefenderOptimizeInfoBullet2 = '2YrYqtmFINiq2YbZgdmK2LAg2KfZhNmF2LPYp9ixINiq2YTZgtin2KbZitmL2KfYjCDYqNmF2Kcg2YHZiiDYsNmE2YMg2KXYudin2K/YqSDYp9mE2KrYtNi62YrZhCDZiNin2YTYr9iu2YjZhCDYpdmE2YkgU2FmZSBNb2RlINi52YbYryDYp9mE2K3Yp9is2Kku'
+        DefenderOptimizeInfoBullet3 = '2KjYudivINin2YPYqtmF2KfZhCDYp9mE2YXYs9in2LHYjCDZiti52YjYryDYp9mE2KzZh9in2LIg2YTZhNmI2LbYuSDYp9mE2LfYqNmK2LnZiiDZhNin2LPYqtmD2YXYp9mEINin2YTYpdi52K/Yp9ivLg=='
+        DefenderOptimizeRequirementsTitle = '2KfZhNmF2KrYt9mE2KjYp9iq'
+        DefenderOptimizeRequirement1 = '2KfZgtix2KMg2KfZhNiq2LnZhNmK2YXYp9iqINmC2KjZhCDYqNiv2KEg2LbYqNi3INil2LnYr9in2K/Yp9iqIERlZmVuZGVyLg=='
+        DefenderOptimizeRequirement2 = '2KfYrdmB2Lgg2KPZiiDYudmF2YQg2YXZgdiq2YjYrSDZgtio2YQg2KfZhNmF2KrYp9io2LnYqS4='
+        DefenderOptimizeRequirement3 = '2KfZhtiq2LjYsSDYrdiq2Ykg2KrZg9iq2YXZhCDYp9mE2LnZhdmE2YrYqSDYqNin2YTZg9in2YXZhC4='
+        Running = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        Completed = '2YXZg9iq2YXZhA=='
+    }
+
+    if (-not $values.ContainsKey($Name)) {
+        throw "Unknown AXIS Advanced text resource: $Name"
+    }
+
+    return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
+}
+
 function Get-AxisWizardArabicText {
     [CmdletBinding()]
     param(
@@ -2595,6 +2629,9 @@ function Get-AxisFirstUseWizardSampleState {
         }
         elseif ($StageName -eq 'Windows') {
             $step['WindowsStageBatchMarker'] = $StageBatchMarker
+        }
+        elseif ($StageName -eq 'Advanced') {
+            $step['AdvancedStageBatchMarker'] = $StageBatchMarker
         }
 
         if ($RequirementsItems.Count -gt 0) {
@@ -3889,6 +3926,65 @@ function Get-AxisFirstUseWizardSampleState {
         -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
         -NoRealActionMarker 'AxisFirstUseWizard.WindowsCleanupPrototypeOnlyNoRuntimeAction'
 
+    $timerResolutionAssistantStep = New-AxisSetupWizardStepState `
+        -Id 'timer-resolution-assistant' `
+        -Title 'Timer Resolution Assistant' `
+        -Description (Get-AxisWizardAdvancedText -Name 'TimerResolutionSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardAdvancedText -Name 'TimerResolutionPrimary') `
+        -InformationCardTitle (Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet1')
+            (Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet2')
+            (Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardAdvancedText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardAdvancedText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'AdvancedTimerResolutionAssistant' `
+        -PrimaryActionWidth 232.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0 `
+        -StageName 'Advanced' `
+        -StageBatchMarker 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.AdvancedTimerResolutionAssistantPrototypeOnlyNoRuntimeAction'
+
+    $defenderOptimizeAssistantStep = New-AxisSetupWizardStepState `
+        -Id 'defender-optimize-assistant' `
+        -Title 'Defender Optimize Assistant' `
+        -Description (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeSubtitle') `
+        -PrimaryActionLabel 'Apply Defender Optimize' `
+        -InformationCardTitle (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet1')
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet2')
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement1')
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement2')
+            (Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardAdvancedText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardAdvancedText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'AdvancedDefenderOptimizeAssistant' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel 'Apply Defender Optimize' `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 232.0 `
+        -ConfirmationActionWidth 232.0 `
+        -RuntimeStatusWidth 252.0 `
+        -RuntimeStatusContentWidth 228.0 `
+        -RuntimeStatusTextMaxWidth 126.0 `
+        -StageName 'Advanced' `
+        -StageBatchMarker 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantPrototypeOnlyNoRuntimeAction'
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -3953,6 +4049,8 @@ function Get-AxisFirstUseWizardSampleState {
             $writeCacheBufferFlushingStep
             $powerPlanStep
             $cleanupStep
+            $timerResolutionAssistantStep
+            $defenderOptimizeAssistantStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -4203,10 +4301,11 @@ function New-AxisWizardRuntimeStatusContent {
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
+    $isAdvancedStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Advanced')
     $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
     $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
-    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
+    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -4238,6 +4337,9 @@ function New-AxisWizardRuntimeStatusContent {
     }
     elseif ($isWindowsStageStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')
+    }
+    elseif ($isAdvancedStageStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AdvancedRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -4313,6 +4415,7 @@ function New-AxisStepStatusArea {
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
+    $isAdvancedStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Advanced')
     $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
@@ -4323,7 +4426,7 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
+    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
@@ -4348,6 +4451,9 @@ function New-AxisStepStatusArea {
     }
     elseif ($isWindowsStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')
+    }
+    elseif ($isAdvancedStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AdvancedRuntimeStatusNoClipping')
     }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
@@ -4392,9 +4498,10 @@ function New-AxisStepSupportPanel {
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
     $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
+    $isAdvancedStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Advanced')
     $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
-    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep -or $isGraphicsStageStep -or $isWindowsStageStep)
-    $supportPadding = if ($isGraphicsStageStep -or $isWindowsStageStep) {
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep -or $isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep)
+    $supportPadding = if ($isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) {
         New-AxisWizardThickness -Left 14 -Top 6 -Right 14 -Bottom 6
     }
     elseif ($usesCompactSupport) {
@@ -4403,7 +4510,7 @@ function New-AxisStepSupportPanel {
     else {
         New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8
     }
-    $supportMargin = if ($isGraphicsStageStep -or $isWindowsStageStep) {
+    $supportMargin = if ($isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) {
         New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 0
     }
     elseif ($usesCompactSupport) {
@@ -4421,7 +4528,7 @@ function New-AxisStepSupportPanel {
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
         -Padding $supportPadding `
         -Margin $supportMargin
-    $panel.MinHeight = if ($isGraphicsStageStep -or $isWindowsStageStep) { 52 } elseif ($usesCompactSupport) { 54 } else { 58 }
+    $panel.MinHeight = if ($isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep) { 52 } elseif ($usesCompactSupport) { 54 } else { 58 }
     $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
@@ -4436,6 +4543,9 @@ function New-AxisStepSupportPanel {
     }
     elseif ($isWindowsStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsSupportCardNoClipping')
+    }
+    elseif ($isAdvancedStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AdvancedSupportCardNoClipping')
     }
     elseif ($isSetupStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupSupportCardNoClipping')
@@ -4496,11 +4606,16 @@ function New-AxisStepPrimaryActionArea {
     }
     $buttonText = [string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    $stageName = [string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '')
     $configuredPrimaryButtonWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionWidth' -DefaultValue 0.0)
     $primaryButtonWidth = if ($configuredPrimaryButtonWidth -gt 0.0) { $configuredPrimaryButtonWidth } elseif ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'to-bios') { 210.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
-    if ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows') {
+    if ($stageName -eq 'Windows') {
         $windowsPrimaryButtonMinimum = [Math]::Min(242.0, [Math]::Max(142.0, ([double]$buttonText.Length * 7.0) + 58.0))
         $primaryButtonWidth = [Math]::Max($primaryButtonWidth, $windowsPrimaryButtonMinimum)
+    }
+    elseif ($stageName -eq 'Advanced') {
+        $advancedPrimaryButtonMinimum = [Math]::Min(252.0, [Math]::Max(196.0, ([double]$buttonText.Length * 7.0) + 58.0))
+        $primaryButtonWidth = [Math]::Max($primaryButtonWidth, $advancedPrimaryButtonMinimum)
     }
     $primaryNoClippingMinimums = @{
         'start-menu-layout' = 242.0
@@ -4553,6 +4668,9 @@ function New-AxisStepPrimaryActionArea {
         $primaryNoClippingMarker = [string]$primaryNoClippingMarkers[$stepId]
         $primaryButton.Resources['AxisFirstUseWizard.WindowsPrimaryActionSharedNoClippingSizing'] = $true
         $primaryButton.Resources[$primaryNoClippingMarker] = $true
+    }
+    elseif ($stageName -eq 'Advanced') {
+        $primaryButton.Resources['AxisFirstUseWizard.AdvancedPrimaryActionSharedNoClippingSizing'] = $true
     }
     $documentationButton = New-AxisStepDocumentationButton -Step $Step -Resources $Resources
     $documentationButton.Margin = New-AxisWizardThickness -Left 0
@@ -4802,7 +4920,8 @@ function New-AxisSetupStep {
     $isInstallersExtensionStep = ($stageName -eq 'Installers' -and $stepId -ne 'installers')
     $isGraphicsStageStep = ($stageName -eq 'Graphics')
     $isWindowsStageStep = ($stageName -eq 'Windows')
-    $isCompactStageStep = ($isGraphicsStageStep -or $isWindowsStageStep)
+    $isAdvancedStageStep = ($stageName -eq 'Advanced')
+    $isCompactStageStep = ($isGraphicsStageStep -or $isWindowsStageStep -or $isAdvancedStageStep)
     $cardContainerPadding = if ($isCompactStageStep) {
         New-AxisWizardThickness -Left 34 -Top 6 -Right 34 -Bottom 3
     }
@@ -4828,6 +4947,9 @@ function New-AxisSetupStep {
     }
     elseif ($isWindowsStageStep) {
         [string](Get-AxisWizardMapValue -Map $Step -Name 'WindowsStageBatchMarker' -DefaultValue 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly')
+    }
+    elseif ($isAdvancedStageStep) {
+        [string](Get-AxisWizardMapValue -Map $Step -Name 'AdvancedStageBatchMarker' -DefaultValue 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly')
     }
     else {
         'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
@@ -5080,6 +5202,9 @@ function New-AxisSetupStep {
         }
         elseif ($isWindowsStageStep) {
             $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsCardsPhysicalOrderInfoRightRequirementsLeft')
+        }
+        elseif ($isAdvancedStageStep) {
+            $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.AdvancedCardsPhysicalOrderInfoRightRequirementsLeft')
         }
     }
 
@@ -7154,7 +7279,9 @@ function New-AxisFirstUseWizardStepContent {
         'network-adapter-power-savings-wake',
         'write-cache-buffer-flushing',
         'power-plan',
-        'cleanup'
+        'cleanup',
+        'timer-resolution-assistant',
+        'defender-optimize-assistant'
     )) {
         return New-AxisSetupStep -Step $Step -Resources $Resources
     }
@@ -7200,7 +7327,7 @@ function New-AxisStepAcknowledgementOverlay {
     $overlay.Visibility = [System.Windows.Visibility]::Collapsed
     $overlay.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString('#CC080808'))
     $overlay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
-    $overlay.Padding = New-AxisWizardThickness -Left 260 -Top 190 -Right 260 -Bottom 190
+    $overlay.Padding = New-AxisWizardThickness -Left 220 -Top 190 -Right 220 -Bottom 190
 
     $card = New-AxisWizardPanel `
         -Resources $Resources `
@@ -7212,6 +7339,7 @@ function New-AxisStepAcknowledgementOverlay {
     $card.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     $card.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     $card.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $card.MinWidth = 420
 
     $stack = [System.Windows.Controls.StackPanel]::new()
     $stack.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -7257,7 +7385,8 @@ function New-AxisStepAcknowledgementOverlay {
     [void]$acknowledgementRow.Children.Add($checkbox)
 
     $confirmationActionWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationActionWidth' -DefaultValue 124.0)
-    $confirmationReturnWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationReturnWidth' -DefaultValue 104.0)
+    $confirmationReturnWidth = [Math]::Max([double](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationReturnWidth' -DefaultValue 118.0), 118.0)
+    $confirmationButtonGap = 16.0
 
     $confirmButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'ConfirmationActionLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Open'))) `
@@ -7287,6 +7416,8 @@ function New-AxisStepAcknowledgementOverlay {
     $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $buttonRow.Tag = 'AxisFirstUseWizard.ConfirmationButtonArea'
+    $buttonRow.MinWidth = $confirmationActionWidth + $confirmationButtonGap + $confirmationReturnWidth
+    $buttonRow.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ConfirmationButtonAreaNoClipping')
 
     $confirmButtonForHandler = $confirmButton
     $primaryBackgroundForHandler = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
@@ -7320,7 +7451,7 @@ function New-AxisStepAcknowledgementOverlay {
     [void]$stack.Children.Add($acknowledgementRow)
     [void]$stack.Children.Add((New-AxisWizardSpacer -Height 14 -Tag 'AxisFirstUseWizard.ConfirmationControlSpacer'))
     [void]$buttonRow.Children.Add($confirmButton)
-    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 12 -Tag 'AxisFirstUseWizard.ConfirmationReturnButtonSpacer'))
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width $confirmationButtonGap -Tag 'AxisFirstUseWizard.ConfirmationReturnButtonSpacer'))
     [void]$buttonRow.Children.Add($returnButton)
     [void]$stack.Children.Add($buttonRow)
     $card.Child = $stack

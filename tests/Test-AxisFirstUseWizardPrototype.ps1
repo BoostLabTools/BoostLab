@@ -512,6 +512,8 @@ $installersStartupAppsSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\desig
 $installersStartupAppsTaskManagerBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Task-Manager-Step-Blueprint.md'
 $restartAfterInstallersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Restart-After-Installers-Step-Blueprint.md'
 $edgeWebViewBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Edge-WebView-Step-Blueprint.md'
+$timerResolutionAssistantBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Timer-Resolution-Assistant-Step-Blueprint.md'
+$defenderOptimizeAssistantBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Defender-Optimize-Assistant-Step-Blueprint.md'
 $graphicsBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Clean-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Install-Debloat-Settings-Step-Blueprint.md'
@@ -546,6 +548,8 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsSettingsB
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsTaskManagerBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Task Manager extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $restartAfterInstallersBlueprintPath -PathType Leaf) 'AXIS Restart After Installers extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $edgeWebViewBlueprintPath -PathType Leaf) 'AXIS Edge WebView step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $timerResolutionAssistantBlueprintPath -PathType Leaf) 'AXIS Timer Resolution Assistant step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $defenderOptimizeAssistantBlueprintPath -PathType Leaf) 'AXIS Defender Optimize Assistant step blueprint is missing.'
 foreach ($graphicsBlueprintPath in $graphicsBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $graphicsBlueprintPath -PathType Leaf) "AXIS Graphics step blueprint is missing: $graphicsBlueprintPath"
 }
@@ -565,6 +569,8 @@ $installersStartupAppsSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 
 $installersStartupAppsTaskManagerBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersStartupAppsTaskManagerBlueprintPath
 $restartAfterInstallersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $restartAfterInstallersBlueprintPath
 $edgeWebViewBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $edgeWebViewBlueprintPath
+$timerResolutionAssistantBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $timerResolutionAssistantBlueprintPath
+$defenderOptimizeAssistantBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $defenderOptimizeAssistantBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -574,6 +580,7 @@ foreach ($functionName in @(
     'Get-AxisWizardSetupText'
     'Get-AxisWizardGraphicsText'
     'Get-AxisWizardWindowsText'
+    'Get-AxisWizardAdvancedText'
     'New-AxisFirstUseWizardPrototype'
     'New-AxisFirstUseWizardPrototypeWindow'
     'New-AxisStageProgressStrip'
@@ -923,6 +930,43 @@ $windowsCleanupInfoBullet2 = Get-AxisWizardWindowsText -Name 'CleanupInfoBullet2
 $windowsCleanupInfoBullet3 = Get-AxisWizardWindowsText -Name 'CleanupInfoBullet3'
 $windowsRunning = Get-AxisWizardWindowsText -Name 'Running'
 $windowsCompleted = Get-AxisWizardWindowsText -Name 'Completed'
+$advancedTimerResolutionSubtitle = Get-AxisWizardAdvancedText -Name 'TimerResolutionSubtitle'
+$advancedTimerResolutionPrimary = Get-AxisWizardAdvancedText -Name 'TimerResolutionPrimary'
+$advancedTimerResolutionInfoTitle = Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoTitle'
+$advancedTimerResolutionInfoBullet1 = Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet1'
+$advancedTimerResolutionInfoBullet2 = Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet2'
+$advancedTimerResolutionInfoBullet3 = Get-AxisWizardAdvancedText -Name 'TimerResolutionInfoBullet3'
+$advancedDefenderOptimizeSubtitle = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeSubtitle'
+$advancedDefenderOptimizeInfoTitle = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoTitle'
+$advancedDefenderOptimizeInfoBullet1 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet1'
+$advancedDefenderOptimizeInfoBullet2 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet2'
+$advancedDefenderOptimizeInfoBullet3 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeInfoBullet3'
+$advancedDefenderOptimizeRequirementsTitle = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirementsTitle'
+$advancedDefenderOptimizeRequirement1 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement1'
+$advancedDefenderOptimizeRequirement2 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement2'
+$advancedDefenderOptimizeRequirement3 = Get-AxisWizardAdvancedText -Name 'DefenderOptimizeRequirement3'
+$advancedRunning = Get-AxisWizardAdvancedText -Name 'Running'
+$advancedCompleted = Get-AxisWizardAdvancedText -Name 'Completed'
+$advancedDefenderOptimizeApprovedBullet1 = ConvertFrom-AxisWizardCodePoints @(
+    0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0020, 0x0627, 0x0644,
+    0x0645, 0x0633, 0x0627, 0x0631, 0x0020, 0x0627, 0x0644, 0x0645,
+    0x0639, 0x062A, 0x0645, 0x062F, 0x0020, 0x0644, 0x0636, 0x0628,
+    0x0637, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627,
+    0x062A, 0x0020, 0x0044, 0x0065, 0x0066, 0x0065, 0x006E, 0x0064,
+    0x0065, 0x0072, 0x002E
+)
+$advancedDefenderOptimizeOldBoostLabBullet1 = ConvertFrom-AxisWizardCodePoints @(
+    0x062A, 0x0637, 0x0628, 0x064A, 0x0642, 0x0020, 0x0645, 0x0633,
+    0x0627, 0x0631, 0x0020, 0x0042, 0x006F, 0x006F, 0x0073, 0x0074,
+    0x004C, 0x0061, 0x0062, 0x0020, 0x0627, 0x0644, 0x0645, 0x0639,
+    0x062A, 0x0645, 0x062F, 0x0020, 0x0644, 0x0636, 0x0628, 0x0637,
+    0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0627, 0x062A,
+    0x0020, 0x0044, 0x0065, 0x0066, 0x0065, 0x006E, 0x0064, 0x0065,
+    0x0072, 0x002E
+)
+Assert-BoostLabCondition ($advancedDefenderOptimizeInfoBullet1 -eq $advancedDefenderOptimizeApprovedBullet1) 'AXIS Defender Optimize information bullet 1 should use the owner-approved no-BoostLab customer copy.'
+Assert-BoostLabCondition (-not $advancedDefenderOptimizeInfoBullet1.Contains('BoostLab')) 'AXIS Defender Optimize information bullet 1 must not expose BoostLab in customer-facing copy.'
+Assert-BoostLabCondition ($advancedDefenderOptimizeInfoBullet1 -ne $advancedDefenderOptimizeOldBoostLabBullet1) 'AXIS Defender Optimize information bullet 1 must not retain the old BoostLab-branded copy.'
 $arabicInstallersRemovedEpicCheckbox = -join ([char[]]@(
     0x062A, 0x0645, 0x0020, 0x0625, 0x063A, 0x0644, 0x0627, 0x0642, 0x0020, 0x0646,
     0x0627, 0x0641, 0x0630, 0x0629, 0x0020, 0x0045, 0x0070, 0x0069, 0x0063, 0x0020,
@@ -1753,6 +1797,42 @@ $windowsPartBStepTitles = @($windowsPartBStepSpecs | ForEach-Object { [string]$_
 $windowsStepSpecs = @($windowsPartAStepSpecs + $windowsPartBStepSpecs)
 $windowsStepOrder = @($windowsStepSpecs | ForEach-Object { [string]$_['Id'] })
 $windowsStepTitles = @($windowsStepSpecs | ForEach-Object { [string]$_['Title'] })
+$advancedStepSpecs = @(
+    [ordered]@{
+        Id = 'timer-resolution-assistant'
+        TagRoot = 'AdvancedTimerResolutionAssistant'
+        Title = 'Timer Resolution Assistant'
+        Primary = $advancedTimerResolutionPrimary
+        Subtitle = $advancedTimerResolutionSubtitle
+        InfoTitle = $advancedTimerResolutionInfoTitle
+        InfoItems = @($advancedTimerResolutionInfoBullet1, $advancedTimerResolutionInfoBullet2, $advancedTimerResolutionInfoBullet3)
+        Requirements = @()
+        Running = $advancedRunning
+        Completed = $advancedCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.AdvancedTimerResolutionAssistantPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+    }
+    [ordered]@{
+        Id = 'defender-optimize-assistant'
+        TagRoot = 'AdvancedDefenderOptimizeAssistant'
+        Title = 'Defender Optimize Assistant'
+        Primary = 'Apply Defender Optimize'
+        Subtitle = $advancedDefenderOptimizeSubtitle
+        InfoTitle = $advancedDefenderOptimizeInfoTitle
+        InfoItems = @($advancedDefenderOptimizeInfoBullet1, $advancedDefenderOptimizeInfoBullet2, $advancedDefenderOptimizeInfoBullet3)
+        Requirements = @($advancedDefenderOptimizeRequirement1, $advancedDefenderOptimizeRequirement2, $advancedDefenderOptimizeRequirement3)
+        Running = $advancedRunning
+        Completed = $advancedCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantPrototypeOnlyNoRuntimeAction'
+        Overlay = $true
+    }
+)
+$advancedStepOrder = @($advancedStepSpecs | ForEach-Object { [string]$_['Id'] })
+$advancedStepTitles = @($advancedStepSpecs | ForEach-Object { [string]$_['Title'] })
 $axisSetupRightAlignedVisualLineRendererAutomationId = 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines'
 $axisSharedCardBodyTextRendererMarker = 'AxisFirstUseWizard.SharedCardBodyTextRenderer'
 $axisSharedCardBodyNoLeftFloatingMarker = 'AxisFirstUseWizard.SharedCardBodyNoLeftFloatingWrappedArabic'
@@ -1840,7 +1920,7 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 48) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, and the twenty-two Windows steps.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 50) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, the twenty-two Windows steps, and the two Advanced steps.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -1848,8 +1928,8 @@ $expectedStepOrder = @(
     'unattended'
     'updates-drivers-block'
     'to-bios'
-) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder + $windowsStepOrder
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, Graphics, Windows Part A, and Windows Part B after Graphics Configuration Center.'
+) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder + $windowsStepOrder + $advancedStepOrder
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, Graphics, Windows Part A, Windows Part B, and Advanced after Cleanup.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
     'BIOS Settings'
@@ -1857,7 +1937,7 @@ $expectedStepTitles = @(
     'AutoUnattend'
     'Updates Drivers Block'
     $arabicToBiosTitle
-) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles + $windowsStepTitles
+) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles + $windowsStepTitles + $advancedStepTitles
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
@@ -2058,6 +2138,9 @@ $networkAdapterPowerSavingsWakeStep = [System.Collections.IDictionary]$sampleSte
 $writeCacheBufferFlushingStep = [System.Collections.IDictionary]$sampleSteps[45]
 $powerPlanStep = [System.Collections.IDictionary]$sampleSteps[46]
 $cleanupStep = [System.Collections.IDictionary]$sampleSteps[47]
+$advancedSteps = @($sampleSteps[48..49])
+$timerResolutionAssistantStep = [System.Collections.IDictionary]$sampleSteps[48]
+$defenderOptimizeAssistantStep = [System.Collections.IDictionary]$sampleSteps[49]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -2448,6 +2531,58 @@ for ($windowsIndex = 0; $windowsIndex -lt $windowsStepSpecs.Count; $windowsIndex
     }
 }
 
+$actualAdvancedStageOrder = @($sampleSteps | Where-Object { [string]$_['StageName'] -eq 'Advanced' } | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition (($actualAdvancedStageOrder -join '|') -eq ($advancedStepOrder -join '|')) 'AXIS Advanced stage order should be Timer Resolution Assistant then Defender Optimize Assistant.'
+Assert-BoostLabCondition ($advancedSteps.Count -eq 2) 'AXIS Advanced stage should add exactly two isolated prototype steps.'
+for ($advancedIndex = 0; $advancedIndex -lt $advancedStepSpecs.Count; $advancedIndex++) {
+    $advancedSpec = [System.Collections.IDictionary]$advancedStepSpecs[$advancedIndex]
+    $advancedStep = [System.Collections.IDictionary]$advancedSteps[$advancedIndex]
+    $advancedName = [string]$advancedSpec['Id']
+    Assert-BoostLabCondition ([string]$advancedStep['Id'] -eq $advancedName) "AXIS Advanced step order changed at index $advancedIndex."
+    Assert-BoostLabCondition ([string]$advancedStep['Title'] -eq [string]$advancedSpec['Title']) "AXIS Advanced title changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['StageName'] -eq 'Advanced') "AXIS Advanced step should be in Advanced stage: $advancedName"
+    Assert-BoostLabCondition ([string]$advancedStep['PrimaryActionLabel'] -eq [string]$advancedSpec['Primary']) "AXIS Advanced primary action changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['Description'] -eq [string]$advancedSpec['Subtitle']) "AXIS Advanced subtitle changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['InformationCardTitle'] -eq [string]$advancedSpec['InfoTitle']) "AXIS Advanced information title changed for $advancedName."
+    Assert-BoostLabCondition ((@($advancedStep['InformationItems']) -join '|') -eq (@($advancedSpec['InfoItems']) -join '|')) "AXIS Advanced information bullets changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['CheckingStatusTitle'] -eq [string]$advancedSpec['Running']) "AXIS Advanced running status changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['CompletedStatusTitle'] -eq [string]$advancedSpec['Completed']) "AXIS Advanced completed status changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['CompletionStateLabel'] -eq [string]$advancedSpec['Completed']) "AXIS Advanced completion label changed for $advancedName."
+    Assert-BoostLabCondition ([bool]$advancedStep['PrototypeOnlySimulation']) "AXIS Advanced step should be prototype-only simulation: $advancedName"
+    Assert-BoostLabCondition ([string]$advancedStep['AdvancedStageBatchMarker'] -eq 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly') "AXIS Advanced batch marker missing for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['NoRealActionMarker'] -eq [string]$advancedSpec['NoRealActionMarker']) "AXIS Advanced no-real-action marker changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['CustomerAction'] -eq [string]$advancedSpec['CustomerAction']) "AXIS Advanced internal action mapping changed for $advancedName."
+    Assert-BoostLabCondition ([string]$advancedStep['FutureInternalAction'] -eq [string]$advancedSpec['FutureInternalAction']) "AXIS Advanced future internal action changed for $advancedName."
+    Assert-BoostLabCondition ((@($advancedStep['CustomerVisibleActions']) -join '|') -eq [string]$advancedSpec['Primary']) "AXIS Advanced customer-visible action should be the owner-approved label only: $advancedName"
+    foreach ($forbiddenAdvancedCustomerAction in @('Analyze', 'Default', 'Restore')) {
+        Assert-BoostLabCondition (-not ($forbiddenAdvancedCustomerAction -in @($advancedStep['CustomerVisibleActions']))) "AXIS Advanced must not expose internal action text $forbiddenAdvancedCustomerAction as customer-visible action: $advancedName"
+    }
+
+    if (@($advancedSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([bool]$advancedStep['ShowRequirements']) "AXIS Advanced requirements card should be present for $advancedName."
+        Assert-BoostLabCondition ((@($advancedStep['RequirementsItems']) -join '|') -eq (@($advancedSpec['Requirements']) -join '|')) "AXIS Advanced requirements copy changed for $advancedName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$advancedStep['ShowRequirements']) "AXIS Advanced requirements card should be absent for $advancedName."
+        Assert-BoostLabCondition (-not $advancedStep.Contains('RequirementsItems')) "AXIS Advanced no-requirements step should not carry requirements items: $advancedName"
+    }
+
+    if ([bool]$advancedSpec['Overlay']) {
+        Assert-BoostLabCondition ([bool]$advancedStep['RequiresConfirmationAcknowledgement']) "AXIS Advanced confirmation overlay should be present for $advancedName."
+        Assert-BoostLabCondition ([string]$advancedStep['DocumentationAcknowledgementText'] -eq $arabicAcknowledgement) "AXIS Advanced confirmation checkbox copy changed for $advancedName."
+        Assert-BoostLabCondition ([string]$advancedStep['ConfirmationActionLabel'] -eq [string]$advancedSpec['Primary']) "AXIS Advanced confirmation primary copy changed for $advancedName."
+        Assert-BoostLabCondition ([string]$advancedStep['ConfirmationReturnLabel'] -eq $arabicReturn) "AXIS Advanced confirmation return copy changed for $advancedName."
+    }
+    else {
+        Assert-BoostLabCondition (-not [bool]$advancedStep['RequiresConfirmationAcknowledgement']) "AXIS Advanced confirmation overlay should be absent for $advancedName."
+        Assert-BoostLabCondition ([bool]$advancedStep['NoConfirmationOverlay']) "AXIS Advanced no-overlay marker should be present for $advancedName."
+    }
+
+    Assert-BoostLabCondition ([bool]$advancedStep['RequiresInputWindow'] -eq $false) "AXIS Advanced step must not show an input window: $advancedName"
+}
+Assert-BoostLabCondition ($advancedDefenderOptimizeInfoBullet1 -eq $advancedDefenderOptimizeApprovedBullet1) 'AXIS Defender Optimize should use the approved no-BoostLab bullet in the sample model.'
+Assert-BoostLabCondition (-not $advancedDefenderOptimizeInfoBullet1.Contains('BoostLab')) 'AXIS Defender Optimize normal UI copy must not include BoostLab.'
+
 $taggedBiosInformationStep = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BiosInformationStep')
 $taggedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost')
 $taggedStepTextContent = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepTextContent')
@@ -2647,7 +2782,7 @@ foreach ($rejectedPhase180DPrototypeText in @(
     Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 9) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, and Edge WebView only.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 10) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, Edge WebView, and Defender Optimize Assistant only.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
@@ -2660,6 +2795,20 @@ Assert-BoostLabCondition ($taggedOverlay[4].Visibility -eq [System.Windows.Visib
 Assert-BoostLabCondition ($taggedOverlay[5].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS GPU Driver Setup confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[6].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS NVIDIA App Install confirmation overlay should start hidden.'
 Assert-BoostLabCondition ($taggedOverlay[7].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Bloatware confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[8].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Edge WebView confirmation overlay should start hidden.'
+Assert-BoostLabCondition ($taggedOverlay[9].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Defender Optimize Assistant confirmation overlay should start hidden.'
+$allConfirmationButtonAreas = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ConfirmationButtonArea')
+Assert-BoostLabCondition ($allConfirmationButtonAreas.Count -eq $taggedOverlay.Count) 'AXIS confirmation overlays should each expose one shared no-clipping button area.'
+foreach ($confirmationButtonArea in $allConfirmationButtonAreas) {
+    $confirmationOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $confirmationButtonArea -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+    $confirmationReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $confirmationButtonArea -Tag 'AxisFirstUseWizard.ConfirmationReturnButton') | Select-Object -First 1
+    $confirmationReturnSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $confirmationButtonArea -Tag 'AxisFirstUseWizard.ConfirmationReturnButtonSpacer') | Select-Object -First 1
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($confirmationButtonArea) -eq 'AxisFirstUseWizard.ConfirmationButtonAreaNoClipping') 'AXIS shared confirmation button rows should expose the no-clipping marker.'
+    Assert-BoostLabCondition ($null -ne $confirmationOpenButton -and $null -ne $confirmationReturnButton -and $null -ne $confirmationReturnSpacer) 'AXIS shared confirmation button rows should contain primary, spacer, and Return controls.'
+    Assert-BoostLabCondition ([double]$confirmationReturnButton.Width -ge 118.0) 'AXIS shared confirmation Return buttons should be wide enough for Arabic text.'
+    Assert-BoostLabCondition ([double]$confirmationReturnSpacer.Width -eq 16.0) 'AXIS shared confirmation button rows should keep a clear 16px gap.'
+    Assert-BoostLabCondition ([double]$confirmationButtonArea.MinWidth -ge ([double]$confirmationOpenButton.Width + [double]$confirmationReturnSpacer.Width + [double]$confirmationReturnButton.Width)) 'AXIS shared confirmation button rows should reserve enough width for long primary labels plus Return.'
+}
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup.Count -eq 1) 'AXIS confirmation overlay should use one right-aligned inner vertical group.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0] -is [System.Windows.Controls.StackPanel]) 'AXIS confirmation right-aligned group should be a StackPanel.'
 Assert-BoostLabCondition ($taggedConfirmationRightAlignedGroup[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS confirmation inner group should be right-aligned without resizing the overlay.'
@@ -2698,8 +2847,9 @@ Assert-BoostLabCondition ([double]$taggedOverlayControlSpacer[0].Height -ge 12.0
 Assert-BoostLabCondition ($taggedOverlayButtonArea.Count -eq 1) 'AXIS confirmation overlay button area is missing.'
 Assert-BoostLabCondition ($taggedOverlayButtonArea[0].FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS confirmation overlay button area should use RTL flow.'
 Assert-BoostLabCondition ($taggedOverlayButtonArea[0].HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) 'AXIS confirmation overlay button area should align to the right.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedOverlayButtonArea[0]) -eq 'AxisFirstUseWizard.ConfirmationButtonAreaNoClipping') 'AXIS confirmation overlay button area should expose the shared no-clipping marker.'
 Assert-BoostLabCondition ($taggedOverlayReturnButtonSpacer.Count -eq 1) 'AXIS confirmation overlay should space Open and Return with an explicit spacer.'
-Assert-BoostLabCondition ([double]$taggedOverlayReturnButtonSpacer[0].Width -ge 10.0 -and [double]$taggedOverlayReturnButtonSpacer[0].Width -le 16.0) 'AXIS confirmation overlay Return spacer should stay compact.'
+Assert-BoostLabCondition ([double]$taggedOverlayReturnButtonSpacer[0].Width -eq 16.0) 'AXIS confirmation overlay Return spacer should provide the shared no-clipping gap.'
 Assert-BoostLabCondition (@($taggedConfirmationRightAlignedGroup[0].Children) -contains $taggedAcknowledgementRightAnchorRow[0]) 'AXIS confirmation checkbox row should be inside the same right-aligned inner group.'
 Assert-BoostLabCondition (@($taggedConfirmationRightAlignedGroup[0].Children) -contains $taggedOverlayButtonArea[0]) 'AXIS confirmation Open button area should be inside the same right-aligned inner group.'
 Assert-BoostLabCondition ($taggedOverlayOpenButton.Count -eq 1) 'AXIS confirmation overlay Open button is missing.'
@@ -2707,6 +2857,8 @@ Assert-BoostLabCondition ([string]$taggedOverlayOpenButton[0].Content -eq $arabi
 Assert-BoostLabCondition ([double]$taggedOverlayOpenButton[0].Margin.Top -eq 0.0) 'AXIS confirmation button should not rely on top margin for overlay spacing.'
 Assert-BoostLabCondition ($taggedOverlayReturnButton.Count -eq 1) 'AXIS confirmation overlay Return button is missing.'
 Assert-BoostLabCondition ([string]$taggedOverlayReturnButton[0].Content -eq $arabicReturn) 'AXIS confirmation Return button should use owner-approved Arabic Return.'
+Assert-BoostLabCondition ([double]$taggedOverlayReturnButton[0].Width -ge 118.0) 'AXIS confirmation Return button should be wide enough for unclipped Arabic text.'
+Assert-BoostLabCondition ([double]$taggedOverlayButtonArea[0].MinWidth -ge ([double]$taggedOverlayOpenButton[0].Width + [double]$taggedOverlayReturnButtonSpacer[0].Width + [double]$taggedOverlayReturnButton[0].Width)) 'AXIS confirmation overlay button row should reserve enough width for both buttons and the gap.'
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($taggedOverlayReturnButton[0]) -eq 'AxisFirstUseWizard.ConfirmationReturnOnlyClosesOverlay') 'AXIS confirmation Return should be marked as overlay-only close behavior.'
 Assert-BoostLabCondition ([bool]$taggedOverlayReturnButton[0].IsEnabled) 'AXIS confirmation Return should always be available.'
 Assert-BoostLabCondition (@($taggedOverlayButtonArea[0].Children) -contains $taggedOverlayOpenButton[0]) 'AXIS confirmation Open button should stay in the overlay button row.'
@@ -4905,7 +5057,236 @@ foreach ($windowsSpec in $windowsStepSpecs) {
     }
     elseif ($windowsStepId -eq 'cleanup') {
         Invoke-AxisFirstUseWizardButtonClick -Button $windowsContinueButton
-        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $windowsContentHost.Child -Tag 'AxisFirstUseWizard.WindowsCleanupStep').Count -eq 1) 'AXIS Cleanup should not navigate beyond the last implemented Windows Part B step.'
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $windowsContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedTimerResolutionAssistantStep').Count -eq 1) 'AXIS Cleanup Continue/Next should navigate to the first Advanced step.'
+    }
+}
+
+foreach ($advancedSpec in $advancedStepSpecs) {
+    $advancedStepId = [string]$advancedSpec['Id']
+    $advancedTagRoot = [string]$advancedSpec['TagRoot']
+    $advancedSampleState = Get-AxisFirstUseWizardSampleState
+    $advancedStepIds = @($advancedSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
+    $advancedStepIndex = [Array]::IndexOf($advancedStepIds, $advancedStepId)
+    Assert-BoostLabCondition ($advancedStepIndex -ge 0) "AXIS Advanced render test should find step: $advancedStepId"
+    $advancedSampleState['CurrentStepIndex'] = $advancedStepIndex
+    $advancedPrototype = New-AxisFirstUseWizardPrototype -SampleState $advancedSampleState
+    $advancedContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+    $advancedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+    $advancedVisibleContent = $advancedContentHost.Child
+    $advancedVisibleText = (Get-AxisFirstUseWizardTextValues -Root $advancedVisibleContent) -join [Environment]::NewLine
+    $advancedStepElement = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}Step") | Select-Object -First 1
+    $advancedTitleText = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}TitleText") | Select-Object -First 1
+    $advancedDetailsGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}StepDetails") | Select-Object -First 1
+    $advancedInformationCard = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}InformationCard") | Select-Object -First 1
+    $advancedRequirementsCard = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}RequirementsCard") | Select-Object -First 1
+    $advancedInformationSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}InformationSharedPhysicalRightEdge") | Select-Object -First 1
+    $advancedRequirementsSharedRightEdge = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag "AxisFirstUseWizard.${advancedTagRoot}RequirementsSharedPhysicalRightEdge") | Select-Object -First 1
+    $advancedPrimaryButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+    $advancedRuntimeStatusArea = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+    $advancedRuntimeStatusSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer') | Select-Object -First 1
+    $advancedSupportPanel = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel') | Select-Object -First 1
+    $advancedDocumentationButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.DocumentationButton') | Select-Object -First 1
+    $advancedStageHeader = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.CurrentStageHeader') | Select-Object -First 1
+    $advancedCheckFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Check') | Select-Object -First 1
+    $advancedRefreshFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Refresh') | Select-Object -First 1
+    $advancedSetupFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Setup') | Select-Object -First 1
+    $advancedInstallersFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Installers') | Select-Object -First 1
+    $advancedGraphicsFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Graphics') | Select-Object -First 1
+    $advancedWindowsFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Windows') | Select-Object -First 1
+    $advancedAdvancedFill = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.StageProgressFill.Advanced') | Select-Object -First 1
+
+    Assert-BoostLabCondition ($advancedStepElement -is [System.Windows.Controls.Border]) "AXIS Advanced step should render a step card: $advancedStepId"
+    Assert-BoostLabCondition ([double]$advancedStepElement.Height -eq 382.0) "AXIS Advanced step should fit inside the 900x650 preview client area: $advancedStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedStepElement) -eq 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly') "AXIS Advanced step should expose prototype-only batch marker: $advancedStepId"
+    Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $advancedTitleText) -eq [string]$advancedSpec['Title']) "AXIS Advanced visible title changed: $advancedStepId"
+    Assert-BoostLabCondition ($advancedTitleText.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Advanced English-only title should render LTR while right-anchored: $advancedStepId"
+    Assert-BoostLabCondition ([string]$advancedPrimaryButton.Content -eq [string]$advancedSpec['Primary']) "AXIS Advanced primary button text changed: $advancedStepId"
+    Assert-BoostLabCondition ([bool]$advancedPrimaryButton.Resources['AxisFirstUseWizard.AdvancedPrimaryActionSharedNoClippingSizing']) "AXIS Advanced primary button should use shared no-clipping sizing: $advancedStepId"
+    Assert-BoostLabCondition ([double]$advancedPrimaryButton.Width -ge 232.0) "AXIS Advanced primary button should keep enough width for its full label: $advancedStepId"
+    Assert-BoostLabCondition (-not [bool]$advancedContinueButton.IsEnabled) "AXIS Advanced Next should start disabled until simulated completion: $advancedStepId"
+    Assert-BoostLabCondition ($advancedRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Advanced runtime status should start hidden: $advancedStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedRuntimeStatusArea) -eq 'AxisFirstUseWizard.AdvancedRuntimeStatusNoClipping') "AXIS Advanced runtime status should expose no-clipping marker: $advancedStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedSupportPanel) -eq 'AxisFirstUseWizard.AdvancedSupportCardNoClipping') "AXIS Advanced support panel should expose no-clipping marker: $advancedStepId"
+    Assert-BoostLabCondition ([double]$advancedSupportPanel.MinHeight -eq 52.0) "AXIS Advanced support panel should use compact no-clipping height: $advancedStepId"
+    Assert-BoostLabCondition ([double]$advancedSupportPanel.Padding.Top -eq 6.0 -and [double]$advancedSupportPanel.Padding.Bottom -eq 6.0) "AXIS Advanced support panel should keep compact internal padding: $advancedStepId"
+    Assert-BoostLabCondition ([double]$advancedSupportPanel.Margin.Top -eq 4.0) "AXIS Advanced support panel should avoid bottom clipping with a compact top margin: $advancedStepId"
+    Assert-BoostLabCondition ([string]$advancedStageHeader.Text -eq 'Advanced') "AXIS Advanced current stage header should show Advanced: $advancedStepId"
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Check' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Check completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Refresh' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Refresh completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedSetupFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Setup' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Setup completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedInstallersFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Installers' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Installers completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedGraphicsFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Graphics' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Graphics completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedWindowsFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineCompletedFullGreen.Windows' -ExpectedColor '#FF22C55E' -Name "$advancedStepId Windows completed")
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $advancedAdvancedFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Advanced' -ExpectedColor '#FFF0F2F5' -Name "$advancedStepId Advanced active")
+
+    foreach ($requiredAdvancedText in @(
+        'Advanced'
+        [string]$advancedSpec['Title']
+        [string]$advancedSpec['Subtitle']
+        [string]$advancedSpec['InfoTitle']
+        @($advancedSpec['InfoItems'])
+        @($advancedSpec['Requirements'])
+        [string]$advancedSpec['Primary']
+        $arabicDocumentation
+        $arabicSupportTitle
+        $arabicSupportBody
+    )) {
+        foreach ($requiredAdvancedTextItem in @($requiredAdvancedText)) {
+            if ([string]::IsNullOrWhiteSpace([string]$requiredAdvancedTextItem)) {
+                continue
+            }
+            $requiredAdvancedTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text ([string]$requiredAdvancedTextItem)
+            $advancedVisibleTextNormalized = ConvertTo-AxisFirstUseWizardNormalizedText -Text $advancedVisibleText
+            Assert-BoostLabCondition (
+                $advancedVisibleText.Contains([string]$requiredAdvancedTextItem) -or
+                $advancedVisibleTextNormalized.Contains($requiredAdvancedTextNormalized)
+            ) "AXIS Advanced view is missing owner-approved text for ${advancedStepId}: $requiredAdvancedTextItem"
+        }
+    }
+    Assert-BoostLabCondition (-not $advancedVisibleText.Contains([string][char]0xFFFD)) "AXIS Advanced visible copy must not contain replacement glyphs: $advancedStepId"
+    Assert-BoostLabCondition (-not $advancedVisibleText.Contains('BoostLab')) "AXIS Advanced normal customer UI must not expose BoostLab branding: $advancedStepId"
+    foreach ($forbiddenAdvancedVisibleText in @('Analyze', 'Default', 'Restore', 'Cancel', 'Skip', 'Skipped', 'Completed with notes', 'PowerShell', 'Registry', 'TrustedInstaller', 'logs', 'diagnostics')) {
+        Assert-BoostLabCondition (-not $advancedVisibleText.Contains($forbiddenAdvancedVisibleText)) "AXIS Advanced view exposes forbidden customer text for ${advancedStepId}: $forbiddenAdvancedVisibleText"
+    }
+    Assert-BoostLabCondition ($advancedRuntimeStatusArea -ne $advancedSupportPanel) "AXIS Advanced runtime status must remain separate from support panel: $advancedStepId"
+    Assert-BoostLabCondition ($null -ne $advancedDocumentationButton) "AXIS Advanced documentation button is missing: $advancedStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.AutoUnattendInputOverlay').Count -eq 0) "AXIS Advanced content must not include an input overlay: $advancedStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $advancedVisibleContent -Type ([System.Windows.Controls.Image])).Count -eq 0) "AXIS Advanced content must not render image icons: $advancedStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTypedElements -Root $advancedVisibleContent -Type ([System.Windows.Shapes.Shape])).Count -eq 0) "AXIS Advanced content must not render vector icons: $advancedStepId"
+    Assert-BoostLabCondition ($null -ne $advancedInformationSharedRightEdge) "AXIS Advanced information card should use the shared physical right-edge text renderer: $advancedStepId"
+    Assert-BoostLabCondition ([string]$advancedInformationSharedRightEdge.Resources[$axisSharedCardBodyTextRendererMarker] -eq 'RightAlignedVisualLines') "AXIS Advanced information cards should use shared right-aligned visual lines: $advancedStepId"
+    Assert-BoostLabCondition ([bool]$advancedInformationSharedRightEdge.Resources[$axisSharedCardBodyNoLeftFloatingMarker]) "AXIS Advanced information cards should prevent left-floating wrapped Arabic lines: $advancedStepId"
+    Assert-BoostLabCondition ([bool]$advancedInformationSharedRightEdge.Resources[$axisSharedCardBodyMixedBidiMarker]) "AXIS Advanced information cards should use the mixed BiDi-safe visual-line path: $advancedStepId"
+    Assert-BoostLabCondition ([string]$advancedInformationSharedRightEdge.Resources[$axisSharedCardBodyFutureGuardMarker] -eq 'GraphicsWindowsAdvanced') "AXIS shared card renderer should guard future Graphics/Windows/Advanced batches: $advancedStepId"
+
+    $advancedInformationBodyLines = @(
+        Get-AxisFirstUseWizardTypedElements -Root $advancedInformationSharedRightEdge -Type ([System.Windows.Controls.TextBlock]) |
+            Where-Object { [string]$_.Tag -like "AxisFirstUseWizard.${advancedTagRoot}InformationItem*" }
+    )
+    Assert-BoostLabCondition ($advancedInformationBodyLines.Count -ge @($advancedSpec['InfoItems']).Count) "AXIS Advanced information body lines should render approved bullets: $advancedStepId"
+    foreach ($advancedInformationBodyLine in $advancedInformationBodyLines) {
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedInformationBodyLine) -eq $axisSetupRightAlignedVisualLineRendererAutomationId) "AXIS Advanced information body line should use the safe no-left-floating marker: $advancedStepId"
+        Assert-BoostLabCondition ($advancedInformationBodyLine.TextWrapping -eq [System.Windows.TextWrapping]::NoWrap) "AXIS Advanced information body line should bypass automatic WPF wrapping: $advancedStepId"
+        Assert-BoostLabCondition ($advancedInformationBodyLine.TextAlignment -eq [System.Windows.TextAlignment]::Right) "AXIS Advanced information body line should stay right-aligned: $advancedStepId"
+        Assert-BoostLabCondition ($advancedInformationBodyLine.HorizontalAlignment -eq [System.Windows.HorizontalAlignment]::Right) "AXIS Advanced information body line should stay physically anchored right: $advancedStepId"
+        Assert-BoostLabCondition ($advancedInformationBodyLine.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) "AXIS Advanced information body line should remain RTL-shaped: $advancedStepId"
+    }
+
+    $advancedInfoMeasureWidth = if (@($advancedSpec['Requirements']).Count -gt 0) { 340.0 } else { 650.0 }
+    $advancedInformationSharedRightEdge.Measure([System.Windows.Size]::new($advancedInfoMeasureWidth, [double]::PositiveInfinity))
+    $advancedInformationInnerHeight = [double]$advancedInformationCard.Height -
+        [double]$advancedInformationCard.Padding.Top -
+        [double]$advancedInformationCard.Padding.Bottom -
+        [double]$advancedInformationCard.BorderThickness.Top -
+        [double]$advancedInformationCard.BorderThickness.Bottom
+    Assert-BoostLabCondition ([double]$advancedInformationSharedRightEdge.DesiredSize.Height -le $advancedInformationInnerHeight) "AXIS Advanced information card text should fit without top/bottom clipping: $advancedStepId"
+
+    $advancedContentGrid = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.StepTextContent') | Select-Object -First 1
+    $advancedStepElement.Measure([System.Windows.Size]::new(826.0, 389.0))
+    $advancedRowTotal = 0.0
+    foreach ($advancedRowChild in @($advancedContentGrid.Children)) {
+        $advancedRowChild.Measure([System.Windows.Size]::new(758.0, [double]::PositiveInfinity))
+        $advancedRowTotal += [double]$advancedRowChild.DesiredSize.Height
+    }
+    $advancedInnerHeight = [double]$advancedStepElement.Height -
+        [double]$advancedStepElement.Padding.Top -
+        [double]$advancedStepElement.Padding.Bottom -
+        [double]$advancedStepElement.BorderThickness.Top -
+        [double]$advancedStepElement.BorderThickness.Bottom
+    Assert-BoostLabCondition ($advancedRowTotal -le $advancedInnerHeight) "AXIS Advanced row content should fit without clipped information/support/footer content: $advancedStepId"
+
+    if (@($advancedSpec['Requirements']).Count -gt 0) {
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedDetailsGrid) -eq 'AxisFirstUseWizard.AdvancedCardsPhysicalOrderInfoRightRequirementsLeft') "AXIS Advanced should mark physical info-right requirements-left order: $advancedStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($advancedInformationCard) -eq 2) "AXIS Advanced information card should be physical right: $advancedStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($advancedRequirementsCard) -eq 0) "AXIS Advanced requirements card should be physical left: $advancedStepId"
+        Assert-BoostLabCondition ($null -ne $advancedRequirementsSharedRightEdge) "AXIS Advanced requirements card should use the shared physical right-edge text renderer: $advancedStepId"
+        Assert-BoostLabCondition ([string]$advancedRequirementsSharedRightEdge.Resources[$axisSharedCardBodyTextRendererMarker] -eq 'RightAlignedVisualLines') "AXIS Advanced requirements cards should use shared right-aligned visual lines: $advancedStepId"
+        Assert-BoostLabCondition ([bool]$advancedRequirementsSharedRightEdge.Resources[$axisSharedCardBodyNoLeftFloatingMarker]) "AXIS Advanced requirements cards should prevent left-floating wrapped Arabic lines: $advancedStepId"
+        Assert-BoostLabCondition ([bool]$advancedRequirementsSharedRightEdge.Resources[$axisSharedCardBodyMixedBidiMarker]) "AXIS Advanced requirements cards should use the mixed BiDi-safe visual-line path: $advancedStepId"
+        $advancedRequirementsSharedRightEdge.Measure([System.Windows.Size]::new(340.0, [double]::PositiveInfinity))
+        $advancedRequirementsInnerHeight = [double]$advancedRequirementsCard.Height -
+            [double]$advancedRequirementsCard.Padding.Top -
+            [double]$advancedRequirementsCard.Padding.Bottom -
+            [double]$advancedRequirementsCard.BorderThickness.Top -
+            [double]$advancedRequirementsCard.BorderThickness.Bottom
+        Assert-BoostLabCondition ([double]$advancedRequirementsSharedRightEdge.DesiredSize.Height -le $advancedRequirementsInnerHeight) "AXIS Advanced requirements card text should fit without top/bottom clipping: $advancedStepId"
+    }
+    else {
+        Assert-BoostLabCondition ($null -eq $advancedRequirementsCard) "AXIS Advanced no-requirements step must not render a requirements card: $advancedStepId"
+        Assert-BoostLabCondition ([System.Windows.Controls.Grid]::GetColumn($advancedInformationCard) -eq 0) "AXIS Advanced single information card should use the only details column: $advancedStepId"
+    }
+
+    $advancedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedPrototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay')
+    if ([bool]$advancedSpec['Overlay']) {
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedPrimaryButton
+        $visibleAdvancedOverlays = @($advancedOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        Assert-BoostLabCondition ($visibleAdvancedOverlays.Count -eq 1) "AXIS Advanced primary should reveal one confirmation overlay only: $advancedStepId"
+        $advancedOverlay = $visibleAdvancedOverlays[0]
+        $advancedOverlayText = (Get-AxisFirstUseWizardTextValues -Root $advancedOverlay) -join [Environment]::NewLine
+        Assert-BoostLabCondition ($advancedOverlayText.Contains($arabicAcknowledgement)) "AXIS Advanced overlay should show acknowledgement copy: $advancedStepId"
+        Assert-BoostLabCondition ($advancedOverlayText.Contains([string]$advancedSpec['Primary'])) "AXIS Advanced overlay should show matching primary copy: $advancedStepId"
+        Assert-BoostLabCondition ($advancedOverlayText.Contains($arabicReturn)) "AXIS Advanced overlay should show Return copy: $advancedStepId"
+        Assert-BoostLabCondition (-not $advancedOverlayText.Contains('Cancel')) "AXIS Advanced overlay must not show Cancel: $advancedStepId"
+        $advancedOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+        $advancedOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+        $advancedOverlayReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationReturnButton') | Select-Object -First 1
+        $advancedOverlayButtonArea = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationButtonArea') | Select-Object -First 1
+        $advancedOverlayReturnSpacer = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationReturnButtonSpacer') | Select-Object -First 1
+        Assert-BoostLabCondition ([string]$advancedOverlayOpenButton.Content -eq [string]$advancedSpec['Primary']) "AXIS Advanced confirmation primary text changed for $advancedStepId."
+        Assert-BoostLabCondition ([string]$advancedOverlayReturnButton.Content -eq $arabicReturn) "AXIS Advanced confirmation Return text changed for $advancedStepId."
+        Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedOverlayButtonArea) -eq 'AxisFirstUseWizard.ConfirmationButtonAreaNoClipping') "AXIS Advanced confirmation button row should expose the shared no-clipping marker: $advancedStepId"
+        Assert-BoostLabCondition ([double]$advancedOverlayReturnButton.Width -ge 118.0) "AXIS Advanced confirmation Return button should be wide enough for unclipped Arabic text: $advancedStepId"
+        Assert-BoostLabCondition ([double]$advancedOverlayReturnSpacer.Width -eq 16.0) "AXIS Advanced confirmation buttons should keep the shared no-clipping gap: $advancedStepId"
+        Assert-BoostLabCondition ([double]$advancedOverlayButtonArea.MinWidth -ge ([double]$advancedOverlayOpenButton.Width + [double]$advancedOverlayReturnSpacer.Width + [double]$advancedOverlayReturnButton.Width)) "AXIS Advanced confirmation button row should reserve enough width for the primary and Return buttons: $advancedStepId"
+        Assert-BoostLabCondition (-not $advancedOverlayText.Contains([string][char]0xFFFD)) "AXIS Advanced overlay should not contain replacement glyphs: $advancedStepId"
+        if ($advancedStepId -eq 'defender-optimize-assistant') {
+            Assert-BoostLabCondition ([string]$advancedOverlayOpenButton.Content -eq 'Apply Defender Optimize') 'AXIS Defender Optimize overlay primary should stay exactly Apply Defender Optimize.'
+            Assert-BoostLabCondition ([string]$advancedOverlayReturnButton.Content -eq $arabicReturn) 'AXIS Defender Optimize overlay Return should stay exactly the owner-approved Arabic Return.'
+            Assert-BoostLabCondition (-not $advancedOverlayText.Contains('BoostLab')) 'AXIS Defender Optimize overlay must not expose BoostLab customer-facing text.'
+            Assert-BoostLabCondition (-not $advancedOverlayText.Contains('Cancel')) 'AXIS Defender Optimize overlay must not show Cancel.'
+        }
+        Assert-BoostLabCondition (-not [bool]$advancedOverlayOpenButton.IsEnabled) "AXIS Advanced confirmation should start disabled until acknowledgement: $advancedStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedOverlayReturnButton
+        Assert-BoostLabCondition ($advancedOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Advanced Return should close only the overlay: $advancedStepId"
+        Assert-BoostLabCondition (-not [bool]$advancedContinueButton.IsEnabled) "AXIS Advanced Return must not enable Next: $advancedStepId"
+        Assert-BoostLabCondition ($advancedRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Advanced Return must not start runtime status: $advancedStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedPrimaryButton
+        $visibleAdvancedOverlays = @($advancedOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        $advancedOverlay = $visibleAdvancedOverlays[0]
+        $advancedOverlayAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+        $advancedOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+        $advancedOverlayAcknowledgement.IsChecked = $true
+        Assert-BoostLabCondition ([bool]$advancedOverlayOpenButton.IsEnabled) "AXIS Advanced confirmation should enable after acknowledgement: $advancedStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedOverlayOpenButton
+        Assert-BoostLabCondition ($advancedOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Advanced confirmation should close before simulation: $advancedStepId"
+    }
+    else {
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedVisibleContent -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) "AXIS Advanced content must not include a confirmation checkbox: $advancedStepId"
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedPrimaryButton
+        $visibleAdvancedOverlays = @($advancedOverlays | Where-Object { $_.Visibility -eq [System.Windows.Visibility]::Visible })
+        Assert-BoostLabCondition ($visibleAdvancedOverlays.Count -eq 0) "AXIS Advanced no-overlay step should not reveal a confirmation overlay: $advancedStepId"
+    }
+
+    Assert-BoostLabCondition ($advancedRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Advanced simulated action should show runtime status: $advancedStepId"
+    Assert-BoostLabCondition ($advancedRuntimeStatusSpacer.Visibility -eq [System.Windows.Visibility]::Visible) "AXIS Advanced runtime spacer should be visible during simulation: $advancedStepId"
+    $advancedRunningText = (Get-AxisFirstUseWizardTextValues -Root $advancedVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($advancedRunningText.Contains([string]$advancedSpec['Running'])) "AXIS Advanced should show owner-approved running status: $advancedStepId"
+    Assert-BoostLabCondition ($advancedRunningText.Contains($arabicSupportBody)) "AXIS Advanced support panel should remain visible during simulation: $advancedStepId"
+    $advancedRunningRuntimeStatusRightAnchor = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedRuntimeStatusArea -Tag 'AxisFirstUseWizard.RuntimeStatusArabicRightAnchor')
+    Assert-BoostLabCondition ($advancedRunningRuntimeStatusRightAnchor.Count -eq 1) "AXIS Advanced running status should keep text near the action row: $advancedStepId"
+    [void](Assert-AxisFirstUseWizardRightAnchor -Anchor $advancedRunningRuntimeStatusRightAnchor[0] -Name "$advancedStepId running runtime status" -ExpectedMaxWidth 126)
+    Assert-BoostLabCondition (Wait-AxisFirstUseWizardCondition -Condition { [bool]$advancedContinueButton.IsEnabled } -TimeoutMilliseconds 3000) "AXIS Advanced should enable Next after simulated completion: $advancedStepId"
+    $advancedCompletedText = (Get-AxisFirstUseWizardTextValues -Root $advancedVisibleContent) -join [Environment]::NewLine
+    Assert-BoostLabCondition ($advancedCompletedText.Contains([string]$advancedSpec['Completed'])) "AXIS Advanced should end in owner-approved completed status: $advancedStepId"
+    Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedRuntimeStatusArea -Tag 'AxisFirstUseWizard.CompletedEffect').Count -eq 1) "AXIS Advanced completed state should render the completed runtime effect: $advancedStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($advancedContinueButton) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') "AXIS Advanced Next should become blue after simulated completion: $advancedStepId"
+    if ($advancedStepId -eq 'timer-resolution-assistant') {
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedContinueButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS Timer Resolution Assistant Continue/Next should navigate to Defender Optimize Assistant.'
+    }
+    elseif ($advancedStepId -eq 'defender-optimize-assistant') {
+        Invoke-AxisFirstUseWizardButtonClick -Button $advancedContinueButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS Defender Optimize Assistant should remain the final implemented first-use wizard step.'
     }
 }
 
@@ -4937,7 +5318,7 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
-Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 9) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, and Edge WebView confirmation overlays only.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 10) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, Edge WebView, and Defender Optimize Assistant confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
@@ -5125,7 +5506,6 @@ Assert-BoostLabCondition ($shapeElements.Count -eq 0) 'AXIS first-use wizard mus
 foreach ($forbiddenVisibleText in @(
     'Cancel'
     'Analyze'
-    'Apply'
     'Default'
     'Restore'
     'Ready'
@@ -5152,6 +5532,9 @@ foreach ($forbiddenVisibleText in @(
     Assert-BoostLabCondition (-not ($joinedText -match [regex]::Escape($forbiddenVisibleText))) "AXIS first-use wizard exposes forbidden customer text: $forbiddenVisibleText"
     Assert-BoostLabCondition (-not ($checkingText -match [regex]::Escape($forbiddenVisibleText))) "AXIS checking state exposes forbidden customer text: $forbiddenVisibleText"
     Assert-BoostLabCondition (-not ($completedText -match [regex]::Escape($forbiddenVisibleText))) "AXIS completed state exposes forbidden customer text: $forbiddenVisibleText"
+}
+foreach ($visibleTextValue in @($texts)) {
+    Assert-BoostLabCondition ([string]$visibleTextValue -ne 'Apply') 'AXIS first-use wizard must not expose standalone internal Apply as customer text.'
 }
 
 Assert-BoostLabCondition (-not $prototypeSource.Contains('Cancel')) 'AXIS first-use wizard source must not contain a Cancel button path.'
@@ -5195,6 +5578,13 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsS
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')) 'AXIS Windows Part A runtime status should expose the no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsSupportCardNoClipping')) 'AXIS Windows Part A support card should expose the no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Windows Part A two-card layout should expose the physical info-right requirements-left marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Get-AxisWizardAdvancedText')) 'AXIS Advanced batch should expose a dedicated approved-copy text resource helper.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly')) 'AXIS Advanced batch should expose the prototype-only batch marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AdvancedRuntimeStatusNoClipping')) 'AXIS Advanced runtime status should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AdvancedSupportCardNoClipping')) 'AXIS Advanced support card should expose the no-clipping marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AdvancedCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Advanced two-card layout should expose the physical info-right requirements-left marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.AdvancedPrimaryActionSharedNoClippingSizing')) 'AXIS Advanced primary actions should expose shared no-clipping sizing.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.ConfirmationButtonAreaNoClipping')) 'AXIS confirmation overlays should expose the shared button-row no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwareActionSelectorSingleSelect')) 'AXIS Bloatware should expose the single-select action selector marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwareActionSelectorNoRuntimeAction')) 'AXIS Bloatware selector should expose the no-runtime marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwarePrimaryDisabledUntilActionSelected')) 'AXIS Bloatware should keep primary disabled until an action is selected.'
@@ -5214,6 +5604,12 @@ foreach ($windowsPartBNoRuntimeMarker in @(
     'AxisFirstUseWizard.WindowsCleanupPrototypeOnlyNoRuntimeAction'
 )) {
     Assert-BoostLabCondition ($prototypeSource.Contains($windowsPartBNoRuntimeMarker)) "AXIS Windows Part B should expose no-real-action marker: $windowsPartBNoRuntimeMarker"
+}
+foreach ($advancedNoRuntimeMarker in @(
+    'AxisFirstUseWizard.AdvancedTimerResolutionAssistantPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantPrototypeOnlyNoRuntimeAction'
+)) {
+    Assert-BoostLabCondition ($prototypeSource.Contains($advancedNoRuntimeMarker)) "AXIS Advanced should expose no-real-action marker: $advancedNoRuntimeMarker"
 }
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SelectorLabelPhysicalRightOfControl')) 'AXIS selector placement should expose the label-right-of-control marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsPrimaryActionSharedNoClippingSizing')) 'AXIS Windows primary actions should expose the shared no-clipping sizing marker.'
@@ -5494,6 +5890,61 @@ foreach ($requiredEdgeWebViewBlueprintText in @(
     Assert-BoostLabCondition ($edgeWebViewBlueprintSource.Contains($requiredEdgeWebViewBlueprintText)) "AXIS Edge WebView blueprint is missing owner-approved branding/copy contract text: $requiredEdgeWebViewBlueprintText"
 }
 Assert-BoostLabCondition (-not $edgeWebViewBlueprintSource.Contains($edgeWebViewBlueprintOldBoostLabBullet1)) 'AXIS Edge WebView blueprint must not retain the old customer-facing BoostLab bullet.'
+
+$defenderOptimizeBlueprintApprovedBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $advancedDefenderOptimizeApprovedBullet1
+$defenderOptimizeBlueprintOldBoostLabBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $advancedDefenderOptimizeOldBoostLabBullet1
+foreach ($requiredTimerResolutionBlueprintText in @(
+    'Internal tool ID | `timer-resolution-assistant`'
+    'Stage | `Advanced`'
+    'Customer-facing step title | `Timer Resolution Assistant`'
+    'Production action mapping | customer-facing'
+    $advancedTimerResolutionPrimary
+    $advancedTimerResolutionSubtitle
+    $advancedTimerResolutionInfoTitle
+    $advancedTimerResolutionInfoBullet1
+    $advancedTimerResolutionInfoBullet2
+    $advancedTimerResolutionInfoBullet3
+    $advancedRunning
+    $advancedCompleted
+)) {
+    $requiredTimerResolutionBlueprintTextToFind = if ($requiredTimerResolutionBlueprintText -match '[\u0600-\u06FF]') {
+        ConvertTo-AxisWizardBlueprintMojibakeText -Text $requiredTimerResolutionBlueprintText
+    }
+    else {
+        $requiredTimerResolutionBlueprintText
+    }
+    Assert-BoostLabCondition ($timerResolutionAssistantBlueprintSource.Contains($requiredTimerResolutionBlueprintTextToFind)) "AXIS Timer Resolution Assistant blueprint is missing owner-approved contract text: $requiredTimerResolutionBlueprintText"
+}
+foreach ($requiredDefenderOptimizeBlueprintText in @(
+    'Internal tool ID | `defender-optimize-assistant`'
+    'Stage | `Advanced`'
+    'Customer-facing step title | `Defender Optimize Assistant`'
+    'Production action mapping | customer-facing `Apply Defender Optimize` maps later to internal `Apply`'
+    $defenderOptimizeBlueprintApprovedBullet1
+    'Do not show `BoostLab` in normal customer-facing copy for this step.'
+    'AXIS is the customer-facing product; BoostLab is internal/repo/code branding only.'
+    'Apply Defender Optimize'
+    $advancedDefenderOptimizeSubtitle
+    $advancedDefenderOptimizeInfoTitle
+    $advancedDefenderOptimizeInfoBullet2
+    $advancedDefenderOptimizeInfoBullet3
+    $advancedDefenderOptimizeRequirementsTitle
+    $advancedDefenderOptimizeRequirement1
+    $advancedDefenderOptimizeRequirement2
+    $advancedDefenderOptimizeRequirement3
+    $advancedRunning
+    $advancedCompleted
+)) {
+    $requiredDefenderOptimizeBlueprintTextToFind = if ($requiredDefenderOptimizeBlueprintText -match '[\u0600-\u06FF]') {
+        ConvertTo-AxisWizardBlueprintMojibakeText -Text $requiredDefenderOptimizeBlueprintText
+    }
+    else {
+        $requiredDefenderOptimizeBlueprintText
+    }
+    Assert-BoostLabCondition ($defenderOptimizeAssistantBlueprintSource.Contains($requiredDefenderOptimizeBlueprintTextToFind)) "AXIS Defender Optimize Assistant blueprint is missing owner-approved branding/copy contract text: $requiredDefenderOptimizeBlueprintText"
+}
+Assert-BoostLabCondition (-not $defenderOptimizeAssistantBlueprintSource.Contains($defenderOptimizeBlueprintOldBoostLabBullet1)) 'AXIS Defender Optimize blueprint must not retain the old customer-facing BoostLab bullet.'
+Assert-BoostLabCondition ($defenderOptimizeAssistantBlueprintSource.Contains($defenderOptimizeBlueprintApprovedBullet1)) 'AXIS Defender Optimize blueprint must use the approved no-BoostLab customer-facing bullet.'
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath
 Assert-BoostLabCondition (-not $mainWindowSource.Contains('AxisFirstUseWizardPrototype')) 'MainWindow should not be wired to the AXIS first-use wizard prototype.'

@@ -31,7 +31,7 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Subtitle | `Ø¶Ø¨Ø· Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Defender Ù„ØªØ­Ø³ÙŠÙ† Ø§Ù„ØªØ¬Ø±Ø¨Ø©.` |
 | Primary action button | `Apply Defender Optimize` |
 | Information card title | `ØªØ­Ø³ÙŠÙ† Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Defender` |
-| Information card bullet 1 | `ØªØ·Ø¨ÙŠÙ‚ Ù…Ø³Ø§Ø± BoostLab Ø§Ù„Ù…Ø¹ØªÙ…Ø¯ Ù„Ø¶Ø¨Ø· Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Defender.` |
+| Information card bullet 1 | `ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„Ù…Ø³Ø§Ø± Ø§Ù„Ù…Ø¹ØªÙ…Ø¯ Ù„Ø¶Ø¨Ø· Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Defender.` |
 | Information card bullet 2 | `ÙŠØªÙ… ØªÙ†ÙÙŠØ° Ø§Ù„Ù…Ø³Ø§Ø± ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ØŒ Ø¨Ù…Ø§ ÙÙŠ Ø°Ù„Ùƒ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ´ØºÙŠÙ„ ÙˆØ§Ù„Ø¯Ø®ÙˆÙ„ Ø¥Ù„Ù‰ Safe Mode Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø§Ø¬Ø©.` |
 | Information card bullet 3 | `Ø¨Ø¹Ø¯ Ø§ÙƒØªÙ…Ø§Ù„ Ø§Ù„Ù…Ø³Ø§Ø±ØŒ ÙŠØ¹ÙˆØ¯ Ø§Ù„Ø¬Ù‡Ø§Ø² Ù„Ù„ÙˆØ¶Ø¹ Ø§Ù„Ø·Ø¨ÙŠØ¹ÙŠ Ù„Ø§Ø³ØªÙƒÙ…Ø§Ù„ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯.` |
 | Requirements card title | `Ø§Ù„Ù…ØªØ·Ù„Ø¨Ø§Øª` |
@@ -102,6 +102,8 @@ Do not show technical failure/error output.
 
 Do not show validation results, command output, internal modules, file paths, Services names, Tasks names, or implementation details beyond the approved copy above.
 
+Do not show `BoostLab` in normal customer-facing copy for this step. AXIS is the customer-facing product; BoostLab is internal/repo/code branding only.
+
 Do not show Error, Failed, Warning, Needs attention, Stopped, Restart needed, Waiting for confirmation, Not available, Skipped, Completed with notes, or Arabic equivalents in the normal customer UI.
 
 ## Prototype Safety Restrictions
@@ -116,7 +118,7 @@ Preserve the global Advanced-stage AXIS layout: `900 x 650`, normal Windows chro
 
 Title and primary action are English-only and should render LTR while remaining physically right-anchored.
 
-`Defender`, `BoostLab`, and `Safe Mode` inside Arabic lines must be rendered safely.
+`Defender` and `Safe Mode` inside Arabic lines must be rendered safely.
 
 ## Non-Goals
 
