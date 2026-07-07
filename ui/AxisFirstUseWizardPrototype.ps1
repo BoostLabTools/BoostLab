@@ -1520,6 +1520,91 @@ function Get-AxisWizardGraphicsText {
     return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
 }
 
+function Get-AxisWizardWindowsText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $values = @{
+        StartMenuTaskbarSubtitle = '2KrYudiv2YrZhNin2Kog2YjYqtmG2LjZitmBINi52YTZiSDYtNix2YrYtyDYp9mE2YXZh9in2YUg2YjZgtin2KbZhdipINin2KjYr9ijLg=='
+        StartMenuTaskbarInfoTitle = '2KrYrdiz2YrZhiDYtNix2YrYtyDYp9mE2YXZh9in2YUg2YjZgtin2KbZhdipINin2KjYr9ij'
+        StartMenuTaskbarInfoBullet1 = '2KrYt9io2YrZgiDYqti52K/ZitmE2KfYqiDZhdiu2LXYtdipINi52YTZiSDYtNix2YrYtyDYp9mE2YXZh9in2YUg2YjZgtin2KbZhdipINin2KjYr9ijLg=='
+        StartMenuTaskbarInfoBullet2 = '2KrZhti42YrZgSDYp9mE2LnZhtin2LXYsSDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDZhNiq2K3Ys9mK2YYg2LTZg9mEINmI2KrYrNix2KjYqSDYp9mE2KfYs9iq2K7Yr9in2YUu'
+        StartMenuTaskbarInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        StartMenuLayoutSubtitle = '2LbYqNi3INiq2K7Yt9mK2Lcg2YLYp9im2YXYqSDYp9io2K/Yoy4='
+        StartMenuLayoutInfoTitle = '2KrYsdiq2YrYqCDZgtin2KbZhdipINin2KjYr9ij'
+        StartMenuLayoutInfoBullet1 = '2KrYt9io2YrZgiDYqtiu2LfZiti3INmF2K7Ytdi1INmE2YLYp9im2YXYqSDYp9io2K/Yoy4='
+        StartMenuLayoutInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINis2LnZhCDYp9mE2YLYp9im2YXYqSDYo9mG2LjZgSDZiNij2LPZh9mEINmB2Yog2KfZhNin2LPYqtiu2K/Yp9mFLg=='
+        StartMenuLayoutInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNiq2K7Yt9mK2Lcg2KfZhNmF2YbYp9iz2Kgg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        ContextMenuSubtitle = '2KrYudiv2YrZhNin2Kog2LnZhNmJINmC2KfYptmF2Kkg2KfZhNiy2LEg2KfZhNij2YrZhdmGLg=='
+        ContextMenuInfoTitle = '2KrZhti42YrZgSDZgtin2KbZhdipINin2YTYstixINin2YTYo9mK2YXZhg=='
+        ContextMenuInfoBullet1 = '2KrYt9io2YrZgiDYqti52K/ZitmE2KfYqiDZhdiu2LXYtdipINi52YTZiSDZgtin2KbZhdipINin2YTYstixINin2YTYo9mK2YXZhi4='
+        ContextMenuInfoBullet2 = '2KrZgtmE2YrZhCDYp9mE2LnZhtin2LXYsSDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDYr9in2K7ZhCDYp9mE2YLYp9im2YXYqS4='
+        ContextMenuInfoBullet3 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINis2LnZhCDYp9mE2YLYp9im2YXYqSDYo9io2LPYtyDZiNij2LPYsdi5INmB2Yog2KfZhNin2LPYqtiu2K/Yp9mFLg=='
+        ThemeBlackSubtitle = '2KrYt9io2YrZgiDYp9mE2KvZitmFINin2YTYr9in2YPZhi4='
+        ThemeBlackPrimary = '2KrYt9io2YrZgiDYp9mE2KvZitmFINin2YTYr9in2YPZhg=='
+        ThemeBlackInfoTitle = '2KfZhNir2YrZhSDYp9mE2K/Yp9mD2YY='
+        ThemeBlackInfoBullet1 = '2KrYt9io2YrZgiDYp9mE2YXYuNmH2LEg2KfZhNiv2KfZg9mGINi52YTZiSBXaW5kb3dzLg=='
+        ThemeBlackInfoBullet2 = '2YrYqtmFINi22KjYtyDYp9mE2YXYuNmH2LEg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        BlackLockScreenWallpaperSubtitle = '2KrYt9io2YrZgiDYrtmE2YHZitin2Kog2LPZiNiv2KfYoSDZhNi02KfYtNipINin2YTZgtmB2YQg2YjYqtiz2KzZitmEINin2YTYrtix2YjYrC4='
+        BlackLockScreenWallpaperPrimary = '2KrYt9io2YrZgiDYp9mE2K7ZhNmB2YrYp9iqINin2YTYs9mI2K/Yp9ih'
+        BlackLockScreenWallpaperInfoTitle = '2KfZhNiu2YTZgdmK2KfYqiDYp9mE2LPZiNiv2KfYoQ=='
+        BlackLockScreenWallpaperInfoBullet1 = '2KrYt9io2YrZgiDYrtmE2YHZitin2Kog2LPZiNiv2KfYoSDYudmE2Ykg2LTYp9i02Kkg2KfZhNmC2YHZhCDZiNiq2LPYrNmK2YQg2KfZhNiu2LHZiNisLg=='
+        BlackLockScreenWallpaperInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YjYrdmK2K8g2KfZhNmF2LjZh9ixINin2YTYudin2YUg2YTZhNmG2LjYp9mFLg=='
+        BlackAccountPicturesSubtitle = '2KrYt9io2YrZgiDYtdmI2LEg2K3Ys9in2Kgg2LPZiNiv2KfYoS4='
+        BlackAccountPicturesPrimary = '2KrYt9io2YrZgiDYtdmI2LEg2KfZhNit2LPYp9ioINin2YTYs9mI2K/Yp9ih'
+        BlackAccountPicturesInfoTitle = '2LXZiNixINin2YTYrdiz2KfYqA=='
+        BlackAccountPicturesInfoBullet1 = '2KfYs9iq2KjYr9in2YQg2LXZiNixINit2LPYp9ioINin2YTZhdiz2KrYrtiv2YUg2KjYtdmI2LEg2LPZiNiv2KfYoS4='
+        BlackAccountPicturesInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YjYrdmK2K8g2YXYuNmH2LEg2K3Ys9in2KjYp9iqIFdpbmRvd3Mu'
+        WidgetsSubtitle = '2KrYudi32YrZhCBXaWRnZXRzINmE2KrZgtmE2YrZhCDYp9mE2YbYtNin2Lcg2LrZitixINin2YTYttix2YjYsdmKLg=='
+        WidgetsPrimary = '2KrYudi32YrZhCBXaWRnZXRz'
+        WidgetsInfoTitle = '2KrYudi32YrZhCBXaWRnZXRz'
+        WidgetsInfoBullet1 = '2KrYudi32YrZhCBXaWRnZXRzINiv2KfYrtmEIFdpbmRvd3Mu'
+        WidgetsInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YLZhNmK2YQg2KfZhNmG2LTYp9i3INi62YrYsSDYp9mE2LbYsdmI2LHZiiDZgdmKINin2YTYrtmE2YHZitipLg=='
+        WidgetsInfoBullet3 = '2KrYs9in2YfZhSDZh9iw2Ycg2KfZhNiu2LfZiNipINmB2Yog2KrYrdiz2YrZhiDYp9iz2KrZh9mE2KfZgyDYp9mE2YXZiNin2LHYryDYo9ir2YbYp9ihINin2YTYp9iz2KrYrtiv2KfZhS4='
+        CopilotSubtitle = '2KrYudi32YrZhCBDb3BpbG90INmI2KrZgtmE2YrZhCDYp9mE2YbYtNin2Lcg2LrZitixINin2YTYttix2YjYsdmKLg=='
+        CopilotPrimary = '2KrYudi32YrZhCBDb3BpbG90'
+        CopilotInfoTitle = '2KrYudi32YrZhCBDb3BpbG90'
+        CopilotInfoBullet1 = '2KrYudi32YrZhCBDb3BpbG90INiv2KfYrtmEIFdpbmRvd3Mu'
+        CopilotInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2YLZhNmK2YQg2KfZhNi52YbYp9i12LEg2LrZitixINin2YTYttix2YjYsdmK2Kkg2YHZiiDYp9mE2YbYuNin2YUu'
+        CopilotInfoBullet3 = '2KrYs9in2YfZhSDZh9iw2Ycg2KfZhNiu2LfZiNipINmB2Yog2KrYrdiz2YrZhiDYqtis2LHYqNipINin2YTYp9iz2KrYrtiv2KfZhSDZiNin2LPYqtmH2YTYp9mDINin2YTZhdmI2KfYsdivLg=='
+        GameModeSubtitle = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTYo9mE2LnYp9ioINmE2YTYqtij2YPYryDZhdmGINiq2YHYudmK2YQgR2FtZSBNb2RlLg=='
+        GameModePrimary = '2YHYqtitINil2LnYr9in2K/Yp9iqIEdhbWUgTW9kZQ=='
+        GameModeInfoTitle = '2YXYsdin2KzYudipINil2LnYr9in2K/Yp9iqINin2YTYo9mE2LnYp9io'
+        GameModeInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2KfZhNij2YTYudin2Kgg2K/Yp9iu2YQgV2luZG93cy4='
+        GameModeInfoBullet2 = '2KrYo9mD2K8g2KPZhiDYrtmK2KfYsSBHYW1lIE1vZGUg2YXYttio2YjYtyDYudmE2YkgT04u'
+        GameModeInfoBullet3 = '2KjYudivINin2YTYqtij2YPYryDZhdmGINin2YTYpdi52K/Yp9iv2Iwg2YrZhdmD2YbZgyDZhdiq2KfYqNi52Kkg2KfZhNiu2LfZiNin2Kog2KfZhNiq2KfZhNmK2Kku'
+        GameModeRunning = '2YHYqtitINil2LnYr9in2K/Yp9iqIEdhbWUgTW9kZQ=='
+        PointerPrecisionSubtitle = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTZhdik2LTYsSDZhNiq2LnYt9mK2YQgRW5oYW5jZSBwb2ludGVyIHByZWNpc2lvbi4='
+        PointerPrecisionPrimary = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTZhdik2LTYsQ=='
+        PointerPrecisionInfoTitle = '2YXYsdin2KzYudipINil2LnYr9in2K/Yp9iqINin2YTZhdik2LTYsQ=='
+        PointerPrecisionInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2YXYpNi02LEg2KfZhNmF2KfZiNizLg=='
+        PointerPrecisionInfoBullet2 = '2KPYstmEINiq2K3Yr9mK2K8g2K7Zitin2LEgRW5oYW5jZSBwb2ludGVyIHByZWNpc2lvbi4='
+        PointerPrecisionInfoBullet3 = '2KjYudivINiw2YTZgyDYp9i22LrYtyBBcHBseSDYq9mFIE9LINmE2K3Zgdi4INin2YTYpdi52K/Yp9ivLg=='
+        PointerPrecisionRunning = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTZhdik2LTYsQ=='
+        BloatwareSubtitle = '2KXYstin2YTYqSDYp9mE2KrYt9io2YrZgtin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kkg2KPZiCDYqtir2KjZitiqINmF2YPZiNmG2KfYqiDZhdit2K/Yr9ipLg=='
+        BloatwarePrimary = '2KrZhtmB2YrYsCDYp9mE2K7Zitin2LE='
+        BloatwareInfoTitle = '2KrZhti42YrZgSDYqti32KjZitmC2KfYqiDYp9mE2YbYuNin2YU='
+        BloatwareInfoBullet1 = '2KrYs9in2LnYryDZh9iw2Ycg2KfZhNiu2LfZiNipINi52YTZiSDYpdiy2KfZhNipINin2YTYqti32KjZitmC2KfYqiDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDYo9mIINiq2KvYqNmK2Kog2YXZg9mI2YbYp9iqINmF2K3Yr9iv2Kkg2K3Ys9ioINin2YTYrtmK2KfYsSDYp9mE2YXYrtiq2KfYsS4='
+        BloatwareInfoBullet2 = '2KfYrtiq2YrYp9ixIFJlbW92ZSBBbGwgQmxvYXR3YXJlINmK2LHZg9iyINi52YTZiSDYqtmG2LjZitmBINin2YTYqti32KjZitmC2KfYqiDYutmK2LEg2KfZhNi22LHZiNix2YrYqS4='
+        BloatwareInfoBullet3 = '2KfYrtiq2YrYp9ixIEluc3RhbGwgU3RvcmUg2KPZiCBJbnN0YWxsIFNuaXBwaW5nIFRvb2wg2YrYs9iq2K7Yr9mFINmE2KrYq9io2YrYqiDYp9mE2YXZg9mI2YYg2KfZhNmF2LfZhNmI2Kgg2YHZgti3Lg=='
+        BloatwareRequirement1 = '2KfZgtix2KMg2KfZhNiq2LnZhNmK2YXYp9iqINmC2KjZhCDYqtmG2YHZitiwINin2YTYrtmK2KfYsSDYp9mE2YXYrdiv2K8u'
+        BloatwareRequirement2 = '2KrYo9mD2K8g2YXZhiDYp9iu2KrZitin2LEg2KfZhNil2KzYsdin2KEg2KfZhNi12K3ZititINmF2YYg2KfZhNmC2KfYptmF2Kkg2YLYqNmEINin2YTZhdiq2KfYqNi52Kku'
+        BloatwareSelectorLabel = '2KfYrtiq2LEg2KfZhNil2KzYsdin2KE='
+        BloatwareSelectorPlaceholder = '2KfYrtiq2LEg2KXYrNix2KfYodmLINmF2YYg2KfZhNmC2KfYptmF2Kk='
+        Running = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
+        Completed = '2YXZg9iq2YXZhA=='
+    }
+
+    if (-not $values.ContainsKey($Name)) {
+        throw "Unknown AXIS Windows text resource: $Name"
+    }
+
+    return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
+}
+
 function Get-AxisWizardArabicText {
     [CmdletBinding()]
     param(
@@ -2392,6 +2477,14 @@ function Get-AxisFirstUseWizardSampleState {
 
             [string[]]$GpuSelectorEnabledOptions = @(),
 
+            [bool]$RequiresActionSelector = $false,
+
+            [string]$ActionSelectorLabel = '',
+
+            [string]$ActionSelectorPlaceholder = '',
+
+            [string[]]$ActionSelectorOptions = @(),
+
             [string]$OptionalContinuationLabel = ''
         )
 
@@ -2434,6 +2527,9 @@ function Get-AxisFirstUseWizardSampleState {
         elseif ($StageName -eq 'Graphics') {
             $step['GraphicsStageBatchMarker'] = $StageBatchMarker
         }
+        elseif ($StageName -eq 'Windows') {
+            $step['WindowsStageBatchMarker'] = $StageBatchMarker
+        }
 
         if ($RequirementsItems.Count -gt 0) {
             $step['RequirementsTitle'] = $RequirementsTitle
@@ -2464,6 +2560,16 @@ function Get-AxisFirstUseWizardSampleState {
             $step['GpuSelectorEnabledOptions'] = @($GpuSelectorEnabledOptions)
             $step['PrimaryActionRequiresSelection'] = $true
             $step['GpuSelectorPrototypeOnly'] = $true
+        }
+
+        if ($RequiresActionSelector) {
+            $step['RequiresActionSelector'] = $true
+            $step['ActionSelectorLabel'] = $ActionSelectorLabel
+            $step['ActionSelectorPlaceholder'] = $ActionSelectorPlaceholder
+            $step['ActionSelectorOptions'] = @($ActionSelectorOptions)
+            $step['PrimaryActionRequiresSelection'] = $true
+            $step['ActionSelectorPrototypeOnly'] = $true
+            $step['ActionSelectorSingleSelect'] = $true
         }
 
         if (-not [string]::IsNullOrWhiteSpace($OptionalContinuationLabel)) {
@@ -3226,6 +3332,260 @@ function Get-AxisFirstUseWizardSampleState {
         -StageBatchMarker 'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly' `
         -NoRealActionMarker 'AxisFirstUseWizard.GraphicsConfigurationCenterPrototypeOnlyNoRuntimeAction'
 
+    $startMenuTaskbarStep = New-AxisSetupWizardStepState `
+        -Id 'start-menu-taskbar' `
+        -Title 'Start Menu Taskbar' `
+        -Description (Get-AxisWizardWindowsText -Name 'StartMenuTaskbarSubtitle') `
+        -PrimaryActionLabel 'Tweaks Start Menu Taskbar' `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'StartMenuTaskbarInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'StartMenuTaskbarInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'StartMenuTaskbarInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'StartMenuTaskbarInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsStartMenuTaskbar' `
+        -PrimaryActionWidth 222.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsStartMenuTaskbarPrototypeOnlyNoRuntimeAction'
+
+    $startMenuLayoutStep = New-AxisSetupWizardStepState `
+        -Id 'start-menu-layout' `
+        -Title 'Start Menu Layout' `
+        -Description (Get-AxisWizardWindowsText -Name 'StartMenuLayoutSubtitle') `
+        -PrimaryActionLabel 'Tweaks Start Menu Layout' `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'StartMenuLayoutInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'StartMenuLayoutInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'StartMenuLayoutInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'StartMenuLayoutInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsStartMenuLayout' `
+        -PrimaryActionWidth 210.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsStartMenuLayoutPrototypeOnlyNoRuntimeAction'
+
+    $contextMenuStep = New-AxisSetupWizardStepState `
+        -Id 'context-menu' `
+        -Title 'Context Menu' `
+        -Description (Get-AxisWizardWindowsText -Name 'ContextMenuSubtitle') `
+        -PrimaryActionLabel 'Tweaks Context Menu' `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'ContextMenuInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'ContextMenuInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'ContextMenuInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'ContextMenuInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsContextMenu' `
+        -PrimaryActionWidth 184.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsContextMenuPrototypeOnlyNoRuntimeAction'
+
+    $themeBlackStep = New-AxisSetupWizardStepState `
+        -Id 'theme-black' `
+        -Title 'Theme Black' `
+        -Description (Get-AxisWizardWindowsText -Name 'ThemeBlackSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'ThemeBlackPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'ThemeBlackInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'ThemeBlackInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'ThemeBlackInfoBullet2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsThemeBlack' `
+        -PrimaryActionWidth 164.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsThemeBlackPrototypeOnlyNoRuntimeAction'
+
+    $blackLockScreenWallpaperStep = New-AxisSetupWizardStepState `
+        -Id 'signout-lockscreen-wallpaper-black' `
+        -Title 'Black Lock Screen Wallpaper' `
+        -Description (Get-AxisWizardWindowsText -Name 'BlackLockScreenWallpaperSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'BlackLockScreenWallpaperPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'BlackLockScreenWallpaperInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'BlackLockScreenWallpaperInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'BlackLockScreenWallpaperInfoBullet2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsBlackLockScreenWallpaper' `
+        -PrimaryActionWidth 186.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsBlackLockScreenWallpaperPrototypeOnlyNoRuntimeAction'
+
+    $blackAccountPicturesStep = New-AxisSetupWizardStepState `
+        -Id 'user-account-pictures-black' `
+        -Title 'Black Account Pictures' `
+        -Description (Get-AxisWizardWindowsText -Name 'BlackAccountPicturesSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'BlackAccountPicturesPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'BlackAccountPicturesInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'BlackAccountPicturesInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'BlackAccountPicturesInfoBullet2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsBlackAccountPictures' `
+        -PrimaryActionWidth 190.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsBlackAccountPicturesPrototypeOnlyNoRuntimeAction'
+
+    $widgetsStep = New-AxisSetupWizardStepState `
+        -Id 'widgets' `
+        -Title 'Widgets' `
+        -Description (Get-AxisWizardWindowsText -Name 'WidgetsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'WidgetsPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'WidgetsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'WidgetsInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'WidgetsInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'WidgetsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsWidgets' `
+        -PrimaryActionWidth 142.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsWidgetsPrototypeOnlyNoRuntimeAction'
+
+    $copilotStep = New-AxisSetupWizardStepState `
+        -Id 'copilot' `
+        -Title 'Copilot' `
+        -Description (Get-AxisWizardWindowsText -Name 'CopilotSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'CopilotPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'CopilotInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'CopilotInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'CopilotInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'CopilotInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsCopilot' `
+        -PrimaryActionWidth 142.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsCopilotPrototypeOnlyNoRuntimeAction'
+
+    $gameModeStep = New-AxisSetupWizardStepState `
+        -Id 'game-mode' `
+        -Title 'Game Mode' `
+        -Description (Get-AxisWizardWindowsText -Name 'GameModeSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'GameModePrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'GameModeInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'GameModeInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'GameModeInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'GameModeInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'GameModeRunning') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'WindowsGameMode' `
+        -OpenMappedPrototypeOnly $true `
+        -PrimaryActionWidth 190.0 `
+        -RuntimeStatusWidth 300.0 `
+        -RuntimeStatusContentWidth 276.0 `
+        -RuntimeStatusTextMaxWidth 174.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsGameModePrototypeOnlyNoRuntimeAction'
+
+    $pointerPrecisionStep = New-AxisSetupWizardStepState `
+        -Id 'pointer-precision' `
+        -Title 'Pointer Precision' `
+        -Description (Get-AxisWizardWindowsText -Name 'PointerPrecisionSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'PointerPrecisionPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'PointerPrecisionInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'PointerPrecisionInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'PointerPrecisionInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'PointerPrecisionInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'PointerPrecisionRunning') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'WindowsPointerPrecision' `
+        -OpenMappedPrototypeOnly $true `
+        -PrimaryActionWidth 166.0 `
+        -RuntimeStatusWidth 278.0 `
+        -RuntimeStatusContentWidth 254.0 `
+        -RuntimeStatusTextMaxWidth 152.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsPointerPrecisionPrototypeOnlyNoRuntimeAction'
+
+    $bloatwareStep = New-AxisSetupWizardStepState `
+        -Id 'bloatware' `
+        -Title 'Bloatware' `
+        -Description (Get-AxisWizardWindowsText -Name 'BloatwareSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'BloatwarePrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'BloatwareInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'BloatwareInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'BloatwareInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'BloatwareInfoBullet3')
+        ) `
+        -RequirementsTitle (Get-AxisWizardArabicText -Name 'RequirementsTitle') `
+        -RequirementsItems @(
+            (Get-AxisWizardWindowsText -Name 'BloatwareRequirement1')
+            (Get-AxisWizardWindowsText -Name 'BloatwareRequirement2')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsBloatware' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel (Get-AxisWizardWindowsText -Name 'BloatwarePrimary') `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 142.0 `
+        -ConfirmationActionWidth 142.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsBloatwarePrototypeOnlyNoRuntimeAction' `
+        -RequiresActionSelector $true `
+        -ActionSelectorLabel (Get-AxisWizardWindowsText -Name 'BloatwareSelectorLabel') `
+        -ActionSelectorPlaceholder (Get-AxisWizardWindowsText -Name 'BloatwareSelectorPlaceholder') `
+        -ActionSelectorOptions @(
+            'Remove All Bloatware'
+            'Install Store'
+            'Install Snipping Tool'
+        )
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -3268,6 +3628,17 @@ function Get-AxisFirstUseWizardSampleState {
             $directXStep
             $visualCppStep
             $graphicsConfigurationCenterStep
+            $startMenuTaskbarStep
+            $startMenuLayoutStep
+            $contextMenuStep
+            $themeBlackStep
+            $blackLockScreenWallpaperStep
+            $blackAccountPicturesStep
+            $widgetsStep
+            $copilotStep
+            $gameModeStep
+            $pointerPrecisionStep
+            $bloatwareStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -3517,10 +3888,11 @@ function New-AxisWizardRuntimeStatusContent {
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
+    $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
     $configuredRuntimeContentWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusContentWidth' -DefaultValue 0.0)
     $configuredRuntimeTextMaxWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusTextMaxWidth' -DefaultValue 0.0)
-    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
-    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
+    $contentWidth = if ($configuredRuntimeContentWidth -gt 0.0) { $configuredRuntimeContentWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 228.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 210.0 } else { 190.0 }
+    $labelAnchorMaxWidth = if ($configuredRuntimeTextMaxWidth -gt 0.0) { $configuredRuntimeTextMaxWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 126.0 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 106.0 } else { 86.0 }
 
     $content = [System.Windows.Controls.Grid]::new()
     $content.Width = $contentWidth
@@ -3550,8 +3922,17 @@ function New-AxisWizardRuntimeStatusContent {
     elseif ($isGraphicsStageStep) {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping')
     }
+    elseif ($isWindowsStageStep) {
+        $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')
+    }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $content.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
+    }
+    if ($stepId -eq 'game-mode') {
+        $content.Resources['AxisFirstUseWizard.WindowsGameModeRuntimeStatusNoClipping'] = $true
+    }
+    elseif ($stepId -eq 'pointer-precision') {
+        $content.Resources['AxisFirstUseWizard.WindowsPointerPrecisionRuntimeStatusNoClipping'] = $true
     }
 
     $effectColumn = [System.Windows.Controls.ColumnDefinition]::new()
@@ -3617,6 +3998,7 @@ function New-AxisStepStatusArea {
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
+    $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
     $configuredRuntimeStatusWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'RuntimeStatusWidth' -DefaultValue 0.0)
 
     $panel = New-AxisWizardPanel `
@@ -3627,7 +4009,7 @@ function New-AxisStepStatusArea {
         -Padding (New-AxisWizardThickness -Left 12 -Top 6 -Right 12 -Bottom 6) `
         -Margin (New-AxisWizardThickness -Left 0)
     $panel.MinHeight = 42
-    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
+    $panel.Width = if ($configuredRuntimeStatusWidth -gt 0.0) { $configuredRuntimeStatusWidth } elseif ($isBiosSettingsStep -or $isAutoUnattendStep -or $isToBiosStep -or $isGraphicsStageStep -or $isWindowsStageStep) { 252 } elseif ($isReinstallStep -or $isUpdatesDriversStep) { 234 } else { 214 }
     $panel.Tag = 'AxisFirstUseWizard.RuntimeStatusArea'
     if ($isBiosSettingsStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.BiosSettingsRuntimeStatusNoClipping')
@@ -3650,8 +4032,17 @@ function New-AxisStepStatusArea {
     elseif ($isGraphicsStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsRuntimeStatusNoClipping')
     }
+    elseif ($isWindowsStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')
+    }
     elseif ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup') {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupRuntimeStatusNoClipping')
+    }
+    if ($stepId -eq 'game-mode') {
+        $panel.Resources['AxisFirstUseWizard.WindowsGameModeRuntimeStatusNoClipping'] = $true
+    }
+    elseif ($stepId -eq 'pointer-precision') {
+        $panel.Resources['AxisFirstUseWizard.WindowsPointerPrecisionRuntimeStatusNoClipping'] = $true
     }
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
@@ -3686,9 +4077,10 @@ function New-AxisStepSupportPanel {
     $isInstallersStep = ($stepId -eq 'installers')
     $isInstallersStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Installers')
     $isGraphicsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Graphics')
+    $isWindowsStageStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows')
     $isSetupStep = ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Setup')
-    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep -or $isGraphicsStageStep)
-    $supportPadding = if ($isGraphicsStageStep) {
+    $usesCompactSupport = ($isToBiosStep -or $isSetupStep -or $isInstallersStageStep -or $isGraphicsStageStep -or $isWindowsStageStep)
+    $supportPadding = if ($isGraphicsStageStep -or $isWindowsStageStep) {
         New-AxisWizardThickness -Left 14 -Top 6 -Right 14 -Bottom 6
     }
     elseif ($usesCompactSupport) {
@@ -3697,7 +4089,7 @@ function New-AxisStepSupportPanel {
     else {
         New-AxisWizardThickness -Left 14 -Top 8 -Right 14 -Bottom 8
     }
-    $supportMargin = if ($isGraphicsStageStep) {
+    $supportMargin = if ($isGraphicsStageStep -or $isWindowsStageStep) {
         New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 0
     }
     elseif ($usesCompactSupport) {
@@ -3715,7 +4107,7 @@ function New-AxisStepSupportPanel {
         -RadiusKey 'Axis.Radius.Wizard.StatusPanel' `
         -Padding $supportPadding `
         -Margin $supportMargin
-    $panel.MinHeight = if ($isGraphicsStageStep) { 52 } elseif ($usesCompactSupport) { 54 } else { 58 }
+    $panel.MinHeight = if ($isGraphicsStageStep -or $isWindowsStageStep) { 52 } elseif ($usesCompactSupport) { 54 } else { 58 }
     $panel.Tag = 'AxisFirstUseWizard.SupportPanel'
     $panel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
     $panel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
@@ -3727,6 +4119,9 @@ function New-AxisStepSupportPanel {
     }
     elseif ($isGraphicsStageStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsSupportCardNoClipping')
+    }
+    elseif ($isWindowsStageStep) {
+        $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsSupportCardNoClipping')
     }
     elseif ($isSetupStep) {
         $panel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.SetupSupportCardNoClipping')
@@ -3789,6 +4184,25 @@ function New-AxisStepPrimaryActionArea {
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
     $configuredPrimaryButtonWidth = [double](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionWidth' -DefaultValue 0.0)
     $primaryButtonWidth = if ($configuredPrimaryButtonWidth -gt 0.0) { $configuredPrimaryButtonWidth } elseif ($stepId -eq 'reinstall') { 320.0 } elseif ($stepId -eq 'updates-drivers-block') { 264.0 } elseif ($stepId -eq 'to-bios') { 210.0 } elseif ($stepId -eq 'unattended') { 154.0 } else { 142.0 }
+    if ([string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue '') -eq 'Windows') {
+        $windowsPrimaryButtonMinimum = [Math]::Min(242.0, [Math]::Max(142.0, ([double]$buttonText.Length * 7.0) + 58.0))
+        $primaryButtonWidth = [Math]::Max($primaryButtonWidth, $windowsPrimaryButtonMinimum)
+    }
+    $primaryNoClippingMinimums = @{
+        'start-menu-layout' = 242.0
+        'context-menu' = 218.0
+        'user-account-pictures-black' = 224.0
+        'game-mode' = 232.0
+    }
+    $primaryNoClippingMarkers = @{
+        'start-menu-layout' = 'AxisFirstUseWizard.WindowsStartMenuLayoutPrimaryNoClipping'
+        'context-menu' = 'AxisFirstUseWizard.WindowsContextMenuPrimaryNoClipping'
+        'user-account-pictures-black' = 'AxisFirstUseWizard.WindowsBlackAccountPicturesPrimaryNoClipping'
+        'game-mode' = 'AxisFirstUseWizard.WindowsGameModePrimaryNoClipping'
+    }
+    if ($primaryNoClippingMinimums.ContainsKey($stepId)) {
+        $primaryButtonWidth = [Math]::Max($primaryButtonWidth, [double]$primaryNoClippingMinimums[$stepId])
+    }
 
     $panel = [System.Windows.Controls.Grid]::new()
     $panel.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
@@ -3821,6 +4235,11 @@ function New-AxisStepPrimaryActionArea {
         -Height 42 `
         -Margin (New-AxisWizardThickness -Left 0)
     $primaryButton.Tag = 'AxisFirstUseWizard.PrimaryOpenButton'
+    if ($primaryNoClippingMarkers.ContainsKey($stepId)) {
+        $primaryNoClippingMarker = [string]$primaryNoClippingMarkers[$stepId]
+        $primaryButton.Resources['AxisFirstUseWizard.WindowsPrimaryActionSharedNoClippingSizing'] = $true
+        $primaryButton.Resources[$primaryNoClippingMarker] = $true
+    }
     $documentationButton = New-AxisStepDocumentationButton -Step $Step -Resources $Resources
     $documentationButton.Margin = New-AxisWizardThickness -Left 0
     [void]$buttonRow.Children.Add($primaryButton)
@@ -4068,7 +4487,9 @@ function New-AxisSetupStep {
     $stageName = [string](Get-AxisWizardMapValue -Map $Step -Name 'StageName' -DefaultValue 'Setup')
     $isInstallersExtensionStep = ($stageName -eq 'Installers' -and $stepId -ne 'installers')
     $isGraphicsStageStep = ($stageName -eq 'Graphics')
-    $cardContainerPadding = if ($isGraphicsStageStep) {
+    $isWindowsStageStep = ($stageName -eq 'Windows')
+    $isCompactStageStep = ($isGraphicsStageStep -or $isWindowsStageStep)
+    $cardContainerPadding = if ($isCompactStageStep) {
         New-AxisWizardThickness -Left 34 -Top 6 -Right 34 -Bottom 3
     }
     else {
@@ -4090,6 +4511,9 @@ function New-AxisSetupStep {
     }
     elseif ($isGraphicsStageStep) {
         'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly'
+    }
+    elseif ($isWindowsStageStep) {
+        'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly'
     }
     else {
         'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
@@ -4117,7 +4541,7 @@ function New-AxisSetupStep {
     else {
         [System.Windows.FlowDirection]::RightToLeft
     }
-    $titleMargin = if ($isGraphicsStageStep) {
+    $titleMargin = if ($isCompactStageStep) {
         New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 3
     }
     else {
@@ -4163,6 +4587,7 @@ function New-AxisSetupStep {
         -MaxWidth 690))
 
     $graphicsGpuSelector = $null
+    $actionSelector = $null
     if ([bool](Get-AxisWizardMapValue -Map $Step -Name 'RequiresGpuSelector' -DefaultValue $false)) {
         $selectorGrid = [System.Windows.Controls.Grid]::new()
         $selectorGrid.Margin = New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 1
@@ -4170,15 +4595,18 @@ function New-AxisSetupStep {
         $selectorGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
         $selectorGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
         $selectorGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsGpuSelectorNvidiaOnly')
-        $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
-        $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
         $selectorControlColumn = [System.Windows.Controls.ColumnDefinition]::new()
         $selectorControlColumn.Width = [System.Windows.GridLength]::Auto
         $selectorLabelColumn = [System.Windows.Controls.ColumnDefinition]::new()
         $selectorLabelColumn.Width = [System.Windows.GridLength]::Auto
-        [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+        $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
         [void]$selectorGrid.ColumnDefinitions.Add($selectorControlColumn)
         [void]$selectorGrid.ColumnDefinitions.Add($selectorLabelColumn)
+        [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+        $selectorGrid.Resources['AxisFirstUseWizard.SelectorPhysicalLeftAboveRequirements'] = $true
+        $selectorGrid.Resources['AxisFirstUseWizard.SelectorLabelPhysicalRightOfControl'] = $true
+        $selectorGrid.Resources['AxisFirstUseWizard.GraphicsGpuSelectorPhysicalLeftAboveRequirements'] = $true
 
         $selectorLabel = New-AxisWizardTextBlock `
             -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'GpuSelectorLabel')) `
@@ -4190,15 +4618,15 @@ function New-AxisSetupStep {
             -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
         $selectorLabel.Tag = 'AxisFirstUseWizard.GraphicsGpuSelectorLabel'
         $selectorLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $selectorLabel.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 12 -Bottom 0
-        [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 2)
+        $selectorLabel.Margin = New-AxisWizardThickness -Left 12 -Top 0 -Right 0 -Bottom 0
+        [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 1)
         [void]$selectorGrid.Children.Add($selectorLabel)
 
         $graphicsGpuSelector = [System.Windows.Controls.ComboBox]::new()
         $graphicsGpuSelector.Tag = 'AxisFirstUseWizard.GraphicsGpuSelector'
         $graphicsGpuSelector.Width = 270
         $graphicsGpuSelector.Height = 34
-        $graphicsGpuSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $graphicsGpuSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $graphicsGpuSelector.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $graphicsGpuSelector.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
         $graphicsGpuSelector.IsEditable = $false
@@ -4231,13 +4659,95 @@ function New-AxisSetupStep {
             [void]$graphicsGpuSelector.Items.Add($gpuItem)
         }
         $graphicsGpuSelector.SelectedIndex = -1
-        [System.Windows.Controls.Grid]::SetColumn($graphicsGpuSelector, 1)
+        [System.Windows.Controls.Grid]::SetColumn($graphicsGpuSelector, 0)
         [void]$selectorGrid.Children.Add($graphicsGpuSelector)
         [void](Add-AxisWizardGridRow -Grid $content -Child $selectorGrid)
     }
 
+    if ([bool](Get-AxisWizardMapValue -Map $Step -Name 'RequiresActionSelector' -DefaultValue $false)) {
+        $actionSelectorGrid = [System.Windows.Controls.Grid]::new()
+        $actionSelectorGrid.Margin = New-AxisWizardThickness -Left 0 -Top 1 -Right 0 -Bottom 1
+        $actionSelectorGrid.Tag = 'AxisFirstUseWizard.WindowsBloatwareActionSelectorRow'
+        $actionSelectorGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $actionSelectorGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+        $actionSelectorGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsBloatwareActionSelectorSingleSelect')
+        $actionSelectorControlColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $actionSelectorControlColumn.Width = [System.Windows.GridLength]::Auto
+        $actionSelectorLabelColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $actionSelectorLabelColumn.Width = [System.Windows.GridLength]::Auto
+        $actionSelectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+        $actionSelectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        [void]$actionSelectorGrid.ColumnDefinitions.Add($actionSelectorControlColumn)
+        [void]$actionSelectorGrid.ColumnDefinitions.Add($actionSelectorLabelColumn)
+        [void]$actionSelectorGrid.ColumnDefinitions.Add($actionSelectorFillColumn)
+        $actionSelectorGrid.Resources['AxisFirstUseWizard.SelectorPhysicalLeftAboveRequirements'] = $true
+        $actionSelectorGrid.Resources['AxisFirstUseWizard.SelectorLabelPhysicalRightOfControl'] = $true
+        $actionSelectorGrid.Resources['AxisFirstUseWizard.WindowsBloatwareSelectorPhysicalLeftAboveRequirements'] = $true
+
+        $actionSelectorLabel = New-AxisWizardTextBlock `
+            -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'ActionSelectorLabel')) `
+            -Resources $Resources `
+            -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+            -FontWeightKey 'Axis.Type.Micro.FontWeight' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+            -TextAlignment ([System.Windows.TextAlignment]::Right) `
+            -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+        $actionSelectorLabel.Tag = 'AxisFirstUseWizard.WindowsBloatwareActionSelectorLabel'
+        $actionSelectorLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $actionSelectorLabel.Margin = New-AxisWizardThickness -Left 12 -Top 0 -Right 0 -Bottom 0
+        [System.Windows.Controls.Grid]::SetColumn($actionSelectorLabel, 1)
+        [void]$actionSelectorGrid.Children.Add($actionSelectorLabel)
+
+        $actionSelector = [System.Windows.Controls.ComboBox]::new()
+        $actionSelector.Tag = 'AxisFirstUseWizard.WindowsBloatwareActionSelector'
+        $actionSelector.Width = 318
+        $actionSelector.Height = 34
+        $actionSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $actionSelector.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $actionSelector.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $actionSelector.IsEditable = $false
+        $actionSelector.MaxDropDownHeight = 150
+        $actionSelector.FontFamily = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontFamily'
+        $actionSelector.FontSize = [double](Get-AxisWizardResource -Resources $Resources -Name 'Axis.Type.BodySmall.FontSize')
+        Set-AxisWizardSelectorComboBoxStyle `
+            -Selector $actionSelector `
+            -Resources $Resources `
+            -FlowDirection ([System.Windows.FlowDirection]::LeftToRight) `
+            -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left) `
+            -Padding (New-AxisWizardThickness -Left 12 -Top 5 -Right 12 -Bottom 5)
+        $actionSelector.Resources['AxisFirstUseWizard.WindowsBloatwareActionSelectorSingleSelect'] = $true
+        $actionSelector.Resources['AxisFirstUseWizard.WindowsBloatwareActionSelectorNoRuntimeAction'] = $true
+        $actionSelector.Resources['AxisFirstUseWizard.WindowsBloatwareActionSelectorUsesSharedDarkAxisStyle'] = $true
+        $actionSelector.Resources['AxisFirstUseWizard.WindowsBloatwareActionSelectorOptionsOwnerApprovedOnly'] = $true
+        $actionSelector.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsBloatwareActionSelectorSingleSelect')
+        $actionSelectorPlaceholderItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Right)
+        $actionSelectorOptionItemStyle = New-AxisWizardSelectorComboBoxItemStyle -Resources $Resources -HorizontalContentAlignment ([System.Windows.HorizontalAlignment]::Left)
+
+        $actionPlaceholderItem = [System.Windows.Controls.ComboBoxItem]::new()
+        $actionPlaceholderItem.Content = [string](Get-AxisWizardMapValue -Map $Step -Name 'ActionSelectorPlaceholder')
+        $actionPlaceholderItem.Tag = 'AxisFirstUseWizard.WindowsBloatwareActionSelectorPlaceholderItem'
+        $actionPlaceholderItem.IsEnabled = $false
+        $actionPlaceholderItem.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+        $actionPlaceholderItem.Style = $actionSelectorPlaceholderItemStyle
+        [void]$actionSelector.Items.Add($actionPlaceholderItem)
+
+        foreach ($actionSelectorOption in @(Get-AxisWizardMapValue -Map $Step -Name 'ActionSelectorOptions' -DefaultValue @())) {
+            $actionItem = [System.Windows.Controls.ComboBoxItem]::new()
+            $actionItem.Content = [string]$actionSelectorOption
+            $actionItem.Tag = [string]$actionSelectorOption
+            $actionItem.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+            $actionItem.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Left
+            $actionItem.Style = $actionSelectorOptionItemStyle
+            [void]$actionSelector.Items.Add($actionItem)
+        }
+        $actionSelector.SelectedIndex = 0
+        [System.Windows.Controls.Grid]::SetColumn($actionSelector, 0)
+        [void]$actionSelectorGrid.Children.Add($actionSelector)
+        [void](Add-AxisWizardGridRow -Grid $content -Child $actionSelectorGrid)
+    }
+
     $detailsGrid = [System.Windows.Controls.Grid]::new()
-    $detailsGrid.Margin = if ($isGraphicsStageStep) {
+    $detailsGrid.Margin = if ($isCompactStageStep) {
         New-AxisWizardThickness -Left 0 -Top 2 -Right 0 -Bottom 3
     }
     else {
@@ -4254,29 +4764,32 @@ function New-AxisSetupStep {
         elseif ($isGraphicsStageStep) {
             $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.GraphicsCardsPhysicalOrderInfoRightRequirementsLeft')
         }
+        elseif ($isWindowsStageStep) {
+            $detailsGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.WindowsCardsPhysicalOrderInfoRightRequirementsLeft')
+        }
     }
 
     $setupTwoCardTextMaxWidth = 340.0
     $setupSingleCardTextMaxWidth = 650.0
     $setupCardHeight = if ($showRequirements) {
-        if ($isGraphicsStageStep) { 144.0 } else { 146.0 }
+        if ($isCompactStageStep) { 144.0 } else { 146.0 }
     }
     else {
-        if ($isGraphicsStageStep) { 126.0 } else { 128.0 }
+        if ($isCompactStageStep) { 126.0 } else { 128.0 }
     }
-    $setupCardPadding = if ($isGraphicsStageStep) {
+    $setupCardPadding = if ($isCompactStageStep) {
         New-AxisWizardThickness -Left 10 -Top 5 -Right 10 -Bottom 5
     }
     else {
         New-AxisWizardThickness -Left 10 -Top 6 -Right 10 -Bottom 6
     }
-    $setupCardItemTopMargin = if ($isGraphicsStageStep) { 1.0 } else { 3.0 }
-    $setupCardVisualLineTopMargin = if ($isGraphicsStageStep) { 0.0 } else { 1.0 }
+    $setupCardItemTopMargin = if ($isCompactStageStep) { 1.0 } else { 3.0 }
+    $setupCardVisualLineTopMargin = if ($isCompactStageStep) { 0.0 } else { 1.0 }
     $setupCardItemMaxVisualLineLength = if ($showRequirements) {
-        if ($isGraphicsStageStep) { 58 } else { 62 }
+        if ($isCompactStageStep) { 58 } else { 62 }
     }
     else {
-        if ($isGraphicsStageStep) { 94 } else { 100 }
+        if ($isCompactStageStep) { 94 } else { 100 }
     }
 
     if ($showRequirements) {
@@ -4516,6 +5029,85 @@ function New-AxisSetupStep {
         & $refreshGraphicsGpuSelectionState
     }
 
+    if ($actionSelector -is [System.Windows.Controls.ComboBox]) {
+        $actionPrimaryButton = $null
+        foreach ($actionChild in @($primaryAction.Children)) {
+            if ($actionChild -is [System.Windows.Controls.StackPanel] -and [string]$actionChild.Tag -eq 'AxisFirstUseWizard.PrimaryActionButtonRow') {
+                foreach ($buttonCandidate in @($actionChild.Children)) {
+                    if ($buttonCandidate -is [System.Windows.Controls.Button] -and [string]$buttonCandidate.Tag -eq 'AxisFirstUseWizard.PrimaryOpenButton') {
+                        $actionPrimaryButton = $buttonCandidate
+                        break
+                    }
+                }
+            }
+        }
+
+        $actionPrimaryBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+        $actionPrimaryBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+        $actionPrimaryForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+        $actionPrimaryEffect = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+        $actionDisabledBackground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+        $actionDisabledBorder = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.BorderSoft'
+        $actionDisabledForeground = Get-AxisWizardResource -Resources $Resources -Name 'Axis.Brush.Wizard.TextMuted'
+        $actionPrimaryAutomationProperty = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+        $actionEnabledAutomationId = 'AxisFirstUseWizard.WindowsBloatwarePrimaryEnabledWithActionSelection'
+        $actionDisabledAutomationId = 'AxisFirstUseWizard.WindowsBloatwarePrimaryDisabledUntilActionSelected'
+        if ($actionPrimaryButton -is [System.Windows.Controls.Button]) {
+            $actionPrimaryButton.SetValue($actionPrimaryAutomationProperty, $actionDisabledAutomationId)
+            $actionPrimaryButton.Resources['AxisFirstUseWizard.WindowsBloatwareSelectedAction'] = ''
+        }
+
+        $actionPrimaryButtonForSelector = $actionPrimaryButton
+        $actionSelectorForSelector = $actionSelector
+        $actionEnabledBackgroundForSelector = $actionPrimaryBackground
+        $actionEnabledBorderForSelector = $actionPrimaryBorder
+        $actionEnabledForegroundForSelector = $actionPrimaryForeground
+        $actionEnabledEffectForSelector = $actionPrimaryEffect
+        $actionDisabledBackgroundForSelector = $actionDisabledBackground
+        $actionDisabledBorderForSelector = $actionDisabledBorder
+        $actionDisabledForegroundForSelector = $actionDisabledForeground
+        $actionAutomationPropertyForSelector = $actionPrimaryAutomationProperty
+        $actionEnabledAutomationIdForSelector = $actionEnabledAutomationId
+        $actionDisabledAutomationIdForSelector = $actionDisabledAutomationId
+        $refreshActionSelectionState = {
+            $selectedItem = $actionSelectorForSelector.SelectedItem
+            $selectedActionName = ''
+            if ($selectedItem -is [System.Windows.Controls.ComboBoxItem]) {
+                $selectedActionName = [string]$selectedItem.Tag
+            }
+            $hasActionSelection = (
+                -not [string]::IsNullOrWhiteSpace($selectedActionName) -and
+                $selectedActionName -ne 'AxisFirstUseWizard.WindowsBloatwareActionSelectorPlaceholderItem'
+            )
+
+            if ($actionPrimaryButtonForSelector -is [System.Windows.Controls.Button]) {
+                if ($hasActionSelection) {
+                    $actionPrimaryButtonForSelector.IsEnabled = $true
+                    $actionPrimaryButtonForSelector.Background = $actionEnabledBackgroundForSelector
+                    $actionPrimaryButtonForSelector.BorderBrush = $actionEnabledBorderForSelector
+                    $actionPrimaryButtonForSelector.Foreground = $actionEnabledForegroundForSelector
+                    $actionPrimaryButtonForSelector.Effect = $actionEnabledEffectForSelector
+                    $actionPrimaryButtonForSelector.SetValue($actionAutomationPropertyForSelector, $actionEnabledAutomationIdForSelector)
+                    $actionPrimaryButtonForSelector.Resources['AxisFirstUseWizard.WindowsBloatwareSelectedAction'] = $selectedActionName
+                }
+                else {
+                    $actionPrimaryButtonForSelector.IsEnabled = $false
+                    $actionPrimaryButtonForSelector.Background = $actionDisabledBackgroundForSelector
+                    $actionPrimaryButtonForSelector.BorderBrush = $actionDisabledBorderForSelector
+                    $actionPrimaryButtonForSelector.Foreground = $actionDisabledForegroundForSelector
+                    $actionPrimaryButtonForSelector.Effect = $null
+                    $actionPrimaryButtonForSelector.SetValue($actionAutomationPropertyForSelector, $actionDisabledAutomationIdForSelector)
+                    $actionPrimaryButtonForSelector.Resources['AxisFirstUseWizard.WindowsBloatwareSelectedAction'] = ''
+                }
+            }
+        }.GetNewClosure()
+
+        $actionSelector.Add_SelectionChanged({
+            & $refreshActionSelectionState
+        }.GetNewClosure())
+        & $refreshActionSelectionState
+    }
+
     $container.Child = $content
 
     return $container
@@ -4599,15 +5191,18 @@ function New-AxisInstallersStep {
     $selectorGrid.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     $selectorGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
     $selectorGrid.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.InstallersCatalogSelectorFromModuleSource')
-    $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
-    $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $selectorControlColumn = [System.Windows.Controls.ColumnDefinition]::new()
     $selectorControlColumn.Width = [System.Windows.GridLength]::Auto
     $selectorLabelColumn = [System.Windows.Controls.ColumnDefinition]::new()
     $selectorLabelColumn.Width = [System.Windows.GridLength]::Auto
-    [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+    $selectorFillColumn = [System.Windows.Controls.ColumnDefinition]::new()
+    $selectorFillColumn.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     [void]$selectorGrid.ColumnDefinitions.Add($selectorControlColumn)
     [void]$selectorGrid.ColumnDefinitions.Add($selectorLabelColumn)
+    [void]$selectorGrid.ColumnDefinitions.Add($selectorFillColumn)
+    $selectorGrid.Resources['AxisFirstUseWizard.SelectorPhysicalLeftAboveRequirements'] = $true
+    $selectorGrid.Resources['AxisFirstUseWizard.SelectorLabelPhysicalRightOfControl'] = $true
+    $selectorGrid.Resources['AxisFirstUseWizard.InstallersSelectorPhysicalLeftAboveRequirements'] = $true
 
     $selectorLabel = New-AxisWizardTextBlock `
         -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'InstallerSelectorLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'InstallersSelectorLabel'))) `
@@ -4619,15 +5214,15 @@ function New-AxisInstallersStep {
         -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
     $selectorLabel.Tag = 'AxisFirstUseWizard.InstallersSelectorLabel'
     $selectorLabel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $selectorLabel.Margin = New-AxisWizardThickness -Left 0 -Top 0 -Right 12 -Bottom 0
-    [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 2)
+    $selectorLabel.Margin = New-AxisWizardThickness -Left 12 -Top 0 -Right 0 -Bottom 0
+    [System.Windows.Controls.Grid]::SetColumn($selectorLabel, 1)
     [void]$selectorGrid.Children.Add($selectorLabel)
 
     $programSelector = [System.Windows.Controls.ComboBox]::new()
     $programSelector.Tag = 'AxisFirstUseWizard.InstallersProgramSelector'
     $programSelector.Width = 318
     $programSelector.Height = 36
-    $programSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $programSelector.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
     $programSelector.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $programSelector.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
     $programSelector.IsEditable = $false
@@ -4665,7 +5260,7 @@ function New-AxisInstallersStep {
         [void]$programSelector.Items.Add($programItem)
     }
     $programSelector.SelectedIndex = 0
-    [System.Windows.Controls.Grid]::SetColumn($programSelector, 1)
+    [System.Windows.Controls.Grid]::SetColumn($programSelector, 0)
     [void]$selectorGrid.Children.Add($programSelector)
     [void](Add-AxisWizardGridRow -Grid $content -Child $selectorGrid)
 
@@ -6223,7 +6818,18 @@ function New-AxisFirstUseWizardStepContent {
         'nvidia-app-install',
         'directx',
         'visual-cpp',
-        'graphics-configuration-center'
+        'graphics-configuration-center',
+        'start-menu-taskbar',
+        'start-menu-layout',
+        'context-menu',
+        'theme-black',
+        'signout-lockscreen-wallpaper-black',
+        'user-account-pictures-black',
+        'widgets',
+        'copilot',
+        'game-mode',
+        'pointer-precision',
+        'bloatware'
     )) {
         return New-AxisSetupStep -Step $Step -Resources $Resources
     }
