@@ -231,7 +231,7 @@ function New-AxisWizardMixedBidiTextBlock {
     }
 
     $textBlock.Inlines.Clear()
-    $englishTermPattern = 'setupcomplete\.cmd|Epic Games Launcher|Epic Games|Memory Compression|Microsoft Edge|Microsoft Store|Windows Update|Task Manager|Windows Home|Windows Pro|Resizable BAR|BitLocker|AutoUnattend|Ctrl \+ V|Microsoft|Windows|BIOS|OOBE|USB|XML'
+    $englishTermPattern = 'setupcomplete\.cmd|Epic Games Launcher|Epic Games|Memory Compression|Microsoft Edge|Microsoft Store|Windows Update|Task Manager|Windows Home|Windows Pro|Resizable BAR|BitLocker|AutoUnattend|Ctrl \+ V|Microsoft|Windows|AXIS|BIOS|OOBE|USB|XML'
     $currentIndex = 0
     foreach ($match in [regex]::Matches($Text, $englishTermPattern)) {
         if ($match.Index -gt $currentIndex) {
@@ -287,6 +287,85 @@ function New-AxisWizardToBiosTitleRightAnchor {
     $anchor.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.ToBiosTitleRightAnchoredEnglishOnly')
     [void]$anchor.Children.Add($titleText)
 
+    return $anchor
+}
+
+function New-AxisWizardAxisTitleRightAnchor {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+
+        [Parameter(Mandatory)]
+        [object]$Resources,
+
+        [Parameter(Mandatory)]
+        [string]$TagRoot
+    )
+
+    $anchor = [System.Windows.Controls.Grid]::new()
+    $anchor.Tag = "AxisFirstUseWizard.${TagRoot}TitleRightAnchor"
+    $anchor.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $anchor.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $anchor.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${TagRoot}TitleAxisBidiSafeRightAnchor")
+
+    $titlePanel = [System.Windows.Controls.StackPanel]::new()
+    $titlePanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $titlePanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $titlePanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $titlePanel.MaxWidth = 690
+    $titlePanel.Tag = "AxisFirstUseWizard.${TagRoot}AxisTitleVisualComposition"
+    $titlePanel.Resources['AxisFirstUseWizard.AxisInArabicTitleBidiSafe'] = $true
+
+    $axisIndex = $Text.IndexOf('AXIS', [System.StringComparison]::Ordinal)
+    if ($axisIndex -lt 0) {
+        $fallbackTitle = New-AxisWizardMixedBidiTextBlock `
+            -Text $Text `
+            -Resources $Resources `
+            -Tag "AxisFirstUseWizard.${TagRoot}TitleText" `
+            -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+            -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+            -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+            -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 6) `
+            -MaxWidth 690
+        [void]$titlePanel.Children.Add($fallbackTitle)
+    }
+    else {
+        $arabicSegment = $Text.Substring(0, $axisIndex).TrimEnd()
+        $axisSegment = $Text.Substring($axisIndex).TrimStart()
+        if (-not [string]::IsNullOrWhiteSpace($arabicSegment)) {
+            $arabicTitle = New-AxisWizardTextBlock `
+                -Text $arabicSegment `
+                -Resources $Resources `
+                -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+                -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+                -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+                -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 6) `
+                -TextAlignment ([System.Windows.TextAlignment]::Right) `
+                -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+            $arabicTitle.Tag = "AxisFirstUseWizard.${TagRoot}TitleArabicSegment"
+            $arabicTitle.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+            [void]$titlePanel.Children.Add($arabicTitle)
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($axisSegment)) {
+            [void]$titlePanel.Children.Add((New-AxisWizardSpacer -Width 7 -Tag "AxisFirstUseWizard.${TagRoot}TitleAxisSpacer"))
+            $axisTitle = New-AxisWizardTextBlock `
+                -Text $axisSegment `
+                -Resources $Resources `
+                -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+                -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+                -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+                -Margin (New-AxisWizardThickness -Left 0 -Top 4 -Right 0 -Bottom 6) `
+                -TextAlignment ([System.Windows.TextAlignment]::Left) `
+                -FlowDirection ([System.Windows.FlowDirection]::LeftToRight)
+            $axisTitle.Tag = "AxisFirstUseWizard.${TagRoot}TitleAxisSegment"
+            $axisTitle.TextWrapping = [System.Windows.TextWrapping]::NoWrap
+            [void]$titlePanel.Children.Add($axisTitle)
+        }
+    }
+
+    [void]$anchor.Children.Add($titlePanel)
     return $anchor
 }
 
@@ -2455,6 +2534,49 @@ function New-AxisWizardButton {
     return $button
 }
 
+function Get-AxisWizardIntroFinalText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet(
+            'IntroTitle',
+            'IntroSubtitle',
+            'IntroPrimary',
+            'IntroInfoTitle',
+            'IntroInfoBullet1',
+            'IntroInfoBullet2',
+            'IntroInfoBullet3',
+            'FinalTitle',
+            'FinalSubtitle',
+            'FinalButton',
+            'FinalInfoTitle',
+            'FinalInfoBullet1',
+            'FinalInfoBullet2',
+            'FinalInfoBullet3'
+        )]
+        [string]$Name
+    )
+
+    $values = @{
+        IntroTitle = '2YXYsdit2KjZi9inINio2YMg2YHZiiBBWElT'
+        IntroSubtitle = '2LPZitmC2YjYr9mDIEFYSVMg2K7Yt9mI2Kkg2KjYrti32YjYqSDZhNil2LnYr9in2K8g2KfZhNis2YfYp9iyINio2KfZhNi02YPZhCDYp9mE2YXZhtin2LPYqC4='
+        IntroPrimary = '2KjYr9ih'
+        IntroInfoTitle = '2YLYqNmEINij2YYg2KrYqNiv2KM='
+        IntroInfoBullet1 = '2YrYs9in2LnYr9mDIEFYSVMg2LnZhNmJINil2LnYr9in2K8g2KfZhNis2YfYp9iyINiu2LfZiNipINio2K7Yt9mI2Kku'
+        IntroInfoBullet2 = '2KfYqtio2Lkg2KfZhNiu2LfZiNin2Kog2KjYp9mE2KrYsdiq2YrYqCDYrdiq2Ykg2YrZg9iq2YXZhCDYp9mE2KXYudiv2KfYryDYqNi02YPZhCDYtdit2YrYrS4='
+        IntroInfoBullet3 = '2YPZhCDYrti32YjYqSDYs9iq2YjYttitINmE2YMg2KfZhNil2KzYsdin2KEg2KfZhNmF2LfZhNmI2Kgg2YLYqNmEINin2YTZhdiq2KfYqNi52Kku'
+        FinalTitle = '2KfZg9iq2YXZhCDYpdi52K/Yp9ivIEFYSVM='
+        FinalSubtitle = '2KrZhSDYpdmD2YXYp9mEINis2YXZiti5INiu2LfZiNin2Kog2KXYudiv2KfYryDYp9mE2KzZh9in2LIg2KjZhtis2KfYrS4='
+        FinalButton = '2KXZhtmH2KfYoQ=='
+        FinalInfoTitle = '2KfZhNis2YfYp9iyINis2KfZh9iy'
+        FinalInfoBullet1 = '2KrZhSDYpdmD2YXYp9mEINis2YXZiti5INiu2LfZiNin2Kog2KfZhNil2LnYr9in2K8u'
+        FinalInfoBullet2 = '2YrZhdmD2YbZgyDYp9mE2KLZhiDYp9iz2KrYrtiv2KfZhSDYp9mE2KzZh9in2LIg2KjYudivINin2YPYqtmF2KfZhCDYpdi52K/Yp9ivIEFYSVMu'
+        FinalInfoBullet3 = '2LnZhtivINin2YTYrdin2KzYqSDZhNmE2YXYs9in2LnYr9ip2Iwg2YrZhdmD2YbZgyDYp9mE2KrZiNin2LXZhCDZhdi5INin2YTYr9i52YUu'
+    }
+
+    return ConvertFrom-AxisWizardBase64Text -Value ([string]$values[$Name])
+}
+
 function Get-AxisWizardStatusResourceName {
     [CmdletBinding()]
     param(
@@ -3985,6 +4107,120 @@ function Get-AxisFirstUseWizardSampleState {
         -StageBatchMarker 'AxisFirstUseWizard.AdvancedStageBatchPrototypeOnly' `
         -NoRealActionMarker 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantPrototypeOnlyNoRuntimeAction'
 
+    $introWelcomePage = [ordered]@{
+        Id = 'intro-welcome'
+        PageKind = 'IntroWelcome'
+        IsToolStep = $false
+        Title = (Get-AxisWizardIntroFinalText -Name 'IntroTitle')
+        StageName = 'Check'
+        State = 'Completed'
+        PrimaryActionLabel = (Get-AxisWizardIntroFinalText -Name 'IntroPrimary')
+        Description = (Get-AxisWizardIntroFinalText -Name 'IntroSubtitle')
+        InformationCardTitle = (Get-AxisWizardIntroFinalText -Name 'IntroInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet1')
+            (Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet2')
+            (Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet3')
+        )
+        CustomerVisibleActions = @((Get-AxisWizardIntroFinalText -Name 'IntroPrimary'))
+        PrototypeOnlySimulation = $true
+        HideStageStrip = $true
+        HideFooterNavigation = $true
+        NoSupportCard = $true
+        NoRequirementsCard = $true
+        NoRuntimeStatus = $true
+        NoConfirmationOverlay = $true
+        NoInstructionLinks = $true
+        NoWebsiteLinks = $true
+        NoDashboard = $true
+        NoIcons = $true
+        NoRealActionMarker = 'AxisFirstUseWizard.IntroWelcomePrototypeOnlyNoRuntimeAction'
+        TagRoot = 'IntroWelcome'
+    }
+
+    $finalCompletionPage = [ordered]@{
+        Id = 'final-completion'
+        PageKind = 'FinalCompletion'
+        IsToolStep = $false
+        Title = (Get-AxisWizardIntroFinalText -Name 'FinalTitle')
+        StageName = 'Advanced'
+        State = 'Completed'
+        PrimaryActionLabel = (Get-AxisWizardIntroFinalText -Name 'FinalButton')
+        Description = (Get-AxisWizardIntroFinalText -Name 'FinalSubtitle')
+        InformationCardTitle = (Get-AxisWizardIntroFinalText -Name 'FinalInfoTitle')
+        InformationItems = @(
+            (Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet1')
+            (Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet2')
+            (Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet3')
+        )
+        CustomerVisibleActions = @((Get-AxisWizardIntroFinalText -Name 'FinalButton'))
+        PrototypeOnlySimulation = $true
+        AllStagesCompleted = $true
+        NoSupportCard = $true
+        NoRequirementsCard = $true
+        NoRuntimeStatus = $true
+        NoConfirmationOverlay = $true
+        NoInstructionLinks = $true
+        NoWebsiteLinks = $true
+        NoDashboard = $true
+        NoIcons = $true
+        NoRealActionMarker = 'AxisFirstUseWizard.FinalCompletionPrototypeOnlyNoRuntimeAction'
+        TagRoot = 'FinalCompletion'
+    }
+
+    $toolSteps = @(
+        $biosStep
+        $biosSettingsStep
+        $reinstallStep
+        $autoUnattendStep
+        $updatesDriversBlockStep
+        $toBiosStep
+        $bitLockerStep
+        $convertHomeToProStep
+        $memoryCompressionStep
+        $dateLanguageRegionTimeStep
+        $startupAppsSettingsStep
+        $startupAppsTaskManagerStep
+        $backgroundAppsStep
+        $edgeSettingsStep
+        $storeSettingsStep
+        $updatesPauseStep
+        $installersStep
+        $installersStartupAppsSettingsStep
+        $installersStartupAppsTaskManagerStep
+        $restartAfterInstallersStep
+        $driverCleanStep
+        $gpuDriverSetupStep
+        $nvidiaAppInstallStep
+        $directXStep
+        $visualCppStep
+        $graphicsConfigurationCenterStep
+        $startMenuTaskbarStep
+        $startMenuLayoutStep
+        $contextMenuStep
+        $themeBlackStep
+        $blackLockScreenWallpaperStep
+        $blackAccountPicturesStep
+        $widgetsStep
+        $copilotStep
+        $gameModeStep
+        $pointerPrecisionStep
+        $bloatwareStep
+        $gameBarStep
+        $edgeWebViewStep
+        $notepadSettingsStep
+        $controlPanelSettingsStep
+        $inputLanguageHotkeyStep
+        $soundStep
+        $deviceManagerPowerSavingsWakeStep
+        $networkAdapterPowerSavingsWakeStep
+        $writeCacheBufferFlushingStep
+        $powerPlanStep
+        $cleanupStep
+        $timerResolutionAssistantStep
+        $defenderOptimizeAssistantStep
+    )
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -3999,58 +4235,13 @@ function Get-AxisFirstUseWizardSampleState {
         }
         Stages = @(Get-AxisFirstUseWizardCanonicalStages)
         CurrentStepIndex = 0
-        Step = $biosStep
+        Step = $introWelcomePage
+        FirstToolStep = $biosStep
+        ToolSteps = @($toolSteps)
         Steps = @(
-            $biosStep
-            $biosSettingsStep
-            $reinstallStep
-            $autoUnattendStep
-            $updatesDriversBlockStep
-            $toBiosStep
-            $bitLockerStep
-            $convertHomeToProStep
-            $memoryCompressionStep
-            $dateLanguageRegionTimeStep
-            $startupAppsSettingsStep
-            $startupAppsTaskManagerStep
-            $backgroundAppsStep
-            $edgeSettingsStep
-            $storeSettingsStep
-            $updatesPauseStep
-            $installersStep
-            $installersStartupAppsSettingsStep
-            $installersStartupAppsTaskManagerStep
-            $restartAfterInstallersStep
-            $driverCleanStep
-            $gpuDriverSetupStep
-            $nvidiaAppInstallStep
-            $directXStep
-            $visualCppStep
-            $graphicsConfigurationCenterStep
-            $startMenuTaskbarStep
-            $startMenuLayoutStep
-            $contextMenuStep
-            $themeBlackStep
-            $blackLockScreenWallpaperStep
-            $blackAccountPicturesStep
-            $widgetsStep
-            $copilotStep
-            $gameModeStep
-            $pointerPrecisionStep
-            $bloatwareStep
-            $gameBarStep
-            $edgeWebViewStep
-            $notepadSettingsStep
-            $controlPanelSettingsStep
-            $inputLanguageHotkeyStep
-            $soundStep
-            $deviceManagerPowerSavingsWakeStep
-            $networkAdapterPowerSavingsWakeStep
-            $writeCacheBufferFlushingStep
-            $powerPlanStep
-            $cleanupStep
-            $timerResolutionAssistantStep
-            $defenderOptimizeAssistantStep
+            $introWelcomePage
+            $toolSteps
+            $finalCompletionPage
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -7238,6 +7429,10 @@ function New-AxisFirstUseWizardStepContent {
     )
 
     $stepId = [string](Get-AxisWizardMapValue -Map $Step -Name 'Id')
+    if ($stepId -in @('intro-welcome', 'final-completion')) {
+        return New-AxisIntroFinalWizardPage -Step $Step -Resources $Resources
+    }
+
     if ($stepId -in @(
         'bitlocker',
         'convert-home-to-pro',
@@ -7472,6 +7667,146 @@ function New-AxisWizardStepContent {
     return New-AxisFirstUseWizardStepContent -Step $step -Resources $Resources
 }
 
+function New-AxisIntroFinalWizardPage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Step,
+
+        [object]$Resources = (New-AxisWpfResourceDictionary)
+    )
+
+    $pageKind = [string](Get-AxisWizardMapValue -Map $Step -Name 'PageKind' -DefaultValue 'IntroWelcome')
+    $tagRoot = [string](Get-AxisWizardMapValue -Map $Step -Name 'TagRoot' -DefaultValue $pageKind)
+    $isIntro = ($pageKind -eq 'IntroWelcome')
+
+    $container = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.MainCardBackground' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 34 -Top 28 -Right 34 -Bottom 24) `
+        -Elevation 'Card'
+    $container.Height = 382
+    $container.Tag = "AxisFirstUseWizard.${tagRoot}Page"
+    $container.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $container.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}PagePrototypeOnlyNoRuntimeNoClipping")
+    $container.Resources['AxisFirstUseWizard.NoSupportCard'] = $true
+    $container.Resources['AxisFirstUseWizard.NoRequirementsCard'] = $true
+    $container.Resources['AxisFirstUseWizard.NoRuntimeStatus'] = $true
+    $container.Resources['AxisFirstUseWizard.NoIcons'] = $true
+
+    $content = [System.Windows.Controls.Grid]::new()
+    $content.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $content.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $content.Tag = "AxisFirstUseWizard.${tagRoot}PageContent"
+
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardAxisTitleRightAnchor `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Title')) `
+        -Resources $Resources `
+        -TagRoot $tagRoot))
+
+    $subtitle = New-AxisWizardMixedBidiTextBlock `
+        -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'Description')) `
+        -Resources $Resources `
+        -Tag "AxisFirstUseWizard.${tagRoot}Subtitle" `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -MaxWidth 690
+    $subtitle.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $subtitle.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}SubtitleAxisBidiSafe")
+    [void](Add-AxisWizardGridRow -Grid $content -Child (New-AxisWizardRightAnchor `
+        -Child $subtitle `
+        -Tag "AxisFirstUseWizard.${tagRoot}SubtitleRightAnchor" `
+        -MaxWidth 690))
+
+    $informationPanel = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.InfoCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderSoft' `
+        -RadiusKey 'Axis.Radius.Wizard.InfoCard' `
+        -Padding (New-AxisWizardThickness -Left 16 -Top 14 -Right 16 -Bottom 14) `
+        -Margin (New-AxisWizardThickness -Left 0 -Top 20 -Right 0 -Bottom 18) `
+        -Elevation 'Soft'
+    $informationPanel.Height = 168
+    $informationPanel.Tag = "AxisFirstUseWizard.${tagRoot}InformationCard"
+    $informationPanel.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.${tagRoot}InformationCardNoClipping")
+    $informationPanel.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+
+    $informationLines = [System.Collections.Generic.List[object]]::new()
+    $informationLines.Add([ordered]@{
+        Text = [string](Get-AxisWizardMapValue -Map $Step -Name 'InformationCardTitle')
+        Tag = "AxisFirstUseWizard.${tagRoot}InformationTitle"
+        FontSizeKey = 'Axis.Type.CardTitle.FontSize'
+        FontWeightKey = 'Axis.Type.CardTitle.FontWeight'
+        FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+        ForegroundKey = 'Axis.Brush.Wizard.TextPrimary'
+        Wrap = $true
+        MaxWidth = 650.0
+    })
+    foreach ($item in @(Get-AxisWizardMapValue -Map $Step -Name 'InformationItems' -DefaultValue @())) {
+        $informationLines.Add([ordered]@{
+            Text = [string]$item
+            Tag = "AxisFirstUseWizard.${tagRoot}InformationItem"
+            FontSizeKey = 'Axis.Type.BodySmall.FontSize'
+            FontWeightKey = 'Axis.Type.Body.FontWeight'
+            FontFamilyKey = 'Axis.Type.BodySmall.FontFamily'
+            ForegroundKey = 'Axis.Brush.Wizard.TextSecondary'
+            TopMargin = 5.0
+            Wrap = $true
+            MaxWidth = 650.0
+            UseSafeVisualLineRenderer = $true
+            MaxVisualLineLength = 98
+            VisualLineTopMargin = 1.0
+        })
+    }
+
+    $informationGroup = New-AxisSetupPhysicalRightEdgeTextGroup `
+        -Tag "AxisFirstUseWizard.${tagRoot}InformationSharedPhysicalRightEdge" `
+        -Resources $Resources `
+        -MaxWidth 650 `
+        -Lines $informationLines `
+        -AutomationId "AxisFirstUseWizard.${tagRoot}InformationAxisBidiSafeText"
+    $informationContent = [System.Windows.Controls.Grid]::new()
+    $informationContent.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $informationContent.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $informationContent.MaxWidth = 650
+    $informationContent.Tag = "AxisFirstUseWizard.${tagRoot}InformationCardContent"
+    [void](Add-AxisWizardGridRow -Grid $informationContent -Child $informationGroup)
+    $informationPanel.Child = New-AxisWizardRightAnchor `
+        -Child $informationContent `
+        -Tag "AxisFirstUseWizard.${tagRoot}InformationRightAnchor" `
+        -MaxWidth 650
+    [void](Add-AxisWizardGridRow -Grid $content -Child $informationPanel)
+
+    if ($isIntro) {
+        $actionRow = [System.Windows.Controls.Grid]::new()
+        $actionRow.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+        $actionRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+        $actionRow.Tag = 'AxisFirstUseWizard.IntroWelcomeActionRow'
+        $actionRow.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.IntroWelcomeSinglePrimaryOnlyNoFooterButtons')
+
+        $startButton = New-AxisWizardButton `
+            -Text ([string](Get-AxisWizardMapValue -Map $Step -Name 'PrimaryActionLabel')) `
+            -Resources $Resources `
+            -Variant 'Primary' `
+            -Enabled $true `
+            -Width 118 `
+            -Height 42 `
+            -Margin (New-AxisWizardThickness -Left 0)
+        $startButton.Tag = 'AxisFirstUseWizard.IntroWelcomeStartButton'
+        $startButton.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $startButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.IntroWelcomeStartButtonNoClippingAdvancesToBiosInformation')
+        [void]$actionRow.Children.Add($startButton)
+        [void](Add-AxisWizardGridRow -Grid $content -Child $actionRow)
+    }
+
+    $container.Child = $content
+    return $container
+}
+
 function New-AxisFirstUseWizardPrototype {
     [CmdletBinding()]
     param(
@@ -7628,6 +7963,36 @@ function New-AxisFirstUseWizardPrototype {
             }
         }
     }.GetNewClosure()
+    $setStageProgressCompletedForNavigation = {
+        $progressGrid = $progress.Child
+        if ($progressGrid -isnot [System.Windows.Controls.Grid]) {
+            return
+        }
+
+        foreach ($candidateItem in @($progressGrid.Children)) {
+            if ($candidateItem -isnot [System.Windows.Controls.StackPanel] -or $candidateItem.Children.Count -lt 2) {
+                continue
+            }
+
+            $label = $candidateItem.Children[0]
+            $barBackground = $candidateItem.Children[1]
+            if ($label -isnot [System.Windows.Controls.TextBlock] -or $barBackground -isnot [System.Windows.Controls.Border]) {
+                continue
+            }
+
+            $fill = $barBackground.Child
+            if ($fill -isnot [System.Windows.Controls.Border]) {
+                continue
+            }
+
+            $itemStageName = [string]$label.Text
+            $label.Foreground = $stageProgressCompletedTextBrush
+            $fill.Width = $stageProgressFullLineWidth
+            $fill.Background = $stageProgressCompletedFillBrush
+            $fill.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageLineCompletedFullGreen.$itemStageName")
+            $candidateItem.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, "AxisFirstUseWizard.StageProgressCompleted.$itemStageName")
+        }
+    }.GetNewClosure()
 
     $contentHost = [System.Windows.Controls.Border]::new()
     $contentHost.Padding = New-AxisWizardThickness -Left 37 -Top 13 -Right 37 -Bottom 8
@@ -7651,6 +8016,9 @@ function New-AxisFirstUseWizardPrototype {
     $stepCompletedFlags = [bool[]]::new($steps.Count)
     $stepStageNames = [string[]]::new($steps.Count)
     $stepOptionalContinuationLabels = [string[]]::new($steps.Count)
+    $stepPageKinds = [string[]]::new($steps.Count)
+    $stepHideStageStrips = [bool[]]::new($steps.Count)
+    $stepAllStagesCompleted = [bool[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
         $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
         $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
@@ -7678,6 +8046,9 @@ function New-AxisFirstUseWizardPrototype {
         $stepCompletedFlags[$stepIndex] = ([string](Get-AxisWizardMapValue -Map $stepMap -Name 'State' -DefaultValue 'Ready') -eq 'Completed')
         $stepStageNames[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'StageName' -DefaultValue 'Check')
         $stepOptionalContinuationLabels[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'OptionalContinuationLabel' -DefaultValue '')
+        $stepPageKinds[$stepIndex] = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'PageKind' -DefaultValue 'Tool')
+        $stepHideStageStrips[$stepIndex] = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'HideStageStrip' -DefaultValue $false)
+        $stepAllStagesCompleted[$stepIndex] = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'AllStagesCompleted' -DefaultValue $false)
     }
     $stageText.Text = $stepStageNames[$currentStepIndex]
     & $setStageProgressActiveForNavigation $stepStageNames[$currentStepIndex]
@@ -7734,7 +8105,8 @@ function New-AxisFirstUseWizardPrototype {
     $optionalContinuationSpacer.Visibility = [System.Windows.Visibility]::Collapsed
     [void]$buttons.Children.Add($optionalContinuationSpacer)
     [void]$buttons.Children.Add($optionalContinuationButton)
-    $continueEnabled = [bool]$stepCompletedFlags[$currentStepIndex]
+    $currentPageKindForContinue = [string]$stepPageKinds[$currentStepIndex]
+    $continueEnabled = ([bool]$stepCompletedFlags[$currentStepIndex] -and $currentPageKindForContinue -eq 'Tool')
     $continueButton = New-AxisWizardButton `
         -Text ([string](Get-AxisWizardMapValue -Map $SampleState -Name 'ContinueLabel' -DefaultValue (Get-AxisWizardArabicText -Name 'Next'))) `
         -Resources $resources `
@@ -7747,8 +8119,24 @@ function New-AxisFirstUseWizardPrototype {
     if ($continueEnabled) {
         Set-AxisWizardEnabledNextButtonBlue -Button $continueButton
     }
-    [void]$buttons.Children.Add((New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.FooterButtonSpacer'))
+    $footerContinueSpacer = New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.FooterButtonSpacer'
+    [void]$buttons.Children.Add($footerContinueSpacer)
     [void]$buttons.Children.Add($continueButton)
+    $finalButtonSpacer = New-AxisWizardSpacer -Width 18 -Tag 'AxisFirstUseWizard.FinalCompletionFooterButtonSpacer'
+    $finalButtonSpacer.Visibility = [System.Windows.Visibility]::Collapsed
+    $finalButton = New-AxisWizardButton `
+        -Text (Get-AxisWizardIntroFinalText -Name 'FinalButton') `
+        -Resources $resources `
+        -Variant 'Primary' `
+        -Enabled $true `
+        -Width 104 `
+        -Height 40 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $finalButton.Tag = 'AxisFirstUseWizard.FinalCompletionButton'
+    $finalButton.Visibility = [System.Windows.Visibility]::Collapsed
+    $finalButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.FinalCompletionButtonPrototypeOnlyNoRuntimeActionNoClipping')
+    [void]$buttons.Children.Add($finalButtonSpacer)
+    [void]$buttons.Children.Add($finalButton)
     [System.Windows.Controls.Grid]::SetColumn($buttons, 1)
     [void]$bottomGrid.Children.Add($buttons)
 
@@ -7837,7 +8225,22 @@ function New-AxisFirstUseWizardPrototype {
     $stageTextForNavigation = $stageText
     $stepStageNamesForNavigation = $stepStageNames
     $setStageProgressActiveForNavigationClosure = $setStageProgressActiveForNavigation
+    $setStageProgressCompletedForNavigationClosure = $setStageProgressCompletedForNavigation
     $continueButtonForNavigation = $continueButton
+    $backButtonForNavigation = $backButton
+    $bottomForNavigation = $bottom
+    $progressForNavigation = $progress
+    $progressRowForNavigation = $root.RowDefinitions[1]
+    $footerRowForNavigation = $root.RowDefinitions[3]
+    $progressVisibleRowHeightForNavigation = [System.Windows.GridLength]::new(50.0)
+    $footerVisibleRowHeightForNavigation = [System.Windows.GridLength]::new(72.0)
+    $collapsedRowHeightForNavigation = [System.Windows.GridLength]::new(0.0)
+    $footerContinueSpacerForNavigation = $footerContinueSpacer
+    $finalButtonForNavigation = $finalButton
+    $finalButtonSpacerForNavigation = $finalButtonSpacer
+    $stepPageKindsForNavigation = $stepPageKinds
+    $stepHideStageStripsForNavigation = $stepHideStageStrips
+    $stepAllStagesCompletedForNavigation = $stepAllStagesCompleted
     $continueEnabledBlueMarkerForNavigation = 'AxisFirstUseWizard.EnabledNextButtonBlue'
     $continueEnabledBlueBackgroundForNavigation = New-AxisWizardColorBrush -Color '#2563EB'
     $continueEnabledBlueBorderForNavigation = New-AxisWizardColorBrush -Color '#60A5FA'
@@ -7849,10 +8252,10 @@ function New-AxisFirstUseWizardPrototype {
     $continueEnabledHoverBorderResourceKeyForNavigation = 'AxisFirstUseWizard.ButtonHoverBorder'
     $continueEnabledBlueHoverBackgroundForNavigation = New-AxisWizardColorBrush -Color '#1D4ED8'
     $continueEnabledBlueHoverBorderForNavigation = New-AxisWizardColorBrush -Color '#93C5FD'
-    $continueDisabledBackgroundForNavigation = $continueButton.Background
-    $continueDisabledBorderForNavigation = $continueButton.BorderBrush
-    $continueDisabledForegroundForNavigation = $continueButton.Foreground
-    $continueDisabledEffectForNavigation = $continueButton.Effect
+    $continueDisabledBackgroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $continueDisabledBorderForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $continueDisabledForegroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $continueDisabledEffectForNavigation = $null
     $continueAutomationIdPropertyForNavigation = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
     $optionalContinuationButtonForNavigation = $optionalContinuationButton
     $optionalContinuationSpacerForNavigation = $optionalContinuationSpacer
@@ -7881,6 +8284,69 @@ function New-AxisFirstUseWizardPrototype {
     }.GetNewClosure()
     $updateOptionalContinuationForNavigationClosure = $updateOptionalContinuationForNavigation
     & $updateOptionalContinuationForNavigationClosure $currentStepIndex
+    $updatePageChromeForNavigation = {
+        param(
+            [int]$Index
+        )
+
+        if ($Index -lt 0 -or $Index -ge $stepPageKindsForNavigation.Count) {
+            return
+        }
+
+        $pageKind = [string]$stepPageKindsForNavigation[$Index]
+        $hideStageStrip = [bool]$stepHideStageStripsForNavigation[$Index]
+        $isFinalCompletion = ($pageKind -eq 'FinalCompletion')
+        $isIntroWelcome = ($pageKind -eq 'IntroWelcome')
+
+        if ($hideStageStrip) {
+            $progressForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $progressRowForNavigation.Height = $collapsedRowHeightForNavigation
+            $stageTextForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+        else {
+            $progressForNavigation.Visibility = [System.Windows.Visibility]::Visible
+            $progressRowForNavigation.Height = $progressVisibleRowHeightForNavigation
+            $stageTextForNavigation.Visibility = [System.Windows.Visibility]::Visible
+        }
+
+        if ([bool]$stepAllStagesCompletedForNavigation[$Index]) {
+            & $setStageProgressCompletedForNavigationClosure
+        }
+
+        if ($isIntroWelcome) {
+            $bottomForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $footerRowForNavigation.Height = $collapsedRowHeightForNavigation
+            $backButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $continueButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $footerContinueSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $optionalContinuationButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $optionalContinuationSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $finalButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            $finalButtonSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+        else {
+            $bottomForNavigation.Visibility = [System.Windows.Visibility]::Visible
+            $footerRowForNavigation.Height = $footerVisibleRowHeightForNavigation
+            $backButtonForNavigation.Visibility = [System.Windows.Visibility]::Visible
+
+            if ($isFinalCompletion) {
+                $continueButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+                $footerContinueSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+                $optionalContinuationButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+                $optionalContinuationSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+                $finalButtonForNavigation.Visibility = [System.Windows.Visibility]::Visible
+                $finalButtonSpacerForNavigation.Visibility = [System.Windows.Visibility]::Visible
+            }
+            else {
+                $continueButtonForNavigation.Visibility = [System.Windows.Visibility]::Visible
+                $footerContinueSpacerForNavigation.Visibility = [System.Windows.Visibility]::Visible
+                $finalButtonForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+                $finalButtonSpacerForNavigation.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }
+    }.GetNewClosure()
+    $updatePageChromeForNavigationClosure = $updatePageChromeForNavigation
+    & $updatePageChromeForNavigationClosure $currentStepIndex
 
     if ($backButton -is [System.Windows.Controls.Button]) {
         $backButton.Add_Click({
@@ -7934,8 +8400,12 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
                 $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverReadableMarkerKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBackgroundResourceKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBorderResourceKeyForNavigation)
             }
             & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
+            & $updatePageChromeForNavigationClosure $currentNavigationIndex
         }.GetNewClosure())
     }
 
@@ -7994,8 +8464,12 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
                 $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverReadableMarkerKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBackgroundResourceKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBorderResourceKeyForNavigation)
             }
             & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
+            & $updatePageChromeForNavigationClosure $currentNavigationIndex
         }.GetNewClosure())
     }
 
@@ -8057,8 +8531,12 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForNavigation.BorderBrush = $continueDisabledBorderForNavigation
                 $continueButtonForNavigation.Foreground = $continueDisabledForegroundForNavigation
                 $continueButtonForNavigation.Effect = $continueDisabledEffectForNavigation
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverReadableMarkerKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBackgroundResourceKeyForNavigation)
+                [void]$continueButtonForNavigation.Resources.Remove($continueEnabledHoverBorderResourceKeyForNavigation)
             }
             & $updateOptionalContinuationForNavigationClosure $currentNavigationIndex
+            & $updatePageChromeForNavigationClosure $currentNavigationIndex
         }.GetNewClosure())
     }
 
@@ -8092,6 +8570,8 @@ function New-AxisFirstUseWizardPrototype {
         $epicInstructionInstallButton = Find-AxisWizardTaggedElement -Node $handlerEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionInstallButton'
         $visited.Clear()
         $epicInstructionReturnButton = Find-AxisWizardTaggedElement -Node $handlerEpicInstructionOverlay -Tag 'AxisFirstUseWizard.InstallersEpicInstructionReturnButton'
+        $visited.Clear()
+        $introStartButton = Find-AxisWizardTaggedElement -Node $handlerContent -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton'
 
         $checkingRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Checking' -Step $handlerStep -Resources $resources
         $completedRuntimeStatusForHandler = New-AxisWizardRuntimeStatusContent -State 'Completed' -Step $handlerStep -Resources $resources
@@ -8127,6 +8607,7 @@ function New-AxisFirstUseWizardPrototype {
         $continueEnabledBlueHoverBackgroundForHandler = $continueEnabledBlueHoverBackgroundForNavigation
         $continueEnabledBlueHoverBorderForHandler = $continueEnabledBlueHoverBorderForNavigation
         $continueAutomationIdPropertyForHandler = $continueAutomationIdPropertyForNavigation
+        $introStartButtonForHandler = $introStartButton
 
         $completionTimerForHandler.Add_Tick({
             $completionTimerForHandler.Stop()
@@ -8145,6 +8626,70 @@ function New-AxisFirstUseWizardPrototype {
                 $continueButtonForHandler.Resources[$continueEnabledHoverBorderResourceKeyForHandler] = $continueEnabledBlueHoverBorderForHandler
             }
         }.GetNewClosure())
+
+        if ($introStartButton -is [System.Windows.Controls.Button]) {
+            $introStartButton.Add_Click({
+                if ($introStartButtonForHandler -is [System.Windows.Controls.Button] -and -not [bool]$introStartButtonForHandler.IsEnabled) {
+                    return
+                }
+
+                $targetNavigationIndex = 1
+                if ($targetNavigationIndex -ge $stepViewsForNavigation.Count) {
+                    return
+                }
+
+                foreach ($overlayForHandler in @($stepOverlaysForHandler)) {
+                    if ($null -eq $overlayForHandler) {
+                        continue
+                    }
+
+                    $overlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                foreach ($inputOverlayForHandler in @($stepInputOverlaysForHandler)) {
+                    if ($null -eq $inputOverlayForHandler) {
+                        continue
+                    }
+
+                    $inputOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                foreach ($epicInstructionOverlayForHandler in @($stepEpicInstructionOverlaysForHandler)) {
+                    if ($null -eq $epicInstructionOverlayForHandler) {
+                        continue
+                    }
+
+                    $epicInstructionOverlayForHandler.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+
+                $navigationStateForNavigation['CurrentStepIndex'] = $targetNavigationIndex
+                $contentHostForNavigation.Child = $stepViewsForNavigation[$targetNavigationIndex]
+                $stageTextForNavigation.Text = $stepStageNamesForNavigation[$targetNavigationIndex]
+                & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$targetNavigationIndex]
+                if ($stepCompletedFlagsForNavigation[$targetNavigationIndex]) {
+                    $continueButtonForHandler.IsEnabled = $true
+                    $continueButtonForHandler.SetValue($continueAutomationIdPropertyForHandler, $continueEnabledBlueMarkerForHandler)
+                    $continueButtonForHandler.Background = $continueEnabledBlueBackgroundForHandler
+                    $continueButtonForHandler.BorderBrush = $continueEnabledBlueBorderForHandler
+                    $continueButtonForHandler.Foreground = $continueEnabledBlueForegroundForHandler
+                    $continueButtonForHandler.Effect = $continueEnabledBlueEffectForHandler
+                    $continueButtonForHandler.Resources[$continueEnabledHoverReadableMarkerKeyForHandler] = $continueEnabledHoverReadableMarkerValueForHandler
+                    $continueButtonForHandler.Resources[$continueEnabledHoverBackgroundResourceKeyForHandler] = $continueEnabledBlueHoverBackgroundForHandler
+                    $continueButtonForHandler.Resources[$continueEnabledHoverBorderResourceKeyForHandler] = $continueEnabledBlueHoverBorderForHandler
+                }
+                else {
+                    $continueButtonForHandler.IsEnabled = $false
+                    $continueButtonForHandler.SetValue($continueAutomationIdPropertyForHandler, '')
+                    $continueButtonForHandler.Background = $continueDisabledBackgroundForNavigation
+                    $continueButtonForHandler.BorderBrush = $continueDisabledBorderForNavigation
+                    $continueButtonForHandler.Foreground = $continueDisabledForegroundForNavigation
+                    $continueButtonForHandler.Effect = $continueDisabledEffectForNavigation
+                    [void]$continueButtonForHandler.Resources.Remove($continueEnabledHoverReadableMarkerKeyForHandler)
+                    [void]$continueButtonForHandler.Resources.Remove($continueEnabledHoverBackgroundResourceKeyForHandler)
+                    [void]$continueButtonForHandler.Resources.Remove($continueEnabledHoverBorderResourceKeyForHandler)
+                }
+                & $updateOptionalContinuationForNavigationClosure $targetNavigationIndex
+                & $updatePageChromeForNavigationClosure $targetNavigationIndex
+            }.GetNewClosure())
+        }
 
         if ($primaryButton -is [System.Windows.Controls.Button]) {
             $primaryButton.Add_Click({

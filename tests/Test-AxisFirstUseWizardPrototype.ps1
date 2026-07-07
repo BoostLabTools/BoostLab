@@ -455,6 +455,37 @@ function Assert-AxisFirstUseWizardStageLineState {
     ) "AXIS $Name stage line color changed."
 }
 
+function Assert-AxisFirstUseWizardNextDisabledNonBlue {
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Button]$Button,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    Assert-BoostLabCondition (-not [bool]$Button.IsEnabled) "AXIS $Name Next should be disabled before simulated completion."
+    Assert-BoostLabCondition (
+        [System.Windows.Automation.AutomationProperties]::GetAutomationId($Button) -ne 'AxisFirstUseWizard.EnabledNextButtonBlue'
+    ) "AXIS $Name disabled Next should not expose the enabled blue marker."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Button.Background) -ne '#FF2563EB'
+    ) "AXIS $Name disabled Next should not use the enabled blue fill."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Button.BorderBrush) -ne '#FF60A5FA'
+    ) "AXIS $Name disabled Next should not use the enabled blue border."
+    Assert-BoostLabCondition ($null -eq $Button.Effect) "AXIS $Name disabled Next should not keep the enabled shadow effect."
+    Assert-BoostLabCondition (
+        [string]$Button.Resources['AxisFirstUseWizard.EnabledNextButtonHoverReadable'] -ne 'BlueHoverKeepsReadableText'
+    ) "AXIS $Name disabled Next should not keep the enabled hover readability marker."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Button.Resources['AxisFirstUseWizard.ButtonHoverBackground']) -ne '#FF1D4ED8'
+    ) "AXIS $Name disabled Next should not keep the enabled blue hover fill."
+    Assert-BoostLabCondition (
+        (Get-AxisFirstUseWizardSolidBrushHex -Brush $Button.Resources['AxisFirstUseWizard.ButtonHoverBorder']) -ne '#FF93C5FD'
+    ) "AXIS $Name disabled Next should not keep the enabled blue hover border."
+}
+
 function Assert-AxisFirstUseWizardSharedPhysicalRightEdgeGroup {
     param(
         [Parameter(Mandatory)]
@@ -577,6 +608,7 @@ foreach ($functionName in @(
     'Get-AxisFirstUseWizardSampleState'
     'Get-AxisFirstUseWizardInstallersCatalogNames'
     'Get-AxisWizardArabicText'
+    'Get-AxisWizardIntroFinalText'
     'Get-AxisWizardSetupText'
     'Get-AxisWizardGraphicsText'
     'Get-AxisWizardWindowsText'
@@ -598,6 +630,7 @@ foreach ($functionName in @(
     'New-AxisInstallersEpicInstructionOverlay'
     'New-AxisSetupPhysicalRightEdgeTextGroup'
     'New-AxisWizardMixedBidiTextBlock'
+    'New-AxisWizardAxisTitleRightAnchor'
     'New-AxisWizardToBiosTitleRightAnchor'
     'Split-AxisAutoUnattendInformationText'
     'New-AxisAutoUnattendInformationTextGroup'
@@ -611,6 +644,7 @@ foreach ($functionName in @(
     'Set-AxisWizardSelectorComboBoxStyle'
     'New-AxisWizardUsbComboBoxItemStyle'
     'New-AxisFirstUseWizardStepContent'
+    'New-AxisIntroFinalWizardPage'
     'New-AxisStepDocumentationButton'
     'New-AxisStepPrimaryActionArea'
     'New-AxisStepStatusArea'
@@ -647,6 +681,20 @@ $arabicSupportBody = Get-AxisWizardArabicText -Name 'SupportBody'
 $arabicChecking = Get-AxisWizardArabicText -Name 'Checking'
 $arabicCompleted = Get-AxisWizardArabicText -Name 'Completed'
 $arabicRestart = Get-AxisWizardArabicText -Name 'Restart'
+$axisIntroTitle = Get-AxisWizardIntroFinalText -Name 'IntroTitle'
+$axisIntroSubtitle = Get-AxisWizardIntroFinalText -Name 'IntroSubtitle'
+$axisIntroPrimary = Get-AxisWizardIntroFinalText -Name 'IntroPrimary'
+$axisIntroInfoTitle = Get-AxisWizardIntroFinalText -Name 'IntroInfoTitle'
+$axisIntroInfoBullet1 = Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet1'
+$axisIntroInfoBullet2 = Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet2'
+$axisIntroInfoBullet3 = Get-AxisWizardIntroFinalText -Name 'IntroInfoBullet3'
+$axisFinalTitle = Get-AxisWizardIntroFinalText -Name 'FinalTitle'
+$axisFinalSubtitle = Get-AxisWizardIntroFinalText -Name 'FinalSubtitle'
+$axisFinalButton = Get-AxisWizardIntroFinalText -Name 'FinalButton'
+$axisFinalInfoTitle = Get-AxisWizardIntroFinalText -Name 'FinalInfoTitle'
+$axisFinalInfoBullet1 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet1'
+$axisFinalInfoBullet2 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet2'
+$axisFinalInfoBullet3 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet3'
 $arabicBiosSettingsSubtitle = Get-AxisWizardArabicText -Name 'BiosSettingsSubtitle'
 $arabicBiosSettingsInfoTitle = Get-AxisWizardArabicText -Name 'BiosSettingsInfoTitle'
 $arabicBiosSettingsInfoIntro = Get-AxisWizardArabicText -Name 'BiosSettingsInfoIntro'
@@ -1891,8 +1939,8 @@ Assert-BoostLabCondition ($window.ResizeMode -eq [System.Windows.ResizeMode]::No
 Assert-BoostLabCondition ($prototype.FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS first-use wizard Arabic surface must use RTL FlowDirection.'
 Assert-BoostLabCondition ($prototype.RowDefinitions.Count -eq 4) 'AXIS first-use wizard should keep header, progress, content, and footer rows separate.'
 Assert-BoostLabCondition ([double]$prototype.RowDefinitions[0].Height.Value -eq 76.0) 'AXIS first-use wizard header row should leave room for normal Windows chrome.'
-Assert-BoostLabCondition ([double]$prototype.RowDefinitions[1].Height.Value -eq 50.0) 'AXIS first-use wizard stage strip row should leave room for normal Windows chrome.'
-Assert-BoostLabCondition ([double]$prototype.RowDefinitions[3].Height.Value -eq 72.0) 'AXIS first-use wizard footer row should leave enough room for unclipped buttons.'
+Assert-BoostLabCondition ([double]$prototype.RowDefinitions[1].Height.Value -eq 0.0) 'AXIS intro page should collapse the stage strip row.'
+Assert-BoostLabCondition ([double]$prototype.RowDefinitions[3].Height.Value -eq 0.0) 'AXIS intro page should collapse the footer row.'
 Assert-BoostLabCondition ($prototype.Resources.Contains('Axis.Brush.Wizard.Background')) 'AXIS first-use wizard root does not include wizard resources.'
 
 $stageConfig = Import-PowerShellDataFile -LiteralPath $stageConfigPath -ErrorAction Stop
@@ -1919,8 +1967,10 @@ Assert-BoostLabCondition (
     (($sampleStageNames -join '|') -eq ($expectedStageNames -join '|'))
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
-$sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 50) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, the twenty-two Windows steps, and the two Advanced steps.'
+$samplePages = @($sampleState['Steps'])
+$sampleSteps = @($sampleState['ToolSteps'])
+Assert-BoostLabCondition ($samplePages.Count -eq 52) 'AXIS first-use wizard sample state should include intro-welcome, the 50 approved tool steps, and final-completion.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 50) 'AXIS first-use wizard ToolSteps should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, the twenty-two Windows steps, and the two Advanced steps.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -1929,7 +1979,9 @@ $expectedStepOrder = @(
     'updates-drivers-block'
     'to-bios'
 ) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder + $windowsStepOrder + $advancedStepOrder
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, Graphics, Windows Part A, Windows Part B, and Advanced after Cleanup.'
+$expectedPageOrder = @('intro-welcome') + $expectedStepOrder + @('final-completion')
+Assert-BoostLabCondition ((@($samplePages | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedPageOrder -join '|')) 'AXIS first-use wizard page order should be intro, the unchanged 50 tool steps, then final completion.'
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard tool-step order should keep Check/Refresh, then Setup, then Installers, Graphics, Windows Part A, Windows Part B, and Advanced after Cleanup.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
     'BIOS Settings'
@@ -1939,14 +1991,137 @@ $expectedStepTitles = @(
     $arabicToBiosTitle
 ) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles + $windowsStepTitles + $advancedStepTitles
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
-Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
-Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
+Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on intro-welcome.'
+Assert-BoostLabCondition ($sampleState['Step'] -eq $samplePages[0]) 'AXIS first-use wizard compatibility Step entry should be the first non-tool intro page.'
+Assert-BoostLabCondition ($sampleState['FirstToolStep'] -eq $sampleSteps[0]) 'AXIS first-use wizard should preserve the first accepted tool step separately from non-tool pages.'
+$introPage = [System.Collections.IDictionary]$samplePages[0]
+$finalPage = [System.Collections.IDictionary]$samplePages[$samplePages.Count - 1]
+Assert-BoostLabCondition ([string]$introPage['Id'] -eq 'intro-welcome') 'AXIS intro page should be first.'
+Assert-BoostLabCondition ([string]$introPage['PageKind'] -eq 'IntroWelcome') 'AXIS intro page should be marked as a non-tool intro page.'
+Assert-BoostLabCondition (-not [bool]$introPage['IsToolStep']) 'AXIS intro page must not be treated as a tool/runtime step.'
+Assert-BoostLabCondition ([string]$introPage['Title'] -eq $axisIntroTitle) 'AXIS intro title changed.'
+Assert-BoostLabCondition ([string]$introPage['Description'] -eq $axisIntroSubtitle) 'AXIS intro subtitle changed.'
+Assert-BoostLabCondition ([string]$introPage['PrimaryActionLabel'] -eq $axisIntroPrimary) 'AXIS intro primary button text changed.'
+Assert-BoostLabCondition ([string]$introPage['InformationCardTitle'] -eq $axisIntroInfoTitle) 'AXIS intro information title changed.'
+Assert-BoostLabCondition ((@($introPage['InformationItems']) -join '|') -eq (@($axisIntroInfoBullet1, $axisIntroInfoBullet2, $axisIntroInfoBullet3) -join '|')) 'AXIS intro information bullets changed.'
+Assert-BoostLabCondition ([bool]$introPage['HideStageStrip']) 'AXIS intro page should hide the stage strip.'
+Assert-BoostLabCondition ([bool]$introPage['NoSupportCard'] -and [bool]$introPage['NoRequirementsCard'] -and [bool]$introPage['NoRuntimeStatus']) 'AXIS intro page should not expose support, requirements, or runtime status.'
+Assert-BoostLabCondition ([string]$finalPage['Id'] -eq 'final-completion') 'AXIS final completion page should be last.'
+Assert-BoostLabCondition ([string]$finalPage['PageKind'] -eq 'FinalCompletion') 'AXIS final page should be marked as a non-tool final page.'
+Assert-BoostLabCondition (-not [bool]$finalPage['IsToolStep']) 'AXIS final page must not be treated as a tool/runtime step.'
+Assert-BoostLabCondition ([string]$finalPage['Title'] -eq $axisFinalTitle) 'AXIS final completion title changed.'
+Assert-BoostLabCondition ([string]$finalPage['Description'] -eq $axisFinalSubtitle) 'AXIS final completion subtitle changed.'
+Assert-BoostLabCondition ([string]$finalPage['PrimaryActionLabel'] -eq $axisFinalButton) 'AXIS final completion button text changed.'
+Assert-BoostLabCondition ([string]$finalPage['InformationCardTitle'] -eq $axisFinalInfoTitle) 'AXIS final completion information title changed.'
+Assert-BoostLabCondition ((@($finalPage['InformationItems']) -join '|') -eq (@($axisFinalInfoBullet1, $axisFinalInfoBullet2, $axisFinalInfoBullet3) -join '|')) 'AXIS final completion information bullets changed.'
+Assert-BoostLabCondition ([bool]$finalPage['AllStagesCompleted']) 'AXIS final page should mark every stage completed.'
+Assert-BoostLabCondition ([bool]$finalPage['NoSupportCard'] -and [bool]$finalPage['NoRequirementsCard'] -and [bool]$finalPage['NoRuntimeStatus']) 'AXIS final page should not expose support, requirements, or runtime status.'
 $mockHardwareProfile = [System.Collections.IDictionary]$sampleState['MockHardwareProfile']
 Assert-BoostLabCondition ([string]$mockHardwareProfile['Marker'] -eq 'AxisFirstUseWizard.MockHardwareProfile') 'AXIS BIOS Settings prototype should expose a local mock hardware profile marker.'
 Assert-BoostLabCondition ([string]$mockHardwareProfile['CpuVendor'] -eq 'Intel') 'AXIS BIOS Settings prototype mock CPU vendor should be Intel.'
 Assert-BoostLabCondition ([string]$mockHardwareProfile['MotherboardVendor'] -eq 'MSI') 'AXIS BIOS Settings prototype mock motherboard vendor should be MSI.'
 Assert-BoostLabCondition ([string]$mockHardwareProfile['Summary'] -eq 'CPU=Intel; Motherboard=MSI') 'AXIS BIOS Settings prototype mock profile should expose CPU=Intel and Motherboard=MSI markers.'
 Assert-BoostLabCondition ([bool]$mockHardwareProfile['PrototypeOnly']) 'AXIS BIOS Settings mock hardware profile should be clearly prototype-only.'
+
+$introContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$introVisibleContent = $introContentHost.Child
+$introVisibleText = (Get-AxisFirstUseWizardTextValues -Root $introVisibleContent) -join [Environment]::NewLine
+$introStartButton = @(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton') | Select-Object -First 1
+$introBackButton = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BackButton') | Select-Object -First 1
+$introContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+$introBottomNavigation = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.BottomNavigation') | Select-Object -First 1
+$introStageStrip = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StageProgressStrip') | Select-Object -First 1
+$introTitleComposition = @(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.IntroWelcomeAxisTitleVisualComposition') | Select-Object -First 1
+$introInformationGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.IntroWelcomeInformationSharedPhysicalRightEdge') | Select-Object -First 1
+
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 1) 'AXIS intro page should be the default first visible page.'
+Assert-BoostLabCondition ($introVisibleText.Contains($axisIntroSubtitle)) 'AXIS intro page should show the approved subtitle.'
+Assert-BoostLabCondition ($introVisibleText.Contains($axisIntroInfoTitle)) 'AXIS intro page should show the approved information title.'
+Assert-BoostLabCondition ($introVisibleText.Contains($axisIntroInfoBullet1) -and $introVisibleText.Contains($axisIntroInfoBullet2) -and $introVisibleText.Contains($axisIntroInfoBullet3)) 'AXIS intro page should show the approved information bullets.'
+Assert-BoostLabCondition ($introTitleComposition -is [System.Windows.Controls.StackPanel]) 'AXIS intro title should use dedicated AXIS BiDi-safe visual composition.'
+Assert-BoostLabCondition ([bool]$introTitleComposition.Resources['AxisFirstUseWizard.AxisInArabicTitleBidiSafe']) 'AXIS intro title should expose the AXIS-in-Arabic BiDi-safe marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($introInformationGroup) -eq 'AxisFirstUseWizard.IntroWelcomeInformationAxisBidiSafeText') 'AXIS intro information card should use the BiDi-safe shared text group.'
+Assert-BoostLabCondition ($introStartButton -is [System.Windows.Controls.Button]) 'AXIS intro page should include one Start primary button.'
+Assert-BoostLabCondition ([string]$introStartButton.Content -eq $axisIntroPrimary) 'AXIS intro Start button text changed.'
+Assert-BoostLabCondition ([double]$introStartButton.Height -eq 42.0 -and [double]$introStartButton.Width -eq 118.0) 'AXIS intro Start button should keep no-clipping dimensions.'
+Assert-BoostLabCondition ($introBottomNavigation.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS intro page should not show footer navigation.'
+Assert-BoostLabCondition ($introBackButton.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS intro page should not show Previous.'
+Assert-BoostLabCondition ($introContinueButton.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS intro page should not show Next.'
+Assert-BoostLabCondition ($introStageStrip.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS intro page should hide the stage strip.'
+Assert-BoostLabCondition ($prototype.RowDefinitions[1].Height.Value -eq 0.0 -and $prototype.RowDefinitions[3].Height.Value -eq 0.0) 'AXIS intro page should collapse stage and footer rows.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 0) 'AXIS intro page should not include a support card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $introVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea').Count -eq 0) 'AXIS intro page should not include runtime status.'
+Assert-BoostLabCondition (-not $introVisibleText.Contains('BoostLab')) 'AXIS intro customer-facing copy must not mention BoostLab.'
+Assert-BoostLabCondition (-not $introVisibleText.Contains('dashboard')) 'AXIS intro customer-facing copy must not mention a dashboard.'
+Assert-BoostLabCondition (-not $introVisibleText.Contains([string][char]0xFFFD)) 'AXIS intro visible copy must not contain replacement glyphs.'
+
+Invoke-AxisFirstUseWizardButtonClick -Button $introStartButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $introContentHost.Child -Tag 'AxisFirstUseWizard.BiosInformationStep').Count -eq 1) 'AXIS intro Start should advance to BIOS Drivers & Downloads.'
+Assert-BoostLabCondition ($introBottomNavigation.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS BIOS page should restore footer navigation after intro Start.'
+Assert-BoostLabCondition ($introStageStrip.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS BIOS page should restore the stage strip after intro Start.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $introContinueButton -Name 'BIOS Drivers & Downloads after intro Start'
+
+$finalSampleState = Get-AxisFirstUseWizardSampleState
+$finalIndex = @($finalSampleState['Steps']).Count - 1
+$finalSampleState['CurrentStepIndex'] = $finalIndex
+$finalSampleState['Step'] = $finalSampleState['Steps'][$finalIndex]
+$finalPrototype = New-AxisFirstUseWizardPrototype -SampleState $finalSampleState
+$finalContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$finalVisibleContent = $finalContentHost.Child
+$finalVisibleText = (Get-AxisFirstUseWizardTextValues -Root $finalVisibleContent) -join [Environment]::NewLine
+$finalBackButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag 'AxisFirstUseWizard.BackButton') | Select-Object -First 1
+$finalContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+$finalButtonElement = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag 'AxisFirstUseWizard.FinalCompletionButton') | Select-Object -First 1
+$finalStageStrip = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag 'AxisFirstUseWizard.StageProgressStrip') | Select-Object -First 1
+$finalTitleComposition = @(Get-AxisFirstUseWizardTaggedElements -Root $finalVisibleContent -Tag 'AxisFirstUseWizard.FinalCompletionAxisTitleVisualComposition') | Select-Object -First 1
+$finalInformationGroup = @(Get-AxisFirstUseWizardTaggedElements -Root $finalVisibleContent -Tag 'AxisFirstUseWizard.FinalCompletionInformationSharedPhysicalRightEdge') | Select-Object -First 1
+
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalVisibleContent -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS final completion page should render after the last tool step.'
+Assert-BoostLabCondition ($finalVisibleText.Contains($axisFinalSubtitle)) 'AXIS final completion page should show the approved subtitle.'
+Assert-BoostLabCondition ($finalVisibleText.Contains($axisFinalInfoTitle)) 'AXIS final completion page should show the approved information title.'
+Assert-BoostLabCondition ($finalVisibleText.Contains($axisFinalInfoBullet1) -and $finalVisibleText.Contains($axisFinalInfoBullet2) -and $finalVisibleText.Contains($axisFinalInfoBullet3)) 'AXIS final completion page should show the approved information bullets.'
+Assert-BoostLabCondition ($finalTitleComposition -is [System.Windows.Controls.StackPanel]) 'AXIS final title should use dedicated AXIS BiDi-safe visual composition.'
+Assert-BoostLabCondition ([bool]$finalTitleComposition.Resources['AxisFirstUseWizard.AxisInArabicTitleBidiSafe']) 'AXIS final title should expose the AXIS-in-Arabic BiDi-safe marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($finalInformationGroup) -eq 'AxisFirstUseWizard.FinalCompletionInformationAxisBidiSafeText') 'AXIS final information card should use the BiDi-safe shared text group.'
+Assert-BoostLabCondition ($finalBackButton.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS final completion page should show Previous.'
+Assert-BoostLabCondition ($finalContinueButton.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS final completion page should not show Next.'
+Assert-BoostLabCondition ($finalButtonElement.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS final completion page should show Finish.'
+Assert-BoostLabCondition ([string]$finalButtonElement.Content -eq $axisFinalButton) 'AXIS final Finish button text changed.'
+Assert-BoostLabCondition ([double]$finalButtonElement.Height -eq 40.0 -and [double]$finalButtonElement.Width -eq 104.0) 'AXIS final Finish button should keep no-clipping dimensions.'
+Assert-BoostLabCondition ($finalStageStrip.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS final completion page should show the stage strip.'
+foreach ($stageName in $expectedStageNames) {
+    $finalStageFill = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag "AxisFirstUseWizard.StageProgressFill.$stageName") | Select-Object -First 1
+    [void](Assert-AxisFirstUseWizardStageLineState -Fill $finalStageFill -ExpectedAutomationId "AxisFirstUseWizard.StageLineCompletedFullGreen.$stageName" -ExpectedColor '#FF22C55E' -Name "final completion $stageName completed")
+}
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalVisibleContent -Tag 'AxisFirstUseWizard.SupportPanel').Count -eq 0) 'AXIS final completion page should not include a support card.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalVisibleContent -Tag 'AxisFirstUseWizard.RuntimeStatusArea').Count -eq 0) 'AXIS final completion page should not include runtime status.'
+Assert-BoostLabCondition (-not $finalVisibleText.Contains('BoostLab')) 'AXIS final customer-facing copy must not mention BoostLab.'
+Assert-BoostLabCondition (-not $finalVisibleText.Contains('dashboard')) 'AXIS final customer-facing copy must not mention a dashboard.'
+Assert-BoostLabCondition (-not $finalVisibleText.Contains([string][char]0xFFFD)) 'AXIS final visible copy must not contain replacement glyphs.'
+Invoke-AxisFirstUseWizardButtonClick -Button $finalBackButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS final Previous should return to Defender Optimize Assistant.'
+
+$toolStartSampleState = Get-AxisFirstUseWizardSampleState
+$toolStartSampleState['CurrentStepIndex'] = 1
+$toolStartSampleState['Step'] = $toolStartSampleState['Steps'][1]
+$prototype = New-AxisFirstUseWizardPrototype -SampleState $toolStartSampleState
+Assert-BoostLabCondition ([double]$prototype.RowDefinitions[1].Height.Value -eq 50.0) 'AXIS tool pages should restore the stage strip row height.'
+Assert-BoostLabCondition ([double]$prototype.RowDefinitions[3].Height.Value -eq 72.0) 'AXIS tool pages should restore the footer row height for unclipped buttons.'
+
+$toolPageIdsForInitialNext = @($toolStartSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
+foreach ($toolStepForInitialNext in $sampleSteps) {
+    $toolStepIdForInitialNext = [string]$toolStepForInitialNext['Id']
+    $toolPageIndexForInitialNext = [Array]::IndexOf($toolPageIdsForInitialNext, $toolStepIdForInitialNext)
+    Assert-BoostLabCondition ($toolPageIndexForInitialNext -ge 0) "AXIS initial Next regression guard should find tool page: $toolStepIdForInitialNext"
+
+    $toolInitialNextSampleState = Get-AxisFirstUseWizardSampleState
+    $toolInitialNextSampleState['CurrentStepIndex'] = $toolPageIndexForInitialNext
+    $toolInitialNextSampleState['Step'] = $toolInitialNextSampleState['Steps'][$toolPageIndexForInitialNext]
+    $toolInitialNextPrototype = New-AxisFirstUseWizardPrototype -SampleState $toolInitialNextSampleState
+    $toolInitialNextButton = @(Get-AxisFirstUseWizardTaggedElements -Root $toolInitialNextPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+    Assert-BoostLabCondition ($toolInitialNextButton -is [System.Windows.Controls.Button]) "AXIS initial Next regression guard should find Next button for $toolStepIdForInitialNext"
+    Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $toolInitialNextButton -Name "initial $toolStepIdForInitialNext"
+}
 
 $texts = @(Get-AxisFirstUseWizardTextValues -Root $prototype)
 $joinedText = $texts -join [Environment]::NewLine
@@ -2706,8 +2881,10 @@ Assert-BoostLabCondition (-not [bool]$taggedBottomNavigation[0].ClipToBounds) 'A
 Assert-BoostLabCondition ($taggedBottomButtons.Count -eq 1) 'AXIS first-use wizard footer button row is missing.'
 Assert-BoostLabCondition ($taggedBottomButtons[0].FlowDirection -eq [System.Windows.FlowDirection]::RightToLeft) 'AXIS footer buttons should use RTL flow.'
 $footerButtons = @(Get-AxisFirstUseWizardTypedElements -Root $taggedBottomButtons[0] -Type ([System.Windows.Controls.Button]))
-Assert-BoostLabCondition ($footerButtons.Count -eq 3) 'AXIS first-use wizard footer should include Back, NVIDIA App optional continuation, and Continue.'
-Assert-BoostLabCondition ((@($footerButtons | ForEach-Object { [string]$_.Content }) -join '|') -eq "$arabicBack|$graphicsNvidiaAppOptionalContinuation|$arabicNext") 'AXIS first-use wizard footer button labels changed.'
+Assert-BoostLabCondition ($footerButtons.Count -eq 4) 'AXIS first-use wizard footer should include Back, NVIDIA App optional continuation, Continue, and the hidden final-completion Finish button.'
+Assert-BoostLabCondition ((@($footerButtons | ForEach-Object { [string]$_.Content }) -join '|') -eq "$arabicBack|$graphicsNvidiaAppOptionalContinuation|$arabicNext|$axisFinalButton") 'AXIS first-use wizard footer button labels changed.'
+$toolPageFinalButton = @($footerButtons | Where-Object { [string]$_.Tag -eq 'AxisFirstUseWizard.FinalCompletionButton' }) | Select-Object -First 1
+Assert-BoostLabCondition ($toolPageFinalButton.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS final-completion Finish button should stay hidden on normal tool pages.'
 Assert-BoostLabCondition ($taggedOptionalContinuationButton.Count -eq 1) 'AXIS NVIDIA App optional continuation footer button is missing.'
 Assert-BoostLabCondition ($taggedOptionalContinuationButton[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS NVIDIA App optional continuation footer button should start hidden before its step.'
 Assert-BoostLabCondition (-not [bool]$taggedOptionalContinuationButton[0].IsEnabled) 'AXIS NVIDIA App optional continuation footer button should start disabled before its step.'
@@ -2719,6 +2896,7 @@ Assert-BoostLabCondition ($taggedFooterButtonSpacer.Count -eq 1) 'AXIS footer bu
 Assert-BoostLabCondition ([double]$taggedFooterButtonSpacer[0].Width -ge 12.0 -and [double]$taggedFooterButtonSpacer[0].Width -le 20.0) 'AXIS footer spacer should provide a clear 12-20px gap.'
 Assert-BoostLabCondition ($taggedContinueButtons.Count -eq 1) 'AXIS first-use wizard Continue button is missing.'
 Assert-BoostLabCondition (-not [bool]$taggedContinueButtons[0].IsEnabled) 'AXIS Continue/Next should start disabled before completion.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name 'BIOS Drivers & Downloads initial'
 $continueStartsDisabled = -not [bool]$taggedContinueButtons[0].IsEnabled
 Assert-BoostLabCondition ([double]$taggedContinueButtons[0].Margin.Right -eq 0.0) 'AXIS Continue/Next should not rely on RTL margin behavior for spacing.'
 foreach ($footerButton in $footerButtons) {
@@ -2866,6 +3044,7 @@ Assert-BoostLabCondition (@($taggedOverlayButtonArea[0].Children) -contains $tag
 Assert-BoostLabCondition (-not [bool]$taggedOverlayOpenButton[0].IsEnabled) 'AXIS confirmation button should be disabled until acknowledgement is checked.'
 $taggedOverlayAcknowledgement[0].IsChecked = $true
 Assert-BoostLabCondition ([bool]$taggedOverlayOpenButton[0].IsEnabled) 'AXIS confirmation button should enable after acknowledgement is checked.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name 'BIOS Drivers & Downloads after confirmation acknowledgement'
 $taggedOverlayAcknowledgement[0].IsChecked = $false
 Assert-BoostLabCondition (-not [bool]$taggedOverlayOpenButton[0].IsEnabled) 'AXIS confirmation button should disable again if acknowledgement is unchecked.'
 
@@ -3070,6 +3249,7 @@ Invoke-AxisFirstUseWizardButtonClick -Button $biosSettingsPrimaryButton
 Assert-BoostLabCondition ($biosSettingsOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS BIOS Settings restart should reveal the confirmation overlay only.'
 $biosSettingsOverlayAcknowledgement.IsChecked = $true
 Assert-BoostLabCondition ([bool]$biosSettingsOverlayOpenButton.IsEnabled) 'AXIS BIOS Settings confirm should enable after acknowledgement.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name 'BIOS Settings after confirmation acknowledgement'
 Invoke-AxisFirstUseWizardButtonClick -Button $biosSettingsOverlayReturnButton
 Assert-BoostLabCondition ($biosSettingsOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Settings Return should close only the overlay.'
 Assert-BoostLabCondition (-not [bool]$biosSettingsOverlayAcknowledgement.IsChecked) 'AXIS BIOS Settings Return should reset acknowledgement.'
@@ -3910,6 +4090,7 @@ Assert-BoostLabCondition ($toBiosOverlay.Visibility -eq [System.Windows.Visibili
 Assert-BoostLabCondition ($toBiosRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS primary action must not start restart simulation before confirmation.'
 $toBiosOverlayAcknowledgement.IsChecked = $true
 Assert-BoostLabCondition ([bool]$toBiosOverlayActionButton.IsEnabled) 'AXIS To BIOS confirm should enable after acknowledgement.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name 'To BIOS after confirmation acknowledgement'
 Invoke-AxisFirstUseWizardButtonClick -Button $toBiosOverlayReturnButton
 Assert-BoostLabCondition ($toBiosOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS To BIOS Return should close only the overlay.'
 Assert-BoostLabCondition (-not [bool]$toBiosOverlayAcknowledgement.IsChecked) 'AXIS To BIOS Return should reset acknowledgement.'
@@ -4119,6 +4300,7 @@ for ($setupIndex = 0; $setupIndex -lt $setupStepSpecs.Count; $setupIndex++) {
         Assert-BoostLabCondition ($setupRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause primary action must not start simulation before acknowledgement.'
         $setupOverlayAcknowledgement.IsChecked = $true
         Assert-BoostLabCondition ([bool]$setupOverlayActionButton.IsEnabled) 'AXIS Updates Pause confirmation primary should enable after acknowledgement.'
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name "$setupId after confirmation acknowledgement"
         Invoke-AxisFirstUseWizardButtonClick -Button $setupOverlayReturnButton
         Assert-BoostLabCondition ($setupOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Updates Pause Return should close only the overlay.'
         Assert-BoostLabCondition (-not [bool]$setupOverlayAcknowledgement.IsChecked) 'AXIS Updates Pause Return should reset acknowledgement.'
@@ -4351,6 +4533,7 @@ Assert-BoostLabCondition ($discordSelectorIndex -gt 0) 'AXIS Installers selector
 Assert-BoostLabCondition ($epicSelectorIndex -gt 0) 'AXIS Installers selector should include Epic Games from the retained catalog.'
 $installersSelector.SelectedIndex = $epicSelectorIndex
 Assert-BoostLabCondition ([bool]$installersPrimaryButton.IsEnabled) 'AXIS Installers Install button should enable after Epic Games is selected.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $taggedContinueButtons[0] -Name 'Installers after Epic Games selector selection'
 Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($installersPrimaryButton) -eq 'AxisFirstUseWizard.InstallersInstallEnabledWithProgramSelection') 'AXIS Installers enabled Install button should expose the selected-program marker.'
 Assert-BoostLabCondition ($installersSelectedProgramDisplay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers selected program micro-row should remain visible for Epic Games like any other app.'
 Assert-BoostLabCondition ([string]$installersSelectedProgramName.Text -eq 'Epic Games') 'AXIS Installers selected app display should show the selected Epic catalog item.'
@@ -4426,6 +4609,7 @@ $nonEpicDiscordSelectorIndex = [Array]::IndexOf($nonEpicActualInstallersCatalogN
 Assert-BoostLabCondition ($nonEpicDiscordSelectorIndex -gt 0) 'AXIS Installers non-Epic regression guard should include Discord.'
 $nonEpicInstallersSelector.SelectedIndex = $nonEpicDiscordSelectorIndex
 Assert-BoostLabCondition (-not [bool]$nonEpicInstallersPrimaryButton.Resources['AxisFirstUseWizard.InstallersEpicSelected']) 'AXIS Installers should not mark non-Epic apps as Epic overlay selections.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $nonEpicInstallersContinueButton -Name 'Installers after non-Epic selector selection'
 Invoke-AxisFirstUseWizardButtonClick -Button $nonEpicInstallersPrimaryButton
 Assert-BoostLabCondition ($nonEpicInstallersEpicOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS Installers non-Epic app should not show the Epic instructional overlay.'
 Assert-BoostLabCondition ($nonEpicInstallersRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS Installers non-Epic app should start simulated install directly.'
@@ -4704,6 +4888,7 @@ foreach ($graphicsSpec in $graphicsStepSpecs) {
         Assert-BoostLabCondition ($graphicsRuntimeStatusArea.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS GPU Driver Setup disabled primary should not start simulation.'
         $graphicsGpuSelector.SelectedIndex = 0
         Assert-BoostLabCondition ([bool]$graphicsPrimaryButton.IsEnabled) 'AXIS GPU Driver Setup primary should enable after NVIDIA is selected.'
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $graphicsContinueButton -Name 'GPU Driver Setup after NVIDIA selector selection'
         Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($graphicsPrimaryButton) -eq 'AxisFirstUseWizard.GraphicsGpuSetupPrimaryEnabledWithNvidiaSelection') 'AXIS GPU Driver Setup enabled primary should expose NVIDIA selection marker.'
     }
 
@@ -4758,6 +4943,7 @@ foreach ($graphicsSpec in $graphicsStepSpecs) {
         $graphicsOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $graphicsOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
         $graphicsOverlayAcknowledgement.IsChecked = $true
         Assert-BoostLabCondition ([bool]$graphicsOverlayOpenButton.IsEnabled) "AXIS Graphics confirmation should enable after acknowledgement: $graphicsStepId"
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $graphicsContinueButton -Name "$graphicsStepId after confirmation acknowledgement"
         Invoke-AxisFirstUseWizardButtonClick -Button $graphicsOverlayOpenButton
         Assert-BoostLabCondition ($graphicsOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Graphics confirmation should close before simulation: $graphicsStepId"
     }
@@ -4985,6 +5171,7 @@ foreach ($windowsSpec in $windowsStepSpecs) {
         Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($windowsPrimaryButton) -eq 'AxisFirstUseWizard.WindowsBloatwarePrimaryDisabledUntilActionSelected') 'AXIS Bloatware primary should expose the disabled-until-selection marker.'
         $windowsActionSelector.SelectedIndex = 1
         Assert-BoostLabCondition ([bool]$windowsPrimaryButton.IsEnabled) 'AXIS Bloatware primary should enable after selecting an owner-approved action.'
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $windowsContinueButton -Name 'Bloatware after action selector selection'
         Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($windowsPrimaryButton) -eq 'AxisFirstUseWizard.WindowsBloatwarePrimaryEnabledWithActionSelection') 'AXIS Bloatware primary should expose the enabled-with-selection marker.'
         Assert-BoostLabCondition ([string]$windowsPrimaryButton.Resources['AxisFirstUseWizard.WindowsBloatwareSelectedAction'] -eq 'Remove All Bloatware') 'AXIS Bloatware selected action marker changed.'
     }
@@ -5013,6 +5200,7 @@ foreach ($windowsSpec in $windowsStepSpecs) {
         $windowsOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $windowsOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
         $windowsOverlayAcknowledgement.IsChecked = $true
         Assert-BoostLabCondition ([bool]$windowsOverlayOpenButton.IsEnabled) "AXIS Windows Part A confirmation should enable after acknowledgement: $windowsStepId"
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $windowsContinueButton -Name "$windowsStepId after confirmation acknowledgement"
         Invoke-AxisFirstUseWizardButtonClick -Button $windowsOverlayOpenButton
         Assert-BoostLabCondition ($windowsOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Windows Part A confirmation should close before simulation: $windowsStepId"
     }
@@ -5257,6 +5445,7 @@ foreach ($advancedSpec in $advancedStepSpecs) {
         $advancedOverlayOpenButton = @(Get-AxisFirstUseWizardTaggedElements -Root $advancedOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
         $advancedOverlayAcknowledgement.IsChecked = $true
         Assert-BoostLabCondition ([bool]$advancedOverlayOpenButton.IsEnabled) "AXIS Advanced confirmation should enable after acknowledgement: $advancedStepId"
+        Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $advancedContinueButton -Name "$advancedStepId after confirmation acknowledgement"
         Invoke-AxisFirstUseWizardButtonClick -Button $advancedOverlayOpenButton
         Assert-BoostLabCondition ($advancedOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) "AXIS Advanced confirmation should close before simulation: $advancedStepId"
     }
@@ -5286,7 +5475,7 @@ foreach ($advancedSpec in $advancedStepSpecs) {
     }
     elseif ($advancedStepId -eq 'defender-optimize-assistant') {
         Invoke-AxisFirstUseWizardButtonClick -Button $advancedContinueButton
-        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS Defender Optimize Assistant should remain the final implemented first-use wizard step.'
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $advancedContentHost.Child -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS Defender Optimize Assistant Continue/Next should navigate to the final completion page.'
     }
 }
 
@@ -5318,6 +5507,9 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
+$previewScopedIntroStartButton = @(Get-AxisFirstUseWizardTaggedElements -Root $previewScopedContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton') | Select-Object -First 1
+Assert-BoostLabCondition ($previewScopedIntroStartButton -is [System.Windows.Controls.Button]) 'AXIS preview-scope smoke test should start on intro-welcome.'
+Invoke-AxisFirstUseWizardButtonClick -Button $previewScopedIntroStartButton
 Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 10) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, Edge WebView, and Defender Optimize Assistant confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
