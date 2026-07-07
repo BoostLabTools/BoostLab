@@ -31,7 +31,7 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Subtitle | `Ø¥Ø²Ø§Ù„Ø© Edge WebView ÙˆØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª ØºÙŠØ± Ø§Ù„Ø¶Ø±ÙˆØ±ÙŠØ© Ù„ØªØ­Ø³ÙŠÙ† Ø§Ù„Ø£Ø¯Ø§Ø¡.` |
 | Primary action button | `Ø¥Ø²Ø§Ù„Ø© Edge WebView` |
 | Information card title | `ØªÙ†Ø¸ÙŠÙ Ù…ÙƒÙˆÙ†Ø§Øª Edge WebView` |
-| Information card bullet 1 | `Ø¥Ø²Ø§Ù„Ø© Edge WebView Ø­Ø³Ø¨ Ù…Ø³Ø§Ø± BoostLab Ø§Ù„Ù…Ø¹ØªÙ…Ø¯.` |
+| Information card bullet 1 | `Ø¥Ø²Ø§Ù„Ø© Edge WebView ÙˆØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª ØºÙŠØ± Ø§Ù„Ø¶Ø±ÙˆØ±ÙŠØ© Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù‡.` |
 | Information card bullet 2 | `ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª ØºÙŠØ± Ø§Ù„Ø¶Ø±ÙˆØ±ÙŠØ© ÙŠØ³Ø§Ø¹Ø¯ Ø¹Ù„Ù‰ Ø¬Ø¹Ù„ Ø§Ù„Ù†Ø¸Ø§Ù… Ø£Ø®Ù Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù….` |
 | Information card bullet 3 | `ÙŠØªÙ… ØªÙ†ÙÙŠØ° Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„Ù…Ù†Ø§Ø³Ø¨ ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ Ø£Ø«Ù†Ø§Ø¡ Ù‡Ø°Ù‡ Ø§Ù„Ø®Ø·ÙˆØ©.` |
 | Requirements card | Not shown |
@@ -71,6 +71,8 @@ No requirements card should be shown.
 
 Do not show services details, installers, file cleanup details, URLs, package details, logs, commands, diagnostics, validation results, command output, internal modules, Registry names, Services names, Tasks names, AppX package names, TrustedInstaller details, file paths, or implementation details.
 
+Do not show `BoostLab` in normal customer-facing copy for this step. AXIS is the customer-facing product; BoostLab is internal/repo/code branding only.
+
 Do not show Error, Failed, Warning, Needs attention, Stopped, Restart needed, Waiting for confirmation, Not available, Skipped, Completed with notes, or Arabic equivalents in the normal customer UI.
 
 ## Prototype Safety Restrictions
@@ -85,9 +87,8 @@ Preserve the global Windows-stage AXIS layout: `900 x 650`, normal Windows chrom
 
 Title is English-only and should render LTR while remaining physically right-anchored.
 
-`Edge WebView` and `BoostLab` inside Arabic lines must be rendered safely.
+`Edge WebView` inside Arabic lines must be rendered safely. `BoostLab` must not be used in normal customer-facing Arabic lines.
 
 ## Non-Goals
 
 This phase does not include UI implementation, runtime implementation, prototype changes, tests, config, modules, source changes, real Apply/Open/Default/Restore/Analyze actions, Windows Settings launch, Edge/WebView mutation, Services mutation, file cleanup, Registry mutation, host mutation, staging, committing, or pushing.
-

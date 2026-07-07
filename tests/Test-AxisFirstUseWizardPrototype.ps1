@@ -60,6 +60,15 @@ function Get-BoostLabGitExecutable {
     return ''
 }
 
+function ConvertTo-AxisWizardBlueprintMojibakeText {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text
+    )
+
+    return [Text.Encoding]::GetEncoding(1252).GetString([Text.Encoding]::UTF8.GetBytes($Text))
+}
+
 function Visit-AxisFirstUseWizardTree {
     param(
         [AllowNull()]
@@ -502,6 +511,7 @@ $installersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-
 $installersStartupAppsSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Settings-Step-Blueprint.md'
 $installersStartupAppsTaskManagerBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Installers-Startup-Apps-Task-Manager-Step-Blueprint.md'
 $restartAfterInstallersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Restart-After-Installers-Step-Blueprint.md'
+$edgeWebViewBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Edge-WebView-Step-Blueprint.md'
 $graphicsBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Clean-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Install-Debloat-Settings-Step-Blueprint.md'
@@ -535,6 +545,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $installersBlueprintPath -PathT
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsSettingsBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Settings extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $installersStartupAppsTaskManagerBlueprintPath -PathType Leaf) 'AXIS Installers Startup Apps Task Manager extension blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $restartAfterInstallersBlueprintPath -PathType Leaf) 'AXIS Restart After Installers extension blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $edgeWebViewBlueprintPath -PathType Leaf) 'AXIS Edge WebView step blueprint is missing.'
 foreach ($graphicsBlueprintPath in $graphicsBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $graphicsBlueprintPath -PathType Leaf) "AXIS Graphics step blueprint is missing: $graphicsBlueprintPath"
 }
@@ -553,6 +564,7 @@ $installersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $insta
 $installersStartupAppsSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersStartupAppsSettingsBlueprintPath
 $installersStartupAppsTaskManagerBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $installersStartupAppsTaskManagerBlueprintPath
 $restartAfterInstallersBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $restartAfterInstallersBlueprintPath
+$edgeWebViewBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $edgeWebViewBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -838,6 +850,77 @@ $windowsBloatwareRequirement1 = Get-AxisWizardWindowsText -Name 'BloatwareRequir
 $windowsBloatwareRequirement2 = Get-AxisWizardWindowsText -Name 'BloatwareRequirement2'
 $windowsBloatwareSelectorLabel = Get-AxisWizardWindowsText -Name 'BloatwareSelectorLabel'
 $windowsBloatwareSelectorPlaceholder = Get-AxisWizardWindowsText -Name 'BloatwareSelectorPlaceholder'
+$windowsGameBarSubtitle = Get-AxisWizardWindowsText -Name 'GameBarSubtitle'
+$windowsGameBarPrimary = Get-AxisWizardWindowsText -Name 'GameBarPrimary'
+$windowsGameBarInfoTitle = Get-AxisWizardWindowsText -Name 'GameBarInfoTitle'
+$windowsGameBarInfoBullet1 = Get-AxisWizardWindowsText -Name 'GameBarInfoBullet1'
+$windowsGameBarInfoBullet2 = Get-AxisWizardWindowsText -Name 'GameBarInfoBullet2'
+$windowsGameBarInfoBullet3 = Get-AxisWizardWindowsText -Name 'GameBarInfoBullet3'
+$windowsEdgeWebViewSubtitle = Get-AxisWizardWindowsText -Name 'EdgeWebViewSubtitle'
+$windowsEdgeWebViewPrimary = Get-AxisWizardWindowsText -Name 'EdgeWebViewPrimary'
+$windowsEdgeWebViewInfoTitle = Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoTitle'
+$windowsEdgeWebViewInfoBullet1 = Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet1'
+$windowsEdgeWebViewInfoBullet2 = Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet2'
+$windowsEdgeWebViewInfoBullet3 = Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet3'
+$windowsEdgeWebViewApprovedBullet1 = ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0632, 0x0627, 0x0644, 0x0629, 0x0020, 0x0045, 0x0064, 0x0067, 0x0065, 0x0020, 0x0057, 0x0065, 0x0062, 0x0056, 0x0069, 0x0065, 0x0077, 0x0020, 0x0648, 0x062A, 0x0642, 0x0644, 0x064A, 0x0644, 0x0020, 0x0627, 0x0644, 0x0645, 0x0643, 0x0648, 0x0646, 0x0627, 0x062A, 0x0020, 0x063A, 0x064A, 0x0631, 0x0020, 0x0627, 0x0644, 0x0636, 0x0631, 0x0648, 0x0631, 0x064A, 0x0629, 0x0020, 0x0627, 0x0644, 0x0645, 0x0631, 0x062A, 0x0628, 0x0637, 0x0629, 0x0020, 0x0628, 0x0647, 0x002E)
+$windowsEdgeWebViewOldBoostLabBullet1 = ConvertFrom-AxisWizardCodePoints @(0x0625, 0x0632, 0x0627, 0x0644, 0x0629, 0x0020, 0x0045, 0x0064, 0x0067, 0x0065, 0x0020, 0x0057, 0x0065, 0x0062, 0x0056, 0x0069, 0x0065, 0x0077, 0x0020, 0x062D, 0x0633, 0x0628, 0x0020, 0x0645, 0x0633, 0x0627, 0x0631, 0x0020, 0x0042, 0x006F, 0x006F, 0x0073, 0x0074, 0x004C, 0x0061, 0x0062, 0x0020, 0x0627, 0x0644, 0x0645, 0x0639, 0x062A, 0x0645, 0x062F, 0x002E)
+Assert-BoostLabCondition ($windowsEdgeWebViewInfoBullet1 -eq $windowsEdgeWebViewApprovedBullet1) 'AXIS Edge WebView information bullet 1 should use the owner-approved no-BoostLab customer copy.'
+Assert-BoostLabCondition (-not $windowsEdgeWebViewInfoBullet1.Contains('BoostLab')) 'AXIS Edge WebView information bullet 1 must not expose BoostLab in customer-facing copy.'
+Assert-BoostLabCondition ($windowsEdgeWebViewInfoBullet1 -ne $windowsEdgeWebViewOldBoostLabBullet1) 'AXIS Edge WebView information bullet 1 must not retain the old BoostLab-branded copy.'
+$windowsNotepadSettingsSubtitle = Get-AxisWizardWindowsText -Name 'NotepadSettingsSubtitle'
+$windowsNotepadSettingsPrimary = Get-AxisWizardWindowsText -Name 'NotepadSettingsPrimary'
+$windowsNotepadSettingsInfoTitle = Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoTitle'
+$windowsNotepadSettingsInfoBullet1 = Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet1'
+$windowsNotepadSettingsInfoBullet2 = Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet2'
+$windowsNotepadSettingsInfoBullet3 = Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet3'
+$windowsControlPanelSettingsSubtitle = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsSubtitle'
+$windowsControlPanelSettingsPrimary = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsPrimary'
+$windowsControlPanelSettingsInfoTitle = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoTitle'
+$windowsControlPanelSettingsInfoBullet1 = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet1'
+$windowsControlPanelSettingsInfoBullet2 = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet2'
+$windowsControlPanelSettingsInfoBullet3 = Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet3'
+$windowsInputLanguageHotkeySubtitle = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeySubtitle'
+$windowsInputLanguageHotkeyPrimary = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyPrimary'
+$windowsInputLanguageHotkeyInfoTitle = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoTitle'
+$windowsInputLanguageHotkeyInfoBullet1 = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet1'
+$windowsInputLanguageHotkeyInfoBullet2 = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet2'
+$windowsInputLanguageHotkeyInfoBullet3 = Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet3'
+$windowsSoundSubtitle = Get-AxisWizardWindowsText -Name 'SoundSubtitle'
+$windowsSoundPrimary = Get-AxisWizardWindowsText -Name 'SoundPrimary'
+$windowsSoundInfoTitle = Get-AxisWizardWindowsText -Name 'SoundInfoTitle'
+$windowsSoundInfoBullet1 = Get-AxisWizardWindowsText -Name 'SoundInfoBullet1'
+$windowsSoundInfoBullet2 = Get-AxisWizardWindowsText -Name 'SoundInfoBullet2'
+$windowsSoundInfoBullet3 = Get-AxisWizardWindowsText -Name 'SoundInfoBullet3'
+$windowsDeviceManagerPowerSavingsWakeSubtitle = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeSubtitle'
+$windowsDeviceManagerPowerSavingsWakePrimary = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakePrimary'
+$windowsDeviceManagerPowerSavingsWakeInfoTitle = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoTitle'
+$windowsDeviceManagerPowerSavingsWakeInfoBullet1 = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet1'
+$windowsDeviceManagerPowerSavingsWakeInfoBullet2 = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet2'
+$windowsDeviceManagerPowerSavingsWakeInfoBullet3 = Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet3'
+$windowsNetworkAdapterPowerSavingsWakeSubtitle = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeSubtitle'
+$windowsNetworkAdapterPowerSavingsWakePrimary = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakePrimary'
+$windowsNetworkAdapterPowerSavingsWakeInfoTitle = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoTitle'
+$windowsNetworkAdapterPowerSavingsWakeInfoBullet1 = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet1'
+$windowsNetworkAdapterPowerSavingsWakeInfoBullet2 = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet2'
+$windowsNetworkAdapterPowerSavingsWakeInfoBullet3 = Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet3'
+$windowsWriteCacheBufferFlushingSubtitle = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingSubtitle'
+$windowsWriteCacheBufferFlushingPrimary = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingPrimary'
+$windowsWriteCacheBufferFlushingInfoTitle = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoTitle'
+$windowsWriteCacheBufferFlushingInfoBullet1 = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet1'
+$windowsWriteCacheBufferFlushingInfoBullet2 = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet2'
+$windowsWriteCacheBufferFlushingInfoBullet3 = Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet3'
+$windowsPowerPlanSubtitle = Get-AxisWizardWindowsText -Name 'PowerPlanSubtitle'
+$windowsPowerPlanPrimary = Get-AxisWizardWindowsText -Name 'PowerPlanPrimary'
+$windowsPowerPlanInfoTitle = Get-AxisWizardWindowsText -Name 'PowerPlanInfoTitle'
+$windowsPowerPlanInfoBullet1 = Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet1'
+$windowsPowerPlanInfoBullet2 = Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet2'
+$windowsPowerPlanInfoBullet3 = Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet3'
+$windowsCleanupSubtitle = Get-AxisWizardWindowsText -Name 'CleanupSubtitle'
+$windowsCleanupPrimary = Get-AxisWizardWindowsText -Name 'CleanupPrimary'
+$windowsCleanupInfoTitle = Get-AxisWizardWindowsText -Name 'CleanupInfoTitle'
+$windowsCleanupInfoBullet1 = Get-AxisWizardWindowsText -Name 'CleanupInfoBullet1'
+$windowsCleanupInfoBullet2 = Get-AxisWizardWindowsText -Name 'CleanupInfoBullet2'
+$windowsCleanupInfoBullet3 = Get-AxisWizardWindowsText -Name 'CleanupInfoBullet3'
 $windowsRunning = Get-AxisWizardWindowsText -Name 'Running'
 $windowsCompleted = Get-AxisWizardWindowsText -Name 'Completed'
 $arabicInstallersRemovedEpicCheckbox = -join ([char[]]@(
@@ -1454,6 +1537,222 @@ $windowsPartAStepSpecs = @(
 )
 $windowsPartAStepOrder = @($windowsPartAStepSpecs | ForEach-Object { [string]$_['Id'] })
 $windowsPartAStepTitles = @($windowsPartAStepSpecs | ForEach-Object { [string]$_['Title'] })
+$windowsPartBStepSpecs = @(
+    [ordered]@{
+        Id = 'game-bar'
+        TagRoot = 'WindowsGameBar'
+        Title = 'Game Bar'
+        Primary = $windowsGameBarPrimary
+        Subtitle = $windowsGameBarSubtitle
+        InfoTitle = $windowsGameBarInfoTitle
+        InfoItems = @($windowsGameBarInfoBullet1, $windowsGameBarInfoBullet2, $windowsGameBarInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsGameBarPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'edge-webview'
+        TagRoot = 'WindowsEdgeWebView'
+        Title = 'Edge WebView'
+        Primary = $windowsEdgeWebViewPrimary
+        Subtitle = $windowsEdgeWebViewSubtitle
+        InfoTitle = $windowsEdgeWebViewInfoTitle
+        InfoItems = @($windowsEdgeWebViewInfoBullet1, $windowsEdgeWebViewInfoBullet2, $windowsEdgeWebViewInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsEdgeWebViewPrototypeOnlyNoRuntimeAction'
+        Overlay = $true
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'notepad-settings'
+        TagRoot = 'WindowsNotepadSettings'
+        Title = 'Notepad Settings'
+        Primary = $windowsNotepadSettingsPrimary
+        Subtitle = $windowsNotepadSettingsSubtitle
+        InfoTitle = $windowsNotepadSettingsInfoTitle
+        InfoItems = @($windowsNotepadSettingsInfoBullet1, $windowsNotepadSettingsInfoBullet2, $windowsNotepadSettingsInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsNotepadSettingsPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'control-panel-settings'
+        TagRoot = 'WindowsControlPanelSettings'
+        Title = 'Control Panel Settings'
+        Primary = $windowsControlPanelSettingsPrimary
+        Subtitle = $windowsControlPanelSettingsSubtitle
+        InfoTitle = $windowsControlPanelSettingsInfoTitle
+        InfoItems = @($windowsControlPanelSettingsInfoBullet1, $windowsControlPanelSettingsInfoBullet2, $windowsControlPanelSettingsInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsControlPanelSettingsPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'input-language-hotkey'
+        TagRoot = 'WindowsInputLanguageHotkey'
+        Title = 'Input Language Hotkey'
+        Primary = $windowsInputLanguageHotkeyPrimary
+        Subtitle = $windowsInputLanguageHotkeySubtitle
+        InfoTitle = $windowsInputLanguageHotkeyInfoTitle
+        InfoItems = @($windowsInputLanguageHotkeyInfoBullet1, $windowsInputLanguageHotkeyInfoBullet2, $windowsInputLanguageHotkeyInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsInputLanguageHotkeyPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'sound'
+        TagRoot = 'WindowsSound'
+        Title = 'Sound'
+        Primary = $windowsSoundPrimary
+        Subtitle = $windowsSoundSubtitle
+        InfoTitle = $windowsSoundInfoTitle
+        InfoItems = @($windowsSoundInfoBullet1, $windowsSoundInfoBullet2, $windowsSoundInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Open'
+        FutureInternalAction = 'Open'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsSoundPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $true
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'device-manager-power-savings-wake'
+        TagRoot = 'WindowsDeviceManagerPowerSavingsWake'
+        Title = 'Device Manager Power Savings Wake'
+        Primary = $windowsDeviceManagerPowerSavingsWakePrimary
+        Subtitle = $windowsDeviceManagerPowerSavingsWakeSubtitle
+        InfoTitle = $windowsDeviceManagerPowerSavingsWakeInfoTitle
+        InfoItems = @($windowsDeviceManagerPowerSavingsWakeInfoBullet1, $windowsDeviceManagerPowerSavingsWakeInfoBullet2, $windowsDeviceManagerPowerSavingsWakeInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsDeviceManagerPowerSavingsWakePrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'network-adapter-power-savings-wake'
+        TagRoot = 'WindowsNetworkAdapterPowerSavingsWake'
+        Title = 'Network Adapter Power Savings Wake'
+        Primary = $windowsNetworkAdapterPowerSavingsWakePrimary
+        Subtitle = $windowsNetworkAdapterPowerSavingsWakeSubtitle
+        InfoTitle = $windowsNetworkAdapterPowerSavingsWakeInfoTitle
+        InfoItems = @($windowsNetworkAdapterPowerSavingsWakeInfoBullet1, $windowsNetworkAdapterPowerSavingsWakeInfoBullet2, $windowsNetworkAdapterPowerSavingsWakeInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsNetworkAdapterPowerSavingsWakePrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'write-cache-buffer-flushing'
+        TagRoot = 'WindowsWriteCacheBufferFlushing'
+        Title = 'Write Cache Buffer Flushing'
+        Primary = $windowsWriteCacheBufferFlushingPrimary
+        Subtitle = $windowsWriteCacheBufferFlushingSubtitle
+        InfoTitle = $windowsWriteCacheBufferFlushingInfoTitle
+        InfoItems = @($windowsWriteCacheBufferFlushingInfoBullet1, $windowsWriteCacheBufferFlushingInfoBullet2, $windowsWriteCacheBufferFlushingInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsWriteCacheBufferFlushingPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'power-plan'
+        TagRoot = 'WindowsPowerPlan'
+        Title = 'Power Plan'
+        Primary = $windowsPowerPlanPrimary
+        Subtitle = $windowsPowerPlanSubtitle
+        InfoTitle = $windowsPowerPlanInfoTitle
+        InfoItems = @($windowsPowerPlanInfoBullet1, $windowsPowerPlanInfoBullet2, $windowsPowerPlanInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsPowerPlanPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+    [ordered]@{
+        Id = 'cleanup'
+        TagRoot = 'WindowsCleanup'
+        Title = 'Cleanup'
+        Primary = $windowsCleanupPrimary
+        Subtitle = $windowsCleanupSubtitle
+        InfoTitle = $windowsCleanupInfoTitle
+        InfoItems = @($windowsCleanupInfoBullet1, $windowsCleanupInfoBullet2, $windowsCleanupInfoBullet3)
+        Requirements = @()
+        Running = $windowsRunning
+        Completed = $windowsCompleted
+        CustomerAction = 'Apply'
+        FutureInternalAction = 'Apply'
+        NoRealActionMarker = 'AxisFirstUseWizard.WindowsCleanupPrototypeOnlyNoRuntimeAction'
+        Overlay = $false
+        Selector = $false
+        OpenMappedPrototypeOnly = $false
+        WindowsStageBatchMarker = 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly'
+    }
+)
+$windowsPartBStepOrder = @($windowsPartBStepSpecs | ForEach-Object { [string]$_['Id'] })
+$windowsPartBStepTitles = @($windowsPartBStepSpecs | ForEach-Object { [string]$_['Title'] })
+$windowsStepSpecs = @($windowsPartAStepSpecs + $windowsPartBStepSpecs)
+$windowsStepOrder = @($windowsStepSpecs | ForEach-Object { [string]$_['Id'] })
+$windowsStepTitles = @($windowsStepSpecs | ForEach-Object { [string]$_['Title'] })
 $axisSetupRightAlignedVisualLineRendererAutomationId = 'AxisFirstUseWizard.SetupRightAlignedVisualLineRenderer.NoLeftFloatingWrappedArabicLines'
 $axisSharedCardBodyTextRendererMarker = 'AxisFirstUseWizard.SharedCardBodyTextRenderer'
 $axisSharedCardBodyNoLeftFloatingMarker = 'AxisFirstUseWizard.SharedCardBodyNoLeftFloatingWrappedArabic'
@@ -1541,7 +1840,7 @@ Assert-BoostLabCondition (
 ) 'AXIS first-use wizard sample state must keep the exact canonical stage order.'
 
 $sampleSteps = @($sampleState['Steps'])
-Assert-BoostLabCondition ($sampleSteps.Count -eq 37) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, and the eleven Windows Part A steps.'
+Assert-BoostLabCondition ($sampleSteps.Count -eq 48) 'AXIS first-use wizard sample state should include the approved Check/Refresh steps, the ten Setup steps, the four Installers-stage steps, the six Graphics-stage steps, and the twenty-two Windows steps.'
 $expectedStepOrder = @(
     'bios-information'
     'bios-settings'
@@ -1549,8 +1848,8 @@ $expectedStepOrder = @(
     'unattended'
     'updates-drivers-block'
     'to-bios'
-) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder + $windowsPartAStepOrder
-Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, Graphics, and Windows Part A after Graphics Configuration Center.'
+) + $setupStepOrder + @('installers') + $installersExtensionStepOrder + $graphicsStepOrder + $windowsStepOrder
+Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Id'] }) -join '|') -eq ($expectedStepOrder -join '|')) 'AXIS first-use wizard step order should keep Check/Refresh, then Setup, then Installers, Graphics, Windows Part A, and Windows Part B after Graphics Configuration Center.'
 $expectedStepTitles = @(
     'BIOS Drivers & Downloads'
     'BIOS Settings'
@@ -1558,7 +1857,7 @@ $expectedStepTitles = @(
     'AutoUnattend'
     'Updates Drivers Block'
     $arabicToBiosTitle
-) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles + $windowsPartAStepTitles
+) + $setupStepTitles + @($arabicInstallersTitle) + $installersExtensionStepTitles + $graphicsStepTitles + $windowsStepTitles
 Assert-BoostLabCondition ((@($sampleSteps | ForEach-Object { [string]$_['Title'] }) -join '|') -eq ($expectedStepTitles -join '|')) 'AXIS first-use wizard customer step title order changed.'
 Assert-BoostLabCondition ([int]$sampleState['CurrentStepIndex'] -eq 0) 'AXIS first-use wizard should start on BIOS Drivers & Downloads.'
 Assert-BoostLabCondition ($sampleState['Step'] -eq $sampleSteps[0]) 'AXIS first-use wizard compatibility Step entry should remain the first visible step.'
@@ -1746,6 +2045,19 @@ $copilotStep = [System.Collections.IDictionary]$sampleSteps[33]
 $gameModeStep = [System.Collections.IDictionary]$sampleSteps[34]
 $pointerPrecisionStep = [System.Collections.IDictionary]$sampleSteps[35]
 $bloatwareStep = [System.Collections.IDictionary]$sampleSteps[36]
+$windowsPartBSteps = @($sampleSteps[37..47])
+$windowsSteps = @($sampleSteps[26..47])
+$gameBarStep = [System.Collections.IDictionary]$sampleSteps[37]
+$edgeWebViewStep = [System.Collections.IDictionary]$sampleSteps[38]
+$notepadSettingsStep = [System.Collections.IDictionary]$sampleSteps[39]
+$controlPanelSettingsStep = [System.Collections.IDictionary]$sampleSteps[40]
+$inputLanguageHotkeyStep = [System.Collections.IDictionary]$sampleSteps[41]
+$soundStep = [System.Collections.IDictionary]$sampleSteps[42]
+$deviceManagerPowerSavingsWakeStep = [System.Collections.IDictionary]$sampleSteps[43]
+$networkAdapterPowerSavingsWakeStep = [System.Collections.IDictionary]$sampleSteps[44]
+$writeCacheBufferFlushingStep = [System.Collections.IDictionary]$sampleSteps[45]
+$powerPlanStep = [System.Collections.IDictionary]$sampleSteps[46]
+$cleanupStep = [System.Collections.IDictionary]$sampleSteps[47]
 Assert-BoostLabCondition ([string]$biosStep['Id'] -eq 'bios-information') 'AXIS first-use wizard internal tool id changed.'
 Assert-BoostLabCondition ([string]$biosStep['Title'] -eq 'BIOS Drivers & Downloads') 'AXIS first-use wizard customer title changed.'
 Assert-BoostLabCondition ([string]$biosStep['StageName'] -eq 'Check') 'AXIS first-use wizard customer stage label changed.'
@@ -2063,54 +2375,62 @@ for ($graphicsIndex = 0; $graphicsIndex -lt $graphicsStepSpecs.Count; $graphicsI
     }
 }
 
-$actualWindowsPartAStageOrder = @($sampleSteps | Where-Object { [string]$_['StageName'] -eq 'Windows' } | ForEach-Object { [string]$_['Id'] })
-Assert-BoostLabCondition (($actualWindowsPartAStageOrder -join '|') -eq ($windowsPartAStepOrder -join '|')) 'AXIS Windows Part A stage order should be Start Menu Taskbar, Start Menu Layout, Context Menu, Theme Black, Black Lock Screen Wallpaper, Black Account Pictures, Widgets, Copilot, Game Mode, Pointer Precision, Bloatware.'
-Assert-BoostLabCondition ($windowsPartASteps.Count -eq 11) 'AXIS Windows Part A should add exactly eleven isolated prototype steps.'
-for ($windowsIndex = 0; $windowsIndex -lt $windowsPartAStepSpecs.Count; $windowsIndex++) {
-    $windowsSpec = [System.Collections.IDictionary]$windowsPartAStepSpecs[$windowsIndex]
-    $windowsStep = [System.Collections.IDictionary]$windowsPartASteps[$windowsIndex]
+$actualWindowsStageOrder = @($sampleSteps | Where-Object { [string]$_['StageName'] -eq 'Windows' } | ForEach-Object { [string]$_['Id'] })
+Assert-BoostLabCondition (($actualWindowsStageOrder -join '|') -eq ($windowsStepOrder -join '|')) 'AXIS Windows stage order should keep Part A followed by Part B: Start Menu Taskbar through Bloatware, then Game Bar through Cleanup.'
+Assert-BoostLabCondition ($windowsPartASteps.Count -eq 11) 'AXIS Windows Part A should keep exactly eleven isolated prototype steps.'
+Assert-BoostLabCondition ($windowsPartBSteps.Count -eq 11) 'AXIS Windows Part B should add exactly eleven isolated prototype steps.'
+Assert-BoostLabCondition ($windowsSteps.Count -eq 22) 'AXIS Windows stage should include exactly twenty-two isolated prototype steps.'
+for ($windowsIndex = 0; $windowsIndex -lt $windowsStepSpecs.Count; $windowsIndex++) {
+    $windowsSpec = [System.Collections.IDictionary]$windowsStepSpecs[$windowsIndex]
+    $windowsStep = [System.Collections.IDictionary]$windowsSteps[$windowsIndex]
     $windowsName = [string]$windowsSpec['Id']
-    Assert-BoostLabCondition ([string]$windowsStep['Id'] -eq $windowsName) "AXIS Windows Part A step order changed at index $windowsIndex."
-    Assert-BoostLabCondition ([string]$windowsStep['Title'] -eq [string]$windowsSpec['Title']) "AXIS Windows Part A title changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['StageName'] -eq 'Windows') "AXIS Windows Part A step should be in Windows stage: $windowsName"
-    Assert-BoostLabCondition ([string]$windowsStep['PrimaryActionLabel'] -eq [string]$windowsSpec['Primary']) "AXIS Windows Part A primary action changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['Description'] -eq [string]$windowsSpec['Subtitle']) "AXIS Windows Part A subtitle changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['InformationCardTitle'] -eq [string]$windowsSpec['InfoTitle']) "AXIS Windows Part A information title changed for $windowsName."
-    Assert-BoostLabCondition ((@($windowsStep['InformationItems']) -join '|') -eq (@($windowsSpec['InfoItems']) -join '|')) "AXIS Windows Part A information bullets changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['CheckingStatusTitle'] -eq [string]$windowsSpec['Running']) "AXIS Windows Part A running status changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['CompletedStatusTitle'] -eq [string]$windowsSpec['Completed']) "AXIS Windows Part A completed status changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['CompletionStateLabel'] -eq [string]$windowsSpec['Completed']) "AXIS Windows Part A completion label changed for $windowsName."
-    Assert-BoostLabCondition ([bool]$windowsStep['PrototypeOnlySimulation']) "AXIS Windows Part A step should be prototype-only simulation: $windowsName"
-    Assert-BoostLabCondition ([string]$windowsStep['WindowsStageBatchMarker'] -eq 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly') "AXIS Windows Part A batch marker missing for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['NoRealActionMarker'] -eq [string]$windowsSpec['NoRealActionMarker']) "AXIS Windows Part A no-real-action marker changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['CustomerAction'] -eq [string]$windowsSpec['CustomerAction']) "AXIS Windows Part A internal action mapping changed for $windowsName."
-    Assert-BoostLabCondition ([string]$windowsStep['FutureInternalAction'] -eq [string]$windowsSpec['FutureInternalAction']) "AXIS Windows Part A future internal action changed for $windowsName."
-    Assert-BoostLabCondition ((@($windowsStep['CustomerVisibleActions']) -join '|') -eq [string]$windowsSpec['Primary']) "AXIS Windows Part A customer-visible action should be the owner-approved label only: $windowsName"
+    $expectedWindowsStageBatchMarker = if ($windowsSpec.Contains('WindowsStageBatchMarker')) {
+        [string]$windowsSpec['WindowsStageBatchMarker']
+    }
+    else {
+        'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly'
+    }
+    Assert-BoostLabCondition ([string]$windowsStep['Id'] -eq $windowsName) "AXIS Windows step order changed at index $windowsIndex."
+    Assert-BoostLabCondition ([string]$windowsStep['Title'] -eq [string]$windowsSpec['Title']) "AXIS Windows title changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['StageName'] -eq 'Windows') "AXIS Windows step should be in Windows stage: $windowsName"
+    Assert-BoostLabCondition ([string]$windowsStep['PrimaryActionLabel'] -eq [string]$windowsSpec['Primary']) "AXIS Windows primary action changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['Description'] -eq [string]$windowsSpec['Subtitle']) "AXIS Windows subtitle changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['InformationCardTitle'] -eq [string]$windowsSpec['InfoTitle']) "AXIS Windows information title changed for $windowsName."
+    Assert-BoostLabCondition ((@($windowsStep['InformationItems']) -join '|') -eq (@($windowsSpec['InfoItems']) -join '|')) "AXIS Windows information bullets changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['CheckingStatusTitle'] -eq [string]$windowsSpec['Running']) "AXIS Windows running status changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['CompletedStatusTitle'] -eq [string]$windowsSpec['Completed']) "AXIS Windows completed status changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['CompletionStateLabel'] -eq [string]$windowsSpec['Completed']) "AXIS Windows completion label changed for $windowsName."
+    Assert-BoostLabCondition ([bool]$windowsStep['PrototypeOnlySimulation']) "AXIS Windows step should be prototype-only simulation: $windowsName"
+    Assert-BoostLabCondition ([string]$windowsStep['WindowsStageBatchMarker'] -eq $expectedWindowsStageBatchMarker) "AXIS Windows batch marker changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['NoRealActionMarker'] -eq [string]$windowsSpec['NoRealActionMarker']) "AXIS Windows no-real-action marker changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['CustomerAction'] -eq [string]$windowsSpec['CustomerAction']) "AXIS Windows internal action mapping changed for $windowsName."
+    Assert-BoostLabCondition ([string]$windowsStep['FutureInternalAction'] -eq [string]$windowsSpec['FutureInternalAction']) "AXIS Windows future internal action changed for $windowsName."
+    Assert-BoostLabCondition ((@($windowsStep['CustomerVisibleActions']) -join '|') -eq [string]$windowsSpec['Primary']) "AXIS Windows customer-visible action should be the owner-approved label only: $windowsName"
     foreach ($forbiddenWindowsCustomerAction in @('Analyze', 'Apply', 'Open', 'Default', 'Restore')) {
-        Assert-BoostLabCondition (-not ($forbiddenWindowsCustomerAction -in @($windowsStep['CustomerVisibleActions']))) "AXIS Windows Part A must not expose internal action text $forbiddenWindowsCustomerAction as customer-visible action: $windowsName"
+        Assert-BoostLabCondition (-not ($forbiddenWindowsCustomerAction -in @($windowsStep['CustomerVisibleActions']))) "AXIS Windows must not expose internal action text $forbiddenWindowsCustomerAction as customer-visible action: $windowsName"
     }
 
     if ([bool]$windowsSpec['Overlay']) {
-        Assert-BoostLabCondition ([bool]$windowsStep['RequiresConfirmationAcknowledgement']) "AXIS Windows Part A confirmation overlay should be present for $windowsName."
-        Assert-BoostLabCondition ([string]$windowsStep['DocumentationAcknowledgementText'] -eq $arabicAcknowledgement) "AXIS Windows Part A confirmation checkbox copy changed for $windowsName."
-        Assert-BoostLabCondition ([string]$windowsStep['ConfirmationActionLabel'] -eq [string]$windowsSpec['Primary']) "AXIS Windows Part A confirmation primary copy changed for $windowsName."
-        Assert-BoostLabCondition ([string]$windowsStep['ConfirmationReturnLabel'] -eq $arabicReturn) "AXIS Windows Part A confirmation return copy changed for $windowsName."
+        Assert-BoostLabCondition ([bool]$windowsStep['RequiresConfirmationAcknowledgement']) "AXIS Windows confirmation overlay should be present for $windowsName."
+        Assert-BoostLabCondition ([string]$windowsStep['DocumentationAcknowledgementText'] -eq $arabicAcknowledgement) "AXIS Windows confirmation checkbox copy changed for $windowsName."
+        Assert-BoostLabCondition ([string]$windowsStep['ConfirmationActionLabel'] -eq [string]$windowsSpec['Primary']) "AXIS Windows confirmation primary copy changed for $windowsName."
+        Assert-BoostLabCondition ([string]$windowsStep['ConfirmationReturnLabel'] -eq $arabicReturn) "AXIS Windows confirmation return copy changed for $windowsName."
     }
     else {
-        Assert-BoostLabCondition (-not [bool]$windowsStep['RequiresConfirmationAcknowledgement']) "AXIS Windows Part A confirmation overlay should be absent for $windowsName."
-        Assert-BoostLabCondition ([bool]$windowsStep['NoConfirmationOverlay']) "AXIS Windows Part A no-overlay marker should be present for $windowsName."
+        Assert-BoostLabCondition (-not [bool]$windowsStep['RequiresConfirmationAcknowledgement']) "AXIS Windows confirmation overlay should be absent for $windowsName."
+        Assert-BoostLabCondition ([bool]$windowsStep['NoConfirmationOverlay']) "AXIS Windows no-overlay marker should be present for $windowsName."
     }
 
     if (@($windowsSpec['Requirements']).Count -gt 0) {
-        Assert-BoostLabCondition ([bool]$windowsStep['ShowRequirements']) "AXIS Windows Part A requirements card should be present for $windowsName."
-        Assert-BoostLabCondition ((@($windowsStep['RequirementsItems']) -join '|') -eq (@($windowsSpec['Requirements']) -join '|')) "AXIS Windows Part A requirements copy changed for $windowsName."
+        Assert-BoostLabCondition ([bool]$windowsStep['ShowRequirements']) "AXIS Windows requirements card should be present for $windowsName."
+        Assert-BoostLabCondition ((@($windowsStep['RequirementsItems']) -join '|') -eq (@($windowsSpec['Requirements']) -join '|')) "AXIS Windows requirements copy changed for $windowsName."
     }
     else {
-        Assert-BoostLabCondition (-not [bool]$windowsStep['ShowRequirements']) "AXIS Windows Part A requirements card should be absent for $windowsName."
-        Assert-BoostLabCondition (-not $windowsStep.Contains('RequirementsItems')) "AXIS Windows Part A no-requirements step should not carry requirements items: $windowsName"
+        Assert-BoostLabCondition (-not [bool]$windowsStep['ShowRequirements']) "AXIS Windows requirements card should be absent for $windowsName."
+        Assert-BoostLabCondition (-not $windowsStep.Contains('RequirementsItems')) "AXIS Windows no-requirements step should not carry requirements items: $windowsName"
     }
 
-    Assert-BoostLabCondition ([bool]$windowsStep['RequiresInputWindow'] -eq $false) "AXIS Windows Part A step must not show an input window: $windowsName"
+    Assert-BoostLabCondition ([bool]$windowsStep['RequiresInputWindow'] -eq $false) "AXIS Windows step must not show an input window: $windowsName"
     if ([bool]$windowsSpec['Selector']) {
         Assert-BoostLabCondition ([bool]$windowsStep['RequiresActionSelector']) 'AXIS Bloatware should require the owner-approved action selector.'
         Assert-BoostLabCondition ([bool]$windowsStep['PrimaryActionRequiresSelection']) 'AXIS Bloatware primary action should remain disabled until an action is selected.'
@@ -2120,11 +2440,11 @@ for ($windowsIndex = 0; $windowsIndex -lt $windowsPartAStepSpecs.Count; $windows
         Assert-BoostLabCondition ((@($windowsStep['ActionSelectorOptions']) -join '|') -eq (@($windowsSpec['SelectorOptions']) -join '|')) 'AXIS Bloatware selector options changed.'
     }
     else {
-        Assert-BoostLabCondition (-not [bool]$windowsStep['RequiresActionSelector']) "AXIS Windows Part A step should not require an action selector: $windowsName"
+        Assert-BoostLabCondition (-not [bool]$windowsStep['RequiresActionSelector']) "AXIS Windows step should not require an action selector: $windowsName"
     }
 
     if ([bool]$windowsSpec['OpenMappedPrototypeOnly']) {
-        Assert-BoostLabCondition ([bool]$windowsStep['OpenMappedPrototypeOnly']) "AXIS Windows Part A Open-mapped step should be marked prototype-only: $windowsName"
+        Assert-BoostLabCondition ([bool]$windowsStep['OpenMappedPrototypeOnly']) "AXIS Windows Open-mapped step should be marked prototype-only: $windowsName"
     }
 }
 
@@ -2327,7 +2647,7 @@ foreach ($rejectedPhase180DPrototypeText in @(
     Assert-BoostLabCondition (-not $prototypeSource.Contains($rejectedPhase180DPrototypeText)) "AXIS first-use wizard prototype should not contain rejected Phase 180D accent text: $rejectedPhase180DPrototypeText"
 }
 
-Assert-BoostLabCondition ($taggedOverlay.Count -eq 8) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, and Bloatware only.'
+Assert-BoostLabCondition ($taggedOverlay.Count -eq 9) 'AXIS first-use wizard should create confirmation overlays for BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, and Edge WebView only.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one AutoUnattend input overlay.'
 Assert-BoostLabCondition ($taggedAutoUnattendInputOverlay[0].Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS AutoUnattend input overlay should start hidden.'
 Assert-BoostLabCondition ($taggedUpdatesDriversInputOverlay.Count -eq 1) 'AXIS first-use wizard should create one Updates Drivers Block input overlay.'
@@ -4315,14 +4635,20 @@ foreach ($graphicsSpec in $graphicsStepSpecs) {
     }
 }
 
-foreach ($windowsSpec in $windowsPartAStepSpecs) {
+foreach ($windowsSpec in $windowsStepSpecs) {
     $windowsStepId = [string]$windowsSpec['Id']
     $windowsTagRoot = [string]$windowsSpec['TagRoot']
     $windowsSampleState = Get-AxisFirstUseWizardSampleState
     $windowsStepIds = @($windowsSampleState['Steps'] | ForEach-Object { [string]$_['Id'] })
     $windowsStepIndex = [Array]::IndexOf($windowsStepIds, $windowsStepId)
-    Assert-BoostLabCondition ($windowsStepIndex -ge 0) "AXIS Windows Part A render test should find step: $windowsStepId"
+    Assert-BoostLabCondition ($windowsStepIndex -ge 0) "AXIS Windows render test should find step: $windowsStepId"
     $windowsSampleState['CurrentStepIndex'] = $windowsStepIndex
+    $expectedWindowsStageBatchMarker = if ($windowsSpec.Contains('WindowsStageBatchMarker')) {
+        [string]$windowsSpec['WindowsStageBatchMarker']
+    }
+    else {
+        'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly'
+    }
     $windowsPrototype = New-AxisFirstUseWizardPrototype -SampleState $windowsSampleState
     $windowsContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $windowsPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
     $windowsContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $windowsPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -4351,7 +4677,7 @@ foreach ($windowsSpec in $windowsPartAStepSpecs) {
 
     Assert-BoostLabCondition ($windowsStepElement -is [System.Windows.Controls.Border]) "AXIS Windows Part A step should render a step card: $windowsStepId"
     Assert-BoostLabCondition ([double]$windowsStepElement.Height -eq 382.0) "AXIS Windows Part A step should fit inside the 900x650 preview client area: $windowsStepId"
-    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($windowsStepElement) -eq 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly') "AXIS Windows Part A step should expose prototype-only batch marker: $windowsStepId"
+    Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($windowsStepElement) -eq $expectedWindowsStageBatchMarker) "AXIS Windows step should expose the expected prototype-only batch marker: $windowsStepId"
     Assert-BoostLabCondition ([string](Get-AxisFirstUseWizardTextBlockPlainText -TextBlock $windowsTitleText) -eq [string]$windowsSpec['Title']) "AXIS Windows Part A visible title changed: $windowsStepId"
     Assert-BoostLabCondition ($windowsTitleText.FlowDirection -eq [System.Windows.FlowDirection]::LeftToRight) "AXIS Windows Part A English title should render LTR while right-anchored: $windowsStepId"
     Assert-BoostLabCondition ([string]$windowsPrimaryButton.Content -eq [string]$windowsSpec['Primary']) "AXIS Windows Part A primary button text changed: $windowsStepId"
@@ -4416,6 +4742,7 @@ foreach ($windowsSpec in $windowsPartAStepSpecs) {
         }
     }
     Assert-BoostLabCondition (-not $windowsVisibleText.Contains([string][char]0xFFFD)) "AXIS Windows Part A visible copy must not contain replacement glyphs: $windowsStepId"
+    Assert-BoostLabCondition (-not $windowsVisibleText.Contains('BoostLab')) "AXIS Windows normal customer UI must not expose BoostLab branding: $windowsStepId"
     foreach ($forbiddenWindowsVisibleText in @('Analyze', 'Default', 'Restore', 'Cancel', 'Skip', 'Skipped', 'Completed with notes', '25H2', '24H2', 'Clean (Recommended)', 'Explorer restart')) {
         Assert-BoostLabCondition (-not $windowsVisibleText.Contains($forbiddenWindowsVisibleText)) "AXIS Windows Part A view exposes forbidden customer text for ${windowsStepId}: $forbiddenWindowsVisibleText"
     }
@@ -4574,7 +4901,11 @@ foreach ($windowsSpec in $windowsPartAStepSpecs) {
 
     if ($windowsStepId -eq 'bloatware') {
         Invoke-AxisFirstUseWizardButtonClick -Button $windowsContinueButton
-        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $windowsContentHost.Child -Tag 'AxisFirstUseWizard.WindowsBloatwareStep').Count -eq 1) 'AXIS Bloatware should not navigate beyond the last implemented Windows Part A step.'
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $windowsContentHost.Child -Tag 'AxisFirstUseWizard.WindowsGameBarStep').Count -eq 1) 'AXIS Bloatware Continue/Next should navigate to the first Windows Part B step.'
+    }
+    elseif ($windowsStepId -eq 'cleanup') {
+        Invoke-AxisFirstUseWizardButtonClick -Button $windowsContinueButton
+        Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $windowsContentHost.Child -Tag 'AxisFirstUseWizard.WindowsCleanupStep').Count -eq 1) 'AXIS Cleanup should not navigate beyond the last implemented Windows Part B step.'
     }
 }
 
@@ -4606,7 +4937,7 @@ $previewScopedOverlays = @(Get-AxisFirstUseWizardTaggedElements -Root $previewSc
 Assert-BoostLabCondition ($null -ne $previewScopedContentHost) 'AXIS preview-scope smoke test content host is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedContinueButton) 'AXIS preview-scope smoke test Continue/Next button is missing.'
 Assert-BoostLabCondition ($null -ne $previewScopedBackButton) 'AXIS preview-scope smoke test Back button is missing.'
-Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 8) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, and Bloatware confirmation overlays only.'
+Assert-BoostLabCondition ($previewScopedOverlays.Count -eq 9) 'AXIS preview-scope smoke test should have BIOS Drivers, BIOS Settings, To BIOS, Updates Pause, Driver Clean, GPU Driver Setup, NVIDIA App Install, Bloatware, and Edge WebView confirmation overlays only.'
 Assert-BoostLabCondition ([string]$previewScopedStageHeader.Text -eq 'Check') 'AXIS preview-scope smoke test should start on Check.'
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedCheckFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineActiveFullWhite.Check' -ExpectedColor '#FFF0F2F5' -Name 'preview-scope Check active')
 [void](Assert-AxisFirstUseWizardStageLineState -Fill $previewScopedRefreshFill -ExpectedAutomationId 'AxisFirstUseWizard.StageLineInactiveDim.Refresh' -ExpectedColor '#FF242424' -Name 'preview-scope Refresh inactive')
@@ -4692,7 +5023,7 @@ $completedSampleState['Steps'] = @(
     $installersStep
     $installersExtensionSteps
     $graphicsSteps
-    $windowsPartASteps
+    $windowsSteps
 )
 $completedPrototype = New-AxisFirstUseWizardPrototype -SampleState $completedSampleState
 $completedContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
@@ -4860,6 +5191,7 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.Installe
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.NvidiaAppOptionalContinuationNoApplySimulation')) 'AXIS NVIDIA App optional continuation should be marked no-runtime.'
 Assert-BoostLabCondition ($prototypeSource.Contains('Get-AxisWizardWindowsText')) 'AXIS Windows Part A batch should expose a dedicated approved-copy text resource helper.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsStagePartAPrototypeOnly')) 'AXIS Windows Part A batch should expose the prototype-only batch marker.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsStagePartBPrototypeOnly')) 'AXIS Windows Part B batch should expose the prototype-only batch marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsRuntimeStatusNoClipping')) 'AXIS Windows Part A runtime status should expose the no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsSupportCardNoClipping')) 'AXIS Windows Part A support card should expose the no-clipping marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsCardsPhysicalOrderInfoRightRequirementsLeft')) 'AXIS Windows Part A two-card layout should expose the physical info-right requirements-left marker.'
@@ -4868,6 +5200,21 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsB
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwarePrimaryDisabledUntilActionSelected')) 'AXIS Bloatware should keep primary disabled until an action is selected.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwarePrototypeOnlyNoRuntimeAction')) 'AXIS Bloatware should expose the no-real-action marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsBloatwareSelectorPhysicalLeftAboveRequirements')) 'AXIS Bloatware selector should expose the physical-left above-requirements marker.'
+foreach ($windowsPartBNoRuntimeMarker in @(
+    'AxisFirstUseWizard.WindowsGameBarPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsEdgeWebViewPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsNotepadSettingsPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsControlPanelSettingsPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsInputLanguageHotkeyPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsSoundPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsDeviceManagerPowerSavingsWakePrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsNetworkAdapterPowerSavingsWakePrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsWriteCacheBufferFlushingPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsPowerPlanPrototypeOnlyNoRuntimeAction',
+    'AxisFirstUseWizard.WindowsCleanupPrototypeOnlyNoRuntimeAction'
+)) {
+    Assert-BoostLabCondition ($prototypeSource.Contains($windowsPartBNoRuntimeMarker)) "AXIS Windows Part B should expose no-real-action marker: $windowsPartBNoRuntimeMarker"
+}
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.SelectorLabelPhysicalRightOfControl')) 'AXIS selector placement should expose the label-right-of-control marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsPrimaryActionSharedNoClippingSizing')) 'AXIS Windows primary actions should expose the shared no-clipping sizing marker.'
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.WindowsStartMenuLayoutPrimaryNoClipping')) 'AXIS Start Menu Layout primary action should expose a no-clipping marker.'
@@ -5134,6 +5481,19 @@ foreach ($requiredToBiosBlueprintText in @(
 )) {
     Assert-BoostLabCondition ($toBiosBlueprintSource.Contains($requiredToBiosBlueprintText)) "AXIS To BIOS blueprint is missing owner-approved contract text: $requiredToBiosBlueprintText"
 }
+
+$edgeWebViewBlueprintApprovedBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $windowsEdgeWebViewApprovedBullet1
+$edgeWebViewBlueprintOldBoostLabBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $windowsEdgeWebViewOldBoostLabBullet1
+foreach ($requiredEdgeWebViewBlueprintText in @(
+    'Internal tool ID | `edge-webview`'
+    'Customer-facing step title | `Edge WebView`'
+    $edgeWebViewBlueprintApprovedBullet1
+    'Do not show `BoostLab` in normal customer-facing copy for this step.'
+    'AXIS is the customer-facing product; BoostLab is internal/repo/code branding only.'
+)) {
+    Assert-BoostLabCondition ($edgeWebViewBlueprintSource.Contains($requiredEdgeWebViewBlueprintText)) "AXIS Edge WebView blueprint is missing owner-approved branding/copy contract text: $requiredEdgeWebViewBlueprintText"
+}
+Assert-BoostLabCondition (-not $edgeWebViewBlueprintSource.Contains($edgeWebViewBlueprintOldBoostLabBullet1)) 'AXIS Edge WebView blueprint must not retain the old customer-facing BoostLab bullet.'
 
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath
 Assert-BoostLabCondition (-not $mainWindowSource.Contains('AxisFirstUseWizardPrototype')) 'MainWindow should not be wired to the AXIS first-use wizard prototype.'

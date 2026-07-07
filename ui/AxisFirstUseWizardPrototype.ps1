@@ -1594,6 +1594,72 @@ function Get-AxisWizardWindowsText {
         BloatwareRequirement2 = '2KrYo9mD2K8g2YXZhiDYp9iu2KrZitin2LEg2KfZhNil2KzYsdin2KEg2KfZhNi12K3ZititINmF2YYg2KfZhNmC2KfYptmF2Kkg2YLYqNmEINin2YTZhdiq2KfYqNi52Kku'
         BloatwareSelectorLabel = '2KfYrtiq2LEg2KfZhNil2KzYsdin2KE='
         BloatwareSelectorPlaceholder = '2KfYrtiq2LEg2KXYrNix2KfYodmLINmF2YYg2KfZhNmC2KfYptmF2Kk='
+        GameBarSubtitle = '2KrYudi32YrZhCBHYW1lIEJhciDZiNiq2YLZhNmK2YQg2YXZg9mI2YbYp9iqINin2YTYo9mE2LnYp9ioINi62YrYsSDYp9mE2LbYsdmI2LHZitipLg=='
+        GameBarPrimary = '2KrYudi32YrZhCBHYW1lIEJhcg=='
+        GameBarInfoTitle = '2KrYrdiz2YrZhiDYqtis2LHYqNipINin2YTYo9mE2LnYp9io'
+        GameBarInfoBullet1 = '2KrYudi32YrZhCBHYW1lIEJhciDZhNiq2YLZhNmK2YQg2KfZhNmG2LTYp9i3INi62YrYsSDYp9mE2LbYsdmI2LHZiiDYo9ir2YbYp9ihINin2YTYp9iz2KrYrtiv2KfZhS4='
+        GameBarInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2K7ZgdmK2YEg2KfYs9iq2YfZhNin2YMg2KfZhNmF2YjYp9ix2K8g2YHZiiDYp9mE2K7ZhNmB2YrYqS4='
+        GameBarInfoBullet3 = '2KrYs9in2YfZhSDZh9iw2Ycg2KfZhNiu2LfZiNipINmB2Yog2KrYrdiz2YrZhiDYqtis2LHYqNipINin2YTYrNmH2KfYsiDYo9ir2YbYp9ihINin2YTZhNi52Kgg2YjYp9mE2KfYs9iq2K7Yr9in2YUg2KfZhNmK2YjZhdmKLg=='
+        EdgeWebViewSubtitle = '2KXYstin2YTYqSBFZGdlIFdlYlZpZXcg2YjYqtmC2YTZitmEINin2YTZhdmD2YjZhtin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kkg2YTYqtit2LPZitmGINin2YTYo9iv2KfYoS4='
+        EdgeWebViewPrimary = '2KXYstin2YTYqSBFZGdlIFdlYlZpZXc='
+        EdgeWebViewInfoTitle = '2KrZhti42YrZgSDZhdmD2YjZhtin2KogRWRnZSBXZWJWaWV3'
+        EdgeWebViewInfoBullet1 = '2KXYstin2YTYqSBFZGdlIFdlYlZpZXcg2YjYqtmC2YTZitmEINin2YTZhdmD2YjZhtin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kkg2KfZhNmF2LHYqtio2LfYqSDYqNmHLg=='
+        EdgeWebViewInfoBullet2 = '2KrZgtmE2YrZhCDYp9mE2YXZg9mI2YbYp9iqINi62YrYsSDYp9mE2LbYsdmI2LHZitipINmK2LPYp9i52K8g2LnZhNmJINis2LnZhCDYp9mE2YbYuNin2YUg2KPYrtmBINij2KvZhtin2KEg2KfZhNin2LPYqtiu2K/Yp9mFLg=='
+        EdgeWebViewInfoBullet3 = '2YrYqtmFINiq2YbZgdmK2LAg2KfZhNil2LnYr9in2K8g2KfZhNmF2YbYp9iz2Kgg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        NotepadSettingsSubtitle = '2LbYqNi3INil2LnYr9in2K/Yp9iqIE5vdGVwYWQg2YTYqtit2LPZitmGINiq2KzYsdio2Kkg2KfZhNin2LPYqtiu2K/Yp9mFLg=='
+        NotepadSettingsPrimary = '2LbYqNi3IE5vdGVwYWQ='
+        NotepadSettingsInfoTitle = '2KrYrdiz2YrZhiDYpdi52K/Yp9iv2KfYqiBOb3RlcGFk'
+        NotepadSettingsInfoBullet1 = '2KrYt9io2YrZgiDYpdi52K/Yp9iv2KfYqiDZhdmG2KfYs9io2Kkg2YTYqtis2LHYqNipINin2LPYqtiu2K/Yp9mFINij2YHYttmEINiv2KfYrtmEIE5vdGVwYWQu'
+        NotepadSettingsInfoBullet2 = '2KzYudmEINil2LnYr9in2K/Yp9iqINin2YTYqti32KjZitmCINij2KjYs9i3INmI2KPZhti42YEg2YTZhNin2LPYqtiu2K/Yp9mFINin2YTZitmI2YXZii4='
+        NotepadSettingsInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINiq2YTZgtin2KbZitmL2Kcg2KPYq9mG2KfYoSDZh9iw2Ycg2KfZhNiu2LfZiNipLg=='
+        ControlPanelSettingsSubtitle = '2LbYqNi3INil2LnYr9in2K/Yp9iqIENvbnRyb2wgUGFuZWwg2YTYqtit2LPZitmGINiq2KzYsdio2KkgV2luZG93cy4='
+        ControlPanelSettingsPrimary = '2LbYqNi3IENvbnRyb2wgUGFuZWw='
+        ControlPanelSettingsInfoTitle = '2KrYrdiz2YrZhiDYpdi52K/Yp9iv2KfYqiDYp9mE2YbYuNin2YU='
+        ControlPanelSettingsInfoBullet1 = '2KrYt9io2YrZgiDYpdi52K/Yp9iv2KfYqiDZhdmH2YXYqSDYr9in2K7ZhCBDb250cm9sIFBhbmVsINmE2KrYrdiz2YrZhiDYqtis2LHYqNipIFdpbmRvd3Mu'
+        ControlPanelSettingsInfoBullet2 = '2KrZgtmE2YrZhCDYp9mE2KXYudiv2KfYr9in2Kog2LrZitixINin2YTYttix2YjYsdmK2Kkg2YjYrNi52YQg2KfZhNmG2LjYp9mFINij2YPYq9ixINis2KfZh9iy2YrYqSDZhNmE2KfYs9iq2K7Yr9in2YUu'
+        ControlPanelSettingsInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        InputLanguageHotkeySubtitle = '2LbYqNi3INin2K7Yqti12KfYsSDYqtio2K/ZitmEINmE2LrYqSDYp9mE2KXYr9iu2KfZhCDYqtmE2YLYp9im2YrZi9inLg=='
+        InputLanguageHotkeyPrimary = '2LbYqNi3INin2K7Yqti12KfYsSDYp9mE2YTYutip'
+        InputLanguageHotkeyInfoTitle = '2KfYrtiq2LXYp9ixINiq2KjYr9mK2YQg2KfZhNmE2LrYqQ=='
+        InputLanguageHotkeyInfoBullet1 = '2LbYqNi3INin2K7Yqti12KfYsSDYqtio2K/ZitmEINmE2LrYqSDYp9mE2KXYr9iu2KfZhCDYr9in2K7ZhCBXaW5kb3dzLg=='
+        InputLanguageHotkeyInfoBullet2 = '2YrYqtmFINiq2LnZitmK2YYg2KfZhNin2K7Yqti12KfYsSDYpdmE2YkgTGVmdCBBbHQgKyBTaGlmdC4='
+        InputLanguageHotkeyInfoBullet3 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2KjYr9mK2YQg2KfZhNmE2LrYqSDYqNiz2LHYudipINij2KvZhtin2KEg2KfZhNmD2KrYp9io2Kku'
+        SoundSubtitle = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTYtdmI2Kog2YTZhdix2KfYrNi52Kkg2KfZhNiz2YXYp9i52Kkg2YjYp9mE2YXYp9mK2YPYsdmI2YHZiNmGLg=='
+        SoundPrimary = '2YHYqtitINil2LnYr9in2K/Yp9iqINin2YTYtdmI2Ko='
+        SoundInfoTitle = '2YXYsdin2KzYudipINil2LnYr9in2K/Yp9iqINin2YTYtdmI2Ko='
+        SoundInfoBullet1 = '2KfZgdiq2K0g2KXYudiv2KfYr9in2Kog2KfZhNi12YjYqiDYr9in2K7ZhCBXaW5kb3dzLg=='
+        SoundInfoBullet2 = '2LHYp9is2Lkg2KXYudiv2KfYr9in2Kog2KfZhNiz2YXYp9i52Kkg2YjYp9mE2YXYp9mK2YPYsdmI2YHZiNmGINit2LPYqCDYp9iz2KrYrtiv2KfZhdmDLg=='
+        SoundInfoBullet3 = '2KXYsNinINin2K3Yqtis2Kog2YXYs9in2LnYr9ipINmB2Yog2LbYqNi3INin2YTYtdmI2KrYjCDZitmF2YPZhtmDINin2YTYqtmI2KfYtdmEINmF2Lkg2KfZhNiv2LnZhS4='
+        DeviceManagerPowerSavingsWakeSubtitle = '2KrYudi32YrZhCDYqtmI2YHZitixINin2YTYt9in2YLYqSDYutmK2LEg2KfZhNi22LHZiNix2Yog2YTZhNij2KzZh9iy2Kkg2YTYqtit2LPZitmGINin2YTYp9iz2KrYrNin2KjYqS4='
+        DeviceManagerPowerSavingsWakePrimary = '2KrYudi32YrZhCDYqtmI2YHZitixINin2YTYt9in2YLYqSDZhNmE2KPYrNmH2LLYqQ=='
+        DeviceManagerPowerSavingsWakeInfoTitle = '2KrYrdiz2YrZhiDYp9iz2KrYrNin2KjYqSDYp9mE2KPYrNmH2LLYqQ=='
+        DeviceManagerPowerSavingsWakeInfoBullet1 = '2KrYudi32YrZhCDYpdi52K/Yp9iv2KfYqiDYqtmI2YHZitixINin2YTYt9in2YLYqSDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDZhNmE2KPYrNmH2LLYqS4='
+        DeviceManagerPowerSavingsWakeInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2K3Ys9mK2YYg2KfZhNin2LPYqtis2KfYqNipINmI2KrZgtmE2YrZhCDYp9mE2KrYo9iu2YrYsSDYo9ir2YbYp9ihINin2YTYp9iz2KrYrtiv2KfZhS4='
+        DeviceManagerPowerSavingsWakeInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        NetworkAdapterPowerSavingsWakeSubtitle = '2KrYudi32YrZhCDYqtmI2YHZitixINin2YTYt9in2YLYqSDZhNmF2K3ZiNmEINin2YTYtNio2YPYqSDZhNiq2K3Ys9mK2YYg2KfYs9iq2YLYsdin2LEg2KfZhNin2KrYtdin2YQu'
+        NetworkAdapterPowerSavingsWakePrimary = '2KrYudi32YrZhCDYqtmI2YHZitixINin2YTYt9in2YLYqSDZhNmE2LTYqNmD2Kk='
+        NetworkAdapterPowerSavingsWakeInfoTitle = '2KrYrdiz2YrZhiDYp9iz2KrZgtix2KfYsSDYp9mE2LTYqNmD2Kk='
+        NetworkAdapterPowerSavingsWakeInfoBullet1 = '2KrYudi32YrZhCDYpdi52K/Yp9iv2KfYqiDYqtmI2YHZitixINin2YTYt9in2YLYqSDYutmK2LEg2KfZhNi22LHZiNix2YrYqSDZhNmF2K3ZiNmEINin2YTYtNio2YPYqS4='
+        NetworkAdapterPowerSavingsWakeInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2K3Ys9mK2YYg2KfYs9iq2YLYsdin2LEg2KfZhNin2KrYtdin2YQg2YjYqtmC2YTZitmEINin2YTYp9mG2YLYt9in2LnYp9iqLg=='
+        NetworkAdapterPowerSavingsWakeInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        WriteCacheBufferFlushingSubtitle = '2KrYrdiz2YrZhiDYt9ix2YrZgtipINiq2LnYp9mF2YQg2YjYrdiv2KfYqiDYp9mE2KrYrtiy2YrZhiDZhdi5INin2YTZgtix2KfYodipINmI2KfZhNmD2KrYp9io2Kku'
+        WriteCacheBufferFlushingPrimary = '2KrYrdiz2YrZhiDYp9mE2KrYrtiy2YrZhg=='
+        WriteCacheBufferFlushingInfoTitle = '2KrYrdiz2YrZhiDYo9iv2KfYoSDYp9mE2KrYrtiy2YrZhg=='
+        WriteCacheBufferFlushingInfoBullet1 = '2LbYqNi3INil2LnYr9in2K/Yp9iqINiq2LPYp9i52K8g2LnZhNmJINiq2K3Ys9mK2YYg2KPYr9in2KEg2YjYrdiv2KfYqiDYp9mE2KrYrtiy2YrZhi4='
+        WriteCacheBufferFlushingInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2K3Ys9mK2YYg2KrYrNix2KjYqSDYp9mE2YLYsdin2KHYqSDZiNin2YTZg9iq2KfYqNipINij2KvZhtin2KEg2KfZhNin2LPYqtiu2K/Yp9mFLg=='
+        WriteCacheBufferFlushingInfoBullet3 = '2YrYqtmFINiq2LfYqNmK2YIg2KfZhNil2LnYr9in2K/Yp9iqINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
+        PowerPlanSubtitle = '2KrYt9io2YrZgiDYrti32Kkg2LfYp9mC2Kkg2YXZiNis2YfYqSDZhNmE2KPYr9in2KEu'
+        PowerPlanPrimary = '2KrYt9io2YrZgiDYrti32Kkg2KfZhNij2K/Yp9ih'
+        PowerPlanInfoTitle = '2K7Yt9ipINin2YTYo9iv2KfYoQ=='
+        PowerPlanInfoBullet1 = '2KrYt9io2YrZgiDYpdi52K/Yp9iv2KfYqiDYt9in2YLYqSDYqtiz2KfYudivINin2YTYrNmH2KfYsiDYudmE2Ykg2KfYs9iq2K7Yr9in2YUg2YPYp9mF2YQg2YLZiNiq2Ycu'
+        PowerPlanInfoBullet2 = '2KrYs9in2LnYryDZh9iw2Ycg2KfZhNiu2LfZiNipINi52YTZiSDYqtit2LPZitmGINin2YTYo9iv2KfYoSDZiNin2YTYp9iz2KrYrNin2KjYqSDYo9ir2YbYp9ihINin2YTYp9iz2KrYrtiv2KfZhS4='
+        PowerPlanInfoBullet3 = '2YrYqtmFINi22KjYtyDYrti32Kkg2KfZhNi32KfZgtipINin2YTZhdmG2KfYs9io2Kkg2KrZhNmC2KfYptmK2YvYpy4='
+        CleanupSubtitle = '2KrZhti42YrZgSDYp9mE2YXZhNmB2KfYqiDYp9mE2YXYpNmC2KrYqSDZiNin2YTZhdiu2YTZgdin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kku'
+        CleanupPrimary = '2KrZhti42YrZgSDYp9mE2KzZh9in2LI='
+        CleanupInfoTitle = '2KrZhti42YrZgSDYp9mE2YbYuNin2YU='
+        CleanupInfoBullet1 = '2KrZhti42YrZgSDYp9mE2YXZhNmB2KfYqiDYp9mE2YXYpNmC2KrYqSDZiNin2YTZhdiu2YTZgdin2Kog2LrZitixINin2YTYttix2YjYsdmK2Kku'
+        CleanupInfoBullet2 = '2YrYs9in2LnYryDYsNmE2YMg2LnZhNmJINiq2K7ZgdmK2YEg2KfZhNmG2LjYp9mFINmI2KzYudmEINin2YTYqtis2LHYqNipINij2YPYq9ixINiz2YTYp9iz2Kku'
+        CleanupInfoBullet3 = '2YrYqtmFINiq2YbZgdmK2LAg2KfZhNiq2YbYuNmK2YEg2KrZhNmC2KfYptmK2YvYpyDYo9ir2YbYp9ihINmH2LDZhyDYp9mE2K7Yt9mI2Kku'
         Running = '2KzYp9ix2Yog2KfZhNiq2YbZgdmK2LA='
         Completed = '2YXZg9iq2YXZhA=='
     }
@@ -3586,6 +3652,243 @@ function Get-AxisFirstUseWizardSampleState {
             'Install Snipping Tool'
         )
 
+    $gameBarStep = New-AxisSetupWizardStepState `
+        -Id 'game-bar' `
+        -Title 'Game Bar' `
+        -Description (Get-AxisWizardWindowsText -Name 'GameBarSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'GameBarPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'GameBarInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'GameBarInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'GameBarInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'GameBarInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsGameBar' `
+        -PrimaryActionWidth 190.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsGameBarPrototypeOnlyNoRuntimeAction'
+
+    $edgeWebViewStep = New-AxisSetupWizardStepState `
+        -Id 'edge-webview' `
+        -Title 'Edge WebView' `
+        -Description (Get-AxisWizardWindowsText -Name 'EdgeWebViewSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'EdgeWebViewPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'EdgeWebViewInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsEdgeWebView' `
+        -RequiresConfirmationAcknowledgement $true `
+        -DocumentationAcknowledgementText (Get-AxisWizardArabicText -Name 'Acknowledgement') `
+        -ConfirmationActionLabel (Get-AxisWizardWindowsText -Name 'EdgeWebViewPrimary') `
+        -ConfirmationReturnLabel (Get-AxisWizardArabicText -Name 'Return') `
+        -PrimaryActionWidth 210.0 `
+        -ConfirmationActionWidth 210.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsEdgeWebViewPrototypeOnlyNoRuntimeAction'
+
+    $notepadSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'notepad-settings' `
+        -Title 'Notepad Settings' `
+        -Description (Get-AxisWizardWindowsText -Name 'NotepadSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'NotepadSettingsPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'NotepadSettingsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsNotepadSettings' `
+        -PrimaryActionWidth 164.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsNotepadSettingsPrototypeOnlyNoRuntimeAction'
+
+    $controlPanelSettingsStep = New-AxisSetupWizardStepState `
+        -Id 'control-panel-settings' `
+        -Title 'Control Panel Settings' `
+        -Description (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'ControlPanelSettingsInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsControlPanelSettings' `
+        -PrimaryActionWidth 190.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsControlPanelSettingsPrototypeOnlyNoRuntimeAction'
+
+    $inputLanguageHotkeyStep = New-AxisSetupWizardStepState `
+        -Id 'input-language-hotkey' `
+        -Title 'Input Language Hotkey' `
+        -Description (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeySubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'InputLanguageHotkeyInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsInputLanguageHotkey' `
+        -PrimaryActionWidth 222.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsInputLanguageHotkeyPrototypeOnlyNoRuntimeAction'
+
+    $soundStep = New-AxisSetupWizardStepState `
+        -Id 'sound' `
+        -Title 'Sound' `
+        -Description (Get-AxisWizardWindowsText -Name 'SoundSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'SoundPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'SoundInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'SoundInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'SoundInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'SoundInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Open' `
+        -FutureInternalAction 'Open' `
+        -TagRoot 'WindowsSound' `
+        -OpenMappedPrototypeOnly $true `
+        -PrimaryActionWidth 224.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsSoundPrototypeOnlyNoRuntimeAction'
+
+    $deviceManagerPowerSavingsWakeStep = New-AxisSetupWizardStepState `
+        -Id 'device-manager-power-savings-wake' `
+        -Title 'Device Manager Power Savings Wake' `
+        -Description (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakePrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'DeviceManagerPowerSavingsWakeInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsDeviceManagerPowerSavingsWake' `
+        -PrimaryActionWidth 268.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsDeviceManagerPowerSavingsWakePrototypeOnlyNoRuntimeAction'
+
+    $networkAdapterPowerSavingsWakeStep = New-AxisSetupWizardStepState `
+        -Id 'network-adapter-power-savings-wake' `
+        -Title 'Network Adapter Power Savings Wake' `
+        -Description (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakePrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'NetworkAdapterPowerSavingsWakeInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsNetworkAdapterPowerSavingsWake' `
+        -PrimaryActionWidth 260.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsNetworkAdapterPowerSavingsWakePrototypeOnlyNoRuntimeAction'
+
+    $writeCacheBufferFlushingStep = New-AxisSetupWizardStepState `
+        -Id 'write-cache-buffer-flushing' `
+        -Title 'Write Cache Buffer Flushing' `
+        -Description (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'WriteCacheBufferFlushingInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsWriteCacheBufferFlushing' `
+        -PrimaryActionWidth 196.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsWriteCacheBufferFlushingPrototypeOnlyNoRuntimeAction'
+
+    $powerPlanStep = New-AxisSetupWizardStepState `
+        -Id 'power-plan' `
+        -Title 'Power Plan' `
+        -Description (Get-AxisWizardWindowsText -Name 'PowerPlanSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'PowerPlanPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'PowerPlanInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'PowerPlanInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsPowerPlan' `
+        -PrimaryActionWidth 218.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsPowerPlanPrototypeOnlyNoRuntimeAction'
+
+    $cleanupStep = New-AxisSetupWizardStepState `
+        -Id 'cleanup' `
+        -Title 'Cleanup' `
+        -Description (Get-AxisWizardWindowsText -Name 'CleanupSubtitle') `
+        -PrimaryActionLabel (Get-AxisWizardWindowsText -Name 'CleanupPrimary') `
+        -InformationCardTitle (Get-AxisWizardWindowsText -Name 'CleanupInfoTitle') `
+        -InformationItems @(
+            (Get-AxisWizardWindowsText -Name 'CleanupInfoBullet1')
+            (Get-AxisWizardWindowsText -Name 'CleanupInfoBullet2')
+            (Get-AxisWizardWindowsText -Name 'CleanupInfoBullet3')
+        ) `
+        -CheckingStatusTitle (Get-AxisWizardWindowsText -Name 'Running') `
+        -CompletedStatusTitle (Get-AxisWizardWindowsText -Name 'Completed') `
+        -CustomerAction 'Apply' `
+        -FutureInternalAction 'Apply' `
+        -TagRoot 'WindowsCleanup' `
+        -PrimaryActionWidth 176.0 `
+        -StageName 'Windows' `
+        -StageBatchMarker 'AxisFirstUseWizard.WindowsStagePartBPrototypeOnly' `
+        -NoRealActionMarker 'AxisFirstUseWizard.WindowsCleanupPrototypeOnlyNoRuntimeAction'
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -3639,6 +3942,17 @@ function Get-AxisFirstUseWizardSampleState {
             $gameModeStep
             $pointerPrecisionStep
             $bloatwareStep
+            $gameBarStep
+            $edgeWebViewStep
+            $notepadSettingsStep
+            $controlPanelSettingsStep
+            $inputLanguageHotkeyStep
+            $soundStep
+            $deviceManagerPowerSavingsWakeStep
+            $networkAdapterPowerSavingsWakeStep
+            $writeCacheBufferFlushingStep
+            $powerPlanStep
+            $cleanupStep
         )
         MockHardwareProfile = $mockHardwareProfile
         SupportedStepStates = @(
@@ -4513,7 +4827,7 @@ function New-AxisSetupStep {
         'AxisFirstUseWizard.GraphicsStageBatchPrototypeOnly'
     }
     elseif ($isWindowsStageStep) {
-        'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly'
+        [string](Get-AxisWizardMapValue -Map $Step -Name 'WindowsStageBatchMarker' -DefaultValue 'AxisFirstUseWizard.WindowsStagePartAPrototypeOnly')
     }
     else {
         'AxisFirstUseWizard.SetupStageBatchPrototypeOnly'
@@ -6829,7 +7143,18 @@ function New-AxisFirstUseWizardStepContent {
         'copilot',
         'game-mode',
         'pointer-precision',
-        'bloatware'
+        'bloatware',
+        'game-bar',
+        'edge-webview',
+        'notepad-settings',
+        'control-panel-settings',
+        'input-language-hotkey',
+        'sound',
+        'device-manager-power-savings-wake',
+        'network-adapter-power-savings-wake',
+        'write-cache-buffer-flushing',
+        'power-plan',
+        'cleanup'
     )) {
         return New-AxisSetupStep -Step $Step -Resources $Resources
     }
