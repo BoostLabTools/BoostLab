@@ -1,81 +1,262 @@
-# AXIS Resume Contract
+# AXIS Persistence And Resume Blueprint
 
-Date: 2026-07-01
-Scope: owner-approved global first-use wizard resume design contract only
+Date: 2026-07-08
+Scope: documentation-only future AXIS first-use wizard persistence and resume design
+
+Related roadmap lock:
+
+- `docs/design/AXIS-Product-Direction-Lock.md`
 
 ## Purpose
 
-AXIS must always remember where the customer stopped, for every step and every script, even if the step does not reboot.
+AXIS must persist and resume the customer's first-use wizard position.
 
-This is broader than restart-only behavior.
+Goals:
 
-Restart-capable steps such as `bios-settings` still require extra care, because the customer-facing primary action will later restart the device into BIOS/UEFI. They are a special case inside the global resume requirement, not the only case.
+- If the customer closes AXIS and reopens it, AXIS returns to the last saved step or page.
+- If a restart happens during an expected AXIS-controlled step flow, future production AXIS can auto-start later and resume properly.
+- If the customer manually restarts the PC outside an expected AXIS restart flow, AXIS does not auto-start. In that case, AXIS resumes only when the customer opens AXIS manually.
 
-This document records the design contract only. It does not implement persistence, startup behavior, scheduled tasks, registry state, runtime execution, BIOS opening, or reboot behavior.
+This blueprint is for future implementation only. It does not implement UI, runtime behavior, file persistence, restart behavior, auto-start behavior, scheduled tasks, RunOnce entries, registry writes, services, tests, production config, or module behavior.
 
-## Global Resume State
+## Owner-Approved Decisions
 
-AXIS should persist current stage and current step position throughout the first-use flow.
+1. Resume after close/reopen:
+   - AXIS should automatically return to the last saved step or page when the customer closes and reopens AXIS.
 
-AXIS should preserve enough state to resume the same customer flow later, including:
+2. Auto-start after restart:
+   - In production, AXIS should auto-start after restart only when the restart was expected or initiated by an AXIS step/script.
+   - If the customer manually restarts the PC outside an expected AXIS restart flow, AXIS should not auto-start.
+   - In that manual restart case, AXIS resumes only when the customer opens AXIS manually.
 
-- current stage
-- current step ID
-- current visible customer step
-- whether the step was started
-- whether the primary action was triggered
-- whether the current step is ready, in progress, completed, or awaiting the customer to press `التالي`
-- any customer navigation state required to avoid restarting the entire flow
+3. Completed setup behavior:
+   - If the customer reached `final-completion` and opens AXIS again, AXIS should ask whether to start over.
 
-This applies to all steps, including steps that do not restart the device.
+4. Start over:
+   - A future action/button is needed:
+     - `ابدأ من جديد`
 
-## After Closing Or Reopening AXIS
+5. Saved progress:
+   - Save both completed steps/pages and the current or last step/page.
 
-After closing/reopening AXIS:
+6. `restart-after-installers`:
+   - After `restart-after-installers`, resume to `restart-after-installers` marked complete.
+   - The customer then presses Next manually to move to Graphics.
+   - Do not auto-advance.
 
-- AXIS should not force the customer to restart the whole flow.
-- AXIS should restore the customer to the last relevant step.
-- AXIS should not force the customer to repeat previous completed steps.
-- AXIS should wait for the customer to continue instead of auto-advancing.
+7. `driver-clean` and `defender-optimize-assistant`:
+   - After an expected restart, they should resume back to the same step and continue the flow.
 
-Exact persistence design and implementation are pending a later approved phase.
+8. `intro-welcome`:
+   - `intro-welcome` appears only the first time.
+   - If saved progress exists, AXIS should not show `intro-welcome` by default.
 
-## Restart-Capable Step Extra Care
+9. `final-completion`:
+   - `final-completion` saves that setup is complete.
 
-After the customer returns to Windows and launches AXIS again:
+## Future State Model
 
-- AXIS should resume at the same step instead of starting from the beginning.
-- AXIS should not force the customer to repeat previous completed steps.
-- AXIS should wait for the customer to continue instead of auto-advancing.
+Future production state should track at minimum:
 
-For BIOS Settings specifically, the intended future behavior is:
+- `schemaVersion`
+- `productName`: `AXIS`
+- `currentPageId`
+- `currentToolStepId`, if the current page is a tool step
+- `currentStage`
+- `completedPageIds`
+- `completedToolStepIds`
+- `isIntroCompleted`
+- `isSetupCompleted`
+- `reachedFinalCompletion`
+- `lastUpdatedUtc`
+- `restartExpected`
+- `restartReason`
+- `restartSourceStepId`
+- `resumeTargetPageId`
+- `resumeMode`
+- `pendingContinuation`
+- optional selector metadata needed later, such as a selected option for selector-driven steps
 
-- return to the BIOS Settings step
-- show the completed state `مكتمل` when appropriate
-- enable `التالي`
-- wait for the customer to press `التالي`
+Important boundaries:
 
-Exact persistence design and implementation are pending a later approved phase.
+- Do not store secrets in wizard progress state.
+- Do not store license keys in wizard progress state.
+- Licensing and customer key design belong to the future Cloudflare website/platform phase.
+- This blueprint does not implement licensing.
 
-## Website Command Launch Context
+Suggested future production storage path:
 
-This contract also applies to the future website/command-launched AXIS flow:
+- `%ProgramData%\AXIS\state.json`
 
-- customer runs a PowerShell command
-- AXIS is downloaded or opened from the store website flow
-- after restart, launching AXIS again should restore the current flow position
+This path is a future production storage idea only. This phase does not create directories, create files, write `state.json`, or persist any state.
 
-## Boundaries
+## Resume Behavior
+
+First launch with no state:
+
+- Show `intro-welcome`.
+
+Intro completed but no tool progress:
+
+- Continue to `bios-information`.
+
+Existing progress:
+
+- Resume to `currentPageId` or the last saved page.
+
+Current page complete:
+
+- It is acceptable to show the completed page with Next enabled so the customer can continue.
+
+Current page incomplete:
+
+- Show the page incomplete with Next disabled until the step simulation or future runtime completes.
+
+Final completion reached:
+
+- Show a start-over prompt or choice.
+- Do not automatically restart the wizard from the beginning.
+- Do not auto-open a dashboard.
+- Dashboard is permanently cancelled.
+
+Manual app close/reopen:
+
+- Resume to the last saved page.
+
+Manual customer PC restart:
+
+- Do not auto-start AXIS.
+- Resume only when the customer opens AXIS manually.
+
+Expected AXIS restart:
+
+- In production, AXIS may auto-start after reboot only for expected AXIS restart flows.
+- Resume according to `resumeTargetPageId` and `pendingContinuation`.
+
+## Expected Restart Flows
+
+`restart-after-installers`:
+
+- Restart is expected.
+- After restart, resume to `restart-after-installers` marked complete.
+- The customer presses Next manually to enter Graphics.
+- No auto-advance.
+
+`driver-clean`:
+
+- Restart may be expected as part of the real future tool flow.
+- After restart, resume back to `driver-clean` and continue the flow according to future runtime integration.
+- Prototype remains simulation-only.
+
+`defender-optimize-assistant`:
+
+- Restart may be expected as part of the real future tool flow.
+- After restart, resume back to `defender-optimize-assistant` and continue the flow according to future runtime integration.
+- Prototype remains simulation-only.
+
+BIOS-related steps:
+
+- `bios-settings` and `to-bios` may involve restart or firmware handoff in future production integration.
+- Persistence should support resume targets for these flows.
+- Exact runtime behavior is decided during production wiring.
+
+No real restart flow is implemented or approved by this documentation-only phase.
+
+## Future Auto-Start Strategy
+
+Possible future production mechanisms:
+
+- Scheduled Task
+- RunOnce
+- AXIS bootstrapper-specific resume mechanism
+
+Rules:
+
+- Auto-start should only be enabled for expected AXIS restart flows.
+- Auto-start should not be enabled for arbitrary or manual customer restarts.
+- The future implementation must clean up any one-time auto-start registration after successful resume.
+- This phase does not implement Scheduled Tasks, RunOnce, startup entries, bootstrapper resume, registry writes, or any host mutation.
+
+## Future Start-Over Behavior
+
+When setup is complete and AXIS is launched again:
+
+- Show a prompt asking whether to start over.
+- Include the future customer-facing action:
+  - `ابدأ من جديد`
+
+Start-over should:
+
+- Reset wizard progress.
+- Clear completed steps/pages.
+- Return to `intro-welcome` or the start of the flow according to future approved behavior.
+- Not affect license status.
+- Not affect website/account/key data.
+- Not run any tool automatically.
+
+Do not implement start-over UI unless a later phase explicitly requests it.
+
+## Prototype Boundary
+
+For the upcoming prototype implementation phase:
+
+- Simulate persistence in the isolated prototype only.
+- Do not write real files.
+- Do not create `state.json`.
+- Do not create directories.
+- Do not create Scheduled Tasks.
+- Do not write RunOnce.
+- Do not restart.
+- Do not auto-start.
+- Do not mutate host state.
+
+The prototype may use in-memory/mock state or a test-only local object to verify behavior.
+
+## Customer-Facing Restrictions
+
+Normal AXIS customer UI must remain Arabic-only.
+
+Do not show these in normal customer UI:
+
+- BoostLab
+- state file paths
+- JSON
+- diagnostics
+- logs
+- Registry details
+- Scheduled Task details
+- RunOnce details
+- PowerShell details
+- implementation details
+- dashboard wording
+
+## Relationship To Roadmap
+
+This blueprint records roadmap phase 3 from `docs/design/AXIS-Product-Direction-Lock.md`.
+
+- Persistence/resume comes after intro/final pages.
+- Persistence/resume comes before converting prototype simulation to real runtime.
+- Persistence/resume must be completed before production runtime wiring.
+
+This document does not edit the product direction lock and does not change the roadmap order.
+
+## Non-Implementation Boundary
 
 This document does not approve or implement:
 
-- creating runtime state files
-- creating registry keys
-- creating scheduled tasks
-- creating startup entries
+- runtime state files
+- `%ProgramData%\AXIS\state.json`
+- registry keys
+- scheduled tasks
+- startup entries
+- RunOnce entries
+- service changes
 - rebooting
-- opening BIOS/UEFI
-- querying live firmware state
-- changing MainWindow integration
-- changing runtime module behavior
-- changing Apply, Default, Restore, Open, diagnostics, or result contracts
+- BIOS/UEFI opening
+- live firmware queries
+- `ui/MainWindow.ps1` integration
+- isolated prototype changes
+- tests
+- runtime module behavior
+- production config changes
+- Apply, Default, Restore, Open, diagnostics, or result contract changes
