@@ -1,7 +1,7 @@
 # AXIS Persistence And Resume Blueprint
 
 Date: 2026-07-08
-Scope: documentation-only future AXIS first-use wizard persistence and resume design
+Scope: AXIS first-use wizard persistence and resume design with prototype-only temp-file preview state
 
 Related roadmap lock:
 
@@ -17,7 +17,7 @@ Goals:
 - If a restart happens during an expected AXIS-controlled step flow, future production AXIS can auto-start later and resume properly.
 - If the customer manually restarts the PC outside an expected AXIS restart flow, AXIS does not auto-start. In that case, AXIS resumes only when the customer opens AXIS manually.
 
-This blueprint is for future implementation only. It does not implement UI, runtime behavior, file persistence, restart behavior, auto-start behavior, scheduled tasks, RunOnce entries, registry writes, services, tests, production config, or module behavior.
+This blueprint describes the production persistence/resume direction and the isolated prototype preview boundary. The current prototype may use prototype-only temp-file state so close/reopen resume can be visually tested. It does not implement production runtime behavior, production persistence, restart behavior, auto-start behavior, scheduled tasks, RunOnce entries, registry writes, services, production config, or module behavior.
 
 ## Owner-Approved Decisions
 
@@ -88,7 +88,7 @@ Suggested future production storage path:
 
 - `%ProgramData%\AXIS\state.json`
 
-This path is a future production storage idea only. This phase does not create directories, create files, write `state.json`, or persist any state.
+This path is a future production storage idea only. The isolated prototype must not create `%ProgramData%\AXIS`, must not write production `state.json`, and must not use that path for preview resume testing.
 
 ## Resume Behavior
 
@@ -198,19 +198,20 @@ Do not implement start-over UI unless a later phase explicitly requests it.
 
 ## Prototype Boundary
 
-For the upcoming prototype implementation phase:
+For the isolated prototype implementation:
 
-- Simulate persistence in the isolated prototype only.
-- Do not write real files.
-- Do not create `state.json`.
-- Do not create directories.
-- Do not create Scheduled Tasks.
-- Do not write RunOnce.
-- Do not restart.
-- Do not auto-start.
-- Do not mutate host state.
+- Use prototype-only temp-file state for visible preview testing.
+- Default prototype state path:
+  - `%TEMP%\AXIS\FirstUseWizardPrototypeState.json`
+- Create the `%TEMP%\AXIS` folder only when saving prototype progress.
+- Store only prototype wizard progress fields.
+- Ignore invalid or corrupt prototype state and start at `intro-welcome`.
+- Clear the prototype temp-file state when the approved start-over prompt primary action is used.
+- Do not show the temp path, JSON, state details, diagnostics, or implementation details in normal customer UI.
 
-The prototype may use in-memory/mock state or a test-only local object to verify behavior.
+This is not production persistence. It does not create or use `%ProgramData%\AXIS\state.json`.
+
+The prototype boundary does not implement Scheduled Tasks, RunOnce, startup entries, bootstrapper resume, registry writes, or any host mutation. It does not restart, auto-start, run tools, or execute Apply, Default, Restore, Open, Analyze, or Restart behavior.
 
 ## Customer-Facing Restrictions
 
@@ -244,7 +245,7 @@ This document does not edit the product direction lock and does not change the r
 
 This document does not approve or implement:
 
-- runtime state files
+- production runtime state files
 - `%ProgramData%\AXIS\state.json`
 - registry keys
 - scheduled tasks
@@ -255,8 +256,6 @@ This document does not approve or implement:
 - BIOS/UEFI opening
 - live firmware queries
 - `ui/MainWindow.ps1` integration
-- isolated prototype changes
-- tests
 - runtime module behavior
 - production config changes
 - Apply, Default, Restore, Open, diagnostics, or result contract changes

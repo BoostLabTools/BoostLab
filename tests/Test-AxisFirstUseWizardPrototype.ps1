@@ -532,6 +532,7 @@ $prototypePath = Join-Path $ProjectRoot 'ui\AxisFirstUseWizardPrototype.ps1'
 $resourcePath = Join-Path $ProjectRoot 'ui\AxisResources.ps1'
 $mainWindowPath = Join-Path $ProjectRoot 'ui\MainWindow.ps1'
 $stageConfigPath = Join-Path $ProjectRoot 'config\Stages.psd1'
+$resumeContractPath = Join-Path $ProjectRoot 'docs\design\AXIS-Restart-Resume-Contract.md'
 $blueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Information-Step-Blueprint.md'
 $biosSettingsBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\BIOS-Settings-Step-Blueprint.md'
 $reinstallBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Reinstall-Step-Blueprint.md'
@@ -545,6 +546,7 @@ $restartAfterInstallersBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps
 $edgeWebViewBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Edge-WebView-Step-Blueprint.md'
 $timerResolutionAssistantBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Timer-Resolution-Assistant-Step-Blueprint.md'
 $defenderOptimizeAssistantBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Defender-Optimize-Assistant-Step-Blueprint.md'
+$finalCompletionBlueprintPath = Join-Path $ProjectRoot 'docs\design\steps\Final-Completion-Page-Blueprint.md'
 $graphicsBlueprintPaths = @(
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Clean-Step-Blueprint.md'
     Join-Path $ProjectRoot 'docs\design\steps\Driver-Install-Debloat-Settings-Step-Blueprint.md'
@@ -568,6 +570,7 @@ $setupBlueprintPaths = @(
 
 Assert-BoostLabCondition (Test-Path -LiteralPath $prototypePath -PathType Leaf) 'AXIS first-use wizard prototype file is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $resourcePath -PathType Leaf) 'AXIS WPF resources file is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $resumeContractPath -PathType Leaf) 'AXIS restart/resume contract is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $blueprintPath -PathType Leaf) 'AXIS BIOS Information step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $biosSettingsBlueprintPath -PathType Leaf) 'AXIS BIOS Settings step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $reinstallBlueprintPath -PathType Leaf) 'AXIS Reinstall step blueprint is missing.'
@@ -581,6 +584,7 @@ Assert-BoostLabCondition (Test-Path -LiteralPath $restartAfterInstallersBlueprin
 Assert-BoostLabCondition (Test-Path -LiteralPath $edgeWebViewBlueprintPath -PathType Leaf) 'AXIS Edge WebView step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $timerResolutionAssistantBlueprintPath -PathType Leaf) 'AXIS Timer Resolution Assistant step blueprint is missing.'
 Assert-BoostLabCondition (Test-Path -LiteralPath $defenderOptimizeAssistantBlueprintPath -PathType Leaf) 'AXIS Defender Optimize Assistant step blueprint is missing.'
+Assert-BoostLabCondition (Test-Path -LiteralPath $finalCompletionBlueprintPath -PathType Leaf) 'AXIS Final Completion page blueprint is missing.'
 foreach ($graphicsBlueprintPath in $graphicsBlueprintPaths) {
     Assert-BoostLabCondition (Test-Path -LiteralPath $graphicsBlueprintPath -PathType Leaf) "AXIS Graphics step blueprint is missing: $graphicsBlueprintPath"
 }
@@ -589,6 +593,7 @@ foreach ($setupBlueprintPath in $setupBlueprintPaths) {
 }
 
 $prototypeSource = Get-Content -Raw -LiteralPath $prototypePath
+$resumeContractSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $resumeContractPath
 $blueprintSource = Get-Content -Raw -LiteralPath $blueprintPath
 $biosSettingsBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $biosSettingsBlueprintPath
 $reinstallBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $reinstallBlueprintPath
@@ -602,6 +607,7 @@ $restartAfterInstallersBlueprintSource = Get-Content -Raw -Encoding UTF8 -Litera
 $edgeWebViewBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $edgeWebViewBlueprintPath
 $timerResolutionAssistantBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $timerResolutionAssistantBlueprintPath
 $defenderOptimizeAssistantBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $defenderOptimizeAssistantBlueprintPath
+$finalCompletionBlueprintSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $finalCompletionBlueprintPath
 . $prototypePath
 
 foreach ($functionName in @(
@@ -657,6 +663,19 @@ foreach ($functionName in @(
     'New-AxisWizardSuccessGlowEffect'
     'Get-AxisWizardFilledSquareCheckboxStyle'
     'Set-AxisWizardEnabledNextButtonBlue'
+    'New-AxisWizardMockResumeState'
+    'Get-AxisWizardPrototypeStatePath'
+    'Test-AxisWizardPrototypeStatePathAllowed'
+    'Read-AxisWizardPrototypeState'
+    'Save-AxisWizardPrototypeState'
+    'Clear-AxisWizardPrototypeState'
+    'Get-AxisWizardMockResumeTarget'
+    'Set-AxisWizardMockCurrentPage'
+    'Set-AxisWizardMockPageCompleted'
+    'Reset-AxisWizardMockProgress'
+    'Test-AxisWizardMockSetupCompleted'
+    'Show-AxisWizardStartOverPrompt'
+    'New-AxisWizardStartOverPromptOverlay'
     'New-AxisWizardSpacer'
     'New-AxisWizardRightAnchor'
     'Add-AxisWizardGridRow'
@@ -664,6 +683,43 @@ foreach ($functionName in @(
     Assert-BoostLabCondition (
         $null -ne (Get-Command -Name $functionName -CommandType Function -ErrorAction SilentlyContinue)
     ) "Required AXIS first-use wizard function is missing: $functionName"
+}
+
+$axisPrototypeStatePath = Get-AxisWizardPrototypeStatePath
+$axisPrototypeStateDirectory = [System.IO.Path]::GetDirectoryName($axisPrototypeStatePath)
+$axisPrototypeStateDirectoryHadExisting = [System.IO.Directory]::Exists($axisPrototypeStateDirectory)
+$axisPrototypeStateHadExisting = [System.IO.File]::Exists($axisPrototypeStatePath)
+$axisPrototypeStateBackupBytes = if ($axisPrototypeStateHadExisting) {
+    [System.IO.File]::ReadAllBytes($axisPrototypeStatePath)
+}
+else {
+    $null
+}
+[void](Clear-AxisWizardPrototypeState)
+$script:AxisPrototypeStateFixtureRestored = $false
+function Restore-AxisWizardPrototypeStateFixture {
+    if ($script:AxisPrototypeStateFixtureRestored) {
+        return
+    }
+
+    if ($axisPrototypeStateHadExisting -and $null -ne $axisPrototypeStateBackupBytes) {
+        [void][System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($axisPrototypeStatePath))
+        [System.IO.File]::WriteAllBytes($axisPrototypeStatePath, $axisPrototypeStateBackupBytes)
+    }
+    else {
+        [void](Clear-AxisWizardPrototypeState)
+    }
+    if (-not $axisPrototypeStateDirectoryHadExisting -and
+        [System.IO.Directory]::Exists($axisPrototypeStateDirectory) -and
+        [System.IO.Directory]::GetFileSystemEntries($axisPrototypeStateDirectory).Count -eq 0) {
+        [System.IO.Directory]::Delete($axisPrototypeStateDirectory)
+    }
+
+    $script:AxisPrototypeStateFixtureRestored = $true
+}
+trap {
+    Restore-AxisWizardPrototypeStateFixture
+    break
 }
 
 $arabicOpen = Get-AxisWizardArabicText -Name 'Open'
@@ -695,6 +751,10 @@ $axisFinalInfoTitle = Get-AxisWizardIntroFinalText -Name 'FinalInfoTitle'
 $axisFinalInfoBullet1 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet1'
 $axisFinalInfoBullet2 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet2'
 $axisFinalInfoBullet3 = Get-AxisWizardIntroFinalText -Name 'FinalInfoBullet3'
+$axisStartOverPromptTitle = ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0645, 0x0020, 0x0625, 0x0643, 0x0645, 0x0627, 0x0644, 0x0020, 0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F)
+$axisStartOverPromptBody = ConvertFrom-AxisWizardCodePoints @(0x062A, 0x0645, 0x0020, 0x0625, 0x0643, 0x0645, 0x0627, 0x0644, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0041, 0x0058, 0x0049, 0x0053, 0x0020, 0x0645, 0x0633, 0x0628, 0x0642, 0x064B, 0x0627, 0x002E, 0x0020, 0x0647, 0x0644, 0x0020, 0x062A, 0x0631, 0x064A, 0x062F, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0645, 0x0646, 0x0020, 0x062C, 0x062F, 0x064A, 0x062F, 0x061F)
+$axisStartOverPromptPrimary = ConvertFrom-AxisWizardCodePoints @(0x0627, 0x0628, 0x062F, 0x0623, 0x0020, 0x0645, 0x0646, 0x0020, 0x062C, 0x062F, 0x064A, 0x062F)
+$axisStartOverPromptReturn = ConvertFrom-AxisWizardCodePoints @(0x0631, 0x062C, 0x0648, 0x0639)
 $arabicBiosSettingsSubtitle = Get-AxisWizardArabicText -Name 'BiosSettingsSubtitle'
 $arabicBiosSettingsInfoTitle = Get-AxisWizardArabicText -Name 'BiosSettingsInfoTitle'
 $arabicBiosSettingsInfoIntro = Get-AxisWizardArabicText -Name 'BiosSettingsInfoIntro'
@@ -2022,6 +2082,362 @@ Assert-BoostLabCondition ([string]$mockHardwareProfile['CpuVendor'] -eq 'Intel')
 Assert-BoostLabCondition ([string]$mockHardwareProfile['MotherboardVendor'] -eq 'MSI') 'AXIS BIOS Settings prototype mock motherboard vendor should be MSI.'
 Assert-BoostLabCondition ([string]$mockHardwareProfile['Summary'] -eq 'CPU=Intel; Motherboard=MSI') 'AXIS BIOS Settings prototype mock profile should expose CPU=Intel and Motherboard=MSI markers.'
 Assert-BoostLabCondition ([bool]$mockHardwareProfile['PrototypeOnly']) 'AXIS BIOS Settings mock hardware profile should be clearly prototype-only.'
+$mockResumeState = [System.Collections.IDictionary]$sampleState['MockResumeState']
+$mockResumePersistence = [System.Collections.IDictionary]$sampleState['MockResumePersistence']
+Assert-BoostLabCondition ([string]$mockResumeState['Marker'] -eq 'AxisFirstUseWizard.MockResumeStatePrototypeOnly') 'AXIS mock resume state should expose a prototype-only marker.'
+Assert-BoostLabCondition ([int]$mockResumeState['schemaVersion'] -eq 1) 'AXIS mock resume state should include a schema version.'
+Assert-BoostLabCondition ([string]$mockResumeState['productName'] -eq 'AXIS') 'AXIS mock resume state should identify AXIS only.'
+Assert-BoostLabCondition ([string]$mockResumeState['currentPageId'] -eq 'intro-welcome') 'AXIS mock resume state should default to intro-welcome for first launch.'
+Assert-BoostLabCondition ([string]$mockResumeState['currentStage'] -eq 'Check') 'AXIS mock resume state should default to Check stage.'
+Assert-BoostLabCondition (@($mockResumeState['completedPageIds']).Count -eq 0 -and @($mockResumeState['completedToolStepIds']).Count -eq 0) 'AXIS mock resume state should start without completed pages or tool steps.'
+Assert-BoostLabCondition (-not [bool]$mockResumeState['isIntroCompleted'] -and -not [bool]$mockResumeState['isSetupCompleted'] -and -not [bool]$mockResumeState['reachedFinalCompletion']) 'AXIS mock resume state should start without completed intro/setup flags.'
+Assert-BoostLabCondition (-not [bool]$mockResumeState['restartExpected'] -and -not [bool]$mockResumeState['ManualRestartAutoStart']) 'AXIS mock resume state should not auto-start by default.'
+Assert-BoostLabCondition ([bool]$mockResumeState['PrototypeOnly'] -and [bool]$mockResumeState['PrototypeTempFilePersistenceAllowed'] -and [bool]$mockResumeState['NoProductionPersistence'] -and [bool]$mockResumeState['NoHostMutation'] -and [bool]$mockResumeState['NoStartupRegistration']) 'AXIS mock resume state should stay prototype-only and deny production persistence.'
+Assert-BoostLabCondition ([string]$mockResumeState['lastUpdatedUtc'] -eq 'MockUtc-2026-07-08T00:00:00Z') 'AXIS mock resume state should use a deterministic mock timestamp.'
+Assert-BoostLabCondition ([string]$mockResumePersistence['Marker'] -eq 'AxisFirstUseWizard.MockResumePersistencePrototypeOnly') 'AXIS mock resume persistence boundary should expose a prototype-only marker.'
+Assert-BoostLabCondition ([bool]$mockResumePersistence['PrototypeOnly'] -and [bool]$mockResumePersistence['TempFilePersistenceOnly'] -and [bool]$mockResumePersistence['NoProductionPersistence'] -and [bool]$mockResumePersistence['NoHostMutation'] -and [bool]$mockResumePersistence['NoStartupRegistration']) 'AXIS mock resume persistence boundary should be temp-file prototype persistence only.'
+Assert-BoostLabCondition ([string]$mockResumePersistence['PrototypeTempStatePath'] -eq $axisPrototypeStatePath) 'AXIS mock resume persistence should expose the default prototype temp state path.'
+Assert-BoostLabCondition (Test-AxisWizardPrototypeStatePathAllowed -Path $axisPrototypeStatePath) 'AXIS prototype state path should be restricted to the approved temp state file.'
+Assert-BoostLabCondition ($axisPrototypeStatePath.EndsWith('AXIS\FirstUseWizardPrototypeState.json', [System.StringComparison]::OrdinalIgnoreCase)) 'AXIS prototype state path should use the approved temp AXIS filename.'
+Assert-BoostLabCondition ((Get-AxisWizardStartOverPromptText -Name 'Title') -eq $axisStartOverPromptTitle) 'AXIS start-over prompt title text changed.'
+Assert-BoostLabCondition ((Get-AxisWizardStartOverPromptText -Name 'Body') -eq $axisStartOverPromptBody) 'AXIS start-over prompt body text changed.'
+Assert-BoostLabCondition ((Get-AxisWizardStartOverPromptText -Name 'Start') -eq $axisStartOverPromptPrimary) 'AXIS start-over prompt primary button text changed.'
+Assert-BoostLabCondition ((Get-AxisWizardStartOverPromptText -Name 'Return') -eq $axisStartOverPromptReturn) 'AXIS start-over prompt Return button text changed.'
+
+$firstLaunchResumeTarget = Get-AxisWizardMockResumeTarget -ResumeState $mockResumeState -Steps $samplePages
+Assert-BoostLabCondition ([string]$firstLaunchResumeTarget['PageId'] -eq 'intro-welcome' -and [int]$firstLaunchResumeTarget['StepIndex'] -eq 0) 'AXIS first-launch mock resume target should remain intro-welcome.'
+Assert-BoostLabCondition (-not [bool]$firstLaunchResumeTarget['ShowStartOverPrompt']) 'AXIS first launch should not show the start-over prompt.'
+
+$introCompletedOnlyResumeState = New-AxisWizardMockResumeState -CurrentPageId '' -IsIntroCompleted $true -ResumeSimulationEnabled $true
+$introCompletedOnlyTarget = Get-AxisWizardMockResumeTarget -ResumeState $introCompletedOnlyResumeState -Steps $samplePages
+Assert-BoostLabCondition ([string]$introCompletedOnlyTarget['PageId'] -eq 'bios-information' -and [int]$introCompletedOnlyTarget['StepIndex'] -eq 1) 'AXIS completed-intro mock resume should skip intro and target BIOS Drivers & Downloads.'
+
+$savedProgressSampleState = Get-AxisFirstUseWizardSampleState
+$savedProgressSampleState['UseMockResumeState'] = $true
+$savedProgressSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'updates-drivers-block' `
+    -CurrentToolStepId 'updates-drivers-block' `
+    -CurrentStage 'Refresh' `
+    -IsIntroCompleted $true `
+    -ResumeSimulationEnabled $true
+$savedProgressPrototype = New-AxisFirstUseWizardPrototype -SampleState $savedProgressSampleState
+$savedProgressContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $savedProgressPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$savedProgressContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $savedProgressPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $savedProgressContentHost.Child -Tag 'AxisFirstUseWizard.UpdatesDriversStep').Count -eq 1) 'AXIS saved progress should resume to updates-drivers-block.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $savedProgressContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 0) 'AXIS saved progress should not show intro-welcome by default.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $savedProgressContinueButton -Name 'saved incomplete updates-drivers-block resume'
+$savedProgressMockState = [System.Collections.IDictionary]$savedProgressSampleState['MockResumeState']
+Assert-BoostLabCondition ([string]$savedProgressMockState['currentPageId'] -eq 'updates-drivers-block') 'AXIS saved progress render should preserve currentPageId.'
+Assert-BoostLabCondition ([string]$savedProgressMockState['currentStage'] -eq 'Refresh') 'AXIS saved progress render should preserve currentStage.'
+
+$completedResumeSampleState = Get-AxisFirstUseWizardSampleState
+$completedResumeSampleState['UseMockResumeState'] = $true
+$completedResumeSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'bios-information' `
+    -CurrentToolStepId 'bios-information' `
+    -CurrentStage 'Check' `
+    -CompletedPageIds @('bios-information') `
+    -CompletedToolStepIds @('bios-information') `
+    -IsIntroCompleted $true `
+    -ResumeSimulationEnabled $true
+$completedResumePrototype = New-AxisFirstUseWizardPrototype -SampleState $completedResumeSampleState
+$completedResumeContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $completedResumePrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$completedResumeContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $completedResumePrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $completedResumeContentHost.Child -Tag 'AxisFirstUseWizard.BiosInformationStep').Count -eq 1) 'AXIS completed saved progress should resume to BIOS Drivers & Downloads.'
+Assert-BoostLabCondition ([bool]$completedResumeContinueButton.IsEnabled) 'AXIS completed saved progress should enable Next where applicable.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($completedResumeContinueButton) -eq 'AxisFirstUseWizard.EnabledNextButtonBlue') 'AXIS completed saved progress Next should use the enabled blue marker.'
+
+$startOverRegressionCompletedPageIds = @($samplePages | ForEach-Object { [string]$_['Id'] })
+$startOverRegressionCompletedToolStepIds = @(
+    $samplePages |
+        Where-Object {
+            $pageKindForStartOverRegression = [string]$_['PageKind']
+            $isToolForStartOverRegression = [bool]$_['IsToolStep']
+            ($pageKindForStartOverRegression -eq 'Tool' -or $isToolForStartOverRegression)
+        } |
+        ForEach-Object { [string]$_['Id'] }
+)
+$finalResumeSampleState = Get-AxisFirstUseWizardSampleState
+$finalResumeSampleState['UseMockResumeState'] = $true
+$finalResumeSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'final-completion' `
+    -CurrentStage 'Advanced' `
+    -CompletedPageIds $startOverRegressionCompletedPageIds `
+    -CompletedToolStepIds $startOverRegressionCompletedToolStepIds `
+    -IsIntroCompleted $true `
+    -IsSetupCompleted $true `
+    -ReachedFinalCompletion $true `
+    -ResumeSimulationEnabled $true
+$finalResumePrototype = New-AxisFirstUseWizardPrototype -SampleState $finalResumeSampleState
+$finalResumeContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumePrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$startOverPromptOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumePrototype -Tag 'AxisFirstUseWizard.StartOverPromptOverlay') | Select-Object -First 1
+$startOverPromptStartButton = @(Get-AxisFirstUseWizardTaggedElements -Root $startOverPromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptStartOverButton') | Select-Object -First 1
+$startOverPromptReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $startOverPromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptReturnButton') | Select-Object -First 1
+$startOverPromptText = (Get-AxisFirstUseWizardTextValues -Root $startOverPromptOverlay) -join [Environment]::NewLine
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS completed setup reopen should remain on final-completion behind the prompt.'
+Assert-BoostLabCondition ($startOverPromptOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS completed setup reopen should show the start-over prompt.'
+Assert-BoostLabCondition ($startOverPromptText.Contains($axisStartOverPromptTitle) -and $startOverPromptText.Contains($axisStartOverPromptBody) -and $startOverPromptText.Contains($axisStartOverPromptPrimary) -and $startOverPromptText.Contains($axisStartOverPromptReturn)) 'AXIS start-over prompt should show only the owner-approved prompt copy.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $startOverPromptOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement').Count -eq 0) 'AXIS start-over prompt should not contain a checkbox.'
+Assert-BoostLabCondition ($startOverPromptText -notmatch 'Cancel|dashboard|BoostLab') 'AXIS start-over prompt should not show Cancel, dashboard, or BoostLab wording.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($startOverPromptOverlay) -eq 'AxisFirstUseWizard.MockResumeStartOverPromptPrototypeOnly') 'AXIS start-over prompt should expose the prototype-only marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($startOverPromptStartButton) -eq 'AxisFirstUseWizard.MockResumeStartOverClearsProgress') 'AXIS start-over primary should expose the clears-progress marker.'
+Assert-BoostLabCondition ([System.Windows.Automation.AutomationProperties]::GetAutomationId($startOverPromptReturnButton) -eq 'AxisFirstUseWizard.MockResumeStartOverReturnOnlyClosesPrompt') 'AXIS start-over Return should expose the prompt-only close marker.'
+Invoke-AxisFirstUseWizardButtonClick -Button $startOverPromptReturnButton
+Assert-BoostLabCondition ($startOverPromptOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS start-over Return should close only the prompt.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS start-over Return should remain on final-completion.'
+$finalResumeMockStateBeforeReset = [System.Collections.IDictionary]$finalResumeSampleState['MockResumeState']
+Assert-BoostLabCondition ((@($finalResumeMockStateBeforeReset['completedToolStepIds']).Count -eq $startOverRegressionCompletedToolStepIds.Count) -and [bool]$finalResumeMockStateBeforeReset['isSetupCompleted']) 'AXIS start-over Return must not clear completed setup progress.'
+Show-AxisWizardStartOverPrompt -Overlay $startOverPromptOverlay
+Invoke-AxisFirstUseWizardButtonClick -Button $startOverPromptStartButton
+Assert-BoostLabCondition ($startOverPromptOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS start-over primary should close the prompt after resetting mock progress.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 1) 'AXIS start-over primary should return to intro-welcome.'
+$finalResumeMockState = [System.Collections.IDictionary]$finalResumeSampleState['MockResumeState']
+Assert-BoostLabCondition ([string]$finalResumeMockState['currentPageId'] -eq 'intro-welcome') 'AXIS start-over primary should reset currentPageId to intro-welcome.'
+Assert-BoostLabCondition ([string]$finalResumeMockState['currentStage'] -eq '' -and [string]$finalResumeMockState['currentToolStepId'] -eq '') 'AXIS start-over primary should clear intro stage/tool ids until the customer starts again.'
+Assert-BoostLabCondition (@($finalResumeMockState['completedPageIds']).Count -eq 0 -and @($finalResumeMockState['completedToolStepIds']).Count -eq 0) 'AXIS start-over primary should clear completed mock progress.'
+Assert-BoostLabCondition (-not [bool]$finalResumeMockState['isIntroCompleted'] -and -not [bool]$finalResumeMockState['isSetupCompleted'] -and -not [bool]$finalResumeMockState['reachedFinalCompletion']) 'AXIS start-over primary should clear intro/setup/final flags.'
+Assert-BoostLabCondition (-not [bool]$finalResumeMockState['restartExpected'] -and [string]$finalResumeMockState['restartReason'] -eq '' -and [string]$finalResumeMockState['restartSourceStepId'] -eq '' -and [string]$finalResumeMockState['resumeTargetPageId'] -eq '' -and [string]$finalResumeMockState['pendingContinuation'] -eq '') 'AXIS start-over primary should clear restart/resume continuation metadata.'
+Assert-BoostLabCondition (@($finalResumeMockState['selectedMetadata'].Keys).Count -eq 0) 'AXIS start-over primary should clear selector metadata.'
+$finalResumeStepStateById = @{}
+foreach ($finalResumeStepAfterReset in @($finalResumeSampleState['Steps'])) {
+    $finalResumeStepStateById[[string]$finalResumeStepAfterReset['Id']] = [string]$finalResumeStepAfterReset['State']
+}
+foreach ($representativeStartOverResetStepId in @('bios-information', 'bitlocker', 'installers', 'driver-clean', 'bloatware', 'defender-optimize-assistant')) {
+    Assert-BoostLabCondition ([string]$finalResumeStepStateById[$representativeStartOverResetStepId] -ne 'Completed') "AXIS start-over should clear stale completed Step state for $representativeStartOverResetStepId."
+}
+$introStartAfterStartOverButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $introStartAfterStartOverButton
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.BiosInformationStep').Count -eq 1) 'AXIS start-over then Start should navigate to BIOS Drivers & Downloads as a first run.'
+$afterStartOverBiosPrimary = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.PrimaryOpenButton') | Select-Object -First 1
+$afterStartOverRuntimeStatus = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumeContentHost.Child -Tag 'AxisFirstUseWizard.RuntimeStatusArea') | Select-Object -First 1
+$afterStartOverContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumePrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition ([bool]$afterStartOverBiosPrimary.IsEnabled) 'AXIS BIOS Drivers & Downloads primary action should be usable after start-over.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $afterStartOverContinueButton -Name 'start-over first-run BIOS Drivers & Downloads'
+Assert-BoostLabCondition ($afterStartOverRuntimeStatus.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS BIOS Drivers & Downloads runtime status should be empty after start-over.'
+$afterStartOverBiosText = (Get-AxisFirstUseWizardTextValues -Root $finalResumeContentHost.Child) -join [Environment]::NewLine
+Assert-BoostLabCondition (-not $afterStartOverBiosText.Contains($arabicCompleted)) 'AXIS BIOS Drivers & Downloads must not retain completed text after start-over.'
+$afterStartOverBiosOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $finalResumePrototype -Tag 'AxisFirstUseWizard.ConfirmationOverlay') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $afterStartOverBiosPrimary
+$afterStartOverBiosAcknowledgement = @(Get-AxisFirstUseWizardTaggedElements -Root $afterStartOverBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement') | Select-Object -First 1
+$afterStartOverBiosConfirm = @(Get-AxisFirstUseWizardTaggedElements -Root $afterStartOverBiosOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton') | Select-Object -First 1
+Assert-BoostLabCondition ($afterStartOverBiosOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS BIOS Drivers & Downloads confirmation overlay should still open after start-over.'
+Assert-BoostLabCondition (-not [bool]$afterStartOverBiosAcknowledgement.IsChecked -and -not [bool]$afterStartOverBiosConfirm.IsEnabled) 'AXIS start-over should clear stale confirmation checkbox state.'
+foreach ($startOverResetSourceMarker in @(
+    'AxisFirstUseWizard.StartOverRuntimeStatusCleared',
+    'AxisFirstUseWizard.StartOverSelectorCleared',
+    'AxisFirstUseWizard.StartOverAcknowledgementCleared',
+    'AxisFirstUseWizard.InstallersProgramSelector',
+    'AxisFirstUseWizard.GraphicsGpuSelector',
+    'AxisFirstUseWizard.WindowsBloatwareActionSelector',
+    'AxisFirstUseWizard.UpdatesDriversUsbSelector',
+    'AxisFirstUseWizard.AutoUnattendUsbSelector',
+    'AxisFirstUseWizard.ConfirmationAcknowledgement'
+)) {
+    Assert-BoostLabCondition ($prototypeSource.Contains($startOverResetSourceMarker)) "AXIS start-over reset source should cover stale UI/session marker: $startOverResetSourceMarker"
+}
+
+$axisProductionStatePath = [System.IO.Path]::Combine([Environment]::GetFolderPath('CommonApplicationData'), 'AXIS', 'state.json')
+$axisProductionStateExistedBefore = [System.IO.File]::Exists($axisProductionStatePath)
+$approvedPrototypeStateProperties = @(
+    'schemaVersion'
+    'productName'
+    'currentPageId'
+    'currentStage'
+    'completedPageIds'
+    'completedToolStepIds'
+    'isIntroCompleted'
+    'isSetupCompleted'
+    'reachedFinalCompletion'
+    'restartExpected'
+    'restartSourceStepId'
+    'resumeTargetPageId'
+    'pendingContinuation'
+    'lastUpdatedUtc'
+)
+
+[void](Clear-AxisWizardPrototypeState)
+$noStateSampleState = Get-AxisFirstUseWizardSampleState
+$noStateSampleState['UsePrototypeStateFile'] = $true
+$noStatePrototype = New-AxisFirstUseWizardPrototype -SampleState $noStateSampleState
+$noStateContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $noStatePrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+Assert-BoostLabCondition (-not [bool]$noStateSampleState['PrototypeStateFileLoaded']) 'AXIS prototype launch with no temp state should not report a loaded state file.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $noStateContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 1) 'AXIS prototype launch with no temp state should start at intro-welcome.'
+Assert-BoostLabCondition (-not [System.IO.File]::Exists($axisPrototypeStatePath)) 'AXIS prototype launch should not create the temp state folder/file until saving progress.'
+
+$noStateIntroStartButton = @(Get-AxisFirstUseWizardTaggedElements -Root $noStatePrototype -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton') | Select-Object -First 1
+Invoke-AxisFirstUseWizardButtonClick -Button $noStateIntroStartButton
+Assert-BoostLabCondition ([System.IO.File]::Exists($axisPrototypeStatePath)) 'AXIS prototype intro navigation should write the approved temp state file.'
+Assert-BoostLabCondition ([System.IO.File]::Exists($axisProductionStatePath) -eq $axisProductionStateExistedBefore) 'AXIS prototype persistence must not create or change the production ProgramData state path.'
+$prototypeStateJson = [System.IO.File]::ReadAllText($axisPrototypeStatePath, [System.Text.Encoding]::UTF8)
+$prototypeStateRecord = $prototypeStateJson | ConvertFrom-Json -ErrorAction Stop
+$prototypeStateProperties = @($prototypeStateRecord.PSObject.Properties.Name)
+$unexpectedPrototypeStateProperties = @($prototypeStateProperties | Where-Object { $approvedPrototypeStateProperties -notcontains $_ })
+$missingPrototypeStateProperties = @($approvedPrototypeStateProperties | Where-Object { $prototypeStateProperties -notcontains $_ })
+Assert-BoostLabCondition ($unexpectedPrototypeStateProperties.Count -eq 0) "AXIS prototype temp state should not store unapproved fields: $($unexpectedPrototypeStateProperties -join ', ')"
+Assert-BoostLabCondition ($missingPrototypeStateProperties.Count -eq 0) "AXIS prototype temp state should include all approved wizard progress fields: $($missingPrototypeStateProperties -join ', ')"
+Assert-BoostLabCondition ([int]$prototypeStateRecord.schemaVersion -eq 1 -and [string]$prototypeStateRecord.productName -eq 'AXIS') 'AXIS prototype temp state should store the approved schema/product markers only.'
+Assert-BoostLabCondition ([string]$prototypeStateRecord.currentPageId -eq 'bios-information') 'AXIS prototype temp state should survive navigation by saving the current page.'
+Assert-BoostLabCondition ([string]$prototypeStateRecord.currentStage -eq 'Check') 'AXIS prototype temp state should save the current stage.'
+Assert-BoostLabCondition ([bool]$prototypeStateRecord.isIntroCompleted) 'AXIS prototype temp state should record intro completion.'
+Assert-BoostLabCondition ((@($prototypeStateRecord.completedPageIds) -contains 'intro-welcome') -and @($prototypeStateRecord.completedToolStepIds).Count -eq 0) 'AXIS prototype temp state should store page progress without inventing completed tool steps.'
+foreach ($blockedPrototypeStateText in @('license', 'secret', 'payment', 'websiteAccount', 'userAccount')) {
+    Assert-BoostLabCondition (-not $prototypeStateJson.Contains($blockedPrototypeStateText)) "AXIS prototype temp state must not store sensitive/account data: $blockedPrototypeStateText"
+}
+$noStateVisibleText = (Get-AxisFirstUseWizardTextValues -Root $noStatePrototype) -join [Environment]::NewLine
+foreach ($blockedVisiblePersistenceText in @('FirstUseWizardPrototypeState', 'state file', 'JSON', 'diagnostics', 'BoostLab', $axisPrototypeStatePath)) {
+    Assert-BoostLabCondition (-not $noStateVisibleText.Contains($blockedVisiblePersistenceText)) "AXIS customer-visible prototype UI must not expose persistence details: $blockedVisiblePersistenceText"
+}
+
+$reloadSampleState = Get-AxisFirstUseWizardSampleState
+$reloadSampleState['UsePrototypeStateFile'] = $true
+$reloadPrototype = New-AxisFirstUseWizardPrototype -SampleState $reloadSampleState
+$reloadContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $reloadPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$reloadContinueButton = @(Get-AxisFirstUseWizardTaggedElements -Root $reloadPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition ([bool]$reloadSampleState['PrototypeStateFileLoaded']) 'AXIS prototype reload should load existing approved temp state.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reloadContentHost.Child -Tag 'AxisFirstUseWizard.BiosInformationStep').Count -eq 1) 'AXIS prototype reload should resume to the saved current page.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $reloadContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 0) 'AXIS prototype reload with progress should not show intro-welcome.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $reloadContinueButton -Name 'prototype temp-file reload to incomplete bios-information'
+
+$finalFileState = New-AxisWizardMockResumeState `
+    -CurrentPageId 'final-completion' `
+    -CurrentStage 'Advanced' `
+    -IsIntroCompleted $true `
+    -IsSetupCompleted $true `
+    -ReachedFinalCompletion $true `
+    -ResumeSimulationEnabled $true
+Assert-BoostLabCondition (Save-AxisWizardPrototypeState -ResumeState $finalFileState) 'AXIS prototype should save final-completion to the approved temp state file.'
+$finalFileSampleState = Get-AxisFirstUseWizardSampleState
+$finalFileSampleState['UsePrototypeStateFile'] = $true
+$finalFilePrototype = New-AxisFirstUseWizardPrototype -SampleState $finalFileSampleState
+$finalFileContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $finalFilePrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$finalFilePromptOverlay = @(Get-AxisFirstUseWizardTaggedElements -Root $finalFilePrototype -Tag 'AxisFirstUseWizard.StartOverPromptOverlay') | Select-Object -First 1
+$finalFilePromptStartButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalFilePromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptStartOverButton') | Select-Object -First 1
+$finalFilePromptReturnButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalFilePromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptReturnButton') | Select-Object -First 1
+Assert-BoostLabCondition ([bool]$finalFileSampleState['PrototypeStateFileLoaded']) 'AXIS prototype final-completion reopen should load the temp state file.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalFileContentHost.Child -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS prototype final-completion temp state should reopen on final-completion.'
+Assert-BoostLabCondition ($finalFilePromptOverlay.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS prototype final-completion temp state should show the start-over prompt.'
+Invoke-AxisFirstUseWizardButtonClick -Button $finalFilePromptReturnButton
+Assert-BoostLabCondition ($finalFilePromptOverlay.Visibility -eq [System.Windows.Visibility]::Collapsed) 'AXIS prototype temp-state Return should close only the start-over prompt.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalFileContentHost.Child -Tag 'AxisFirstUseWizard.FinalCompletionPage').Count -eq 1) 'AXIS prototype temp-state Return should stay on final-completion.'
+Assert-BoostLabCondition ([System.IO.File]::Exists($axisPrototypeStatePath)) 'AXIS prototype temp-state Return should not delete saved progress.'
+$finalCloseWindowSampleState = Get-AxisFirstUseWizardSampleState
+$finalCloseWindowSampleState['UsePrototypeStateFile'] = $true
+$finalCloseWindow = New-AxisFirstUseWizardPrototypeWindow -SampleState $finalCloseWindowSampleState
+$finalCloseWindowRoot = [System.Windows.Controls.Grid]$finalCloseWindow.Content
+$finalCloseWindowButton = @(Get-AxisFirstUseWizardTaggedElements -Root $finalCloseWindowRoot -Tag 'AxisFirstUseWizard.FinalCompletionButton') | Select-Object -First 1
+$finalCloseWindowMockState = [System.Collections.IDictionary]$finalCloseWindowSampleState['MockResumeState']
+$script:AxisFirstUseWizardFinalCloseObserved = $false
+$finalCloseWindow.Add_Closed({ $script:AxisFirstUseWizardFinalCloseObserved = $true })
+Invoke-AxisFirstUseWizardButtonClick -Button $finalCloseWindowButton
+Assert-BoostLabCondition ([bool]$script:AxisFirstUseWizardFinalCloseObserved) 'AXIS final Finish should close the containing isolated prototype window.'
+Assert-BoostLabCondition ([System.IO.File]::Exists($axisPrototypeStatePath)) 'AXIS final Finish must not delete the saved final-completion prototype state.'
+Assert-BoostLabCondition ([string]$finalCloseWindowMockState['currentPageId'] -eq 'final-completion' -and [bool]$finalCloseWindowMockState['reachedFinalCompletion'] -and [bool]$finalCloseWindowMockState['isSetupCompleted']) 'AXIS final Finish must leave final-completion/setup-complete state saved in memory.'
+Show-AxisWizardStartOverPrompt -Overlay $finalFilePromptOverlay
+Invoke-AxisFirstUseWizardButtonClick -Button $finalFilePromptStartButton
+Assert-BoostLabCondition (-not [System.IO.File]::Exists($axisPrototypeStatePath)) 'AXIS prototype start-over primary should delete the temp state file.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalFileContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 1) 'AXIS prototype start-over primary should return to intro-welcome after clearing temp state.'
+
+[void][System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($axisPrototypeStatePath))
+[System.IO.File]::WriteAllText($axisPrototypeStatePath, '{ invalid-json', [System.Text.Encoding]::UTF8)
+$corruptStateSampleState = Get-AxisFirstUseWizardSampleState
+$corruptStateSampleState['UsePrototypeStateFile'] = $true
+$corruptStatePrototype = New-AxisFirstUseWizardPrototype -SampleState $corruptStateSampleState
+$corruptStateContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $corruptStatePrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+Assert-BoostLabCondition (-not [bool]$corruptStateSampleState['PrototypeStateFileLoaded']) 'AXIS prototype corrupt temp state should be ignored safely.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $corruptStateContentHost.Child -Tag 'AxisFirstUseWizard.IntroWelcomePage').Count -eq 1) 'AXIS prototype corrupt temp state should fall back to intro-welcome.'
+Assert-BoostLabCondition ([System.IO.File]::Exists($axisProductionStatePath) -eq $axisProductionStateExistedBefore) 'AXIS prototype temp-state tests must not create or change the production ProgramData state path.'
+[void](Clear-AxisWizardPrototypeState)
+
+$manualRestartSampleState = Get-AxisFirstUseWizardSampleState
+$manualRestartSampleState['UseMockResumeState'] = $true
+$manualRestartSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'driver-clean' `
+    -CurrentToolStepId 'driver-clean' `
+    -CurrentStage 'Graphics' `
+    -IsIntroCompleted $true `
+    -ResumeMode 'ManualRestart' `
+    -ResumeSimulationEnabled $true
+$manualRestartPrototype = New-AxisFirstUseWizardPrototype -SampleState $manualRestartSampleState
+$manualRestartContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $manualRestartPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$manualRestartMockState = [System.Collections.IDictionary]$manualRestartSampleState['MockResumeState']
+Assert-BoostLabCondition (-not [bool]$manualRestartMockState['ManualRestartAutoStart']) 'AXIS manual restart mock must not auto-start.'
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $manualRestartContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsDriverCleanStep').Count -eq 1) 'AXIS manual restart mock should resume only when opened by the customer.'
+
+$expectedRestartAfterSampleState = Get-AxisFirstUseWizardSampleState
+$expectedRestartAfterSampleState['UseMockResumeState'] = $true
+$expectedRestartAfterSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'restart-after-installers' `
+    -CurrentToolStepId 'restart-after-installers' `
+    -CurrentStage 'Installers' `
+    -IsIntroCompleted $true `
+    -RestartExpected $true `
+    -RestartSourceStepId 'restart-after-installers' `
+    -ResumeTargetPageId 'restart-after-installers' `
+    -ResumeMode 'ExpectedRestart' `
+    -PendingContinuation 'ManualNextToGraphics' `
+    -ResumeSimulationEnabled $true
+$expectedRestartAfterPrototype = New-AxisFirstUseWizardPrototype -SampleState $expectedRestartAfterSampleState
+$expectedRestartAfterContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedRestartAfterPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$expectedRestartAfterContinue = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedRestartAfterPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $expectedRestartAfterContentHost.Child -Tag 'AxisFirstUseWizard.RestartAfterInstallersStep').Count -eq 1) 'AXIS expected restart should resume to restart-after-installers.'
+$expectedRestartAfterMockState = [System.Collections.IDictionary]$expectedRestartAfterSampleState['MockResumeState']
+Assert-BoostLabCondition ((@($expectedRestartAfterMockState['completedToolStepIds']) -contains 'restart-after-installers')) 'AXIS expected restart should mark restart-after-installers complete.'
+Assert-BoostLabCondition ([bool]$expectedRestartAfterContinue.IsEnabled) 'AXIS expected restart-after-installers resume should enable Next.'
+Invoke-AxisFirstUseWizardButtonClick -Button $expectedRestartAfterContinue
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $expectedRestartAfterContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsDriverCleanStep').Count -eq 1) 'AXIS expected restart-after-installers should not auto-advance; customer Next moves manually to Graphics.'
+
+$expectedDriverCleanSampleState = Get-AxisFirstUseWizardSampleState
+$expectedDriverCleanSampleState['UseMockResumeState'] = $true
+$expectedDriverCleanSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'driver-clean' `
+    -CurrentToolStepId 'driver-clean' `
+    -CurrentStage 'Graphics' `
+    -IsIntroCompleted $true `
+    -RestartExpected $true `
+    -RestartSourceStepId 'driver-clean' `
+    -ResumeTargetPageId 'driver-clean' `
+    -ResumeMode 'ExpectedRestart' `
+    -PendingContinuation 'ContinueDriverCleanMock' `
+    -ResumeSimulationEnabled $true
+$expectedDriverCleanPrototype = New-AxisFirstUseWizardPrototype -SampleState $expectedDriverCleanSampleState
+$expectedDriverCleanContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedDriverCleanPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$expectedDriverCleanContinue = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedDriverCleanPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $expectedDriverCleanContentHost.Child -Tag 'AxisFirstUseWizard.GraphicsDriverCleanStep').Count -eq 1) 'AXIS expected restart should resume back to driver-clean.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $expectedDriverCleanContinue -Name 'expected restart driver-clean resume'
+
+$expectedDefenderSampleState = Get-AxisFirstUseWizardSampleState
+$expectedDefenderSampleState['UseMockResumeState'] = $true
+$expectedDefenderSampleState['MockResumeState'] = New-AxisWizardMockResumeState `
+    -CurrentPageId 'defender-optimize-assistant' `
+    -CurrentToolStepId 'defender-optimize-assistant' `
+    -CurrentStage 'Advanced' `
+    -IsIntroCompleted $true `
+    -RestartExpected $true `
+    -RestartSourceStepId 'defender-optimize-assistant' `
+    -ResumeTargetPageId 'defender-optimize-assistant' `
+    -ResumeMode 'ExpectedRestart' `
+    -PendingContinuation 'ContinueDefenderOptimizeMock' `
+    -ResumeSimulationEnabled $true
+$expectedDefenderPrototype = New-AxisFirstUseWizardPrototype -SampleState $expectedDefenderSampleState
+$expectedDefenderContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedDefenderPrototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
+$expectedDefenderContinue = @(Get-AxisFirstUseWizardTaggedElements -Root $expectedDefenderPrototype -Tag 'AxisFirstUseWizard.ContinueButton') | Select-Object -First 1
+Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $expectedDefenderContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS expected restart should resume back to defender-optimize-assistant.'
+Assert-AxisFirstUseWizardNextDisabledNonBlue -Button $expectedDefenderContinue -Name 'expected restart defender-optimize-assistant resume'
+
+foreach ($biosResumeTargetId in @('bios-settings', 'to-bios')) {
+    $biosRestartResumeState = New-AxisWizardMockResumeState `
+        -CurrentPageId $biosResumeTargetId `
+        -CurrentToolStepId $biosResumeTargetId `
+        -CurrentStage 'Refresh' `
+        -IsIntroCompleted $true `
+        -RestartExpected $true `
+        -RestartSourceStepId $biosResumeTargetId `
+        -ResumeTargetPageId $biosResumeTargetId `
+        -ResumeMode 'ExpectedRestart' `
+        -ResumeSimulationEnabled $true
+    $biosRestartTarget = Get-AxisWizardMockResumeTarget -ResumeState $biosRestartResumeState -Steps $samplePages
+    Assert-BoostLabCondition ([string]$biosRestartTarget['PageId'] -eq $biosResumeTargetId) "AXIS BIOS-related mock restart resume should support target: $biosResumeTargetId"
+}
 
 $introContentHost = @(Get-AxisFirstUseWizardTaggedElements -Root $prototype -Tag 'AxisFirstUseWizard.StepContentHost') | Select-Object -First 1
 $introVisibleContent = $introContentHost.Child
@@ -2088,6 +2504,7 @@ Assert-BoostLabCondition ($finalContinueButton.Visibility -eq [System.Windows.Vi
 Assert-BoostLabCondition ($finalButtonElement.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS final completion page should show Finish.'
 Assert-BoostLabCondition ([string]$finalButtonElement.Content -eq $axisFinalButton) 'AXIS final Finish button text changed.'
 Assert-BoostLabCondition ([double]$finalButtonElement.Height -eq 40.0 -and [double]$finalButtonElement.Width -eq 104.0) 'AXIS final Finish button should keep no-clipping dimensions.'
+Assert-BoostLabCondition ([bool]$finalButtonElement.Resources['AxisFirstUseWizard.FinalCompletionFinishClosesPrototypeWindowOnly']) 'AXIS final Finish button should expose the safe prototype-window close marker.'
 Assert-BoostLabCondition ($finalStageStrip.Visibility -eq [System.Windows.Visibility]::Visible) 'AXIS final completion page should show the stage strip.'
 foreach ($stageName in $expectedStageNames) {
     $finalStageFill = @(Get-AxisFirstUseWizardTaggedElements -Root $finalPrototype -Tag "AxisFirstUseWizard.StageProgressFill.$stageName") | Select-Object -First 1
@@ -2098,6 +2515,8 @@ Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalVis
 Assert-BoostLabCondition (-not $finalVisibleText.Contains('BoostLab')) 'AXIS final customer-facing copy must not mention BoostLab.'
 Assert-BoostLabCondition (-not $finalVisibleText.Contains('dashboard')) 'AXIS final customer-facing copy must not mention a dashboard.'
 Assert-BoostLabCondition (-not $finalVisibleText.Contains([string][char]0xFFFD)) 'AXIS final visible copy must not contain replacement glyphs.'
+$finalSampleMockResumeState = [System.Collections.IDictionary]$finalSampleState['MockResumeState']
+Assert-BoostLabCondition ([bool]$finalSampleMockResumeState['reachedFinalCompletion'] -and [bool]$finalSampleMockResumeState['isSetupCompleted']) 'AXIS final-completion render should record reachedFinalCompletion and isSetupCompleted in mock state.'
 Invoke-AxisFirstUseWizardButtonClick -Button $finalBackButton
 Assert-BoostLabCondition (@(Get-AxisFirstUseWizardTaggedElements -Root $finalContentHost.Child -Tag 'AxisFirstUseWizard.AdvancedDefenderOptimizeAssistantStep').Count -eq 1) 'AXIS final Previous should return to Defender Optimize Assistant.'
 
@@ -3095,6 +3514,9 @@ Assert-BoostLabCondition ([string]$taggedContinueButtons[0].Resources['AxisFirst
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBackground']).Color -eq '#FF1D4ED8') 'AXIS enabled Continue/Next hover should stay blue instead of switching to the light primary hover.'
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBorder']).Color -eq '#FF93C5FD') 'AXIS enabled Continue/Next hover border should keep readable blue-family contrast.'
 Assert-BoostLabCondition ([string]([System.Windows.Media.SolidColorBrush]$taggedContinueButtons[0].Resources['AxisFirstUseWizard.ButtonHoverBackground']).Color -ne '#FFF5F5F5') 'AXIS enabled Continue/Next hover must not become white/light with off-white text.'
+$toolStartMockResumeState = [System.Collections.IDictionary]$toolStartSampleState['MockResumeState']
+Assert-BoostLabCondition ((@($toolStartMockResumeState['completedToolStepIds']) -contains 'bios-information')) 'AXIS simulated tool completion should record bios-information in completedToolStepIds.'
+Assert-BoostLabCondition ((@($toolStartMockResumeState['completedPageIds']) -contains 'bios-information')) 'AXIS simulated tool completion should record bios-information in completedPageIds.'
 
 Invoke-AxisFirstUseWizardButtonClick -Button $taggedContinueButtons[0]
 $biosSettingsVisibleContent = $taggedContentHost[0].Child
@@ -5824,6 +6246,67 @@ Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLin
 Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.StageLineCompletedFullGreen')) 'AXIS stage strip should expose the completed full-green line marker.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('87.36')) 'AXIS stage strip must not keep the old partial active underline width.'
 Assert-BoostLabCondition (-not $prototypeSource.Contains('0.84')) 'AXIS stage strip must not keep the old partial progress value.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.MockResumeStatePrototypeOnly')) 'AXIS mock resume state should expose a prototype-only marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.MockResumeTargetPrototypeOnly')) 'AXIS mock resume target should expose a prototype-only marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.MockResumeStartOverPromptPrototypeOnly')) 'AXIS start-over prompt should expose a prototype-only marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.MockResumeStartOverClearsProgress')) 'AXIS start-over prompt should expose the in-memory clear-progress marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.MockResumeStartOverReturnOnlyClosesPrompt')) 'AXIS start-over prompt should expose the Return-only marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('AxisFirstUseWizard.FinalCompletionFinishClosesPrototypeWindowOnly')) 'AXIS final Finish should expose a prototype-only window-close marker in source.'
+Assert-BoostLabCondition ($prototypeSource.Contains('[System.Windows.Window]::GetWindow($finalButtonRootForClose)') -and $prototypeSource.Contains('$finalCompletionWindow.Close()')) 'AXIS final Finish should close only the containing WPF prototype window.'
+$finalButtonCloseMatch = [regex]::Match($prototypeSource, '(?s)\$finalButton\.Add_Click\(\s*\{(?<Body>.*?)\}\.GetNewClosure\(\)\s*\)')
+Assert-BoostLabCondition ($finalButtonCloseMatch.Success) 'AXIS final Finish should expose an inspectable click handler.'
+$finalButtonCloseBody = [string]$finalButtonCloseMatch.Groups['Body'].Value
+foreach ($blockedFinalButtonCloseText in @(
+    'Clear-AxisWizardPrototypeState',
+    'clearPrototypeStateForNavigationClosure',
+    'resetMockProgressForNavigationClosure',
+    'resetCachedWizardSessionForNavigationClosure',
+    'Invoke-BoostLabToolAction',
+    'Start-Process',
+    'Stop-Process',
+    'shutdown.exe',
+    'Restart-Computer',
+    '[Environment]::Exit',
+    'exit'
+)) {
+    Assert-BoostLabCondition (-not $finalButtonCloseBody.Contains($blockedFinalButtonCloseText)) "AXIS final Finish close handler must not clear state, run tools, or terminate the host: $blockedFinalButtonCloseText"
+}
+$startOverResetClosureMatch = [regex]::Match($prototypeSource, '(?s)\$resetCachedWizardSessionForNavigation\s*=\s*\{(?<Body>.*?)\}\.GetNewClosure\(\)')
+Assert-BoostLabCondition ($startOverResetClosureMatch.Success) 'AXIS start-over reset should expose an inspectable cached-session reset closure.'
+$startOverResetClosureBody = [string]$startOverResetClosureMatch.Groups['Body'].Value
+foreach ($blockedStartOverResetHelper in @(
+    'Get-AxisWizardResource',
+    'Get-AxisWizardStepStateResourceKeys',
+    'Get-AxisWizardMapValue',
+    'New-AxisWizardShadowEffect'
+)) {
+    Assert-BoostLabCondition (-not $startOverResetClosureBody.Contains($blockedStartOverResetHelper)) "AXIS start-over reset event path must not call non-closure-safe helper: $blockedStartOverResetHelper"
+}
+foreach ($requiredStartOverResetCapture in @(
+    '$resetPrimaryBackgroundForNavigation',
+    '$resetPrimaryEffectForNavigation',
+    '$resetRuntimeBackgroundForNavigation',
+    '$resetDisabledBackgroundForNavigation'
+)) {
+    Assert-BoostLabCondition ($prototypeSource.Contains($requiredStartOverResetCapture)) "AXIS start-over reset should precompute and capture resource value: $requiredStartOverResetCapture"
+}
+Assert-BoostLabCondition ($prototypeSource.Contains('FirstUseWizardPrototypeState.json')) 'AXIS prototype should use the approved temp state filename.'
+Assert-BoostLabCondition ($prototypeSource.Contains('UsePrototypeStateFile')) 'AXIS prototype should expose the prototype temp-file persistence switch.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Read-AxisWizardPrototypeState')) 'AXIS prototype should expose a temp-state read helper.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Save-AxisWizardPrototypeState')) 'AXIS prototype should expose a temp-state save helper.'
+Assert-BoostLabCondition ($prototypeSource.Contains('Clear-AxisWizardPrototypeState')) 'AXIS prototype should expose a temp-state clear helper.'
+foreach ($blockedMockResumePersistenceText in @(
+    'state.json'
+    '%ProgramData%'
+    'ProgramData\AXIS'
+    'Register-ScheduledTask'
+    'ScheduledTask'
+    'RunOnce'
+    'shutdown.exe'
+    'Stop-Process'
+)) {
+    Assert-BoostLabCondition (-not $prototypeSource.Contains($blockedMockResumePersistenceText)) "AXIS mock resume prototype must not contain real persistence/startup text: $blockedMockResumePersistenceText"
+}
 $eventHandlerBlocks = [System.Collections.Generic.List[string]]::new()
 foreach ($eventName in @('Add_Checked', 'Add_Unchecked', 'Add_Click', 'Add_Tick')) {
     foreach ($match in [regex]::Matches($prototypeSource, "(?s)\.$eventName\(\s*\{(?<Body>.*?)\}\.GetNewClosure\(\)\s*\)")) {
@@ -5866,6 +6349,7 @@ foreach ($blockedRuntimeText in @(
     'Out-File'
     'New-Item'
     'Copy-Item'
+    'Stop-Process'
     'Get-CimInstance'
     'Get-WmiObject'
     'Win32_Processor'
@@ -6070,6 +6554,19 @@ foreach ($requiredToBiosBlueprintText in @(
     Assert-BoostLabCondition ($toBiosBlueprintSource.Contains($requiredToBiosBlueprintText)) "AXIS To BIOS blueprint is missing owner-approved contract text: $requiredToBiosBlueprintText"
 }
 
+foreach ($requiredFinalCompletionBlueprintText in @(
+    'Internal page ID | `final-completion`'
+    'Pressing the final button in the isolated prototype closes only the prototype WPF window safely.'
+    'It does not clear saved progress.'
+    'It does not reset wizard progress.'
+    'Reopening the isolated prototype after completion still shows the approved start-over prompt.'
+    'No dashboard transition.'
+    'No website links.'
+    'No runtime action, restart, Scheduled Task, RunOnce, Registry write, Service change, process termination, or host mutation is allowed.'
+)) {
+    Assert-BoostLabCondition ($finalCompletionBlueprintSource.Contains($requiredFinalCompletionBlueprintText)) "AXIS Final Completion blueprint is missing owner-approved close behavior contract text: $requiredFinalCompletionBlueprintText"
+}
+
 $edgeWebViewBlueprintApprovedBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $windowsEdgeWebViewApprovedBullet1
 $edgeWebViewBlueprintOldBoostLabBullet1 = ConvertTo-AxisWizardBlueprintMojibakeText -Text $windowsEdgeWebViewOldBoostLabBullet1
 foreach ($requiredEdgeWebViewBlueprintText in @(
@@ -6138,6 +6635,17 @@ foreach ($requiredDefenderOptimizeBlueprintText in @(
 Assert-BoostLabCondition (-not $defenderOptimizeAssistantBlueprintSource.Contains($defenderOptimizeBlueprintOldBoostLabBullet1)) 'AXIS Defender Optimize blueprint must not retain the old customer-facing BoostLab bullet.'
 Assert-BoostLabCondition ($defenderOptimizeAssistantBlueprintSource.Contains($defenderOptimizeBlueprintApprovedBullet1)) 'AXIS Defender Optimize blueprint must use the approved no-BoostLab customer-facing bullet.'
 
+foreach ($requiredResumeContractText in @(
+    '%TEMP%\AXIS\FirstUseWizardPrototypeState.json'
+    'prototype-only temp-file state'
+    'not production persistence'
+    '%ProgramData%\AXIS\state.json'
+    'future production storage idea only'
+    'does not implement Scheduled Tasks, RunOnce, startup entries, bootstrapper resume, registry writes, or any host mutation'
+)) {
+    Assert-BoostLabCondition ($resumeContractSource.Contains($requiredResumeContractText)) "AXIS restart/resume contract is missing prototype temp-file boundary text: $requiredResumeContractText"
+}
+
 $mainWindowSource = Get-Content -Raw -LiteralPath $mainWindowPath
 Assert-BoostLabCondition (-not $mainWindowSource.Contains('AxisFirstUseWizardPrototype')) 'MainWindow should not be wired to the AXIS first-use wizard prototype.'
 Assert-BoostLabCondition (-not $mainWindowSource.Contains('Start-AxisFirstUseWizardPreview')) 'MainWindow should not be wired to the AXIS first-use wizard preview harness.'
@@ -6156,6 +6664,8 @@ $protectedSourceChanges = @(
 )
 Assert-BoostLabCondition ($LASTEXITCODE -eq 0) 'Unable to inspect protected source/intake working-tree status.'
 Assert-BoostLabCondition ($protectedSourceChanges.Count -eq 0) "Protected source/intake paths have working-tree modifications: $($protectedSourceChanges -join '; ')"
+
+Restore-AxisWizardPrototypeStateFixture
 
 [pscustomobject]@{
     Test = 'AxisFirstUseWizardPrototype'

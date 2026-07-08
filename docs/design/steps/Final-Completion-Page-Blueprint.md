@@ -1,13 +1,13 @@
 # AXIS Final Completion Page Blueprint
 
 Date: 2026-07-07
-Scope: documentation-only owner-approved blueprint for a future first-use wizard final completion page
+Scope: owner-approved blueprint and isolated prototype behavior contract for the first-use wizard final completion page
 
 ## Owner-Control Notice
 
 This document records owner-approved Arabic-only customer-facing content and layout requirements for the future `final-completion` AXIS first-use wizard page.
 
-This phase is documentation-only. It does not implement UI behavior, edit the isolated prototype, edit tests, wire the page into `ui/MainWindow.ps1`, add website links, add instruction links, run a tool, close a window, or create runtime behavior.
+The original blueprint phase was documentation-only. A later isolated-prototype phase may implement only the explicitly approved safe prototype behavior recorded here, without wiring `ui/MainWindow.ps1`, adding website links, adding instruction links, running a tool, or creating production runtime behavior.
 
 Anything not explicitly owner-approved in this document must not appear in the normal AXIS customer UI.
 
@@ -20,7 +20,7 @@ Anything not explicitly owner-approved in this document must not appear in the n
 | Purpose | Final page shown after all wizard tool steps are completed |
 | Language | Arabic-only |
 | Future production final button behavior | `إنهاء` closes the AXIS window later |
-| Prototype behavior later | Safe prototype behavior only |
+| Current isolated prototype behavior | Pressing the final button closes only the prototype WPF window safely; saved progress remains. |
 | Stage strip | Shown with all stages completed green |
 | Support card | Not shown |
 | Requirements card | Not shown |
@@ -46,7 +46,12 @@ Anything not explicitly owner-approved in this document must not appear in the n
 - No Next button.
 - Show final button: `إنهاء`.
 - In production later, `إنهاء` closes the AXIS window.
-- In the isolated prototype later, `إنهاء` may simulate completion or close the prototype window only if the existing safe prototype pattern allows it.
+- Pressing the final button in the isolated prototype closes only the prototype WPF window safely.
+- It does not clear saved progress.
+- It does not reset wizard progress.
+- It does not navigate to a dashboard.
+- It does not open links or external processes.
+- Reopening the isolated prototype after completion still shows the approved start-over prompt.
 - No runtime status.
 - No support card.
 - No requirements card.
@@ -55,7 +60,7 @@ Anything not explicitly owner-approved in this document must not appear in the n
 - No instruction links.
 - No website links.
 
-Do not implement this behavior in this docs-only phase.
+This safe close behavior is prototype-only. No runtime action, restart, Scheduled Task, RunOnce, Registry write, Service change, process termination, or host mutation is allowed.
 
 ## Future Layout Contract
 
@@ -103,23 +108,20 @@ Future first-use wizard flow after implementation should become:
 2. existing 50 tool steps, from `bios-information` through `defender-optimize-assistant`
 3. `final-completion`
 
-This document records the blueprint only. The next implementation phase may add the page to the isolated prototype.
+This document records the owner-approved page contract. The isolated prototype may represent this page, but production wiring remains outside this blueprint.
 
 ## Non-Goals
 
-This phase does not include:
+This blueprint and isolated prototype behavior do not include:
 
-- UI implementation.
 - Runtime implementation.
-- Prototype edits.
-- Test edits.
 - MainWindow integration.
 - Website work.
 - Instruction button linking.
 - Language switching.
 - English copy.
 - Dashboard implementation.
-- Window close behavior.
+- Production window close behavior.
 - Tool execution.
 - Host mutation.
 - Staging, committing, or pushing.

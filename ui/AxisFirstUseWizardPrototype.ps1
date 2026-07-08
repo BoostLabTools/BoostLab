@@ -1418,6 +1418,564 @@ function ConvertFrom-AxisWizardBase64Text {
     return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Value))
 }
 
+function Get-AxisWizardMockTimestamp {
+    [CmdletBinding()]
+    param()
+
+    return 'MockUtc-2026-07-08T00:00:00Z'
+}
+
+function New-AxisWizardMockResumeState {
+    [CmdletBinding()]
+    param(
+        [string]$CurrentPageId = 'intro-welcome',
+
+        [string]$CurrentToolStepId = '',
+
+        [string]$CurrentStage = 'Check',
+
+        [string[]]$CompletedPageIds = @(),
+
+        [string[]]$CompletedToolStepIds = @(),
+
+        [bool]$IsIntroCompleted = $false,
+
+        [bool]$IsSetupCompleted = $false,
+
+        [bool]$ReachedFinalCompletion = $false,
+
+        [bool]$RestartExpected = $false,
+
+        [string]$RestartReason = '',
+
+        [string]$RestartSourceStepId = '',
+
+        [string]$ResumeTargetPageId = '',
+
+        [string]$ResumeMode = 'None',
+
+        [string]$PendingContinuation = '',
+
+        [hashtable]$SelectedMetadata = @{},
+
+        [bool]$ResumeSimulationEnabled = $false
+    )
+
+    return [ordered]@{
+        schemaVersion = 1
+        productName = 'AXIS'
+        currentPageId = $CurrentPageId
+        currentToolStepId = $CurrentToolStepId
+        currentStage = $CurrentStage
+        completedPageIds = @($CompletedPageIds)
+        completedToolStepIds = @($CompletedToolStepIds)
+        isIntroCompleted = $IsIntroCompleted
+        isSetupCompleted = $IsSetupCompleted
+        reachedFinalCompletion = $ReachedFinalCompletion
+        restartExpected = $RestartExpected
+        restartReason = $RestartReason
+        restartSourceStepId = $RestartSourceStepId
+        resumeTargetPageId = $ResumeTargetPageId
+        resumeMode = $ResumeMode
+        pendingContinuation = $PendingContinuation
+        lastUpdatedUtc = (Get-AxisWizardMockTimestamp)
+        selectedMetadata = [ordered]@{} + $SelectedMetadata
+        ResumeSimulationEnabled = $ResumeSimulationEnabled
+        Marker = 'AxisFirstUseWizard.MockResumeStatePrototypeOnly'
+        PrototypeOnly = $true
+        PrototypeTempFilePersistenceAllowed = $true
+        NoProductionPersistence = $true
+        NoHostMutation = $true
+        NoStartupRegistration = $true
+        ManualRestartAutoStart = $false
+    }
+}
+
+function Get-AxisWizardPrototypeStatePath {
+    [CmdletBinding()]
+    param()
+
+    $tempRoot = [System.IO.Path]::GetTempPath()
+    return [System.IO.Path]::Combine($tempRoot, 'AXIS', 'FirstUseWizardPrototypeState.json')
+}
+
+function Test-AxisWizardPrototypeStatePathAllowed {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $expectedPath = [System.IO.Path]::GetFullPath((Get-AxisWizardPrototypeStatePath))
+    return ([string]::Equals($fullPath, $expectedPath, [System.StringComparison]::OrdinalIgnoreCase))
+}
+
+function ConvertTo-AxisWizardPrototypeStateRecord {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState
+    )
+
+    return [ordered]@{
+        schemaVersion = 1
+        productName = 'AXIS'
+        currentPageId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'currentPageId' -DefaultValue 'intro-welcome')
+        currentStage = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'currentStage' -DefaultValue 'Check')
+        completedPageIds = @((Get-AxisWizardMapValue -Map $ResumeState -Name 'completedPageIds' -DefaultValue @()) | ForEach-Object { [string]$_ })
+        completedToolStepIds = @((Get-AxisWizardMapValue -Map $ResumeState -Name 'completedToolStepIds' -DefaultValue @()) | ForEach-Object { [string]$_ })
+        isIntroCompleted = [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'isIntroCompleted' -DefaultValue $false)
+        isSetupCompleted = [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'isSetupCompleted' -DefaultValue $false)
+        reachedFinalCompletion = [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'reachedFinalCompletion' -DefaultValue $false)
+        restartExpected = [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartExpected' -DefaultValue $false)
+        restartSourceStepId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartSourceStepId' -DefaultValue '')
+        resumeTargetPageId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'resumeTargetPageId' -DefaultValue '')
+        pendingContinuation = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'pendingContinuation' -DefaultValue '')
+        lastUpdatedUtc = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'lastUpdatedUtc' -DefaultValue (Get-AxisWizardMockTimestamp))
+    }
+}
+
+function ConvertFrom-AxisWizardPrototypeStateRecord {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Record
+    )
+
+    if ($null -eq $Record -or
+        [int]$Record.schemaVersion -ne 1 -or
+        [string]$Record.productName -ne 'AXIS' -or
+        [string]::IsNullOrWhiteSpace([string]$Record.currentPageId)) {
+        return $null
+    }
+
+    $currentPageId = [string]$Record.currentPageId
+    $currentToolStepId = if ($currentPageId -in @('intro-welcome', 'final-completion')) { '' } else { $currentPageId }
+    $state = New-AxisWizardMockResumeState `
+        -CurrentPageId $currentPageId `
+        -CurrentToolStepId $currentToolStepId `
+        -CurrentStage ([string]$Record.currentStage) `
+        -CompletedPageIds @($Record.completedPageIds | ForEach-Object { [string]$_ }) `
+        -CompletedToolStepIds @($Record.completedToolStepIds | ForEach-Object { [string]$_ }) `
+        -IsIntroCompleted ([bool]$Record.isIntroCompleted) `
+        -IsSetupCompleted ([bool]$Record.isSetupCompleted) `
+        -ReachedFinalCompletion ([bool]$Record.reachedFinalCompletion) `
+        -RestartExpected ([bool]$Record.restartExpected) `
+        -RestartSourceStepId ([string]$Record.restartSourceStepId) `
+        -ResumeTargetPageId ([string]$Record.resumeTargetPageId) `
+        -PendingContinuation ([string]$Record.pendingContinuation) `
+        -ResumeSimulationEnabled $true
+    $state['lastUpdatedUtc'] = [string]$Record.lastUpdatedUtc
+    $state['PrototypeStateFileLoaded'] = $true
+    return $state
+}
+
+function Read-AxisWizardPrototypeState {
+    [CmdletBinding()]
+    param(
+        [string]$Path = (Get-AxisWizardPrototypeStatePath)
+    )
+
+    if (-not (Test-AxisWizardPrototypeStatePathAllowed -Path $Path)) {
+        return $null
+    }
+    if (-not [System.IO.File]::Exists($Path)) {
+        return $null
+    }
+
+    try {
+        $json = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+        $record = $json | ConvertFrom-Json -ErrorAction Stop
+        return ConvertFrom-AxisWizardPrototypeStateRecord -Record $record
+    }
+    catch {
+        return $null
+    }
+}
+
+function Save-AxisWizardPrototypeState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState,
+
+        [string]$Path = (Get-AxisWizardPrototypeStatePath)
+    )
+
+    if (-not (Test-AxisWizardPrototypeStatePathAllowed -Path $Path)) {
+        return $false
+    }
+
+    $directory = [System.IO.Path]::GetDirectoryName($Path)
+    [void][System.IO.Directory]::CreateDirectory($directory)
+    $record = ConvertTo-AxisWizardPrototypeStateRecord -ResumeState $ResumeState
+    $json = $record | ConvertTo-Json -Depth 4
+    [System.IO.File]::WriteAllText($Path, $json, [System.Text.Encoding]::UTF8)
+    return $true
+}
+
+function Clear-AxisWizardPrototypeState {
+    [CmdletBinding()]
+    param(
+        [string]$Path = (Get-AxisWizardPrototypeStatePath)
+    )
+
+    if (-not (Test-AxisWizardPrototypeStatePathAllowed -Path $Path)) {
+        return $false
+    }
+    if ([System.IO.File]::Exists($Path)) {
+        [System.IO.File]::Delete($Path)
+    }
+
+    return $true
+}
+
+function Add-AxisWizardMockStateListValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState,
+
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [Parameter(Mandatory)]
+        [string]$Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return
+    }
+
+    $items = @()
+    if ($ResumeState.Contains($Name) -and $null -ne $ResumeState[$Name]) {
+        $items = @($ResumeState[$Name])
+    }
+
+    if ($items -notcontains $Value) {
+        $items += $Value
+    }
+
+    $ResumeState[$Name] = @($items)
+}
+
+function Set-AxisWizardMockCurrentPage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Page
+    )
+
+    $pageId = [string](Get-AxisWizardMapValue -Map $Page -Name 'Id' -DefaultValue '')
+    $pageKind = [string](Get-AxisWizardMapValue -Map $Page -Name 'PageKind' -DefaultValue 'Tool')
+    $stageName = [string](Get-AxisWizardMapValue -Map $Page -Name 'StageName' -DefaultValue 'Check')
+    $isToolStep = [bool](Get-AxisWizardMapValue -Map $Page -Name 'IsToolStep' -DefaultValue ($pageKind -eq 'Tool'))
+
+    $ResumeState['currentPageId'] = $pageId
+    $ResumeState['currentStage'] = $stageName
+    if ($isToolStep -and $pageKind -eq 'Tool') {
+        $ResumeState['currentToolStepId'] = $pageId
+    }
+    else {
+        $ResumeState['currentToolStepId'] = ''
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($pageId) -and $pageId -ne 'intro-welcome') {
+        $ResumeState['isIntroCompleted'] = $true
+    }
+
+    if ($pageId -eq 'final-completion') {
+        $ResumeState['reachedFinalCompletion'] = $true
+        $ResumeState['isSetupCompleted'] = $true
+        Add-AxisWizardMockStateListValue -ResumeState $ResumeState -Name 'completedPageIds' -Value $pageId
+    }
+
+    $ResumeState['lastUpdatedUtc'] = Get-AxisWizardMockTimestamp
+}
+
+function Set-AxisWizardMockPageCompleted {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Page
+    )
+
+    $pageId = [string](Get-AxisWizardMapValue -Map $Page -Name 'Id' -DefaultValue '')
+    $pageKind = [string](Get-AxisWizardMapValue -Map $Page -Name 'PageKind' -DefaultValue 'Tool')
+    $isToolStep = [bool](Get-AxisWizardMapValue -Map $Page -Name 'IsToolStep' -DefaultValue ($pageKind -eq 'Tool'))
+
+    Add-AxisWizardMockStateListValue -ResumeState $ResumeState -Name 'completedPageIds' -Value $pageId
+    if ($isToolStep -and $pageKind -eq 'Tool') {
+        Add-AxisWizardMockStateListValue -ResumeState $ResumeState -Name 'completedToolStepIds' -Value $pageId
+    }
+
+    if ($pageId -eq 'intro-welcome') {
+        $ResumeState['isIntroCompleted'] = $true
+    }
+    elseif ($pageId -eq 'final-completion') {
+        $ResumeState['reachedFinalCompletion'] = $true
+        $ResumeState['isSetupCompleted'] = $true
+    }
+
+    $ResumeState['lastUpdatedUtc'] = Get-AxisWizardMockTimestamp
+}
+
+function Reset-AxisWizardMockProgress {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$ResumeState
+    )
+
+    $ResumeState['currentPageId'] = 'intro-welcome'
+    $ResumeState['currentToolStepId'] = ''
+    $ResumeState['currentStage'] = ''
+    $ResumeState['completedPageIds'] = @()
+    $ResumeState['completedToolStepIds'] = @()
+    $ResumeState['isIntroCompleted'] = $false
+    $ResumeState['isSetupCompleted'] = $false
+    $ResumeState['reachedFinalCompletion'] = $false
+    $ResumeState['restartExpected'] = $false
+    $ResumeState['restartReason'] = ''
+    $ResumeState['restartSourceStepId'] = ''
+    $ResumeState['resumeTargetPageId'] = ''
+    $ResumeState['resumeMode'] = 'None'
+    $ResumeState['pendingContinuation'] = ''
+    $ResumeState['selectedMetadata'] = [ordered]@{}
+    $ResumeState['lastUpdatedUtc'] = Get-AxisWizardMockTimestamp
+}
+
+function Test-AxisWizardMockSetupCompleted {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$ResumeState
+    )
+
+    if ($null -eq $ResumeState) {
+        return $false
+    }
+
+    return ([bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'isSetupCompleted' -DefaultValue $false) -or
+        [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'reachedFinalCompletion' -DefaultValue $false))
+}
+
+function Initialize-AxisWizardMockResumeStateForPrototype {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$ResumeState
+    )
+
+    if ($null -eq $ResumeState) {
+        return
+    }
+
+    $restartExpected = [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartExpected' -DefaultValue $false)
+    $restartSourceStepId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartSourceStepId' -DefaultValue '')
+    $resumeTargetPageId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'resumeTargetPageId' -DefaultValue '')
+
+    if ($restartExpected -and [string]::IsNullOrWhiteSpace($resumeTargetPageId) -and
+        $restartSourceStepId -in @('bios-settings', 'to-bios', 'driver-clean', 'defender-optimize-assistant')) {
+        $ResumeState['resumeTargetPageId'] = $restartSourceStepId
+        $resumeTargetPageId = $restartSourceStepId
+    }
+
+    if ($restartExpected -and
+        $restartSourceStepId -eq 'restart-after-installers' -and
+        ($resumeTargetPageId -eq 'restart-after-installers' -or [string]::IsNullOrWhiteSpace($resumeTargetPageId))) {
+        $ResumeState['resumeTargetPageId'] = 'restart-after-installers'
+        Add-AxisWizardMockStateListValue -ResumeState $ResumeState -Name 'completedPageIds' -Value 'restart-after-installers'
+        Add-AxisWizardMockStateListValue -ResumeState $ResumeState -Name 'completedToolStepIds' -Value 'restart-after-installers'
+    }
+
+    $ResumeState['ManualRestartAutoStart'] = $false
+    $ResumeState['lastUpdatedUtc'] = Get-AxisWizardMockTimestamp
+}
+
+function Get-AxisWizardMockResumeTarget {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [System.Collections.IDictionary]$ResumeState,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IEnumerable]$Steps
+    )
+
+    $stepList = @($Steps)
+    $targetPageId = 'intro-welcome'
+    $showStartOverPrompt = $false
+
+    if ($null -ne $ResumeState) {
+        if (Test-AxisWizardMockSetupCompleted -ResumeState $ResumeState) {
+            $targetPageId = 'final-completion'
+            $showStartOverPrompt = $true
+        }
+        elseif ([bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartExpected' -DefaultValue $false) -and
+            -not [string]::IsNullOrWhiteSpace([string](Get-AxisWizardMapValue -Map $ResumeState -Name 'resumeTargetPageId' -DefaultValue ''))) {
+            $targetPageId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'resumeTargetPageId' -DefaultValue '')
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace([string](Get-AxisWizardMapValue -Map $ResumeState -Name 'currentPageId' -DefaultValue ''))) {
+            $targetPageId = [string](Get-AxisWizardMapValue -Map $ResumeState -Name 'currentPageId' -DefaultValue '')
+        }
+        elseif ([bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'isIntroCompleted' -DefaultValue $false)) {
+            $targetPageId = 'bios-information'
+        }
+    }
+
+    $targetIndex = 0
+    for ($index = 0; $index -lt $stepList.Count; $index++) {
+        $candidate = [System.Collections.IDictionary]$stepList[$index]
+        if ([string](Get-AxisWizardMapValue -Map $candidate -Name 'Id' -DefaultValue '') -eq $targetPageId) {
+            $targetIndex = $index
+            break
+        }
+    }
+
+    return [ordered]@{
+        PageId = $targetPageId
+        StepIndex = $targetIndex
+        ShowStartOverPrompt = $showStartOverPrompt
+        ManualRestartAutoStart = $false
+        ExpectedRestart = ($null -ne $ResumeState -and [bool](Get-AxisWizardMapValue -Map $ResumeState -Name 'restartExpected' -DefaultValue $false))
+        Marker = 'AxisFirstUseWizard.MockResumeTargetPrototypeOnly'
+    }
+}
+
+function Get-AxisWizardStartOverPromptText {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $values = @{
+        Title = @(0x062A, 0x0645, 0x0020, 0x0625, 0x0643, 0x0645, 0x0627, 0x0644, 0x0020, 0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F)
+        Body = @(0x062A, 0x0645, 0x0020, 0x0625, 0x0643, 0x0645, 0x0627, 0x0644, 0x0020, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0041, 0x0058, 0x0049, 0x0053, 0x0020, 0x0645, 0x0633, 0x0628, 0x0642, 0x064B, 0x0627, 0x002E, 0x0020, 0x0647, 0x0644, 0x0020, 0x062A, 0x0631, 0x064A, 0x062F, 0x0020, 0x0628, 0x062F, 0x0621, 0x0020, 0x0627, 0x0644, 0x0625, 0x0639, 0x062F, 0x0627, 0x062F, 0x0020, 0x0645, 0x0646, 0x0020, 0x062C, 0x062F, 0x064A, 0x062F, 0x061F)
+        Start = @(0x0627, 0x0628, 0x062F, 0x0623, 0x0020, 0x0645, 0x0646, 0x0020, 0x062C, 0x062F, 0x064A, 0x062F)
+        Return = @(0x0631, 0x062C, 0x0648, 0x0639)
+    }
+
+    return ConvertFrom-AxisWizardCodePoints -CodePoints $values[$Name]
+}
+
+function Show-AxisWizardStartOverPrompt {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Windows.Controls.Border]$Overlay
+    )
+
+    $Overlay.Visibility = [System.Windows.Visibility]::Visible
+}
+
+function New-AxisWizardStartOverPromptOverlay {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object]$Resources
+    )
+
+    $overlay = [System.Windows.Controls.Border]::new()
+    $overlay.Tag = 'AxisFirstUseWizard.StartOverPromptOverlay'
+    $overlay.Visibility = [System.Windows.Visibility]::Collapsed
+    $overlay.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString('#CC080808'))
+    $overlay.Padding = New-AxisWizardThickness -Left 206 -Top 172 -Right 206 -Bottom 172
+    $overlay.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $overlay.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.MockResumeStartOverPromptPrototypeOnly')
+
+    $card = New-AxisWizardPanel `
+        -Resources $Resources `
+        -BackgroundKey 'Axis.Brush.Wizard.ElevatedCard' `
+        -BorderBrushKey 'Axis.Brush.Wizard.BorderStrong' `
+        -RadiusKey 'Axis.Radius.Wizard.MainCard' `
+        -Padding (New-AxisWizardThickness -Left 24 -Top 24 -Right 24 -Bottom 22) `
+        -Elevation 'Card'
+    $card.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $card.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $card.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $card.MinWidth = 452
+    $card.Tag = 'AxisFirstUseWizard.StartOverPromptCard'
+
+    $stack = [System.Windows.Controls.StackPanel]::new()
+    $stack.FlowDirection = [System.Windows.FlowDirection]::LeftToRight
+    $stack.Orientation = [System.Windows.Controls.Orientation]::Vertical
+    $stack.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $stack.Tag = 'AxisFirstUseWizard.StartOverPromptRightAlignedGroup'
+
+    $title = New-AxisWizardTextBlock `
+        -Text (Get-AxisWizardStartOverPromptText -Name 'Title') `
+        -Resources $Resources `
+        -FontSizeKey 'Axis.Type.PageTitle.FontSize' `
+        -FontWeightKey 'Axis.Type.PageTitle.FontWeight' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextPrimary' `
+        -TextAlignment ([System.Windows.TextAlignment]::Right) `
+        -FlowDirection ([System.Windows.FlowDirection]::RightToLeft)
+    $title.Tag = 'AxisFirstUseWizard.StartOverPromptTitle'
+    $title.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    $body = New-AxisWizardMixedBidiTextBlock `
+        -Text (Get-AxisWizardStartOverPromptText -Name 'Body') `
+        -Resources $Resources `
+        -Tag 'AxisFirstUseWizard.StartOverPromptBody' `
+        -FontSizeKey 'Axis.Type.BodySmall.FontSize' `
+        -FontFamilyKey 'Axis.Type.BodySmall.FontFamily' `
+        -ForegroundKey 'Axis.Brush.Wizard.TextSecondary' `
+        -MaxWidth 390
+    $body.TextWrapping = [System.Windows.TextWrapping]::Wrap
+    $body.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.StartOverPromptBodyAxisBidiSafe')
+
+    $buttonRow = [System.Windows.Controls.StackPanel]::new()
+    $buttonRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $buttonRow.FlowDirection = [System.Windows.FlowDirection]::RightToLeft
+    $buttonRow.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $buttonRow.Tag = 'AxisFirstUseWizard.StartOverPromptButtonArea'
+    $buttonRow.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.StartOverPromptNoExtraExitNoCheckbox')
+
+    $startButton = New-AxisWizardButton `
+        -Text (Get-AxisWizardStartOverPromptText -Name 'Start') `
+        -Resources $Resources `
+        -Variant 'Primary' `
+        -Enabled $true `
+        -Width 136 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $startButton.Tag = 'AxisFirstUseWizard.StartOverPromptStartOverButton'
+    $startButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.MockResumeStartOverClearsProgress')
+
+    $returnButton = New-AxisWizardButton `
+        -Text (Get-AxisWizardStartOverPromptText -Name 'Return') `
+        -Resources $Resources `
+        -Variant 'Quiet' `
+        -Enabled $true `
+        -Width 110 `
+        -Height 42 `
+        -Margin (New-AxisWizardThickness -Left 0)
+    $returnButton.Tag = 'AxisFirstUseWizard.StartOverPromptReturnButton'
+    $returnButton.SetValue([System.Windows.Automation.AutomationProperties]::AutomationIdProperty, 'AxisFirstUseWizard.MockResumeStartOverReturnOnlyClosesPrompt')
+
+    [void]$stack.Children.Add($title)
+    [void]$stack.Children.Add((New-AxisWizardSpacer -Height 10 -Tag 'AxisFirstUseWizard.StartOverPromptTitleBodySpacer'))
+    [void]$stack.Children.Add($body)
+    [void]$stack.Children.Add((New-AxisWizardSpacer -Height 18 -Tag 'AxisFirstUseWizard.StartOverPromptBodyButtonSpacer'))
+    [void]$buttonRow.Children.Add($startButton)
+    [void]$buttonRow.Children.Add((New-AxisWizardSpacer -Width 14 -Tag 'AxisFirstUseWizard.StartOverPromptButtonSpacer'))
+    [void]$buttonRow.Children.Add($returnButton)
+    [void]$stack.Children.Add($buttonRow)
+    $card.Child = $stack
+    $overlay.Child = $card
+
+    return $overlay
+}
+
 function Get-AxisWizardSetupText {
     [CmdletBinding()]
     param(
@@ -4221,6 +4779,8 @@ function Get-AxisFirstUseWizardSampleState {
         $defenderOptimizeAssistantStep
     )
 
+    $mockResumeState = New-AxisWizardMockResumeState
+
     return [ordered]@{
         BrandName = 'AXIS'
         ModeLabel = ''
@@ -4244,6 +4804,17 @@ function Get-AxisFirstUseWizardSampleState {
             $finalCompletionPage
         )
         MockHardwareProfile = $mockHardwareProfile
+        MockResumeState = $mockResumeState
+        UseMockResumeState = $false
+        MockResumePersistence = [ordered]@{
+            Marker = 'AxisFirstUseWizard.MockResumePersistencePrototypeOnly'
+            PrototypeOnly = $true
+            PrototypeTempStatePath = (Get-AxisWizardPrototypeStatePath)
+            TempFilePersistenceOnly = $true
+            NoProductionPersistence = $true
+            NoHostMutation = $true
+            NoStartupRegistration = $true
+        }
         SupportedStepStates = @(
             'Ready'
             'Checking'
@@ -8008,6 +8579,46 @@ function New-AxisFirstUseWizardPrototype {
     if ($currentStepIndex -lt 0 -or $currentStepIndex -ge $steps.Count) {
         $currentStepIndex = 0
     }
+    $mockResumeState = Get-AxisWizardMapValue -Map $SampleState -Name 'MockResumeState' -DefaultValue $null
+    if ($null -eq $mockResumeState -or $mockResumeState -isnot [System.Collections.IDictionary]) {
+        $mockResumeState = New-AxisWizardMockResumeState
+        $SampleState['MockResumeState'] = $mockResumeState
+    }
+    else {
+        $mockResumeState = [System.Collections.IDictionary]$mockResumeState
+    }
+    $prototypeStateFileEnabled = [bool](Get-AxisWizardMapValue -Map $SampleState -Name 'UsePrototypeStateFile' -DefaultValue $false)
+    $prototypeStatePath = [string](Get-AxisWizardMapValue -Map $SampleState -Name 'PrototypeStatePath' -DefaultValue (Get-AxisWizardPrototypeStatePath))
+    $prototypeStateFileLoaded = $false
+    if ($prototypeStateFileEnabled -and -not [bool](Get-AxisWizardMapValue -Map $SampleState -Name 'UseMockResumeState' -DefaultValue $false)) {
+        $loadedPrototypeState = Read-AxisWizardPrototypeState -Path $prototypeStatePath
+        if ($loadedPrototypeState -is [System.Collections.IDictionary]) {
+            $mockResumeState = [System.Collections.IDictionary]$loadedPrototypeState
+            $SampleState['MockResumeState'] = $mockResumeState
+            $SampleState['UseMockResumeState'] = $true
+            $prototypeStateFileLoaded = $true
+        }
+    }
+    $SampleState['PrototypeStatePath'] = $prototypeStatePath
+    $SampleState['PrototypeStateFileLoaded'] = $prototypeStateFileLoaded
+    Initialize-AxisWizardMockResumeStateForPrototype -ResumeState $mockResumeState
+    $useMockResumeState = ([bool](Get-AxisWizardMapValue -Map $SampleState -Name 'UseMockResumeState' -DefaultValue $false) -or
+        [bool](Get-AxisWizardMapValue -Map $mockResumeState -Name 'ResumeSimulationEnabled' -DefaultValue $false))
+    $mockResumeTarget = $null
+    $showStartOverPromptOnLoad = $false
+    if ($useMockResumeState) {
+        $mockResumeTarget = Get-AxisWizardMockResumeTarget -ResumeState $mockResumeState -Steps $steps
+        $currentStepIndex = [int](Get-AxisWizardMapValue -Map $mockResumeTarget -Name 'StepIndex' -DefaultValue 0)
+        if ($currentStepIndex -lt 0 -or $currentStepIndex -ge $steps.Count) {
+            $currentStepIndex = 0
+        }
+        $showStartOverPromptOnLoad = [bool](Get-AxisWizardMapValue -Map $mockResumeTarget -Name 'ShowStartOverPrompt' -DefaultValue $false)
+        $SampleState['CurrentStepIndex'] = $currentStepIndex
+        $SampleState['Step'] = $steps[$currentStepIndex]
+        $SampleState['CurrentStageName'] = [string](Get-AxisWizardMapValue -Map ([System.Collections.IDictionary]$steps[$currentStepIndex]) -Name 'StageName' -DefaultValue 'Check')
+    }
+    $completedPageIdsFromMockResume = @($mockResumeState['completedPageIds'])
+    $completedToolStepIdsFromMockResume = @($mockResumeState['completedToolStepIds'])
     $step = $steps[$currentStepIndex]
     $stepViews = [object[]]::new($steps.Count)
     $stepOverlays = [object[]]::new($steps.Count)
@@ -8021,8 +8632,11 @@ function New-AxisFirstUseWizardPrototype {
     $stepAllStagesCompleted = [bool[]]::new($steps.Count)
     for ($stepIndex = 0; $stepIndex -lt $steps.Count; $stepIndex++) {
         $stepMap = [System.Collections.IDictionary]$steps[$stepIndex]
-        $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
         $stepIdForOverlay = [string](Get-AxisWizardMapValue -Map $stepMap -Name 'Id')
+        if ($completedPageIdsFromMockResume -contains $stepIdForOverlay -or $completedToolStepIdsFromMockResume -contains $stepIdForOverlay) {
+            $stepMap['State'] = 'Completed'
+        }
+        $stepViews[$stepIndex] = New-AxisFirstUseWizardStepContent -Step $stepMap -Resources $resources
         $requiresConfirmationAcknowledgement = [bool](Get-AxisWizardMapValue -Map $stepMap -Name 'RequiresConfirmationAcknowledgement' -DefaultValue $false)
         if ($requiresConfirmationAcknowledgement) {
             $stepOverlays[$stepIndex] = New-AxisStepAcknowledgementOverlay -Step $stepMap -Resources $resources
@@ -8169,6 +8783,10 @@ function New-AxisFirstUseWizardPrototype {
         [void]$root.Children.Add($epicInstructionOverlay)
     }
 
+    $startOverPromptOverlay = New-AxisWizardStartOverPromptOverlay -Resources $resources
+    [System.Windows.Controls.Grid]::SetRowSpan($startOverPromptOverlay, 4)
+    [void]$root.Children.Add($startOverPromptOverlay)
+
     $primaryButton = $null
     $confirmButton = $null
     $runtimeStatusHost = $null
@@ -8260,6 +8878,436 @@ function New-AxisFirstUseWizardPrototype {
     $optionalContinuationButtonForNavigation = $optionalContinuationButton
     $optionalContinuationSpacerForNavigation = $optionalContinuationSpacer
     $stepOptionalContinuationLabelsForNavigation = $stepOptionalContinuationLabels
+    $mockResumeStateForNavigation = $mockResumeState
+    $stepsForNavigation = $steps
+    $mockTimestampForNavigation = Get-AxisWizardMockTimestamp
+    $prototypeStateFileEnabledForNavigation = $prototypeStateFileEnabled
+    $prototypeStatePathForNavigation = $prototypeStatePath
+    $prototypeStatePathAllowedForNavigation = ($prototypeStateFileEnabledForNavigation -and (Test-AxisWizardPrototypeStatePathAllowed -Path $prototypeStatePathForNavigation))
+    $saveMockResumeStateForNavigation = {
+        if (-not $prototypeStateFileEnabledForNavigation -or -not $prototypeStatePathAllowedForNavigation -or $null -eq $mockResumeStateForNavigation) {
+            return
+        }
+
+        $record = [ordered]@{
+            schemaVersion = 1
+            productName = 'AXIS'
+            currentPageId = [string]$mockResumeStateForNavigation['currentPageId']
+            currentStage = [string]$mockResumeStateForNavigation['currentStage']
+            completedPageIds = @($mockResumeStateForNavigation['completedPageIds'] | ForEach-Object { [string]$_ })
+            completedToolStepIds = @($mockResumeStateForNavigation['completedToolStepIds'] | ForEach-Object { [string]$_ })
+            isIntroCompleted = [bool]$mockResumeStateForNavigation['isIntroCompleted']
+            isSetupCompleted = [bool]$mockResumeStateForNavigation['isSetupCompleted']
+            reachedFinalCompletion = [bool]$mockResumeStateForNavigation['reachedFinalCompletion']
+            restartExpected = [bool]$mockResumeStateForNavigation['restartExpected']
+            restartSourceStepId = [string]$mockResumeStateForNavigation['restartSourceStepId']
+            resumeTargetPageId = [string]$mockResumeStateForNavigation['resumeTargetPageId']
+            pendingContinuation = [string]$mockResumeStateForNavigation['pendingContinuation']
+            lastUpdatedUtc = [string]$mockResumeStateForNavigation['lastUpdatedUtc']
+        }
+        $directory = [System.IO.Path]::GetDirectoryName($prototypeStatePathForNavigation)
+        [void][System.IO.Directory]::CreateDirectory($directory)
+        $json = $record | ConvertTo-Json -Depth 4
+        [System.IO.File]::WriteAllText($prototypeStatePathForNavigation, $json, [System.Text.Encoding]::UTF8)
+    }.GetNewClosure()
+    $saveMockResumeStateForNavigationClosure = $saveMockResumeStateForNavigation
+    $clearPrototypeStateForNavigation = {
+        if (-not $prototypeStateFileEnabledForNavigation -or -not $prototypeStatePathAllowedForNavigation) {
+            return
+        }
+        if ([System.IO.File]::Exists($prototypeStatePathForNavigation)) {
+            [System.IO.File]::Delete($prototypeStatePathForNavigation)
+        }
+    }.GetNewClosure()
+    $clearPrototypeStateForNavigationClosure = $clearPrototypeStateForNavigation
+    $addMockStateListValueForNavigation = {
+        param(
+            [System.Collections.IDictionary]$State,
+            [string]$Name,
+            [string]$Value
+        )
+
+        if ($null -eq $State -or [string]::IsNullOrWhiteSpace($Value)) {
+            return
+        }
+
+        $items = @()
+        if ($State.Contains($Name) -and $null -ne $State[$Name]) {
+            $items = @($State[$Name])
+        }
+        if ($items -notcontains $Value) {
+            $items += $Value
+        }
+        $State[$Name] = @($items)
+    }.GetNewClosure()
+    $addMockStateListValueForNavigationClosure = $addMockStateListValueForNavigation
+    $setMockCurrentPageForNavigation = {
+        param(
+            [int]$Index
+        )
+
+        if ($null -eq $mockResumeStateForNavigation -or $Index -lt 0 -or $Index -ge $stepsForNavigation.Count) {
+            return
+        }
+
+        $page = [System.Collections.IDictionary]$stepsForNavigation[$Index]
+        $pageId = ''
+        if ($page.Contains('Id') -and $null -ne $page['Id']) {
+            $pageId = [string]$page['Id']
+        }
+        $pageKind = 'Tool'
+        if ($page.Contains('PageKind') -and $null -ne $page['PageKind']) {
+            $pageKind = [string]$page['PageKind']
+        }
+        $stageName = 'Check'
+        if ($page.Contains('StageName') -and $null -ne $page['StageName']) {
+            $stageName = [string]$page['StageName']
+        }
+        $isToolStep = ($pageKind -eq 'Tool')
+        if ($page.Contains('IsToolStep') -and $null -ne $page['IsToolStep']) {
+            $isToolStep = [bool]$page['IsToolStep']
+        }
+
+        $mockResumeStateForNavigation['currentPageId'] = $pageId
+        $mockResumeStateForNavigation['currentStage'] = $stageName
+        if ($isToolStep -and $pageKind -eq 'Tool') {
+            $mockResumeStateForNavigation['currentToolStepId'] = $pageId
+        }
+        else {
+            $mockResumeStateForNavigation['currentToolStepId'] = ''
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($pageId) -and $pageId -ne 'intro-welcome') {
+            $mockResumeStateForNavigation['isIntroCompleted'] = $true
+        }
+        if ($pageId -eq 'final-completion') {
+            $mockResumeStateForNavigation['reachedFinalCompletion'] = $true
+            $mockResumeStateForNavigation['isSetupCompleted'] = $true
+            & $addMockStateListValueForNavigationClosure $mockResumeStateForNavigation 'completedPageIds' $pageId
+        }
+
+        $mockResumeStateForNavigation['lastUpdatedUtc'] = $mockTimestampForNavigation
+    }.GetNewClosure()
+    $setMockCurrentPageForNavigationClosure = $setMockCurrentPageForNavigation
+    $setMockPageCompletedForNavigation = {
+        param(
+            [int]$Index
+        )
+
+        if ($null -eq $mockResumeStateForNavigation -or $Index -lt 0 -or $Index -ge $stepsForNavigation.Count) {
+            return
+        }
+
+        $page = [System.Collections.IDictionary]$stepsForNavigation[$Index]
+        $pageId = ''
+        if ($page.Contains('Id') -and $null -ne $page['Id']) {
+            $pageId = [string]$page['Id']
+        }
+        $pageKind = 'Tool'
+        if ($page.Contains('PageKind') -and $null -ne $page['PageKind']) {
+            $pageKind = [string]$page['PageKind']
+        }
+        $isToolStep = ($pageKind -eq 'Tool')
+        if ($page.Contains('IsToolStep') -and $null -ne $page['IsToolStep']) {
+            $isToolStep = [bool]$page['IsToolStep']
+        }
+
+        & $addMockStateListValueForNavigationClosure $mockResumeStateForNavigation 'completedPageIds' $pageId
+        if ($isToolStep -and $pageKind -eq 'Tool') {
+            & $addMockStateListValueForNavigationClosure $mockResumeStateForNavigation 'completedToolStepIds' $pageId
+        }
+        if ($pageId -eq 'intro-welcome') {
+            $mockResumeStateForNavigation['isIntroCompleted'] = $true
+        }
+        elseif ($pageId -eq 'final-completion') {
+            $mockResumeStateForNavigation['reachedFinalCompletion'] = $true
+            $mockResumeStateForNavigation['isSetupCompleted'] = $true
+        }
+
+        $mockResumeStateForNavigation['lastUpdatedUtc'] = $mockTimestampForNavigation
+    }.GetNewClosure()
+    $setMockPageCompletedForNavigationClosure = $setMockPageCompletedForNavigation
+    $resetMockProgressForNavigation = {
+        if ($null -eq $mockResumeStateForNavigation) {
+            return
+        }
+
+        $mockResumeStateForNavigation['currentPageId'] = 'intro-welcome'
+        $mockResumeStateForNavigation['currentToolStepId'] = ''
+        $mockResumeStateForNavigation['currentStage'] = ''
+        $mockResumeStateForNavigation['completedPageIds'] = @()
+        $mockResumeStateForNavigation['completedToolStepIds'] = @()
+        $mockResumeStateForNavigation['isIntroCompleted'] = $false
+        $mockResumeStateForNavigation['isSetupCompleted'] = $false
+        $mockResumeStateForNavigation['reachedFinalCompletion'] = $false
+        $mockResumeStateForNavigation['restartExpected'] = $false
+        $mockResumeStateForNavigation['restartReason'] = ''
+        $mockResumeStateForNavigation['restartSourceStepId'] = ''
+        $mockResumeStateForNavigation['resumeTargetPageId'] = ''
+        $mockResumeStateForNavigation['resumeMode'] = 'None'
+        $mockResumeStateForNavigation['pendingContinuation'] = ''
+        $mockResumeStateForNavigation['selectedMetadata'] = [ordered]@{}
+        $mockResumeStateForNavigation['lastUpdatedUtc'] = $mockTimestampForNavigation
+    }.GetNewClosure()
+    $resetMockProgressForNavigationClosure = $resetMockProgressForNavigation
+    $resetAutomationPropertyForNavigation = [System.Windows.Automation.AutomationProperties]::AutomationIdProperty
+    $resetPrimaryBackgroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.PrimaryButton'
+    $resetPrimaryBorderForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.PrimaryButtonHover'
+    $resetPrimaryForegroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.PrimaryButtonText'
+    $resetPrimaryEffectForNavigation = New-AxisWizardShadowEffect -Opacity 0.16 -BlurRadius 16 -ShadowDepth 3
+    $resetDisabledBackgroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.SurfaceSoft'
+    $resetDisabledBorderForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.BorderSoft'
+    $resetDisabledForegroundForNavigation = Get-AxisWizardResource -Resources $resources -Name 'Axis.Brush.Wizard.TextMuted'
+    $resetRuntimeReadyResourceKeysForNavigation = Get-AxisWizardStepStateResourceKeys -State 'Ready'
+    $resetRuntimeBackgroundForNavigation = Get-AxisWizardResource -Resources $resources -Name ([string]$resetRuntimeReadyResourceKeysForNavigation['Background'])
+    $resetRuntimeBorderForNavigation = Get-AxisWizardResource -Resources $resources -Name ([string]$resetRuntimeReadyResourceKeysForNavigation['Border'])
+    $resetCachedWizardSessionForNavigation = {
+        $automationPropertyForReset = $resetAutomationPropertyForNavigation
+        $primaryBackgroundForReset = $resetPrimaryBackgroundForNavigation
+        $primaryBorderForReset = $resetPrimaryBorderForNavigation
+        $primaryForegroundForReset = $resetPrimaryForegroundForNavigation
+        $primaryEffectForReset = $resetPrimaryEffectForNavigation
+        $disabledBackgroundForReset = $resetDisabledBackgroundForNavigation
+        $disabledBorderForReset = $resetDisabledBorderForNavigation
+        $disabledForegroundForReset = $resetDisabledForegroundForNavigation
+        $runtimeBackgroundForReset = $resetRuntimeBackgroundForNavigation
+        $runtimeBorderForReset = $resetRuntimeBorderForNavigation
+        $findTaggedElementForReset = {
+            param(
+                [AllowNull()]
+                [object]$Node,
+
+                [Parameter(Mandatory)]
+                [string]$Tag,
+
+                [Parameter(Mandatory)]
+                [AllowEmptyCollection()]
+                [System.Collections.Generic.HashSet[int]]$Visited
+            )
+
+            if ($null -eq $Node) {
+                return $null
+            }
+
+            $nodeKey = [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode($Node)
+            if ($Visited.Contains($nodeKey)) {
+                return $null
+            }
+
+            [void]$Visited.Add($nodeKey)
+            if ($Node -is [System.Windows.FrameworkElement] -and [string]$Node.Tag -eq $Tag) {
+                return $Node
+            }
+            if ($Node -is [System.Windows.Controls.ContentControl]) {
+                $match = & $findTaggedElementForReset -Node $Node.Content -Tag $Tag -Visited $Visited
+                if ($null -ne $match) { return $match }
+            }
+            if ($Node -is [System.Windows.Controls.Panel]) {
+                foreach ($child in @($Node.Children)) {
+                    $match = & $findTaggedElementForReset -Node $child -Tag $Tag -Visited $Visited
+                    if ($null -ne $match) { return $match }
+                }
+            }
+            if ($Node -is [System.Windows.Controls.Decorator]) {
+                $match = & $findTaggedElementForReset -Node $Node.Child -Tag $Tag -Visited $Visited
+                if ($null -ne $match) { return $match }
+            }
+
+            return $null
+        }
+        $visitedForReset = [System.Collections.Generic.HashSet[int]]::new()
+
+        for ($resetStepIndex = 0; $resetStepIndex -lt $stepsForNavigation.Count; $resetStepIndex++) {
+            $resetStep = [System.Collections.IDictionary]$stepsForNavigation[$resetStepIndex]
+            $resetPageKind = 'Tool'
+            if ($resetStep.Contains('PageKind') -and $null -ne $resetStep['PageKind']) {
+                $resetPageKind = [string]$resetStep['PageKind']
+            }
+            $resetIsToolStep = ($resetPageKind -eq 'Tool')
+            if ($resetStep.Contains('IsToolStep') -and $null -ne $resetStep['IsToolStep']) {
+                $resetIsToolStep = [bool]$resetStep['IsToolStep']
+            }
+            $resetStepId = ''
+            if ($resetStep.Contains('Id') -and $null -ne $resetStep['Id']) {
+                $resetStepId = [string]$resetStep['Id']
+            }
+            $resetRequiresSelection = $false
+            if ($resetStep.Contains('PrimaryActionRequiresSelection') -and $null -ne $resetStep['PrimaryActionRequiresSelection']) {
+                $resetRequiresSelection = [bool]$resetStep['PrimaryActionRequiresSelection']
+            }
+
+            if ($resetIsToolStep -and $resetPageKind -eq 'Tool') {
+                $resetStep['State'] = 'Ready'
+            }
+
+            $resetView = $stepViewsForNavigation[$resetStepIndex]
+            if ($null -eq $resetView) {
+                continue
+            }
+
+            $visitedForReset.Clear()
+            $resetRuntimeStatusHost = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.RuntimeStatusArea' -Visited $visitedForReset
+            if ($resetRuntimeStatusHost -is [System.Windows.Controls.Border]) {
+                $resetRuntimeStatusHost.Child = $null
+                $resetRuntimeStatusHost.Visibility = [System.Windows.Visibility]::Collapsed
+                $resetRuntimeStatusHost.Background = $runtimeBackgroundForReset
+                $resetRuntimeStatusHost.BorderBrush = $runtimeBorderForReset
+                $resetRuntimeStatusHost.Resources['AxisFirstUseWizard.StartOverRuntimeStatusCleared'] = $true
+            }
+
+            $visitedForReset.Clear()
+            $resetRuntimeStatusSpacer = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.ActionRuntimeStatusSpacer' -Visited $visitedForReset
+            if ($resetRuntimeStatusSpacer -is [System.Windows.FrameworkElement]) {
+                $resetRuntimeStatusSpacer.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+
+            $visitedForReset.Clear()
+            $resetPrimaryButton = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.PrimaryOpenButton' -Visited $visitedForReset
+            if ($resetPrimaryButton -is [System.Windows.Controls.Button]) {
+                if ($resetRequiresSelection) {
+                    $resetPrimaryButton.IsEnabled = $false
+                    $resetPrimaryButton.Background = $disabledBackgroundForReset
+                    $resetPrimaryButton.BorderBrush = $disabledBorderForReset
+                    $resetPrimaryButton.Foreground = $disabledForegroundForReset
+                    $resetPrimaryButton.Effect = $null
+                    if ($resetStepId -eq 'installers') {
+                        $resetPrimaryButton.SetValue($automationPropertyForReset, 'AxisFirstUseWizard.InstallersInstallDisabledUntilProgramSelected')
+                    }
+                    elseif ($resetStepId -eq 'driver-install-debloat-settings') {
+                        $resetPrimaryButton.SetValue($automationPropertyForReset, 'AxisFirstUseWizard.GraphicsGpuSetupPrimaryDisabledUntilNvidiaSelected')
+                    }
+                    elseif ($resetStepId -eq 'bloatware') {
+                        $resetPrimaryButton.SetValue($automationPropertyForReset, 'AxisFirstUseWizard.WindowsBloatwarePrimaryDisabledUntilActionSelected')
+                    }
+                }
+                elseif ($resetIsToolStep -and $resetPageKind -eq 'Tool') {
+                    $resetPrimaryButton.IsEnabled = $true
+                    $resetPrimaryButton.Background = $primaryBackgroundForReset
+                    $resetPrimaryButton.BorderBrush = $primaryBorderForReset
+                    $resetPrimaryButton.Foreground = $primaryForegroundForReset
+                    $resetPrimaryButton.Effect = $primaryEffectForReset
+                    $resetPrimaryButton.SetValue($automationPropertyForReset, '')
+                }
+
+                $resetPrimaryButton.Resources['AxisFirstUseWizard.InstallersSelectedProgram'] = ''
+                $resetPrimaryButton.Resources['AxisFirstUseWizard.InstallersEpicSelected'] = $false
+                $resetPrimaryButton.Resources['AxisFirstUseWizard.GraphicsGpuSetupSelectedGpu'] = ''
+                $resetPrimaryButton.Resources['AxisFirstUseWizard.WindowsBloatwareSelectedAction'] = ''
+            }
+
+            foreach ($resetSelectorSpec in @(
+                @{ Tag = 'AxisFirstUseWizard.InstallersProgramSelector'; Index = 0 },
+                @{ Tag = 'AxisFirstUseWizard.GraphicsGpuSelector'; Index = -1 },
+                @{ Tag = 'AxisFirstUseWizard.WindowsBloatwareActionSelector'; Index = 0 }
+            )) {
+                $visitedForReset.Clear()
+                $resetSelector = & $findTaggedElementForReset -Node $resetView -Tag ([string]$resetSelectorSpec.Tag) -Visited $visitedForReset
+                if ($resetSelector -is [System.Windows.Controls.ComboBox]) {
+                    $resetSelector.SelectedIndex = [int]$resetSelectorSpec.Index
+                    $resetSelector.Resources['AxisFirstUseWizard.StartOverSelectorCleared'] = $true
+                }
+            }
+
+            $visitedForReset.Clear()
+            $resetSelectedProgramDisplay = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.InstallersSelectedProgramDisplay' -Visited $visitedForReset
+            if ($resetSelectedProgramDisplay -is [System.Windows.FrameworkElement]) {
+                $resetSelectedProgramDisplay.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+
+            $visitedForReset.Clear()
+            $resetSelectedProgramName = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.InstallersSelectedProgramName' -Visited $visitedForReset
+            if ($resetSelectedProgramName -is [System.Windows.Controls.TextBlock]) {
+                $resetSelectedProgramName.Text = ''
+            }
+
+            $visitedForReset.Clear()
+            $resetIntroStartButton = & $findTaggedElementForReset -Node $resetView -Tag 'AxisFirstUseWizard.IntroWelcomeStartButton' -Visited $visitedForReset
+            if ($resetIntroStartButton -is [System.Windows.Controls.Button]) {
+                $resetIntroStartButton.IsEnabled = $true
+                $resetIntroStartButton.Background = $primaryBackgroundForReset
+                $resetIntroStartButton.BorderBrush = $primaryBorderForReset
+                $resetIntroStartButton.Foreground = $primaryForegroundForReset
+                $resetIntroStartButton.Effect = $primaryEffectForReset
+            }
+        }
+
+        foreach ($resetOverlay in @($stepOverlaysForNavigation)) {
+            if ($null -eq $resetOverlay) {
+                continue
+            }
+
+            $resetOverlay.Visibility = [System.Windows.Visibility]::Collapsed
+            $visitedForReset.Clear()
+            $resetAcknowledgement = & $findTaggedElementForReset -Node $resetOverlay -Tag 'AxisFirstUseWizard.ConfirmationAcknowledgement' -Visited $visitedForReset
+            if ($resetAcknowledgement -is [System.Windows.Controls.CheckBox]) {
+                $resetAcknowledgement.IsChecked = $false
+                $resetAcknowledgement.Resources['AxisFirstUseWizard.StartOverAcknowledgementCleared'] = $true
+            }
+
+            $visitedForReset.Clear()
+            $resetConfirmButton = & $findTaggedElementForReset -Node $resetOverlay -Tag 'AxisFirstUseWizard.ConfirmationOpenButton' -Visited $visitedForReset
+            if ($resetConfirmButton -is [System.Windows.Controls.Button]) {
+                $resetConfirmButton.IsEnabled = $false
+                $resetConfirmButton.Background = $disabledBackgroundForReset
+                $resetConfirmButton.BorderBrush = $disabledBorderForReset
+                $resetConfirmButton.Foreground = $disabledForegroundForReset
+                $resetConfirmButton.Effect = $null
+            }
+        }
+
+        foreach ($resetInputOverlay in @($stepInputOverlaysForNavigation)) {
+            if ($null -eq $resetInputOverlay) {
+                continue
+            }
+
+            $resetInputOverlay.Visibility = [System.Windows.Visibility]::Collapsed
+            foreach ($resetInputTextBoxTag in @(
+                'AxisFirstUseWizard.AutoUnattendAccountTextBox',
+                'AxisFirstUseWizard.UpdatesDriversAccountTextBox'
+            )) {
+                $visitedForReset.Clear()
+                $resetTextBox = & $findTaggedElementForReset -Node $resetInputOverlay -Tag $resetInputTextBoxTag -Visited $visitedForReset
+                if ($resetTextBox -is [System.Windows.Controls.TextBox]) {
+                    $resetTextBox.Text = ''
+                }
+            }
+
+            foreach ($resetUsbSelectorTag in @(
+                'AxisFirstUseWizard.AutoUnattendUsbSelector',
+                'AxisFirstUseWizard.UpdatesDriversUsbSelector'
+            )) {
+                $visitedForReset.Clear()
+                $resetUsbSelector = & $findTaggedElementForReset -Node $resetInputOverlay -Tag $resetUsbSelectorTag -Visited $visitedForReset
+                if ($resetUsbSelector -is [System.Windows.Controls.ComboBox]) {
+                    $resetUsbSelector.SelectedIndex = -1
+                    $resetUsbSelector.Resources['AxisFirstUseWizard.StartOverSelectorCleared'] = $true
+                }
+            }
+
+            foreach ($resetInputCreateButtonTag in @(
+                'AxisFirstUseWizard.AutoUnattendInputCreateButton',
+                'AxisFirstUseWizard.UpdatesDriversInputCreateButton'
+            )) {
+                $visitedForReset.Clear()
+                $resetInputCreateButton = & $findTaggedElementForReset -Node $resetInputOverlay -Tag $resetInputCreateButtonTag -Visited $visitedForReset
+                if ($resetInputCreateButton -is [System.Windows.Controls.Button]) {
+                    $resetInputCreateButton.IsEnabled = $false
+                    $resetInputCreateButton.Background = $disabledBackgroundForReset
+                    $resetInputCreateButton.BorderBrush = $disabledBorderForReset
+                    $resetInputCreateButton.Foreground = $disabledForegroundForReset
+                    $resetInputCreateButton.Effect = $null
+                }
+            }
+        }
+
+        foreach ($resetEpicInstructionOverlay in @($stepEpicInstructionOverlaysForNavigation)) {
+            if ($null -ne $resetEpicInstructionOverlay) {
+                $resetEpicInstructionOverlay.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }
+    }.GetNewClosure()
+    $resetCachedWizardSessionForNavigationClosure = $resetCachedWizardSessionForNavigation
+    & $setMockCurrentPageForNavigationClosure $currentStepIndex
     $updateOptionalContinuationForNavigation = {
         param(
             [int]$Index
@@ -8348,6 +9396,83 @@ function New-AxisFirstUseWizardPrototype {
     $updatePageChromeForNavigationClosure = $updatePageChromeForNavigation
     & $updatePageChromeForNavigationClosure $currentStepIndex
 
+    $visited.Clear()
+    $startOverPromptStartButton = Find-AxisWizardTaggedElement -Node $startOverPromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptStartOverButton'
+    $visited.Clear()
+    $startOverPromptReturnButton = Find-AxisWizardTaggedElement -Node $startOverPromptOverlay -Tag 'AxisFirstUseWizard.StartOverPromptReturnButton'
+
+    if ($startOverPromptReturnButton -is [System.Windows.Controls.Button]) {
+        $startOverPromptOverlayForReturn = $startOverPromptOverlay
+        $startOverPromptReturnButton.Add_Click({
+            $startOverPromptOverlayForReturn.Visibility = [System.Windows.Visibility]::Collapsed
+        }.GetNewClosure())
+    }
+
+    if ($startOverPromptStartButton -is [System.Windows.Controls.Button]) {
+        $startOverPromptOverlayForStart = $startOverPromptOverlay
+        $navigationStateForStartOver = $navigationStateForNavigation
+        $contentHostForStartOver = $contentHostForNavigation
+        $stepViewsForStartOver = $stepViewsForNavigation
+        $stepCompletedFlagsForStartOver = $stepCompletedFlagsForNavigation
+        $stageTextForStartOver = $stageTextForNavigation
+        $stepStageNamesForStartOver = $stepStageNamesForNavigation
+        $setStageProgressActiveForStartOver = $setStageProgressActiveForNavigationClosure
+        $continueButtonForStartOver = $continueButtonForNavigation
+        $continueAutomationIdPropertyForStartOver = $continueAutomationIdPropertyForNavigation
+        $continueDisabledBackgroundForStartOver = $continueDisabledBackgroundForNavigation
+        $continueDisabledBorderForStartOver = $continueDisabledBorderForNavigation
+        $continueDisabledForegroundForStartOver = $continueDisabledForegroundForNavigation
+        $continueDisabledEffectForStartOver = $continueDisabledEffectForNavigation
+        $continueEnabledHoverReadableMarkerKeyForStartOver = $continueEnabledHoverReadableMarkerKeyForNavigation
+        $continueEnabledHoverBackgroundResourceKeyForStartOver = $continueEnabledHoverBackgroundResourceKeyForNavigation
+        $continueEnabledHoverBorderResourceKeyForStartOver = $continueEnabledHoverBorderResourceKeyForNavigation
+        $updateOptionalContinuationForStartOver = $updateOptionalContinuationForNavigationClosure
+        $updatePageChromeForStartOver = $updatePageChromeForNavigationClosure
+        $resetMockProgressForStartOver = $resetMockProgressForNavigationClosure
+        $resetCachedWizardSessionForStartOver = $resetCachedWizardSessionForNavigationClosure
+        $startOverPromptStartButton.Add_Click({
+            & $resetMockProgressForStartOver
+            & $resetCachedWizardSessionForStartOver
+            for ($resetIndex = 0; $resetIndex -lt $stepCompletedFlagsForStartOver.Count; $resetIndex++) {
+                $stepCompletedFlagsForStartOver[$resetIndex] = $false
+            }
+
+            $targetStartOverIndex = 0
+            $navigationStateForStartOver['CurrentStepIndex'] = $targetStartOverIndex
+            & $clearPrototypeStateForNavigationClosure
+            $contentHostForStartOver.Child = $stepViewsForStartOver[$targetStartOverIndex]
+            $stageTextForStartOver.Text = $stepStageNamesForStartOver[$targetStartOverIndex]
+            & $setStageProgressActiveForStartOver $stepStageNamesForStartOver[$targetStartOverIndex]
+            $continueButtonForStartOver.IsEnabled = $false
+            $continueButtonForStartOver.SetValue($continueAutomationIdPropertyForStartOver, '')
+            $continueButtonForStartOver.Background = $continueDisabledBackgroundForStartOver
+            $continueButtonForStartOver.BorderBrush = $continueDisabledBorderForStartOver
+            $continueButtonForStartOver.Foreground = $continueDisabledForegroundForStartOver
+            $continueButtonForStartOver.Effect = $continueDisabledEffectForStartOver
+            [void]$continueButtonForStartOver.Resources.Remove($continueEnabledHoverReadableMarkerKeyForStartOver)
+            [void]$continueButtonForStartOver.Resources.Remove($continueEnabledHoverBackgroundResourceKeyForStartOver)
+            [void]$continueButtonForStartOver.Resources.Remove($continueEnabledHoverBorderResourceKeyForStartOver)
+            & $updateOptionalContinuationForStartOver $targetStartOverIndex
+            & $updatePageChromeForStartOver $targetStartOverIndex
+            $startOverPromptOverlayForStart.Visibility = [System.Windows.Visibility]::Collapsed
+        }.GetNewClosure())
+    }
+
+    if ($showStartOverPromptOnLoad) {
+        Show-AxisWizardStartOverPrompt -Overlay $startOverPromptOverlay
+    }
+
+    if ($finalButton -is [System.Windows.Controls.Button]) {
+        $finalButtonRootForClose = $root
+        $finalButton.Resources['AxisFirstUseWizard.FinalCompletionFinishClosesPrototypeWindowOnly'] = $true
+        $finalButton.Add_Click({
+            $finalCompletionWindow = [System.Windows.Window]::GetWindow($finalButtonRootForClose)
+            if ($finalCompletionWindow -is [System.Windows.Window]) {
+                $finalCompletionWindow.Close()
+            }
+        }.GetNewClosure())
+    }
+
     if ($backButton -is [System.Windows.Controls.Button]) {
         $backButton.Add_Click({
             $currentNavigationIndex = [int]$navigationStateForNavigation['CurrentStepIndex']
@@ -8379,6 +9504,8 @@ function New-AxisFirstUseWizardPrototype {
 
             $currentNavigationIndex = $currentNavigationIndex - 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            & $setMockCurrentPageForNavigationClosure $currentNavigationIndex
+            & $saveMockResumeStateForNavigationClosure
             $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
             $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
             & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
@@ -8443,6 +9570,8 @@ function New-AxisFirstUseWizardPrototype {
 
             $currentNavigationIndex = $currentNavigationIndex + 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            & $setMockCurrentPageForNavigationClosure $currentNavigationIndex
+            & $saveMockResumeStateForNavigationClosure
             $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
             $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
             & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
@@ -8510,6 +9639,8 @@ function New-AxisFirstUseWizardPrototype {
 
             $currentNavigationIndex = $currentNavigationIndex + 1
             $navigationStateForNavigation['CurrentStepIndex'] = $currentNavigationIndex
+            & $setMockCurrentPageForNavigationClosure $currentNavigationIndex
+            & $saveMockResumeStateForNavigationClosure
             $contentHostForNavigation.Child = $stepViewsForNavigation[$currentNavigationIndex]
             $stageTextForNavigation.Text = $stepStageNamesForNavigation[$currentNavigationIndex]
             & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$currentNavigationIndex]
@@ -8594,6 +9725,7 @@ function New-AxisFirstUseWizardPrototype {
         $inputAccountBoxForHandler = $inputAccountBox
         $inputUsbSelectorForHandler = $inputUsbSelector
         $stepCompletedFlagsForHandler = $stepCompletedFlagsForNavigation
+        $setMockPageCompletedForHandlerClosure = $setMockPageCompletedForNavigationClosure
         $continueButtonForHandler = $continueButton
         $continueEnabledBlueMarkerForHandler = $continueEnabledBlueMarkerForNavigation
         $continueEnabledBlueBackgroundForHandler = $continueEnabledBlueBackgroundForNavigation
@@ -8612,6 +9744,8 @@ function New-AxisFirstUseWizardPrototype {
         $completionTimerForHandler.Add_Tick({
             $completionTimerForHandler.Stop()
             $stepCompletedFlagsForHandler[$handlerStepIndexForClosure] = $true
+            & $setMockPageCompletedForHandlerClosure $handlerStepIndexForClosure
+            & $saveMockResumeStateForNavigationClosure
             $runtimeStatusHostForHandler.Child = $completedRuntimeStatusForHandler
             $runtimeStatusHostForHandler.Visibility = [System.Windows.Visibility]::Visible
             if ([int]$navigationStateForNavigation['CurrentStepIndex'] -eq $handlerStepIndexForClosure) {
@@ -8661,6 +9795,9 @@ function New-AxisFirstUseWizardPrototype {
                 }
 
                 $navigationStateForNavigation['CurrentStepIndex'] = $targetNavigationIndex
+                & $setMockPageCompletedForNavigationClosure 0
+                & $setMockCurrentPageForNavigationClosure $targetNavigationIndex
+                & $saveMockResumeStateForNavigationClosure
                 $contentHostForNavigation.Child = $stepViewsForNavigation[$targetNavigationIndex]
                 $stageTextForNavigation.Text = $stepStageNamesForNavigation[$targetNavigationIndex]
                 & $setStageProgressActiveForNavigationClosure $stepStageNamesForNavigation[$targetNavigationIndex]
@@ -8823,6 +9960,12 @@ function New-AxisFirstUseWizardPrototypeWindow {
     $window.Background = Get-AxisWizardResource -Resources (New-AxisWpfResourceDictionary) -Name 'Axis.Brush.Wizard.WindowSurface'
     $window.UseLayoutRounding = $true
     $window.SnapsToDevicePixels = $true
+    if (-not $SampleState.Contains('UsePrototypeStateFile')) {
+        $SampleState['UsePrototypeStateFile'] = $true
+    }
+    if (-not $SampleState.Contains('PrototypeStatePath')) {
+        $SampleState['PrototypeStatePath'] = Get-AxisWizardPrototypeStatePath
+    }
     $window.Content = New-AxisFirstUseWizardPrototype -SampleState $SampleState
     return $window
 }
